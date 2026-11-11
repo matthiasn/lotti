@@ -572,6 +572,31 @@ void main() {
     expect(thread.doorsByMessageId, isEmpty);
   });
 
+  test('her runs are every one in the conversation, those the window drops '
+      'included, and never a user turn', () async {
+    for (var i = 0; i < 30; i++) {
+      final at = DateTime(2026, 10).add(Duration(minutes: 2 * i));
+      final turn = 'u$i'.padLeft(4, '0');
+      userTurn(turn, 'turn $i', at: at);
+      row(
+        id: 'r$i'.padLeft(4, '0'),
+        kind: AgentMessageKind.action,
+        toolName: FrontAgentToolNames.replyToUser,
+        operationId: turn,
+        content: {'text': 'reply $i'},
+        runKey: 'run-$i',
+        createdAt: at.add(const Duration(minutes: 1)),
+      );
+    }
+
+    final thread = await builder.build();
+
+    // Sixty messages, fifty shown: the first five replies are out of view.
+    expect(thread.messages, hasLength(50));
+    expect(thread.messages.map((m) => m.runKey), isNot(contains('run-0')));
+    expect(thread.runKeys, {for (var i = 0; i < 30; i++) 'run-$i'});
+  });
+
   test('a turn with a door still waiting on the user stays in view however '
       'old: the inbox must not scroll out of existence', () async {
     for (var i = 0; i < 60; i++) {

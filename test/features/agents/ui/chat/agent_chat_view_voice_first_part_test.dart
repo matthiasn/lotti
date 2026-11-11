@@ -88,7 +88,6 @@ void main() {
     bool voiceFirst = true,
     bool isSending = false,
     List<AgentChatMessage>? history,
-    Widget? Function(BuildContext, AgentChatMessage)? footerTrailing,
     bool reducedMotion = false,
     VoidCallback? onSendSpoken,
     bool? draftSpoken,
@@ -117,7 +116,6 @@ void main() {
                 history: AsyncData(history ?? messages),
                 conversational: conversational,
                 voiceFirst: voiceFirst,
-                footerTrailingBuilder: footerTrailing,
                 onSendSpoken: onSendSpoken,
                 draftSpoken: draftSpoken,
                 onDraftSpoken: onDraftSpoken,
@@ -138,25 +136,50 @@ void main() {
   }
 
   group('a conversation', () {
-    testWidgets('her words are unboxed prose and nobody carries a name and '
-        'time line; the footer stays for what a host adds', (tester) async {
-      await pumpView(
-        tester,
-        footerTrailing: (context, message) =>
-            message.role == AgentChatRole.agent
-            ? const Text('900 tokens', key: Key('cost'))
-            : null,
-      );
+    testWidgets('her words are unboxed prose, nobody carries a name and '
+        "time line, and the user's bubble is a neutral step off the ground", (
+      tester,
+    ) async {
+      await pumpView(tester);
 
       expect(find.textContaining('Companion · '), findsNothing);
       expect(find.textContaining('You · '), findsNothing);
-      expect(find.byKey(const Key('cost')), findsOne);
-      final hers = find.ancestor(
-        of: find.text('Forty-two.'),
-        matching: find.byType(DecoratedBox),
+      BoxDecoration bubbleOf(String text) =>
+          tester
+                  .widget<DecoratedBox>(
+                    find
+                        .ancestor(
+                          of: find.text(text),
+                          matching: find.byType(DecoratedBox),
+                        )
+                        .first,
+                  )
+                  .decoration
+              as BoxDecoration;
+      final tokens = tester.element(find.byType(AgentChatView)).designTokens;
+      expect(bubbleOf('Forty-two.').color, isNull);
+      expect(
+        bubbleOf('How many hatchlings?').color,
+        tokens.colors.background.level02,
       );
-      final box = tester.widget<DecoratedBox>(hers.first);
-      expect((box.decoration as BoxDecoration).color, isNull);
+    });
+
+    testWidgets("a log's user bubble keeps the selected fill", (tester) async {
+      await pumpView(tester, conversational: false, voiceFirst: false);
+
+      final tokens = tester.element(find.byType(AgentChatView)).designTokens;
+      final bubble = tester.widget<DecoratedBox>(
+        find
+            .ancestor(
+              of: find.text('How many hatchlings?'),
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      expect(
+        (bubble.decoration as BoxDecoration).color,
+        tokens.colors.surface.selected,
+      );
     });
 
     testWidgets('a log keeps the name-and-time line on every message', (

@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, and how many pull requests the user opened and shipped, with charts under her words, and names tasks as links, how a reply is composed of words, cards and charts in her order and checked before it is stored, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, and how many pull requests the user opened and shipped, with charts under her words, and names tasks as links, how a reply is composed of words, cards and charts in her order, checked before it is stored, and drawn as a GenUI surface, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -51,7 +51,7 @@ sources:
   - id: chat-service
     resource: ../../lib/features/front_agent/service/front_chat_service.dart
     title: FrontChatService — persist, arm recovery, wake, await, consume
-    last_modified: 2026-11-09
+    last_modified: 2026-11-11
   - id: history-service
     resource: ../../lib/features/front_agent/service/front_chat_history_service.dart
     title: FrontChatHistoryService — which turns are still unanswered
@@ -110,16 +110,16 @@ sources:
     last_modified: 2026-10-26
   - id: conversations
     resource: ../../lib/features/front_agent/service/front_conversation_service.dart
-    title: FrontConversationService — which conversations exist, renaming, archiving, deleting
-    last_modified: 2026-10-31
+    title: FrontConversationService — which conversations exist and their category, renaming, archiving, deleting
+    last_modified: 2026-11-11
   - id: conversation-state
     resource: ../../lib/features/front_agent/state/front_conversation_providers.dart
-    title: The conversation index, the picked and the active conversation, and whether her card is shown
-    last_modified: 2026-10-31
+    title: The conversation index, the picked and the active conversation, whether the drawer is open and whether her card is shown
+    last_modified: 2026-11-11
   - id: conversation-list
     resource: ../../lib/features/front_agent/ui/front_conversation_list.dart
-    title: FrontConversationList — the list of conversations, grouped by recency
-    last_modified: 2026-11-01
+    title: FrontConversationList — the drawer's list, its categories and the history grouped by recency
+    last_modified: 2026-11-11
   - id: adr-0154
     resource: ../../docs/adr/0154-front-agent-conversations.md
     title: ADR 0154 — the front agent keeps many conversations
@@ -127,19 +127,19 @@ sources:
   - id: thread
     resource: ../../lib/features/front_agent/service/front_chat_thread_builder.dart
     title: FrontChatThreadBuilder — the thread with doors, options, mirrored replies and the preview cards a reply carries
-    last_modified: 2026-11-09
+    last_modified: 2026-11-11
   - id: controller
     resource: ../../lib/features/front_agent/state/front_chat_controller.dart
-    title: FrontChatController — the composer
-    last_modified: 2026-11-09
+    title: FrontChatController — the composer, and the category a send carries
+    last_modified: 2026-11-11
   - id: pane
     resource: ../../lib/features/front_agent/ui/front_chat_pane.dart
-    title: FrontChatPane — the thread on the shared AgentChatView
-    last_modified: 2026-11-09
+    title: FrontChatPane — the thread on the shared AgentChatView, and the drawer over or beside it
+    last_modified: 2026-11-11
   - id: sheet
     resource: ../../lib/features/front_agent/ui/front_chat_surface.dart
     title: showFrontChat — her surface over the app
-    last_modified: 2026-11-08
+    last_modified: 2026-11-11
   - id: providers
     resource: ../../lib/features/front_agent/state/front_agent_providers.dart
     title: The registry contributions, the wake runner that routes then walks, and the setup resolver
@@ -152,6 +152,18 @@ sources:
     resource: ../../lib/features/front_agent/model/front_reply_layout.dart
     title: FrontReplyPart — the catalog her reply is composed from (words, cards, what a lookup made)
     last_modified: 2026-11-10
+  - id: reply-components
+    resource: ../../lib/features/front_agent/model/front_reply_components.dart
+    title: frontReplyComponents — a reply's parts as A2UI components, their data from the reply as stored
+    last_modified: 2026-11-11
+  - id: reply-catalog
+    resource: ../../lib/features/front_agent/ui/genui/front_reply_catalog.dart
+    title: frontReplyCatalog and FrontReplyScope — her reply's GenUI catalog on the chat's own widgets
+    last_modified: 2026-11-11
+  - id: reply-surface
+    resource: ../../lib/features/front_agent/ui/genui/front_reply_surface.dart
+    title: FrontReplySurface — one reply as a GenUI surface, updated in place
+    last_modified: 2026-11-11
   - id: reply-layout-reader
     resource: ../../lib/features/front_agent/workflow/front_reply_layout_reader.dart
     title: readFrontReplyLayout — reply_to_user's parts checked against what the turn saw, nothing a lookup found lost
@@ -202,8 +214,28 @@ sources:
     last_modified: 2026-11-08
   - id: voice-switch
     resource: ../../lib/features/front_agent/ui/front_voice_switch.dart
-    title: FrontVoiceSwitch — mutes her where she speaks
-    last_modified: 2026-11-07
+    title: FrontVoiceSwitch — the drawer's "Spoken answers" row, her mute beside her replay
+    last_modified: 2026-11-11
+  - id: drawer
+    resource: ../../lib/features/front_agent/ui/front_chat_drawer.dart
+    title: FrontChatDrawer and FrontChatDrawerFooter — search, new chat, the conversations, her settings
+    last_modified: 2026-11-11
+  - id: header
+    resource: ../../lib/features/front_agent/ui/front_chat_header.dart
+    title: FrontChatHeader — one row, the drawer toggle to close
+    last_modified: 2026-11-11
+  - id: category-chip
+    resource: ../../lib/features/front_agent/ui/front_category_chip.dart
+    title: FrontCategoryChip and FrontCategorySheet — the conversation's category, picked in the composer
+    last_modified: 2026-11-11
+  - id: category-state
+    resource: ../../lib/features/front_agent/state/front_chat_category.dart
+    title: frontChatCategoryProvider — the open conversation's category, stored or picked
+    last_modified: 2026-11-11
+  - id: conversation-cost
+    resource: ../../lib/features/front_agent/state/front_conversation_cost.dart
+    title: frontConversationCostProvider — what the open conversation has cost
+    last_modified: 2026-11-11
   - id: voice-controls
     resource: ../../lib/features/front_agent/ui/front_voice_controls.dart
     title: Her voice's stop / say-it-again control
@@ -235,7 +267,7 @@ sources:
   - id: profile-choice
     resource: ../../lib/features/front_agent/ui/front_profile_choice.dart
     title: FrontProfileChoice — her AI profile, and with it her voice
-    last_modified: 2026-11-01
+    last_modified: 2026-11-11
   - id: voice-state
     resource: ../../lib/features/front_agent/state/front_voice_providers.dart
     title: The spoken turn awaiting her spoken reply, her voice's source id, and what she last said in each conversation
@@ -338,9 +370,9 @@ contained and logged under `FrontRuntimeMaintenance`.
 
 Tasks, projects and people are filtered through `FrontRoutingScope.categoryIds`:
 the identity's `allowedCategoryIds` narrowed by any categories the turn's
-payload carries — written by builds that had category chips; new turns carry
-none (`frontCategoriesOf` on the user turn's payload, read in
-`executeUserMessage`), never widened — `frontNarrowedCategories`, the same
+payload carries — the conversation's category, picked in the composer (see
+[the category scope](#the-category-scope)); `frontCategoriesOf` on the user
+turn's payload, read in `executeUserMessage` — never widened — `frontNarrowedCategories`, the same
 rule the journal door applies; empty is unrestricted, the `categoryAllowed`
 convention. Goals carry no category and are listed whenever `includeGoals`.
 
@@ -1112,9 +1144,10 @@ turn with a door whose outcome is a `FrontDoorProposal` or a
 `frontInboxFilterProvider` the switch the list's *Inbox* row turns on — an
 auto-disposed notifier, so the filter is off every time the sheet opens, and
 Back (or Escape) leaves it before closing the sheet. While something waits,
-a warning-tone badge counts it right after the header's *Chats* glyph (a
-tap on either opens the list) and the *Inbox* row counts it with a
-badge of the same tone.
+a warning-tone dot sits on the header's drawer toggle — no number in the
+header; to a screen reader it says the count, and a tap on it is the
+toggle's — and the drawer's *Inbox* row counts it with a badge of the same
+tone, so how many is read where it is acted on.
 The count and the filtered view come from `frontAllChatsThreadProvider`,
 the thread of every conversation not deleted, so what waits in one
 conversation is not lost by opening another.
@@ -1168,18 +1201,53 @@ it. The routing prompt's recent turns come from the
 pending turn's conversation only (`FrontAgentWorkflow._recentTurns`): another
 conversation is another subject.
 
-The header's *Chats* control — a menu glyph named by its tooltip, so the
-conversation's title keeps its room on a phone — opens the list (`frontConversationListOpenProvider`),
-a page over the conversation with its own back, *Chats*, the list's search
-and new-conversation glyphs (`FrontConversationListActions`) and close.
-Beside the conversation the list carries the same *Chats* title and glyphs on
-a band of its own, inset as her header is (`frontBandPadding`), so the two
-bands are one height and their hairlines run across the sheet as one; the list
-sits there on `background.level02`, a step off the conversation's ground. The
-search glyph opens the field in place (`frontConversationSearchOpenProvider`,
-disposed with the list); the new-conversation glyph wears the accent, the
-page's one action. `FrontConversationList` leads with *Inbox* while
-something waits; then the history grouped by recency — *Today*,
+The conversations live in her **drawer** (`FrontChatDrawer`), as a Claude
+or ChatGPT window keeps them: a top row as tall as her header — the search
+(always there; what is typed narrows the list as `FrontConversationList.query`)
+and, over a phone's thread, a glyph back to the conversation — then a
+*New chat* row in the accent, the drawer's one action, then the list, then
+her settings (`FrontChatDrawerFooter`, [below](#the-chat-surface)), which
+step aside while the keyboard is up so a short screen keeps room for what
+the search finds. Whether it is up is read by `FrontChatSurface`, above the
+`Dialog` — which pads by the keyboard and removes the inset from everything
+it holds — and handed down as `keyboardUp`. On a phone
+or a narrow window the header's toggle opens it over the thread
+(`frontConversationListOpenProvider`, off every time the sheet opens): it
+slides in from the leading edge over the shared modal scrim
+(`ModalUtils.getModalBarrierColor`), as wide as the list is beside a full
+panel's thread (`kDetailContentMaxWidth × FrontChatPane.listShare`) and
+never so wide that a tap target of scrim does not stay beside it. **The
+thread stays mounted under it** — the same `State`, never rebuilt — so
+opening the drawer takes nothing off the screen. A tap on the scrim, the
+drawer's own glyph, Back and Escape close it; so do picking a conversation,
+the inbox or a new chat. While it is open it is a named modal region
+(`Semantics.scopesRoute`, *Chats*), focus moves into it and the thread under
+it is out of focus's reach (`ExcludeFocus`) and assistive technology's
+(`BlockSemantics`); closing it hands focus back to the toggle (the header's
+`drawerFocusNode`). Under reduced motion it is there at once. It is built only
+while it shows, so it opens each time on the whole list. On a desktop-width
+window the drawer sits beside the conversation instead, always open, on
+`background.level02`, a step off the conversation's ground; its top row and
+her header share `frontBandPadding` around a tap target, so their hairlines
+run across the sheet as one.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Closed
+  Closed --> Opening: drawer toggle, its inbox dot too
+  Opening --> Open: slid in (at once under reduced motion)
+  Open --> Closing: scrim, its glyph, Back or Escape
+  Open --> Closing: a conversation, the inbox or a new chat picked
+  Closing --> Closed: slid out, unmounted
+  note right of Open: the thread stays mounted under it
+```
+
+`FrontConversationList` leads with *Inbox* while
+something waits; then *Categories*, every category she may see that a
+conversation is in, by name, each with its colour and how many conversations
+it holds — a tap narrows the history to them (with the search, if any), a
+second tap shows everything again, and a filter on a category she can no
+longer see holds nothing back; then the history grouped by recency — *Today*,
 *Yesterday*, *Previous 7 days*, *Older* — flat: each group's day a neutral
 low-emphasis caption, snug over its dense rows, no card and no hairlines. The
 accent means "press", so a day never wears it; the open row's rounded fill
@@ -1189,15 +1257,18 @@ A row is one line of title over one line of her last answer on the row's
 whole width (`FrontConversation.preview`, the first line of her latest
 `reply_to_user` or `ask_user` in it, read by `FrontConversationService`),
 each cut with an ellipsis, so every row is the same height and the list
-scans — the answer left out when there is none. A row says no time of its
+scans — the answer left out when there is none. A row leads with its
+category's colour (`FrontCategorySwatch`), an outline for none or for one she
+may no longer see — an archived row the archive glyph instead — and names
+the category to assistive technology, so colour never stands alone. A row says no time of its
 own: its recency section (Today, Yesterday, Previous 7 days, Older) says
 when, as the Claude and ChatGPT lists have it. On the open row's fill the
 second line is a step brighter, medium emphasis rather than low. A row's rename, archive and delete (its ⋯ at the
 end of the title's first line, in room every title leaves it so nothing
 reflows when it shows, its whole tap target inside the row) show on hover
 and focus, at rest on the open row too unless
-the list sits beside the conversation (`FrontConversationList.beside`), whose
-header carries the same menu; a long press opens that menu under any row.
+the drawer sits beside the conversation (`FrontConversationList.beside`); a
+long press opens that menu under any row.
 The ⋯ is `FrontMenuButton`, on the menu every agent page opens
 (`AgentSurfaceMenuButton`): rounded, raised on the card surface over the
 shared modal scrim, placed inside the window's safe area, closed without
@@ -1230,12 +1301,20 @@ failed turn keeps its durable id so the retry re-wakes the same turn.
 `FrontChatPane` is the thread on `AgentChatView` with day dividers
 (`dividerBuilder`), the door cards under a routed turn, the option chips
 under her **latest** question only (an older question's chips would answer
-a question nobody is asking), and a per-turn cost that tails her bubble's
-footer line — `Companion · 8:30 AM · 9.8K tokens`, one meta row — through
-the chat view's `footerTrailingBuilder`, read by the reply row's run key
-(`agentRunConsumptionTotalsProvider`, consumption schema v5's
-`idx_consumption_agent_run`). A send clears the inbox filter: the new turn
-lands in its conversation, shown whole.
+a question nobody is asking). The thread shows only what was said: no cost
+line under her words — what the open conversation has cost is the drawer's
+*Agent internals* row to say (`frontConversationCostProvider`, every run
+of hers in the conversation — `FrontChatThread.runKeys`, gathered before the
+thread's fifty-message window, so the total never shrinks as it moves —
+summed from `agentRunConsumptionTotalsProvider`,
+consumption schema v5's `idx_consumption_agent_run`, a run still loading
+counted once it arrives; null in the inbox, so no run of the conversations
+it gathers is read). A reload keeps the thread on screen, but another
+conversation picked is a change of subject: `FrontChatThreadView` remembers
+what its shown thread was loaded for (the inbox, or which conversation) and
+shows the loading shell, or the new one's error, until the one picked has
+loaded — the composer already sends there. A send clears the inbox filter: the new turn lands
+in its conversation, shown whole.
 
 A turn is the user's bubble, her reply, and under her reply the **door
 cards** (`FrontDoorCard`) — her answer, part by part. The doors are keyed
@@ -1268,41 +1347,40 @@ status says so in the error ink and the tap reads *Try again*
 the sheet for the entry's, the task's or the event's page. The inbox filter keeps a
 waiting turn's words and the reply that carries its cards together.
 
-The header (`FrontChatHeader`) says who the conversation is with and what
-about. Her face leads it in a rounded tile at `ControlSizes.avatar` — the
-spark when `enable_companion` is off — and a tap on it shows her glass card
-over the thread, in place (see [her voice](#her-voice)); to a screen reader
-it is a button named *Show companion*. While the card is out the face slides
-away (fading as it narrows), since she is already on screen, and her name and
-title take its room. The row hangs from its top line: her face, her name and
-the controls, and under them, across the whole width beside her face, the
-open conversation's title on one line (the inbox's name while that view is
-on; her name alone for a conversation not begun), an archived conversation
-marked before its title. The controls are her voice while the companion is
-on, as one pair of AI discs — `FrontVoiceButton`, whose idle glyph is "again"
-rather than a speaker, and the `FrontVoiceSwitch` that mutes her, a speaker
-struck through while muted, its state in the glyph's shape since the disc's
-accent means busy — then an overflow and close. The band is one tap target
-over one title line tall (`frontBandContentHeight`, the title's line height
-as the text scales) plus `frontBandPadding`, whatever it holds, so it never
-jumps between a conversation and one not begun.
-Where the list is a page over the conversation (a phone, a narrow window) the
-row opens with the *Chats* glyph and the inbox count, and the overflow
-leads with a new conversation and the switch that mutes her as a checked row
-(`frontVoiceMenuItem`), so the row fits a 360 dp phone with every control
-showing. Beside the list the switch sits on the row beside her replay, the
-list's own band takes the same `frontBandContentHeight` so the two hairlines
-meet, and a short
-vertical rule sets close apart from the conversation's controls. The overflow then
-holds her AI profile once she exists, her internals, where the thread's cost
-is accounted, and this conversation's rename, archive and delete as a group
-of their own — the same `FrontMenuButton` the list's rows have. A
-conversation not begun opens on her bust at hero size (`FrontChatHero`) and
-her invitation, centred where the thread will be; once it has begun the
-thread is the conversation's alone. The thread is `conversational` and `voiceFirst` (see
-[chat input](agents/chat-input-and-reasoning.md)): her replies as prose with
-their cost as a quiet line under them, one pill field with the mic at its
-end, and what she was told by voice sent as said.
+The header (`FrontChatHeader`) is **one row**: the drawer toggle — a menu
+glyph named *Chats* by its tooltip, a dot on it while the inbox holds
+something (its count is the drawer's) — her face
+in a rounded tile at `ControlSizes.avatar` (the spark when
+`enable_companion` is off), her name, *New chat* and close. A tap on her
+face shows her glass card over the thread, in place (see
+[her voice](#her-voice)); to a screen reader it is a button named *Show
+companion*. While the card is out the face slides away (fading as it
+narrows), since she is already on screen, and her name takes its room. There
+is no title line and no overflow: the conversation's title is its row in the
+drawer, and everything else — her voice, her profile, her internals, a
+conversation's own rename, archive and delete — is the drawer's. *New chat*
+has nothing to start in a conversation not begun, except from the inbox,
+which it leaves. Beside the drawer the row is her face, her name and close.
+The band is a tap target plus `frontBandPadding` tall whatever it holds, and
+the row fits a 360 dp phone with every control showing.
+
+The drawer's foot (`FrontChatDrawerFooter`) holds her settings as rows that
+say their value: *Spoken answers* (`FrontVoiceSwitch`) while the companion is
+on, with the way to have her say her latest answer again
+(`FrontVoiceButton`) beside the switch — none in the inbox, which is no one
+conversation; *AI profile*, once she exists and the profiles are loaded,
+naming the profile she has of her own, else the Settings default she follows
+(`FrontProfileChoice`); and *Agent internals*, with what the open
+conversation has cost (none in the inbox), opening `AgentInternalsPanel`.
+
+A conversation not begun opens on her bust at hero size (`FrontChatHero`)
+and her invitation, centred where the thread will be; once it has begun the
+thread is the conversation's alone. The thread is `conversational` and
+`voiceFirst` (see [chat input](agents/chat-input-and-reasoning.md)): her
+replies as prose, the user's words in a neutral bubble a step off the ground
+(`background.level02`), one pill field with the mic at its end and the
+conversation's category chip at the start of its controls row
+(`composerLeading`), and what she was told by voice sent as said.
 `showFrontChat` opens her surface over the app, as History opens: a dialog
 behind the shared scrim, the whole screen below the page breakpoint, else a
 panel up to `kDetailContentMaxWidth` inset by `step6`. The dialog opens with
@@ -1310,25 +1388,63 @@ panel up to `kDetailContentMaxWidth` inset by `step6`. The dialog opens with
 the home indicator and a `SafeArea` inside the Scaffold keeps her header and
 composer clear of them (the route's own `SafeArea` left a strip of scrim at
 either edge); a panel adds the window's padding to its inset. On a desktop-width
-window (`isDesktopLayout`) the list sits beside the conversation, 38% of
-the panel (`FrontChatSurface.listShare`), and the header leaves out the way
-to the list and a new conversation, which the list carries. Escape goes
-through `ModalEscapeScope` to the pane's back chain — the list, then the
+window (`isDesktopLayout`) the drawer sits beside the conversation, 38% of
+the panel (`FrontChatPane.listShare`), and the header leaves out the drawer
+toggle and a new conversation, which the drawer carries. Escape goes
+through `ModalEscapeScope` to the pane's back chain — the drawer, then the
 inbox — before it closes her. It opens from the desktop rail's utility row
 above Settings, the phone launcher's utility button beside the menu, or the
 `openFrontChat` keyboard command (Cmd/Ctrl+L), all gated by
 `enable_front_agent` and all closed under lockdown: her thread spans every
 category.
 
-**Narrowing to a category is said, not picked.** There are no category
-chips: a category named in the question (she knows them by name) narrows
-the answer, as `list_due_tasks`' `categoryIds` and the journal door's scope
-show. A turn's payload can still carry `categoryIds` (`frontCategoriesKey`)
-— turns written while conversations had chips, synced from another device —
-and the journal door reads it back and narrows her allow-list by it, never
-widening it (`frontNarrowedCategories`): with no allow-list those categories
-are the scope, and ones that fall outside the allow-list leave it as it is,
-since an empty scope would be the whole journal. New turns carry none.
+## The category scope
+
+**A conversation's category is picked where the words are typed.** The
+composer's chip (`FrontCategoryChip`) shows the open conversation's category
+— its colour, its name, a chevron — or *Everything*; a tap opens
+`FrontCategorySheet`, one row per category she may see plus *Everything*,
+the current one checked. Every turn sent from then on carries it: the
+controller writes it, as a set of one, under `frontCategoriesKey` in the
+turn's payload (`FrontChatService.appendMessage`; *Everything* writes no
+key), and her workflow narrows her allow-list by it, never widening it
+(`frontNarrowedCategories`): with no allow-list the category is the scope,
+and one that falls outside the allow-list leaves it as it is, since an empty
+scope would be the whole journal. An older build ignores the key, so a turn
+written here is answered there unscoped, and nothing breaks.
+
+There is no new record: a conversation's category is the scope of its
+newest user turn (`FrontConversation.categoryIds`, read by
+`FrontConversationService`). What the user picks since is held beside the
+draft (`frontChatCategoryPickProvider`, keep-alive, so a chat not begun keeps
+its pick until its first turn carries it), keyed by the conversation it was
+picked in and dropped on every switch. `frontChatCategoryOf` resolves the
+two for both the chip and the send, so what is shown is what goes out; it
+only ever answers with a category `@` offers (`frontMentionCategoriesProvider`
+— lockdown and her allow-list), so a stored one she may no longer see reads
+as *Everything* — while the categories are still loading a send carries the
+scope unchecked (`frontChatCategoryIdOf`) rather than dropping it. Once the
+index has reloaded after a send, the pick it went out with is dropped
+(unless a newer one was made meanwhile), so the stored scope speaks again:
+that turn's, or a newer turn's from another device, in whatever category it
+was sent. The controller listens before it invalidates the index, with no
+await between, so the first index it sees settled was read after the turn
+was written. A failed turn keeps the scope it was typed under
+(`failedCategoryIds`) and its retry carries that, whatever is picked since.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Stored: a conversation opens
+  Stored --> Picked: a category or Everything chosen in the sheet
+  Picked --> Picked: chosen again
+  Picked --> Stored: a turn sent, once the index reloads after it
+  Picked --> Stored: another conversation, or a new chat, opened
+  note right of Stored: the newest turn's scope, or Everything
+```
+
+`@` still names a category for one question: naming one in the words
+narrows that answer, as `list_due_tasks`' `categoryIds` and the journal
+door's scope show, and sets nothing standing — the sheet says so.
 
 **Her reply is composed of parts, never parsed from her words.** A reply
 that shows anything besides words is `reply_to_user`'s `parts`: what the
@@ -1362,14 +1478,30 @@ skipped), and `FrontChatThread.partsOf` is what the surface draws: those
 parts, or — for a reply stored before replies had parts — her words, then
 what it carries in catalog order. Her words are never cut into lists: a
 Markdown list of task links in a reply stays her words, its links still
-open. The pane hands `AgentChatView.replyBodyBuilder` a body for any reply
-whose parts are more than words: a text part through the view's own
-Markdown (with the device's dates), a cards part as a
-`FrontEntityPreviewList` — a task as `FrontEntityPreviewCompactCard`, a
-project as `FrontEntityPreviewProjectCard` (both below), a tap opening a
-task on top of her and a project after closing her — and a `show` part as
-its chart or closed-task card, or nothing when the reply does not carry
-it. `<conversation_tasks>` counts the tasks her cards listed as named.
+open.
+
+**Her reply is drawn as a GenUI surface.** The pane hands
+`AgentChatView.replyBodyBuilder` a body for any reply whose parts are more
+than words: a `FrontReplySurface` keyed by the reply, which holds a
+`SurfaceController` of `frontReplyCatalog` and draws GenUI's `Surface`.
+`frontReplyComponents` maps the parts to A2UI components — a root
+`FrontReply` listing, in order, `FrontText`, `FrontCards`,
+`FrontClosedTasks`, `FrontLoggedTimeChart` and `FrontPullRequestChart`
+components — and **every component's data is the reply as stored**, never
+the model's: a `show` whose data the reply does not carry draws nothing, a
+card a door's preview or a closed-task card already shows is left out (an
+emptied list with it), an attachment placed twice is drawn once, and the due
+window labels a reply's one list only. Each catalog item builds on the
+chat's own widgets: her words through the view's Markdown (with the
+device's dates), a cards list as a `FrontEntityPreviewList` — a task as
+`FrontEntityPreviewCompactCard`, a project as `FrontEntityPreviewProjectCard`
+(both below) — and the closed-task card and charts as they always were.
+What a tap does comes from `FrontReplyScope` above the surface (a task
+opens on top of her, a project after closing her), so the catalog itself is
+static. The surface is created once per reply and updated in place when its
+components change. GenUI checks the components against each item's schema
+after the update; the components the mapping draws pass it. What the doors
+made follows the surface as preview cards. it. `<conversation_tasks>` counts the tasks her cards listed as named.
 
 ```mermaid
 flowchart LR
@@ -1382,7 +1514,8 @@ flowchart LR
   R -->|"text + parts (undrawable parts dropped, named, logged)"| P[(reply payload: text, parts)]
   P --> B[FrontChatThreadBuilder]
   B --> T["FrontChatThread.partsOf(id)"]
-  T --> S[pane: words, cards, charts in order]
+  T --> C["frontReplyComponents: A2UI components, data from the reply"]
+  C --> G["FrontReplySurface: SurfaceController + Surface (frontReplyCatalog)"]
 ```
 
 **An answer about what is due says which window, quietly.** Her prompt has
@@ -1596,7 +1729,7 @@ that visibility is read, and tries again when it arrives.
 profile her own setup resolves to ([where it plugs in](#where-it-plugs-in)).
 Her built-in fallback is a bare model with no read-aloud slot, so without a
 profile of her own or a Settings default she speaks with the on-device
-voice, however many other profiles name Voxtral TTS. The header's overflow
+voice, however many other profiles name Voxtral TTS. The drawer's footer
 offers *AI profile* once she exists (`FrontProfileChoice`). The picker leads
 with a *Settings default* row, named after that profile and marked while she
 has no profile of her own (or her own is gone), then lists every profile. A
@@ -1641,8 +1774,8 @@ microphone opens (`ChatRecorderController.start`), so she never records
 herself.
 
 **Her voice's controls and her card** (`front_voice_controls.dart`,
-`front_voice_switch.dart`) ride the header while the companion is on.
-`FrontVoiceSwitch` mutes her: it writes the companion customization's
+`front_voice_switch.dart`) are the drawer's *Spoken answers* row while the
+companion is on; her card is the header's. `FrontVoiceSwitch` mutes her: it writes the companion customization's
 `speaksReplies`, the same setting as the companion settings' switch, so a
 mute here holds everywhere and stops her mid-sentence; it is shown only
 once that setting has loaded, since a mute is never guessed at.

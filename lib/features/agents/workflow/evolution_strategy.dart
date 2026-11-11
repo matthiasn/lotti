@@ -152,6 +152,12 @@ class EvolutionStrategy extends ConversationStrategy {
             toolCallId: call.id,
             response: 'Surface "$surfaceId" rendered successfully.',
           );
+        } on GenUiBridgeException catch (e) {
+          // Nothing was drawn; she is told why, so she can draw it right.
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response: 'Error: surface not drawn — ${e.message}',
+          );
         } catch (e) {
           manager.addToolResponse(
             toolCallId: call.id,

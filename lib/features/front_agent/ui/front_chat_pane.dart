@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -18,6 +20,7 @@ import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
+import 'package:lotti/features/front_agent/model/front_reply_components.dart';
 import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
@@ -27,17 +30,16 @@ import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
+import 'package:lotti/features/front_agent/ui/front_category_chip.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_drawer.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
-import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
-import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
-import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
-import 'package:lotti/features/front_agent/ui/front_task_list.dart';
-import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
+import 'package:lotti/features/front_agent/ui/genui/front_reply_catalog.dart';
+import 'package:lotti/features/front_agent/ui/genui/front_reply_surface.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -46,43 +48,107 @@ import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A task's page, as [internalRouteFromMarkdownUrl] gives it: `/tasks/<id>`.
 final RegExp _taskRoute = RegExp(r'^/tasks/([^/?]+)$');
 
 /// The companion's chat: one of the user's conversations with her, under
-/// her header, in the shared [AgentChatView] — or, while the header's list
-/// is open, the list of them all ([FrontConversationList]).
+/// her one-row header, in the shared [AgentChatView] — and her drawer
+/// ([FrontChatDrawer]): slid over the thread on a phone, beside it on a
+/// desktop window.
 ///
 /// What differs from a goal's or a person's chat is what hangs off a
 /// message: under a routed turn, the doors it was taken through and what
 /// came back, attributed to each owner; under her latest clarifying
 /// question, the choices as chips. A day divider sits between messages of
 /// different days.
-class FrontChatPane extends ConsumerWidget {
-  const FrontChatPane({required this.onClose, this.listWidth, super.key});
+class FrontChatPane extends ConsumerStatefulWidget {
+  const FrontChatPane({
+    required this.onClose,
+    this.listWidth,
+    this.keyboardUp = false,
+    super.key,
+  });
+
+  /// The share of a wide panel the drawer beside the conversation takes:
+  /// room for a preview that says something, the conversation keeping the
+  /// rest. Over a phone's thread the drawer is as wide as that at most.
+  static const double listShare = 0.38;
 
   final VoidCallback onClose;
 
-  /// The width of the list kept beside the conversation, on a window wide
-  /// enough for both; null where the list is a page over the conversation.
+  /// The width of the drawer kept beside the conversation, on a window wide
+  /// enough for both; null where the drawer slides over the conversation.
   final double? listWidth;
 
+  /// Whether the on-screen keyboard is up, as her surface sees it above the
+  /// dialog that hides the inset: the drawer's settings step aside for it.
+  final bool keyboardUp;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FrontChatPane> createState() => _FrontChatPaneState();
+}
+
+class _FrontChatPaneState extends ConsumerState<FrontChatPane>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _drawer = AnimationController(
+    vsync: this,
+    duration: MotionDurations.medium2,
+  );
+
+  /// The header's drawer toggle: focus goes back to it as the drawer closes.
+  final _toggleFocus = FocusNode(debugLabel: 'front-chat-drawer-toggle');
+
+  /// The drawer's own scope: focus moves into it as it opens.
+  final _drawerFocus = FocusScopeNode(debugLabel: 'front-chat-drawer');
+
+  @override
+  void dispose() {
+    _drawer.dispose();
+    _toggleFocus.dispose();
+    _drawerFocus.dispose();
+    super.dispose();
+  }
+
+  /// Slides the drawer in or out — at once where the platform asks for
+  /// reduced motion — and moves focus with it.
+  void _follow(bool open) {
+    // Read now: under reduced motion the drawer, and its focus with it, is
+    // gone by the next frame.
+    final hadFocus = _drawerFocus.hasFocus;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _drawer.value = open ? 1 : 0;
+    } else {
+      open ? _drawer.forward() : _drawer.reverse();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (open) {
+        _drawerFocus.requestFocus();
+      } else if (hadFocus) {
+        _toggleFocus.requestFocus();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final onClose = widget.onClose;
+    final listWidth = widget.listWidth;
     final beside = listWidth != null;
-    // Beside the conversation the list is always there: it never opens
+    // Beside the conversation the drawer is always there: it never opens
     // over it.
     final listOpen = !beside && ref.watch(frontConversationListOpenProvider);
-    // Her reply to a spoken turn is spoken back, list open or not.
+    // Her reply to a spoken turn is spoken back, drawer open or not.
     FrontVoice.listenForSpokenReply(ref, context);
     final inboxOnly = ref.watch(frontInboxFilterProvider);
     // What was being said belongs to the conversation it was said in:
-    // leaving it — for another, or for the list — lets it go, rather than
-    // sending it into wherever the user went. Listened here, where it is
-    // always mounted, not in the thread, which the list replaces.
+    // leaving it for another lets it go, rather than sending it into
+    // wherever the user went. Opening the drawer is not leaving: the thread
+    // stays under it, and the take goes on (decision 5).
     void letHerGo(Object? previous, Object? next) {
       if (previous == next) return;
       // Only on leaving one: a conversation resolving as the surface opens
@@ -100,10 +166,15 @@ class FrontChatPane extends ConsumerWidget {
         frontActiveConversationProvider.select((active) => active.value),
         letHerGo,
       )
-      ..listen<bool>(frontConversationListOpenProvider, letHerGo);
-    // The list is a page over the conversation, and the inbox a view of
-    // it: back — the system gesture, the Escape key — leaves the list, then
-    // the inbox, before it closes the sheet.
+      // Followed beside the conversation too, where nothing shows it: a
+      // window that narrows again finds the drawer where its state says.
+      ..listen<bool>(
+        frontConversationListOpenProvider,
+        (_, open) => _follow(open),
+      );
+    // The drawer is a layer over the conversation, and the inbox a view of
+    // it: back — the system gesture, the Escape key — closes the drawer,
+    // then leaves the inbox, before it closes the sheet.
     return PopScope(
       canPop: !listOpen && !inboxOnly,
       onPopInvokedWithResult: (didPop, _) {
@@ -118,13 +189,16 @@ class FrontChatPane extends ConsumerWidget {
           ? Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // A step off the conversation's ground: the list is the
+                // A step off the conversation's ground: the drawer is the
                 // sheet's sidebar, not more of the thread.
                 ColoredBox(
                   color: tokens.colors.background.level02,
                   child: SizedBox(
                     width: listWidth,
-                    child: const FrontConversationList(beside: true),
+                    child: FrontChatDrawer(
+                      beside: true,
+                      keyboardUp: widget.keyboardUp,
+                    ),
                   ),
                 ),
                 const DesignSystemDivider(
@@ -140,18 +214,129 @@ class FrontChatPane extends ConsumerWidget {
                 ),
               ],
             )
-          : Column(
-              children: [
-                FrontChatHeader(onClose: onClose),
-                Expanded(
-                  child: listOpen
-                      ? const FrontConversationList()
-                      : FrontChatThreadView(onClose: onClose),
-                ),
-              ],
+          : LayoutBuilder(
+              builder: (context, constraints) => Stack(
+                children: [
+                  // Always built, under the drawer too: opening it never
+                  // takes the conversation off the screen or rebuilds it.
+                  ExcludeFocus(
+                    excluding: listOpen,
+                    child: Column(
+                      children: [
+                        FrontChatHeader(
+                          onClose: onClose,
+                          drawerFocusNode: _toggleFocus,
+                        ),
+                        Expanded(child: FrontChatThreadView(onClose: onClose)),
+                      ],
+                    ),
+                  ),
+                  _DrawerLayer(
+                    animation: _drawer,
+                    focusNode: _drawerFocus,
+                    keyboardUp: widget.keyboardUp,
+                    // Room beside it for the scrim, a tap target wide, and
+                    // never wider than it is beside a wide panel's thread.
+                    width: math.min(
+                      constraints.maxWidth - TapTargets.minimum,
+                      kDetailContentMaxWidth * FrontChatPane.listShare,
+                    ),
+                  ),
+                ],
+              ),
             ),
     );
   }
+}
+
+/// The drawer over a phone's thread: the shared scrim, which closes it,
+/// and the drawer slid in from the leading edge, a labelled modal region
+/// that keeps focus and assistive technology to itself while it is open.
+/// Built only while it shows, so it opens each time on everything.
+class _DrawerLayer extends ConsumerWidget {
+  const _DrawerLayer({
+    required this.animation,
+    required this.focusNode,
+    required this.keyboardUp,
+    required this.width,
+  });
+
+  final Animation<double> animation;
+  final FocusScopeNode focusNode;
+  final bool keyboardUp;
+  final double width;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    void close() =>
+        ref.read(frontConversationListOpenProvider.notifier).close();
+    final drawer = Semantics(
+      scopesRoute: true,
+      namesRoute: true,
+      explicitChildNodes: true,
+      label: messages.queryChats,
+      child: FocusScope(
+        node: focusNode,
+        child: Material(
+          color: tokens.colors.background.level02,
+          child: FrontChatDrawer(keyboardUp: keyboardUp),
+        ),
+      ),
+    );
+    return AnimatedBuilder(
+      animation: animation,
+      child: drawer,
+      builder: (context, drawer) {
+        if (animation.isDismissed) return const SizedBox.shrink();
+        final shown = MotionCurves.standard.transform(animation.value);
+        return BlockSemantics(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Opacity(
+                  opacity: shown,
+                  child: Semantics(
+                    key: FrontChatPaneKeys.scrim,
+                    container: true,
+                    button: true,
+                    label: messages.frontChatDrawerClose,
+                    onTap: close,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      excludeFromSemantics: true,
+                      onTap: close,
+                      child: ColoredBox(
+                        color: ModalUtils.getModalBarrierColor(
+                          isDark:
+                              Theme.of(context).brightness == Brightness.dark,
+                          context: context,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              PositionedDirectional(
+                start: -width * (1 - shown),
+                top: 0,
+                bottom: 0,
+                width: width,
+                child: drawer!,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Stable keys for the pane's own parts.
+@visibleForTesting
+abstract final class FrontChatPaneKeys {
+  static const Key scrim = Key('front-chat-drawer-scrim');
 }
 
 /// One conversation's thread and the field under it — or, while the inbox is
@@ -159,7 +344,7 @@ class FrontChatPane extends ConsumerWidget {
 /// while the header's face has it shown ([frontCompanionCardShownProvider]),
 /// her glass card floats over the thread ([FrontCompanionCard]), fading in
 /// and out where the user left it.
-class FrontChatThreadView extends ConsumerWidget {
+class FrontChatThreadView extends ConsumerStatefulWidget {
   const FrontChatThreadView({required this.onClose, super.key});
 
   /// Closes her surface. Everything that leaves her for a page goes through
@@ -169,12 +354,37 @@ class FrontChatThreadView extends ConsumerWidget {
   final VoidCallback onClose;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FrontChatThreadView> createState() =>
+      _FrontChatThreadViewState();
+}
+
+class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
+  /// What the shown thread was loaded for: the inbox, or one conversation.
+  /// Another conversation picked is a change of subject, not a reload: its
+  /// thread is not the one on screen.
+  (bool, String?)? _shownFor;
+
+  @override
+  Widget build(BuildContext context) {
+    final onClose = widget.onClose;
     final messages = context.messages;
     final threadAsync = ref.watch(frontChatThreadProvider);
+    // The inbox is the same thread, filtered to the turns with a door still
+    // waiting on the user (decision 7).
+    final inboxOnly = ref.watch(frontInboxFilterProvider);
+    final conversationId = ref.watch(frontActiveConversationProvider).value;
+    final subject = (inboxOnly, inboxOnly ? null : conversationId);
+    if (threadAsync.hasValue &&
+        !threadAsync.isLoading &&
+        !threadAsync.hasError) {
+      _shownFor = subject;
+    }
     // Read through `.value`: a reload keeps the shown thread on screen
-    // (stay while reload); only a first load with nothing yet shows a shell.
-    final thread = threadAsync.value;
+    // (stay while reload). Only a first load, or another conversation
+    // picked, shows the shell — the composer already sends to the one
+    // picked, so the last one's words must not stand in for it — and a
+    // failed load of the one picked shows its error.
+    final thread = _shownFor == subject ? threadAsync.value : null;
     // She copies dates as her tools give them (ISO); on screen each is in
     // the device's own format, as a due date is everywhere else.
     String deviceDays(String text) =>
@@ -207,10 +417,6 @@ class FrontChatThreadView extends ConsumerWidget {
     final controller = ref.read(frontChatControllerProvider.notifier);
     final latestId = thread?.messages.lastOrNull?.id;
     final locale = Localizations.localeOf(context).toLanguageTag();
-    // The inbox is the same thread, filtered to the turns with a door still
-    // waiting on the user (decision 7).
-    final inboxOnly = ref.watch(frontInboxFilterProvider);
-    final conversationId = ref.watch(frontActiveConversationProvider).value;
     final inboxIds = thread?.inboxMessageIds ?? const <String>{};
     // Her card goes with her figure and her voice: never with the character
     // off, nor in the inbox, which gathers every conversation.
@@ -376,8 +582,9 @@ class FrontChatThreadView extends ConsumerWidget {
       // field's edges line up with the messages on a wide window.
       contentMaxWidth: kProseMeasureWidth,
       voiceFirst: true,
-      // `@` names a category she may see; naming one narrows her answer.
-      composerHelper: mentions.isEmpty ? null : messages.frontChatMentionHint,
+      // The conversation's category, picked where the words are typed; `@`
+      // still names one for a single question.
+      composerLeading: mentions.isEmpty ? null : const FrontCategoryChip(),
       mentionOptions: [
         for (final category in mentions)
           DesignSystemChatInputMention(
@@ -455,10 +662,11 @@ class FrontChatThreadView extends ConsumerWidget {
         settingsDefaultDictationTargetProvider,
       ),
       onLinkTap: (_, url, title) => openLink(url, title),
-      // Her reply is drawn part by part, in the order the turn stored them:
-      // her words, the tasks she listed as preview cards, the charts and
-      // closed-task cards where she placed them; then what her turn's doors
-      // made, as preview cards. A reply of words alone is drawn as usual.
+      // Her reply is a GenUI surface of her reply catalog: her words, the
+      // tasks she listed as preview cards, the charts and closed-task cards
+      // where she placed them, each component's data taken from the reply
+      // as stored; then what her turn's doors made, as preview cards. A
+      // reply of words alone is drawn as usual.
       replyBodyBuilder: (context, message, prose) {
         final parts = thread?.partsOf(message.id) ?? const <FrontReplyPart>[];
         final previews = thread?.entityPreviewsByMessageId[message.id];
@@ -466,77 +674,42 @@ class FrontChatThreadView extends ConsumerWidget {
           return null;
         }
         final closedTasks = thread?.closedTasksByMessageId[message.id];
-        final chart = thread?.loggedTimeByMessageId[message.id];
-        final pullRequests = thread?.pullRequestsByMessageId[message.id];
-        // A task a door made or a closed card shows is not drawn twice.
-        final shown = {
-          ...?closedTasks?.map((task) => task.id),
-          ...?previews?.map((preview) => preview.id),
-        };
-        final tokens = context.designTokens;
-        // A due answer's one list says which window it is; separate lists
-        // — overdue, then due — are named by her own words above each.
-        final due = parts.whereType<FrontReplyCards>().length == 1
-            ? thread?.dueSectionsByMessageId[message.id]
-            : null;
-        Widget? listed(int index, List<FrontEntityReference> cards) {
-          final references = [
-            for (final card in cards)
-              if (!shown.contains(card.id)) card,
-          ];
-          if (references.isEmpty) return null;
-          return Column(
-            key: ValueKey('front-reply-cards-${message.id}-$index'),
+        return FrontReplyScope(
+          prose: (markdown) => prose(deviceDays(markdown)),
+          onOpen: openMade,
+          onOpenTask: (id) => openLink(
+            frontReferenceUrl(FrontDestinationKind.task, id),
+            '',
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: tokens.spacing.step2,
+            spacing: context.designTokens.spacing.step4,
             children: [
-              if (due != null) FrontDueSectionLabel(section: due),
-              FrontEntityPreviewList(references: references, onOpen: openMade),
-            ],
-          );
-        }
-
-        Widget? attached(FrontReplyAttachment attachment) =>
-            switch (attachment) {
-              FrontReplyAttachment.closedTasks when closedTasks != null =>
-                FrontClosedTaskList(
-                  key: ValueKey('front-closed-tasks-${message.id}'),
-                  tasks: closedTasks,
-                  onOpen: (id) => openLink(
-                    frontReferenceUrl(FrontDestinationKind.task, id),
-                    '',
-                  ),
+              FrontReplySurface(
+                key: ValueKey('front-reply-surface-${message.id}'),
+                surfaceId: message.id,
+                components: frontReplyComponents(
+                  parts: parts,
+                  closedTasks: closedTasks,
+                  loggedTime: thread?.loggedTimeByMessageId[message.id],
+                  pullRequests: thread?.pullRequestsByMessageId[message.id],
+                  due: thread?.dueSectionsByMessageId[message.id],
+                  // A task a door made or a closed card shows is not drawn
+                  // twice.
+                  shown: {
+                    ...?closedTasks?.map((task) => task.id),
+                    ...?previews?.map((preview) => preview.id),
+                  },
                 ),
-              FrontReplyAttachment.loggedTimeChart when chart != null =>
-                FrontLoggedTimeChartCard(
-                  key: ValueKey('front-logged-time-${message.id}'),
-                  chart: chart,
-                ),
-              FrontReplyAttachment.pullRequestChart when pullRequests != null =>
-                FrontPullRequestChartCard(
-                  key: ValueKey('front-pull-requests-${message.id}'),
-                  chart: pullRequests,
-                ),
-              _ => null,
-            };
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: tokens.spacing.step4,
-          children: [
-            for (final (index, part) in parts.indexed)
-              ?switch (part) {
-                FrontReplyText(:final markdown) => prose(deviceDays(markdown)),
-                FrontReplyCards(:final cards) => listed(index, cards),
-                FrontReplyShow(:final attachment) => attached(attachment),
-              },
-            if (previews != null)
-              FrontEntityPreviewList(
-                key: ValueKey('front-entity-previews-${message.id}'),
-                references: previews,
-                onOpen: openMade,
               ),
-          ],
+              if (previews != null)
+                FrontEntityPreviewList(
+                  key: ValueKey('front-entity-previews-${message.id}'),
+                  references: previews,
+                  onOpen: openMade,
+                ),
+            ],
+          ),
         );
       },
       onRetry: controller.retry,
@@ -581,15 +754,6 @@ class FrontChatThreadView extends ConsumerWidget {
           );
         }
         return card ?? chips;
-      },
-      // What her turn cost — the routing calls of the wake that wrote the
-      // row — quietly under her words.
-      footerTrailingBuilder: (context, message) {
-        final runKey = message.runKey;
-        if (message.role != AgentChatRole.agent || runKey == null) {
-          return null;
-        }
-        return FrontTurnCostLine(runKey: runKey);
       },
       dividerBuilder: (context, message, previous) {
         if (previous != null &&

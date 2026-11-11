@@ -30,8 +30,7 @@ abstract final class FrontProfileChoiceKeys {
 /// counts as no choice (`resolveFrontAgentModel`).
 abstract final class FrontProfileChoice {
   /// The profile she has chosen of her own, if any, whether or not it still
-  /// exists.
-  @visibleForTesting
+  /// exists: the one the picker checks and the drawer names.
   static String? ownProfileId(AgentConfig config) =>
       config.inferenceSetup?.baseProfileId ?? config.profileId;
 

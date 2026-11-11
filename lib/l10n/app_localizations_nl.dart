@@ -7294,11 +7294,36 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontChatArchivedToast => 'Chat gearchiveerd.';
 
   @override
+  String get frontChatCategoriesHeading => 'Categorieën';
+
+  @override
+  String frontChatCategoryChip(String name) {
+    return 'Categorie van deze chat: $name';
+  }
+
+  @override
+  String get frontChatCategoryEverything => 'Alles';
+
+  @override
+  String get frontChatCategorySheetBody =>
+      'Vanaf nu putten de antwoorden in deze chat alleen uit deze categorie.';
+
+  @override
+  String get frontChatCategorySheetMention =>
+      'Typ je @ in een bericht, dan beperk je alleen die ene vraag.';
+
+  @override
+  String get frontChatCategorySheetTitle => 'Chat in een categorie';
+
+  @override
   String get frontChatCompanionShow => 'Metgezel tonen';
 
   @override
   String get frontChatDeleteExplanation =>
       'Deze chat verwijderen? Zijn berichten worden op al je apparaten verborgen, niet gewist. Wat je uit deze chat hebt opgeslagen, blijft waar het is.';
+
+  @override
+  String get frontChatDrawerClose => 'Chats sluiten';
 
   @override
   String get frontChatEmpty =>
@@ -7342,9 +7367,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Inbox';
-
-  @override
-  String get frontChatMentionHint => 'Typ @ om een categorie te noemen';
 
   @override
   String get frontChatNoChats =>
@@ -7391,6 +7413,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontChatSearchChats => 'Chats doorzoeken';
+
+  @override
+  String get frontChatSpokenAnswers => 'Gesproken antwoorden';
 
   @override
   String get frontChatTitle => 'Metgezel';

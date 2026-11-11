@@ -54,6 +54,8 @@ class FrontConversationService {
 
     final firstText = <String, String>{};
     final lastActivity = <String, DateTime>{};
+    // Oldest first, so the newest turn's scope is the one left.
+    final categories = <String, Set<String>>{};
     final conversationOfTurn = <String, String>{};
     for (final turn in turns) {
       final payload = payloads[turn.contentEntryId];
@@ -67,6 +69,7 @@ class FrontConversationService {
       // Local: a synced turn can carry UTC, and the surface sorts days by
       // the user's calendar.
       lastActivity[id] = turn.createdAt.toLocal();
+      categories[id] = frontCategoriesOf(payload.content);
     }
     final previews = await _previews(rows, conversationOfTurn);
 
@@ -105,6 +108,7 @@ class FrontConversationService {
                 lastActivity: last,
                 archived: archived[id] ?? false,
                 preview: previews[id],
+                categoryIds: categories[id] ?? const {},
               ),
         ]..sort((a, b) {
           final byTime = b.lastActivity.compareTo(a.lastActivity);

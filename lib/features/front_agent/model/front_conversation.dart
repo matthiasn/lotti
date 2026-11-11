@@ -50,6 +50,7 @@ class FrontConversation {
     required this.lastActivity,
     required this.archived,
     this.preview,
+    this.categoryIds = const {},
   });
 
   final String id;
@@ -62,6 +63,11 @@ class FrontConversation {
   /// When its newest turn was written.
   final DateTime lastActivity;
   final bool archived;
+
+  /// The categories its newest user turn was narrowed to (see
+  /// [frontCategoriesOf]): the scope it is in now, empty for none. Derived
+  /// from the turns, as everything about a conversation is.
+  final Set<String> categoryIds;
 }
 
 /// Every conversation the user has with her: the live ones newest first,

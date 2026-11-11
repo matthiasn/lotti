@@ -12371,6 +12371,42 @@ abstract class AppLocalizations {
   /// **'Chat archived.'**
   String get frontChatArchivedToast;
 
+  /// No description provided for @frontChatCategoriesHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get frontChatCategoriesHeading;
+
+  /// No description provided for @frontChatCategoryChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Category for this chat: {name}'**
+  String frontChatCategoryChip(String name);
+
+  /// No description provided for @frontChatCategoryEverything.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything'**
+  String get frontChatCategoryEverything;
+
+  /// No description provided for @frontChatCategorySheetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'From here on, the answers in this chat draw on this category only.'**
+  String get frontChatCategorySheetBody;
+
+  /// No description provided for @frontChatCategorySheetMention.
+  ///
+  /// In en, this message translates to:
+  /// **'Typing @ in a message narrows just that one question.'**
+  String get frontChatCategorySheetMention;
+
+  /// No description provided for @frontChatCategorySheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat in a category'**
+  String get frontChatCategorySheetTitle;
+
   /// Tooltip and screen-reader label on the companion's face in the chat header: a tap shows the floating card over the conversation; the face is hidden while the card is shown.
   ///
   /// In en, this message translates to:
@@ -12382,6 +12418,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete this chat? Its messages are hidden on every device, not erased. Whatever you filed from it stays where it is.'**
   String get frontChatDeleteExplanation;
+
+  /// No description provided for @frontChatDrawerClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close chats'**
+  String get frontChatDrawerClose;
 
   /// No description provided for @frontChatEmpty.
   ///
@@ -12448,12 +12490,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Inbox'**
   String get frontChatInboxTitle;
-
-  /// No description provided for @frontChatMentionHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Type @ to name a category'**
-  String get frontChatMentionHint;
 
   /// No description provided for @frontChatNoChats.
   ///
@@ -12538,6 +12574,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search chats'**
   String get frontChatSearchChats;
+
+  /// No description provided for @frontChatSpokenAnswers.
+  ///
+  /// In en, this message translates to:
+  /// **'Spoken answers'**
+  String get frontChatSpokenAnswers;
 
   /// No description provided for @frontChatTitle.
   ///

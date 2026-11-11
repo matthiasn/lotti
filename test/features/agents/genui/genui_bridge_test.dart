@@ -97,49 +97,85 @@ void main() {
       expect(ids, ['surface-a', 'surface-b']);
     });
 
-    test('uses defaults for missing args', () {
-      final id = bridge.handleToolCall(<String, dynamic>{});
-      expect(id, 'surface-unknown');
-    });
-
-    test('falls back to surface-unknown for an empty-string surfaceId', () {
-      // Distinct from the missing-key case: surfaceId is present but blank,
-      // which the isNotEmpty guard must also reject.
-      final id = bridge.handleToolCall({
+    test('a surface the model did not name gets an id of its own, so two '
+        'never collide', () {
+      const metrics = {'totalWakes': 1, 'successRate': 1.0, 'failureCount': 0};
+      final first = bridge.handleToolCall({
+        'rootType': 'MetricsSummary',
+        'data': metrics,
+      });
+      final second = bridge.handleToolCall({
         'surfaceId': '',
         'rootType': 'MetricsSummary',
-        'data': {'totalWakes': 1, 'successRate': 1.0, 'failureCount': 0},
+        'data': metrics,
       });
 
-      expect(id, 'surface-unknown');
-      // The surface is actually created under the fallback id, not dropped.
-      expect(bridge.drainPendingSurfaceIds(), ['surface-unknown']);
-      expect(processor.registry.getSurface('surface-unknown'), isNotNull);
+      expect(first, isNot(second));
+      expect(bridge.drainPendingSurfaceIds(), [first, second]);
+      expect(processor.registry.getSurface(first), isNotNull);
+      expect(processor.registry.getSurface(second), isNotNull);
     });
 
-    test('falls back to EvolutionProposal for unsupported root types', () {
+    test('missing data draws the type with none of its properties', () {
       final id = bridge.handleToolCall({
-        'surfaceId': 'surf-unknown-root',
-        'rootType': 'TotallyUnknownType',
-        'data': <String, dynamic>{},
-      });
-
-      expect(id, 'surf-unknown-root');
-      // The surface was created and its root component silently fell back
-      // to the EvolutionProposal catalog item.
-      final surface = processor.registry.getSurface('surf-unknown-root');
-      expect(surface, isNotNull);
-      expect(surface!.components['root']!.type, 'EvolutionProposal');
-    });
-
-    test('handles non-map data gracefully', () {
-      // Simulate malformed LLM output where data is a string instead of map.
-      final id = bridge.handleToolCall({
-        'surfaceId': 'surf-bad',
+        'surfaceId': 'surf-empty',
         'rootType': 'MetricsSummary',
-        'data': 'not a map',
       });
-      expect(id, 'surf-bad');
+
+      expect(
+        processor.registry.getSurface(id)!.components['root']!.type,
+        'MetricsSummary',
+      );
+    });
+
+    test('a type of its catalog that the tool enum omits is still drawn', () {
+      // SessionProgress is in the evolution catalog, so the
+      // bridge draws it even though the LLM-facing enum omits it.
+      expect(
+        bridge.handleToolCall({
+          'surfaceId': 'surf-progress',
+          'rootType': 'SessionProgress',
+          'data': <String, dynamic>{},
+        }),
+        'surf-progress',
+      );
+    });
+
+    group('draws nothing, and says why, for', () {
+      Matcher refused(String reason) => throwsA(
+        isA<GenUiBridgeException>()
+            .having((e) => e.message, 'message', contains(reason))
+            .having((e) => e.toString(), 'toString', contains(reason)),
+      );
+
+      test('a rootType the catalog does not have, never another type', () {
+        expect(
+          () => bridge.handleToolCall({
+            'surfaceId': 'surf-unknown-root',
+            'rootType': 'TotallyUnknownType',
+            'data': <String, dynamic>{},
+          }),
+          refused('rootType "TotallyUnknownType" is not a widget type'),
+        );
+        expect(
+          () => bridge.handleToolCall(<String, dynamic>{}),
+          refused('rootType "null" is not a widget type'),
+        );
+        expect(processor.registry.getSurface('surf-unknown-root'), isNull);
+        expect(bridge.drainPendingSurfaceIds(), isEmpty);
+      });
+
+      test('data that is not an object of its properties', () {
+        expect(
+          () => bridge.handleToolCall({
+            'surfaceId': 'surf-bad',
+            'rootType': 'MetricsSummary',
+            'data': 'not a map',
+          }),
+          refused('data must be an object of the MetricsSummary properties'),
+        );
+        expect(processor.registry.getSurface('surf-bad'), isNull);
+      });
     });
   });
 

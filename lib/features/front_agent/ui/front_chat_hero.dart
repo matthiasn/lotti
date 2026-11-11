@@ -9,12 +9,10 @@ import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
-import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_stage_pointing.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -23,29 +21,6 @@ import 'package:material_ui/material_ui.dart';
 abstract final class FrontChatHeroKeys {
   static const Key hero = Key('front-chat-hero');
   static const Key figure = Key('front-chat-figure');
-}
-
-/// The open conversation, as the surface names it: the inbox while that
-/// view is on, the conversation's title, or her name for one not begun.
-({String title, bool archived}) frontOpenConversation(
-  WidgetRef ref,
-  AppLocalizations messages,
-) {
-  final inboxOnly = ref.watch(frontInboxFilterProvider);
-  final activeId = ref.watch(frontActiveConversationProvider).value;
-  final conversation = ref
-      .watch(frontConversationsProvider)
-      .value
-      ?.byId(activeId);
-  final title = conversation?.title ?? '';
-  return (
-    title: inboxOnly
-        ? messages.frontChatInboxTitle
-        : title.isNotEmpty
-        ? title
-        : messages.frontChatTitle,
-    archived: !inboxOnly && (conversation?.archived ?? false),
-  );
 }
 
 /// She greets a conversation not begun: her bust, large, where the thread

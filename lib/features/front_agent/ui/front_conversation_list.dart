@@ -2,14 +2,13 @@ import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
@@ -17,6 +16,8 @@ import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
+import 'package:lotti/features/front_agent/ui/front_category_chip.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -25,33 +26,42 @@ import 'package:material_ui/material_ui.dart';
 /// Stable keys for the list's controls.
 @visibleForTesting
 abstract final class FrontConversationListKeys {
-  static const Key newChat = Key('front-conversations-new');
   static const Key archived = Key('front-conversations-archived');
   static Key row(String id) => Key('front-conversation-$id');
   static Key menu(String id) => Key('front-conversation-menu-$id');
-  static const Key search = Key('front-conversations-search');
-  static const Key searchField = Key('front-conversations-search-field');
+  static Key swatch(String id) => Key('front-conversation-swatch-$id');
+  static Key category(String id) => Key('front-conversations-category-$id');
   static const Key inbox = Key('front-conversations-inbox');
 }
 
 /// The user's conversations with her, as a ChatGPT or Claude sidebar lists
-/// them: a new one first, the search, then the live ones newest first under
-/// recency sections, each with rename, archive and delete; the archived ones
-/// folded away at the end, below a divider. A search looks through every
-/// conversation, archived ones included. Picking one opens it and closes the
-/// list.
+/// them — the body of her drawer (`FrontChatDrawer`), under its search and
+/// its new-chat row: the inbox, then the categories her conversations are
+/// in, then the live ones newest first under recency sections, each with
+/// rename, archive and delete; the archived ones folded away at the end,
+/// below a divider. A [query] looks through every conversation, archived
+/// ones included. Picking one opens it and closes the drawer.
 ///
-/// Rows sit inset in the page gutter, so the open one is a quiet rounded
+/// Each row leads with its category's colour, an outline for none, and says
+/// the category's name to assistive technology, so colour never stands
+/// alone. A category in the Categories section narrows the history to its
+/// conversations; a second tap shows them all again.
+///
+/// Rows sit inset in the drawer's gutter, so the open one is a quiet rounded
 /// pill — the search field's width — and their text and the section labels
-/// share one left edge. A new conversation and the search are the band's
-/// ([FrontConversationListActions]): the list's own beside the conversation,
-/// the page header's where the list is a page.
+/// share one left edge.
 class FrontConversationList extends ConsumerStatefulWidget {
-  const FrontConversationList({this.beside = false, super.key});
+  const FrontConversationList({
+    this.query = '',
+    this.beside = false,
+    super.key,
+  });
 
-  /// Beside the open conversation (a desktop window), whose header carries
-  /// that conversation's menu: its row keeps its time then, and shows its
-  /// menu on hover or focus like any other.
+  /// What the drawer's search holds: only conversations whose title has it.
+  final String query;
+
+  /// Beside the open conversation (a desktop window): the open row shows
+  /// its menu on hover or focus like any other, rather than always.
   final bool beside;
 
   @override
@@ -60,23 +70,11 @@ class FrontConversationList extends ConsumerStatefulWidget {
 }
 
 class _FrontConversationListState extends ConsumerState<FrontConversationList> {
-  String _query = '';
   bool _showArchived = false;
 
-  /// An open search that is left empty closes when focus leaves it.
-  late final FocusNode _searchFocus = FocusNode()..addListener(_searchBlurred);
-
-  void _searchBlurred() {
-    // Focus also leaves as the list goes away, when there is nothing to close.
-    if (!mounted || _searchFocus.hasFocus || _query.trim().isNotEmpty) return;
-    ref.read(frontConversationSearchOpenProvider.notifier).close();
-  }
-
-  @override
-  void dispose() {
-    _searchFocus.dispose();
-    super.dispose();
-  }
+  /// The category the history is narrowed to, if any; held while the drawer
+  /// is, so it opens again on everything.
+  String? _categoryFilter;
 
   void _closeList() =>
       ref.read(frontConversationListOpenProvider.notifier).close();
@@ -97,13 +95,31 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
           frontAllChatsThreadProvider.select((t) => t.value?.inboxCount),
         ) ??
         0;
-    // The band opens it: the list's own, or the page header's.
-    final searchOpen = ref.watch(frontConversationSearchOpenProvider);
-    final needle = _query.trim().toLowerCase();
+    final needle = widget.query.trim().toLowerCase();
     final searching = needle.isNotEmpty;
+    final all = index?.conversations ?? const <FrontConversation>[];
+    // Only categories she may see: a locked-away one is never named here.
+    final categories = {
+      for (final category in ref.watch(frontMentionCategoriesProvider))
+        category.id: category,
+    };
+    CategoryDefinition? categoryOf(FrontConversation c) =>
+        c.categoryIds.map((id) => categories[id]).nonNulls.firstOrNull;
+    final counts = <CategoryDefinition, int>{};
+    for (final c in all) {
+      if (categoryOf(c) case final category?) {
+        counts[category] = (counts[category] ?? 0) + 1;
+      }
+    }
+    // A filter on a category that has gone holds nothing back.
+    final filter = counts.keys
+        .where((category) => category.id == _categoryFilter)
+        .firstOrNull;
     final matching = [
-      for (final c in index?.conversations ?? const <FrontConversation>[])
-        if (!searching || c.title.toLowerCase().contains(needle)) c,
+      for (final c in all)
+        if ((!searching || c.title.toLowerCase().contains(needle)) &&
+            (filter == null || categoryOf(c) == filter))
+          c,
     ];
     // A search looks through the archived ones too, in place.
     final live = [
@@ -121,7 +137,7 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
     // group opens.
     final showArchived = _showArchived || archived.any((c) => c.id == activeId);
     final now = clock.now();
-    final rowSize = _rowSize(context);
+    final rowSize = frontDrawerRowSize(context);
     // Labels sit on the row text's own edge.
     final textInset = DesignSystemListItem.contentInset(tokens, rowSize);
     final rounded = BorderRadius.circular(tokens.radii.s);
@@ -129,6 +145,7 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
     Widget row(FrontConversation c) => _ConversationRow(
       key: FrontConversationListKeys.row(c.id),
       conversation: c,
+      category: categoryOf(c),
       borderRadius: rounded,
       selected: !inboxOnly && c.id == activeId,
       pinMenu: !widget.beside,
@@ -139,30 +156,31 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
       },
     );
 
-    // A group: its name over its conversations, flat. The name in the
-    // accent splits the days — the rows stay neutral, so the open row's
-    // fill is still the one strong surface in the list.
+    // A section's name, snug over its rows, on their text's edge. Neutral:
+    // the accent means "press", and a day is not pressed.
+    Widget sectionLabel(String label) => Padding(
+      padding: EdgeInsets.only(
+        left: textInset,
+        right: textInset,
+        bottom: tokens.spacing.step1,
+      ),
+      child: Text(
+        label,
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: tokens.colors.text.lowEmphasis,
+        ),
+      ),
+    );
+
+    // A group: its name over its conversations, flat — the rows stay
+    // neutral, so the open row's fill is still the one strong surface in the
+    // list.
     Widget group(String? label, List<FrontConversation> rows) => Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (label != null)
-            Padding(
-              // Snug over its rows, on their text's edge.
-              padding: EdgeInsets.only(
-                left: textInset,
-                right: textInset,
-                bottom: tokens.spacing.step1,
-              ),
-              // Neutral: the accent means "press", and a day is not pressed.
-              child: Text(
-                label,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ),
-            ),
+          if (label != null) sectionLabel(label),
           for (final c in rows) row(c),
         ],
       ),
@@ -174,8 +192,8 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
     for (final c in live) {
       sections.putIfAbsent(_Recency.of(c.lastActivity, now), () => []).add(c);
     }
-    // The thread's own gutter: the pills, the search and the divider line
-    // up with the bubbles' edges.
+    // The drawer's gutter: the pills and the divider line up with its
+    // search and its new-chat row.
     final list = ListView(
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.step5,
@@ -225,25 +243,56 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
               _closeList();
             },
           ),
-        if (hasAny && searchOpen) ...[
-          SizedBox(height: tokens.spacing.step2),
-          DesignSystemSearch(
-            // Keyed: the first letter hides the Inbox row above it, and
-            // unkeyed the field would be rebuilt at its new index — its
-            // text and focus lost.
-            key: FrontConversationListKeys.searchField,
-            hintText: messages.frontChatSearchChats,
-            size: DesignSystemSearchSize.small,
-            focusNode: _searchFocus,
-            autofocus: true,
-            onChanged: (value) => setState(() => _query = value),
-            // Clearing closes it again: the list is back as it was.
-            onClear: () {
-              setState(() => _query = '');
-              ref.read(frontConversationSearchOpenProvider.notifier).close();
-            },
+        // The categories her conversations are in, each a filter on the
+        // history; a second tap on the one on shows everything again.
+        if (counts.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.only(top: tokens.spacing.step4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                sectionLabel(messages.frontChatCategoriesHeading),
+                for (final MapEntry(key: category, value: count)
+                    in counts.entries.toList()..sort(
+                      (a, b) => a.key.name.toLowerCase().compareTo(
+                        b.key.name.toLowerCase(),
+                      ),
+                    ))
+                  Semantics(
+                    selected: category == filter,
+                    child: DesignSystemListItem(
+                      key: FrontConversationListKeys.category(category.id),
+                      titleContent: Text(
+                        category.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _labelStyle(context).copyWith(
+                          color: tokens.colors.text.highEmphasis,
+                        ),
+                      ),
+                      size: rowSize,
+                      borderRadius: rounded,
+                      activated: category == filter,
+                      activatedBackgroundColor: tokens.colors.surface.hover,
+                      hoverBackgroundColor: tokens.colors.surface.enabled,
+                      leading: FrontCategorySwatch(category: category),
+                      trailing: _TrailingSlot(
+                        child: Text(
+                          '$count',
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(color: tokens.colors.text.lowEmphasis),
+                        ),
+                      ),
+                      onTap: () => setState(
+                        () => _categoryFilter = category == filter
+                            ? null
+                            : category.id,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ],
         // A search is one group of what matched; otherwise the recency groups.
         if (searching && live.isNotEmpty) group(null, live),
         if (!searching)
@@ -306,102 +355,7 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
         ],
       ],
     );
-    if (!widget.beside) return list;
-    // Beside the conversation the list has a band of its own, as tall as
-    // her header's, so the two hairlines run across the sheet as one.
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: tokens.colors.decorative.level01),
-            ),
-          ),
-          child: Padding(
-            padding: frontBandPadding(tokens),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: frontBandContentHeight(context),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      // On the rows' text edge.
-                      padding: EdgeInsetsDirectional.only(start: textInset),
-                      child: Text(
-                        messages.queryChats,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.subtitle.subtitle2
-                            .copyWith(color: tokens.colors.text.highEmphasis),
-                      ),
-                    ),
-                  ),
-                  ...FrontConversationListActions.of(context, ref),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Expanded(child: list),
-      ],
-    );
-  }
-}
-
-/// The height of one line of the conversation's title in her header, as the
-/// text scales.
-double frontTitleLineHeight(BuildContext context) => MediaQuery.textScalerOf(
-  context,
-).scale(context.designTokens.typography.lineHeight.bodySmall);
-
-/// The height inside the sheet's top band: her header's top line — a tap
-/// target — over the conversation's title, whatever the band holds.
-double frontBandContentHeight(BuildContext context) =>
-    TapTargets.minimum + frontTitleLineHeight(context);
-
-/// The inset of the sheet's top band — her header, and the list's own band
-/// beside it: with [frontBandContentHeight] inside both, they come out the
-/// same height, so their hairlines meet.
-EdgeInsets frontBandPadding(DsTokens tokens) => EdgeInsets.symmetric(
-  horizontal: tokens.spacing.step5,
-  vertical: tokens.spacing.step2,
-);
-
-/// The list's two actions, as glyphs on its band: the search (once there is
-/// anything to search) and a new conversation — the page's one action, so the
-/// accent. On the list's own band beside the conversation, and on the page
-/// header where the list is a page.
-abstract final class FrontConversationListActions {
-  static List<Widget> of(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final hasAny =
-        ref.watch(frontConversationsProvider).value?.conversations.isNotEmpty ??
-        false;
-    return [
-      if (hasAny)
-        DesignSystemIconAction(
-          key: FrontConversationListKeys.search,
-          tooltip: messages.frontChatSearchChats,
-          icon: LottiIcons.search,
-          onPressed: ref
-              .read(frontConversationSearchOpenProvider.notifier)
-              .open,
-        ),
-      DesignSystemIconAction(
-        key: FrontConversationListKeys.newChat,
-        tooltip: messages.queryNewChat,
-        icon: LottiIcons.editNote,
-        tone: tokens.colors.interactive.enabled,
-        onPressed: () {
-          ref.read(frontChatControllerProvider.notifier).startConversation();
-          ref.read(frontConversationListOpenProvider.notifier).close();
-        },
-      ),
-    ];
+    return list;
   }
 }
 
@@ -446,7 +400,8 @@ TextStyle _labelStyle(BuildContext context) =>
 const DesignSystemListItemSize _conversationRowSize =
     DesignSystemListItemSize.small;
 
-DesignSystemListItemSize _rowSize(BuildContext context) =>
+/// The size of the drawer's rows — the list's and its footer's alike.
+DesignSystemListItemSize frontDrawerRowSize(BuildContext context) =>
     isDesktopLayout(context)
     ? DesignSystemListItemSize.small
     : DesignSystemListItemSize.medium;
@@ -465,7 +420,11 @@ class _TrailingSlot extends StatelessWidget {
   static double widthOf(BuildContext context) {
     final tokens = context.designTokens;
     return (TapTargets.minimum -
-            2 * DesignSystemListItem.contentInset(tokens, _rowSize(context)))
+            2 *
+                DesignSystemListItem.contentInset(
+                  tokens,
+                  frontDrawerRowSize(context),
+                ))
         .clamp(0.0, DesignSystemContextMenuButton.extent(tokens));
   }
 
@@ -508,6 +467,7 @@ double _lineHeight(BuildContext context, TextStyle style) {
 class _ConversationRow extends StatefulWidget {
   const _ConversationRow({
     required this.conversation,
+    required this.category,
     required this.borderRadius,
     required this.selected,
     required this.menu,
@@ -517,6 +477,9 @@ class _ConversationRow extends StatefulWidget {
   });
 
   final FrontConversation conversation;
+
+  /// The category it is in, as she may see it; null for none.
+  final CategoryDefinition? category;
 
   /// The row's own corners, for its fill.
   final BorderRadius borderRadius;
@@ -625,20 +588,26 @@ class _ConversationRowState extends State<_ConversationRow> {
       activated: widget.selected,
       activatedBackgroundColor: tokens.colors.surface.hover,
       hoverBackgroundColor: tokens.colors.surface.enabled,
-      // An archived one says so wherever it shows — a search included.
-      leading: widget.conversation.archived
+      // Its category's colour, an outline for none; an archived one says
+      // that instead, wherever it shows — a search included.
+      leading: conversation.archived
           ? Icon(
               LottiIcons.archive,
               size: IconSizes.s,
               color: tokens.colors.text.mediumEmphasis,
             )
-          : null,
+          : FrontCategorySwatch(
+              key: FrontConversationListKeys.swatch(conversation.id),
+              category: widget.category,
+            ),
       onTap: widget.onOpen,
       onHoverChanged: (value) => setState(() => _hovered = value),
       onFocusChanged: (value) => setState(() => _focused = value),
     );
     return Semantics(
       selected: widget.selected,
+      // The colour is a picture of the category: its name is said too.
+      hint: widget.category?.name,
       // A long press offers any row's menu, so a phone — no hover — reaches
       // the rows whose menu is not shown.
       onLongPressHint: context.messages.frontChatRowMenuHint,

@@ -387,8 +387,6 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                                   attachment: groupAttachment
                                       ? attachment
                                       : null,
-                                  footerTrailing: widget.footerTrailingBuilder
-                                      ?.call(context, message),
                                 ),
                                 if (attachment != null && !groupAttachment) ...[
                                   SizedBox(height: tokens.spacing.step2),
@@ -460,7 +458,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
               _ChatComposer(
                 contentMaxWidth: maxWidth,
                 controller: _controller,
-                helperText: widget.composerHelper,
+                leading: widget.composerLeading,
                 mentionOptions: widget.mentionOptions,
                 hintText:
                     widget.composerHint ??

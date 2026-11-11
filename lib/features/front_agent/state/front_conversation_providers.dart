@@ -67,8 +67,9 @@ class FrontConversationPicker extends Notifier<String?> {
   }
 }
 
-/// Whether the sheet shows the list of conversations instead of one. Off
-/// every time the sheet opens.
+/// Whether the drawer of conversations is open over the one shown (on a
+/// phone; beside it on a desktop window it is always there). Off every
+/// time the sheet opens.
 final NotifierProvider<FrontConversationListOpen, bool>
 frontConversationListOpenProvider =
     NotifierProvider.autoDispose<FrontConversationListOpen, bool>(
@@ -100,26 +101,6 @@ class FrontCompanionCardShown extends Notifier<bool> {
   bool build() => false;
 
   void toggle() => state = !state;
-}
-
-/// Whether the conversation list's search field is open. The list's band —
-/// its own beside the conversation, the page header's on a phone — opens it,
-/// and the list shows the field; disposed with the list, so a list opened
-/// again starts without it.
-final NotifierProvider<FrontConversationSearchOpen, bool>
-frontConversationSearchOpenProvider =
-    NotifierProvider.autoDispose<FrontConversationSearchOpen, bool>(
-      FrontConversationSearchOpen.new,
-      name: 'frontConversationSearchOpenProvider',
-    );
-
-class FrontConversationSearchOpen extends Notifier<bool> {
-  @override
-  bool build() => false;
-
-  void open() => state = true;
-
-  void close() => state = false;
 }
 
 /// The id a first conversation takes when nothing was ever said: minted

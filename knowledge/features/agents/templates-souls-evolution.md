@@ -16,6 +16,10 @@ sources:
     resource: ../../../lib/features/agents/workflow/template_evolution_workflow.dart
     title: TemplateEvolutionWorkflow
     last_modified: 2026-07-21
+  - id: genui-bridge
+    resource: ../../../lib/features/agents/genui/genui_bridge.dart
+    title: GenUiBridge — render_surface tool calls into A2UI surfaces of the evolution catalog
+    last_modified: 2026-11-11
   - id: improver
     resource: ../../../lib/features/agents/workflow/improver_agent_workflow.dart
     title: ImproverAgentWorkflow
@@ -273,6 +277,18 @@ centred line. Until a session exists the chat shows `EvolutionSessionOpening`
 rather than a transcript, and `AgentTypingIndicator` marks the agent
 composing — it animates perpetually, so a test that reaches either must `pump`
 rather than `pumpAndSettle`.
+
+**Rich cards in the chat are GenUI surfaces the model asks for by tool.**
+The model calls `render_surface(surfaceId, rootType, data)`; `GenUiBridge`
+turns it into A2UI `CreateSurface` and `UpdateComponents` messages for a
+`SurfaceController` of the evolution catalog (`buildEvolutionCatalog`), and
+`EvolutionMessageList` draws each as GenUI's `Surface`. The model never
+writes A2UI JSON in its text. A `rootType` the evolution catalog does not
+have, or `data` that is not an object, draws nothing: the bridge throws a
+`GenUiBridgeException` and `EvolutionStrategy` answers the call with its
+reason (`Error: surface not drawn — …`), so a surface is never drawn as a
+type the model did not ask for. A surface the model did not name gets an id
+of its own (`surface-unnamed-<n>`), so two never collide.
 
 **Both review pages hang off a `/review` sub-route, declared once.** The
 template detail page beams to `/settings/agents/templates/<templateId>/review`

@@ -7266,11 +7266,36 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatArchivedToast => 'Chat arkiveret.';
 
   @override
+  String get frontChatCategoriesHeading => 'Kategorier';
+
+  @override
+  String frontChatCategoryChip(String name) {
+    return 'Kategori for denne chat: $name';
+  }
+
+  @override
+  String get frontChatCategoryEverything => 'Alt';
+
+  @override
+  String get frontChatCategorySheetBody =>
+      'Fra nu af bygger svarene i denne chat kun på denne kategori.';
+
+  @override
+  String get frontChatCategorySheetMention =>
+      'Skriver du @ i en besked, afgrænser du kun det ene spørgsmål.';
+
+  @override
+  String get frontChatCategorySheetTitle => 'Chat i en kategori';
+
+  @override
   String get frontChatCompanionShow => 'Vis ledsager';
 
   @override
   String get frontChatDeleteExplanation =>
       'Slet denne chat? Dens beskeder skjules på alle enheder, men slettes ikke. Det, du har gemt fra chatten, bliver, hvor det er.';
+
+  @override
+  String get frontChatDrawerClose => 'Luk chats';
 
   @override
   String get frontChatEmpty =>
@@ -7314,9 +7339,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Indbakke';
-
-  @override
-  String get frontChatMentionHint => 'Skriv @ for at nævne en kategori';
 
   @override
   String get frontChatNoChats =>
@@ -7363,6 +7385,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontChatSearchChats => 'Søg i chats';
+
+  @override
+  String get frontChatSpokenAnswers => 'Talte svar';
 
   @override
   String get frontChatTitle => 'Ledsager';

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -44,6 +45,8 @@ import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
+import 'package:lotti/features/front_agent/ui/front_category_chip.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_drawer.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
@@ -54,7 +57,6 @@ import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
-import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/features/tasks/state/task_preview_provider.dart';
@@ -106,7 +108,8 @@ void main() {
   /// Every list of cards her reply draws, in any reply.
   final herLists = find.byWidgetPredicate(
     (widget) => switch (widget.key) {
-      ValueKey<String>(:final value) => value.startsWith('front-reply-cards-'),
+      ValueKey<String>(:final value) =>
+        value.startsWith('front-reply-') && value.contains('-cards-'),
       _ => false,
     },
   );
@@ -117,7 +120,7 @@ void main() {
       tester
           .widget<FrontEntityPreviewList>(
             find.descendant(
-              of: find.byKey(ValueKey('front-reply-cards-$replyId-$part')),
+              of: find.byKey(ValueKey('front-reply-$replyId-cards-$part')),
               matching: find.byType(FrontEntityPreviewList),
             ),
           )
@@ -160,6 +163,7 @@ void main() {
     VoidCallback? onClose,
     QueryAccessSnapshot? journalAccess,
     FrontConversationIndex? conversations,
+    Set<String> Function()? storedScope,
     ChatRecorderController Function()? recorder,
     FrontDayPlanner? planDay,
     FrontNewProject? newProject,
@@ -170,6 +174,8 @@ void main() {
     bool companion = false,
     Set<String> flagsOn = const {},
     Future<FrontEntityPreview?> Function(FrontEntityKey key)? previews,
+    bool reducedMotion = false,
+    ValueListenable<double?>? listWidth,
   }) async {
     // The project creation resolves categories through the locator.
     final cache = MockEntitiesCacheService();
@@ -187,14 +193,21 @@ void main() {
     final navigator = GlobalKey<NavigatorState>();
     // Her surface closes by popping its route, which back's PopScope does
     // not hold.
+    VoidCallback close() =>
+        onClose ??
+        () {
+          if (pushed) navigator.currentState!.pop();
+        };
     final pane = Scaffold(
-      body: FrontChatPane(
-        onClose:
-            onClose ??
-            () {
-              if (pushed) navigator.currentState!.pop();
-            },
-      ),
+      body: listWidth == null
+          ? FrontChatPane(onClose: close())
+          // The window crossing the desktop width: the drawer beside the
+          // conversation, then over it again.
+          : ValueListenableBuilder<double?>(
+              valueListenable: listWidth,
+              builder: (context, width, _) =>
+                  FrontChatPane(onClose: close(), listWidth: width),
+            ),
     );
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
@@ -202,7 +215,10 @@ void main() {
           pushed ? const SizedBox.shrink() : pane,
           navigatorKey: navigator,
           navigatorObservers: navigatorObservers,
-          mediaQueryData: const MediaQueryData(size: window),
+          mediaQueryData: MediaQueryData(
+            size: window,
+            disableAnimations: reducedMotion,
+          ),
           overrides: [
             frontChatThreadProvider.overrideWith(
               (ref) => (thread ?? () async => FrontChatThread.empty)(),
@@ -221,6 +237,8 @@ void main() {
                         title: 'Two things.',
                         lastActivity: now,
                         archived: false,
+                        // As the index reads `c-1`'s newest turn now.
+                        categoryIds: storedScope?.call() ?? const {},
                       ),
                     ],
                   ),
@@ -294,6 +312,20 @@ void main() {
     });
   }
 
+  /// Lets the drawer slide all the way in or out: its ticker starts on the
+  /// frame after the change and settles a frame after its last value.
+  Future<void> settleDrawer(WidgetTester tester) async {
+    await tester.pump();
+    await tester.pump(MotionDurations.medium2);
+    await tester.pump(MotionDurations.short2);
+  }
+
+  /// Opens the drawer from the header and lets it slide all the way in.
+  Future<void> openDrawer(WidgetTester tester) async {
+    await tester.tap(find.byKey(FrontChatHeaderKeys.drawer));
+    await settleDrawer(tester);
+  }
+
   testWidgets('an empty thread invites the first question under her header', (
     tester,
   ) async {
@@ -325,6 +357,83 @@ void main() {
       find.text("Couldn't load this conversation right now."),
       findsOneWidget,
     );
+  });
+
+  group('another conversation picked', () {
+    late Future<FrontChatThread> Function() load;
+
+    /// The pane on `c-1`'s thread; each later load is [load]'s, which a
+    /// test points at the conversation picked next or at `c-1` reloading.
+    Future<ProviderContainer> pumpOn(WidgetTester tester) async {
+      load = () async => FrontChatThread(
+        messages: [message('m0', AgentChatRole.user, 'Count c-1', now)],
+      );
+      await pumpPane(tester, thread: () => load());
+      expect(find.text('Count c-1'), findsOne);
+      return ProviderScope.containerOf(
+        tester.element(find.byType(FrontChatHeader)),
+      );
+    }
+
+    Future<void> pick(
+      WidgetTester tester,
+      ProviderContainer container,
+      String id,
+    ) => withClock(Clock.fixed(now), () async {
+      container.read(frontPickedConversationProvider.notifier).picked = id;
+      container.invalidate(frontChatThreadProvider);
+      await tester.pump();
+      await tester.pump();
+    });
+
+    testWidgets("never shows the last one's words while its own load: the "
+        'composer already sends to the one picked', (tester) async {
+      final container = await pumpOn(tester);
+      final loading = Completer<FrontChatThread>();
+      load = () => loading.future;
+
+      await pick(tester, container, 'c-2');
+
+      expect(find.text('Count c-1'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOne);
+
+      loading.complete(
+        FrontChatThread(
+          messages: [message('m1', AgentChatRole.user, 'Count c-2', now)],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Count c-2'), findsOne);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('says its own load failed rather than showing the last '
+        "one's words", (tester) async {
+      final container = await pumpOn(tester);
+      load = () => Future.error(StateError('db'));
+
+      await pick(tester, container, 'c-2');
+
+      expect(find.text('Count c-1'), findsNothing);
+      expect(
+        find.text("Couldn't load this conversation right now."),
+        findsOne,
+      );
+    });
+
+    testWidgets('a reload of the same conversation keeps its words on '
+        'screen (stay while reload)', (tester) async {
+      final container = await pumpOn(tester);
+      load = () => Completer<FrontChatThread>().future;
+
+      container.invalidate(frontChatThreadProvider);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Count c-1'), findsOne);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
   });
 
   testWidgets('renders the thread with day dividers, the doors under a routed '
@@ -415,17 +524,11 @@ void main() {
     expect(find.byKey(const ValueKey('front-options-ask0')), findsNothing);
     expect(find.byType(FrontAskOptionsRow), findsOneWidget);
 
-    // A conversation, not a log: no name-and-time line on each message.
-    // Her turns keep what they cost, quietly under her words; a wake that
-    // recorded no call shows nothing.
+    // A conversation, not a log: no name-and-time line on each message,
+    // and no cost line under her words — what the conversation cost is
+    // the drawer's to say.
     expect(find.textContaining('Companion · '), findsNothing);
-    expect(find.byType(FrontTurnCostLine), findsNWidgets(2));
-    final cost = find.byKey(const ValueKey('front-turn-cost-run-2'));
-    expect(cost, findsOneWidget);
-    expect(find.byKey(const ValueKey('front-turn-cost-run-1')), findsNothing);
-    expect(tester.widget<Text>(cost).data, isNot(startsWith(' · ')));
-    final bubble = find.byKey(const ValueKey('goal-chat-message-ask2'));
-    expect(find.descendant(of: bubble, matching: cost), findsOneWidget);
+    expect(find.textContaining('tokens'), findsNothing);
   });
 
   testWidgets('a chip answers in its own words through the composer', (
@@ -548,25 +651,194 @@ void main() {
     });
   }
 
-  testWidgets('the list of conversations takes the thread’s place while it '
-      'is open', (tester) async {
-    await pumpPane(tester);
-    expect(find.byType(AgentChatView), findsOneWidget);
+  group('the drawer', () {
+    testWidgets('slides over the thread, which stays mounted under it: the '
+        'same thread, never rebuilt', (tester) async {
+      await pumpPane(tester);
+      final thread = tester.state(find.byType(AgentChatView));
+      expect(find.byType(FrontChatDrawer), findsNothing);
 
-    await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
-    await tester.pump();
-    await tester.pump();
+      await openDrawer(tester);
 
-    expect(find.byType(FrontConversationList), findsOneWidget);
-    expect(find.byType(AgentChatView), findsNothing);
-    expect(find.text('Two things.'), findsOneWidget);
+      expect(find.byType(FrontChatDrawer), findsOneWidget);
+      expect(find.byType(FrontConversationList), findsOneWidget);
+      expect(tester.state(find.byType(AgentChatView)), same(thread));
+      // From the leading edge, a tap target short of the far one.
+      final drawer = tester.getRect(find.byType(FrontChatDrawer));
+      final pane = tester.getRect(find.byType(FrontChatPane));
+      expect(drawer.left, pane.left);
+      expect(drawer.width, lessThanOrEqualTo(pane.width - TapTargets.minimum));
 
-    await tester.tap(find.text('Two things.'));
-    await tester.pump();
-    await tester.pump();
+      // Picking a conversation opens it and closes the drawer.
+      await tester.tap(find.text('Two things.'));
+      await settleDrawer(tester);
+      expect(find.byType(FrontChatDrawer), findsNothing);
+      expect(tester.state(find.byType(AgentChatView)), same(thread));
+    });
 
-    expect(find.byType(FrontConversationList), findsNothing);
-    expect(find.byType(AgentChatView), findsOneWidget);
+    testWidgets('a tap on the scrim closes it, and the scrim is a labelled '
+        'button', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpPane(tester);
+      await openDrawer(tester);
+
+      expect(
+        tester.getSemantics(find.byKey(FrontChatPaneKeys.scrim)),
+        isSemantics(label: 'Close chats', isButton: true, hasTapAction: true),
+      );
+      // Beside the drawer, where only the scrim is.
+      final pane = tester.getRect(find.byType(FrontChatPane));
+      await tester.tapAt(Offset(pane.right - 4, pane.center.dy));
+      await settleDrawer(tester);
+      expect(find.byType(FrontChatDrawer), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('its own close glyph closes it', (tester) async {
+      await pumpPane(tester);
+      await openDrawer(tester);
+
+      await tester.tap(find.byKey(FrontChatDrawerKeys.close));
+      await settleDrawer(tester);
+      expect(find.byType(FrontChatDrawer), findsNothing);
+    });
+
+    testWidgets('a new chat from it starts one and closes it', (tester) async {
+      await pumpPane(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(FrontChatPane)),
+      );
+      await openDrawer(tester);
+
+      await tester.tap(find.byKey(FrontChatDrawerKeys.newChat));
+      await settleDrawer(tester);
+
+      expect(find.byType(FrontChatDrawer), findsNothing);
+      expect(
+        container.read(frontPickedConversationProvider),
+        isNot(anyOf(isNull, 'c-1')),
+      );
+    });
+
+    testWidgets('is a named region, and the thread under it is out of reach '
+        'of focus while it is open', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpPane(tester);
+      await openDrawer(tester);
+
+      // The drawer's own region, not the toggle's tooltip of the same name.
+      final region = tester.widget<Semantics>(
+        find
+            .ancestor(
+              of: find.byType(FrontChatDrawer),
+              matching: find.byWidgetPredicate(
+                (widget) =>
+                    widget is Semantics &&
+                    (widget.properties.scopesRoute ?? false),
+              ),
+            )
+            .first,
+      );
+      expect(region.properties.label, 'Chats');
+      expect(region.properties.namesRoute, isTrue);
+      expect(
+        tester
+            .widget<ExcludeFocus>(
+              find
+                  .ancestor(
+                    of: find.byType(AgentChatView),
+                    matching: find.byType(ExcludeFocus),
+                  )
+                  .first,
+            )
+            .excluding,
+        isTrue,
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('takes focus as it opens and gives it back to its toggle as '
+        'it closes', (tester) async {
+      await pumpPane(tester);
+      await openDrawer(tester);
+      final drawerScope = FocusScope.of(
+        tester.element(find.byType(FrontConversationList)),
+      );
+      expect(drawerScope.hasFocus, isTrue);
+
+      await tester.tap(find.byKey(FrontChatDrawerKeys.close));
+      await settleDrawer(tester);
+      final toggle = Focus.of(
+        tester.element(
+          find.descendant(
+            of: find.byKey(FrontChatHeaderKeys.drawer),
+            matching: find.byType(Icon),
+          ),
+        ),
+      );
+      expect(toggle.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('a window that widens and narrows again finds the drawer '
+        'where its state says: closed beside the thread, closed over it', (
+      tester,
+    ) async {
+      final width = ValueNotifier<double?>(null);
+      addTearDown(width.dispose);
+      await pumpPane(tester, listWidth: width);
+      await openDrawer(tester);
+
+      width.value = 300;
+      await settleDrawer(tester);
+      // Beside the thread, picking a conversation closes the drawer.
+      await tester.tap(find.text('Two things.'));
+      await settleDrawer(tester);
+
+      width.value = null;
+      await settleDrawer(tester);
+      expect(find.byType(FrontChatDrawer), findsNothing);
+    });
+
+    testWidgets('with reduced motion focus still goes back to the toggle, '
+        'though the drawer is gone at once', (tester) async {
+      await pumpPane(tester, reducedMotion: true);
+      await tester.tap(find.byKey(FrontChatHeaderKeys.drawer));
+      await tester.pump();
+      await tester.pump();
+      expect(
+        FocusScope.of(
+          tester.element(find.byType(FrontConversationList)),
+        ).hasFocus,
+        isTrue,
+      );
+
+      await tester.tap(find.byKey(FrontChatDrawerKeys.close));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(FrontChatDrawer), findsNothing);
+      final toggle = Focus.of(
+        tester.element(
+          find.descendant(
+            of: find.byKey(FrontChatHeaderKeys.drawer),
+            matching: find.byType(Icon),
+          ),
+        ),
+      );
+      expect(toggle.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('with reduced motion it is there at once', (tester) async {
+      await pumpPane(tester, reducedMotion: true);
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.drawer));
+      await tester.pump();
+
+      expect(
+        tester.getRect(find.byType(FrontChatDrawer)).left,
+        tester.getRect(find.byType(FrontChatPane)).left,
+      );
+    });
   });
 
   testWidgets('a begun conversation leads with its first message — she is '
@@ -634,6 +906,32 @@ void main() {
       container.read(frontPickedConversationProvider.notifier).picked = 'c-2';
       await tester.pump();
       await tester.pump();
+    });
+
+    expect(recording.cancels, 1);
+  });
+
+  testWidgets('opening the drawer is not leaving: the recording goes on '
+      'under it (decision 5)', (tester) async {
+    final recording = _Recording();
+    await pumpPane(tester, recorder: () => recording);
+
+    await openDrawer(tester);
+    await tester.tap(find.byKey(FrontChatDrawerKeys.close));
+    await settleDrawer(tester);
+
+    expect(recording.cancels, 0);
+  });
+
+  testWidgets('a new chat from the drawer leaves the conversation, and lets '
+      'the recording go', (tester) async {
+    final recording = _Recording();
+    await pumpPane(tester, recorder: () => recording);
+
+    await openDrawer(tester);
+    await withClock(Clock.fixed(now), () async {
+      await tester.tap(find.byKey(FrontChatDrawerKeys.newChat));
+      await settleDrawer(tester);
     });
 
     expect(recording.cancels, 1);
@@ -708,14 +1006,11 @@ void main() {
       verify(() => filing.fileUnderOwner('d:door:0')).called(1);
     });
 
-    /// Opens the list from the header and the inbox from the list.
+    /// Opens the drawer from the header and the inbox from the drawer.
     Future<void> openInbox(WidgetTester tester) async {
-      await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
-      await tester.pump();
-      await tester.pump();
+      await openDrawer(tester);
       await tester.tap(find.byKey(FrontConversationListKeys.inbox));
-      await tester.pump();
-      await tester.pump();
+      await settleDrawer(tester);
     }
 
     testWidgets('a task linked in an answer opens on top of her from the '
@@ -779,35 +1074,29 @@ void main() {
       expect(container.read(frontInboxFilterProvider), isTrue);
     });
 
-    testWidgets("the list's inbox filters the thread to the turns that wait, "
-        'and the header names it', (tester) async {
+    testWidgets("the drawer's inbox filters the thread to the turns that "
+        'wait', (tester) async {
       await pumpPane(tester, thread: () async => waiting());
       expect(find.text('Fine.'), findsOneWidget);
-      // A dot on the way to the list says something waits.
+      // A count on the drawer's toggle says something waits.
       expect(find.byKey(FrontChatHeaderKeys.inbox), findsOneWidget);
 
       await openInbox(tester);
 
-      expect(
-        tester.widget<Text>(find.byKey(FrontChatHeaderKeys.title)).data,
-        'Inbox',
-      );
       expect(find.text('The hinge arrived.'), findsWidgets);
       expect(find.text('Fine.'), findsNothing);
       // Her reply carries the doors, so it stays with the words.
       expect(find.text('Filed? Your call.'), findsOneWidget);
 
-      // Opening a conversation from the list leaves the inbox.
-      await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
-      await tester.pump();
-      await tester.pump();
+      // Opening a conversation from the drawer leaves the inbox.
+      await openDrawer(tester);
       await tester.tap(find.text('Two things.'));
-      await tester.pump();
-      await tester.pump();
+      await settleDrawer(tester);
       expect(find.text('Fine.'), findsOneWidget);
     });
 
-    testWidgets('back leaves the list, then the inbox, before the sheet', (
+    testWidgets('back closes the drawer, then leaves the inbox, before the '
+        'sheet', (
       tester,
     ) async {
       var closed = 0;
@@ -817,16 +1106,14 @@ void main() {
         onClose: () => closed++,
       );
       await openInbox(tester);
-      await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
-      await tester.pump();
-      await tester.pump();
+      await openDrawer(tester);
       final container = ProviderScope.containerOf(
         tester.element(find.byType(FrontChatHeader)),
       );
 
       await tester.binding.handlePopRoute();
-      await tester.pump();
-      expect(find.byType(FrontConversationList), findsNothing);
+      await settleDrawer(tester);
+      expect(find.byType(FrontChatDrawer), findsNothing);
       expect(container.read(frontInboxFilterProvider), isTrue);
 
       await tester.binding.handlePopRoute();
@@ -1080,7 +1367,7 @@ void main() {
       find.textContaining('Two things:', findRichText: true),
     );
     final card = tester.getRect(
-      find.byKey(const ValueKey('front-reply-cards-a1-1')),
+      find.byKey(const ValueKey('front-reply-a1-cards-1')),
     );
     final after = tester.getTopLeft(
       find.textContaining('Eggs first.', findRichText: true),
@@ -1156,7 +1443,7 @@ void main() {
         ], due: dueToday),
       );
 
-      final list = find.byKey(const ValueKey('front-reply-cards-a1-1'));
+      final list = find.byKey(const ValueKey('front-reply-a1-cards-1'));
       final label = find.descendant(
         of: list,
         matching: find.byType(FrontDueSectionLabel),
@@ -1190,7 +1477,7 @@ void main() {
       expect(find.byType(FrontDueSectionLabel), findsNothing);
       expect(
         tester
-            .getRect(find.byKey(const ValueKey('front-reply-cards-a1-1')))
+            .getRect(find.byKey(const ValueKey('front-reply-a1-cards-1')))
             .bottom,
         lessThan(
           tester
@@ -1748,8 +2035,8 @@ void main() {
     );
   });
 
-  testWidgets('@ offers the categories she may see, and the field says so; '
-      'with none, it says nothing about @', (tester) async {
+  testWidgets('@ offers the categories she may see, and the field leads '
+      "with the conversation's category; with none, neither", (tester) async {
     await pumpPane(
       tester,
       mentionCategories: [
@@ -1765,14 +2052,75 @@ void main() {
     );
     expect(input.mentionOptions.single.label, 'Colony');
     expect(input.mentionOptions.single.color, const Color(0xFF4CAF93));
-    expect(input.helperText, 'Type @ to name a category');
+    expect(input.leading, isA<FrontCategoryChip>());
+    expect(input.helperText, isNull);
 
     await pumpPane(tester, mentionCategories: const <CategoryDefinition>[]);
     input = tester.widget<DesignSystemChatInput>(
       find.byType(DesignSystemChatInput),
     );
     expect(input.mentionOptions, isEmpty);
-    expect(input.helperText, isNull);
+    expect(input.leading, isNull);
+  });
+
+  testWidgets('a category picked in the composer goes out with the next '
+      'turn, and stays for the one after', (tester) async {
+    // What the turns sent leave as `c-1`'s scope, once the pick has gone.
+    var stored = const <String>{};
+    when(
+      () => chatService.sendMessage(
+        text: any(named: 'text'),
+        conversationId: 'c-1',
+        categoryIds: {'colony'},
+      ),
+    ).thenAnswer((_) async => stored = {'colony'});
+    await pumpPane(
+      tester,
+      storedScope: () => stored,
+      mentionCategories: [
+        CategoryTestUtils.createTestCategory(
+          id: 'colony',
+          name: 'Colony',
+          color: '#4CAF93',
+        ),
+      ],
+    );
+    expect(find.text('Everything'), findsOneWidget);
+
+    await tester.tap(find.byKey(FrontCategoryChipKeys.chip));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(FrontCategoryChipKeys.option('colony')));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(FrontCategoryChipKeys.chip),
+        matching: find.text('Colony'),
+      ),
+      findsOneWidget,
+    );
+
+    for (final words in ['How many chicks?', 'And eggs?']) {
+      await tester.enterText(find.byType(TextField), words);
+      await tester.pump();
+      await tester.tap(find.byIcon(LottiIcons.arrowUp));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    verify(
+      () => chatService.sendMessage(
+        text: 'How many chicks?',
+        conversationId: 'c-1',
+        categoryIds: {'colony'},
+      ),
+    ).called(1);
+    verify(
+      () => chatService.sendMessage(
+        text: 'And eggs?',
+        conversationId: 'c-1',
+        categoryIds: {'colony'},
+      ),
+    ).called(1);
   });
 
   testWidgets('a reply with no list of tasks has no task rows', (tester) async {

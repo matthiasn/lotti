@@ -2,8 +2,8 @@ import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -16,6 +16,7 @@ import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
+import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -24,6 +25,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../categories/test_utils.dart';
 
 void main() {
   final now = DateTime(2026, 10, 31, 15);
@@ -43,11 +45,25 @@ void main() {
     String title, {
     required DateTime at,
     bool archived = false,
+    Set<String> categoryIds = const {},
   }) => FrontConversation(
     id: id,
     title: title,
     lastActivity: at,
     archived: archived,
+    categoryIds: categoryIds,
+  );
+
+  // Two of the penguin world's categories she may see.
+  final penguins = CategoryTestUtils.createTestCategory(
+    id: 'cat-penguins',
+    name: 'Penguin Operations',
+    color: '#4AB6E8',
+  );
+  final habitat = CategoryTestUtils.createTestCategory(
+    id: 'cat-habitat',
+    name: 'Habitat Engineering',
+    color: '#7BD3A0',
   );
 
   final colony = FrontConversationIndex(
@@ -72,6 +88,8 @@ void main() {
     WidgetTester tester, {
     FrontConversationIndex? index,
     bool beside = false,
+    String query = '',
+    List<CategoryDefinition> categories = const [],
     FrontChatThread? allChats,
   }) async {
     await setUpTestGetIt();
@@ -82,8 +100,11 @@ void main() {
     return withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
-          Scaffold(body: FrontConversationList(beside: beside)),
+          Scaffold(
+            body: FrontConversationList(query: query, beside: beside),
+          ),
           overrides: [
+            frontMentionCategoriesProvider.overrideWithValue(categories),
             frontConversationsProvider.overrideWith(
               (ref) async => index ?? colony,
             ),
@@ -135,65 +156,14 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('with nothing said yet, the band offers a new chat and no '
-      'search, and the list only invites', (tester) async {
+  testWidgets('with nothing said yet, the list only invites', (tester) async {
     await pumpList(tester, index: FrontConversationIndex.empty, beside: true);
 
     expect(titles(tester), isEmpty);
     expect(find.text('No chats yet. Ask something to start one.'), findsOne);
-    expect(find.byKey(FrontConversationListKeys.newChat), findsOne);
-    expect(find.byKey(FrontConversationListKeys.search), findsNothing);
+    // The drawer owns the search and a new chat: the list carries neither.
     expect(find.byType(DesignSystemSearch), findsNothing);
-  });
-
-  testWidgets('beside the conversation the list has a band of its own: '
-      "Chats, its search and a new chat, as tall as her header's", (
-    tester,
-  ) async {
-    await pumpList(tester, beside: true);
-
-    expect(find.text('Chats'), findsOne);
-    final band = find.ancestor(
-      of: find.text('Chats'),
-      matching: find.byType(DecoratedBox),
-    );
-    final search = tester.getRect(find.byKey(FrontConversationListKeys.search));
-    final newChat = tester.getRect(
-      find.byKey(FrontConversationListKeys.newChat),
-    );
-    // One row: the title, then the search, then the new chat at the end.
-    expect(search.center.dy, newChat.center.dy);
-    expect(search.right, lessThanOrEqualTo(newChat.left));
-    // Her header's height: a tap target over a title line, and the band's
-    // inset above and below it.
-    final tokens = tester
-        .element(find.byType(FrontConversationList))
-        .designTokens;
-    expect(
-      tester.getRect(band.first).height,
-      TapTargets.minimum +
-          tokens.typography.lineHeight.bodySmall +
-          2 * tokens.spacing.step2,
-    );
-    // The page's one action wears the accent.
-    expect(
-      tester
-          .widget<DesignSystemIconAction>(
-            find.byKey(FrontConversationListKeys.newChat),
-          )
-          .tone,
-      tokens.colors.interactive.enabled,
-    );
-  });
-
-  testWidgets('as a page, the list leaves its actions to the page header', (
-    tester,
-  ) async {
-    await pumpList(tester);
-
     expect(find.text('Chats'), findsNothing);
-    expect(find.byKey(FrontConversationListKeys.newChat), findsNothing);
-    expect(find.byKey(FrontConversationListKeys.search), findsNothing);
   });
 
   testWidgets('the live ones newest first under recency sections with the '
@@ -257,75 +227,284 @@ void main() {
     });
   });
 
-  testWidgets('search looks through the archived ones too, drops the '
-      'sections, and says when nothing matches', (tester) async {
+  testWidgets('a query looks through the archived ones too, ignores case, '
+      'drops the sections, and says when nothing matches', (tester) async {
     await withClock(Clock.fixed(now), () async {
-      await pumpList(tester, beside: true);
-
-      // The search opens in place from the band's glyph.
-      expect(find.byType(TextField), findsNothing);
-      await tester.tap(find.byKey(FrontConversationListKeys.search));
-      await tester.pump();
-      await tester.enterText(find.byType(TextField), 'CENSUS');
-      await tester.pump();
+      await pumpList(tester, query: 'CENSUS');
       expect(titles(tester), ['Plan the census']);
       expect(find.text('Today'), findsNothing);
 
-      await tester.enterText(find.byType(TextField), 'rota');
-      await tester.pump();
+      await pumpList(tester, query: 'rota');
       expect(titles(tester), ['Feeding rota']);
 
-      await tester.enterText(find.byType(TextField), 'krill');
-      await tester.pump();
+      await pumpList(tester, query: 'krill');
       expect(titles(tester), isEmpty);
       expect(find.text('No chat title matches.'), findsOne);
 
-      // Clearing closes it again, and the list is back as it was.
-      await tester.tap(find.byIcon(LottiIcons.closeCircled));
-      await tester.pump();
-      expect(find.byType(TextField), findsNothing);
+      // Blank is no query: the list as it was.
+      await pumpList(tester, query: '  ');
       expect(find.text('Today'), findsOne);
     });
   });
 
-  testWidgets('with something in the inbox, the first letter typed stays in '
-      'the search, and the field keeps focus', (tester) async {
-    await withClock(Clock.fixed(now), () async {
-      await pumpList(
-        tester,
-        beside: true,
-        allChats: FrontChatThread(
-          messages: const [],
-          doorsByMessageId: {
-            'u1': [
-              FrontDoorEntry(
-                doorId: 'd:door:0',
-                record: FrontDoorRecord(
-                  segmentIndex: 0,
-                  text: 'A loose thought',
-                  kind: FrontDestinationKind.unrouted,
-                  status: FrontDoorStatus.done,
-                  claimedAt: DateTime.utc(2026, 10, 26),
-                  outcome: const FrontDoorInbox(),
-                ),
+  testWidgets('a query hides the inbox row: a search is of conversations', (
+    tester,
+  ) async {
+    final waiting = FrontChatThread(
+      messages: const [],
+      doorsByMessageId: {
+        'u1': [
+          FrontDoorEntry(
+            doorId: 'd:door:0',
+            record: FrontDoorRecord(
+              segmentIndex: 0,
+              text: 'A loose thought',
+              kind: FrontDestinationKind.unrouted,
+              status: FrontDoorStatus.done,
+              claimedAt: DateTime.utc(2026, 10, 26),
+              outcome: const FrontDoorInbox(),
+            ),
+          ),
+        ],
+      },
+    );
+    await pumpList(tester, allChats: waiting);
+    expect(find.byKey(FrontConversationListKeys.inbox), findsOne);
+
+    await pumpList(tester, allChats: waiting, query: 'c');
+    expect(find.byKey(FrontConversationListKeys.inbox), findsNothing);
+    expect(titles(tester), contains('Plan the census'));
+  });
+
+  group('categories', () {
+    final scoped = FrontConversationIndex(
+      conversations: [
+        conversation(
+          'c-2',
+          'Count the hatchlings',
+          at: DateTime(2026, 10, 31, 9),
+          categoryIds: {'cat-penguins'},
+        ),
+        conversation(
+          'c-1',
+          'Plan the census',
+          at: DateTime(2026, 10, 29, 9),
+          categoryIds: {'cat-penguins'},
+        ),
+        conversation(
+          'c-3',
+          'Fix the heat pump',
+          at: DateTime(2026, 10, 28, 9),
+          categoryIds: {'cat-habitat'},
+        ),
+        conversation('c-4', 'Say hello', at: DateTime(2026, 10, 27, 9)),
+        // In a category she may no longer see.
+        conversation(
+          'c-5',
+          'Locked away',
+          at: DateTime(2026, 10, 26, 9),
+          categoryIds: {'cat-private'},
+        ),
+      ],
+    );
+
+    Future<void> pumpScoped(WidgetTester tester, {String query = ''}) =>
+        withClock(
+          Clock.fixed(now),
+          () => pumpList(
+            tester,
+            index: scoped,
+            query: query,
+            categories: [penguins, habitat],
+          ),
+        );
+
+    List<String> rows(WidgetTester tester) => [
+      for (final c in scoped.conversations)
+        if (find
+            .byKey(FrontConversationListKeys.row(c.id))
+            .evaluate()
+            .isNotEmpty)
+          c.id,
+    ];
+
+    BoxDecoration swatchOf(WidgetTester tester, String id) =>
+        tester
+                .widget<DecoratedBox>(
+                  find.descendant(
+                    of: find.byKey(FrontConversationListKeys.swatch(id)),
+                    matching: find.byType(DecoratedBox),
+                  ),
+                )
+                .decoration
+            as BoxDecoration;
+
+    testWidgets("each row leads with its category's colour, an outline for "
+        'none or for one she may not see', (tester) async {
+      await pumpScoped(tester);
+
+      expect(swatchOf(tester, 'c-2').color, const Color(0xFF4AB6E8));
+      expect(swatchOf(tester, 'c-3').color, const Color(0xFF7BD3A0));
+      for (final none in ['c-4', 'c-5']) {
+        expect(swatchOf(tester, none).color, isNull);
+        expect(swatchOf(tester, none).border, isNotNull);
+      }
+    });
+
+    testWidgets('colour never stands alone: a row names its category to '
+        'assistive technology', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpScoped(tester);
+
+      expect(
+        tester.getSemantics(find.byKey(FrontConversationListKeys.row('c-3'))),
+        isSemantics(hint: 'Habitat Engineering'),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('an archived row says so instead of a colour', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await pumpList(
+          tester,
+          categories: [penguins],
+          index: FrontConversationIndex(
+            conversations: [
+              conversation(
+                'c-0',
+                'Feeding rota',
+                at: DateTime(2026, 10, 20, 9),
+                archived: true,
+                categoryIds: {'cat-penguins'},
               ),
             ],
-          },
+          ),
+          query: 'rota',
+        );
+      });
+
+      expect(find.byKey(FrontConversationListKeys.swatch('c-0')), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(FrontConversationListKeys.row('c-0')),
+          matching: find.byIcon(LottiIcons.archive),
+        ),
+        findsOne,
+      );
+    });
+
+    testWidgets('the Categories section lists the ones in use by name with '
+        'their counts, above the history', (tester) async {
+      await pumpScoped(tester);
+
+      expect(find.text('Categories'), findsOne);
+      final habitatRow = find.byKey(
+        FrontConversationListKeys.category('cat-habitat'),
+      );
+      final penguinRow = find.byKey(
+        FrontConversationListKeys.category('cat-penguins'),
+      );
+      String countOf(Finder row) => tester
+          .widget<Text>(
+            find.descendant(
+              of: row,
+              matching: find.byWidgetPredicate(
+                (w) => w is Text && int.tryParse(w.data ?? '') != null,
+              ),
+            ),
+          )
+          .data!;
+      expect(countOf(penguinRow), '2');
+      expect(countOf(habitatRow), '1');
+      // By name, and the one she may not see is never named.
+      expect(
+        tester.getTopLeft(habitatRow).dy,
+        lessThan(tester.getTopLeft(penguinRow).dy),
+      );
+      expect(
+        find.byKey(FrontConversationListKeys.category('cat-private')),
+        findsNothing,
+      );
+      expect(
+        tester.getTopLeft(penguinRow).dy,
+        lessThan(tester.getTopLeft(find.text('Today')).dy),
+      );
+    });
+
+    testWidgets('a category narrows the history to its conversations, and a '
+        'second tap shows them all again', (tester) async {
+      await pumpScoped(tester);
+      final penguinRow = find.byKey(
+        FrontConversationListKeys.category('cat-penguins'),
+      );
+
+      await tester.tap(penguinRow);
+      await tester.pump();
+      expect(rows(tester), ['c-2', 'c-1']);
+      expect(
+        tester.widget<DesignSystemListItem>(penguinRow).activated,
+        isTrue,
+      );
+
+      await tester.tap(penguinRow);
+      await tester.pump();
+      expect(rows(tester), ['c-2', 'c-1', 'c-3', 'c-4', 'c-5']);
+    });
+
+    testWidgets('a category and a query narrow together', (tester) async {
+      await pumpScoped(tester, query: 'census');
+      await tester.tap(
+        find.byKey(FrontConversationListKeys.category('cat-habitat')),
+      );
+      await tester.pump();
+
+      expect(rows(tester), isEmpty);
+      expect(find.text('No chat title matches.'), findsOne);
+    });
+
+    testWidgets('a filter on a category that has gone holds nothing back', (
+      tester,
+    ) async {
+      await pumpScoped(tester);
+      await tester.tap(
+        find.byKey(FrontConversationListKeys.category('cat-habitat')),
+      );
+      await tester.pump();
+      expect(rows(tester), ['c-3']);
+
+      // She may no longer see it: the section and the filter both go.
+      ProviderScope.containerOf(
+        tester.element(find.byType(FrontConversationList)),
+      ).invalidate(frontMentionCategoriesProvider);
+      await withClock(
+        Clock.fixed(now),
+        () => tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const Scaffold(body: FrontConversationList()),
+            overrides: [
+              frontMentionCategoriesProvider.overrideWithValue([penguins]),
+              frontConversationsProvider.overrideWith((ref) async => scoped),
+              frontConversationServiceProvider.overrideWithValue(service),
+            ],
+          ),
         ),
       );
-      expect(find.byKey(FrontConversationListKeys.inbox), findsOne);
-
-      await tester.tap(find.byKey(FrontConversationListKeys.search));
       await tester.pump();
-      await tester.enterText(find.byType(TextField), 'c');
-      await tester.pump();
+      expect(
+        find.byKey(FrontConversationListKeys.category('cat-habitat')),
+        findsNothing,
+      );
+      expect(rows(tester), ['c-2', 'c-1', 'c-3', 'c-4', 'c-5']);
+    });
 
-      // Searching hides the inbox row above the field; the field stays.
-      expect(find.byKey(FrontConversationListKeys.inbox), findsNothing);
-      final field = tester.widget<TextField>(find.byType(TextField));
-      expect(field.controller!.text, 'c');
-      expect(field.focusNode!.hasFocus, isTrue);
-      expect(titles(tester), contains('Plan the census'));
+    testWidgets('with no conversation in a category there is no section', (
+      tester,
+    ) async {
+      await withClock(
+        Clock.fixed(now),
+        () => pumpList(tester, categories: [penguins, habitat]),
+      );
+      expect(find.text('Categories'), findsNothing);
     });
   });
 
@@ -557,19 +736,6 @@ void main() {
     );
   });
 
-  testWidgets('an empty search closes when focus leaves it', (tester) async {
-    await pumpList(tester, beside: true);
-
-    await tester.tap(find.byKey(FrontConversationListKeys.search));
-    await tester.pump();
-    expect(find.byType(TextField), findsOne);
-
-    FocusManager.instance.primaryFocus?.unfocus();
-    await tester.pump();
-
-    expect(find.byType(TextField), findsNothing);
-  });
-
   testWidgets("a row's menu sits on its title's first line, at its end — a "
       "wrapped title and her answer below — and the menu's whole target "
       'stays inside the row', (tester) async {
@@ -715,23 +881,14 @@ void main() {
     verify(() => service.archive('c-2', archived: true)).called(1);
   });
 
-  testWidgets('a tap opens that conversation and closes the list; a new '
-      'chat opens an empty one', (tester) async {
+  testWidgets('a tap opens that conversation and closes the drawer', (
+    tester,
+  ) async {
     final container = await pumpList(tester, beside: true);
 
     await tester.tap(find.text('Count the hatchlings'));
     await tester.pump();
     expect(container.read(frontPickedConversationProvider), 'c-2');
-    expect(container.read(frontConversationListOpenProvider), isFalse);
-
-    container.read(frontConversationListOpenProvider.notifier).toggle();
-    await tester.pump();
-    await tester.tap(find.byKey(FrontConversationListKeys.newChat));
-    await tester.pump();
-    expect(
-      container.read(frontPickedConversationProvider),
-      isNot(anyOf('c-0', 'c-1', 'c-2')),
-    );
     expect(container.read(frontConversationListOpenProvider), isFalse);
   });
 

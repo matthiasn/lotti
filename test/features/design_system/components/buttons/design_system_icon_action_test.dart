@@ -23,6 +23,7 @@ void main() {
     VoidCallback? onPressed,
     bool isBusy = false,
     Color? tone,
+    FocusNode? focusNode,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -33,6 +34,7 @@ void main() {
           onPressed: onPressed,
           isBusy: isBusy,
           tone: tone,
+          focusNode: focusNode,
         ),
       ),
     );
@@ -49,6 +51,23 @@ void main() {
       await tester.pump();
 
       expect(taps, 1);
+    });
+
+    testWidgets("a host's focus node is the control's own, so focus can be "
+        'handed back to it', (tester) async {
+      final focus = FocusNode();
+      addTearDown(focus.dispose);
+      await pump(tester, onPressed: () {}, focusNode: focus);
+
+      expect(tester.widget<InkWell>(find.byType(InkWell)).focusNode, focus);
+      focus.requestFocus();
+      await tester.pump();
+      expect(focus.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('without one it keeps a focus of its own', (tester) async {
+      await pump(tester, onPressed: () {});
+      expect(tester.widget<InkWell>(find.byType(InkWell)).focusNode, isNull);
     });
 
     testWidgets('a null callback makes the control inert, not just faded', (

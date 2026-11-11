@@ -3,21 +3,26 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
+import 'package:lotti/features/front_agent/state/front_chat_category.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
+import '../../categories/test_utils.dart';
 
 /// Counts how often the thread was re-projected: the controller's
 /// invalidation is what the surface relies on after an awaited turn.
@@ -821,6 +826,346 @@ void main() {
       await controller().send();
       expect(state().failedDoorIds, {'d1'});
       expect(state().failedMessage, 'Again');
+    });
+  });
+
+  group('categories', () {
+    // The penguin world's categories she may see.
+    final penguins = CategoryTestUtils.createTestCategory(
+      id: 'cat-penguins',
+      name: 'Penguin Operations',
+    );
+    final habitat = CategoryTestUtils.createTestCategory(
+      id: 'cat-habitat',
+      name: 'Habitat Engineering',
+    );
+
+    late ProviderContainer scoped;
+
+    /// `c-1`'s scope as the index reads it now: a send can change it.
+    var storedScope = const <String>{};
+
+    /// A container whose open conversation `c-1` was last scoped to
+    /// [stored], with [options] the categories she may see — still loading
+    /// unless [catalogLoaded].
+    Future<void> open({
+      Set<String> stored = const {},
+      List<CategoryDefinition>? options,
+      bool catalogLoaded = true,
+    }) async {
+      storedScope = stored;
+      final catalog = StreamController<List<CategoryDefinition>>();
+      addTearDown(catalog.close);
+      if (catalogLoaded) catalog.add(options ?? [penguins, habitat]);
+      scoped = ProviderContainer(
+        overrides: [
+          frontAgentServiceProvider.overrideWithValue(agentService),
+          frontChatServiceProvider.overrideWithValue(chatService),
+          frontChatThreadBuilderProvider.overrideWithValue(threadBuilder),
+          frontConversationServiceProvider.overrideWithValue(conversations),
+          categoriesStreamProvider.overrideWith((ref) => catalog.stream),
+          frontMentionCategoriesProvider.overrideWith(
+            (ref) => ref.watch(categoriesStreamProvider).value ?? const [],
+          ),
+          frontConversationsProvider.overrideWith(
+            (ref) async => FrontConversationIndex(
+              conversations: [
+                FrontConversation(
+                  id: 'c-1',
+                  title: 'Census',
+                  lastActivity: clock.now(),
+                  archived: false,
+                  categoryIds: storedScope,
+                ),
+                FrontConversation(
+                  id: 'c-2',
+                  title: 'Heat pump',
+                  lastActivity: clock.now().subtract(
+                    const Duration(minutes: 1),
+                  ),
+                  archived: false,
+                ),
+              ],
+            ),
+          ),
+          frontChatThreadProvider.overrideWith(
+            (Ref ref) async => FrontChatThread.empty,
+          ),
+        ],
+      );
+      addTearDown(scoped.dispose);
+      // Kept alive across the calls, as the surface keeps them.
+      final subs = [
+        scoped.listen(categoriesStreamProvider, (_, _) {}),
+        scoped.listen(frontActiveConversationProvider, (_, _) {}),
+        scoped.listen(frontConversationsProvider, (_, _) {}),
+        scoped.listen(frontInboxFilterProvider, (_, _) {}),
+      ];
+      addTearDown(() {
+        for (final sub in subs) {
+          sub.close();
+        }
+      });
+      await scoped.read(frontActiveConversationProvider.future);
+      await pumpEventQueue();
+    }
+
+    FrontChatController composer() =>
+        scoped.read(frontChatControllerProvider.notifier);
+    FrontChatCategoryPicker picker() =>
+        scoped.read(frontChatCategoryPickProvider.notifier);
+
+    void stubSend() => when(
+      () => chatService.sendMessage(
+        text: any(named: 'text'),
+        conversationId: any(named: 'conversationId'),
+        categoryIds: any(named: 'categoryIds'),
+      ),
+    ).thenAnswer((_) async {});
+
+    Set<String> sentWith(String text) =>
+        verify(
+              () => chatService.sendMessage(
+                text: text,
+                conversationId: any(named: 'conversationId'),
+                categoryIds: captureAny(named: 'categoryIds'),
+              ),
+            ).captured.single
+            as Set<String>;
+
+    test('a send carries the category picked for its conversation', () async {
+      await open();
+      stubSend();
+      picker().pick('c-1', 'cat-penguins');
+
+      await composer().sendText('How many chicks?');
+
+      verify(
+        () => chatService.sendMessage(
+          text: 'How many chicks?',
+          conversationId: 'c-1',
+          categoryIds: {'cat-penguins'},
+        ),
+      ).called(1);
+    });
+
+    test('with nothing picked, a send carries the scope of the '
+        "conversation's newest turn", () async {
+      await open(stored: {'cat-habitat'});
+      stubSend();
+
+      await composer().sendText('And the vents?');
+
+      expect(sentWith('And the vents?'), {'cat-habitat'});
+    });
+
+    test('"Everything" picked over a stored scope carries none', () async {
+      await open(stored: {'cat-habitat'});
+      stubSend();
+      picker().pick('c-1', null);
+
+      await composer().sendText('Anything at all?');
+
+      expect(sentWith('Anything at all?'), isEmpty);
+    });
+
+    test('a pick made in another conversation is not carried', () async {
+      await open();
+      stubSend();
+      picker().pick('c-2', 'cat-penguins');
+
+      await composer().sendText('Hello');
+
+      expect(sentWith('Hello'), isEmpty);
+    });
+
+    test('a category she may no longer see is not carried', () async {
+      await open(stored: {'cat-habitat'}, options: [penguins]);
+      stubSend();
+
+      await composer().sendText('Hello');
+
+      expect(sentWith('Hello'), isEmpty);
+    });
+
+    test('a turn that failed keeps the scope it was typed under, and its '
+        'retry carries it though the pick changed since', () async {
+      await open();
+      picker().pick('c-1', 'cat-penguins');
+      when(
+        () => chatService.sendMessage(
+          text: 'Count them',
+          conversationId: 'c-1',
+          categoryIds: {'cat-penguins'},
+        ),
+      ).thenThrow(const FrontChatTurnException('offline'));
+
+      await composer().sendText('Count them');
+      expect(
+        scoped.read(frontChatControllerProvider).failedCategoryIds,
+        {'cat-penguins'},
+      );
+
+      picker().pick('c-1', 'cat-habitat');
+      stubSend();
+      await composer().retry();
+
+      verify(
+        () => chatService.sendMessage(
+          text: 'Count them',
+          conversationId: 'c-1',
+          categoryIds: {'cat-penguins'},
+        ),
+      ).called(2);
+      expect(scoped.read(frontChatControllerProvider).failedMessage, isNull);
+    });
+
+    test('a send that fails for another reason keeps its scope too', () async {
+      await open();
+      picker().pick('c-1', 'cat-habitat');
+      when(
+        () => chatService.sendMessage(
+          text: any(named: 'text'),
+          conversationId: any(named: 'conversationId'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenThrow(StateError('db closed'));
+
+      await composer().sendText('Fix it');
+
+      expect(
+        scoped.read(frontChatControllerProvider).failedCategoryIds,
+        {'cat-habitat'},
+      );
+    });
+
+    test('a retry that fails again keeps the scope for the next one', () async {
+      await open();
+      picker().pick('c-1', 'cat-habitat');
+      when(
+        () => chatService.sendMessage(
+          text: any(named: 'text'),
+          conversationId: any(named: 'conversationId'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenThrow(const FrontChatTurnException('offline'));
+      await composer().sendText('Fix it');
+
+      await composer().retry();
+      expect(
+        scoped.read(frontChatControllerProvider).failedCategoryIds,
+        {'cat-habitat'},
+      );
+
+      when(
+        () => chatService.sendMessage(
+          text: any(named: 'text'),
+          conversationId: any(named: 'conversationId'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenThrow(StateError('db closed'));
+      await composer().retry();
+      expect(
+        scoped.read(frontChatControllerProvider).failedCategoryIds,
+        {'cat-habitat'},
+      );
+    });
+
+    test('while the categories are still loading, a send carries the stored '
+        'scope rather than dropping it', () async {
+      await open(stored: {'cat-habitat'}, catalogLoaded: false);
+      stubSend();
+
+      await composer().sendText('And the vents?');
+
+      expect(sentWith('And the vents?'), {'cat-habitat'});
+    });
+
+    test('a pick sent is dropped once the index shows the turn carrying it: '
+        'the stored scope speaks from then on', () async {
+      await open();
+      picker().pick('c-1', 'cat-penguins');
+      when(
+        () => chatService.sendMessage(
+          text: any(named: 'text'),
+          conversationId: any(named: 'conversationId'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenAnswer((_) async => storedScope = {'cat-penguins'});
+
+      await composer().sendText('Count them');
+      await scoped.read(frontConversationsProvider.future);
+      await pumpEventQueue();
+
+      expect(scoped.read(frontChatCategoryPickProvider), isNull);
+      expect(scoped.read(frontChatCategoryProvider), penguins);
+    });
+
+    test('a pick made while the turn was on its way is kept', () async {
+      await open();
+      picker().pick('c-1', 'cat-penguins');
+      when(
+        () => chatService.sendMessage(
+          text: any(named: 'text'),
+          conversationId: any(named: 'conversationId'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenAnswer((_) async {
+        storedScope = {'cat-penguins'};
+        picker().pick('c-1', 'cat-habitat');
+      });
+
+      await composer().sendText('Count them');
+      await scoped.read(frontConversationsProvider.future);
+      await pumpEventQueue();
+
+      expect(
+        scoped.read(frontChatCategoryPickProvider)?.categoryId,
+        'cat-habitat',
+      );
+    });
+
+    test('a newer turn from another device, in another category, wins over '
+        'the pick sent: the next send carries its scope', () async {
+      await open();
+      picker().pick('c-1', 'cat-penguins');
+      when(
+        () => chatService.sendMessage(
+          text: any(named: 'text'),
+          conversationId: any(named: 'conversationId'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenAnswer((_) async => storedScope = {'cat-habitat'});
+
+      await composer().sendText('Count them');
+      await scoped.read(frontConversationsProvider.future);
+      await pumpEventQueue();
+
+      expect(scoped.read(frontChatCategoryPickProvider), isNull);
+      expect(scoped.read(frontChatCategoryProvider), habitat);
+      await composer().sendText('And the vents?');
+      expect(sentWith('And the vents?'), {'cat-habitat'});
+    });
+
+    test('switching conversation drops a pick not yet sent; opening the one '
+        'already open keeps it', () async {
+      await open();
+      picker().pick('c-1', 'cat-penguins');
+
+      composer().openConversation('c-1');
+      expect(scoped.read(frontChatCategoryPickProvider), isNotNull);
+
+      composer().openConversation('c-2');
+      expect(scoped.read(frontChatCategoryPickProvider), isNull);
+    });
+
+    test('a new chat drops the pick of the one left', () async {
+      await open();
+      picker().pick('c-1', 'cat-penguins');
+
+      composer().startConversation();
+
+      expect(scoped.read(frontChatCategoryPickProvider), isNull);
     });
   });
 }
