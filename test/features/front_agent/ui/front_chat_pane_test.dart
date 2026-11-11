@@ -757,6 +757,12 @@ void main() {
       FrontTurnFailure.noModel,
       'No AI model is set up for the companion. Choose one in Settings.',
     ),
+    // Without the provider's words, an empty account falls back to the
+    // provider line.
+    (
+      FrontTurnFailure.outOfCredit,
+      'Your AI provider answered with an error. Try again in a moment.',
+    ),
     (FrontTurnFailure.unknown, "That didn't send."),
   ]) {
     testWidgets('a turn that failed for $failure says why beside the retry, '
@@ -782,6 +788,42 @@ void main() {
       expect(find.text('Try Again'), findsOneWidget);
     });
   }
+
+  // Regression: an empty account read as "try again in a moment" — the
+  // provider's own words say it is out of credit and where to top up.
+  testWidgets("a turn that failed on an empty account relays the provider's "
+      'own words', (tester) async {
+    when(
+      () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+    ).thenThrow(
+      FrontChatTurnException(
+        'boom',
+        messageId: 'm-1',
+        failure: FrontTurnFailure.outOfCredit,
+        cause: Exception('Mistral API error (HTTP 402, Insufficient credits)'),
+      ),
+    );
+    await pumpPane(tester);
+
+    await tester.enterText(find.byType(TextField), 'Hello');
+    await tester.pump();
+    await tester.tap(find.byIcon(LottiIcons.arrowUp));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Your AI provider account is out of credit: Mistral API error '
+        '(HTTP 402, Insufficient credits)',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Your AI provider answered with an error. Try again in a moment.',
+      ),
+      findsNothing,
+    );
+  });
 
   group('the drawer', () {
     testWidgets('slides over the thread, which stays mounted under it: the '

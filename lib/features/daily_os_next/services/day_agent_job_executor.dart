@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 
@@ -425,6 +427,11 @@ DayProcessingFailureClass classifyDayAgentJobFailure(Object? error) {
   if (error is TimeoutException) return DayProcessingFailureClass.timeout;
   if (error is DayAgentOutputLimitExceededException) {
     return DayProcessingFailureClass.providerBusy;
+  }
+  // A refused key or an empty balance, whether the provider exception was
+  // rethrown or reported as the failed wake's cause: only the user fixes it.
+  if (AiErrorUtils.needsUserAction(wakeFailureCause(error) ?? error)) {
+    return DayProcessingFailureClass.setupRequired;
   }
   final typeName = error.runtimeType.toString();
   if (typeName == 'MissingCaptureParseException' ||

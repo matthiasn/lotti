@@ -71,6 +71,8 @@
   "agentCategoryRatingsSubmit": "Brug disse prioriteter",
   "agentCategoryRatingsSubtitle": "Hvor vigtigt er det, at jeg retter hver af disse? 1 betyder lad det være, 5 betyder fix det først.",
   "agentCategoryRatingsTitle": "Hjælp mig med at prioritere",
+  "agentChatFailedOutOfCredit": "Din konto hos AI-udbyderen er løbet tør for kredit: {message}",
+  "agentChatFailedProviderSaid": "Din AI-udbyder svarede: {message}",
   "agentControlsActionError": "Handling mislykkedes: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -999,6 +1001,8 @@
   "aiInferenceErrorAuthenticationTitle": "Autentificering mislykkedes",
   "aiInferenceErrorConnectionFailedTitle": "Forbindelsen mislykkedes",
   "aiInferenceErrorInvalidRequestTitle": "Ugyldig anmodning",
+  "aiInferenceErrorOutOfCreditSuggestion": "Fyld kredit på din konto hos udbyderen, eller vælg en model fra en anden udbyder i Indstillinger.",
+  "aiInferenceErrorOutOfCreditTitle": "Ingen kredit tilbage",
   "aiInferenceErrorRateLimitTitle": "Hastighedsgrænse overskredet",
   "aiInferenceErrorRetryButton": "Prøv igen",
   "aiInferenceErrorServerTitle": "Serverfejl",

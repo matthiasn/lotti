@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
+import 'package:lotti/features/agents/ui/chat/agent_turn_failure_label.dart';
 import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
@@ -125,6 +126,7 @@ class RelationshipChatPane extends ConsumerWidget {
       draft: composer.draft,
       isSending: composer.isSending,
       hasFailedTurn: composer.failedMessage != null,
+      failedTurnLabel: agentTurnFailureLabel(messages, composer.failureCause),
       onDraftChanged: controller.updateDraft,
       onSend: controller.send,
       onRetry: controller.retry,

@@ -24,6 +24,9 @@ import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
     show WakeRunCompletion;
+import 'package:lotti/features/agents/workflow/wake_result.dart'
+    show wakeFailureCause;
+import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/categories/ui/widgets/category_crumb.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';

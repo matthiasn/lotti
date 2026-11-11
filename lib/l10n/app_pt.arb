@@ -70,6 +70,8 @@
   "agentCategoryRatingsSubmit": "Use essas prioridades",
   "agentCategoryRatingsSubtitle": "Quão importante é que eu corrija cada um deles? 1 significa deixar como está, 5 significa consertar primeiro.",
   "agentCategoryRatingsTitle": "Ajude-me a priorizar",
+  "agentChatFailedOutOfCredit": "A tua conta no fornecedor de IA ficou sem crédito: {message}",
+  "agentChatFailedProviderSaid": "O teu fornecedor de IA respondeu: {message}",
   "agentControlsActionError": "Falha na ação: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -998,6 +1000,8 @@
   "aiInferenceErrorAuthenticationTitle": "Falha na autenticação",
   "aiInferenceErrorConnectionFailedTitle": "Falha na conexão",
   "aiInferenceErrorInvalidRequestTitle": "Solicitação inválida",
+  "aiInferenceErrorOutOfCreditSuggestion": "Carrega crédito na tua conta deste fornecedor ou escolhe nas Configurações um modelo de outro fornecedor.",
+  "aiInferenceErrorOutOfCreditTitle": "Sem crédito",
   "aiInferenceErrorRateLimitTitle": "Limite de taxa excedido",
   "aiInferenceErrorRetryButton": "Tente novamente",
   "aiInferenceErrorServerTitle": "Erro no servidor",

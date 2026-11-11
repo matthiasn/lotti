@@ -71,6 +71,8 @@
   "agentCategoryRatingsSubmit": "Utiliser ces priorités",
   "agentCategoryRatingsSubtitle": "À quel point c'est important que je corrige chacun de ces points ? 1 = laisse comme ça, 5 = corrige ça en premier.",
   "agentCategoryRatingsTitle": "Aide-moi à prioriser",
+  "agentChatFailedOutOfCredit": "Le crédit de ton compte chez ton fournisseur d'IA est épuisé : {message}",
+  "agentChatFailedProviderSaid": "Ton fournisseur d'IA a répondu : {message}",
   "agentControlsActionError": "L'action a échoué : {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -792,6 +794,8 @@
   "aiInferenceErrorAuthenticationTitle": "Échec de l'authentification",
   "aiInferenceErrorConnectionFailedTitle": "Échec de la connexion",
   "aiInferenceErrorInvalidRequestTitle": "Requête invalide",
+  "aiInferenceErrorOutOfCreditSuggestion": "Recharge le crédit de ton compte chez ce fournisseur, ou choisis dans les Paramètres un modèle d'un autre fournisseur.",
+  "aiInferenceErrorOutOfCreditTitle": "Crédit épuisé",
   "aiInferenceErrorRateLimitTitle": "Limite de requêtes dépassée",
   "aiInferenceErrorRetryButton": "Réessayer",
   "aiInferenceErrorServerTitle": "Erreur serveur",

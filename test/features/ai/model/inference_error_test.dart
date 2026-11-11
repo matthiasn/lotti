@@ -51,6 +51,7 @@ void main() {
         InferenceErrorType.timeout,
         InferenceErrorType.authentication,
         InferenceErrorType.rateLimit,
+        InferenceErrorType.outOfCredit,
         InferenceErrorType.invalidRequest,
         InferenceErrorType.serverError,
         InferenceErrorType.unknown,
@@ -80,6 +81,8 @@ void main() {
                       context.messages.aiInferenceErrorAuthenticationTitle,
                   InferenceErrorType.rateLimit:
                       context.messages.aiInferenceErrorRateLimitTitle,
+                  InferenceErrorType.outOfCredit:
+                      context.messages.aiInferenceErrorOutOfCreditTitle,
                   InferenceErrorType.invalidRequest:
                       context.messages.aiInferenceErrorInvalidRequestTitle,
                   InferenceErrorType.serverError:

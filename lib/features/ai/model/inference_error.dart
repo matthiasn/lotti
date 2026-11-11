@@ -31,6 +31,10 @@ enum InferenceErrorType {
   /// Rate limit exceeded
   rateLimit,
 
+  /// The provider account is out of credit (prepaid balance spent, billing
+  /// quota used up, payment overdue)
+  outOfCredit,
+
   /// Invalid request (bad model, invalid parameters)
   invalidRequest,
 
@@ -53,6 +57,8 @@ extension InferenceErrorTypeExtension on InferenceErrorType {
         return context.messages.aiInferenceErrorAuthenticationTitle;
       case InferenceErrorType.rateLimit:
         return context.messages.aiInferenceErrorRateLimitTitle;
+      case InferenceErrorType.outOfCredit:
+        return context.messages.aiInferenceErrorOutOfCreditTitle;
       case InferenceErrorType.invalidRequest:
         return context.messages.aiInferenceErrorInvalidRequestTitle;
       case InferenceErrorType.serverError:

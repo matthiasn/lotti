@@ -11,8 +11,11 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/relationship_chat_service.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions_band.dart';
@@ -57,6 +60,7 @@ void main() {
     Size size = const Size(400, 800),
     List<AgentChatMessage> messages = const [],
     String? nickname,
+    RelationshipChatService? chatService,
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
@@ -98,6 +102,8 @@ void main() {
         mediaQueryData: MediaQueryData(size: size),
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(repository),
+          if (chatService != null)
+            relationshipChatServiceProvider.overrideWithValue(chatService),
           personTimelineOverride(),
           agentIdentityProvider(
             agentId,
@@ -170,6 +176,36 @@ void main() {
       find.text('Start a conversation with the briefing agent about Anna.'),
       findsOneWidget,
     );
+  });
+
+  // Regression: a turn that failed on an empty provider account showed only
+  // "That didn't send." — the provider's own words say why.
+  testWidgets("a failed turn relays the provider's own words", (tester) async {
+    final service = MockRelationshipChatService();
+    when(
+      () => service.sendMessage(agentId: agentId, text: 'Any news?'),
+    ).thenThrow(
+      RelationshipChatTurnException(
+        'wake failed',
+        messageId: 'message-1',
+        cause: Exception('Mistral API error (HTTP 400, invalid model)'),
+      ),
+    );
+    await pumpPane(tester, chatService: service);
+
+    await tester.enterText(find.byType(TextField), 'Any news?');
+    await tester.pump();
+    await tester.tap(find.byKey(DesignSystemChatInputKeys.send));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Your AI provider answered: Mistral API error (HTTP 400, invalid '
+        'model)',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text("That didn't send."), findsNothing);
   });
 
   testWidgets("the agent's replies are signed by the agent, not the person", (

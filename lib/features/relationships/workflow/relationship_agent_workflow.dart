@@ -594,9 +594,9 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
           relationshipEscalationWorkspaceKey(escalationDueDay),
           triggerTokens,
           now,
-          // A refused API key is a setup problem: back off like one rather
-          // than retrying on every scheduler pass until the key changes.
-          configurationFailure: AiErrorUtils.isAuthenticationFailure(error),
+          // A refused API key or an empty balance is a setup problem: back
+          // off like one rather than retrying on every scheduler pass.
+          configurationFailure: AiErrorUtils.needsUserAction(error),
         );
       }
       return WakeResult.failed(kind: 'Relationship Phase B', error: error);

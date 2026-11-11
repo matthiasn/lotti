@@ -19,7 +19,11 @@ sources:
   - id: turn-failure
     resource: ../../lib/features/front_agent/model/front_turn_failure.dart
     title: FrontTurnFailure — why a turn failed, across the wake boundary
-    last_modified: 2026-11-09
+    last_modified: 2026-11-12
+  - id: turn-failure-label
+    resource: ../../lib/features/agents/ui/chat/agent_turn_failure_label.dart
+    title: agentTurnFailureLabel — a failed turn in the provider's own words
+    last_modified: 2026-11-12
   - id: strategy
     resource: ../../lib/features/front_agent/workflow/front_agent_strategy.dart
     title: FrontAgentStrategy — accumulating, count-capped tool handling, her words linked
@@ -858,8 +862,9 @@ stateDiagram-v2
 by type only (`WakeResult.failed`), so the chat could never tell a rate limit
 from a timeout. The workflow classifies its own failure into a
 `FrontTurnFailure` — `rateLimit`, `timeout`, `network`, `authentication`,
-`provider` (other 4xx/5xx), `noModel`, `noAnswer` (no terminal call in the
-budget), `unknown` — and returns `failure.wakeError(error)`
+`outOfCredit` (an empty prepaid balance or a spend limit), `provider` (other
+4xx/5xx), `noModel`, `noAnswer` (no terminal call in the budget), `unknown`
+— and returns `failure.wakeError(error)`
 (`front turn failed: rateLimit (MistralInferenceException)`: the cause and
 the exception's type, never its message). Only a failure while the provider
 is being called goes through `AiErrorUtils.categorizeError`; a database
@@ -871,6 +876,17 @@ turn, and `FrontChatPane` passes `AgentChatView.failedTurnLabel` — a
 `frontChatFailed*` line ("Your AI provider is limiting requests right now.
 Wait a moment, then try again.") beside *Try again*. `unknown` keeps the
 shared "That didn't send."
+
+**The provider's own words travel in memory.** The workflow also returns the
+caught exception as `WakeResult.cause`, which the wake wiring carries on
+`WakeFailedException.cause` — left out of its `toString`, which the PII-safe
+error log records. `wakeFailureCause(completion.error)` hands it to
+`FrontChatTurnException.cause` and the composer's `failureCause`; for
+`outOfCredit` and `provider`, `agentTurnFailureLabel` relays
+`AiErrorUtils.providerMessage` ("Your AI provider account is out of credit:
+Insufficient credits. Add more using …"), so the user learns which account
+and where to top up. The goal and relationship chats and the goal read card
+relay the same cause.
 
 **Two log lines time every turn.** The workflow logs, under `frontAgent`,
 the elapsed milliseconds at the end of each phase:

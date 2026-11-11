@@ -6,6 +6,7 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/relationships/service/relationship_chat_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
@@ -142,6 +143,7 @@ void main() {
 
   test('a failed wake surfaces the message id so retry re-enqueues the '
       'already durable turn instead of duplicating it', () async {
+    final cause = Exception('Insufficient credits');
     when(
       () => orchestrator.enqueueManualWake(
         agentId: agentId,
@@ -153,10 +155,14 @@ void main() {
     ).thenAnswer((_) {
       scheduleMicrotask(
         () => completions.add(
-          const WakeRunCompletion(
+          WakeRunCompletion(
             runKey: 'chat-run',
             status: WakeRunStatus.failed,
-            error: 'provider down',
+            error: WakeFailedException(
+              kind: 'relationship',
+              reason: 'provider down',
+              cause: cause,
+            ),
           ),
         ),
       );
@@ -166,11 +172,10 @@ void main() {
     await expectLater(
       service.sendMessage(agentId: agentId, text: 'How is Anna?'),
       throwsA(
-        isA<RelationshipChatTurnException>().having(
-          (error) => error.messageId,
-          'messageId',
-          isNotNull,
-        ),
+        isA<RelationshipChatTurnException>()
+            .having((error) => error.messageId, 'messageId', isNotNull)
+            // For the chat to relay the provider's own words.
+            .having((error) => error.cause, 'cause', same(cause)),
       ),
     );
     // The turn IS durable — only the wake failed.

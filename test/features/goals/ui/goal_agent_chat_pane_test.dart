@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/dashboards/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
+import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_dictation_provider.dart';
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
@@ -32,41 +33,8 @@ void main() {
   testWidgets('identifies the agent and its goal above the durable composer', (
     tester,
   ) async {
-    final identity =
-        AgentDomainEntity.agent(
-              id: 'goal-1',
-              agentId: 'goal-1',
-              kind: AgentKinds.goalAgent,
-              displayName: 'Juno',
-              lifecycle: AgentLifecycle.active,
-              mode: AgentInteractionMode.autonomous,
-              allowedCategoryIds: const {},
-              currentStateId: 'goal-1:state',
-              config: const AgentConfig(),
-              createdAt: DateTime(2026),
-              updatedAt: DateTime(2026),
-              vectorClock: null,
-            )
-            as AgentIdentityEntity;
-    final spec =
-        AgentDomainEntity.goalSpecVersion(
-              id: 'goal-1:spec-v1',
-              agentId: 'goal-1',
-              version: 1,
-              status: GoalSpecVersionStatus.active,
-              authoredBy: 'user',
-              title: 'Fitness',
-              statement: 'Show up for three workouts each week.',
-              criteria: const GoalCriterion.habit(
-                criterionId: 'gym',
-                habitId: 'gym',
-                window: GoalWindow.rollingDays(count: 7),
-                targetCount: 3,
-              ),
-              createdAt: DateTime(2026),
-              vectorClock: null,
-            )
-            as GoalSpecVersionEntity;
+    final identity = _identity();
+    final spec = _spec();
 
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -109,6 +77,62 @@ void main() {
     await tester.enterText(find.byType(TextField), 'What should I do today?');
     await tester.pump();
     expect(find.byKey(DesignSystemChatInputKeys.send), findsOneWidget);
+  });
+
+  // Regression: a goal chat turn that failed on an empty provider account
+  // showed only "That didn't send." — the provider's own words say why.
+  testWidgets("a failed turn relays the provider's own words", (tester) async {
+    final service = MockGoalChatService();
+    when(
+      () => service.sendMessage(agentId: 'goal-1', text: 'How am I doing?'),
+    ).thenThrow(
+      GoalChatTurnException(
+        'wake failed',
+        messageId: 'message-1',
+        cause: Exception('Mistral API error (HTTP 402, Insufficient credits)'),
+      ),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const Scaffold(body: GoalAgentChatPane(agentId: 'goal-1')),
+        overrides: [
+          goalChatServiceProvider.overrideWithValue(service),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => _identity()),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: _spec(),
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => const []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'How am I doing?');
+    await tester.pump();
+    await tester.tap(find.byKey(DesignSystemChatInputKeys.send));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Your AI provider account is out of credit: Mistral API error '
+        '(HTTP 402, Insufficient credits)',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text("That didn't send."), findsNothing);
   });
 
   testWidgets('an unresolved health load shows NO coarse label — loading is '
@@ -318,3 +342,40 @@ void main() {
     expect(card.offer.items.single.day, DateTime.utc(2026, 8, 12));
   });
 }
+
+AgentIdentityEntity _identity() =>
+    AgentDomainEntity.agent(
+          id: 'goal-1',
+          agentId: 'goal-1',
+          kind: AgentKinds.goalAgent,
+          displayName: 'Juno',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'goal-1:state',
+          config: const AgentConfig(),
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+          vectorClock: null,
+        )
+        as AgentIdentityEntity;
+
+GoalSpecVersionEntity _spec() =>
+    AgentDomainEntity.goalSpecVersion(
+          id: 'goal-1:spec-v1',
+          agentId: 'goal-1',
+          version: 1,
+          status: GoalSpecVersionStatus.active,
+          authoredBy: 'user',
+          title: 'Fitness',
+          statement: 'Show up for three workouts each week.',
+          criteria: const GoalCriterion.habit(
+            criterionId: 'gym',
+            habitId: 'gym',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 3,
+          ),
+          createdAt: DateTime(2026),
+          vectorClock: null,
+        )
+        as GoalSpecVersionEntity;

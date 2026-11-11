@@ -19,17 +19,21 @@ class _MockGoalChatService extends Mock implements GoalChatService {}
 
 void main() {
   test('composer copyWith can retain an explicit failure', () {
-    final failed = const GoalChatComposerState().copyWith(
+    final cause = Exception('Insufficient credits');
+    final failed = GoalChatComposerState(
       failedMessage: 'Keep me honest.',
       failedMessageId: 'message-1',
+      failureCause: cause,
     );
     final retained = failed.copyWith(draft: 'Still here');
     final cleared = retained.copyWith(clearFailure: true);
 
     expect(retained.failedMessage, 'Keep me honest.');
     expect(retained.failedMessageId, 'message-1');
+    expect(retained.failureCause, same(cause));
     expect(cleared.failedMessage, isNull);
     expect(cleared.failedMessageId, isNull);
+    expect(cleared.failureCause, isNull);
   });
 
   test(
@@ -93,11 +97,17 @@ void main() {
   test(
     'retry preserves the durable turn id across typed and unknown errors',
     () async {
+      final sendCause = Exception('Insufficient credits');
+      final retryCause = Exception('still no credits');
       final service = _MockGoalChatService();
       when(
         () => service.sendMessage(agentId: 'goal-1', text: 'Keep trying.'),
       ).thenThrow(
-        const GoalChatTurnException('offline', messageId: 'message-1'),
+        GoalChatTurnException(
+          'offline',
+          messageId: 'message-1',
+          cause: sendCause,
+        ),
       );
       var retryAttempts = 0;
       when(
@@ -108,7 +118,7 @@ void main() {
       ).thenAnswer((_) async {
         retryAttempts++;
         if (retryAttempts == 1) {
-          throw const GoalChatTurnException('still offline');
+          throw GoalChatTurnException('still offline', cause: retryCause);
         }
         throw StateError('database unavailable');
       });
@@ -122,17 +132,22 @@ void main() {
         goalChatControllerProvider('goal-1').notifier,
       )..updateDraft('Keep trying.');
       await controller.send();
+      var state = container.read(goalChatControllerProvider('goal-1'));
+      // The provider's words stay with the failure, for the chat to relay.
+      expect(state.failureCause, same(sendCause));
 
       await controller.retry();
-      var state = container.read(goalChatControllerProvider('goal-1'));
+      state = container.read(goalChatControllerProvider('goal-1'));
       expect(state.failedMessage, 'Keep trying.');
       expect(state.failedMessageId, 'message-1');
+      expect(state.failureCause, same(retryCause));
 
       await controller.retry();
       state = container.read(goalChatControllerProvider('goal-1'));
       expect(state.draft, 'Keep trying.');
       expect(state.failedMessage, 'Keep trying.');
       expect(state.failedMessageId, 'message-1');
+      expect(state.failureCause, isNull);
       expect(retryAttempts, 2);
     },
   );

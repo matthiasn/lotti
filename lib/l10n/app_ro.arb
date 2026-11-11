@@ -71,6 +71,8 @@
   "agentCategoryRatingsSubmit": "Folosiți aceste priorități",
   "agentCategoryRatingsSubtitle": "Cât de important este să corectați fiecare dintre aceste puncte? 1 înseamnă «lăsați așa», iar 5 «corectați mai întâi».",
   "agentCategoryRatingsTitle": "Ajută-mă să prioritizez",
+  "agentChatFailedOutOfCredit": "Contul dumneavoastră la furnizorul de AI nu mai are credit: {message}",
+  "agentChatFailedProviderSaid": "Furnizorul dumneavoastră de AI a răspuns: {message}",
   "agentControlsActionError": "Acțiunea a eșuat: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -792,6 +794,8 @@
   "aiInferenceErrorAuthenticationTitle": "Autentificare eșuată",
   "aiInferenceErrorConnectionFailedTitle": "Conexiune eșuată",
   "aiInferenceErrorInvalidRequestTitle": "Cerere invalidă",
+  "aiInferenceErrorOutOfCreditSuggestion": "Reîncărcați creditul contului la acest furnizor sau alegeți în Setări un model de la alt furnizor.",
+  "aiInferenceErrorOutOfCreditTitle": "Credit epuizat",
   "aiInferenceErrorRateLimitTitle": "Limită de cereri depășită",
   "aiInferenceErrorRetryButton": "Încercați din nou",
   "aiInferenceErrorServerTitle": "Eroare de server",

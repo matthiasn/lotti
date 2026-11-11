@@ -8,6 +8,8 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_agent_job_executor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
@@ -650,6 +652,30 @@ void main() {
       expect(
         classifyDayAgentJobFailure(null),
         DayProcessingFailureClass.local,
+      );
+    });
+
+    // Regression: a refused key or an empty account read as a timeout and
+    // was retried, though only the user can fix either.
+    test('a failure only the user can fix needs setup, whether the provider '
+        'exception was rethrown or carried as the wake cause', () {
+      expect(
+        classifyDayAgentJobFailure(
+          const WakeFailedException(
+            kind: 'day',
+            reason: 'Day agent workflow failed (InferenceHttpException)',
+            cause: InferenceHttpException(
+              'Insufficient credits',
+              provider: 'OpenRouter',
+              statusCode: 402,
+            ),
+          ),
+        ),
+        DayProcessingFailureClass.setupRequired,
+      );
+      expect(
+        classifyDayAgentJobFailure(Exception('HTTP 401 Unauthorized')),
+        DayProcessingFailureClass.setupRequired,
       );
     });
 

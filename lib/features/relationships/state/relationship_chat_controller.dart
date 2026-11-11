@@ -21,12 +21,17 @@ class RelationshipChatComposerState {
     this.isSending = false,
     this.failedMessage,
     this.failedMessageId,
+    this.failureCause,
   });
 
   final String draft;
   final bool isSending;
   final String? failedMessage;
   final String? failedMessageId;
+
+  /// The exception the failed turn's wake caught, in memory only, for the
+  /// chat to relay the provider's own words. Cleared with the failure.
+  final Object? failureCause;
 
   RelationshipChatComposerState copyWith({
     String? draft,
@@ -41,6 +46,7 @@ class RelationshipChatComposerState {
     failedMessageId: clearFailure
         ? null
         : failedMessageId ?? this.failedMessageId,
+    failureCause: clearFailure ? null : failureCause,
   );
 }
 
@@ -91,6 +97,7 @@ class RelationshipChatController
         draft: state.draft,
         failedMessage: message,
         failedMessageId: error.messageId,
+        failureCause: error.cause,
       );
     } catch (_) {
       state = RelationshipChatComposerState(
@@ -120,6 +127,7 @@ class RelationshipChatController
         draft: failed,
         failedMessage: failed,
         failedMessageId: error.messageId ?? messageId,
+        failureCause: error.cause,
       );
     } catch (_) {
       state = RelationshipChatComposerState(

@@ -357,6 +357,18 @@ abstract class AppLocalizations {
   /// **'Help Me Prioritize'**
   String get agentCategoryRatingsTitle;
 
+  /// Agent chat: a turn failed because the provider account is out of credit; message is the provider's own error text.
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI provider account is out of credit: {message}'**
+  String agentChatFailedOutOfCredit(String message);
+
+  /// Agent chat: a turn failed with a provider error; message is the provider's own error text.
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI provider answered: {message}'**
+  String agentChatFailedProviderSaid(String message);
+
   /// No description provided for @agentControlsActionError.
   ///
   /// In en, this message translates to:
@@ -3497,6 +3509,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invalid Request'**
   String get aiInferenceErrorInvalidRequestTitle;
+
+  /// AI error panel suggestion when the provider account is out of credit.
+  ///
+  /// In en, this message translates to:
+  /// **'Top up your account with this provider, or pick a model from another provider in Settings.'**
+  String get aiInferenceErrorOutOfCreditSuggestion;
+
+  /// AI error panel title when the provider account has no credit left or hit its spend limit.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of credit'**
+  String get aiInferenceErrorOutOfCreditTitle;
 
   /// No description provided for @aiInferenceErrorRateLimitTitle.
   ///

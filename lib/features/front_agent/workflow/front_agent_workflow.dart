@@ -382,7 +382,11 @@ class FrontAgentWorkflow with AgentErrorLogging {
         _ => FrontTurnFailure.unknown,
       };
       laps.add('failed=${failure.name}');
-      return WakeResult(success: false, error: failure.wakeError(error));
+      return WakeResult(
+        success: false,
+        error: failure.wakeError(error),
+        cause: error,
+      );
     } finally {
       if (conversationId != null) {
         _conversationRepository.deleteConversation(conversationId);

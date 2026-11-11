@@ -142,6 +142,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentCategoryRatingsTitle => 'Ajută-mă să prioritizez';
 
   @override
+  String agentChatFailedOutOfCredit(String message) {
+    return 'Contul dumneavoastră la furnizorul de AI nu mai are credit: $message';
+  }
+
+  @override
+  String agentChatFailedProviderSaid(String message) {
+    return 'Furnizorul dumneavoastră de AI a răspuns: $message';
+  }
+
+  @override
   String agentControlsActionError(String error) {
     return 'Acțiunea a eșuat: $error';
   }
@@ -2037,6 +2047,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiInferenceErrorInvalidRequestTitle => 'Cerere invalidă';
+
+  @override
+  String get aiInferenceErrorOutOfCreditSuggestion =>
+      'Reîncărcați creditul contului la acest furnizor sau alegeți în Setări un model de la alt furnizor.';
+
+  @override
+  String get aiInferenceErrorOutOfCreditTitle => 'Credit epuizat';
 
   @override
   String get aiInferenceErrorRateLimitTitle => 'Limită de cereri depășită';

@@ -13,6 +13,7 @@ import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -292,19 +293,16 @@ void main() {
     );
   });
 
-  Future<WakeResultLike> run({
+  Future<WakeResult> run({
     String messageId = 'msg-1',
     AgentIdentityEntity? agentIdentity,
-  }) async {
-    final result = await workflow.executeUserMessage(
-      agentIdentity: agentIdentity ?? identity,
-      runKey: runKey,
-      triggerTokens: {frontChatMessageTriggerToken(messageId)},
-      threadId: threadId,
-      messageId: messageId,
-    );
-    return (success: result.success, error: result.error);
-  }
+  }) => workflow.executeUserMessage(
+    agentIdentity: agentIdentity ?? identity,
+    runKey: runKey,
+    triggerTokens: {frontChatMessageTriggerToken(messageId)},
+    threadId: threadId,
+    messageId: messageId,
+  );
 
   group('the source turn', () {
     test('a missing message fails the wake before any inference', () async {
@@ -1867,6 +1865,8 @@ Here is the garden task.'''),
         FrontTurnFailure.rateLimit,
       );
       expect(result.error, isNot(contains('secret body')));
+      // The body stays in memory, for the chat that waits on this turn.
+      expect(result.cause.toString(), contains('secret body'));
     });
   });
 
@@ -1983,8 +1983,6 @@ Here is the garden task.'''),
     );
   });
 }
-
-typedef WakeResultLike = ({bool success, String? error});
 
 /// The one open task of the test world.
 Task makeGardenTask() {

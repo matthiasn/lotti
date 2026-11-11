@@ -71,6 +71,8 @@
   "agentCategoryRatingsSubmit": "Använd dessa prioriteringar",
   "agentCategoryRatingsSubtitle": "Hur viktigt är det att jag fixar var och en av dessa? 1 betyder låt det vara, 5 betyder fixa det först.",
   "agentCategoryRatingsTitle": "Hjälp mig att prioritera",
+  "agentChatFailedOutOfCredit": "Ditt konto hos AI-leverantören har slut på kredit: {message}",
+  "agentChatFailedProviderSaid": "Din AI-leverantör svarade: {message}",
   "agentControlsActionError": "Åtgärden misslyckades: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -999,6 +1001,8 @@
   "aiInferenceErrorAuthenticationTitle": "Autentisering misslyckades",
   "aiInferenceErrorConnectionFailedTitle": "Anslutningen misslyckades",
   "aiInferenceErrorInvalidRequestTitle": "Ogiltig begäran",
+  "aiInferenceErrorOutOfCreditSuggestion": "Fyll på krediten på ditt konto hos leverantören, eller välj en modell från en annan leverantör i Inställningar.",
+  "aiInferenceErrorOutOfCreditTitle": "Slut på kredit",
   "aiInferenceErrorRateLimitTitle": "Hastighetsgräns överskriden",
   "aiInferenceErrorRetryButton": "Försök igen",
   "aiInferenceErrorServerTitle": "Serverfel",

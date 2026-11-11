@@ -207,6 +207,7 @@ void main() {
       'throws a WakeFailedException naming the kind and the workflow error '
       'when the event wake fails',
       () async {
+        final cause = Exception('Insufficient credits');
         stubEventAgent();
         when(
           () => eventWorkflow.execute(
@@ -216,9 +217,10 @@ void main() {
             threadId: any(named: 'threadId'),
           ),
         ).thenAnswer(
-          (_) async => const WakeResult(
+          (_) async => WakeResult(
             success: false,
             error: 'No active event ID',
+            cause: cause,
           ),
         );
 
@@ -229,7 +231,9 @@ void main() {
           throwsA(
             isA<WakeFailedException>()
                 .having((e) => e.kind, 'kind', 'event')
-                .having((e) => e.reason, 'reason', 'No active event ID'),
+                .having((e) => e.reason, 'reason', 'No active event ID')
+                // The caught exception rides along for the waiting surface.
+                .having((e) => e.cause, 'cause', same(cause)),
           ),
         );
 

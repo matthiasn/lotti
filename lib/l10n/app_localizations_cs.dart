@@ -141,6 +141,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentCategoryRatingsTitle => 'Pomoz mi s prioritami';
 
   @override
+  String agentChatFailedOutOfCredit(String message) {
+    return 'Tvůj účet u poskytovatele AI nemá kredit: $message';
+  }
+
+  @override
+  String agentChatFailedProviderSaid(String message) {
+    return 'Tvůj poskytovatel AI odpověděl: $message';
+  }
+
+  @override
   String agentControlsActionError(String error) {
     return 'Akce se nezdařila: $error';
   }
@@ -2024,6 +2034,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiInferenceErrorInvalidRequestTitle => 'Neplatný požadavek';
+
+  @override
+  String get aiInferenceErrorOutOfCreditSuggestion =>
+      'Dobij si kredit u tohoto poskytovatele, nebo si v Nastavení vyber model od jiného poskytovatele.';
+
+  @override
+  String get aiInferenceErrorOutOfCreditTitle => 'Kredit vyčerpán';
 
   @override
   String get aiInferenceErrorRateLimitTitle => 'Limit rychlosti překročen';
