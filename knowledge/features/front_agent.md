@@ -1397,7 +1397,8 @@ opens on top of her, a project after closing her), so the catalog itself is
 static. The surface is created once per reply and updated in place when its
 components change. GenUI checks the components against each item's schema
 after the update; the components the mapping draws pass it. What the doors
-made follows the surface as preview cards. it. `<conversation_tasks>` counts the tasks her cards listed as named.
+made follows the surface as preview cards. `<conversation_tasks>` counts
+the tasks her cards listed as named.
 
 ```mermaid
 flowchart LR
