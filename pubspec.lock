@@ -9,6 +9,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "96.0.0"
+  a2ui_agent:
+    dependency: "direct main"
+    description:
+      name: a2ui_agent
+      sha256: "4992866d816c7fa13d73d053a7e3206c65bbb2c37ad6bf869d059e1a625159e7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   a2ui_core:
     dependency: "direct main"
     description:
@@ -57,6 +65,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.3"
+  antlr4:
+    dependency: transitive
+    description:
+      name: antlr4
+      sha256: "752b4a6e4ad97953652a2b2bbf5377f46c94b579d3372b50080c7e5858234a05"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.13.2"
   arb_utils:
     dependency: "direct dev"
     description:

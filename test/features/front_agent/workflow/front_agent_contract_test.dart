@@ -3,89 +3,85 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
-import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_reply_reader.dart';
+import 'package:lotti/features/front_agent/workflow/front_reply_stream.dart';
 
 void main() {
-  test('nine tools, never one, in a fixed order', () {
-    // A single tool makes DeepSeek rewrite tool_choice; the list is fixed
-    // so the request prefix stays byte-stable across turns.
-    expect(frontAgentTools.map((t) => t.name), [
-      FrontAgentToolNames.dispatch,
-      FrontAgentToolNames.readTldr,
-      FrontAgentToolNames.matchToCorpus,
-      FrontAgentToolNames.listDueTasks,
-      FrontAgentToolNames.summarizeLoggedTime,
-      FrontAgentToolNames.listClosedTasks,
-      FrontAgentToolNames.summarizePullRequests,
-      FrontAgentToolNames.askUser,
-      FrontAgentToolNames.replyToUser,
-    ]);
-  });
+  test(
+    'eight tools, never one, in a fixed order; her answer is not one of them',
+    () {
+      // A single tool makes DeepSeek rewrite tool_choice; the list is fixed
+      // so the request prefix stays byte-stable across turns.
+      expect(frontAgentTools.map((t) => t.name), [
+        FrontAgentToolNames.dispatch,
+        FrontAgentToolNames.readTldr,
+        FrontAgentToolNames.matchToCorpus,
+        FrontAgentToolNames.listDueTasks,
+        FrontAgentToolNames.summarizeLoggedTime,
+        FrontAgentToolNames.listClosedTasks,
+        FrontAgentToolNames.summarizePullRequests,
+        FrontAgentToolNames.askUser,
+      ]);
+    },
+  );
 
-  test('reply_to_user is the shared conversation tool name', () {
+  test('a stored answer keeps the shared reply record name', () {
     expect(
       FrontAgentToolNames.replyToUser,
       AgentConversationToolNames.replyToUser,
     );
   });
 
-  test('reply_to_user takes words or composed components, each one of the '
-      "catalog's; the prompt asks for lists as cards, never as Markdown", () {
-    final reply = frontAgentTools.singleWhere(
-      (t) => t.name == FrontAgentToolNames.replyToUser,
-    );
-    final properties = reply.parameters['properties'] as Map<String, Object?>;
-    expect(properties.keys, ['message', 'components']);
-    final component = (properties['components']! as Map)['items'] as Map;
-    expect((component['properties'] as Map).keys, [
-      'component',
-      'text',
-      'items',
-      'options',
-    ]);
-    expect(
-      ((component['properties'] as Map)['component'] as Map)['enum'],
-      FrontReplyComponents.composable,
-    );
-    // She never writes the root: the app adds it.
-    expect(
-      FrontReplyComponents.composable,
-      isNot(contains(FrontReplyComponents.reply)),
-    );
-    expect(component['required'], ['component']);
-    // Every array says what it holds: a provider may refuse one that does
-    // not.
-    expect(((component['properties'] as Map)['items'] as Map)['items'], {
-      'type': 'object',
-      'properties': {
-        'ref': {'type': 'string'},
-        'note': {'type': 'string'},
-      },
-      'required': ['ref'],
-    });
+  test('the prompt has her answer as the message she writes: UI first, '
+      'prose always, cards by id', () {
+    expect(frontAgentSystemPrompt, contains('never a tool call'));
     expect(
       frontAgentSystemPrompt,
-      contains('Cards are shown, never read aloud'),
+      contains('The prose is required in every answer'),
     );
-    expect(reply.parameters.containsKey('required'), isFalse);
-
-    expect(
-      frontAgentSystemPrompt,
-      contains('`{"component": "TaskCards", "items": [{"ref": "task:<id>"}'),
-    );
+    expect(frontAgentSystemPrompt, contains('never by title'));
     expect(
       frontAgentSystemPrompt,
       contains('overdue and due as two `TaskCards`'),
     );
-    expect(frontAgentSystemPrompt, contains('its time as the `note`'));
+    expect(frontAgentSystemPrompt, contains("each task's time in `notes`"));
     expect(
       frontAgentSystemPrompt,
       contains('up to $frontQuickRepliesMax short replies the user can tap'),
     );
-    expect(frontAgentSystemPrompt, isNot(contains('one markdown bullet list')));
+    expect(frontAgentSystemPrompt, contains('never read aloud'));
+    expect(frontAgentSystemPrompt, isNot(contains('reply_to_user')));
+    expect(frontDispatchRepairInstruction, contains('write your answer now'));
+    // A turn that looked something up is asked for its answer; one that has
+    // not is asked to route.
+    expect(
+      frontContinuationInstruction(answerLookups: 1),
+      frontAnswerInstruction,
+    );
+    expect(
+      frontContinuationInstruction(answerLookups: 0),
+      frontDispatchRepairInstruction,
+    );
+    expect(frontAnswerInstruction, contains('Do not dispatch'));
+  });
+
+  test('the system message is the contract, then how to write UI, then her '
+      'manner last, so only the tail changes with her setting', () {
+    final warm = frontAgentSystemMessage(CompanionSass.warm);
+    final sassy = frontAgentSystemMessage(CompanionSass.sassy);
+
+    final contract = warm.indexOf(frontAgentSystemPrompt);
+    final snippet = warm.indexOf(frontReplyPromptSnippet);
+    final manner = warm.indexOf(frontAgentPersonality(CompanionSass.warm));
+    expect(contract, 0);
+    expect(snippet, greaterThan(contract));
+    expect(manner, greaterThan(snippet));
+    expect(warm, endsWith(frontAgentPersonality(CompanionSass.warm)));
+    // The cached prefix is the same whatever her manner.
+    expect(sassy.substring(0, manner), warm.substring(0, manner));
+    expect(warm, contains('## Writing UI'));
   });
 
   test("the dispatch schema enumerates exactly the model's kinds", () {

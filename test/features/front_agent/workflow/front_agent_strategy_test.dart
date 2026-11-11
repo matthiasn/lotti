@@ -365,6 +365,8 @@ garbage: not listed
 hologram:x: not listed''');
       expect(answers.last, frontTldrExhaustedAnswer);
       expect(s.lookupCalls, 1);
+      // A TLDR read serves routing: it does not make the turn an answer.
+      expect(s.answerLookupCalls, 0);
     });
 
     test('needs one to five ids', () async {
@@ -498,16 +500,14 @@ hologram:x: not listed''');
         '- task:shed | Paint the shed | OPEN | due 2026-11-02',
       );
       expect(s.lookupCalls, 1);
+      expect(s.answerLookupCalls, 1);
 
-      final action = await s.processToolCalls(
-        toolCalls: [
-          _call('reply_to_user', {
-            'message': 'Due today: task:shed — and Garden (task:garden).',
-          }, id: 'call-2'),
-        ],
-        manager: manager,
+      expect(
+        s.acceptAnswer(
+          'Due today: task:shed — and Garden (task:garden).',
+        ),
+        isTrue,
       );
-      expect(action, ConversationAction.complete);
       // A listed id she recites becomes a link titled as listed.
       expect(
         s.replyToUser,
@@ -565,11 +565,14 @@ hologram:x: not listed''');
       await s.processToolCalls(
         toolCalls: [
           _call('list_due_tasks', {'which': 'overdue'}),
-          _call('reply_to_user', {
-            'message': 'Overdue:\n- Paint the shed',
-          }, id: 'call-2'),
         ],
         manager: manager,
+      );
+      expect(
+        s.acceptAnswer(
+          'Overdue:\n- Paint the shed',
+        ),
+        isTrue,
       );
       // Linked by its title, the list line is drawn as a card. Her text —
       // what is spoken — keeps it: cards are not read aloud.
@@ -744,15 +747,12 @@ hologram:x: not listed''');
       expect(s.lookupCalls, 1);
       expect(s.hasTerminalOutput, isFalse);
 
-      final action = await s.processToolCalls(
-        toolCalls: [
-          _call('reply_to_user', {
-            'message': 'Yesterday: 3h 30m — 2h Work, 1h 30m Health.',
-          }, id: 'call-2'),
-        ],
-        manager: manager,
+      expect(
+        s.acceptAnswer(
+          'Yesterday: 3h 30m — 2h Work, 1h 30m Health.',
+        ),
+        isTrue,
       );
-      expect(action, ConversationAction.complete);
       expect(s.replyToUser, 'Yesterday: 3h 30m — 2h Work, 1h 30m Health.');
       expect(s.dispatch, isNull);
       // Her reply charts the days summed, in the turn's scope.
@@ -843,13 +843,11 @@ hologram:x: not listed''');
           'logged 2026-11-07 | 1h',
         );
 
-        await s.processToolCalls(
-          toolCalls: [
-            _call('reply_to_user', {
-              'message': 'In Home:\n- Prune the roses\n\nNot Mow the lawn.',
-            }, id: 'call-2'),
-          ],
-          manager: manager,
+        expect(
+          s.acceptAnswer(
+            'In Home:\n- Prune the roses\n\nNot Mow the lawn.',
+          ),
+          isTrue,
         );
         // Only the task she was shown links; the one filtered out does not.
         // Only the task she was shown links; the one filtered out does not.
@@ -918,13 +916,11 @@ hologram:x: not listed''');
           '3 tasks had time; not listed.',
         );
 
-        await s.processToolCalls(
-          toolCalls: [
-            _call('reply_to_user', {
-              'message': 'You logged 1h in Home on Prune the roses.',
-            }, id: 'call-2'),
-          ],
-          manager: manager,
+        expect(
+          s.acceptAnswer(
+            'You logged 1h in Home on Prune the roses.',
+          ),
+          isTrue,
         );
         expect(
           s.replyToUser,
@@ -1177,17 +1173,13 @@ hologram:x: not listed''');
         expect(s.lookupCalls, 1);
         expect(s.hasTerminalOutput, isFalse);
 
-        final action = await s.processToolCalls(
-          toolCalls: [
-            _call('reply_to_user', {
-              'message':
-                  'Yesterday you completed:\n- Prune the roses\n'
-                  'and rejected:\n- Paint the shed',
-            }, id: 'call-2'),
-          ],
-          manager: manager,
+        expect(
+          s.acceptAnswer(
+            'Yesterday you completed:\n- Prune the roses\n'
+            'and rejected:\n- Paint the shed',
+          ),
+          isTrue,
         );
-        expect(action, ConversationAction.complete);
         // Named by title they are linked; the closed-task cards show every
         // one of them, so her lists of them are not drawn a second time.
         expect(
@@ -1548,80 +1540,63 @@ hologram:x: not listed''');
   });
 
   group('terminal calls are exclusive', () {
-    test('a reply beside a rejected dispatch is dropped so the turn stays '
-        'open for the repair', () async {
+    test('a rejected dispatch leaves the turn open for the repair, which '
+        'may still end on her answer', () async {
       final s = strategy();
       final action = await s.processToolCalls(
         toolCalls: [
-          _call('reply_to_user', {'message': 'Filed under Garden.'}),
           _call('dispatch', {
             'segments': [segment(start: 0, end: 13, id: 'nope')],
-          }, id: 'call-2'),
+          }),
         ],
         manager: manager,
       );
 
       expect(action, ConversationAction.continueConversation);
-      expect(s.replyToUser, isNull);
       expect(s.hasTerminalOutput, isFalse);
 
-      // The repair round may still end with a valid reply.
-      final repaired = await s.processToolCalls(
-        toolCalls: [
-          _call('reply_to_user', {'message': 'Nothing fits.'}),
-        ],
-        manager: manager,
-      );
-      expect(repaired, ConversationAction.complete);
+      expect(s.acceptAnswer('Nothing fits.'), isTrue);
       expect(s.replyToUser, 'Nothing fits.');
-    });
-
-    test('a reply beside a rejected dispatch survives when a question was '
-        'accepted in the same batch', () async {
-      final s = strategy();
-      await s.processToolCalls(
-        toolCalls: [
-          _call('ask_user', {'question': 'Which?'}),
-          _call('dispatch', {
-            'segments': [segment(start: 0, end: 13, id: 'nope')],
-          }, id: 'call-2'),
-        ],
-        manager: manager,
-      );
-      expect(s.askUser, isNotNull);
       expect(s.hasTerminalOutput, isTrue);
     });
 
     test(
-      'ask_user and reply_to_user refuse each other in either order',
+      'a question accepted beside a rejected dispatch ends the turn',
       () async {
         final s = strategy();
         await s.processToolCalls(
           toolCalls: [
             _call('ask_user', {'question': 'Which?'}),
-            _call('reply_to_user', {'message': 'Hi'}, id: 'call-2'),
+            _call('dispatch', {
+              'segments': [segment(start: 0, end: 13, id: 'nope')],
+            }, id: 'call-2'),
           ],
           manager: manager,
         );
-        expect(responses().last, contains('already ended with ask_user'));
-        expect(s.replyToUser, isNull);
-
-        final t = strategy();
-        await t.processToolCalls(
-          toolCalls: [
-            _call('reply_to_user', {'message': 'Hi'}),
-            _call('ask_user', {'question': 'Which?'}, id: 'call-2'),
-          ],
-          manager: manager,
-        );
-        expect(responses().last, contains('already ended with reply_to_user'));
-        expect(t.askUser, isNull);
-        expect(t.replyToUser, 'Hi');
+        expect(s.askUser, isNotNull);
+        expect(s.hasTerminalOutput, isTrue);
       },
     );
+
+    test('once she asked, or answered, a later answer is not taken', () async {
+      final asked = strategy();
+      await asked.processToolCalls(
+        toolCalls: [
+          _call('ask_user', {'question': 'Which?'}),
+        ],
+        manager: manager,
+      );
+      expect(asked.acceptAnswer('Hi'), isFalse);
+      expect(asked.replyToUser, isNull);
+
+      final answered = strategy();
+      expect(answered.acceptAnswer('Hi'), isTrue);
+      expect(answered.acceptAnswer('Again'), isFalse);
+      expect(answered.replyToUser, 'Hi');
+    });
   });
 
-  group('reply_to_user', () {
+  group('her answer', () {
     const shed = FrontIndexRow(
       kind: FrontDestinationKind.task,
       id: 'shed',
@@ -1636,7 +1611,7 @@ hologram:x: not listed''');
       'component': 'Text',
       'text': words,
     };
-    Map<String, Object?> cards(List<FrontIndexRow> rows) => {
+    Map<String, Object?> cards(List<FrontIndexRow> rows, {String? caption}) => {
       'component': 'TaskCards',
       'items': [
         for (final row in rows)
@@ -1646,6 +1621,7 @@ hologram:x: not listed''');
             title: row.title,
           ).toJson(),
       ],
+      'caption': ?caption,
     };
     FrontDueTasks dueShedAndRoof(FrontDueQuery query) => FrontDueTasks(
       window: query.window,
@@ -1654,111 +1630,118 @@ hologram:x: not listed''');
       rows: const [shed, roof],
     );
 
-    test('components are kept as she composed them, cards from what the turn '
-        'saw; due tasks she did not list follow', () async {
+    /// Verifies one format failure was logged, with [what] in it.
+    void verifyFormatFailure(String what) => verify(
+      () => domainLogger.log(
+        any(),
+        any(that: allOf(startsWith('front reply format: '), contains(what))),
+        subDomain: 'FrontAgentStrategy',
+        level: InsightLevel.warn,
+      ),
+    ).called(1);
+
+    test('her prose leads what her UI block composed, cards from what the '
+        'turn saw; due tasks she did not list follow', () async {
       final s = strategy(dueLister: (query) async => dueShedAndRoof(query));
       await s.processToolCalls(
         toolCalls: [
           _call('list_due_tasks', {'which': 'all'}),
-          _call('reply_to_user', {
-            'components': [
-              {'component': 'Text', 'text': 'One is overdue:'},
-              {
-                'component': 'TaskCards',
-                'items': ['task:shed'],
-              },
-              {
-                'component': 'Text',
-                'text': 'And the garden (task:garden) waits.',
-              },
-            ],
-          }, id: 'call-2'),
         ],
         manager: manager,
       );
 
+      final taken = s.acceptAnswer('''
+<a2ui>
+surface("reply")
+root = Reply([
+  Text("Overdue"),
+  TaskCards("Overdue tasks", ["task:shed"])
+])
+</a2ui>
+One is overdue, and the garden (task:garden) waits.''');
+
+      expect(taken, isTrue);
+      // A recited id beside its title folds into one link (see
+      // linkFrontReferences): her prose passes through the same linking.
+      const said =
+          'One is overdue, and the [Garden](lotti://task/garden) waits.';
+      expect(s.replyToUser, said);
       expect(s.replyComponents, [
-        text('One is overdue:'),
-        cards([shed]),
-        // A recited id beside its title folds into one link (see
-        // linkFrontReferences): her words pass through the same linking.
-        text('And the [Garden](lotti://task/garden) waits.'),
+        text(said),
+        text('Overdue'),
+        cards([shed], caption: 'Overdue tasks'),
         cards([roof]),
       ]);
-      expect(
-        s.replyToUser,
-        'One is overdue:\n\nAnd the [Garden](lotti://task/garden) waits.',
-      );
     });
 
-    test('a list of task links she wrote in her words is cards anyway, with '
-        'what the line said as the note', () async {
-      final s = strategy(dueLister: (query) async => dueShedAndRoof(query));
-      await s.processToolCalls(
-        toolCalls: [
-          _call('list_due_tasks', {'which': 'today'}),
-          _call('reply_to_user', {
-            'message':
-                'Two are due:\n\n'
-                '- [Paint the shed](task:shed) — before the rain\n'
-                '- Fix the roof',
-          }, id: 'call-2'),
-        ],
-        manager: manager,
-      );
-
-      expect(s.replyComponents, [
-        text('Two are due:'),
-        {
-          'component': 'TaskCards',
-          'items': [
-            const FrontEntityReference(
-              kind: FrontEntityKind.task,
-              id: 'shed',
-              title: 'Paint the shed',
-              note: 'before the rain',
-            ).toJson(),
-            const FrontEntityReference(
-              kind: FrontEntityKind.task,
-              id: 'roof',
-              title: 'Fix the roof',
-            ).toJson(),
+    test(
+      'a list of task links she wrote in her prose is cards anyway, with '
+      'what the line said as the note; her text keeps it for speech',
+      () async {
+        final s = strategy(dueLister: (query) async => dueShedAndRoof(query));
+        await s.processToolCalls(
+          toolCalls: [
+            _call('list_due_tasks', {'which': 'today'}),
           ],
-        },
-      ]);
-      // Spoken and remembered as she wrote it, list and all.
-      expect(
-        s.replyToUser,
-        'Two are due:\n\n'
-        '- [Paint the shed](lotti://task/shed) — before the rain\n'
-        '- [Fix the roof](lotti://task/roof)',
-      );
-    });
+          manager: manager,
+        );
 
-    test('a card or chart the turn cannot draw is dropped and named to her, '
-        'logged, and her answer still delivered', () async {
-      final s = strategy();
-      final action = await s.processToolCalls(
-        toolCalls: [
-          _call('reply_to_user', {
-            'message': 'Here:',
-            'components': [
-              {
-                'component': 'TaskCards',
-                'items': ['task:made-up', 'task:garden'],
-              },
-              {'component': 'LoggedTimeChart'},
+        s.acceptAnswer(
+          'Two are due:\n\n'
+          '- [Paint the shed](task:shed) — before the rain\n'
+          '- Fix the roof',
+        );
+
+        expect(s.replyComponents, [
+          text('Two are due:'),
+          {
+            'component': 'TaskCards',
+            'items': [
+              const FrontEntityReference(
+                kind: FrontEntityKind.task,
+                id: 'shed',
+                title: 'Paint the shed',
+                note: 'before the rain',
+              ).toJson(),
+              const FrontEntityReference(
+                kind: FrontEntityKind.task,
+                id: 'roof',
+                title: 'Fix the roof',
+              ).toJson(),
             ],
-          }),
-        ],
-        manager: manager,
-      );
+          },
+        ]);
+        expect(
+          s.replyToUser,
+          'Two are due:\n\n'
+          '- [Paint the shed](lotti://task/shed) — before the rain\n'
+          '- [Fix the roof](lotti://task/roof)',
+        );
+      },
+    );
 
-      // A refusal could end a turn with no call left without any answer.
-      expect(action, ConversationAction.complete);
-      expect(s.replyToUser, 'Here:');
+    test('a block she got wrong, and a card or chart the turn cannot draw, '
+        'are left out and logged; her answer is still taken', () {
+      final s = strategy();
+
+      final taken = s.acceptAnswer('''
+<a2ui>
+surface("bad")
+root = Hologram("Nope")
+</a2ui>
+<a2ui>
+surface("reply")
+root = Reply([
+  TaskCards("Found", ["task:made-up", "task:garden"]),
+  LoggedTimeChart("Time")
+])
+</a2ui>
+Here is the garden.''');
+
+      expect(taken, isTrue);
+      expect(s.replyToUser, 'Here is the garden.');
       expect(s.replyComponents, [
-        text('Here:'),
+        text('Here is the garden.'),
         {
           'component': 'TaskCards',
           'items': [
@@ -1768,64 +1751,57 @@ hologram:x: not listed''');
               title: 'Garden',
             ).toJson(),
           ],
+          'caption': 'Found',
         },
       ]);
-      final answer = responses().single;
-      expect(answer, startsWith('Reply delivered without what could not be'));
-      expect(answer, contains('task:made-up, not a task or project'));
-      expect(answer, contains('LoggedTimeChart, which no lookup made'));
-      verify(
-        () => domainLogger.log(
-          any(),
-          'reply_to_user dropped 2 component(s) it could not draw',
-          subDomain: 'FrontAgentStrategy',
-          level: InsightLevel.warn,
-        ),
-      ).called(1);
+      verifyFormatFailure(
+        '3 part(s): 1 block(s) unreadable, 2 component(s) not drawable',
+      );
     });
 
-    test(
-      'a reply without words is refused, and her corrected one taken',
-      () async {
-        final s = strategy();
-        await s.processToolCalls(
-          toolCalls: [
-            _call('reply_to_user', {
-              'components': [
-                {
-                  'component': 'TaskCards',
-                  'items': ['task:garden'],
-                },
-              ],
-            }),
-            _call('reply_to_user', {'message': 'The garden.'}, id: 'call-2'),
-          ],
-          manager: manager,
-        );
+    test('UI without prose is not an answer: it is logged, and the turn '
+        'stays open for the repair', () {
+      final s = strategy();
 
-        expect(responses().first, contains('needs your words'));
-        expect(s.replyToUser, 'The garden.');
-      },
-    );
+      final taken = s.acceptAnswer('''
+<a2ui>
+surface("reply")
+root = TaskCards("Found", ["task:garden"])
+</a2ui>''');
 
-    test('one reply may accompany a dispatch; a second is refused', () async {
+      expect(taken, isFalse);
+      expect(s.hasTerminalOutput, isFalse);
+      verifyFormatFailure('UI but no prose');
+      expect(s.acceptAnswer('The garden.'), isTrue);
+    });
+
+    test('nothing at all is no answer, and nothing to log', () {
+      final s = strategy();
+
+      expect(s.acceptAnswer('   '), isFalse);
+      verifyNever(
+        () => domainLogger.log(
+          any(),
+          any(that: startsWith('front reply format')),
+          subDomain: any(named: 'subDomain'),
+          level: any(named: 'level'),
+        ),
+      );
+    });
+
+    test('her answer may accompany a dispatch', () async {
       final s = strategy();
       final action = await s.processToolCalls(
         toolCalls: [
-          _call('reply_to_user', {'message': ' Filed both. '}),
-          _call('dispatch', fullDispatch(), id: 'call-2'),
-          _call('reply_to_user', {'message': 'Again'}, id: 'call-3'),
-          _call('reply_to_user', {'message': ''}, id: 'call-4'),
+          _call('dispatch', fullDispatch()),
         ],
         manager: manager,
       );
+
       expect(action, ConversationAction.complete);
+      expect(s.acceptAnswer(' Filed both. '), isTrue);
       expect(s.replyToUser, 'Filed both.');
       expect(s.dispatch, isNotNull);
-      final answers = responses();
-      expect(answers[2], contains('at most once per turn'));
-      // A second reply is refused for being one, whatever it says.
-      expect(answers[3], contains('at most once per turn'));
     });
   });
 

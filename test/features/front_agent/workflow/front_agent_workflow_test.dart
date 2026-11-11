@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -100,6 +101,12 @@ void main() {
         ),
       );
 
+  /// The message she ends a model call on — her answer — for [stubModel],
+  /// which hands it to the workflow as the conversation's last message.
+  const answerMarker = '__answer__';
+  ChatCompletionMessageToolCall answer(String content) =>
+      call(answerMarker, {'content': content});
+
   Map<String, dynamic> dispatchArgs() => {
     'segments': [
       {
@@ -146,6 +153,7 @@ void main() {
     void Function(String message)? onMessage,
   }) {
     var calls = 0;
+    String? pendingAnswer;
     conversationRepository
       ..maxDelegateCalls = maxCalls
       ..sendMessageDelegate =
@@ -163,10 +171,45 @@ void main() {
             calls++;
             onMessage?.call(message);
             when(() => manager.turnCount).thenReturn(calls);
-            await (strategy! as FrontAgentStrategy).processToolCalls(
-              toolCalls: toolCalls(calls),
-              manager: manager,
-            );
+            final all = pendingAnswer == null
+                ? toolCalls(calls)
+                : const <ChatCompletionMessageToolCall>[];
+            var real = [
+              for (final c in all)
+                if (c.function.name != answerMarker) c,
+            ];
+            var said =
+                pendingAnswer ??
+                [
+                  for (final c in all)
+                    if (c.function.name == answerMarker)
+                      (jsonDecode(c.function.arguments) as Map)['content']
+                          as String,
+                ].join('\n');
+            pendingAnswer = null;
+            // As a model does it: lookups in one call, her answer in the
+            // next. Only a dispatch carries her line in the same message.
+            if (said.isNotEmpty &&
+                real.isNotEmpty &&
+                !real.any((c) => c.function.name == 'dispatch')) {
+              pendingAnswer = said;
+              said = '';
+              conversationRepository.maxDelegateCalls = maxCalls + 1;
+            }
+            real = List.unmodifiable(real);
+            if (real.isNotEmpty) {
+              await (strategy! as FrontAgentStrategy).processToolCalls(
+                toolCalls: real,
+                manager: manager,
+              );
+            }
+            // What the model's call left as the conversation's last message.
+            when(() => manager.messages).thenReturn([
+              ChatCompletionMessage.assistant(
+                content: said.isEmpty ? null : said,
+                toolCalls: real.isEmpty ? null : real,
+              ),
+            ]);
             return null;
           };
   }
@@ -181,6 +224,7 @@ void main() {
     domainLogger = MockDomainLogger();
     upserts = [];
     when(() => manager.turnCount).thenReturn(0);
+    when(() => manager.messages).thenReturn(const []);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
@@ -284,7 +328,7 @@ void main() {
       seedMessage();
       stubModel(
         (_) => [
-          call('reply_to_user', {'message': 'Filed under Garden.'}),
+          answer('Filed under Garden.'),
           call('dispatch', dispatchArgs()),
         ],
       );
@@ -332,7 +376,7 @@ void main() {
     test(
       'the prompt carries the index, the recent turns of this '
       'conversation only and the pending message in that order, and the '
-      'system prompt is the contract followed by her manner',
+      'system message is the contract, the UI notation, then her manner',
       () async {
         seedMessage();
         String? system;
@@ -382,8 +426,8 @@ void main() {
                 'summarize_logged_time',
                 'list_closed_tasks',
                 'summarize_pull_requests',
+                // Her answer is the message she writes, not a tool.
                 'ask_user',
-                'reply_to_user',
               ]);
               return null;
             };
@@ -500,12 +544,9 @@ void main() {
         final result = await run();
         expect(result.success, isTrue);
 
-        // The contract, then her manner at the sass the user set.
-        expect(
-          system,
-          '$frontAgentSystemPrompt\n\n'
-          '${frontAgentPersonality(CompanionSass.sassy)}',
-        );
+        // The contract, how to write UI, then her manner at the sass the
+        // user set.
+        expect(system, frontAgentSystemMessage(CompanionSass.sassy));
         expect(sent, isNotNull);
         final indexAt = sent!.indexOf('<routing_index>');
         final recentAt = sent!.indexOf('<recent_turns>');
@@ -937,7 +978,7 @@ void main() {
         stubModel(
           (_) => [
             call('list_due_tasks', {'which': 'today'}),
-            call('reply_to_user', {'message': 'Due today: task:garden.'}),
+            answer('Due today: task:garden.'),
           ],
         );
         when(
@@ -1032,7 +1073,7 @@ void main() {
       stubModel(
         (_) => [
           call('list_due_tasks', {'which': 'overdue'}),
-          call('reply_to_user', {'message': 'Overdue at home: task:dishes.'}),
+          answer('Overdue at home: task:dishes.'),
         ],
         onMessage: (message) => prompt ??= message,
       );
@@ -1111,9 +1152,7 @@ void main() {
         stubModel(
           (_) => [
             call('list_closed_tasks', {'period': 'yesterday'}),
-            call('reply_to_user', {
-              'message': 'Yesterday you completed:\n- Dishes',
-            }),
+            answer('Yesterday you completed:\n- Dishes'),
           ],
         );
         when(
@@ -1229,7 +1268,7 @@ void main() {
             'period': 'yesterday',
             'tasks': true,
           }),
-          call('reply_to_user', {'message': 'Yesterday: 1h 30m on Home.'}),
+          answer('Yesterday: 1h 30m on Home.'),
         ],
       );
       when(
@@ -1314,9 +1353,7 @@ void main() {
       stubModel(
         (_) => [
           call('summarize_pull_requests', {'pastDays': 14}),
-          call('reply_to_user', {
-            'message': 'You created 1 PR adding 120 lines and deleting 30.',
-          }),
+          answer('You created 1 PR adding 120 lines and deleting 30.'),
         ],
       );
       when(
@@ -1355,6 +1392,168 @@ void main() {
       // No time was summed: nothing else to chart.
       expect(_replyData(payload).keys, ['pullRequests']);
     });
+  });
+
+  group('her answer is the message she ends on', () {
+    AgentMessagePayloadEntity? replyPayload() => upserts
+        .whereType<AgentMessagePayloadEntity>()
+        .where((p) => p.content.containsKey('surface'))
+        .firstOrNull;
+
+    test('UI she wrote before her prose is stored as the surface; only the '
+        'prose is her text', () async {
+      seedMessage();
+      stubModel(
+        (_) => [
+          answer('''
+<a2ui>
+surface("reply")
+root = TaskCards("The garden task", ["task:garden"])
+</a2ui>
+Here is the garden task.'''),
+        ],
+      );
+
+      final result = await run();
+
+      expect(result.success, isTrue);
+      final payload = replyPayload()!;
+      expect(payload.content['text'], 'Here is the garden task.');
+      final components =
+          ((payload.content['surface']! as Map)['createSurface']
+                  as Map)['components']
+              as List;
+      expect(components.skip(1), [
+        {'component': 'Text', 'text': 'Here is the garden task.', 'id': 'c0'},
+        {
+          'component': 'TaskCards',
+          'items': [
+            {'kind': 'task', 'id': 'garden', 'title': 'Garden'},
+          ],
+          'caption': 'The garden task',
+          'id': 'c1',
+        },
+      ]);
+    });
+
+    test('words beside a lookup call are a remark on the way, not her '
+        'answer: the next call is', () async {
+      seedMessage();
+      final sentTo = <String>[];
+      var turn = 0;
+      conversationRepository
+        ..maxDelegateCalls = 2
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              turn++;
+              sentTo.add(message);
+              when(() => manager.turnCount).thenReturn(turn);
+              if (turn == 1) {
+                final lookup = call('list_due_tasks', {'which': 'today'});
+                await (strategy! as FrontAgentStrategy).processToolCalls(
+                  toolCalls: [lookup],
+                  manager: manager,
+                );
+                when(() => manager.messages).thenReturn([
+                  ChatCompletionMessage.assistant(
+                    content: 'Let me check.',
+                    toolCalls: [lookup],
+                  ),
+                ]);
+              } else {
+                when(() => manager.messages).thenReturn([
+                  const ChatCompletionMessage.assistant(
+                    content: 'Nothing is due today.',
+                  ),
+                ]);
+              }
+              return null;
+            };
+
+      final result = await run();
+
+      expect(result.success, isTrue);
+      expect(replyPayload()!.content['text'], 'Nothing is due today.');
+      // After a lookup, the second call asks for her answer, not a dispatch.
+      expect(sentTo.last, frontAnswerInstruction);
+    });
+
+    test('her line beside an accepted dispatch goes with it', () async {
+      seedMessage();
+      stubModel(
+        (_) => [
+          call('dispatch', dispatchArgs()),
+          answer('Filed under Garden.'),
+        ],
+      );
+
+      final result = await run();
+
+      expect(result.success, isTrue);
+      expect(replyPayload()!.content['text'], 'Filed under Garden.');
+    });
+
+    test(
+      'her line beside a refused dispatch describes a routing that did '
+      'not happen: it is not taken, and with no call left the turn fails',
+      () async {
+        seedMessage();
+        final refused = call('dispatch', {
+          'segments': [
+            {
+              'start': 0,
+              'end': 5,
+              'text': 'nope',
+              'intent': 'statement',
+              'destination': {'kind': 'task', 'id': 'made-up'},
+              'confidence': 0.9,
+            },
+          ],
+        });
+        conversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              when(
+                () => manager.turnCount,
+              ).thenReturn(frontProviderCallsPerTurn);
+              await (strategy! as FrontAgentStrategy).processToolCalls(
+                toolCalls: [refused],
+                manager: manager,
+              );
+              when(() => manager.messages).thenReturn([
+                ChatCompletionMessage.assistant(
+                  content: 'Filed under the made-up task.',
+                  toolCalls: [refused],
+                ),
+              ]);
+              return null;
+            };
+
+        final result = await run();
+
+        expect(result.success, isFalse);
+        expect(replyPayload(), isNull);
+      },
+    );
   });
 
   group('a question', () {
@@ -1564,7 +1763,7 @@ void main() {
         seedMessage();
         stubModel(
           (_) => [
-            call('reply_to_user', {'message': 'Filed.'}),
+            answer('Filed.'),
             call('dispatch', dispatchArgs()),
           ],
         );
@@ -1603,7 +1802,7 @@ void main() {
         seedMessage();
         stubModel(
           (_) => [
-            call('reply_to_user', {'message': 'Filed.'}),
+            answer('Filed.'),
             call('dispatch', dispatchArgs()),
           ],
         );
@@ -1693,7 +1892,7 @@ void main() {
               when(() => manager.turnCount).thenReturn(1);
               await (strategy! as FrontAgentStrategy).processToolCalls(
                 toolCalls: [
-                  call('reply_to_user', {'message': 'Hi.'}),
+                  answer('Hi.'),
                 ],
                 manager: manager,
               );

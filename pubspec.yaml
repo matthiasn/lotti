@@ -19,6 +19,7 @@ environment:
   flutter: '>=3.47.0'
 
 dependencies:
+  a2ui_agent: ^0.3.0
   a2ui_core: ^0.7.0
   a2ui_flutter: ^0.3.0
   async: ^2.13.1

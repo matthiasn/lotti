@@ -134,6 +134,37 @@ void main() {
     expect(order.toSet(), hasLength(order.length));
   });
 
+  testWidgets('a caption she gave is the screen-reader label of its '
+      'component, and is never shown', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpReplySurfaces(tester, {
+      'a1': FrontReplySurface.compose(
+        surfaceId: 'a1',
+        components: [
+          const {
+            'component': FrontReplyComponents.text,
+            'text': 'Two are due:',
+          },
+          {
+            ...cards(const [ice, feed]),
+            'caption': 'Tasks due today',
+          },
+          const {
+            'component': FrontReplyComponents.loggedTimeChart,
+            'caption': 'Logged time this week',
+          },
+        ],
+        loggedTime: loggedTime,
+      ),
+    }, taps: FrontReplyTaps());
+
+    expect(find.bySemanticsLabel('Tasks due today'), findsOneWidget);
+    expect(find.bySemanticsLabel('Logged time this week'), findsOneWidget);
+    expect(find.text('Tasks due today'), findsNothing);
+    expect(find.text('Logged time this week'), findsNothing);
+    handle.dispose();
+  });
+
   testWidgets('a tap on a card or a closed task goes to the chat', (
     tester,
   ) async {

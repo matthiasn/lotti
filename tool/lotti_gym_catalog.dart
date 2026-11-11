@@ -197,6 +197,11 @@ Future<Map<String, Object?>> buildLottiGymCatalog() async {
           'single-entry-point plan); run directly with '
           'FRONT_AGENT_EVAL_OUTPUT. A Gym adapter follows with the chat '
           'surface in slice 1.',
+      '$_ai/front_agent_answer_eval_live_test.dart':
+          'Front-agent answers in the reply format (UI blocks, then prose) '
+          'over the same hand-held index, on the Mistral API rather than '
+          'the Melious transport; run directly with '
+          'FRONT_ANSWER_EVAL_OUTPUT.',
     },
   };
 }
