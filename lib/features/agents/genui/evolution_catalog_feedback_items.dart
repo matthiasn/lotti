@@ -1,4 +1,4 @@
-import 'package:genui/genui.dart';
+import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_schemas.dart';
 import 'package:lotti/features/agents/ui/agent_palette.dart';
@@ -8,17 +8,16 @@ import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Inline grouped feedback classification card.
-final feedbackClassificationItem = CatalogItem(
+final feedbackClassificationItem = ComponentImplementation(
   name: 'FeedbackClassification',
-  dataSchema: feedbackClassificationSchema,
-  widgetBuilder: (itemContext) {
-    final json = itemContext.data;
-    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+  schema: feedbackClassificationSchema,
+  builder: (buildContext, node, props, _) {
+    final json = evolutionProps(props);
     final items = readMapList(json, 'items');
     final positiveCount = readInt(json, 'positiveCount');
     final negativeCount = readInt(json, 'negativeCount');
     final neutralCount = readInt(json, 'neutralCount');
-    final context = itemContext.buildContext;
+    final context = buildContext;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -102,14 +101,13 @@ final feedbackClassificationItem = CatalogItem(
 );
 
 /// Category distribution visualization card.
-final feedbackCategoryBreakdownItem = CatalogItem(
+final feedbackCategoryBreakdownItem = ComponentImplementation(
   name: 'FeedbackCategoryBreakdown',
-  dataSchema: feedbackCategoryBreakdownSchema,
-  widgetBuilder: (itemContext) {
-    final json = itemContext.data;
-    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+  schema: feedbackCategoryBreakdownSchema,
+  builder: (buildContext, node, props, _) {
+    final json = evolutionProps(props);
     final categories = readMapList(json, 'categories');
-    final context = itemContext.buildContext;
+    final context = buildContext;
 
     final totalCount = categories.fold<int>(
       0,
@@ -160,19 +158,18 @@ final feedbackCategoryBreakdownItem = CatalogItem(
 );
 
 /// Compact session progress status card.
-final sessionProgressItem = CatalogItem(
+final sessionProgressItem = ComponentImplementation(
   name: 'SessionProgress',
-  dataSchema: sessionProgressSchema,
-  widgetBuilder: (itemContext) {
-    final json = itemContext.data;
-    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+  schema: sessionProgressSchema,
+  builder: (buildContext, node, props, _) {
+    final json = evolutionProps(props);
     final sessionNumber = readInt(json, 'sessionNumber');
     final totalSessions = readInt(json, 'totalSessions');
     final feedbackCount = readInt(json, 'feedbackCount');
     final positiveCount = readInt(json, 'positiveCount');
     final negativeCount = readInt(json, 'negativeCount');
     final status = readString(json, 'status', 'active');
-    final context = itemContext.buildContext;
+    final context = buildContext;
 
     final statusColor = switch (status) {
       'completed' => AgentPalette.green,

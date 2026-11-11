@@ -13,7 +13,6 @@ import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
-import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
@@ -572,10 +571,22 @@ hologram:x: not listed''');
         ],
         manager: manager,
       );
+      // Linked by its title, the list line is drawn as a card. Her text —
+      // what is spoken — keeps it: cards are not read aloud.
       expect(
         s.replyToUser,
         'Overdue:\n- [Paint the shed](lotti://task/shed)',
       );
+      expect(s.replyComponents.first, {
+        'component': 'Text',
+        'text': 'Overdue:',
+      });
+      expect(s.replyComponents.last, {
+        'component': 'TaskCards',
+        'items': [
+          {'kind': 'task', 'id': 'shed', 'title': 'Paint the shed'},
+        ],
+      });
     });
 
     test('refuses a missing window, a reach past a week, a second list, and '
@@ -841,10 +852,19 @@ hologram:x: not listed''');
           manager: manager,
         );
         // Only the task she was shown links; the one filtered out does not.
+        // Only the task she was shown links; the one filtered out does not.
         expect(
           s.replyToUser,
           'In Home:\n- [Prune the roses](lotti://task/roses)\n\n'
           'Not Mow the lawn.',
+        );
+        expect(
+          [
+            for (final component in s.replyComponents)
+              if (component case {'items': final List<Object?> items})
+                for (final item in items) (item! as Map)['id'],
+          ],
+          ['roses'],
         );
       },
     );
@@ -1168,10 +1188,16 @@ hologram:x: not listed''');
           manager: manager,
         );
         expect(action, ConversationAction.complete);
+        // Named by title they are linked; the closed-task cards show every
+        // one of them, so her lists of them are not drawn a second time.
         expect(
           s.replyToUser,
           'Yesterday you completed:\n- [Prune the roses](lotti://task/roses)\n'
           'and rejected:\n- [Paint the shed](lotti://task/shed)',
+        );
+        expect(
+          [for (final component in s.replyComponents) component['component']],
+          ['Text', 'Text', 'ClosedTasks'],
         );
         expect(s.dispatch, isNull);
       },
@@ -1606,11 +1632,21 @@ hologram:x: not listed''');
       id: 'roof',
       title: 'Fix the roof',
     );
-    FrontEntityReference card(FrontIndexRow row) => FrontEntityReference(
-      kind: FrontEntityKind.task,
-      id: row.id,
-      title: row.title,
-    );
+    Map<String, Object?> text(String words) => {
+      'component': 'Text',
+      'text': words,
+    };
+    Map<String, Object?> cards(List<FrontIndexRow> rows) => {
+      'component': 'TaskCards',
+      'items': [
+        for (final row in rows)
+          FrontEntityReference(
+            kind: FrontEntityKind.task,
+            id: row.id,
+            title: row.title,
+          ).toJson(),
+      ],
+    };
     FrontDueTasks dueShedAndRoof(FrontDueQuery query) => FrontDueTasks(
       window: query.window,
       today: DateTime(2026, 11, 2),
@@ -1618,36 +1654,84 @@ hologram:x: not listed''');
       rows: const [shed, roof],
     );
 
-    test('parts are stored as she composed them, cards from what the turn '
+    test('components are kept as she composed them, cards from what the turn '
         'saw; due tasks she did not list follow', () async {
       final s = strategy(dueLister: (query) async => dueShedAndRoof(query));
       await s.processToolCalls(
         toolCalls: [
           _call('list_due_tasks', {'which': 'all'}),
           _call('reply_to_user', {
-            'parts': [
-              {'text': 'One is overdue:'},
+            'components': [
+              {'component': 'Text', 'text': 'One is overdue:'},
               {
-                'cards': ['task:shed'],
+                'component': 'TaskCards',
+                'items': ['task:shed'],
               },
-              {'text': 'And the garden (task:garden) waits.'},
+              {
+                'component': 'Text',
+                'text': 'And the garden (task:garden) waits.',
+              },
             ],
           }, id: 'call-2'),
         ],
         manager: manager,
       );
 
-      expect(s.replyParts, [
-        const FrontReplyText('One is overdue:'),
-        FrontReplyCards([card(shed)]),
+      expect(s.replyComponents, [
+        text('One is overdue:'),
+        cards([shed]),
         // A recited id beside its title folds into one link (see
         // linkFrontReferences): her words pass through the same linking.
-        const FrontReplyText('And the [Garden](lotti://task/garden) waits.'),
-        FrontReplyCards([card(roof)]),
+        text('And the [Garden](lotti://task/garden) waits.'),
+        cards([roof]),
       ]);
       expect(
         s.replyToUser,
         'One is overdue:\n\nAnd the [Garden](lotti://task/garden) waits.',
+      );
+    });
+
+    test('a list of task links she wrote in her words is cards anyway, with '
+        'what the line said as the note', () async {
+      final s = strategy(dueLister: (query) async => dueShedAndRoof(query));
+      await s.processToolCalls(
+        toolCalls: [
+          _call('list_due_tasks', {'which': 'today'}),
+          _call('reply_to_user', {
+            'message':
+                'Two are due:\n\n'
+                '- [Paint the shed](task:shed) — before the rain\n'
+                '- Fix the roof',
+          }, id: 'call-2'),
+        ],
+        manager: manager,
+      );
+
+      expect(s.replyComponents, [
+        text('Two are due:'),
+        {
+          'component': 'TaskCards',
+          'items': [
+            const FrontEntityReference(
+              kind: FrontEntityKind.task,
+              id: 'shed',
+              title: 'Paint the shed',
+              note: 'before the rain',
+            ).toJson(),
+            const FrontEntityReference(
+              kind: FrontEntityKind.task,
+              id: 'roof',
+              title: 'Fix the roof',
+            ).toJson(),
+          ],
+        },
+      ]);
+      // Spoken and remembered as she wrote it, list and all.
+      expect(
+        s.replyToUser,
+        'Two are due:\n\n'
+        '- [Paint the shed](lotti://task/shed) — before the rain\n'
+        '- [Fix the roof](lotti://task/roof)',
       );
     });
 
@@ -1658,11 +1742,12 @@ hologram:x: not listed''');
         toolCalls: [
           _call('reply_to_user', {
             'message': 'Here:',
-            'parts': [
+            'components': [
               {
-                'cards': ['task:made-up', 'task:garden'],
+                'component': 'TaskCards',
+                'items': ['task:made-up', 'task:garden'],
               },
-              {'show': 'logged_time_chart'},
+              {'component': 'LoggedTimeChart'},
             ],
           }),
         ],
@@ -1672,24 +1757,27 @@ hologram:x: not listed''');
       // A refusal could end a turn with no call left without any answer.
       expect(action, ConversationAction.complete);
       expect(s.replyToUser, 'Here:');
-      expect(s.replyParts, [
-        const FrontReplyText('Here:'),
-        const FrontReplyCards([
-          FrontEntityReference(
-            kind: FrontEntityKind.task,
-            id: 'garden',
-            title: 'Garden',
-          ),
-        ]),
+      expect(s.replyComponents, [
+        text('Here:'),
+        {
+          'component': 'TaskCards',
+          'items': [
+            const FrontEntityReference(
+              kind: FrontEntityKind.task,
+              id: 'garden',
+              title: 'Garden',
+            ).toJson(),
+          ],
+        },
       ]);
       final answer = responses().single;
       expect(answer, startsWith('Reply delivered without what could not be'));
       expect(answer, contains('task:made-up, not a task or project'));
-      expect(answer, contains('show "logged_time_chart"'));
+      expect(answer, contains('LoggedTimeChart, which no lookup made'));
       verify(
         () => domainLogger.log(
           any(),
-          'reply_to_user dropped 2 part(s) it could not draw',
+          'reply_to_user dropped 2 component(s) it could not draw',
           subDomain: 'FrontAgentStrategy',
           level: InsightLevel.warn,
         ),
@@ -1703,9 +1791,10 @@ hologram:x: not listed''');
         await s.processToolCalls(
           toolCalls: [
             _call('reply_to_user', {
-              'parts': [
+              'components': [
                 {
-                  'cards': ['task:garden'],
+                  'component': 'TaskCards',
+                  'items': ['task:garden'],
                 },
               ],
             }),

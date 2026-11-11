@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:genui/genui.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
@@ -61,7 +60,7 @@ class ActiveEvolutionSession {
   final GeminiThinkingMode? geminiThinkingMode;
 
   /// GenUI message processor for rendering dynamic surfaces.
-  final SurfaceController? processor;
+  final EvolutionSurfaces? processor;
 
   /// Bridge between OpenAI tool calls and GenUI surface creation.
   final GenUiBridge? genUiBridge;

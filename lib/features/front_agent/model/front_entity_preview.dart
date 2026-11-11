@@ -40,16 +40,22 @@ class FrontEntityReference {
     required this.kind,
     required this.id,
     required this.title,
+    this.note,
   });
 
   final FrontEntityKind kind;
   final String id;
   final String title;
 
+  /// A few words she attached to this card — the time logged on it, why it
+  /// is listed — shown on a task's card; null when she gave none.
+  final String? note;
+
   Map<String, Object?> toJson() => {
     'kind': kind.name,
     'id': id,
     'title': title,
+    'note': ?note,
   };
 
   /// Reads a reference a reply stored; null for a shape this build does
@@ -62,7 +68,13 @@ class FrontEntityReference {
     if (kind == null || id is! String || id.isEmpty || title is! String) {
       return null;
     }
-    return FrontEntityReference(kind: kind, id: id, title: title);
+    final note = json['note'];
+    return FrontEntityReference(
+      kind: kind,
+      id: id,
+      title: title,
+      note: note is String && note.trim().isNotEmpty ? note.trim() : null,
+    );
   }
 
   /// Reads a stored list, skipping what [fromJson] does not know.
@@ -76,10 +88,11 @@ class FrontEntityReference {
       other is FrontEntityReference &&
       other.kind == kind &&
       other.id == id &&
-      other.title == title;
+      other.title == title &&
+      other.note == note;
 
   @override
-  int get hashCode => Object.hash(kind, id, title);
+  int get hashCode => Object.hash(kind, id, title, note);
 
   @override
   String toString() => 'FrontEntityReference(${kind.name}, $id, $title)';

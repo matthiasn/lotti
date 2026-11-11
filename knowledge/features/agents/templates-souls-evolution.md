@@ -18,7 +18,7 @@ sources:
     last_modified: 2026-07-21
   - id: genui-bridge
     resource: ../../../lib/features/agents/genui/genui_bridge.dart
-    title: GenUiBridge — render_surface tool calls into A2UI surfaces of the evolution catalog
+    title: GenUiBridge — render_surface tool calls into A2UI v1.0 surfaces of the evolution catalog
     last_modified: 2026-11-11
   - id: improver
     resource: ../../../lib/features/agents/workflow/improver_agent_workflow.dart
@@ -278,17 +278,26 @@ rather than a transcript, and `AgentTypingIndicator` marks the agent
 composing — it animates perpetually, so a test that reaches either must `pump`
 rather than `pumpAndSettle`.
 
-**Rich cards in the chat are GenUI surfaces the model asks for by tool.**
+**Rich cards in the chat are A2UI surfaces the model asks for by tool.**
 The model calls `render_surface(surfaceId, rootType, data)`; `GenUiBridge`
-turns it into A2UI `CreateSurface` and `UpdateComponents` messages for a
-`SurfaceController` of the evolution catalog (`buildEvolutionCatalog`), and
-`EvolutionMessageList` draws each as GenUI's `Surface`. The model never
-writes A2UI JSON in its text. A `rootType` the evolution catalog does not
-have, or `data` that is not an object, draws nothing: the bridge throws a
+turns it into one A2UI v1.0 `createSurface` message for the session's
+`EvolutionSurfaces` — an `a2ui_core` `MessageProcessor` of the evolution
+catalog (`buildEvolutionCatalog`) — and `EvolutionMessageList` draws each
+as `a2ui_flutter`'s `A2uiSurface`. The model never writes A2UI itself. The
+processor checks the component against its type's schema before anything
+is created: a `rootType` the catalog does not have, `data` that is not an
+object, or properties the schema refuses draw nothing. The bridge throws a
 `GenUiBridgeException` and `EvolutionStrategy` answers the call with its
-reason (`Error: surface not drawn — …`), so a surface is never drawn as a
-type the model did not ask for. A surface the model did not name gets an id
-of its own (`surface-unnamed-<n>`), so two never collide.
+reason (`Error: surface not drawn — …`, naming each property), so a
+surface is never drawn as a type the model did not ask for. A null property
+counts as not given, which the app's own proposal surfaces rely on. A
+surface the model did not name gets an id of its own
+(`surface-unnamed-<n>`); one it names again is updated in place, and an
+update the schema refuses leaves the card already on screen as it was. A card's widgets
+send the user's choice as an A2UI action on the surface
+(`evolutionAction`, through `EvolutionSurfaceScope`), what was chosen in
+the action's `context`; `GenUiEventHandler` routes it from the processor's
+`onAction`.
 
 **Both review pages hang off a `/review` sub-route, declared once.** The
 template detail page beams to `/settings/agents/templates/<templateId>/review`

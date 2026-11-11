@@ -202,7 +202,7 @@ extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
 
       // Set up GenUI infrastructure.
       final catalog = buildEvolutionCatalog();
-      final processor = SurfaceController(catalogs: [catalog]);
+      final processor = EvolutionSurfaces(catalogs: [catalog]);
       final bridge = GenUiBridge(processor: processor);
       final eventHandler = GenUiEventHandler(
         processor: processor,

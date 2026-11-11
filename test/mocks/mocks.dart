@@ -8,7 +8,6 @@ import 'package:drift/drift.dart' as drift;
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:genui/genui.dart' as genui;
 import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';
 import 'package:http/http.dart' as http;
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -461,10 +460,6 @@ class MockSyncDescriptorFetcher extends Mock implements SyncDescriptorFetcher {}
 
 class MockSyncDescriptorRecovery extends Mock
     implements SyncDescriptorRecovery {}
-
-class MockSurfaceController extends Mock implements genui.SurfaceController {}
-
-class MockSurfaceContext extends Mock implements genui.SurfaceContext {}
 
 class MockMatrixClient extends Mock implements Client {}
 

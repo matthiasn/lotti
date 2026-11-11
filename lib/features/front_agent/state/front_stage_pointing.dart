@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderFamily;
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
-import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
@@ -25,7 +24,7 @@ bool frontLatestReplyHasVisual(FrontChatThread thread) {
       )
       .firstOrNull;
   if (reply == null) return false;
-  return thread.partsOf(reply.id).any((part) => part is! FrontReplyText);
+  return thread.surfacesByMessageId[reply.id]?.hasVisual ?? false;
 }
 
 /// Whether she points at the conversation she floats over on her page, for a

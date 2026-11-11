@@ -223,6 +223,39 @@ void main() {
       expect(opened, [coldRef, iceRef]);
     });
 
+    testWidgets('a note she attached to a task is on its card, first under '
+        'the title, and read out with it', (tester) async {
+      await pump(
+        tester,
+        references: const [
+          FrontEntityReference(
+            kind: FrontEntityKind.task,
+            id: 'ice-pad',
+            title: 'Check the ice-pad weather window',
+            note: '2h 10m',
+          ),
+        ],
+        load: (_) async => ice(),
+      );
+
+      final card = find.byKey(FrontEntityPreviewKeys.card('ice-pad'));
+      final subtitle = tester
+          .widgetList<RichText>(
+            find.descendant(of: card, matching: find.byType(RichText)),
+          )
+          .map((text) => text.text.toPlainText())
+          .firstWhere((text) => text.contains('2h 10m'));
+      // The note leads the lines under the title, ahead of the one-liner.
+      expect(
+        subtitle.indexOf('2h 10m'),
+        lessThan(subtitle.indexOf('Crosswind near the 18-knot limit')),
+      );
+      expect(
+        find.bySemanticsLabel(RegExp('weather window.*2h 10m.*Crosswind')),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('keeps a small gap between cards', (tester) async {
       await pump(
         tester,

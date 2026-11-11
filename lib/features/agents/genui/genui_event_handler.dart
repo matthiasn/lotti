@@ -1,20 +1,19 @@
-import 'dart:async';
-import 'dart:convert';
-
-import 'package:genui/genui.dart';
+import 'package:a2ui_core/a2ui_core.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/services/domain_logging.dart';
 
-/// Routes GenUI surface events to the evolution chat logic.
+/// Routes the actions of evolution surfaces to the evolution chat logic.
 ///
-/// Listens on [SurfaceController.onSubmit] for [ChatMessage]s containing
-/// [UiInteractionPart]s and dispatches them to registered callbacks.
+/// Listens on the processor's `onAction` and dispatches each
+/// [A2uiRendererAction] to its registered callback. What the user chose
+/// travels in the action's `context`.
 class GenUiEventHandler {
   GenUiEventHandler({
     required this.processor,
     required this._domainLogger,
   });
 
-  final SurfaceController processor;
+  final EvolutionSurfaces processor;
 
   /// Receives the failures of malformed surface events.
   final DomainLogger _domainLogger;
@@ -40,119 +39,64 @@ class GenUiEventHandler {
   /// Called when the user picks an option in an A/B comparison surface.
   void Function(String surfaceId, String value)? onABComparisonSubmitted;
 
-  StreamSubscription<ChatMessage>? _subscription;
+  Subscription? _subscription;
 
-  /// Start listening for surface events. Idempotent: cancels any existing
+  /// Start listening for surface actions. Idempotent: cancels any existing
   /// subscription before creating a new one.
   void listen() {
-    _subscription?.cancel();
-    _subscription = processor.onSubmit.listen(_handleEvent);
+    _subscription?.unsubscribe();
+    _subscription = processor.model.onAction.subscribe(_handleAction);
   }
 
-  void _handleEvent(ChatMessage message) {
+  void _handleAction(A2uiRendererAction action) {
     try {
-      for (final interactionPart in message.parts.uiInteractionParts) {
-        _processInteraction(interactionPart.interaction);
+      final surfaceId = action.surfaceId;
+      switch (action.name) {
+        case 'proposal_approved' || 'proposal_rejected':
+          onProposalAction?.call(surfaceId, action.name);
+        case 'soul_proposal_approved' || 'soul_proposal_rejected':
+          onSoulProposalAction?.call(surfaceId, action.name);
+        case 'ratings_submitted':
+          if (action.context['ratings'] case final Map<Object?, Object?> raw) {
+            onRatingsSubmitted?.call(surfaceId, {
+              for (final MapEntry(:key, :value) in raw.entries)
+                '$key': value is num ? value.toInt() : 0,
+            });
+          }
+        case 'ab_comparison_submitted':
+          if (_chosen(action) case final value?) {
+            onABComparisonSubmitted?.call(surfaceId, value);
+          }
+        case 'binary_choice_submitted':
+          if (_chosen(action) case final value?) {
+            onBinaryChoiceSubmitted?.call(surfaceId, value);
+          }
       }
     } catch (e, s) {
-      _logFailure(e, s, 'Failed to handle GenUI event');
+      // A callback's own failure must not break the surface's event stream.
+      // The action's context is the user's choice — model-written text — so
+      // only the error is logged, without its source.
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        DomainLogger.withoutSource(e),
+        stackTrace: s,
+        subDomain: 'GenUiEventHandler',
+        message: 'Failed to handle surface action ${action.name}',
+        errorType: e.runtimeType,
+      );
     }
   }
 
-  void _processInteraction(String interaction) {
-    try {
-      final decoded = jsonDecode(interaction);
-      if (decoded is! Map<String, dynamic>) return;
-      final actionRaw = decoded['action'];
-      if (actionRaw is! Map<String, dynamic>) return;
-
-      final action = UserActionEvent.fromMap(actionRaw);
-      final name = action.name;
-      if (name == 'proposal_approved' || name == 'proposal_rejected') {
-        onProposalAction?.call(action.surfaceId, name);
-      } else if (name == 'soul_proposal_approved' ||
-          name == 'soul_proposal_rejected') {
-        onSoulProposalAction?.call(action.surfaceId, name);
-      } else if (name == 'ratings_submitted') {
-        final ratingsJson = action.sourceComponentId;
-        try {
-          final decoded = jsonDecode(ratingsJson);
-          if (decoded is Map<String, dynamic>) {
-            final ratings = decoded.map(
-              (k, v) => MapEntry(k, v is num ? v.toInt() : 0),
-            );
-            onRatingsSubmitted?.call(action.surfaceId, ratings);
-          }
-        } catch (e, s) {
-          _logFailure(
-            e,
-            s,
-            'Failed to parse ratings JSON '
-            '(bytes=${utf8.encode(ratingsJson).length})',
-          );
-        }
-      } else if (name == 'ab_comparison_submitted') {
-        final payloadJson = action.sourceComponentId;
-        try {
-          final decoded = jsonDecode(payloadJson);
-          if (decoded is Map<String, dynamic>) {
-            final value = decoded['value'];
-            if (value is String && value.trim().isNotEmpty) {
-              onABComparisonSubmitted?.call(action.surfaceId, value.trim());
-            }
-          }
-        } catch (e, s) {
-          _logFailure(
-            e,
-            s,
-            'Failed to parse AB comparison JSON '
-            '(bytes=${utf8.encode(payloadJson).length})',
-          );
-        }
-      } else if (name == 'binary_choice_submitted') {
-        final payloadJson = action.sourceComponentId;
-        try {
-          final decoded = jsonDecode(payloadJson);
-          if (decoded is Map<String, dynamic>) {
-            final value = decoded['value'];
-            if (value is String && value.trim().isNotEmpty) {
-              onBinaryChoiceSubmitted?.call(action.surfaceId, value.trim());
-            }
-          }
-        } catch (e, s) {
-          _logFailure(
-            e,
-            s,
-            'Failed to parse binary choice JSON '
-            '(bytes=${utf8.encode(payloadJson).length})',
-          );
-        }
-      }
-    } catch (e, s) {
-      _logFailure(e, s, 'Failed to process GenUI interaction');
-    }
-  }
-
-  /// Logs a failed surface event without its payload.
-  ///
-  /// A `jsonDecode` [FormatException] prints the offending source, which here
-  /// is the user's rating, choice or comparison option — model-written text —
-  /// so it is logged through [DomainLogger.withoutSource], and `errorType`
-  /// keeps the original classification in the PII-safe log.
-  void _logFailure(Object error, StackTrace stackTrace, String message) {
-    _domainLogger.error(
-      LogDomain.agentWorkflow,
-      DomainLogger.withoutSource(error),
-      stackTrace: stackTrace,
-      subDomain: 'GenUiEventHandler',
-      message: message,
-      errorType: error.runtimeType,
-    );
-  }
+  /// The non-blank `value` the user chose, or null.
+  static String? _chosen(A2uiRendererAction action) =>
+      switch (action.context['value']) {
+        final String value when value.trim().isNotEmpty => value.trim(),
+        _ => null,
+      };
 
   /// Stop listening and clean up.
   void dispose() {
-    _subscription?.cancel();
+    _subscription?.unsubscribe();
     _subscription = null;
   }
 }

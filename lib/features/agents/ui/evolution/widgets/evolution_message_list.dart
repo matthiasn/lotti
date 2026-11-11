@@ -1,4 +1,6 @@
-import 'package:genui/genui.dart';
+import 'package:a2ui_flutter/a2ui_flutter.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
 import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
@@ -30,7 +32,7 @@ class EvolutionMessageList extends StatefulWidget {
   final List<EvolutionChatMessage> messages;
   final bool isWaiting;
   final EvolutionSystemTextResolver resolveSystemText;
-  final SurfaceController? processor;
+  final EvolutionSurfaces? processor;
 
   @override
   State<EvolutionMessageList> createState() => _EvolutionMessageListState();
@@ -128,12 +130,17 @@ class _EvolutionMessageListState extends State<EvolutionMessageList> {
         text: widget.resolveSystemText(context, text),
         role: 'system',
       ),
-      EvolutionSurfaceMessage(:final surfaceId) =>
-        widget.processor != null
-            ? Surface(
-                surfaceContext: widget.processor!.contextFor(surfaceId),
-              )
-            : const SizedBox.shrink(),
+      EvolutionSurfaceMessage(:final surfaceId) => switch (widget
+          .processor
+          ?.model
+          .getSurface(surfaceId)) {
+        final surface? => EvolutionSurfaceScope(
+          key: ObjectKey(surface),
+          surface: surface,
+          child: A2uiSurface(surface: surface),
+        ),
+        null => const SizedBox.shrink(),
+      },
     };
   }
 }

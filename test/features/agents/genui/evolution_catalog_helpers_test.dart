@@ -1,5 +1,8 @@
+import 'package:a2ui_core/a2ui_core.dart';
+import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -529,5 +532,27 @@ void main() {
       // must not be equal.
       expect(boxColors[0], isNot(boxColors[1]));
     });
+  });
+
+  test('the surface scope tells its dependents only when the surface '
+      'itself changes', () {
+    final processor = EvolutionSurfaces(catalogs: [buildEvolutionCatalog()]);
+    addTearDown(processor.dispose);
+    SurfaceModel<ComponentImplementation> surface(String id) {
+      processor.processMessages([
+        {
+          'version': '1.0',
+          'createSurface': {'surfaceId': id, 'catalogId': evolutionCatalogId},
+        },
+      ]);
+      return processor.model.getSurface(id)!;
+    }
+
+    final a = surface('a');
+    EvolutionSurfaceScope scope(SurfaceModel<ComponentImplementation> on) =>
+        EvolutionSurfaceScope(surface: on, child: const SizedBox.shrink());
+
+    expect(scope(a).updateShouldNotify(scope(a)), isFalse);
+    expect(scope(a).updateShouldNotify(scope(surface('b'))), isTrue);
   });
 }

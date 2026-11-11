@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:a2ui_core/a2ui_core.dart';
+import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -324,5 +326,46 @@ Widget categoryBar({
         ),
       ],
     ),
+  );
+}
+
+/// A component's properties as plain values: what the agent gave, with any
+/// data binding resolved.
+Map<String, Object?> evolutionProps(ComponentProps props) => {
+  for (final MapEntry(:key, :value) in props.entries)
+    key: ComponentProps.unwrap(value),
+};
+
+/// The surface a component is drawn on, for the actions its widgets send.
+/// `a2ui_flutter` keeps its own scope private, so the chat provides this one
+/// around each `A2uiSurface`.
+class EvolutionSurfaceScope extends InheritedWidget {
+  const EvolutionSurfaceScope({
+    required this.surface,
+    required super.child,
+    super.key,
+  });
+
+  final SurfaceModel<ComponentImplementation> surface;
+
+  @override
+  bool updateShouldNotify(EvolutionSurfaceScope oldWidget) =>
+      !identical(surface, oldWidget.surface);
+}
+
+/// Sends the user's action [name] on the surface [node] is drawn on, with
+/// what was chosen in [context]. It arrives on the processor's `onAction`.
+Future<void> evolutionAction(
+  BuildContext buildContext,
+  ComponentNode<ComponentImplementation> node,
+  String name, [
+  Map<String, Object?> context = const {},
+]) async {
+  final scope = buildContext
+      .getInheritedWidgetOfExactType<EvolutionSurfaceScope>();
+  assert(scope != null, 'An evolution surface is drawn in its scope');
+  await scope?.surface.dispatchAction(
+    {'name': name, 'context': context},
+    node.componentId,
   );
 }

@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/genui/genui_event_handler.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
@@ -982,16 +983,19 @@ void main() {
         () async {
           // Build a GenUiBridge backed by a MockSurfaceController, then
           // pre-populate it with one pending surface via handleToolCall.
-          final mockProcessor = MockSurfaceController();
-          when(
-            () => mockProcessor.handleMessage(any()),
-          ).thenReturn(null);
+          final mockProcessor = EvolutionSurfaces(
+            catalogs: [buildEvolutionCatalog()],
+          );
 
           final bridge = GenUiBridge(processor: mockProcessor)
             ..handleToolCall({
               'surfaceId': 'opening-surface-1',
               'rootType': 'EvolutionProposal',
-              'data': <String, dynamic>{},
+              'data': {
+                'generalDirective': 'Be brief.',
+                'reportDirective': 'Lead with the outcome.',
+                'rationale': 'Reports ran long.',
+              },
             });
 
           // Create a strategy that exposes the bridge.
@@ -1037,21 +1041,28 @@ void main() {
       test(
         'adds multiple surfaces from opening drain in order',
         () async {
-          final mockProcessor = MockSurfaceController();
-          when(
-            () => mockProcessor.handleMessage(any()),
-          ).thenReturn(null);
+          final mockProcessor = EvolutionSurfaces(
+            catalogs: [buildEvolutionCatalog()],
+          );
 
           final bridge = GenUiBridge(processor: mockProcessor)
             ..handleToolCall({
               'surfaceId': 'surf-a',
               'rootType': 'EvolutionProposal',
-              'data': <String, dynamic>{},
+              'data': {
+                'generalDirective': 'Be brief.',
+                'reportDirective': 'Lead with the outcome.',
+                'rationale': 'Reports ran long.',
+              },
             })
             ..handleToolCall({
               'surfaceId': 'surf-b',
               'rootType': 'EvolutionProposal',
-              'data': <String, dynamic>{},
+              'data': {
+                'generalDirective': 'Be brief.',
+                'reportDirective': 'Lead with the outcome.',
+                'rationale': 'Reports ran long.',
+              },
             });
 
           final strategyWithBridge = EvolutionStrategy(genUiBridge: bridge);
@@ -1089,10 +1100,8 @@ void main() {
       ActiveEvolutionSession makeSessionWithEventHandler({
         String sessionId = 'session-1',
       }) {
-        final mockProcessor = MockSurfaceController();
-        when(() => mockProcessor.handleMessage(any())).thenReturn(null);
-        when(() => mockProcessor.onSubmit).thenAnswer(
-          (_) => const Stream.empty(),
+        final mockProcessor = EvolutionSurfaces(
+          catalogs: [buildEvolutionCatalog()],
         );
 
         final eventHandler = GenUiEventHandler(
@@ -1472,15 +1481,18 @@ void main() {
 
           // Create a bridge pre-loaded with a surface that will be added
           // by getSession(...) during sendMessage.
-          final mockProcessor = MockSurfaceController();
-          when(
-            () => mockProcessor.handleMessage(any()),
-          ).thenReturn(null);
+          final mockProcessor = EvolutionSurfaces(
+            catalogs: [buildEvolutionCatalog()],
+          );
           final bridge = GenUiBridge(processor: mockProcessor)
             ..handleToolCall({
               'surfaceId': 'response-surface-1',
               'rootType': 'EvolutionProposal',
-              'data': <String, dynamic>{},
+              'data': {
+                'generalDirective': 'Be brief.',
+                'reportDirective': 'Lead with the outcome.',
+                'rationale': 'Reports ran long.',
+              },
             });
 
           // getSession will return a session whose strategy has the bridge.

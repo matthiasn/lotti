@@ -1,4 +1,4 @@
-import 'package:genui/genui.dart';
+import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_schemas.dart';
 import 'package:lotti/features/agents/genui/evolution_note_confirmation_card.dart';
@@ -9,12 +9,11 @@ import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Confirmation card for a recorded evolution note.
-final evolutionNoteConfirmationItem = CatalogItem(
+final evolutionNoteConfirmationItem = ComponentImplementation(
   name: 'EvolutionNoteConfirmation',
-  dataSchema: noteConfirmationSchema,
-  widgetBuilder: (itemContext) {
-    final json = itemContext.data;
-    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+  schema: noteConfirmationSchema,
+  builder: (buildContext, node, props, _) {
+    final json = evolutionProps(props);
     final kind = readString(json, 'kind', 'reflection');
     final content = readString(json, 'content');
 
@@ -26,19 +25,18 @@ final evolutionNoteConfirmationItem = CatalogItem(
 );
 
 /// Inline metrics summary widget.
-final metricsSummaryItem = CatalogItem(
+final metricsSummaryItem = ComponentImplementation(
   name: 'MetricsSummary',
-  dataSchema: metricsSummarySchema,
-  widgetBuilder: (itemContext) {
-    final json = itemContext.data;
-    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+  schema: metricsSummarySchema,
+  builder: (buildContext, node, props, _) {
+    final json = evolutionProps(props);
     final totalWakes = readInt(json, 'totalWakes');
     final successRate = readDouble(json, 'successRate');
     final failureCount = readInt(json, 'failureCount');
     final avgDuration = readNumOrNull(json, 'averageDurationSeconds');
     final activeInstances = readNumOrNull(json, 'activeInstances');
 
-    final context = itemContext.buildContext;
+    final context = buildContext;
     final messages = context.messages;
 
     return Padding(
@@ -77,18 +75,17 @@ final metricsSummaryItem = CatalogItem(
 );
 
 /// Before/after version comparison widget.
-final versionComparisonItem = CatalogItem(
+final versionComparisonItem = ComponentImplementation(
   name: 'VersionComparison',
-  dataSchema: versionComparisonSchema,
-  widgetBuilder: (itemContext) {
-    final json = itemContext.data;
-    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+  schema: versionComparisonSchema,
+  builder: (buildContext, node, props, _) {
+    final json = evolutionProps(props);
     final beforeVersion = readInt(json, 'beforeVersion');
     final afterVersion = readInt(json, 'afterVersion');
     final beforeDirectives = readString(json, 'beforeDirectives');
     final afterDirectives = readString(json, 'afterDirectives');
     final changesSummary = readStringOrNull(json, 'changesSummary');
-    final context = itemContext.buildContext;
+    final context = buildContext;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),

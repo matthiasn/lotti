@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:genui/genui.dart' as genui;
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog.dart';
+import 'package:lotti/features/agents/genui/evolution_note_confirmation_card.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
@@ -16,10 +17,8 @@ import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_inp
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_session_opening.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
-import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 import 'evolution_chat_test_utils.dart';
@@ -545,20 +544,28 @@ void main() {
       },
     );
 
-    testWidgets('surface message with processor renders Surface widget', (
+    testWidgets('a surface message draws its surface from the processor', (
       tester,
     ) async {
-      // Set up a MockSurfaceController whose contextFor returns a stubbed
-      // SurfaceContext with a null definition so the Surface widget renders
-      // SizedBox.shrink() internally — but lines 179-180 are still hit.
-      final mockProcessor = MockSurfaceController();
-      final mockContext = MockSurfaceContext();
-      final definitionNotifier = ValueNotifier<genui.SurfaceDefinition?>(null);
-      addTearDown(definitionNotifier.dispose);
-
-      when(() => mockProcessor.contextFor('surf-42')).thenReturn(mockContext);
-      when(() => mockContext.surfaceId).thenReturn('surf-42');
-      when(() => mockContext.definition).thenReturn(definitionNotifier);
+      final processor = EvolutionSurfaces(catalogs: [buildEvolutionCatalog()])
+        ..processMessages([
+          {
+            'version': '1.0',
+            'createSurface': {
+              'surfaceId': 'surf-42',
+              'catalogId': evolutionCatalogId,
+              'components': [
+                {
+                  'id': 'root',
+                  'component': 'EvolutionNoteConfirmation',
+                  'kind': 'reflection',
+                  'content': 'Shorter reports landed well.',
+                },
+              ],
+            },
+          },
+        ]);
+      addTearDown(processor.dispose);
 
       final defaultSoul = makeTestSoulDocument(displayName: 'Laura');
 
@@ -577,7 +584,7 @@ void main() {
                       timestamp: DateTime(2024, 3, 15),
                     ),
                   ],
-                  processor: mockProcessor,
+                  processor: processor,
                 ),
               ),
             ),
@@ -586,10 +593,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // contextFor should have been called when the Surface widget was built.
-      verify(() => mockProcessor.contextFor('surf-42')).called(greaterThan(0));
-      // With null definition the Surface renders SizedBox.shrink; no chat bubble.
-      expect(find.byType(EvolutionChatBubble), findsNothing);
+      // The surface's component is drawn by its catalog widget.
+      final card = tester.widget<EvolutionNoteConfirmationCard>(
+        find.byType(EvolutionNoteConfirmationCard),
+      );
+      expect(card.kind, 'reflection');
+      expect(card.content, 'Shorter reports landed well.');
     });
   });
 }

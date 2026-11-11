@@ -21,6 +21,7 @@ import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
@@ -975,24 +976,40 @@ void main() {
           reply.content['text'],
           'Due today: [Garden](lotti://task/garden).',
         );
-        // No time was summed: nothing to chart.
-        expect(reply.content.containsKey('loggedTime'), isFalse);
-        // Which window the list was read from: the label over her list.
-        expect(reply.content['dueTasks'], {
-          'window': 'today',
-          'today': '2026-11-02',
-          'through': '2026-11-02',
+        // What is drawn, stored as one A2UI v1.0 surface named for the
+        // reply: her words, then the due task — a card from the lookup, not
+        // from her words — labelled with the window through the data model.
+        final surface = FrontReplySurface.fromJson(reply.content['surface'])!;
+        final created = surface.message['createSurface']! as Map;
+        expect(surface.message['version'], '1.0');
+        expect(
+          surface.surfaceId,
+          frontAgentReplyMessageId(frontAgentId, 'run-1'),
+        );
+        expect(created['dataModel'], {
+          'due': {
+            'window': 'today',
+            'today': '2026-11-02',
+            'through': '2026-11-02',
+          },
         });
-        // What is drawn, stored with it: her words, then the due task she
-        // only linked, as a card — from the lookup, not from her words.
-        expect(reply.content['parts'], [
-          {'text': 'Due today: [Garden](lotti://task/garden).'},
+        expect((created['components']! as List).skip(1), [
           {
-            'cards': [
+            'component': 'Text',
+            'text': 'Due today: [Garden](lotti://task/garden).',
+            'id': 'c0',
+          },
+          {
+            'component': 'TaskCards',
+            'items': [
               {'kind': 'task', 'id': 'garden', 'title': 'Garden'},
             ],
+            'id': 'c1',
+            'due': {'@path': '/due'},
           },
         ]);
+        // Nothing is stored twice beside it.
+        expect(reply.content.keys, ['text', 'surface']);
       },
     );
 
@@ -1140,7 +1157,7 @@ void main() {
             .singleWhere(
               (p) => p.content.containsKey('text') && p.agentId == frontAgentId,
             );
-        expect(payload.content['closedTasks'], [
+        expect(_replyData(payload)['closedTasks'], [
           {
             'id': 'dishes',
             'title': 'Dishes',
@@ -1262,7 +1279,7 @@ void main() {
           .singleWhere(
             (p) => p.content.containsKey('text') && p.agentId == frontAgentId,
           );
-      expect(payload.content['loggedTime'], {
+      expect(_replyData(payload)['loggedTime'], {
         'startDay': epochDay(DateTime(2026, 11)),
         'endDayExclusive': epochDay(DateTime(2026, 11, 2)),
         'categoryIds': ['home'],
@@ -1330,12 +1347,13 @@ void main() {
           .singleWhere(
             (p) => p.content.containsKey('text') && p.agentId == frontAgentId,
           );
-      expect(payload.content['pullRequests'], {
+      expect(_replyData(payload)['pullRequests'], {
         'startDay': epochDay(DateTime(2026, 10, 20)),
         'endDayExclusive': epochDay(DateTime(2026, 11, 3)),
         'categoryIds': ['home'],
       });
-      expect(payload.content.containsKey('loggedTime'), isFalse);
+      // No time was summed: nothing else to chart.
+      expect(_replyData(payload).keys, ['pullRequests']);
     });
   });
 
@@ -1793,3 +1811,12 @@ Task makeGardenTask() {
       )
       as Task;
 }
+
+/// The data model of the surface a reply payload stored: what the turn's
+/// lookups made, written by the app.
+Map<Object?, Object?> _replyData(AgentMessagePayloadEntity payload) =>
+    (FrontReplySurface.fromJson(
+              payload.content['surface'],
+            )!.message['createSurface']!
+            as Map)['dataModel']!
+        as Map;

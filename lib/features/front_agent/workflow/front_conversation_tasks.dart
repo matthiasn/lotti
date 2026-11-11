@@ -3,8 +3,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
-import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
-import 'package:lotti/features/front_agent/model/front_reply_layout.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 
 /// How many tasks named in the conversation the prompt carries.
@@ -71,11 +70,11 @@ Iterable<(String, DateTime?)> _taskIdsOf(
       for (final card in cards.reversed) {
         yield (card.id, null);
       }
-      for (final part in FrontReplyPart.listFromJson(content['parts'])) {
-        if (part is! FrontReplyCards) continue;
-        for (final card in part.cards) {
-          if (card.kind == FrontEntityKind.task) yield (card.id, null);
-        }
+      // What her surface shows: the tasks her cards list, and — as stored
+      // since replies have surfaces — the ones a closed-task lookup found.
+      final surface = FrontReplySurface.fromJson(content['surface']);
+      for (final id in surface?.taskIds ?? const <String>[]) {
+        yield (id, null);
       }
     case FrontAgentToolNames.askUser:
       yield* linked(content['question']);

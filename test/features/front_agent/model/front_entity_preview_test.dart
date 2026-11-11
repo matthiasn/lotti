@@ -41,6 +41,34 @@ void main() {
       expect(FrontEntityReference.listFromJson('nope'), isEmpty);
     });
 
+    test('carries a note through JSON, trimmed; a blank one is none, and '
+        'it tells two references apart', () {
+      const noted = FrontEntityReference(
+        kind: FrontEntityKind.task,
+        id: 't-1',
+        title: 'Check the ice-pad weather window',
+        note: '2h 10m',
+      );
+
+      expect(FrontEntityReference.fromJson(noted.toJson()), noted);
+      expect(noted, isNot(reference));
+      expect(reference.toJson().containsKey('note'), isFalse);
+      expect(
+        FrontEntityReference.fromJson({
+          ...noted.toJson(),
+          'note': ' 45m ',
+        })!.note,
+        '45m',
+      );
+      for (final blank in <Object?>['   ', 7]) {
+        expect(
+          FrontEntityReference.fromJson({...noted.toJson(), 'note': blank}),
+          reference,
+          reason: '$blank',
+        );
+      }
+    });
+
     test('is equal, and hashes alike, only with the same kind, id and '
         'title', () {
       // Not const: a canonical constant would be the very same instance.

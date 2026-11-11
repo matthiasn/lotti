@@ -1,4 +1,4 @@
-import 'package:genui/genui.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 
 /// Holds the full state for an active evolution chat session.
@@ -17,8 +17,8 @@ class EvolutionChatData {
   final bool isWaiting;
 
   /// The GenUI message processor, available after session start.
-  /// Used by [Surface] widgets to render dynamic content.
-  final SurfaceController? processor;
+  /// Used by `A2uiSurface` widgets to render dynamic content.
+  final EvolutionSurfaces? processor;
   final Map<String, int> categoryRatings;
   final String? lastSurfacedProposalKey;
 
@@ -26,7 +26,7 @@ class EvolutionChatData {
     String? Function()? sessionId,
     List<EvolutionChatMessage>? messages,
     bool? isWaiting,
-    SurfaceController? Function()? processor,
+    EvolutionSurfaces? Function()? processor,
     Map<String, int>? categoryRatings,
     String? Function()? lastSurfacedProposalKey,
   }) {
