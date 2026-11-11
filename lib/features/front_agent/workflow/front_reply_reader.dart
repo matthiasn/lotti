@@ -3,8 +3,8 @@ import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 
-/// A `reply_to_user` the reader refused: one without words, which leaves
-/// nothing to deliver. Its message is the error she is told.
+/// A reply the reader refused: one without prose, which leaves nothing to
+/// say. Its message says what was missing.
 class FrontReplyException implements Exception {
   const FrontReplyException(this.message);
 
@@ -14,14 +14,12 @@ class FrontReplyException implements Exception {
   String toString() => message;
 }
 
-/// Her reply as read: `text`, her words as she wrote them — a list she
-/// wrote included, since cards are not read aloud — which is what is
-/// spoken, kept in the conversation and shown when a reply is words alone;
-/// `components`,
-/// what is drawn, in order, each a `{component, …properties}` map for
+/// Her reply as read: `text`, her prose — a list she wrote in it included,
+/// since cards are not read aloud — which is what is spoken, kept in the
+/// conversation and shown when a reply is words alone; `components`, what is
+/// drawn, in order, each a `{component, …properties}` map for
 /// `FrontReplySurface.compose`; and `dropped`, a note per component that
-/// could not be drawn and was left out — what her tool result and the log
-/// say.
+/// could not be drawn and was left out, for the log.
 typedef FrontReply = ({
   String text,
   List<Map<String, Object?>> components,
@@ -31,43 +29,47 @@ typedef FrontReply = ({
 /// How many replies to tap a reply may offer.
 const int frontQuickRepliesMax = 3;
 
-/// Reads `reply_to_user`'s [message] and [components] into her reply.
+/// Reads her [prose] and the [components] she composed into her reply.
 ///
-/// She composes a reply from the catalog (`FrontReplyComponents`): `Text`
-/// with her words; `TaskCards` with `items`, each `task:<id>` or
-/// `project:<id>` — or `{"ref": …, "note": …}` to say a few words on its
-/// card; `ClosedTasks`, `LoggedTimeChart` and `PullRequestChart`, placing
-/// what a lookup made; and `QuickReplies` with up to
-/// [frontQuickRepliesMax] `options`. Her words are said once: a [message]
-/// leads [components], unless it repeats what their `Text` says. Her words
-/// pass through [link].
+/// Her answer has one place for words, her prose, which leads what is
+/// drawn. The components are the catalog's (`FrontReplyComponents`), as she
+/// writes them: `Text`, a short label shown between other parts and not
+/// spoken; `TaskCards` with `ids`, each `task:<id>`, `project:<id>` or a
+/// task's bare id, and optionally `notes`, a few words per id for its card;
+/// `ClosedTasks`, `LoggedTimeChart` and `PullRequestChart`, placing what a
+/// lookup made; and `QuickReplies` with up to [frontQuickRepliesMax]
+/// `options`. A `caption`, where she gave one, is kept as the component's
+/// accessibility label. Her prose passes through [link].
 ///
 /// A card must be a task or project of [visible] — what the turn could see,
 /// by `kind:id` — and a lookup's component one of [available]: nothing is
 /// drawn for an id she made up or a chart no lookup produced. Such a
 /// component is dropped and named in `dropped`, never a reason to lose her
-/// answer: refusing it could end a turn with no call left without any
-/// reply. Only a reply without words throws a [FrontReplyException].
+/// answer. Only a reply without prose throws a [FrontReplyException].
 ///
 /// **Cards never hinge on her remembering the component.** A list in her
-/// words whose lines each link one task or project of [visible] is drawn as
+/// prose whose lines each link one task or project of [visible] is drawn as
 /// `TaskCards` in its place, what else the line says kept as the card's
 /// note (a project line that says more stays her words, since only a
 /// task's card shows a note; so does a line that says more than
-/// [frontCardNoteMax] characters, a sentence rather than a label). The list stays in `text`, so it is still spoken. Nothing a lookup found is lost either: the tasks of [dueRows] she
-/// listed nowhere follow as one more list, and [available] components she
-/// did not place follow in catalog order. A task is listed once, where it
-/// first stands, and never when it is one of [closedTaskIds], whose cards
-/// show it.
+/// [frontCardNoteMax] characters, a sentence rather than a label). The list
+/// stays in `text`, so it is still spoken. Nothing a lookup found is lost
+/// either: the tasks of [dueRows] she listed nowhere follow as one more
+/// list, and [available] components she did not place follow in catalog
+/// order. A task is listed once, where it first stands, and never when it
+/// is one of [closedTaskIds], whose cards show it.
 FrontReply readFrontReply({
-  required Object? message,
-  required Object? components,
+  required String prose,
+  required List<Object?> components,
   required Map<String, FrontIndexRow> visible,
   required Set<String> available,
   required List<FrontIndexRow> dueRows,
   required String Function(String words) link,
   Set<String> closedTaskIds = const {},
 }) {
+  if (prose.trim().isEmpty) {
+    throw const FrontReplyException('The reply has no prose.');
+  }
   final dropped = <String>[];
   final read = <Map<String, Object?>>[];
   final listed = <String>{
@@ -75,23 +77,22 @@ FrontReply readFrontReply({
   };
   final placed = <String>{};
 
-  void cards(Iterable<FrontEntityReference> references) {
+  void cards(Iterable<FrontEntityReference> references, {Object? caption}) {
     final items = [
       for (final reference in references)
         if (listed.add('${reference.kind.name}:${reference.id}'))
           reference.toJson(),
     ];
     if (items.isEmpty) return;
-    read.add({'component': FrontReplyComponents.taskCards, 'items': items});
+    read.add({
+      'component': FrontReplyComponents.taskCards,
+      'items': items,
+      'caption': ?_caption(caption),
+    });
   }
 
-  // Her words as she wrote them, lists included: what is spoken and kept.
-  final said = <String>[];
-
   void words(String text) {
-    final linked = link(text.trim());
-    said.add(linked);
-    for (final piece in _wordsAndLists(linked, visible)) {
+    for (final piece in _wordsAndLists(text, visible)) {
       switch (piece) {
         case final String text:
           read.add({'component': FrontReplyComponents.text, 'text': text});
@@ -101,49 +102,33 @@ FrontReply readFrontReply({
     }
   }
 
-  // A model that composes components tends to repeat its words in
-  // `message` too. Her words are said once: a message that says what the
-  // Text components say — or that they are part of — is left out; one that
-  // adds words leads them.
-  final composed = _normalized(
-    [
-      if (components is List)
-        for (final component in components)
-          if (component case {
-            'component': FrontReplyComponents.text,
-            'text': final String text,
-          })
-            text,
-    ].join(' '),
-  );
-  final lead = message is String ? message.trim() : '';
-  final repeats =
-      composed.isNotEmpty &&
-      (composed.contains(_normalized(lead)) ||
-          _normalized(lead).contains(composed));
-  if (lead.isNotEmpty && !repeats) words(lead);
-  if (components != null && components is! List) {
-    dropped.add('components, which is not a list');
-  }
-  for (final component in components is List ? components : const <Object?>[]) {
+  final said = link(prose.trim());
+  words(said);
+  for (final component in components) {
     final type = component is Map ? component['component'] : null;
     switch (component) {
       case {'text': final String text} when type == FrontReplyComponents.text:
-        if (text.trim().isNotEmpty) words(text);
-      case {'items': final List<Object?> items}
+        if (text.trim().isNotEmpty) words(link(text.trim()));
+      case {'ids': final List<Object?> ids}
           when type == FrontReplyComponents.taskCards:
-        cards([
-          for (final item in items)
-            if (_referenceOf(item, visible) case final reference?)
-              reference
-            else
-              ?_drop(
-                dropped,
-                '${item is Map ? item['ref'] : item}, not a task or project '
-                'listed under <routing_index> or returned by a lookup this '
-                'turn',
-              ),
-        ]);
+        final notes = component['notes'];
+        final references = <FrontEntityReference>[];
+        for (final (index, id) in ids.indexed) {
+          final reference = _referenceOf(
+            id,
+            notes is List && index < notes.length ? notes[index] : null,
+            visible,
+          );
+          if (reference == null) {
+            dropped.add(
+              '$id, not a task or project listed under <routing_index> or '
+              'returned by a lookup this turn',
+            );
+          } else {
+            references.add(reference);
+          }
+        }
+        cards(references, caption: component['caption']);
       case {'options': final List<Object?> options}
           when type == FrontReplyComponents.quickReplies:
         final replies = [
@@ -156,33 +141,28 @@ FrontReply readFrontReply({
             'options': replies,
           });
         }
-      case _ when FrontReplyComponents.fromLookups.contains(type):
+      case final Map<Object?, Object?> lookup
+          when FrontReplyComponents.fromLookups.contains(type):
         if (!available.contains(type)) {
           dropped.add('$type, which no lookup made this turn');
         } else if (placed.add(type! as String)) {
-          read.add({'component': type});
+          read.add({
+            'component': type,
+            'caption': ?_caption(lookup['caption']),
+          });
         }
       default:
-        dropped.add(
-          '$component, not a component: each names one of '
-          '${FrontReplyComponents.composable.join(', ')} as its component, '
-          'with its properties',
-        );
+        dropped.add('$component, not a component of the reply catalog');
     }
   }
 
-  if (said.isEmpty) {
-    throw const FrontReplyException(
-      'Error: reply_to_user needs your words: a message, or a Text component.',
-    );
-  }
   cards([
     for (final row in dueRows)
       if (_kinds[row.kind] case final kind?)
         FrontEntityReference(kind: kind, id: row.id, title: row.title),
   ]);
   return (
-    text: said.join('\n\n'),
+    text: said,
     components: [
       ...read,
       for (final type in FrontReplyComponents.fromLookups)
@@ -193,20 +173,14 @@ FrontReply readFrontReply({
   );
 }
 
-/// [text] for comparing what was said: lower case, whitespace collapsed.
-String _normalized(String text) =>
-    text.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+/// A component's accessibility label, when she gave one.
+String? _caption(Object? caption) =>
+    caption is String && caption.trim().isNotEmpty ? caption.trim() : null;
 
 /// The longest a list line's other words may be to become a card's note: a
 /// time, a label. A line that says a sentence stays her words, where it
 /// can be read whole.
 const int frontCardNoteMax = 40;
-
-/// Records [note] in [dropped]; null, so it can stand where a value would.
-Never? _drop(List<String> dropped, String note) {
-  dropped.add(note);
-  return null;
-}
 
 /// The kinds a card can show, from the router's.
 const Map<FrontDestinationKind, FrontEntityKind> _kinds = {
@@ -214,18 +188,16 @@ const Map<FrontDestinationKind, FrontEntityKind> _kinds = {
   FrontDestinationKind.project: FrontEntityKind.project,
 };
 
-/// The card [raw] names — `kind:id`, or `{ref, note}` — or null when it is
-/// not a task or project of [visible].
+/// The card [id] names — `task:<id>`, `project:<id>`, or a task's bare id —
+/// with [note] as what its card says, or null when it is not a task or
+/// project of [visible].
 FrontEntityReference? _referenceOf(
-  Object? raw,
+  Object? id,
+  Object? note,
   Map<String, FrontIndexRow> visible,
 ) {
-  final (ref, note) = switch (raw) {
-    final String ref => (ref, null),
-    {'ref': final String ref} => (ref, raw['note']),
-    _ => (null, null),
-  };
-  final row = ref == null ? null : visible[ref.trim()];
+  final ref = id is String ? id.trim() : null;
+  final row = ref == null ? null : visible[ref] ?? visible['task:$ref'];
   final kind = row == null ? null : _kinds[row.kind];
   if (row == null || kind == null) return null;
   return FrontEntityReference(

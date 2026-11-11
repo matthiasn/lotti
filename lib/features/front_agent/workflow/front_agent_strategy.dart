@@ -16,6 +16,7 @@ import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_dispatch_validator.dart';
 import 'package:lotti/features/front_agent/workflow/front_reply_reader.dart';
+import 'package:lotti/features/front_agent/workflow/front_reply_stream.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -62,7 +63,8 @@ typedef FrontAskUser = ({String question, List<FrontAskOption> options});
 /// mid-conversation. The workflow reads the accumulators after the loop and
 /// writes the outputs in one transaction.
 ///
-/// Three calls end the turn — `dispatch`, `ask_user`, `reply_to_user` — and
+/// Two calls end the turn — `dispatch` and `ask_user` — as does her answer,
+/// which is the message she writes, not a call ([acceptAnswer]) — and
 /// the five lookups are capped by count, not by removing them from the list:
 /// a shrinking tool list changes the request prefix and voids the provider's
 /// cache, which a routing turn exists to keep warm.
@@ -171,10 +173,10 @@ class FrontAgentStrategy extends ConversationStrategy
   /// What her reply draws, in order, as the catalog components she
   /// composed — with any list of task links in her words made cards, and
   /// whatever a lookup found that she did not place after them (see
-  /// [readFrontReply]). Empty until she replied.
+  /// [readFrontReply]). Empty until her answer was taken ([acceptAnswer]).
   List<Map<String, Object?>> get replyComponents => _replyComponents;
 
-  /// Whether the model ended the turn with one of the three terminal calls.
+  /// Whether the turn has ended: on a dispatch, a question, or her answer.
   bool get hasTerminalOutput =>
       _dispatch != null || _askUser != null || _replyToUser != null;
 
@@ -190,13 +192,18 @@ class FrontAgentStrategy extends ConversationStrategy
       _closedLists +
       _pullRequestSummaries;
 
+  /// How many of those looked something up to answer with — due or closed
+  /// tasks, logged time, pull requests. Reading a TLDR or matching the
+  /// corpus serves routing as much as answering, so those are not counted.
+  int get answerLookupCalls =>
+      _dueLists + _timeSummaries + _closedLists + _pullRequestSummaries;
+
   @override
   Future<ConversationAction> processToolCalls({
     required List<ChatCompletionMessageToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
     await recordAssistantMessage();
-    final rejectedBefore = _rejectedDispatches;
 
     for (final call in toolCalls) {
       final toolName = call.function.name;
@@ -240,21 +247,9 @@ class FrontAgentStrategy extends ConversationStrategy
           await _handleSummarizePullRequests(call, args, manager);
         case FrontAgentToolNames.askUser:
           await _handleAskUser(call, args, manager);
-        case FrontAgentToolNames.replyToUser:
-          await _handleReplyToUser(call, args, manager);
         default:
           await _reject(call, manager, 'Error: unknown tool "$toolName".');
       }
-    }
-
-    // A reply may only accompany an accepted dispatch. When this batch
-    // rejected a dispatch and accepted neither a dispatch nor a question,
-    // the reply described a routing that did not happen: drop it so the
-    // turn stays open for the repair round instead of ending on it.
-    if (_rejectedDispatches > rejectedBefore &&
-        _dispatch == null &&
-        _askUser == null) {
-      _replyToUser = null;
     }
 
     return hasTerminalOutput
@@ -471,7 +466,7 @@ class FrontAgentStrategy extends ConversationStrategy
       await _reject(
         call,
         manager,
-        'Due tasks are unavailable this turn; say so in reply_to_user.',
+        'Due tasks are unavailable this turn; say so in your answer.',
       );
       return;
     }
@@ -526,7 +521,7 @@ class FrontAgentStrategy extends ConversationStrategy
       await _reject(
         call,
         manager,
-        'Logged time is unavailable this turn; say so in reply_to_user.',
+        'Logged time is unavailable this turn; say so in your answer.',
       );
       return;
     }
@@ -589,7 +584,7 @@ class FrontAgentStrategy extends ConversationStrategy
       await _reject(
         call,
         manager,
-        'Closed tasks are unavailable this turn; say so in reply_to_user.',
+        'Closed tasks are unavailable this turn; say so in your answer.',
       );
       return;
     }
@@ -626,7 +621,7 @@ class FrontAgentStrategy extends ConversationStrategy
       await _reject(
         call,
         manager,
-        'Pull requests are unavailable this turn; say so in reply_to_user.',
+        'Pull requests are unavailable this turn; say so in your answer.',
       );
       return;
     }
@@ -670,7 +665,7 @@ class FrontAgentStrategy extends ConversationStrategy
           call,
           manager,
           '${category.name} is outside the categories this conversation is '
-          'narrowed to; say so in reply_to_user.',
+          'narrowed to; say so in your answer.',
         );
         return null;
       }
@@ -707,15 +702,6 @@ class FrontAgentStrategy extends ConversationStrategy
         call,
         manager,
         'Error: the turn already ended with dispatch; do not dispatch and '
-        'ask in the same turn.',
-      );
-      return;
-    }
-    if (_replyToUser != null) {
-      await _reject(
-        call,
-        manager,
-        'Error: the turn already ended with reply_to_user; do not reply and '
         'ask in the same turn.',
       );
       return;
@@ -767,34 +753,24 @@ class FrontAgentStrategy extends ConversationStrategy
     await _accept(call, manager, 'Question delivered.');
   }
 
-  Future<void> _handleReplyToUser(
-    ChatCompletionMessageToolCall call,
-    Map<String, dynamic> args,
-    ConversationManager manager,
-  ) async {
-    if (_replyToUser != null) {
-      await _reject(
-        call,
-        manager,
-        'Error: reply_to_user may be called at most once per turn.',
-      );
-      return;
-    }
-    if (_askUser != null) {
-      await _reject(
-        call,
-        manager,
-        'Error: the turn already ended with ask_user; do not ask and reply '
-        'in the same turn.',
-      );
-      return;
-    }
+  /// Takes [content], the message she ended the turn with, as her answer:
+  /// UI blocks, then prose (see `parseFrontReplyStream`).
+  ///
+  /// Her prose is what is said; her blocks are checked against what the turn
+  /// saw and composed into what is drawn (`readFrontReply`). A block that
+  /// cannot be read, or a component that cannot be drawn, is left out and
+  /// logged — never a reason to lose her answer. Returns false, leaving the
+  /// turn open for the repair round, when there is nothing to take: no
+  /// prose, a question already asked, or an answer already taken.
+  bool acceptAnswer(String content) {
+    if (_askUser != null || _replyToUser != null) return false;
+    final streamed = parseFrontReplyStream(content);
     final closed = _closedTaskCards;
     final FrontReply reply;
     try {
       reply = readFrontReply(
-        message: args['message'],
-        components: args['components'],
+        prose: streamed.prose,
+        components: streamed.components,
         visible: frontVisibleRows([...index.rows, ..._lookupRows]),
         available: {
           if (closed != null) FrontReplyComponents.closedTasks,
@@ -805,32 +781,35 @@ class FrontAgentStrategy extends ConversationStrategy
         closedTaskIds: {...?closed?.map((card) => card.id)},
         link: _linked,
       );
-    } on FrontReplyException catch (e) {
-      await _reject(call, manager, e.message);
-      return;
+    } on FrontReplyException {
+      if (streamed.components.isNotEmpty || streamed.errors.isNotEmpty) {
+        _logFormatFailure('her answer had UI but no prose');
+      }
+      return false;
     }
     _replyToUser = reply.text;
     _replyComponents = reply.components;
-    if (reply.dropped.isNotEmpty) {
-      // Counted, so a model that keeps naming what the turn never saw shows
-      // up in the logs rather than as a card that quietly never appears.
-      domainLogger.log(
-        LogDomain.agentWorkflow,
-        'reply_to_user dropped ${reply.dropped.length} component(s) it could '
-        'not draw',
-        subDomain: 'FrontAgentStrategy',
-        level: InsightLevel.warn,
+    final unread = streamed.errors.length + reply.dropped.length;
+    if (unread > 0) {
+      // Counted, so a model that keeps writing what cannot be drawn shows up
+      // in the logs rather than as a card that quietly never appears.
+      _logFormatFailure(
+        'her answer left out $unread part(s): ${streamed.errors.length} '
+        'block(s) unreadable, ${reply.dropped.length} component(s) not '
+        'drawable',
       );
     }
-    await _accept(
-      call,
-      manager,
-      reply.dropped.isEmpty
-          ? 'Reply delivered.'
-          : 'Reply delivered without what could not be drawn: '
-                '${reply.dropped.join('; ')}.',
-    );
+    return true;
   }
+
+  /// Logs that her answer did not follow the reply format. Never its words:
+  /// they are the user's conversation.
+  void _logFormatFailure(String what) => domainLogger.log(
+    LogDomain.agentWorkflow,
+    'front reply format: $what',
+    subDomain: 'FrontAgentStrategy',
+    level: InsightLevel.warn,
+  );
 
   String _trimmed(Object? value) => value is String ? value.trim() : '';
 

@@ -93,7 +93,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   is.
 - `workflow/` — the tool contract and system prompt, the dispatch validator
   (the rules in code), the conversation strategy (count-and-refuse lookups,
-  terminal calls, her words linked), the model resolution (its own setup, never a category's)
+  how a turn ends, her words linked), her answer as she writes it — UI
+  blocks, then prose (`front_reply_stream.dart`) — the model resolution (its own setup, never a category's)
   and the wake workflow that persists the dispatch record.
 - `service/` — the index builder over existing reads (and the due-task
   lister behind `list_due_tasks`, the logged-time summarizer behind
@@ -129,6 +130,7 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   cards her lists of tasks and what her turn made are drawn as
   (`front_entity_preview_card.dart`; her reply is an A2UI v1.0 surface she
   composes from a catalog — stored as `model/front_reply_surface.dart`,
+  written in her message and parsed by `workflow/front_reply_stream.dart`,
   checked by `workflow/front_reply_reader.dart`, drawn by `a2ui_flutter`
   through `ui/a2ui/`; the
   window over a due list in `model/front_due_section.dart`), her voice (`front_chat_voice.dart`: the spoken reply, when

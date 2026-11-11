@@ -74,6 +74,17 @@ Key _key(BuildContext context, ComponentNode<ComponentImplementation> node) =>
       '${node.componentId}',
     );
 
+/// The accessibility label she gave a component: never shown or spoken.
+final Schema _captionSchema = S.string(
+  description: 'A short label for screen readers',
+);
+
+/// [child] under [caption] as its screen-reader label, when she gave one.
+Widget _captioned(String? caption, Widget child) =>
+    caption == null || caption.trim().isEmpty
+    ? child
+    : Semantics(container: true, label: caption.trim(), child: child);
+
 /// A property the app binds to the surface's data model.
 final Schema _bound = CommonSchemasV1.dataBinding;
 
@@ -126,6 +137,7 @@ final _taskCards = ComponentImplementation(
         ),
       ),
       'due': _bound,
+      'caption': _captionSchema,
     },
     required: ['items'],
   ),
@@ -137,14 +149,17 @@ final _taskCards = ComponentImplementation(
     ];
     if (cards.isEmpty) return const SizedBox.shrink();
     final due = FrontDueSection.fromJson(props.value('due'));
-    return Column(
-      key: _key(context, node),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: context.designTokens.spacing.step2,
-      children: [
-        if (due != null) FrontDueSectionLabel(section: due),
-        FrontEntityPreviewList(references: cards, onOpen: scope.onOpen),
-      ],
+    return _captioned(
+      props.string('caption'),
+      Column(
+        key: _key(context, node),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: context.designTokens.spacing.step2,
+        children: [
+          if (due != null) FrontDueSectionLabel(section: due),
+          FrontEntityPreviewList(references: cards, onOpen: scope.onOpen),
+        ],
+      ),
     );
   },
 );
@@ -155,10 +170,18 @@ ComponentImplementation _fromLookup(
   Widget? Function(BuildContext context, Key key, Object? data) build,
 ) => ComponentImplementation(
   name: name,
-  schema: S.object(properties: {'data': _bound}, required: ['data']),
-  builder: (context, node, props, _) =>
-      build(context, _key(context, node), props.value('data')) ??
-      const SizedBox.shrink(),
+  schema: S.object(
+    properties: {'data': _bound, 'caption': _captionSchema},
+    required: ['data'],
+  ),
+  builder: (context, node, props, _) => switch (build(
+    context,
+    _key(context, node),
+    props.value('data'),
+  )) {
+    null => const SizedBox.shrink(),
+    final drawn => _captioned(props.string('caption'), drawn),
+  },
 );
 
 final ComponentImplementation _closedTasks = _fromLookup(

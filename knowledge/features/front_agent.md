@@ -92,6 +92,10 @@ sources:
     resource: ../../lib/features/front_agent/workflow/front_conversation_tasks.dart
     title: frontConversationTaskIds — the tasks a conversation named, newest first
     last_modified: 2026-11-08
+  - id: adr-0164
+    resource: ../../docs/adr/0164-the-companion-writes-her-answer-ui-blocks-then-prose.md
+    title: ADR 0164 — the companion writes her answer, UI blocks then prose
+    last_modified: 2026-11-12
   - id: adr-0162
     resource: ../../docs/adr/0162-she-says-the-task-is-made.md
     title: ADR 0162 — she says the task is made
@@ -154,8 +158,12 @@ sources:
     last_modified: 2026-11-11
   - id: reply-reader
     resource: ../../lib/features/front_agent/workflow/front_reply_reader.dart
-    title: readFrontReply — reply_to_user's components checked against what the turn saw, task lists in her words made cards, nothing a lookup found lost
-    last_modified: 2026-11-11
+    title: readFrontReply — her prose and the components she wrote checked against what the turn saw, task lists in her prose made cards, nothing a lookup found lost
+    last_modified: 2026-11-12
+  - id: reply-stream
+    resource: ../../lib/features/front_agent/workflow/front_reply_stream.dart
+    title: parseFrontReplyStream — her message split into Express UI blocks and prose, the authoring catalog and the prompt snippet that teaches it
+    last_modified: 2026-11-12
   - id: reply-catalog
     resource: ../../lib/features/front_agent/ui/a2ui/front_reply_catalog.dart
     title: frontReplyCatalog and FrontReplyScope — her reply's A2UI catalog on the chat's own widgets
@@ -307,8 +315,8 @@ flowchart TD
   T --> N[conversation tasks: ≤8 tasks the conversation named,<br/>newest first, open or closed — conversationTasks]
   X --> C[ConversationRepository.sendMessage<br/>turnBudget 3, temperature 0,<br/>through FrontInferenceStallGuard]
   C --> S[FrontAgentStrategy]
-  S -->|dispatch / ask_user / reply_to_user| E{terminal?}
-  E -->|no, and a call is left| P[repair instruction once]
+  S -->|dispatch / ask_user / her answer, the message she ends on| E{ended?}
+  E -->|no, and a call is left| P[one more instruction:<br/>her answer after an answer lookup,<br/>else the dispatch repair]
   E -->|no, budget spent| F[WakeResult failed, no agent output persisted;<br/>the user turn stays durable]
   E -->|yes| O[one transaction: dispatch, ask, reply records<br/>deterministic ids per agent and run]
   O --> D
@@ -427,7 +435,6 @@ Nine tools, never fewer (a single tool makes DeepSeek rewrite
 | `list_closed_tasks(period \| pastDays \| from+through, categoryIds?)` | no | 1 per turn | `frontClosedListExhaustedAnswer`; unavailable when no lister is wired |
 | `summarize_pull_requests(period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
-| `reply_to_user(message?, components?)` | yes | once | refused without words; a component it cannot draw is dropped and named (see *Her reply is an A2UI surface*) |
 
 Lookups are capped by **count-and-refuse**, not by removing the tool:
 removing it changes the request prefix and voids the cache. Rows a
@@ -435,11 +442,19 @@ removing it changes the request prefix and voids the cache. Rows a
 `list_closed_tasks` returns become valid destinations
 for the rest of the turn — and names her words may link.
 
-`ask_user` and `dispatch` refuse each other, and so do `ask_user` and
-`reply_to_user`. A reply may accompany an accepted dispatch; when a batch
-rejects a dispatch and accepts neither a dispatch nor a question, a reply
-in that batch is dropped, so the turn stays open for the repair round
-instead of ending on a sentence about a routing that never happened.
+`ask_user` and `dispatch` refuse each other.
+
+**Her answer is not a tool: it is the message she writes** (ADR 0164). After each
+send the workflow hands the last assistant message to
+`FrontAgentStrategy.acceptAnswer` (`frontTakeAnswer`), which takes it as
+her answer when it has prose (see *Her reply is an A2UI surface*). A
+question already asked, or an answer already taken, is never replaced. A
+message beside tool calls is her line with an accepted dispatch and is
+taken only then: beside a lookup, or a dispatch that was rejected, it is
+left, so the turn stays open instead of ending on a sentence about a
+routing that never happened. The stored row keeps the record name
+`reply_to_user`, which is what the thread, the inbox and `<recent_turns>`
+read.
 
 ## What `validateFrontDispatch` enforces
 
@@ -466,16 +481,17 @@ gap containing a word becomes one. The thresholds are the day agent's
 Her **manner** follows the contract in the system prompt:
 `frontAgentPersonality(sass)` — warm, cheeky or sassy, the companion's
 `CompanionSass` read at each wake through the workflow's `sass` getter —
-shapes only her own words (`reply_to_user`, `ask_user`), never routing, ids
-or an owner's answer, and asks for short spoken-friendly sentences. Appended
-after the contract, so a sass change leaves the cached prefix as it is.
+shapes only her own words (her answer, `ask_user`), never routing, ids
+or an owner's answer, and asks for short spoken-friendly sentences.
+`frontAgentSystemMessage` puts it last — after the contract and the
+*Writing UI* section — so a sass change leaves the cached prefix as it is.
 ## Her own answers: what is due, logged time, what was closed, and naming things
 
 A question about which tasks are due — *what is due today?*, *anything
 overdue?*, *what's due this week?* — no single owner holds, so it is hers,
 like a journal question; but she answers it from the record, not the
-journal. The prompt's rule 8 sends it to `list_due_tasks` and then
-`reply_to_user` alone; rule 7 keeps `day` for changes to today's plan, so a
+journal. The prompt's rule 8 sends it to `list_due_tasks` and then her
+answer alone; rule 7 keeps `day` for changes to today's plan, so a
 due question no longer lands on the day door, whose question outcome is
 `FrontDoorSkipped(noDoor)`.
 
@@ -507,7 +523,7 @@ the index's shape plus its category's name, an overdue one marked only in
 **How much time was logged** — *how much did I log yesterday?*, *what did
 I work on in the past seven days?*, *time in Work this week?* — is hers too.
 Rule 9 sends it to
-`summarize_logged_time` and then `reply_to_user` alone; it is never
+`summarize_logged_time` and then her answer alone; it is never
 dispatched. Its window is exactly one of a `period`, `pastDays` (the past N
 days ending today) or `from` and `through` (`YYYY-MM-DD`, both included),
 read by the same `frontPullRequestQuery` as `list_closed_tasks` and
@@ -649,7 +665,7 @@ flowchart LR
 
 **What was completed or rejected** — *what did I complete today?*, *what
 was closed in @Lotti this weekend?* — is hers as well. Rule 13 sends it to
-`list_closed_tasks` and then `reply_to_user` alone, never a door. Its window
+`list_closed_tasks` and then her answer alone, never a door. Its window
 is exactly one of a `FrontTimePeriod`, `pastDays` or `from` and `through`
 (both included, at most `frontPullRequestMaxDays`), read by the same
 `frontPullRequestQuery` as `summarize_pull_requests`: a weekend names no
@@ -707,7 +723,7 @@ many were completed and rejected, never list or link the tasks herself.
 **How many pull requests the user opened, and what they shipped** — *how
 many PRs did I create in the past 14 days?*, *what did I ship in the last
 two weeks?* — is hers too. Rule 14 sends it to `summarize_pull_requests`
-and then `reply_to_user` alone. Its window is exactly one of a
+and then her answer alone. Its window is exactly one of a
 `FrontTimePeriod`, `pastDays` (the past N days ending today) or `from` and
 `through` (`YYYY-MM-DD`, both included — how "this weekend" is asked), at
 most `frontPullRequestMaxDays` (31) days so every bar stays one day;
@@ -757,7 +773,7 @@ flowchart LR
 Her own words name a task or a project as a Markdown link titled as listed:
 `[title](lotti://task/<id>)`, `lotti://project/<id>` (`frontReferenceUrl`).
 The prompt asks for that; `linkFrontReferences` is the guard the strategy
-runs over every `reply_to_user` and `ask_user` question before it is
+runs over her answer's prose and every `ask_user` question before it is
 accepted, so a recited id never reaches the user: `task:<id>`, or a bare id
 with a digit (every UUID has one, so no word is mistaken for an id), in
 backticks or not, becomes the link, and `Title (task:<id>)` folds into one
@@ -790,9 +806,11 @@ with no correction pass that would keep her waiting.
 # The budget and the repair round
 
 `frontProviderCallsPerTurn` is 3, passed as `turnBudget`. The common turn is
-one completion. A turn that ends without a terminal call gets
-`frontDispatchRepairInstruction` once, with whatever is left of the three.
-A turn still without a terminal call after that **fails closed**: the wake
+one completion. A turn that has not ended — no dispatch, no question, no
+answer — gets one more instruction (`frontContinuationInstruction`: her
+answer after an answer lookup, otherwise `frontDispatchRepairInstruction`),
+with whatever is left of the three. A turn that has still not ended after
+that **fails closed**: the wake
 returns a failed `WakeResult` and persists **no agent output** — no
 dispatch, no question, no invented reply. What `FrontChatService` wrote
 before the wake — the user payload and the user message — stays durable,
@@ -801,7 +819,7 @@ which is what makes the turn retryable rather than lost.
 # Latency and failures
 
 A lookup answer — pull requests, logged time, what was closed, what is due —
-is two provider calls: the lookup, then `reply_to_user` over its result.
+is two provider calls: the lookup, then her answer over its result.
 Live on Mistral (2026-11-09, DeepSeek V4.1 Flash, a 15.6k-token turn) each
 call took 0.6–4 s with no reasoning tokens, and now and then far longer: one
 call sat 19 s before its first chunk and took 44 s in all.
@@ -955,7 +973,7 @@ flowchart LR
   M -->|draft follows a task| L[(followsUp link to it;<br/>its category when none was read;<br/>its project, when it has one)]
   M --> A[category default agent<br/>autoAssignCategoryAgentWith, last]
   A -->|creation wake: the title is content| G[the agent's first run]
-  R -->|reply_to_user, one line| S[spoken on a spoken turn]
+  R -->|her line beside the dispatch| S[spoken on a spoken turn]
 ```
 
 | Field | Who fills it | From |
@@ -1013,7 +1031,7 @@ without one. Both are written **before** the agent: `createTaskAgent` enqueues t
 at once, and the content gate lets it run — a non-empty title counts as
 content — so the first run sees the link, the project, the words and the timer.
 
-**What she says** is her `reply_to_user` line with the dispatch, spoken
+**What she says** is the line she writes beside the dispatch, spoken
 as every reply to a spoken turn is ([her voice](#her-voice)): the task is
 ready to confirm, and the timer when one will start. It names the task by
 its title, never as a link — the task has no id yet (the live eval caught
@@ -1441,39 +1459,70 @@ stateDiagram-v2
 narrows that answer, as `list_due_tasks`' `categoryIds` and the journal
 door's scope show, and sets nothing standing — the sheet says so.
 
-**Her reply is an A2UI surface she composes from a catalog.** A reply that
-shows anything besides words is `reply_to_user`'s `components`: what the
-user sees, in her order, each naming one of `FrontReplyComponents` —
-`Text`, her words; `TaskCards` with `items`, each `task:<id>` or
-`project:<id>` (or `{"ref", "note"}` to say a few words on its card, such
-as its logged time); `ClosedTasks`, `LoggedTimeChart` and
-`PullRequestChart`, placing what a lookup of the turn made; and
-`QuickReplies` with up to `frontQuickRepliesMax` short `options` the user
-can tap. A plain answer is `message` alone. Her words are said once: a `message`
-leads the components, unless it repeats what their `Text` says, as a
-model that composes tends to. She composes and references; **she never passes data
-to a component**: a card reads its task live by id, and a lookup's
-component is bound to what the app wrote from that lookup.
+**Her reply is an A2UI surface she composes from a catalog.** Her answer
+is one message: any UI first, then her prose. The UI is written in A2UI
+Express notation, the `a2ui_agent` library's default — a block per
+surface, a component a call by position:
+
+```text
+<a2ui>
+surface("reply")
+root = TaskCards("Due today", ["task:t-ice", "task:t-seal"])
+</a2ui>
+Two things are due today, and the ice survey is the one that cannot wait.
+```
+
+`front_reply_stream.dart` owns that side. `frontReplyAuthoringCatalog` is
+what she may write — `Reply` (children, top to bottom), `Text` (a short
+label between parts), `TaskCards(caption, ids, notes?)`,
+`ClosedTasks(caption)`, `LoggedTimeChart(caption)`,
+`PullRequestChart(caption)` and `QuickReplies(options)` — flat, with no
+data in it: **she never passes data to a component**. A card names a task
+or project by id and reads it live; a lookup's component only places what
+the app wrote from that lookup. `frontReplyPromptSnippet` is the library's
+description of that catalog and two examples in the exact format, which
+`frontAgentSystemMessage` appends under *Writing UI*. `frontReplyFormat`
+allows `createSurface` alone. `parseFrontReplyStream` runs her message
+through the library's processor and returns her prose, the components in
+the order she laid them out, and an error per block it could not read.
+
+**Speech and display are separate channels.** Her prose is the only thing
+spoken and the only thing kept in `<recent_turns>`; it leads what is drawn.
+A `Text` is a label, shown and never spoken; a `caption` is a component's
+accessibility label (`Semantics`), never drawn and never read aloud by
+her voice. So her prompt has her say what matters about the cards in her
+prose, the screen top to bottom.
 
 `readFrontReply` checks the components before anything is stored: a card
 must be a task or project the turn could see — `<routing_index>` or a
-lookup's rows, by `kind:id` — and a lookup's component must have a lookup
-behind it this turn. One that fails is **dropped, never a reason to lose
-her answer**: refusing it could end a turn that has no call left for a
-repair without any reply. Her tool result names what was left out, and the
-strategy logs a warning with the count. Only a reply without words is
-refused. **Cards never hinge on her remembering the component**: a list in
-her words whose lines each hold one link to a task or project the turn saw
-is cut out of her words and drawn as `TaskCards` in its place, what else
-the line says kept as the card's note (a project line that says more
-stays her words, since only a task's card shows a note; so does a line
-that says a sentence, longer than `frontCardNoteMax`). The tasks a `list_due_tasks` found that she listed
-nowhere follow as one more list, and a lookup's component she did not
-place follows in catalog order. A task is listed once, and never when a
-closed-task card shows it. The reply's `text` — what is spoken, kept in
-`<recent_turns>` — is her words as she wrote them, a list she wrote
-included: cards are shown, never read aloud, so her prompt has her say
-what matters about them in her words.
+lookup's rows, by `kind:id`, a bare id meaning a task — and a lookup's
+component must have a lookup behind it this turn. One that fails is
+**dropped, never a reason to lose her answer**, and so is a block the
+parser could not read: `acceptAnswer` logs a `front reply format:` warning
+with the counts (never her words), which is how a model that keeps writing
+what cannot be drawn shows up. Only a message without prose is not an
+answer: the turn stays open for the one instruction the budget still
+allows, and UI without prose is logged the same way. **Cards never hinge
+on her remembering the component**: a list in her prose whose lines each
+hold one link to a task or project the turn saw is drawn as `TaskCards`,
+what else the line says kept as the card's note (a project line that says
+more stays her words, since only a task's card shows a note; so does a
+line that says a sentence, longer than `frontCardNoteMax`). The tasks a
+`list_due_tasks` found that she listed nowhere follow as one more list,
+and a lookup's component she did not place follows in catalog order. A
+task is listed once, and never when a closed-task card shows it.
+
+**A turn that looked something up to answer with is asked for its
+answer.** The send loop stops after a lookup batch, so a lookup answer is
+always a second call. `frontContinuationInstruction` picks what that call
+is told: `frontAnswerInstruction` when the turn ran a lookup made for an
+answer (`answerLookupCalls`: due or closed tasks, logged time, pull
+requests), otherwise `frontDispatchRepairInstruction`. A TLDR read or a
+corpus match serves routing as much as answering and keeps the repair
+wording. Leading with *dispatch* after a due lookup had a model route, now
+and then, the question it had just looked up
+(`test/features/ai/eval/front_agent_answer_eval_live_test.dart` runs the
+production strategy, prompt and parser against live models).
 
 The workflow stores the reply as **one A2UI v1.0 `createSurface` message**
 (`FrontReplySurface.compose`, the payload's `surface`), named for the
@@ -1512,10 +1561,12 @@ and not in the inbox, which gathers every conversation. What the doors made foll
 flowchart LR
   L[lookups this turn] -->|rows| V[visible: index + lookup rows]
   L -->|charts, closed cards, due window| D[data the app writes]
-  M["reply_to_user(message?, components?)"] --> R[readFrontReply]
+  M["her message: Express blocks, then prose"] --> X[parseFrontReplyStream]
+  X -->|prose + components| R[readFrontReply]
+  X -->|unreadable block: logged| W[front reply format warning]
   V --> R
-  R -->|no words: refused| M
-  R -->|"components (undrawable dropped, lists in words made cards)"| C[FrontReplySurface.compose]
+  R -->|no prose: not an answer, the turn stays open| M
+  R -->|"components (undrawable dropped, lists in prose made cards)"| C[FrontReplySurface.compose]
   D --> C
   C --> P[("payload: text + surface (A2UI v1.0 createSurface)")]
   P --> B[FrontChatThreadBuilder]

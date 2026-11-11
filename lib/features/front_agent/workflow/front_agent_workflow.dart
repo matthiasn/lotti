@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/agents/workflow/wake_token_usage.dart';
+import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -29,6 +31,7 @@ import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
 import 'package:lotti/features/front_agent/workflow/front_conversation_tasks.dart';
 import 'package:lotti/features/front_agent/workflow/front_inference_stall_guard.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Stable output ids per agent and run, so a wake can recognise that its
@@ -242,8 +245,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
         ),
       );
       conversationId = _conversationRepository.createConversation(
-        systemMessage:
-            '$frontAgentSystemPrompt\n\n${frontAgentPersonality(_sass())}',
+        systemMessage: frontAgentSystemMessage(_sass()),
         maxTurns: agentIdentity.config.maxTurnsPerWake,
       );
 
@@ -270,10 +272,12 @@ class FrontAgentWorkflow with AgentErrorLogging {
         turnBudget: frontProviderCallsPerTurn,
       );
 
-      // The one repair the budget allows: a turn that ended without a
-      // terminal call, or whose dispatch was invalid, gets the instruction
-      // once — and only while a call is left of the three.
+      // Her answer is the message she ended on, not a call.
       final manager = _conversationRepository.getConversation(conversationId);
+      frontTakeAnswer(strategy, manager);
+      // The one repair the budget allows: a turn that ended without an
+      // answer or a terminal call, or whose dispatch was invalid, gets the
+      // instruction once — and only while a call is left of the three.
       final callsSoFar = manager?.turnCount ?? frontProviderCallsPerTurn;
       if (!strategy.hasTerminalOutput &&
           callsSoFar < frontProviderCallsPerTurn) {
@@ -281,7 +285,9 @@ class FrontAgentWorkflow with AgentErrorLogging {
           usage,
           await _conversationRepository.sendMessage(
             conversationId: conversationId,
-            message: frontDispatchRepairInstruction,
+            message: frontContinuationInstruction(
+              answerLookups: strategy.answerLookupCalls,
+            ),
             model: resolved.modelId,
             provider: resolved.provider,
             inferenceRepo: inferenceRepo,
@@ -295,6 +301,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
             turnBudget: frontProviderCallsPerTurn - callsSoFar,
           ),
         );
+        frontTakeAnswer(strategy, manager);
       }
       inferring = false;
       lap('inference(calls=${manager?.turnCount})');
@@ -598,6 +605,26 @@ class FrontAgentWorkflow with AgentErrorLogging {
 
   InferenceUsage? _merge(InferenceUsage? a, InferenceUsage? b) =>
       a == null ? b : (b == null ? a : a.merge(b));
+}
+
+/// Hands [strategy] the message she ended the model call on, as her answer.
+///
+/// Words she writes beside lookup calls are a remark on the way, not her
+/// answer; beside an accepted dispatch they are the line that goes with it.
+/// Beside a dispatch that was refused they describe a routing that did not
+/// happen, so the turn stays open for the repair round.
+void frontTakeAnswer(
+  FrontAgentStrategy strategy,
+  ConversationManager? manager,
+) {
+  final last = manager?.messages.reversed
+      .whereType<ChatCompletionAssistantMessage>()
+      .firstOrNull;
+  final content = last?.content;
+  if (last == null || content == null || content.trim().isEmpty) return;
+  final calledTools = last.toolCalls?.isNotEmpty ?? false;
+  if (calledTools && strategy.dispatch == null) return;
+  strategy.acceptAnswer(content);
 }
 
 /// The wake's user turn, by volatility: the index (changes when the record
