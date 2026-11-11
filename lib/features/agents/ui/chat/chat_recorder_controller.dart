@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/chat/chat_amplitude_history.dart';
@@ -42,7 +43,7 @@ typedef ChatTranscriptCorrector =
 ///
 /// Race model: every recording session captures a monotonically increasing
 /// `_operationId` before its first startup await (see [start]). Async callbacks (amplitude
-/// ticks, transcription deltas, the safety timer) only mutate state while their
+/// ticks, transcription deltas) only mutate state while their
 /// captured id still equals `_operationId`. [cancel] bumps the id to orphan any
 /// in-flight work, so a stale callback from an aborted session can never write
 /// over the next one. Every state mutation also checks `ref.mounted` because
@@ -92,7 +93,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
 
   record.AudioRecorder? _recorder;
   StreamSubscription<record.Amplitude>? _ampSub;
-  Timer? _maxTimer;
   Directory? _tempDir;
   String? _filePath;
   bool _isStarting = false;
@@ -118,7 +118,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       await cleanup;
       return;
     }
-    _maxTimer?.cancel();
     final ampSub = _ampSub;
     final recorder = _recorder;
     final filePath = _filePath;
@@ -127,7 +126,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     _recorder = null;
     _filePath = null;
     _tempDir = null;
-    _maxTimer = null;
 
     try {
       await ampSub?.cancel();
@@ -158,9 +156,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   }
 
   /// Begins a batch recording: checks mic permission, records to a temp `.m4a`
-  /// file, streams throttled amplitude into [ChatRecorderState.amplitudeHistory],
-  /// and arms a [ChatRecorderConfig.maxSeconds] safety timer that auto-calls
-  /// [stopAndTranscribe]. No-op unless idle; records an error message if a
+  /// file, and streams throttled amplitude into
+  /// [ChatRecorderState.amplitudeHistory]. The take runs until it is stopped,
+  /// as a recording on a task does. No-op unless idle; records an error message if a
   /// start is already in flight. On any failure the partial recording is
   /// cleaned up. An optional [resolveTranscriptionTarget] belongs to this
   /// recording and resolves the caller's current route when recording stops;
@@ -265,29 +263,16 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
             if (!ref.mounted) return;
 
             final dBFS = event.current;
+            final elapsedMillis = _nowMillisProvider() - startedAt;
             state = state.copyWith(
               status: ChatRecorderStatus.recording,
-              elapsed: Duration(
-                milliseconds: (_nowMillisProvider() - startedAt).clamp(
-                  0,
-                  _config.maxSeconds * 1000,
-                ),
-              ),
+              elapsed: Duration(milliseconds: math.max(0, elapsedMillis)),
               amplitudeHistory: appendAmplitudeSample(
                 state.amplitudeHistory,
                 dBFS,
               ),
             );
           });
-
-      // Safety stop after configured max duration
-      _maxTimer?.cancel();
-      _maxTimer = Timer(Duration(seconds: _config.maxSeconds), () {
-        // Check if this operation is still current and ref is valid
-        if (currentOpId == _operationId && ref.mounted) {
-          unawaited(stopAndTranscribe());
-        }
-      });
 
       // Log start
       _logger.log(
@@ -345,7 +330,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     ChatRecorderState? completed;
 
     state = state.copyWith(status: ChatRecorderStatus.processing);
-    _maxTimer?.cancel();
     try {
       try {
         await ampSub?.cancel();
@@ -429,7 +413,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     await _startFuture;
     final recorder = _recorder;
 
-    _maxTimer?.cancel();
     try {
       await _ampSub?.cancel();
     } catch (e, s) {
@@ -557,8 +540,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     _recorder = null;
     _filePath = null;
     _tempDir = null;
-    _maxTimer?.cancel();
-    _maxTimer = null;
     try {
       await ampSub?.cancel();
     } catch (e, s) {
