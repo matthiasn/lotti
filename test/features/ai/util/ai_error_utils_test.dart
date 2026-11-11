@@ -1401,6 +1401,27 @@ OpenAIClientException({
       );
     });
 
+    test("relays a provider's words for every error it answered with", () {
+      for (final (status, words) in [
+        (401, 'Incorrect API key provided'),
+        (429, 'Too many requests'),
+        (400, 'Unknown model'),
+        (503, 'The model is overloaded'),
+      ]) {
+        expect(
+          AiErrorUtils.providerMessage(
+            InferenceHttpException(
+              words,
+              provider: 'Mistral',
+              statusCode: status,
+            ),
+          ),
+          words,
+          reason: '$status',
+        );
+      }
+    });
+
     test('says nothing for a failure no provider answered', () {
       expect(AiErrorUtils.providerMessage(null), isNull);
       expect(
