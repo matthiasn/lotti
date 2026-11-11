@@ -6546,11 +6546,11 @@ abstract class AppLocalizations {
   /// **'Resize'**
   String get companionCardResize;
 
-  /// Menu row: changes the companion's look (outfit)
+  /// Menu row on the companion's floating card: closes the chat and opens her settings page, where her look is customized
   ///
   /// In en, this message translates to:
-  /// **'Restyle'**
-  String get companionCardRestyle;
+  /// **'Customize'**
+  String get companionCardCustomize;
 
   /// Menu row: shows the companion card small
   ///

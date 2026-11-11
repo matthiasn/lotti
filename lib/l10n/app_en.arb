@@ -2537,6 +2537,10 @@
   "commonError": "Error",
   "commonLoading": "Loading...",
   "commonUnknown": "Unknown",
+  "companionCardCustomize": "Customize",
+  "@companionCardCustomize": {
+    "description": "Menu row on the companion's floating card: closes the chat and opens her settings page, where her look is customized"
+  },
   "companionCardDemo": "Demo size",
   "@companionCardDemo": {
     "description": "Menu row: the companion card fills the conversation area until dismissed, for demos"
@@ -2564,10 +2568,6 @@
   "companionCardResize": "Resize",
   "@companionCardResize": {
     "description": "Tooltip of the desktop resize grip on the companion card"
-  },
-  "companionCardRestyle": "Restyle",
-  "@companionCardRestyle": {
-    "description": "Menu row: changes the companion's look (outfit)"
   },
   "companionCardSmall": "Small",
   "@companionCardSmall": {

@@ -566,7 +566,15 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
         duration: MotionDurations.short4,
         child: cardFor == null
             ? const SizedBox.shrink()
-            : FrontCompanionCard(conversationId: cardFor, form: cardForm),
+            : FrontCompanionCard(
+                conversationId: cardFor,
+                form: cardForm,
+                // Her settings are a page of the app: she closes first.
+                onCustomize: () {
+                  onClose();
+                  beamToNamed('/settings/companion');
+                },
+              ),
       ),
       threadBottomInset: cardInset,
       agentName: messages.frontChatTitle,

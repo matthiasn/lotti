@@ -3872,7 +3872,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionCardResize => 'Ændr størrelse';
 
   @override
-  String get companionCardRestyle => 'Skift stil';
+  String get companionCardCustomize => 'Tilpas';
 
   @override
   String get companionCardSmall => 'Lille';

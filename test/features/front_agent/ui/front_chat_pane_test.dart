@@ -172,6 +172,7 @@ void main() {
     List<NavigatorObserver> navigatorObservers = const [],
     List<CategoryDefinition>? mentionCategories,
     bool companion = false,
+    bool cardShown = false,
     Set<String> flagsOn = const {},
     Future<FrontEntityPreview?> Function(FrontEntityKey key)? previews,
     bool reducedMotion = false,
@@ -180,11 +181,16 @@ void main() {
     // The project creation resolves categories through the locator.
     final cache = MockEntitiesCacheService();
     when(() => cache.getCategoryById(any())).thenReturn(null);
-    await setUpTestGetIt(
+    final mocks = await setUpTestGetIt(
       additionalSetup: () =>
           getIt.registerSingleton<EntitiesCacheService>(cache),
     );
     addTearDown(tearDownTestGetIt);
+    // Her card as the user left it: hidden unless [cardShown], the default
+    // for a user who never hid it.
+    when(
+      () => mocks.settingsDb.itemByKey(frontCompanionCardShownSettingsKey),
+    ).thenAnswer((_) async => cardShown ? null : 'false');
     // Tall enough that every message of the longest thread is built.
     const window = Size(800, 2400);
     setTestSurfaceSize(tester, window);
@@ -2429,6 +2435,31 @@ void main() {
       expect(toggle, findsOne);
     });
 
+    testWidgets('out from the first open for a user who never hid her; '
+        "her menu's Customize closes her surface, then opens the page that "
+        'customizes her', (tester) async {
+      final order = <String>[];
+      beamToNamedOverride = order.add;
+      addTearDown(() => beamToNamedOverride = null);
+      await pumpPane(
+        tester,
+        companion: true,
+        cardShown: true,
+        onClose: () => order.add('closed'),
+      );
+      await frames(tester);
+      expect(card, findsOne);
+      expect(toggle, findsNothing);
+
+      await tester.longPress(card);
+      await tester.pump();
+      await tester.tap(find.byKey(CompanionFloatingCardKeys.customize));
+      await tester.pump();
+
+      expect(order, ['closed', '/settings/companion']);
+      await frames(tester);
+    });
+
     for (final (why, companion, inbox) in [
       ('in the inbox', true, true),
       ('with the character off', false, false),
@@ -2436,11 +2467,10 @@ void main() {
       testWidgets('$why she stays away, though her card was shown', (
         tester,
       ) async {
-        await pumpPane(tester, companion: companion);
+        await pumpPane(tester, companion: companion, cardShown: true);
         final container = ProviderScope.containerOf(
           tester.element(find.byType(FrontChatPane)),
         );
-        container.read(frontCompanionCardShownProvider.notifier).toggle();
         if (inbox) container.read(frontInboxFilterProvider.notifier).toggle();
         await frames(tester);
 

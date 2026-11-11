@@ -124,15 +124,20 @@ class _SpeakingFigure extends ConsumerWidget {
 /// they left her in [form]. She speaks the conversation's answers, holds the
 /// turn's pose as her bust in the header does, and points at what her latest
 /// reply lists ([frontStagePointsProvider]) while the thread is to her right.
+/// Its menu's customize row calls [onCustomize].
 class FrontCompanionCard extends ConsumerWidget {
   const FrontCompanionCard({
     required this.conversationId,
     required this.form,
+    required this.onCustomize,
     super.key,
   });
 
   final String conversationId;
   final CompanionCardForm form;
+
+  /// Opens the page that customizes her.
+  final VoidCallback onCustomize;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -151,13 +156,7 @@ class FrontCompanionCard extends ConsumerWidget {
       speaking: speaking,
       // Her face in the header shows the card; the card puts itself away.
       onHide: ref.read(frontCompanionCardShownProvider.notifier).toggle,
-      onRestyle: () => ref
-          .read(companionOutfitProvider.notifier)
-          .next(
-            ref
-                .read(companionLookRollProvider)
-                .outfitFor(frontCompanionDressedFor),
-          ),
+      onCustomize: onCustomize,
       // Decorative: the card carries its own label, and she says nothing a
       // reader would miss.
       figure: ExcludeSemantics(

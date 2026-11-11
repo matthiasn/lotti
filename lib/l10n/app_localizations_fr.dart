@@ -3932,7 +3932,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get companionCardResize => 'Redimensionner';
 
   @override
-  String get companionCardRestyle => 'Changer de style';
+  String get companionCardCustomize => 'Personnaliser';
 
   @override
   String get companionCardSmall => 'Petit';

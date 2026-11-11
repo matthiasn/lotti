@@ -3939,7 +3939,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionCardResize => 'Redimensionați';
 
   @override
-  String get companionCardRestyle => 'Schimbați stilul';
+  String get companionCardCustomize => 'Personalizați';
 
   @override
   String get companionCardSmall => 'Mic';

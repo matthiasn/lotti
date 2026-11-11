@@ -11,7 +11,9 @@ import 'package:lotti/features/front_agent/state/front_conversation_providers.da
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   FrontConversation conversation(
@@ -212,4 +214,85 @@ void main() {
       expect(await c.read(frontActiveConversationProvider.future), 'c-1');
     }),
   );
+
+  group('her card shown', () {
+    late TestGetItMocks mocks;
+
+    setUp(() async => mocks = await setUpTestGetIt());
+    tearDown(tearDownTestGetIt);
+
+    void stored(String? value) => when(
+      () => mocks.settingsDb.itemByKey(frontCompanionCardShownSettingsKey),
+    ).thenAnswer((_) async => value);
+
+    ProviderContainer container() {
+      final c = ProviderContainer(overrides: getItServiceOverrides());
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    test('is hidden until what was kept is read: no flash', () async {
+      stored('false');
+      final c = container();
+
+      expect(c.read(frontCompanionCardShownProvider), isFalse);
+    });
+
+    for (final (saved, shown) in [
+      (null, true),
+      ('true', true),
+      ('false', false),
+    ]) {
+      test('starts ${shown ? 'shown' : 'hidden'} with $saved kept', () async {
+        stored(saved);
+        final c = container()..read(frontCompanionCardShownProvider);
+        await pumpEventQueue();
+
+        expect(c.read(frontCompanionCardShownProvider), shown);
+      });
+    }
+
+    test('starts shown when what is kept cannot be read', () async {
+      when(
+        () => mocks.settingsDb.itemByKey(frontCompanionCardShownSettingsKey),
+      ).thenThrow(Exception('locked'));
+      final c = container()..read(frontCompanionCardShownProvider);
+      await pumpEventQueue();
+
+      expect(c.read(frontCompanionCardShownProvider), isTrue);
+    });
+
+    test('a toggle keeps what it set', () async {
+      stored(null);
+      final c = container()..read(frontCompanionCardShownProvider);
+      await pumpEventQueue();
+
+      c.read(frontCompanionCardShownProvider.notifier).toggle();
+      expect(c.read(frontCompanionCardShownProvider), isFalse);
+      verify(
+        () => mocks.settingsDb.saveSettingsItem(
+          frontCompanionCardShownSettingsKey,
+          'false',
+        ),
+      ).called(1);
+
+      c.read(frontCompanionCardShownProvider.notifier).toggle();
+      expect(c.read(frontCompanionCardShownProvider), isTrue);
+      verify(
+        () => mocks.settingsDb.saveSettingsItem(
+          frontCompanionCardShownSettingsKey,
+          'true',
+        ),
+      ).called(1);
+    });
+
+    test('a toggle made while the kept value loads wins over it', () async {
+      stored('false');
+      final c = container()..read(frontCompanionCardShownProvider);
+      c.read(frontCompanionCardShownProvider.notifier).toggle();
+      await pumpEventQueue();
+
+      expect(c.read(frontCompanionCardShownProvider), isTrue);
+    });
+  });
 }

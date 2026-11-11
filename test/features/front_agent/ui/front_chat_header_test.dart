@@ -35,6 +35,7 @@ import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../test_utils/screenshot_harness.dart';
 import '../../../widget_test_utils.dart';
@@ -60,8 +61,12 @@ void main() {
     List<NavigatorObserver> observers = const [],
     FocusNode? drawerFocus,
   }) async {
-    await setUpTestGetIt();
+    final mocks = await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
+    // Her card hidden by the user earlier: her face is in the header.
+    when(
+      () => mocks.settingsDb.itemByKey(frontCompanionCardShownSettingsKey),
+    ).thenAnswer((_) async => 'false');
     // On the fixtures' day: the open conversation is the one that moved
     // today, whenever the suite runs.
     await withClock(Clock.fixed(DateTime(2026, 10, 31, 12)), () async {

@@ -1807,14 +1807,22 @@ source. The thread, its field, the header and the list stay where they are,
 so typing, `@` mentions, the microphone and Enter to send go on as before.
 The card puts itself away: a single tap on it, or *Hide* last in its menu
 (`CompanionFloatingCard.onHide`), and the face comes back to the header.
-Whether she is shown is held for the app's session, not saved; she shows only
-while the companion is on, a conversation is open and the inbox is off.
+Whether she is shown is kept in SettingsDb (`FRONT_COMPANION_CARD_SHOWN`,
+device-local, like her placement): she is out until the user hides her, and
+stays hidden after a restart once they have. Until that value is read she is
+hidden, so a user who put her away never sees her flash in; a value that
+cannot be read counts as shown, and a tap made while it is read wins over
+it. She shows only while the companion is on, a conversation is open and the
+inbox is off.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Hidden
+  [*] --> Reading
+  Reading --> Shown: nothing kept, shown kept, or unreadable
+  Reading --> Hidden: hidden kept
   Hidden --> Shown: tap her face in the header
   Shown --> Hidden: tap the card, or Hide in its menu
+  note right of Reading: hidden meanwhile, so she never flashes in
   note right of Shown: the header face steps aside, and no card in the inbox or with the character off
 ```
 
@@ -1831,8 +1839,9 @@ unclaimed). Its edge takes the interactive accent
 while she speaks. It opens small in the bottom-right corner; a drag that
 starts on it moves it, a double tap switches Small ⇄ Large, a pinch sizes it
 anywhere between, and a long press — a right-click on a desktop — opens its
-menu (Small, Large, Demo size, Restyle, Reset position and size, and Hide
-when its host gives `onHide`, which a single tap calls too). A desktop
+menu (Small, Large, Demo size, Customize — which closes her surface and
+opens her settings page, `/settings/companion` —, Reset position and size,
+and Hide when its host gives `onHide`, which a single tap calls too). A desktop
 adds a grip on the corner facing the open screen, on hover, and Ctrl/⌘ +
 scroll. Wherever it sits, the card stays a margin (`spacing.step5`) inside
 the thread's area, and never taller or wider than that area allows. The

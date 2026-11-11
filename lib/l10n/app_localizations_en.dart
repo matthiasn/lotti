@@ -3857,7 +3857,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get companionCardResize => 'Resize';
 
   @override
-  String get companionCardRestyle => 'Restyle';
+  String get companionCardCustomize => 'Customize';
 
   @override
   String get companionCardSmall => 'Small';
@@ -18562,6 +18562,9 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get colorLabel => 'Colour';
+
+  @override
+  String get companionCardCustomize => 'Customise';
 
   @override
   String get companionSettingsCharacterDescription =>

@@ -1,10 +1,12 @@
 import 'package:clock/clock.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/service/front_conversation_service.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:uuid/uuid.dart';
 
 /// Lists, renames, archives and deletes the user's conversations with her.
@@ -86,9 +88,15 @@ class FrontConversationListOpen extends Notifier<bool> {
   void close() => state = false;
 }
 
-/// Whether her glass card floats over the open conversation: a tap on her
-/// face in the header shows it, another hides it. Held for the app's session,
-/// so she is where the user left her when the sheet opens again.
+/// The SettingsDb key her card's shown-or-hidden is kept under: device-local,
+/// like the card's placement.
+const frontCompanionCardShownSettingsKey = 'FRONT_COMPANION_CARD_SHOWN';
+
+/// Whether her glass card floats over the open conversation: shown until the
+/// user hides it — a tap on the card — and back from a tap on her face in the
+/// header. Kept in SettingsDb, so she is as the user left her after a
+/// restart too. Hidden only until that is read: a card that showed and then
+/// went away for a user who hid it would be a flash.
 final NotifierProvider<FrontCompanionCardShown, bool>
 frontCompanionCardShownProvider =
     NotifierProvider<FrontCompanionCardShown, bool>(
@@ -97,10 +105,38 @@ frontCompanionCardShownProvider =
     );
 
 class FrontCompanionCardShown extends Notifier<bool> {
-  @override
-  bool build() => false;
+  bool _toggled = false;
 
-  void toggle() => state = !state;
+  @override
+  bool build() {
+    // After build: a read that fails at once must not set state inside it.
+    Future.microtask(_load).ignore();
+    return false;
+  }
+
+  Future<void> _load() async {
+    String? stored;
+    try {
+      stored = await ref
+          .read(settingsDbProvider)
+          .itemByKey(frontCompanionCardShownSettingsKey);
+    } catch (error, stackTrace) {
+      // Shown, as when nothing was kept.
+      debugPrint('FRONT_COMPANION_CARD_SHOWN load failed: $error\n$stackTrace');
+    }
+    // A toggle made while the stored value was read wins over it.
+    if (!ref.mounted || _toggled) return;
+    state = stored != 'false';
+  }
+
+  void toggle() {
+    _toggled = true;
+    state = !state;
+    ref
+        .read(settingsDbProvider)
+        .saveSettingsItem(frontCompanionCardShownSettingsKey, state.toString())
+        .ignore();
+  }
 }
 
 /// The id a first conversation takes when nothing was ever said: minted
