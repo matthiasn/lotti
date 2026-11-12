@@ -1823,6 +1823,128 @@ root = TaskCards("Found", ["task:garden"])
     },
   );
 
+  group('her answer while she writes it', () {
+    // What she says so far, then the components drawn, by type.
+    late List<String> progress;
+
+    FrontAgentStrategy live() {
+      progress = [];
+      return FrontAgentStrategy(
+        syncService: syncService,
+        domainLogger: domainLogger,
+        agentId: 'front_agent',
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        input: input,
+        index: index,
+        now: DateTime(2026, 11, 2, 9),
+        onAnswerProgress: (text, components) => progress.add(
+          '$text | '
+          '${[for (final c in components) c['component']].join(', ')}',
+        ),
+      );
+    }
+
+    test('each arrival reports what she says and draws so far, cards before '
+        'a word of prose, and takes nothing', () {
+      final s = live();
+      const block =
+          '<a2ui>\nsurface("reply")\n'
+          'root = TaskCards("Tasks", ["task:garden"])\n</a2ui>\n';
+
+      s
+        // Nothing to show yet: the block is still open.
+        ..onContent('<a2ui>\nsurface("reply")')
+        ..onContent(block)
+        ..onContent('${block}Garden is')
+        ..onContent('${block}Garden is the one.');
+
+      expect(progress, [
+        ' | TaskCards',
+        'Garden is | Text, TaskCards',
+        'Garden is the one. | Text, TaskCards',
+      ]);
+      // Shown, not taken: the message may yet be a remark beside a lookup.
+      expect(s.replyToUser, isNull);
+      expect(s.hasTerminalOutput, isFalse);
+    });
+
+    test('what a lookup found can be shown before she writes: nothing '
+        'without a lookup, nothing once the turn has ended', () async {
+      final s = live();
+      expect(s.showLookups(), isFalse);
+      expect(progress, isEmpty);
+
+      final found = FrontAgentStrategy(
+        syncService: syncService,
+        domainLogger: domainLogger,
+        agentId: 'front_agent',
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        input: input,
+        index: index,
+        now: DateTime(2026, 11, 2, 9),
+        dueTaskLister: (query) async => FrontDueTasks(
+          window: query.window,
+          today: DateTime(2026, 11, 2),
+          through: DateTime(2026, 11, 2),
+          rows: index.rows.where((row) => row.id == 'garden').toList(),
+        ),
+        onAnswerProgress: (text, components) => progress.add(
+          '$text | '
+          '${[for (final c in components) c['component']].join(', ')}',
+        ),
+      );
+      await found.processToolCalls(
+        toolCalls: [
+          _call('list_due_tasks', {'which': 'today'}),
+        ],
+        manager: manager,
+      );
+
+      expect(found.showLookups(), isTrue);
+      expect(progress, [' | TaskCards']);
+
+      // An answer taken is what is shown from then on.
+      found.acceptAnswer('Garden is due.');
+      expect(found.showLookups(), isFalse);
+      expect(progress, hasLength(1));
+      // And nothing shows it when nothing listens.
+      expect(strategy().showLookups(), isFalse);
+    });
+
+    test('reasoning is never shown, and a recited id is a link as it will '
+        'be in her answer', () {
+      live()
+        ..onContent('<think>Which task')
+        ..onContent('<think>Which task?</think>It is task:garden.');
+
+      expect(progress, ['It is [Garden](lotti://task/garden). | Text']);
+    });
+
+    test('nothing is reported once the turn has asked or answered, or '
+        'when nothing shows it', () async {
+      live()
+        ..acceptAnswer('Done.')
+        ..onContent('More.');
+      expect(progress, isEmpty);
+
+      final asked = live();
+      await asked.processToolCalls(
+        toolCalls: [
+          _call('ask_user', {'question': 'Which one?'}),
+        ],
+        manager: manager,
+      );
+      asked.onContent('More.');
+      expect(progress, isEmpty);
+
+      // No listener: reading it would be work for nothing, and must not
+      // throw.
+      strategy().onContent('Hello.');
+    });
+  });
+
   test('no continuation prompt: the workflow owns the repair', () {
     expect(strategy().getContinuationPrompt(manager), isNull);
   });

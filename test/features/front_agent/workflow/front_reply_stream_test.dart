@@ -75,6 +75,52 @@ One is overdue, one is due.''');
     );
   });
 
+  group('a message still being written', () {
+    FrontStreamedReply sofar(String content) =>
+        parseFrontReplyStream(content, complete: false);
+
+    test('the start of a tag is held back, not shown as prose', () {
+      for (final content in ['<', '<a2', '<a2ui', '<a2ui>']) {
+        final reply = sofar(content);
+        expect(reply.prose, isEmpty, reason: content);
+        expect(reply.components, isEmpty, reason: content);
+        expect(reply.errors, isEmpty, reason: content);
+      }
+    });
+
+    test('a block left open is not an error yet, and draws nothing', () {
+      final reply = sofar('<a2ui>\nsurface("reply")\nroot = TaskCards("Due');
+
+      expect(reply.components, isEmpty);
+      expect(reply.errors, isEmpty);
+      expect(reply.prose, isEmpty);
+    });
+
+    test('a closed block is drawn before a word of prose has come, and the '
+        'prose grows after it', () {
+      const block =
+          '<a2ui>\nsurface("reply")\n'
+          'root = TaskCards("Due today", ["task:t-ice"])\n</a2ui>\n';
+      const cards = {
+        'component': 'TaskCards',
+        'caption': 'Due today',
+        'ids': ['task:t-ice'],
+      };
+
+      expect(sofar(block).components, [cards]);
+      expect(sofar(block).prose, isEmpty);
+
+      final later = sofar('${block}One thing is');
+      expect(later.components, [cards]);
+      expect(later.prose, 'One thing is');
+    });
+
+    test('prose alone grows as it comes', () {
+      expect(sofar('Nothing').prose, 'Nothing');
+      expect(sofar('Nothing is due today.').prose, 'Nothing is due today.');
+    });
+  });
+
   test('a plain answer is prose alone', () {
     final reply = parseFrontReplyStream('All right, talk soon.');
 

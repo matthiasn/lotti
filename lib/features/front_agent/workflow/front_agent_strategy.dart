@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/util/think_blocks.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_due_section.dart';
@@ -85,7 +86,13 @@ class FrontAgentStrategy extends ConversationStrategy
     this.closedTaskLister,
     this.pullRequestSummarizer,
     this.conversationTasks = const [],
+    this.onAnswerProgress,
   });
+
+  /// Told what her answer says and draws so far, each time more of the
+  /// message she is writing arrives; null when nothing shows it live.
+  final void Function(String text, List<Map<String, Object?>> components)?
+  onAnswerProgress;
 
   @override
   final AgentSyncService syncService;
@@ -765,22 +772,9 @@ class FrontAgentStrategy extends ConversationStrategy
   bool acceptAnswer(String content) {
     if (_askUser != null || _replyToUser != null) return false;
     final streamed = parseFrontReplyStream(content);
-    final closed = _closedTaskCards;
     final FrontReply reply;
     try {
-      reply = readFrontReply(
-        prose: streamed.prose,
-        components: streamed.components,
-        visible: frontVisibleRows([...index.rows, ..._lookupRows]),
-        available: {
-          if (closed != null) FrontReplyComponents.closedTasks,
-          if (_loggedTimeChart != null) FrontReplyComponents.loggedTimeChart,
-          if (_pullRequestChart != null) FrontReplyComponents.pullRequestChart,
-        },
-        dueRows: _dueRows,
-        closedTaskIds: {...?closed?.map((card) => card.id)},
-        link: _linked,
-      );
+      reply = _read(streamed);
     } on FrontReplyException {
       if (streamed.components.isNotEmpty || streamed.errors.isNotEmpty) {
         _logFormatFailure('her answer had UI but no prose');
@@ -800,6 +794,59 @@ class FrontAgentStrategy extends ConversationStrategy
       );
     }
     return true;
+  }
+
+  /// Her message while she is still writing it: what it says and draws so
+  /// far goes to [onAnswerProgress], read as [acceptAnswer] will read it but
+  /// taking nothing — the message may yet turn out to be a remark beside a
+  /// lookup. Nothing is reported before it has a word or a component.
+  @override
+  void onContent(String content) {
+    final progress = onAnswerProgress;
+    if (progress == null || _askUser != null || _replyToUser != null) return;
+    final streamed = parseFrontReplyStream(
+      stripThinkBlocks(content) ?? '',
+      complete: false,
+    );
+    if (streamed.prose.isEmpty && streamed.components.isEmpty) return;
+    final reply = _read(streamed, proseRequired: false);
+    progress(reply.text, reply.components);
+  }
+
+  /// Shows, through [onAnswerProgress], what the turn's lookups found —
+  /// the tasks due, a chart, the closed tasks — before she has written a
+  /// word about it: most of a lookup answer's wait is the call that writes
+  /// it, and what it will be about is already known. Returns whether there
+  /// was something to show.
+  bool showLookups() {
+    final progress = onAnswerProgress;
+    if (progress == null || hasTerminalOutput) return false;
+    final found = _read(
+      (prose: '', components: const [], errors: const []),
+      proseRequired: false,
+    ).components;
+    if (found.isEmpty) return false;
+    progress('', found);
+    return true;
+  }
+
+  /// [streamed] checked against what the turn saw (`readFrontReply`).
+  FrontReply _read(FrontStreamedReply streamed, {bool proseRequired = true}) {
+    final closed = _closedTaskCards;
+    return readFrontReply(
+      prose: streamed.prose,
+      components: streamed.components,
+      visible: frontVisibleRows([...index.rows, ..._lookupRows]),
+      available: {
+        if (closed != null) FrontReplyComponents.closedTasks,
+        if (_loggedTimeChart != null) FrontReplyComponents.loggedTimeChart,
+        if (_pullRequestChart != null) FrontReplyComponents.pullRequestChart,
+      },
+      dueRows: _dueRows,
+      closedTaskIds: {...?closed?.map((card) => card.id)},
+      link: _linked,
+      proseRequired: proseRequired,
+    );
   }
 
   /// Logs that her answer did not follow the reply format. Never its words:

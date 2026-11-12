@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
+import 'package:lotti/features/front_agent/model/front_live_answer.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/runtime/front_runtime_maintenance.dart';
 import 'package:lotti/features/front_agent/service/front_agent_service.dart';
@@ -61,6 +62,22 @@ final frontRoutingIndexBuilderProvider = Provider<FrontRoutingIndexBuilder>(
 );
 
 /// One routing turn per wake.
+/// Her answer while a turn is still writing it (see [FrontLiveAnswer]).
+final frontLiveAnswerProvider =
+    NotifierProvider<FrontLiveAnswerNotifier, FrontLiveAnswer?>(
+      FrontLiveAnswerNotifier.new,
+      name: 'frontLiveAnswerProvider',
+    );
+
+class FrontLiveAnswerNotifier extends Notifier<FrontLiveAnswer?> {
+  @override
+  FrontLiveAnswer? build() => null;
+
+  // Set from the running turn, as her message streams.
+  // ignore: use_setters_to_change_properties
+  void show(FrontLiveAnswer? answer) => state = answer;
+}
+
 final frontAgentWorkflowProvider = Provider<FrontAgentWorkflow>(
   (ref) => FrontAgentWorkflow(
     repository: ref.watch(agentRepositoryProvider),
@@ -72,6 +89,8 @@ final frontAgentWorkflowProvider = Provider<FrontAgentWorkflow>(
     domainLogger: ref.watch(domainLoggerProvider),
     // Read at each wake, so a sass changed since speaks from the next turn.
     sass: () => ref.read(companionCustomizationProvider).sass,
+    onLiveAnswer: (answer) =>
+        ref.read(frontLiveAnswerProvider.notifier).show(answer),
   ),
   name: 'frontAgentWorkflowProvider',
 );

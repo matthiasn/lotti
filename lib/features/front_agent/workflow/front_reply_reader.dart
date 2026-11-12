@@ -45,7 +45,9 @@ const int frontQuickRepliesMax = 3;
 /// by `kind:id` — and a lookup's component one of [available]: nothing is
 /// drawn for an id she made up or a chart no lookup produced. Such a
 /// component is dropped and named in `dropped`, never a reason to lose her
-/// answer. Only a reply without prose throws a [FrontReplyException].
+/// answer. Only a reply without prose throws a [FrontReplyException] —
+/// unless [proseRequired] is false, for an answer still being written,
+/// whose UI comes before its prose.
 ///
 /// **Cards never hinge on her remembering the component.** A list in her
 /// prose whose lines each link one task or project of [visible] is drawn as
@@ -66,8 +68,9 @@ FrontReply readFrontReply({
   required List<FrontIndexRow> dueRows,
   required String Function(String words) link,
   Set<String> closedTaskIds = const {},
+  bool proseRequired = true,
 }) {
-  if (prose.trim().isEmpty) {
+  if (proseRequired && prose.trim().isEmpty) {
     throw const FrontReplyException('The reply has no prose.');
   }
   final dropped = <String>[];

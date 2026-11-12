@@ -21,8 +21,10 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+import 'package:lotti/features/front_agent/model/front_live_answer.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
+import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
@@ -385,7 +387,18 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
     // picked, shows the shell — the composer already sends to the one
     // picked, so the last one's words must not stand in for it — and a
     // failed load of the one picked shows its error.
-    final thread = _shownFor == subject ? threadAsync.value : null;
+    final stored = _shownFor == subject ? threadAsync.value : null;
+    // Her answer while she writes it is the thread's last message, under
+    // the id her stored reply will have, which then takes its place. Not in
+    // the inbox, which shows only turns that wait on the user.
+    final thread = stored == null || inboxOnly
+        ? stored
+        : frontThreadWithLive(stored, ref.watch(frontLiveAnswerProvider));
+    // Cards a lookup found may stand before she has written a word; she
+    // is still thinking until she has.
+    final writing =
+        !identical(thread, stored) &&
+        (thread?.messages.lastOrNull?.text.isNotEmpty ?? false);
     // She copies dates as her tools give them (ISO); on screen each is in
     // the device's own format, as a due date is everywhere else.
     String deviceDays(String text) =>
@@ -651,6 +664,8 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
         sendingLabel: messages.frontChatResponding,
         draft: composer.draft,
         isSending: composer.isSending,
+        // Her answer is appearing: nothing says she is still thinking.
+        activity: writing ? const SizedBox.shrink() : null,
         hasFailedTurn: composer.failedMessage != null,
         failedTurnLabel: switch (composer.failure) {
           FrontTurnFailure.rateLimit => messages.frontChatFailedRateLimit,

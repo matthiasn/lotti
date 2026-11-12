@@ -32,6 +32,7 @@ import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+import 'package:lotti/features/front_agent/model/front_live_answer.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
@@ -694,6 +695,78 @@ void main() {
       () => agentService.getOrCreate(),
       () => chatService.sendMessage(text: 'Swim 2 km', conversationId: 'c-1'),
     ]);
+  });
+
+  testWidgets('her answer appears while she writes it, in place of the line '
+      'that says she is thinking, and is taken down when it was no answer', (
+    tester,
+  ) async {
+    final sent = Completer<void>();
+    when(
+      () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+    ).thenAnswer((_) => sent.future);
+    await pumpPane(
+      tester,
+      thread: () async => FrontChatThread(
+        messages: [message('u1', AgentChatRole.user, 'What is due?', now)],
+      ),
+    );
+    final live = ProviderScope.containerOf(
+      tester.element(find.byType(FrontChatPane)),
+    ).read(frontLiveAnswerProvider.notifier);
+    FrontLiveAnswer writing(String text) => FrontLiveAnswer(
+      sourceMessageId: 'u1',
+      replyId: 'a1',
+      text: text,
+      surface: FrontReplySurface.compose(
+        surfaceId: 'a1',
+        components: [
+          {'component': FrontReplyComponents.text, 'text': text},
+        ],
+      ),
+      startedAt: now,
+    );
+
+    // The line in the thread that says she is thinking; the field says
+    // so too, for as long as the turn runs.
+    final thinking = find.byWidgetPredicate(
+      (widget) => '${widget.runtimeType}' == '_ThinkingBubble',
+    );
+
+    await tester.enterText(find.byType(TextField), 'Hello');
+    await tester.pump();
+    await tester.tap(find.byIcon(LottiIcons.arrowUp));
+    await tester.pump();
+    expect(thinking, findsOneWidget);
+
+    // What a lookup found, before a word of hers: she is still thinking.
+    live.show(writing(''));
+    await tester.pump();
+    await tester.pump();
+    expect(thinking, findsOneWidget);
+
+    live.show(writing('Two things are'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Two things are'), findsOneWidget);
+    expect(thinking, findsNothing);
+
+    // The same message grows: it is not a second one.
+    live.show(writing('Two things are due today.'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Two things are due today.'), findsOneWidget);
+    expect(find.text('Two things are'), findsNothing);
+
+    // A remark beside a lookup: she is thinking again.
+    live.show(null);
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Two things are due today.'), findsNothing);
+    expect(thinking, findsOneWidget);
+
+    sent.complete();
+    await tester.pumpAndSettle();
   });
 
   testWidgets('typing and sending goes through the chat service; a failed '

@@ -23,6 +23,7 @@ import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_live_answer.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
@@ -47,6 +48,10 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   const runKey = 'run-1';
+  // What the running turn showed of her answer, in order; null where it
+  // took it down again.
+  final liveAnswers = <FrontLiveAnswer?>[];
+  setUp(liveAnswers.clear);
   const threadId = 'thread-1';
   const input = 'Buy the hose.';
   //             0123456789012
@@ -290,6 +295,7 @@ void main() {
         agentRepository: repository,
       ),
       domainLogger: domainLogger,
+      onLiveAnswer: liveAnswers.add,
     );
   });
 
@@ -960,6 +966,65 @@ void main() {
   });
 
   group('a question about what is due', () {
+    test('what the lookup found is drawn as soon as it returns, before she '
+        'has written a word about it', () async {
+      final task = makeGardenTask();
+      when(() => journalDb.getTasksDueOnOrBefore(any())).thenAnswer(
+        (_) async => [
+          task.copyWith(
+            data: task.data.copyWith(due: DateTime(2026, 11, 2, 17)),
+          ),
+        ],
+      );
+      seedMessage();
+      // Where the turn stood each time something was shown.
+      final shownDuring = <int>[];
+      var turn = 0;
+      workflow = FrontAgentWorkflow(
+        repository: repository,
+        syncService: syncService,
+        conversationRepository: conversationRepository,
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+        aiConfigRepository: aiConfigRepository,
+        indexBuilder: FrontRoutingIndexBuilder(
+          journalDb: journalDb,
+          agentRepository: repository,
+        ),
+        domainLogger: domainLogger,
+        onLiveAnswer: (answer) {
+          liveAnswers.add(answer);
+          shownDuring.add(turn);
+        },
+      );
+      conversationRepository.maxDelegateCalls = 2;
+      stubModel(
+        (call_) {
+          turn = call_;
+          return [
+            call('list_due_tasks', {'which': 'today'}),
+            answer('Garden is due today.'),
+          ];
+        },
+        maxCalls: 2,
+      );
+
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 11, 2, 9)),
+        run,
+      );
+
+      expect(result.success, isTrue);
+      // After the lookup call and before the one that writes: the card,
+      // under the reply's id, with no words yet.
+      final first = liveAnswers.first!;
+      expect(shownDuring.first, 1);
+      expect(first.text, isEmpty);
+      expect(first.surface.taskIds, ['garden']);
+      expect(first.replyId, frontAgentReplyMessageId(frontAgentId, runKey));
+      // It is never taken down: her stored reply takes its place.
+      expect(liveAnswers, everyElement(isNotNull));
+    });
+
     test(
       'is answered from the due tasks of today, each named as a link',
       () async {
@@ -1484,6 +1549,135 @@ Here is the garden task.'''),
       expect(replyPayload()!.content['text'], 'Nothing is due today.');
       // After a lookup, the second call asks for her answer, not a dispatch.
       expect(sentTo.last, frontAnswerInstruction);
+    });
+
+    /// A model that streams [chunks] as its message, then ends on it.
+    void streamAnswer(List<String> chunks, {bool thenThrow = false}) {
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            when(() => manager.turnCount).thenReturn(1);
+            final written = StringBuffer();
+            for (final chunk in chunks) {
+              written.write(chunk);
+              strategy!.onContent(written.toString());
+            }
+            if (thenThrow) throw Exception('connection lost');
+            when(() => manager.messages).thenReturn([
+              ChatCompletionMessage.assistant(content: written.toString()),
+            ]);
+            return null;
+          };
+    }
+
+    test('while she writes, her answer is shown under the id her stored '
+        'reply then has: cards first, then her prose as it grows', () async {
+      seedMessage();
+      streamAnswer([
+        '<a2ui>\nsurface("reply")\n',
+        'root = TaskCards("Tasks", ["task:garden"])\n</a2ui>\n',
+        'Garden is ',
+        'the one.',
+      ]);
+
+      final result = await run();
+
+      expect(result.success, isTrue);
+      final replyId = frontAgentReplyMessageId(frontAgentId, runKey);
+      // The open block showed nothing; then the cards, then the words.
+      expect(
+        [for (final live in liveAnswers) live?.text],
+        ['', 'Garden is', 'Garden is the one.'],
+      );
+      for (final live in liveAnswers) {
+        expect(live!.replyId, replyId);
+        expect(live.sourceMessageId, 'msg-1');
+        expect(live.surface.taskIds, ['garden']);
+      }
+      // What was shown last is what was stored, so nothing moves when the
+      // stored reply takes its place — and it was never taken down.
+      final stored = replyPayload()!;
+      expect(stored.content['text'], liveAnswers.last!.text);
+      expect(stored.content['surface'], liveAnswers.last!.surface.message);
+      expect(
+        upserts.whereType<AgentMessageEntity>().map((m) => m.id),
+        contains(replyId),
+      );
+    });
+
+    test('a remark beside a lookup is shown as it comes and taken down: it '
+        'was no answer', () async {
+      seedMessage();
+      var turn = 0;
+      conversationRepository
+        ..maxDelegateCalls = 2
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              turn++;
+              when(() => manager.turnCount).thenReturn(turn);
+              final said = turn == 1 ? 'Let me check.' : 'Nothing is due.';
+              strategy!.onContent(said);
+              final lookup = call('list_due_tasks', {'which': 'today'});
+              if (turn == 1) {
+                await strategy.processToolCalls(
+                  toolCalls: [lookup],
+                  manager: manager,
+                );
+              }
+              when(() => manager.messages).thenReturn([
+                ChatCompletionMessage.assistant(
+                  content: said,
+                  toolCalls: turn == 1 ? [lookup] : null,
+                ),
+              ]);
+              return null;
+            };
+
+      final result = await run();
+
+      expect(result.success, isTrue);
+      expect(
+        [for (final live in liveAnswers) live?.text],
+        ['Let me check.', null, 'Nothing is due.'],
+      );
+      expect(replyPayload()!.content['text'], 'Nothing is due.');
+    });
+
+    test('a turn that fails takes down what it showed: nothing was stored '
+        'to take its place', () async {
+      seedMessage();
+      streamAnswer(['Two things are'], thenThrow: true);
+
+      final result = await run();
+
+      expect(result.success, isFalse);
+      expect(
+        [for (final live in liveAnswers) live?.text],
+        [
+          'Two things are',
+          null,
+        ],
+      );
+      expect(replyPayload(), isNull);
     });
 
     test('her line beside an accepted dispatch goes with it', () async {
