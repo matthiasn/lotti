@@ -1561,7 +1561,10 @@ read the surface (`taskIds`, `hasVisual`).
 **The surface is drawn by `a2ui_flutter`.** `FrontReplySurfaces` holds one
 `MessageProcessor` of `frontReplyCatalog` for the conversation and feeds it
 each reply's stored message: a new reply is created, one whose surface
-changed is replaced, one that left the thread is deleted, and a reply of
+changed is updated in place (`updateDataModel`, then `updateComponents`,
+so what it already shows stays mounted while her answer grows; delete and
+create only when the processor refuses the update), one that left the
+thread is deleted, and a reply of
 words alone gets none. A stored message the processor refuses is logged
 (its code only) and left out, so the reply falls back to her words. The
 pane hands `AgentChatView.replyBodyBuilder` an `A2uiSurface` inside a
