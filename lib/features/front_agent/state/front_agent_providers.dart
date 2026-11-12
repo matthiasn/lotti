@@ -57,6 +57,7 @@ final frontRoutingIndexBuilderProvider = Provider<FrontRoutingIndexBuilder>(
     fts5Db: ref.watch(fts5DbProvider),
     firstDayOfWeekIndex: () => ref.read(firstDayOfWeekIndexProvider.future),
     githubLogin: () => ref.read(gitHubTokenStorageProvider).readLogin(),
+    pullRequestRepository: ref.watch(pullRequestRepositoryProvider),
   ),
   name: 'frontRoutingIndexBuilderProvider',
 );

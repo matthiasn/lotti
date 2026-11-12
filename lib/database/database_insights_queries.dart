@@ -31,6 +31,7 @@ typedef GoalLabelTimeRowRecord = ({
 typedef PullRequestStatRowRecord = ({
   String entryId,
   String key,
+  String taskId,
   String? taskCategoryId,
   String? title,
   String? authorLogin,
@@ -247,6 +248,7 @@ mixin _JournalDbInsightsQueries on _$JournalDb {
         SELECT
           pr.id AS entry_id,
           pr.subtype AS pr_key,
+          task.id AS task_id,
           NULLIF(task.category, '') AS task_category,
           json_extract(pr.serialized, '$.data.snapshot.title') AS title,
           json_extract(pr.serialized, '$.data.snapshot.authorLogin')
@@ -281,6 +283,7 @@ mixin _JournalDbInsightsQueries on _$JournalDb {
           (
             entryId: row.read<String>('entry_id'),
             key: key,
+            taskId: row.read<String>('task_id'),
             taskCategoryId: row.read<String?>('task_category'),
             title: row.read<String?>('title'),
             authorLogin: row.read<String?>('author_login'),

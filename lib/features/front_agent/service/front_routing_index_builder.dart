@@ -16,6 +16,7 @@ import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/service/front_logged_time_reader.dart';
 import 'package:lotti/features/front_agent/service/front_pull_request_reader.dart';
+import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -58,7 +59,12 @@ class FrontRoutingIndexBuilder {
     this.fts5Db,
     this.firstDayOfWeekIndex,
     this.githubLogin,
+    this.pullRequestRepository,
   });
+
+  /// The linked pull requests and their summaries; null when none is wired,
+  /// and finding or reading a pull request is then unavailable.
+  final PullRequestRepository? pullRequestRepository;
 
   final JournalDb journalDb;
   final AgentRepository agentRepository;
@@ -375,21 +381,27 @@ class FrontRoutingIndexBuilder {
     };
   }
 
+  /// The days [query] names on [now]'s day: its own, or its period's, which
+  /// starts a week on the device region's first weekday.
+  Future<InsightsRange> rangeOf(
+    FrontPullRequestQuery query,
+    DateTime now,
+  ) async =>
+      query.range ??
+      query.period!.rangeOn(
+        now,
+        firstDayOfWeekIndex:
+            await firstDayOfWeekIndex?.call() ?? defaultFirstDayOfWeekIndex,
+      );
+
   /// The pull requests the user opened or merged in one window of [now]'s
   /// local days, through the tasks [scope] lets her see, as
   /// [readFrontPullRequests] reads them from the device.
   Future<FrontPullRequests> Function(FrontPullRequestQuery query)
   pullRequestSummarizer(FrontRoutingScope scope, {required DateTime now}) {
     return (query) async {
-      final range =
-          query.range ??
-          query.period!.rangeOn(
-            now,
-            firstDayOfWeekIndex:
-                await firstDayOfWeekIndex?.call() ?? defaultFirstDayOfWeekIndex,
-          );
       final chart = FrontPullRequestChart(
-        range: range,
+        range: await rangeOf(query, now),
         categoryIds: scope.categoryIds,
         authorLogin: await githubLogin?.call(),
       );

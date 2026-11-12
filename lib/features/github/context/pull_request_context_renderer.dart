@@ -21,6 +21,7 @@ String renderPullRequestContext(
     ..writeln(switch (audience) {
       PullRequestContextAudience.taskAgent => _agentGuidance,
       PullRequestContextAudience.codingPrompt => _codingPromptGuidance,
+      PullRequestContextAudience.companion => _companionGuidance,
     });
   for (final item in items) {
     out
@@ -54,6 +55,12 @@ const _codingPromptGuidance =
     'request. A pull request marked not refreshed shows its last known '
     'state, which may be out of date. $_briefGuidance';
 
+const _companionGuidance =
+    'Pull requests as the app last stored them, each with when GitHub was '
+    'last read for it; GitHub is not asked again for this answer. The app '
+    'stores no diff, no list of changed files and no reviewer names: only '
+    'what is shown here.';
+
 const _briefGuidance =
     'A merged or closed pull request is shown in brief — its outcome, size '
     'and, once one is written, a TL;DR of what it did: a merged one is work '
@@ -71,8 +78,15 @@ String _renderItem(
           : '### ${item.ref} — ${snapshot.title}',
     );
   final failure = item.failure;
+  final companion = audience == PullRequestContextAudience.companion;
 
-  if (!item.current) {
+  if (companion) {
+    if (snapshot == null) {
+      out.writeln('- Never read from GitHub: its state is unknown.');
+      return out.toString();
+    }
+    out.writeln('- Last stored: observed ${_iso(snapshot.observedAt)}.');
+  } else if (!item.current) {
     final reason = failure == null ? 'not refreshed' : _failureReason(failure);
     if (audience == PullRequestContextAudience.taskAgent || snapshot == null) {
       out.writeln('- Not refreshed ($reason): its state is unknown.');
@@ -88,7 +102,9 @@ String _renderItem(
   if (snapshot == null) return out.toString();
 
   final size = _size(snapshot);
-  if (isSettledPullRequest(snapshot)) {
+  // The companion is asked about one pull request in particular, merged or
+  // not: its reviews and size are the answer, so nothing is in brief.
+  if (!companion && isSettledPullRequest(snapshot)) {
     out.writeln(
       '- State: ${_state(snapshot)}${size == null ? '' : ' ($size)'}',
     );
@@ -101,9 +117,15 @@ String _renderItem(
   // Open, draft or not: the work in progress, in full.
   out
     ..writeln('- Branch: ${snapshot.headRef} → ${snapshot.baseRef}')
-    ..writeln('- Checks: ${_checks(snapshot.checks)}')
-    ..writeln('- Merge: ${_mergeability(snapshot.mergeability)}')
-    ..writeln('- Reviews: ${_reviews(snapshot.reviews)}');
+    ..writeln('- Checks: ${_checks(snapshot.checks)}');
+  // Whether a settled one could merge says nothing any more.
+  if (!isSettledPullRequest(snapshot)) {
+    out.writeln('- Merge: ${_mergeability(snapshot.mergeability)}');
+  }
+  if (snapshot.authorLogin case final author? when companion) {
+    out.writeln('- Author: @$author');
+  }
+  out.writeln('- Reviews: ${_reviews(snapshot.reviews)}');
   if (size != null) out.writeln('- Size: $size');
   final body = snapshot.body?.trim();
   if (body != null && body.isNotEmpty) {

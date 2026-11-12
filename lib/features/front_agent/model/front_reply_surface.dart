@@ -24,6 +24,9 @@ abstract final class FrontReplyComponents {
   /// Tasks and projects as preview cards (`items`).
   static const taskCards = 'TaskCards';
 
+  /// Pull requests as cards, each with its task (`items`).
+  static const pullRequestCards = 'PullRequestCards';
+
   /// The cards of every task a closed-task lookup found.
   static const closedTasks = 'ClosedTasks';
 
@@ -40,6 +43,7 @@ abstract final class FrontReplyComponents {
   static const List<String> composable = [
     text,
     taskCards,
+    pullRequestCards,
     closedTasks,
     loggedTimeChart,
     pullRequestChart,
@@ -189,6 +193,14 @@ class FrontReplySurface {
           if (card.kind == FrontEntityKind.task) card.id,
     if (_create['dataModel'] case {FrontReplyData.closedTasks: final closed})
       for (final card in FrontClosedTaskCard.listFromJson(closed)) card.id,
+  ];
+
+  /// The pull requests its cards show, in order: what "that PR" may mean
+  /// next turn.
+  List<FrontPullRequestCard> get pullRequestCards => [
+    for (final component in _components)
+      if (component['component'] == FrontReplyComponents.pullRequestCards)
+        ...frontPullRequestCardsFromJson(component['items']),
   ];
 
   @override

@@ -12,6 +12,7 @@ import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
+import 'package:lotti/features/front_agent/ui/front_pull_request_cards.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:material_ui/material_ui.dart';
@@ -164,6 +165,35 @@ final _taskCards = ComponentImplementation(
   },
 );
 
+final _pullRequestCards = ComponentImplementation(
+  name: FrontReplyComponents.pullRequestCards,
+  schema: S.object(
+    properties: {
+      'items': S.list(
+        description: 'The pull requests, each with the task holding it',
+        items: S.object(
+          properties: {'key': S.string(), 'taskId': S.string()},
+          required: ['key', 'taskId'],
+        ),
+      ),
+      'caption': _captionSchema,
+    },
+    required: ['items'],
+  ),
+  builder: (context, node, props, _) {
+    final cards = frontPullRequestCardsFromJson(props.list('items'));
+    if (cards.isEmpty) return const SizedBox.shrink();
+    return _captioned(
+      props.string('caption'),
+      FrontPullRequestCards(
+        key: _key(context, node),
+        cards: cards,
+        onOpenTask: FrontReplyScope.of(context).onOpenTask,
+      ),
+    );
+  },
+);
+
 /// A component drawn from what a lookup made, bound at `data`.
 ComponentImplementation _fromLookup(
   String name,
@@ -277,6 +307,7 @@ final CatalogImplementation frontReplyCatalog = CatalogImplementation(
     _reply,
     _text,
     _taskCards,
+    _pullRequestCards,
     _closedTasks,
     _loggedTimeChart,
     _pullRequestChart,

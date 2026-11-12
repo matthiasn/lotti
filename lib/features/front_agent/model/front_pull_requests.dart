@@ -95,6 +95,7 @@ class FrontPullRequest {
   const FrontPullRequest({
     required this.key,
     required this.title,
+    this.taskId,
     this.createdAt,
     this.mergedAt,
     this.additions = 0,
@@ -104,6 +105,10 @@ class FrontPullRequest {
   /// `owner/repo#number`.
   final String key;
   final String title;
+
+  /// The task holding it that the read counted it through; null where the
+  /// caller does not say.
+  final String? taskId;
 
   /// Null for a snapshot stored before it carried the opening: such a pull
   /// request can count as merged, never as opened on a day.
@@ -343,4 +348,100 @@ class FrontPullRequests {
     String two(int value) => value.toString().padLeft(2, '0');
     return '${date.year}-${two(date.month)}-${two(date.day)}';
   }
+}
+
+/// How many pull requests one `find_pull_requests` may hand back: what a
+/// reply shows as cards and speaks about, never a whole month's work.
+const int frontPullRequestsFoundMax = 5;
+
+/// How many candidates one filter call reads, newest opened first.
+// shortcut: older candidates past this are not searched; page the filter
+// if a month of pull requests ever outgrows it.
+const int frontPullRequestFilterMaxCandidates = 300;
+
+/// A pull request as her reply's card names it: by `owner/repo#number` and
+/// the task holding it, whose pull requests the card reads live.
+typedef FrontPullRequestCard = ({String key, String taskId});
+
+/// [card] as a reply's surface stores it.
+Map<String, Object> frontPullRequestCardToJson(FrontPullRequestCard card) => {
+  'key': card.key,
+  'taskId': card.taskId,
+};
+
+/// The cards a stored list names, skipping what this build cannot read.
+List<FrontPullRequestCard> frontPullRequestCardsFromJson(Object? json) => [
+  if (json is List)
+    for (final item in json)
+      if (item case {'key': final String key, 'taskId': final String taskId})
+        (key: key, taskId: taskId),
+];
+
+/// One pull request she may name and show: what `find_pull_requests` found
+/// or the conversation showed — its title, the one-liner of its summary
+/// when one is written, when it was opened and merged, and the task that
+/// holds it, as the turn may see that task.
+@immutable
+class FrontFoundPullRequest {
+  const FrontFoundPullRequest({
+    required this.key,
+    required this.title,
+    required this.task,
+    this.oneLiner,
+    this.createdAt,
+    this.mergedAt,
+  });
+
+  /// `owner/repo#number`: the id she names it by.
+  final String key;
+  final String title;
+  final FrontIndexRow task;
+  final String? oneLiner;
+  final DateTime? createdAt;
+  final DateTime? mergedAt;
+
+  FrontPullRequestCard get card => (key: key, taskId: task.id);
+
+  /// One line, as a tool answer and the prompt list it: `key | title |
+  /// opened | merged | task:id (title) | one-liner`.
+  String render() {
+    final opened = createdAt == null
+        ? 'unknown'
+        : FrontPullRequests._isoDay(createdAt!.toLocal());
+    return [
+      key,
+      FrontPullRequests._oneLine(title),
+      'opened $opened',
+      if (mergedAt case final merged?)
+        'merged ${FrontPullRequests._isoDay(merged.toLocal())}',
+      'task:${task.id} (${FrontPullRequests._oneLine(task.title)})',
+      if (oneLiner case final line? when line.trim().isNotEmpty)
+        FrontPullRequests._oneLine(line),
+    ].join(' | ');
+  }
+}
+
+/// The answer of a `find_pull_requests` over [range] for [topic]: those of
+/// the [searched] pull requests the filter kept, one per line, or that none
+/// was about it.
+String renderFrontFoundPullRequests({
+  required String topic,
+  required InsightsRange range,
+  required int searched,
+  required List<FrontFoundPullRequest> found,
+}) {
+  final from = FrontPullRequests._isoDay(dayStart(range.startDay));
+  final through = FrontPullRequests._isoDay(
+    dayStart(range.endDayExclusive - 1),
+  );
+  final days = from == through ? from : '$from through $through';
+  if (found.isEmpty) {
+    return 'None of the $searched pull requests opened or merged $days is '
+        'about "$topic".';
+  }
+  const shape = 'id | title | opened | merged | task | summary';
+  return [
+    'Pull requests about "$topic", $days ($searched searched), each as $shape:',
+    for (final pr in found) '- ${pr.render()}',
+  ].join('\n');
 }

@@ -16,6 +16,7 @@ import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_dispatch_validator.dart';
+import 'package:lotti/features/front_agent/workflow/front_pull_request_lookups.dart';
 import 'package:lotti/features/front_agent/workflow/front_reply_reader.dart';
 import 'package:lotti/features/front_agent/workflow/front_reply_stream.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -87,7 +88,8 @@ class FrontAgentStrategy extends ConversationStrategy
     this.pullRequestSummarizer,
     this.conversationTasks = const [],
     this.onAnswerProgress,
-  });
+    FrontPullRequestLookups? pullRequests,
+  }) : pullRequests = pullRequests ?? FrontPullRequestLookups(now: now);
 
   /// Told what her answer says and draws so far, each time more of the
   /// message she is writing arrives; null when nothing shows it live.
@@ -137,6 +139,9 @@ class FrontAgentStrategy extends ConversationStrategy
   /// Null when no journal is wired (tests, evals): the tool then answers
   /// that it is unavailable.
   final FrontPullRequestSummarizer? pullRequestSummarizer;
+
+  /// `find_pull_requests` and `read_pull_requests`, and what they found.
+  final FrontPullRequestLookups pullRequests;
 
   FrontDispatch? _dispatch;
   FrontAskUser? _askUser;
@@ -197,13 +202,19 @@ class FrontAgentStrategy extends ConversationStrategy
       _dueLists +
       _timeSummaries +
       _closedLists +
-      _pullRequestSummaries;
+      _pullRequestSummaries +
+      pullRequests.calls;
 
   /// How many of those looked something up to answer with — due or closed
-  /// tasks, logged time, pull requests. Reading a TLDR or matching the
-  /// corpus serves routing as much as answering, so those are not counted.
+  /// tasks, logged time, pull requests counted, found or read. Reading a
+  /// TLDR or matching the corpus serves routing as much as answering, so
+  /// those are not counted.
   int get answerLookupCalls =>
-      _dueLists + _timeSummaries + _closedLists + _pullRequestSummaries;
+      _dueLists +
+      _timeSummaries +
+      _closedLists +
+      _pullRequestSummaries +
+      pullRequests.calls;
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -252,6 +263,10 @@ class FrontAgentStrategy extends ConversationStrategy
           await _handleListClosedTasks(call, args, manager);
         case FrontAgentToolNames.summarizePullRequests:
           await _handleSummarizePullRequests(call, args, manager);
+        case FrontAgentToolNames.findPullRequests:
+          await _answerPullRequests(call, manager, pullRequests.find(args));
+        case FrontAgentToolNames.readPullRequests:
+          await _answerPullRequests(call, manager, pullRequests.read(args));
         case FrontAgentToolNames.askUser:
           await _handleAskUser(call, args, manager);
         default:
@@ -641,6 +656,16 @@ class FrontAgentStrategy extends ConversationStrategy
     await _accept(call, manager, summary.render());
   }
 
+  Future<void> _answerPullRequests(
+    ChatCompletionMessageToolCall call,
+    ConversationManager manager,
+    Future<FrontPullRequestAnswer> answering,
+  ) async {
+    final (:response, :accepted, :rows) = await answering;
+    _lookupRows.addAll(rows);
+    await (accepted ? _accept : _reject)(call, manager, response);
+  }
+
   /// The categories a tool call's `categoryIds` names — those the user named
   /// in the question — or null once the call is rejected: an id not listed
   /// under ## Categories, or one outside the conversation's chips.
@@ -849,6 +874,8 @@ class FrontAgentStrategy extends ConversationStrategy
       closedTaskIds: {...?closed?.map((card) => card.id)},
       link: _linked,
       proseRequired: proseRequired,
+      pullRequests: pullRequests.shown,
+      foundPullRequests: pullRequests.found,
     );
   }
 

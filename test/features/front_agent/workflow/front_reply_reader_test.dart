@@ -1,9 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_reply_reader.dart';
+
+import '../front_pull_request_test_data.dart';
 
 void main() {
   final tasks = [
@@ -53,6 +56,8 @@ void main() {
     Set<String> available = const {},
     List<FrontIndexRow> dueRows = const [],
     Set<String> closedTaskIds = const {},
+    List<FrontFoundPullRequest> shownPullRequests = const [],
+    List<FrontFoundPullRequest> foundPullRequests = const [],
   }) => readFrontReply(
     prose: prose,
     components: components,
@@ -61,6 +66,10 @@ void main() {
     dueRows: dueRows,
     closedTaskIds: closedTaskIds,
     link: (words) => words,
+    pullRequests: {
+      for (final pr in [...shownPullRequests, ...foundPullRequests]) pr.key: pr,
+    },
+    foundPullRequests: foundPullRequests,
   );
 
   test('an answer still being written may have no prose yet: its '
@@ -268,6 +277,72 @@ void main() {
       {'component': 'ClosedTasks'},
       {'component': 'PullRequestChart'},
     ]);
+  });
+
+  group('pull request cards', () {
+    final shown = foundPullRequest(1, taskId: 'igloo');
+    final found = [foundPullRequest(2), foundPullRequest(3)];
+    Map<String, Object?> pullRequestCards(
+      List<FrontFoundPullRequest> prs, {
+      String? caption,
+    }) => {
+      'component': 'PullRequestCards',
+      'items': [for (final pr in prs) frontPullRequestCardToJson(pr.card)],
+      'caption': ?caption,
+    };
+
+    test('ids she places are stored as each one and its task, in her '
+        'order; found ones she placed nowhere follow, each once', () {
+      final reply = read(
+        prose: 'That was the fish ledger.',
+        components: [
+          {
+            'component': 'PullRequestCards',
+            'caption': 'Pull requests found',
+            'ids': [
+              ' penguin/colony#3',
+              'penguin/colony#1',
+              'penguin/colony#3',
+            ],
+          },
+        ],
+        shownPullRequests: [shown],
+        foundPullRequests: found,
+      );
+
+      expect(reply.components, [
+        text('That was the fish ledger.'),
+        pullRequestCards([
+          found[1],
+          shown,
+        ], caption: 'Pull requests found'),
+        pullRequestCards([found[0]]),
+      ]);
+      expect(reply.dropped, isEmpty);
+    });
+
+    test('an id the turn never saw is dropped and named', () {
+      final reply = read(
+        components: [
+          {
+            'component': 'PullRequestCards',
+            'ids': ['penguin/colony#99', 7],
+          },
+        ],
+        shownPullRequests: [shown],
+      );
+
+      expect(reply.components, [text('Here.')]);
+      expect(reply.dropped, hasLength(2));
+      expect(reply.dropped.first, startsWith('penguin/colony#99, not a pull'));
+    });
+
+    test('found pull requests are drawn though she placed none', () {
+      expect(read(foundPullRequests: found).components, [
+        text('Here.'),
+        pullRequestCards(found),
+      ]);
+    });
   });
 
   test('a reply without prose is refused: there is nothing to say', () {

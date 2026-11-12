@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, and how many pull requests the user opened and shipped, with charts under her words, and names tasks as links, how a reply is composed of catalog components in her order, checked, stored as an A2UI surface and drawn by `a2ui_flutter`, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, how many pull requests the user opened and shipped, with charts under her words, and which task some work was in — pull requests filtered by a call of their own, shown as the task page's pull request cards, with follow-ups about them — and names tasks as links, how a reply is composed of catalog components in her order, checked, stored as an A2UI surface and drawn by `a2ui_flutter`, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -220,6 +220,22 @@ sources:
     resource: ../../lib/features/front_agent/service/front_pull_request_reader.dart
     title: readFrontPullRequests — stored pull requests through the tasks her scope sees, the user's own only
     last_modified: 2026-11-08
+  - id: pull-request-finder
+    resource: ../../lib/features/front_agent/service/front_pull_request_finder.dart
+    title: FrontPullRequestFinding — the candidates of a window, the pull requests a conversation showed, and their stored details
+    last_modified: 2026-11-12
+  - id: pull-request-filter
+    resource: ../../lib/features/front_agent/workflow/front_pull_request_filter.dart
+    title: frontPullRequestFilter — the call apart from her conversation that keeps the pull requests about a topic
+    last_modified: 2026-11-12
+  - id: pull-request-lookups
+    resource: ../../lib/features/front_agent/workflow/front_pull_request_lookups.dart
+    title: FrontPullRequestLookups — find_pull_requests and read_pull_requests for one turn
+    last_modified: 2026-11-12
+  - id: pull-request-cards
+    resource: ../../lib/features/front_agent/ui/front_pull_request_cards.dart
+    title: FrontPullRequestCards — the task page's pull request card under her reply, per holding task
+    last_modified: 2026-11-12
   - id: pull-request-chart
     resource: ../../lib/features/front_agent/ui/front_pull_request_chart_card.dart
     title: FrontPullRequestChartCard — per-day and running-total charts of pull requests and their lines
@@ -428,9 +444,20 @@ because a follow-up is most often to finished work. It is not a destination
 for that: the strategy accepts a listed conversation task only as a
 follow-up's `followsUpTaskId` and as an `ask_user` option.
 
+**The pull requests the conversation showed** follow as
+`<conversation_pull_requests>`, one line each (`FrontFoundPullRequest.render`:
+`owner/repo#n | title | opened | merged | task:<id> (title) | one-liner`),
+most recently shown first — what "that PR" or "who reviewed it" means.
+`frontConversationPullRequests` reads them from the `PullRequestCards` of
+her stored surfaces, at most `frontConversationPullRequestsMax` (5), each
+once; the task each card names counts as a task the conversation named.
+`FrontPullRequestFinding.pullRequestsOf` resolves them now, through
+`conversationTasks` for the privacy and scope rules and the task's linked
+entries for the pull request: one the task no longer holds is left out.
+
 # The contract
 
-Nine tools, never fewer (a single tool makes DeepSeek rewrite
+Ten tools, never fewer (a single tool makes DeepSeek rewrite
 `tool_choice`), in a fixed order:
 
 | Tool | Ends the turn | Cap | Over the cap |
@@ -442,13 +469,17 @@ Nine tools, never fewer (a single tool makes DeepSeek rewrite
 | `summarize_logged_time(period \| pastDays \| from+through, categoryIds?, tasks?, projectId?, taskId?)` | no | 1 per turn | `frontTimeSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `list_closed_tasks(period \| pastDays \| from+through, categoryIds?)` | no | 1 per turn | `frontClosedListExhaustedAnswer`; unavailable when no lister is wired |
 | `summarize_pull_requests(period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
+| `find_pull_requests(topic, period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestFindExhaustedAnswer`; unavailable without a pull request repository |
+| `read_pull_requests(ids ≤ 3)` | no | 1 per turn | `frontPullRequestReadExhaustedAnswer`; only keys `<conversation_pull_requests>` lists or this turn found |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
 
 Lookups are capped by **count-and-refuse**, not by removing the tool:
 removing it changes the request prefix and voids the cache. Rows a
 `match_to_corpus`, `list_due_tasks`, `summarize_logged_time` or
 `list_closed_tasks` returns become valid destinations
-for the rest of the turn — and names her words may link.
+for the rest of the turn — and names her words may link. So do the tasks
+holding the pull requests `find_pull_requests` kept or
+`read_pull_requests` read.
 
 `ask_user` and `dispatch` refuse each other.
 
@@ -776,6 +807,52 @@ flowchart LR
   Card --> Read
   Card --> Days["frontPullRequestDays"]
   Days --> Bars["ImpactStackedBars / ImpactStackedArea"]
+```
+
+**Which task some work was in** — *what was the task where I worked on
+the A2UI notation in the past two weeks?* — is answered from pull requests
+too, without putting a month of them into her conversation (ADR 0165).
+Rule 15 sends it to `find_pull_requests` with a `topic` and the same
+window as `summarize_pull_requests` (the past 31 days when none is named).
+`pullRequestFinder` reads the window's pull requests as
+`readFrontPullRequests` counts them — the user's own, through the tasks her
+scope sees — and, for each, its task row and the one-liner of its stored
+summary, at most `frontPullRequestFilterMaxCandidates` (300). All of them
+go to `frontPullRequestFilter`: a conversation of its own on her model,
+with `frontPullRequestFilterSystemMessage`, no tools, one call, billed to
+her wake and deleted after. It answers with keys, most relevant first;
+`parseFrontPullRequestFilter` keeps the candidates' keys it names, at most
+`frontPullRequestsFoundMax` (5). Only those come back to her, each as one
+line with its task, and their tasks become rows her words may link. A
+failed filter call refuses the lookup and is logged by error type; the
+turn goes on and she says the search failed.
+
+The pull requests it kept are drawn as `PullRequestCards` — where she
+places them, or after her words when she does not (`readFrontReply`), each
+once. A card stores the key and the holding task (`FrontPullRequestCard`),
+never a title. A follow-up about one (rule 16) calls `read_pull_requests`
+with keys from `<conversation_pull_requests>` or this turn's find;
+`pullRequestDetails` renders each from the stored snapshot with
+`renderPullRequestContext` for the `companion` audience: in full, merged or
+not, labelled with when it was observed. No diff, file list or reviewer
+names are stored, so she says what is: size, files, commits, the review
+decision, and that the card's menu opens it on GitHub.
+
+```mermaid
+sequenceDiagram
+  participant Her as Her turn
+  participant Lookups as FrontPullRequestLookups
+  participant Finder as pullRequestFinder
+  participant Filter as filter conversation
+  participant Reply as readFrontReply
+  Her->>Lookups: find_pull_requests(topic, window)
+  Lookups->>Finder: the window
+  Finder-->>Lookups: candidates with task and one-liner
+  Lookups->>Filter: topic and every candidate
+  Filter-->>Lookups: keys, at most five
+  Lookups-->>Her: only the kept ones, with their tasks
+  Her->>Reply: prose and PullRequestCards(ids)
+  Reply-->>Her: cards of known keys, found ones appended
 ```
 
 Her own words name a task or a project as a Markdown link titled as listed:
@@ -1495,7 +1572,7 @@ Two things are due today, and the ice survey is the one that cannot wait.
 `front_reply_stream.dart` owns that side. `frontReplyAuthoringCatalog` is
 what she may write — `Reply` (children, top to bottom), `Text` (a short
 label between parts), `TaskCards(caption, ids, notes?)`,
-`ClosedTasks(caption)`, `LoggedTimeChart(caption)`,
+`PullRequestCards(caption, ids)`, `ClosedTasks(caption)`, `LoggedTimeChart(caption)`,
 `PullRequestChart(caption)` and `QuickReplies(options)` — flat, with no
 data in it: **she never passes data to a component**. A card names a task
 or project by id and reads it live; a lookup's component only places what
@@ -1572,7 +1649,11 @@ pane hands `AgentChatView.replyBodyBuilder` an `A2uiSurface` inside a
 is built on the chat's own widgets: `Text` through the view's Markdown
 (with the device's dates), `TaskCards` as a `FrontEntityPreviewList` — a
 task as `FrontEntityPreviewCompactCard`, a project as
-`FrontEntityPreviewProjectCard` (both below) — the lookups' components as
+`FrontEntityPreviewProjectCard` (both below) — `PullRequestCards` as
+`FrontPullRequestCards`, one task page pull request card per holding task:
+the task as its header, which opens it, over that task's own
+`PullRequestRow`s read live, a pull request the task no longer holds left
+out — the lookups' components as
 the closed-task card and the charts, and `QuickReplies` as design-system
 chips. What a tap does comes from the scope (a task opens on top of her, a
 project after closing her), so the catalog itself is static; a card a

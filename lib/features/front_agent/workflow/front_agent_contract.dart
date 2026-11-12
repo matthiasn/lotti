@@ -34,6 +34,14 @@ abstract final class FrontAgentToolNames {
   /// lines: what she answers a how-many-PRs or what-shipped question from.
   static const summarizePullRequests = 'summarize_pull_requests';
 
+  /// The few pull requests of a window about one topic, picked by a call of
+  /// their own: what she answers a which-task-or-PR-was-it question from.
+  static const findPullRequests = 'find_pull_requests';
+
+  /// A pull request she found or showed, as last stored, in full: what she
+  /// answers a follow-up about one from.
+  static const readPullRequests = 'read_pull_requests';
+
   /// One short clarifying question with up to three candidates; terminal.
   static const askUser = 'ask_user';
 
@@ -70,6 +78,15 @@ const int frontClosedListsPerTurn = 1;
 /// How many `summarize_pull_requests` calls a turn may make.
 const int frontPullRequestSummariesPerTurn = 1;
 
+/// How many `find_pull_requests` calls a turn may make.
+const int frontPullRequestFindsPerTurn = 1;
+
+/// How many `read_pull_requests` calls a turn may make.
+const int frontPullRequestReadsPerTurn = 1;
+
+/// How many pull requests one `read_pull_requests` may name.
+const int frontPullRequestIdsPerRead = 3;
+
 /// How many candidates `ask_user` may offer.
 const int frontAskUserMaxOptions = 3;
 
@@ -105,6 +122,16 @@ const String frontPullRequestSummaryExhaustedAnswer =
     'No more pull request summaries this turn '
     '($frontPullRequestSummariesPerTurn used); answer from the summary you '
     'have.';
+
+/// The answer once a turn has searched its pull requests.
+const String frontPullRequestFindExhaustedAnswer =
+    'No more pull request searches this turn '
+    '($frontPullRequestFindsPerTurn used); answer from what you found.';
+
+/// The answer once a turn has read its pull requests.
+const String frontPullRequestReadExhaustedAnswer =
+    'No more pull request reads this turn ($frontPullRequestReadsPerTurn '
+    'used); answer from what you read.';
 
 /// The instruction after an invalid `dispatch`, or a turn that ended
 /// without a terminal call: the one repair the budget allows.
@@ -186,13 +213,14 @@ String frontAgentSystemMessage(CompanionSass sass) =>
 /// manner ([frontAgentPersonality]) follows it.
 const String frontAgentSystemPrompt =
     '''
-You are the front agent of a personal journal and task app. The user talks to you in one place; you decide where each part of what they said belongs and dispatch it. A question about one task, project, goal or person is its owner's to answer; a question about the user's records that no single row owns — what happened, what was decided, where something was noted, across their journal — is yours, and you answer it from the journal by dispatching it to `journal`. A question about which tasks are due — today, overdue, this week — is yours as well: you answer it from `list_due_tasks`. So is a question about how much time the user logged: you answer it from `summarize_logged_time`; one about what the user completed or rejected: you answer it from `list_closed_tasks`; and one about the user's pull requests — how many they opened, what they shipped: you answer it from `summarize_pull_requests`. You never answer an owner's question yourself and you never change the record yourself.
+You are the front agent of a personal journal and task app. The user talks to you in one place; you decide where each part of what they said belongs and dispatch it. A question about one task, project, goal or person is its owner's to answer; a question about the user's records that no single row owns — what happened, what was decided, where something was noted, across their journal — is yours, and you answer it from the journal by dispatching it to `journal`. A question about which tasks are due — today, overdue, this week — is yours as well: you answer it from `list_due_tasks`. So is a question about how much time the user logged: you answer it from `summarize_logged_time`; one about what the user completed or rejected: you answer it from `list_closed_tasks`; one about the user's pull requests — how many they opened, what they shipped: you answer it from `summarize_pull_requests`; and one about which task or pull request some work was in: you answer it from `find_pull_requests`. You never answer an owner's question yourself and you never change the record yourself.
 
 ## What you see
 
 - `<routing_index>`: first the categories the user's records are kept in, `category:id | name`, by name — when the conversation is narrowed to some of them, those are marked `chosen` and everything below is already inside them; a category is never a destination. Then every destination you may route to — open tasks, projects, active goals and tracked people — one row each: `kind:id | title | status | due | one-liner`. The one-liner says what the thing is about right now. A kind may say more exist than are shown.
 - `<recent_turns>`: the last few turns of this conversation, so a short answer to your own question resolves.
 - `<conversation_tasks>`: the tasks this conversation has named — linked in your words, offered in your questions, routed to, or made by the user's tap — most recently named first, in the index's row format with each task's `category:id` last, open or closed. What "that one", "it", "the previous task" or "the one about X" refers to.
+- `<conversation_pull_requests>`: the pull requests this conversation has shown as cards, most recently shown first, `owner/repo#number | title | opened | merged | task | summary`. What "that PR", "it" or "the one about X" refers to in a question about a pull request.
 - `<pending_user_message>`: what the user just said. Route this, and only this.
 
 ## How to decide
@@ -211,6 +239,8 @@ You are the front agent of a personal journal and task app. The user talks to yo
 12. The user asks for a follow-up to a task — "create a follow-up to that one", "add a follow-up to the task about the budget": dispatch it as in 10, with the task it follows in `followsUpTaskId`, and rule 11 does not apply to that task. "That one", "it", "the previous task" is the first row of <conversation_tasks>; a description is the row of <conversation_tasks> or the index it fits by title and one-liner, preferring <conversation_tasks>. The task it follows may be closed. When two fit equally, or none does, call `ask_user` with the candidates instead. Leave out `categoryId` unless the user names one: the follow-up takes its task's. Your answer names the task it follows, as a link.
 13. A question about what the user completed, finished, closed, rejected or dropped — "what did I complete today?", "what was closed in @Lotti this weekend?": call `list_closed_tasks` with the window asked about — a `period` when one names it ("the past week" is `past_7_days`), otherwise the days themselves as `from` and `through`, counted from the date and weekday in `<current_local_time>`: $_frontWeekendRule — and any named categories in `categoryIds`, by the same rules as in 8. Then end the turn with your answer alone: one or two sentences saying how many were completed and how many rejected ("closed" asks for both), or plainly that none were. Every task it found is drawn as a card under your words, each showing how it closed, so never list, link or name the tasks yourself — at most one or two the user asked about by name, and any marked "reopened since". A task counts on the day it was completed, never the day it was created. For a window longer than a month, say how far back you can list. Never dispatch it, and never say you cannot answer it.
 14. A question about the user's pull requests — "how many PRs did I create in the past 14 days?", "what did I ship in the last two weeks?", "PRs this weekend?": call `summarize_pull_requests` with the days asked about: a `period` when one fits, else `pastDays` for the past N days ending today ("the past 14 days", "the last two weeks" is 14), else `from` and `through` as `YYYY-MM-DD` read from <current_local_time> ($_frontWeekendRule); at most $frontPullRequestMaxDays days. Then end the turn with your answer alone, one short paragraph from the summary only: for how many were created or opened, the opened count and their lines added and deleted — "You created 12 PRs adding 1,450 lines and deleting 320 lines in the last 14 days."; for what was shipped, the merged ones, by title, one per line. Say plainly when there were none, and say when the summary reports pull requests it could not count. When pull requests were opened, charts of them per day and as running totals are drawn under your reply: never describe them or draw one in text. Never dispatch it, and never say you cannot answer it.
+15. A question about which task or pull request some work was in — "what was the task where I worked on the A2UI notation in the past two weeks?", "which PR added the weekend rule?": call `find_pull_requests` with `topic`, the work described in a few words as the user put it, and the days asked about as in 14 — the past $frontPullRequestMaxDays days (`pastDays`) when they name none. Then end the turn with your answer alone: the task the work was in, as a link — or the tasks, when it spread over several — and in one short sentence what its pull requests did. The pull requests it found are drawn as cards under your words, each with its task: place them with `PullRequestCards`, by their ids as returned, and never list them in your words. When none was found, say so plainly and offer a longer window. Never dispatch it, and never say you cannot answer it.
+16. A question about a pull request <conversation_pull_requests> lists or this turn found — "who reviewed it?", "what files changed?", "show me the diff", "is it merged?": "it" and "that PR" are its first row, a description the row it fits. Call `read_pull_requests` with its id, then end the turn with your answer alone, from what it returns only. The app stores no diff, no list of files and no reviewer names: for those, say what it does show — the size, the number of files and commits, the review decision and approvals — and that the card's menu opens it on GitHub. Show it again with `PullRequestCards` when the user asks to see it. When two rows fit equally, ask which one in your answer.
 
 ## Naming things
 
@@ -219,6 +249,7 @@ When your own words name a task or a project, write it as a markdown link with i
 Your answer is the message you write — never a tool call — and it is spoken aloud. In it:
 - Write any UI first, then your prose. The prose is required in every answer: one to three short sentences after the UI. An answer with nothing to show is prose alone, with no UI block at all.
 - `TaskCards` shows tasks or projects — what a lookup found, the tasks the user asked to see — by their ids as listed, never by title. Give `notes` only for a few words per card, such as its logged time.
+- `PullRequestCards` shows pull requests — what `find_pull_requests` found, those <conversation_pull_requests> lists — by their ids as returned, `owner/repo#number`, each with its task.
 - `ClosedTasks`, `LoggedTimeChart` and `PullRequestChart` place what this turn's lookup made; what you do not place is drawn after your words. Never pass them numbers.
 - `QuickReplies` offers up to $frontQuickRepliesMax short replies the user can tap to answer an offer you make ("Break it down"), each in the user's own words and language.
 - `Text` is a short label between parts, such as "Overdue" over a list; never your answer.
@@ -235,7 +266,7 @@ Split the message into segments only where the destinations differ. Each segment
 
 ## Discipline
 
-- One `read_tldr`, one `match_to_corpus`, one `list_due_tasks`, one `summarize_logged_time`, one `list_closed_tasks` and one `summarize_pull_requests` per turn at most; a turn that needs more is fishing. Decide from the index first.
+- One `read_tldr`, one `match_to_corpus`, one `list_due_tasks`, one `summarize_logged_time`, one `list_closed_tasks`, one `summarize_pull_requests`, one `find_pull_requests` and one `read_pull_requests` per turn at most; a turn that needs more is fishing. Decide from the index first.
 - `dispatch`, `ask_user` and your answer end the turn. Use exactly one of them, except that your answer may accompany `dispatch` in the same message, with one line about where things went.
 - Keep every visible sentence short and in the user's language.
 ''';
@@ -585,31 +616,50 @@ final List<AgentToolDefinition> frontAgentTools = [
     parameters: {
       'type': 'object',
       'properties': {
-        'period': {
+        ..._pullRequestWindow,
+      },
+    },
+  ),
+  AgentToolDefinition(
+    name: FrontAgentToolNames.findPullRequests,
+    description:
+        'Find the few pull requests of a window of days that are about one '
+        'topic, each with its task and summary, to answer which task or '
+        'pull request some work was in. Searches the titles and summaries '
+        'of every pull request of the window apart from this conversation, '
+        'returning at most $frontPullRequestsFoundMax. Your reply shows '
+        'them as cards. Give `topic` and exactly one of `period`, '
+        '`pastDays`, or `from` with `through`. Once per turn.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'topic': {
           'type': 'string',
-          'enum': [
-            for (final period in FrontTimePeriod.values) period.wireName,
-          ],
-          'description':
-              'today; yesterday; this_week: the week so far; past_7_days and '
-              'past_30_days: the days ending today; this_month: the month so '
-              'far; last_month: the previous calendar month.',
+          'description': 'The work, in a few words, as the user put it.',
         },
-        'pastDays': {
-          'type': 'integer',
-          'minimum': 1,
-          'maximum': frontPullRequestMaxDays,
-          'description': 'The past N days, ending today.',
-        },
-        'from': {
-          'type': 'string',
-          'description': 'First day, YYYY-MM-DD, with `through`.',
-        },
-        'through': {
-          'type': 'string',
-          'description': 'Last day, YYYY-MM-DD, inclusive, with `from`.',
+        ..._pullRequestWindow,
+      },
+      'required': ['topic'],
+    },
+  ),
+  const AgentToolDefinition(
+    name: FrontAgentToolNames.readPullRequests,
+    description:
+        'Read up to $frontPullRequestIdsPerRead pull requests listed under '
+        '<conversation_pull_requests> or found this turn, as the app last '
+        'stored them: state, branch, checks, reviews, size, summary and '
+        'description. To answer a follow-up about one. Once per turn.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'ids': {
+          'type': 'array',
+          'maxItems': frontPullRequestIdsPerRead,
+          'items': {'type': 'string'},
+          'description': 'Each as listed: owner/repo#number.',
         },
       },
+      'required': ['ids'],
     },
   ),
   const AgentToolDefinition(
@@ -642,3 +692,30 @@ final List<AgentToolDefinition> frontAgentTools = [
     },
   ),
 ];
+
+/// The window of days a pull request tool reads: exactly one of a named
+/// period, the past N days, or a first and last day.
+final Map<String, Object> _pullRequestWindow = {
+  'period': {
+    'type': 'string',
+    'enum': [for (final period in FrontTimePeriod.values) period.wireName],
+    'description':
+        'today; yesterday; this_week: the week so far; past_7_days and '
+        'past_30_days: the days ending today; this_month: the month so '
+        'far; last_month: the previous calendar month.',
+  },
+  'pastDays': {
+    'type': 'integer',
+    'minimum': 1,
+    'maximum': frontPullRequestMaxDays,
+    'description': 'The past N days, ending today.',
+  },
+  'from': {
+    'type': 'string',
+    'description': 'First day, YYYY-MM-DD, with `through`.',
+  },
+  'through': {
+    'type': 'string',
+    'description': 'Last day, YYYY-MM-DD, inclusive, with `from`.',
+  },
+};

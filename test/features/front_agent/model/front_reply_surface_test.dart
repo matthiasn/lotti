@@ -206,4 +206,41 @@ void main() {
     // Her cards' tasks, then the closed ones; a project is no task.
     expect(rich.taskIds, ['t-1', 'c-1']);
   });
+
+  test('knows the pull requests its cards show, in order, and that they '
+      'are something to point at', () {
+    final surface = FrontReplySurface.compose(
+      surfaceId: 'r',
+      components: [
+        text('That one.'),
+        {
+          'component': FrontReplyComponents.pullRequestCards,
+          'items': [
+            frontPullRequestCardToJson((key: 'penguin/colony#7', taskId: 'a')),
+          ],
+        },
+        {
+          'component': FrontReplyComponents.pullRequestCards,
+          'items': [
+            frontPullRequestCardToJson((key: 'penguin/colony#2', taskId: 'b')),
+          ],
+        },
+      ],
+    );
+    final stored = FrontReplySurface.fromJson(surface.message)!;
+
+    expect(stored.pullRequestCards, [
+      (key: 'penguin/colony#7', taskId: 'a'),
+      (key: 'penguin/colony#2', taskId: 'b'),
+    ]);
+    expect(stored.hasVisual, isTrue);
+    expect(stored.taskIds, isEmpty);
+    expect(
+      FrontReplySurface.compose(
+        surfaceId: 'r',
+        components: [text('Hi.')],
+      ).pullRequestCards,
+      isEmpty,
+    );
+  });
 }

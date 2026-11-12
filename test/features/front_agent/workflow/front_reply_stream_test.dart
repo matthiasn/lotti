@@ -23,6 +23,26 @@ You have two tasks due today.''');
     expect(reply.errors, isEmpty);
   });
 
+  test('pull request cards are written by key, each owner/repo#number, '
+      'and the prompt teaches them', () {
+    final reply = parseFrontReplyStream('''
+<a2ui>
+surface("reply")
+root = PullRequestCards("Pull requests found", ["penguin/colony#7", "penguin/colony#2"])
+</a2ui>
+That was the fish ledger task.''');
+
+    expect(reply.components, [
+      {
+        'component': 'PullRequestCards',
+        'caption': 'Pull requests found',
+        'ids': ['penguin/colony#7', 'penguin/colony#2'],
+      },
+    ]);
+    expect(reply.errors, isEmpty);
+    expect(frontReplyPromptSnippet, contains('PullRequestCards'));
+  });
+
   test("a root Reply's children are the parts, top to bottom", () {
     final reply = parseFrontReplyStream('''
 <a2ui>

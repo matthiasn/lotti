@@ -57,6 +57,7 @@ readFrontPullRequests(JournalDb journalDb, FrontPullRequestChart chart) async {
       FrontPullRequest(
         key: row.key,
         title: row.title ?? '',
+        taskId: row.taskId,
         createdAt: createdAt,
         mergedAt: row.mergedAt,
         additions: row.additions,
