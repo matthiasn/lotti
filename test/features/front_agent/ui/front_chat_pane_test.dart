@@ -19,6 +19,7 @@ import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/companion/state/companion_card_controller.dart';
 import 'package:lotti/features/companion/ui/companion_floating_card.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
@@ -409,6 +410,41 @@ void main() {
         conversationId: 'c-1',
       ),
     ).called(1);
+  });
+
+  testWidgets('over words already typed the starters do not answer: a send '
+      'would empty the field and take them with it', (tester) async {
+    await pumpPane(tester);
+    bool answers() => tester
+        .widgetList<DesignSystemButton>(
+          find.descendant(
+            of: find.byType(FrontStarterPrompts),
+            matching: find.byType(DesignSystemButton),
+          ),
+        )
+        .every((button) => button.onPressed != null);
+    expect(answers(), isTrue);
+
+    await tester.enterText(find.byType(EditableText), 'Order fish buckets');
+    await tester.pump();
+    expect(answers(), isFalse);
+    await tester.tap(
+      find.byKey(FrontStarterPromptsKeys.dueToday),
+      warnIfMissed: false,
+    );
+    await tester.pump();
+    verifyNever(
+      () => chatService.sendMessage(
+        text: any(named: 'text'),
+        conversationId: any(named: 'conversationId'),
+      ),
+    );
+    expect(find.text('Order fish buckets'), findsOne);
+
+    // The field emptied again, they answer again.
+    await tester.enterText(find.byType(EditableText), '');
+    await tester.pump();
+    expect(answers(), isTrue);
   });
 
   testWidgets('a thread with something said offers no starters', (

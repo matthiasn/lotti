@@ -77,6 +77,16 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
   /// is, so it opens again on everything.
   String? _categoryFilter;
 
+  /// The filter chips' row, which scrolls sideways when they outrun the
+  /// drawer.
+  final _categoryChips = ScrollController();
+
+  @override
+  void dispose() {
+    _categoryChips.dispose();
+    super.dispose();
+  }
+
   void _closeList() =>
       ref.read(frontConversationListOpenProvider.notifier).close();
 
@@ -112,17 +122,16 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
     final filter = inUse
         .where((category) => category.id == _categoryFilter)
         .firstOrNull;
+    // By name, the one that is on first: seen without scrolling to it.
+    // One comparator, so the order never depends on the sort being stable.
     final shownCategories =
         [
-            for (final category
-                in inUse.toList()..sort(
-                  (a, b) =>
-                      a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-                ))
-              if (!searching || category == filter) category,
-          ]
-          // The one that is on leads the row: seen without scrolling to it.
-          ..sort((a, b) => (b == filter ? 1 : 0) - (a == filter ? 1 : 0));
+          for (final category in inUse)
+            if (!searching || category == filter) category,
+        ]..sort((a, b) {
+          if ((a == filter) != (b == filter)) return a == filter ? -1 : 1;
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
     final matching = [
       for (final c in all)
         if ((!searching || c.title.toLowerCase().contains(needle)) &&
@@ -260,6 +269,7 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
         // stays — still seen, still a tap from off.
         if (shownCategories.isNotEmpty)
           SingleChildScrollView(
+            controller: _categoryChips,
             scrollDirection: Axis.horizontal,
             child: Row(
               spacing: tokens.spacing.step2,
@@ -278,11 +288,17 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
                     // The tint says it is on; the cross says a tap takes
                     // it off.
                     showRemove: category == filter,
-                    onPressed: () => setState(
-                      () => _categoryFilter = category == filter
-                          ? null
-                          : category.id,
-                    ),
+                    onPressed: () {
+                      setState(
+                        () => _categoryFilter = category == filter
+                            ? null
+                            : category.id,
+                      );
+                      // The one picked moves to the head of the row: the
+                      // row goes back there with it, so it and its cross
+                      // are never left off-screen.
+                      if (_categoryChips.hasClients) _categoryChips.jumpTo(0);
+                    },
                   ),
               ],
             ),

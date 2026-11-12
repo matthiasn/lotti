@@ -659,8 +659,12 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
                         ),
                         SizedBox(height: context.designTokens.spacing.step5),
                         // A first move, a tap away.
+                        // Not over words already typed: a send empties the
+                        // field, and a starter would take them with it.
                         FrontStarterPrompts(
-                          enabled: !composer.isSending,
+                          enabled:
+                              !composer.isSending &&
+                              composer.draft.trim().isEmpty,
                           onChosen: controller.sendText,
                         ),
                       ],

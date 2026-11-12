@@ -24,8 +24,9 @@ class FrontStarterPrompts extends StatelessWidget {
 
   final ValueChanged<String> onChosen;
 
-  /// False while a turn is in flight: a second tap would queue a second
-  /// turn.
+  /// False while a turn is in flight — a second tap would queue a second
+  /// turn — and while the field holds words of the user's own, which a send
+  /// would empty.
   final bool enabled;
 
   @override

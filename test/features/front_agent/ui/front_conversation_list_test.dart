@@ -444,6 +444,90 @@ void main() {
       );
     });
 
+    group('with more chips than the drawer is wide', () {
+      // Named so that name order is not the order they are made in.
+      final many = [
+        for (final (i, name) in [
+          'Krill Survey Logistics',
+          'Aurora Watching Nights',
+          'Zodiac Boat Maintenance',
+          'Ice Shelf Cartography',
+          'Egg Incubation Rota',
+          'Weather Station Repairs',
+          'Bathymetry And Soundings',
+          'Fish Bucket Procurement',
+        ].indexed)
+          CategoryTestUtils.createTestCategory(id: 'cat-$i', name: name),
+      ];
+      final sorted = [...many]..sort((a, b) => a.name.compareTo(b.name));
+      final spread = FrontConversationIndex(
+        conversations: [
+          for (final (i, category) in many.indexed)
+            conversation(
+              'c-$i',
+              'Chat $i',
+              at: DateTime(2026, 10, 31, 9).subtract(Duration(hours: i)),
+              categoryIds: {category.id},
+            ),
+        ],
+      );
+      Future<void> pumpMany(WidgetTester tester) => withClock(
+        Clock.fixed(now),
+        () => pumpList(tester, index: spread, categories: many),
+      );
+      List<String> chipOrder(WidgetTester tester) => [
+        for (final chip in tester.widgetList<DesignSystemChip>(
+          find.byType(DesignSystemChip),
+        ))
+          chip.label,
+      ];
+      ScrollPosition chipScroll(WidgetTester tester) => Scrollable.of(
+        tester.element(find.byType(DesignSystemChip).first),
+      ).position;
+
+      testWidgets('they stay in name order, the one that is on first and the '
+          'rest by name after it', (tester) async {
+        await pumpMany(tester);
+        expect(chipOrder(tester), [for (final c in sorted) c.name]);
+
+        final picked = sorted[4];
+        await tester.ensureVisible(
+          find.byKey(FrontConversationListKeys.category(picked.id)),
+        );
+        await tester.tap(
+          find.byKey(FrontConversationListKeys.category(picked.id)),
+        );
+        await tester.pump();
+        expect(chipOrder(tester), [
+          picked.name,
+          for (final c in sorted)
+            if (c != picked) c.name,
+        ]);
+      });
+
+      testWidgets('one picked from the far end comes back into view at the '
+          'head of the row, its cross with it', (tester) async {
+        await pumpMany(tester);
+        final last = find.byKey(
+          FrontConversationListKeys.category(sorted.last.id),
+        );
+        // Off-screen until the row is scrolled to it.
+        expect(chipScroll(tester).maxScrollExtent, greaterThan(0));
+        await tester.ensureVisible(last);
+        await tester.pump();
+        expect(chipScroll(tester).pixels, greaterThan(0));
+
+        await tester.tap(last);
+        await tester.pump();
+
+        expect(chipScroll(tester).pixels, 0);
+        expect(tester.widget<DesignSystemChip>(last).showRemove, isTrue);
+        final list = tester.getRect(find.byType(FrontConversationList));
+        expect(tester.getRect(last).left, greaterThanOrEqualTo(list.left));
+        expect(tester.getRect(last).right, lessThanOrEqualTo(list.right));
+      });
+    });
+
     testWidgets('a category narrows the history to its conversations, and a '
         'second tap shows them all again', (tester) async {
       await pumpScoped(tester);
@@ -710,7 +794,11 @@ void main() {
       'itself, and its swatch and its menu centre on the row with it', (
     tester,
   ) async {
-    const long = 'Count the hatchlings on the north shelf before the thaw';
+    // Far past one line at any font the suite runs with.
+    final long = List.filled(
+      12,
+      'Count the hatchlings on the north shelf',
+    ).join(' ');
     await pumpList(
       tester,
       index: FrontConversationIndex(

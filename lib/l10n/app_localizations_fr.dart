@@ -7534,7 +7534,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get frontChatStarterDueToday =>
-      'Qu\'est-ce qui est à faire aujourd\'hui ?';
+      'Qu\'est-ce qui arrive à échéance aujourd\'hui ?';
 
   @override
   String get frontChatStarterOverdue => 'Qu\'est-ce qui est en retard ?';
