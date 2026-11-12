@@ -107,12 +107,19 @@ class _FrontReplySurfacesState extends State<FrontReplySurfaces> {
 
   /// Brings reply [id]'s live surface to [wanted] without recreating it;
   /// false when it has to be recreated — it is words alone now, it is
-  /// another surface, or the processor refused the update.
+  /// another surface, it was written under another protocol version or
+  /// catalog (an update carries neither, so the live surface would keep the
+  /// old ones), or the processor refused the update.
   bool _update(String id, FrontReplySurface wanted) {
+    final fed = _fed[id]!;
     final create = wanted.message['createSurface'];
+    final was = fed.message['createSurface'];
     if (wanted.wordsOnly ||
-        wanted.surfaceId != _fed[id]!.surfaceId ||
-        create is! Map<String, Object?>) {
+        wanted.surfaceId != fed.surfaceId ||
+        create is! Map<String, Object?> ||
+        was is! Map<String, Object?> ||
+        wanted.message['version'] != fed.message['version'] ||
+        create['catalogId'] != was['catalogId']) {
       return false;
     }
     // The data first: the components bind to it.

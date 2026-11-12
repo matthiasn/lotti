@@ -86,6 +86,30 @@ void main() {
     expect(find.text('words: Garden'), findsNothing);
   });
 
+  testWidgets('a reply re-read under another protocol version is created '
+      'anew, not updated in place', (tester) async {
+    final taps = FrontReplyTaps();
+    final before = reply('a1', 'One:');
+    await pumpReplySurfaces(tester, {'a1': before}, taps: taps);
+    final surface = tester
+        .widget<A2uiSurface>(find.byType(A2uiSurface))
+        .surface;
+    // The same reply as another device stored it, under an older version.
+    final synced = FrontReplySurface.fromJson({
+      ...reply('a1', 'One, synced:').message,
+      'version': '0.9',
+    })!;
+
+    await pumpReplySurfaces(tester, {'a1': synced}, taps: taps);
+    await tester.pump();
+
+    final shown = tester.widgetList<A2uiSurface>(find.byType(A2uiSurface));
+    // Either drawn on a surface of its own or left to her words: never the
+    // old surface patched with components of another version.
+    expect(shown.map((s) => s.surface), isNot(contains(same(surface))));
+    expect(find.text('words: One:'), findsNothing);
+  });
+
   testWidgets('a reply that became words alone loses its surface, an '
       'unchanged one keeps its surface, and one that left is deleted', (
     tester,
