@@ -21,6 +21,7 @@ import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_live_answer.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
@@ -91,7 +92,14 @@ class FrontAgentWorkflow with AgentErrorLogging {
     required this._indexBuilder,
     required this._domainLogger,
     CompanionSass Function()? sass,
+    this.onLiveAnswer,
   }) : _sass = sass ?? _defaultSass;
+
+  /// Shown her answer while a turn is still writing it, and null when what
+  /// was shown is no answer after all: a remark beside a lookup, or a turn
+  /// that failed. An answer that was stored is not taken down — its stored
+  /// reply, with the same id, takes its place.
+  final void Function(FrontLiveAnswer? answer)? onLiveAnswer;
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
@@ -205,7 +213,10 @@ class FrontAgentWorkflow with AgentErrorLogging {
         scope,
       );
       lap('history');
-      final strategy = FrontAgentStrategy(
+      final replyId = frontAgentReplyMessageId(agentId, runKey);
+      // Declared first: what shows her answer live reads its lookups.
+      late final FrontAgentStrategy strategy;
+      strategy = FrontAgentStrategy(
         syncService: _syncService,
         domainLogger: _domainLogger,
         agentId: agentId,
@@ -226,6 +237,17 @@ class FrontAgentWorkflow with AgentErrorLogging {
           scope,
           now: now,
         ),
+        onAnswerProgress: onLiveAnswer == null
+            ? null
+            : (text, components) => onLiveAnswer!(
+                FrontLiveAnswer(
+                  sourceMessageId: sourceMessageId,
+                  replyId: replyId,
+                  text: text,
+                  surface: _surface(replyId, strategy, components),
+                  startedAt: now,
+                ),
+              ),
       );
       final tools = [
         for (final tool in frontAgentTools) tool.toChatCompletionTool(),
@@ -275,6 +297,12 @@ class FrontAgentWorkflow with AgentErrorLogging {
       // Her answer is the message she ended on, not a call.
       final manager = _conversationRepository.getConversation(conversationId);
       frontTakeAnswer(strategy, manager);
+      // What she wrote beside a lookup was shown as it came, and is no
+      // answer: it gives way to what the lookup found, drawn while she
+      // writes about it.
+      if (strategy.replyToUser == null && !strategy.showLookups()) {
+        onLiveAnswer?.call(null);
+      }
       // The one repair the budget allows: a turn that ended without an
       // answer or a terminal call, or whose dispatch was invalid, gets the
       // instruction once — and only while a call is left of the three.
@@ -303,6 +331,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
           ),
         );
         frontTakeAnswer(strategy, manager);
+        if (strategy.replyToUser == null) onLiveAnswer?.call(null);
       }
       inferring = false;
       lap('inference(calls=${manager?.turnCount})');
@@ -382,6 +411,8 @@ class FrontAgentWorkflow with AgentErrorLogging {
         _ => FrontTurnFailure.unknown,
       };
       laps.add('failed=${failure.name}');
+      // Nothing was stored that could take its place.
+      onLiveAnswer?.call(null);
       return WakeResult(
         success: false,
         error: failure.wakeError(error),
@@ -594,19 +625,31 @@ class FrontAgentWorkflow with AgentErrorLogging {
             'text': reply,
             // What is drawn: an A2UI surface of her components, its data
             // model filled here with what the turn's lookups made.
-            'surface': FrontReplySurface.compose(
-              surfaceId: replyId,
-              components: strategy.replyComponents,
-              due: strategy.dueSection,
-              closedTasks: strategy.closedTaskCards,
-              loggedTime: strategy.loggedTimeChart,
-              pullRequests: strategy.pullRequestChart,
+            'surface': _surface(
+              replyId,
+              strategy,
+              strategy.replyComponents,
             ).message,
           },
         );
       }
     });
   }
+
+  /// Her [components] as the reply's A2UI surface, its data model filled
+  /// with what the turn's lookups made.
+  FrontReplySurface _surface(
+    String replyId,
+    FrontAgentStrategy strategy,
+    List<Map<String, Object?>> components,
+  ) => FrontReplySurface.compose(
+    surfaceId: replyId,
+    components: components,
+    due: strategy.dueSection,
+    closedTasks: strategy.closedTaskCards,
+    loggedTime: strategy.loggedTimeChart,
+    pullRequests: strategy.pullRequestChart,
+  );
 
   InferenceUsage? _merge(InferenceUsage? a, InferenceUsage? b) =>
       a == null ? b : (b == null ? a : a.merge(b));

@@ -94,7 +94,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 - `workflow/` — the tool contract and system prompt, the dispatch validator
   (the rules in code), the conversation strategy (count-and-refuse lookups,
   how a turn ends, her words linked), her answer as she writes it — UI
-  blocks, then prose (`front_reply_stream.dart`) — the model resolution (its own setup, never a category's)
+  blocks, then prose (`front_reply_stream.dart`), shown while she writes
+  it (`model/front_live_answer.dart`) — the model resolution (its own setup, never a category's)
   and the wake workflow that persists the dispatch record.
 - `service/` — the index builder over existing reads (and the due-task
   lister behind `list_due_tasks`, the logged-time summarizer behind

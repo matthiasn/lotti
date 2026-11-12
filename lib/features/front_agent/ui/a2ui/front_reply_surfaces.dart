@@ -11,8 +11,12 @@ import 'package:material_ui/material_ui.dart';
 /// surface.
 ///
 /// [surfaces] are the replies to draw, by reply id. A reply new to the
-/// thread is created, one whose stored surface changed (re-read after sync)
-/// is replaced, and one that left the thread is deleted. A surface the
+/// thread is created, and one that left the thread is deleted. One whose
+/// surface changed — her answer growing while she writes it, a reply
+/// re-read after sync — is updated in place (`updateDataModel`, then
+/// `updateComponents`), so what it already shows stays mounted: a chart is
+/// not rebuilt for every word that arrives under it. Only an update the
+/// processor refuses falls back to delete and create. A surface the
 /// processor refuses — a stored shape it cannot draw — is logged and left
 /// out, so the reply falls back to her words.
 ///
@@ -82,7 +86,8 @@ class _FrontReplySurfacesState extends State<FrontReplySurfaces> {
     for (final id in _fed.keys.toList()) {
       final wanted = widget.surfaces[id];
       if (wanted != null &&
-          _equality.equals(wanted.message, _fed[id]!.message)) {
+          (_equality.equals(wanted.message, _fed[id]!.message) ||
+              _update(id, wanted))) {
         continue;
       }
       _process({
@@ -98,6 +103,44 @@ class _FrontReplySurfacesState extends State<FrontReplySurfaces> {
       for (final MapEntry(key: id, value: surface) in _fed.entries)
         id: ?_processor.model.getSurface(surface.surfaceId),
     };
+  }
+
+  /// Brings reply [id]'s live surface to [wanted] without recreating it;
+  /// false when it has to be recreated — it is words alone now, it is
+  /// another surface, it was written under another protocol version or
+  /// catalog (an update carries neither, so the live surface would keep the
+  /// old ones), or the processor refused the update.
+  bool _update(String id, FrontReplySurface wanted) {
+    final fed = _fed[id]!;
+    final create = wanted.message['createSurface'];
+    final was = fed.message['createSurface'];
+    if (wanted.wordsOnly ||
+        wanted.surfaceId != fed.surfaceId ||
+        create is! Map<String, Object?> ||
+        was is! Map<String, Object?> ||
+        wanted.message['version'] != fed.message['version'] ||
+        create['catalogId'] != was['catalogId']) {
+      return false;
+    }
+    // The data first: the components bind to it.
+    final updated =
+        _process({
+          'version': frontReplyProtocolVersion,
+          'updateDataModel': {
+            'surfaceId': wanted.surfaceId,
+            'path': '/',
+            'value': create['dataModel'],
+          },
+        }) &&
+        _process({
+          'version': frontReplyProtocolVersion,
+          'updateComponents': {
+            'surfaceId': wanted.surfaceId,
+            'components': create['components'],
+          },
+        });
+    if (updated) _fed[id] = wanted;
+    return updated;
   }
 
   /// Applies one A2UI message; false when the processor refuses it.

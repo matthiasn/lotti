@@ -168,6 +168,10 @@ sources:
     resource: ../../lib/features/front_agent/workflow/front_reply_stream.dart
     title: parseFrontReplyStream — her message split into Express UI blocks and prose, the authoring catalog and the prompt snippet that teaches it
     last_modified: 2026-11-12
+  - id: live-answer
+    resource: ../../lib/features/front_agent/model/front_live_answer.dart
+    title: FrontLiveAnswer — her answer while a turn is still writing it, and the thread it is shown in
+    last_modified: 2026-11-12
   - id: reply-catalog
     resource: ../../lib/features/front_agent/ui/a2ui/front_reply_catalog.dart
     title: frontReplyCatalog and FrontReplyScope — her reply's A2UI catalog on the chat's own widgets
@@ -1557,7 +1561,10 @@ read the surface (`taskIds`, `hasVisual`).
 **The surface is drawn by `a2ui_flutter`.** `FrontReplySurfaces` holds one
 `MessageProcessor` of `frontReplyCatalog` for the conversation and feeds it
 each reply's stored message: a new reply is created, one whose surface
-changed is replaced, one that left the thread is deleted, and a reply of
+changed is updated in place (`updateDataModel`, then `updateComponents`,
+so what it already shows stays mounted while her answer grows; delete and
+create only when the processor refuses the update), one that left the
+thread is deleted, and a reply of
 words alone gets none. A stored message the processor refuses is logged
 (its code only) and left out, so the reply falls back to her words. The
 pane hands `AgentChatView.replyBodyBuilder` an `A2uiSurface` inside a
@@ -1593,6 +1600,57 @@ flowchart LR
   S --> A["A2uiSurface in FrontReplyScope (frontReplyCatalog)"]
   A -->|quick_reply action| U[user's next turn]
 ```
+
+**Her answer is on screen while she writes it.** Most of a lookup
+answer's wait is not her writing: it is the lookup call, then the wait for
+the second call's first token. Live (2026-11-12, the three models she runs
+on), her first word came 0.1–0.5 s before the turn ended — but what the
+lookup found was known a third to a half of the way in. So two things are
+shown early, both through one in-memory value, `FrontLiveAnswer`:
+
+- **What a lookup found, as soon as it returns.** After the call that
+  looked something up, `FrontAgentStrategy.showLookups` reads an empty
+  message through `readFrontReply` — which appends the due tasks and the
+  lookup components nobody placed — and the cards or the chart are drawn
+  while the next call writes about them.
+- **Her message as it streams.** `ConversationRepository.sendMessage`
+  tells the strategy what the model has written so far
+  (`ConversationStrategy.onContent`, a no-op by default). The front
+  strategy strips reasoning blocks, reads the unfinished message
+  (`parseFrontReplyStream(complete: false)`: an open block is not an error
+  yet, and text that could start a tag is held back) and reports what it
+  says and draws so far — read exactly as `acceptAnswer` will read it, but
+  taking nothing.
+
+The workflow composes each report into the reply's surface under
+`frontAgentReplyMessageId`, the id the stored reply will have, and hands it
+to `frontLiveAnswerProvider`. The pane adds it to the thread as its last
+message (`frontThreadWithLive`) when the thread ends on the turn it answers
+and the stored reply is not in it yet. **Because the two share an id, the
+stored reply takes the live one's place** — same row, same surface key, no
+loading shell and no jump (stay while reload). The line that says she is
+thinking stays until she has written a word. A live answer is taken down
+only when it turns out to be none: a remark beside a lookup that found
+nothing to draw, or a turn that failed. It is never in the inbox, which
+shows turns that wait on the user.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Nothing: the turn starts
+  Nothing --> Lookups: a lookup call returned with something to draw
+  Nothing --> Writing: her message streams
+  Lookups --> Writing: her message streams
+  Writing --> Writing: more of it arrives
+  Writing --> Lookups: it was a remark beside a lookup
+  Writing --> Nothing: a remark, and nothing was found
+  Writing --> Stored: the turn ends on it
+  Lookups --> Nothing: the turn failed
+  Writing --> Nothing: the turn failed
+  Stored --> [*]: the stored reply, same id, takes its place
+```
+
+Her voice is unchanged by this: a spoken turn is still spoken once, from
+the stored reply.
 
 **An answer about what is due says which window, quietly.** Her prompt has
 no headings — her words may be read aloud — so the label over a due list

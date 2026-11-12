@@ -67,6 +67,31 @@ When<Stream<CreateChatCompletionStreamResponse>> _stubGenerateText(
   );
 }
 
+/// A strategy that keeps the default for everything it may.
+class _PlainStrategy extends ConversationStrategy {
+  @override
+  Future<ConversationAction> processToolCalls({
+    required List<ChatCompletionMessageToolCall> toolCalls,
+    required ConversationManager manager,
+  }) async => ConversationAction.complete;
+
+  @override
+  bool shouldContinue(ConversationManager manager) => false;
+
+  @override
+  String? getContinuationPrompt(ConversationManager manager) => null;
+}
+
+/// A strategy that records what it is told the model has written.
+class _WatchingStrategy extends _PlainStrategy {
+  _WatchingStrategy(this.seen);
+
+  final List<String> seen;
+
+  @override
+  void onContent(String content) => seen.add(content);
+}
+
 CreateChatCompletionStreamResponse _deltaResponse(
   ChatCompletionStreamResponseDelta delta,
 ) => CreateChatCompletionStreamResponse(
@@ -382,6 +407,32 @@ void main() {
         expect(manager.messages[0].role, ChatCompletionMessageRole.user);
         expect(manager.messages[1].role, ChatCompletionMessageRole.assistant);
         expect(manager.messages[1].content, 'Hello, human!');
+      });
+
+      test('the strategy is told what the model has written so far, each '
+          'time more arrives', () async {
+        _stubGenerateText(mockOllamaRepo).thenAnswer(
+          (_) => Stream.fromIterable([
+            _contentResponse('Hello'),
+            _contentResponse(', human'),
+            _contentResponse('!'),
+          ]),
+        );
+        final seen = <String>[];
+        final watching = _WatchingStrategy(seen);
+
+        await repository.sendMessage(
+          conversationId: conversationId,
+          message: 'Hello, AI!',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          strategy: watching,
+        );
+
+        expect(seen, ['Hello', 'Hello, human', 'Hello, human!']);
+        // A strategy that does not watch is simply not told.
+        expect(() => _PlainStrategy().onContent('Hello'), returnsNormally);
       });
 
       test('forces temperature 1.0 for OpenAI providers', () async {

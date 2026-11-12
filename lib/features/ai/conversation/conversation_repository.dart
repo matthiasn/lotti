@@ -469,6 +469,7 @@ class ConversationRepository extends Notifier<void> {
               // Collect content
               if (delta?.content != null) {
                 contentBuffer.write(delta!.content);
+                strategy?.onContent(contentBuffer.toString());
               }
 
               // Collect tool calls
@@ -525,9 +526,8 @@ class ConversationRepository extends Notifier<void> {
 
         // Add assistant message.
         //
-        // Strip `<think>...</think>` blocks before persisting. The streaming
-        // UI has already received the thinking content in real time; what
-        // gets stored here is later resent on subsequent turns via
+        // Strip `<think>...</think>` blocks before persisting: what gets
+        // stored here is later resent on subsequent turns via
         // `getMessagesForRequest()`, and we must not echo past reasoning
         // back to the model.
         final rawContent = contentBuffer.toString();

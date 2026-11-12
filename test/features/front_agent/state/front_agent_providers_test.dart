@@ -29,6 +29,8 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_live_answer.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/service/front_agent_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
@@ -519,6 +521,24 @@ void main() {
       // checked against.
       expect(await builder.githubLogin!(), 'pingu');
       expect(wired.read(frontAgentWorkflowProvider), isA<FrontAgentWorkflow>());
+      // What a running turn shows of her answer goes to the provider the
+      // pane reads, and is taken down through it too.
+      final workflow = wired.read(frontAgentWorkflowProvider);
+      expect(wired.read(frontLiveAnswerProvider), isNull);
+      final writing = FrontLiveAnswer(
+        sourceMessageId: 'u1',
+        replyId: 'a1',
+        text: 'Two things are',
+        surface: FrontReplySurface.compose(
+          surfaceId: 'a1',
+          components: const [],
+        ),
+        startedAt: DateTime(2026, 11, 12),
+      );
+      workflow.onLiveAnswer!(writing);
+      expect(wired.read(frontLiveAnswerProvider), same(writing));
+      workflow.onLiveAnswer!(null);
+      expect(wired.read(frontLiveAnswerProvider), isNull);
       expect(wired.read(frontAgentServiceProvider), isA<FrontAgentService>());
       expect(wired.read(frontChatServiceProvider), isA<FrontChatService>());
       expect(wired.read(frontDoorWalkerProvider), isA<FrontDoorWalker>());

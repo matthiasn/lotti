@@ -237,6 +237,13 @@ abstract class ConversationStrategy {
   /// Generate continuation prompt
   String? getContinuationPrompt(ConversationManager manager);
 
+  /// Called while a model call streams, with everything it has written so
+  /// far in that call — reasoning blocks included — each time more arrives.
+  ///
+  /// For a strategy that shows the answer as it is written. The default
+  /// does nothing.
+  void onContent(String content) {}
+
   /// The tools to advertise for the turn about to be sent, or null to keep
   /// whatever the caller passed to `sendMessage`.
   ///

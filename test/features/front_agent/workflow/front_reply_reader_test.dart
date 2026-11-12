@@ -63,6 +63,30 @@ void main() {
     link: (words) => words,
   );
 
+  test('an answer still being written may have no prose yet: its '
+      'components are read, and there are no words', () {
+    final reply = readFrontReply(
+      prose: '',
+      components: const [
+        {
+          'component': 'TaskCards',
+          'ids': ['task:t-1'],
+        },
+      ],
+      visible: visible,
+      available: const {},
+      dueRows: const [],
+      link: (words) => words,
+      proseRequired: false,
+    );
+
+    expect(reply.text, isEmpty);
+    expect(
+      [for (final component in reply.components) component['component']],
+      [FrontReplyComponents.taskCards],
+    );
+  });
+
   test('prose alone is one Text of her words, linked', () {
     final reply = readFrontReply(
       prose: '  Nothing is due.  ',

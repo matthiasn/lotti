@@ -186,12 +186,19 @@ typedef FrontStreamedReply = ({
 /// A block that cannot be read — malformed, or naming what the catalog does
 /// not have — is left out and reported in `errors`; the prose and the blocks
 /// around it are kept, so a bad block never costs the answer.
-FrontStreamedReply parseFrontReplyStream(String content) {
+///
+/// With [complete] false, [content] is a message still being written: a
+/// block left open is not an error yet, and text that could be the start of
+/// a tag is held back rather than shown as prose.
+FrontStreamedReply parseFrontReplyStream(
+  String content, {
+  bool complete = true,
+}) {
   final errors = <String>[];
   // A continuing stream reports a block it cannot read — one left open
   // included — as an ErrorPart and goes on; it does not throw for one.
   final stream = _processor.openContinuingStream();
-  final parts = [...stream.feed(content), ...stream.close()];
+  final parts = [...stream.feed(content), if (complete) ...stream.close()];
 
   final prose = StringBuffer();
   final components = <Map<String, Object?>>[];
