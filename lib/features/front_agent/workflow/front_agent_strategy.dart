@@ -259,6 +259,9 @@ class FrontAgentStrategy extends ConversationStrategy
       }
     }
 
+    // What this round looked up is drawn now, before the call that writes
+    // about it starts — wherever that call is started from.
+    showLookups();
     return hasTerminalOutput
         ? ConversationAction.complete
         : ConversationAction.continueConversation;

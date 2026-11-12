@@ -1902,13 +1902,17 @@ root = TaskCards("Found", ["task:garden"])
         manager: manager,
       );
 
-      expect(found.showLookups(), isTrue);
+      // Drawn as the round that looked it up ends, before any call that
+      // writes about it.
       expect(progress, [' | TaskCards']);
+      // And again when asked, as the workflow does after a remark.
+      expect(found.showLookups(), isTrue);
+      expect(progress, [' | TaskCards', ' | TaskCards']);
 
       // An answer taken is what is shown from then on.
       found.acceptAnswer('Garden is due.');
       expect(found.showLookups(), isFalse);
-      expect(progress, hasLength(1));
+      expect(progress, hasLength(2));
       // And nothing shows it when nothing listens.
       expect(strategy().showLookups(), isFalse);
     });
