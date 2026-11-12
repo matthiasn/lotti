@@ -12395,12 +12395,6 @@ abstract class AppLocalizations {
   /// **'Chat archived.'**
   String get frontChatArchivedToast;
 
-  /// No description provided for @frontChatCategoriesHeading.
-  ///
-  /// In en, this message translates to:
-  /// **'Categories'**
-  String get frontChatCategoriesHeading;
-
   /// No description provided for @frontChatCategoryChip.
   ///
   /// In en, this message translates to:
@@ -12545,6 +12539,12 @@ abstract class AppLocalizations {
   /// **'Ask anything…'**
   String get frontChatPlaceholder;
 
+  /// Hint in the companion chat's field while the conversation is narrowed to one category.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about {category}…'**
+  String frontChatPlaceholderScoped(String category);
+
   /// No description provided for @frontChatPrevious7Days.
   ///
   /// In en, this message translates to:
@@ -12604,6 +12604,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Spoken answers'**
   String get frontChatSpokenAnswers;
+
+  /// A starter question offered in an empty companion chat; a tap sends it as the user's first message.
+  ///
+  /// In en, this message translates to:
+  /// **'What is due today?'**
+  String get frontChatStarterDueToday;
+
+  /// A starter question offered in an empty companion chat; a tap sends it as the user's first message.
+  ///
+  /// In en, this message translates to:
+  /// **'What is overdue?'**
+  String get frontChatStarterOverdue;
+
+  /// A starter question offered in an empty companion chat; a tap sends it as the user's first message.
+  ///
+  /// In en, this message translates to:
+  /// **'What did I work on this week?'**
+  String get frontChatStarterThisWeek;
 
   /// No description provided for @frontChatTitle.
   ///

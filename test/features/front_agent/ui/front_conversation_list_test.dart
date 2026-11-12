@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
+import 'package:lotti/features/front_agent/ui/front_category_chip.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -393,41 +395,52 @@ void main() {
       );
     });
 
-    testWidgets('the Categories section lists the ones in use by name with '
-        'their counts, above the history', (tester) async {
+    testWidgets('the categories in use are one row of filter chips, by name, '
+        'above the history — a filter, not a section of places to go', (
+      tester,
+    ) async {
       await pumpScoped(tester);
 
-      expect(find.text('Categories'), findsOne);
-      final habitatRow = find.byKey(
+      expect(find.text('Categories'), findsNothing);
+      final habitatChip = find.byKey(
         FrontConversationListKeys.category('cat-habitat'),
       );
-      final penguinRow = find.byKey(
+      final penguinChip = find.byKey(
         FrontConversationListKeys.category('cat-penguins'),
       );
-      String countOf(Finder row) => tester
-          .widget<Text>(
-            find.descendant(
-              of: row,
-              matching: find.byWidgetPredicate(
-                (w) => w is Text && int.tryParse(w.data ?? '') != null,
-              ),
-            ),
-          )
-          .data!;
-      expect(countOf(penguinRow), '2');
-      expect(countOf(habitatRow), '1');
-      // By name, and the one she may not see is never named.
+      for (final chip in [habitatChip, penguinChip]) {
+        final widget = tester.widget<DesignSystemChip>(chip);
+        expect(widget.size, DesignSystemChipSize.compactPillTouch);
+        expect(widget.selected, isFalse);
+        // Its colour beside its name.
+        expect(
+          find.descendant(of: chip, matching: find.byType(FrontCategorySwatch)),
+          findsOne,
+        );
+      }
       expect(
-        tester.getTopLeft(habitatRow).dy,
-        lessThan(tester.getTopLeft(penguinRow).dy),
+        find.descendant(
+          of: habitatChip,
+          matching: find.text('Habitat Engineering'),
+        ),
+        findsOne,
+      );
+      // One row, by name, and the one she may not see is never named.
+      expect(
+        tester.getCenter(habitatChip).dy,
+        tester.getCenter(penguinChip).dy,
+      );
+      expect(
+        tester.getRect(habitatChip).right,
+        lessThan(tester.getRect(penguinChip).left),
       );
       expect(
         find.byKey(FrontConversationListKeys.category('cat-private')),
         findsNothing,
       );
       expect(
-        tester.getTopLeft(penguinRow).dy,
-        lessThan(tester.getTopLeft(find.text('Today')).dy),
+        tester.getRect(penguinChip).bottom,
+        lessThanOrEqualTo(tester.getTopLeft(find.text('Today')).dy),
       );
     });
 
@@ -441,9 +454,18 @@ void main() {
       await tester.tap(penguinRow);
       await tester.pump();
       expect(rows(tester), ['c-2', 'c-1']);
+      final on = tester.widget<DesignSystemChip>(penguinRow);
+      expect(on.selected, isTrue);
+      // Said by more than its tint: a cross for the tap that takes it off,
+      // and first in the row, where it is seen without scrolling.
+      expect(on.showRemove, isTrue);
+      final habitatChip = find.byKey(
+        FrontConversationListKeys.category('cat-habitat'),
+      );
+      expect(tester.widget<DesignSystemChip>(habitatChip).showRemove, isFalse);
       expect(
-        tester.widget<DesignSystemListItem>(penguinRow).activated,
-        isTrue,
+        tester.getRect(penguinRow).right,
+        lessThan(tester.getRect(habitatChip).left),
       );
 
       await tester.tap(penguinRow);
@@ -451,15 +473,44 @@ void main() {
       expect(rows(tester), ['c-2', 'c-1', 'c-3', 'c-4', 'c-5']);
     });
 
-    testWidgets('a category and a query narrow together', (tester) async {
-      await pumpScoped(tester, query: 'census');
-      await tester.tap(
-        find.byKey(FrontConversationListKeys.category('cat-habitat')),
+    testWidgets('a category and a query narrow together, the category on '
+        'still shown over the search, alone, and a tap from off', (
+      tester,
+    ) async {
+      await pumpScoped(tester);
+      final habitatRow = find.byKey(
+        FrontConversationListKeys.category('cat-habitat'),
       );
+      await tester.tap(habitatRow);
+      await tester.pump();
+      await pumpScoped(tester, query: 'census');
       await tester.pump();
 
       expect(rows(tester), isEmpty);
       expect(find.text('No chat title matches.'), findsOne);
+      // The filter narrowing the search is seen, and on.
+      expect(tester.widget<DesignSystemChip>(habitatRow).selected, isTrue);
+      expect(
+        find.byKey(FrontConversationListKeys.category('cat-penguins')),
+        findsNothing,
+      );
+
+      await tester.tap(habitatRow);
+      await tester.pump();
+      expect(rows(tester), isNotEmpty);
+      expect(habitatRow, findsNothing);
+    });
+
+    testWidgets('a search with no category on shows what matched right '
+        'under the field: no Categories section over it', (tester) async {
+      await pumpScoped(tester, query: 'census');
+
+      expect(rows(tester), isNotEmpty);
+      expect(find.text('Categories'), findsNothing);
+      expect(
+        find.byKey(FrontConversationListKeys.category('cat-habitat')),
+        findsNothing,
+      );
     });
 
     testWidgets('a filter on a category that has gone holds nothing back', (
@@ -586,7 +637,7 @@ void main() {
         .designTokens
         .colors
         .text
-        .lowEmphasis;
+        .mediumEmphasis;
     final days = tester.widgetList<Text>(
       find.textContaining(RegExp(r'^(Today|Yesterday|Previous 7 days|Older)$')),
     );
@@ -595,8 +646,9 @@ void main() {
   });
 
   testWidgets('a row says no time of its own — its section says when — and '
-      "her answer runs the row's width on one line; the open row says it a "
-      'step brighter', (tester) async {
+      "her answer runs the row's width on one line, legible on every row", (
+    tester,
+  ) async {
     // Every frame of this test reads the fixed day: "today at 11:58" is
     // today only while the clock says it is that day.
     await withClock(Clock.fixed(now), () async {
@@ -645,13 +697,129 @@ void main() {
           .colors
           .text;
       expect(preview('c-1').style!.color, colors.mediumEmphasis);
-      expect(preview('c-2').style!.color, colors.lowEmphasis);
-      // The title takes one line too, so every row is the same height.
+      expect(preview('c-2').style!.color, colors.mediumEmphasis);
+      // Over her answer the title takes one line.
       expect(
         tester.widget<Text>(inRow('c-1', find.text('Chat c-1'))).maxLines,
         1,
       );
     });
+  });
+
+  testWidgets('with no answer under it a long title takes the second line '
+      'itself, and its swatch and its menu centre on the row with it', (
+    tester,
+  ) async {
+    const long = 'Count the hatchlings on the north shelf before the thaw';
+    await pumpList(
+      tester,
+      index: FrontConversationIndex(
+        conversations: [
+          conversation('c-1', long, at: DateTime(2026, 10, 31, 9)),
+          conversation('c-2', 'Short', at: DateTime(2026, 10, 31, 8)),
+        ],
+      ),
+    );
+    Finder inRow(String id, Finder finder) => find.descendant(
+      of: find.byKey(FrontConversationListKeys.row(id)),
+      matching: finder,
+    );
+
+    final title = tester.widget<Text>(inRow('c-1', find.text(long)));
+    expect(title.maxLines, 2);
+    final row = tester.getRect(
+      find.byKey(FrontConversationListKeys.row('c-1')),
+    );
+    final short = tester.getRect(
+      find.byKey(FrontConversationListKeys.row('c-2')),
+    );
+    // Two lines are drawn, not one cut short.
+    expect(row.height, greaterThan(short.height));
+    for (final id in ['c-1', 'c-2']) {
+      final box = tester.getRect(
+        find.byKey(FrontConversationListKeys.row(id)),
+      );
+      final words = tester.getRect(
+        inRow(id, find.text(id == 'c-1' ? long : 'Short')),
+      );
+      final swatch = tester.getRect(
+        find.byKey(FrontConversationListKeys.swatch(id)),
+      );
+      final menu = tester.getRect(
+        find.byKey(FrontConversationListKeys.menu(id)),
+      );
+      expect(words.center.dy, closeTo(box.center.dy, 0.5));
+      expect(swatch.center.dy, closeTo(box.center.dy, 0.5));
+      expect(menu.center.dy, closeTo(box.center.dy, 0.5));
+    }
+  });
+
+  for (final beside in [false, true]) {
+    testWidgets("room for a menu at the title's end is kept only where a "
+        'menu can show (beside the conversation: $beside)', (tester) async {
+      await pumpList(tester, beside: beside);
+      double endOf(String id, String title) =>
+          (tester
+                      .widget<Padding>(
+                        find
+                            .ancestor(
+                              of: find.descendant(
+                                of: find.byKey(
+                                  FrontConversationListKeys.row(id),
+                                ),
+                                matching: find.text(title),
+                              ),
+                              matching: find.byType(Padding),
+                            )
+                            .first,
+                      )
+                      .padding
+                  as EdgeInsetsDirectional)
+              .end;
+      // `c-2` is not the open one, and nothing hovers it.
+      final room = endOf('c-2', 'Count the hatchlings');
+      if (beside) {
+        // A hover shows the menu there: kept, so nothing reflows.
+        expect(room, greaterThan(0));
+      } else {
+        // Over a phone's thread no menu shows on it: the title has the row.
+        expect(room, 0);
+        // The open row shows its menu, and keeps the room for it.
+        expect(endOf('c-1', 'Plan the census'), greaterThan(0));
+      }
+    });
+  }
+
+  testWidgets('weight means "here": the open row alone is set heavier '
+      "than the drawer's label style", (tester) async {
+    await pumpList(tester);
+    final styles = tester
+        .element(find.byType(FrontConversationList))
+        .designTokens
+        .typography
+        .styles;
+    FontWeight? weightOf(String id, String title) => tester
+        .widget<Text>(
+          find.descendant(
+            of: find.byKey(FrontConversationListKeys.row(id)),
+            matching: find.text(title),
+          ),
+        )
+        .style!
+        .fontWeight;
+    // `c-1` is the open one.
+    expect(
+      weightOf('c-1', 'Plan the census'),
+      styles.subtitle.subtitle2.fontWeight,
+    );
+    expect(
+      weightOf('c-2', 'Count the hatchlings'),
+      styles.body.bodySmall.fontWeight,
+    );
+    expect(
+      styles.subtitle.subtitle2.fontWeight,
+      isNot(styles.body.bodySmall.fontWeight),
+    );
   });
 
   testWidgets("on a wide window a row's menu shows on hover and focus", (

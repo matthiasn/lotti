@@ -25,6 +25,7 @@ import 'package:lotti/features/front_agent/model/front_live_answer.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
+import 'package:lotti/features/front_agent/state/front_chat_category.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
@@ -42,6 +43,7 @@ import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
+import 'package:lotti/features/front_agent/ui/front_starter_prompts.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -425,6 +427,9 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
     };
     final composer = ref.watch(frontChatControllerProvider);
     final mentions = ref.watch(frontMentionCategoriesProvider);
+    // The category the open conversation is narrowed to; none in the inbox,
+    // which is every conversation at once.
+    final scope = inboxOnly ? null : ref.watch(frontChatCategoryProvider);
     // Kept across a reread (`.value`): an answer is not taken off the screen
     // while its sources' visibility is checked again.
     final journalAccess = ref.watch(frontJournalAccessProvider).value;
@@ -652,6 +657,12 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
                                     .mediumEmphasis,
                               ),
                         ),
+                        SizedBox(height: context.designTokens.spacing.step5),
+                        // A first move, a tap away.
+                        FrontStarterPrompts(
+                          enabled: !composer.isSending,
+                          onChosen: controller.sendText,
+                        ),
                       ],
                     ),
                   ),
@@ -660,7 +671,10 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
         emptyMessage: inboxOnly
             ? messages.frontChatInboxEmpty
             : messages.frontChatEmpty,
-        composerHint: messages.frontChatPlaceholder,
+        // What the conversation is narrowed to is said where the words go.
+        composerHint: scope == null
+            ? messages.frontChatPlaceholder
+            : messages.frontChatPlaceholderScoped(scope.name),
         sendingLabel: messages.frontChatResponding,
         draft: composer.draft,
         isSending: composer.isSending,

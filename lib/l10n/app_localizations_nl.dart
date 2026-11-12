@@ -7311,9 +7311,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontChatArchivedToast => 'Chat gearchiveerd.';
 
   @override
-  String get frontChatCategoriesHeading => 'Categorieën';
-
-  @override
   String frontChatCategoryChip(String name) {
     return 'Categorie van deze chat: $name';
   }
@@ -7402,6 +7399,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontChatPlaceholder => 'Vraag wat je wilt…';
 
   @override
+  String frontChatPlaceholderScoped(String category) {
+    return 'Vraag iets over $category…';
+  }
+
+  @override
   String get frontChatPrevious7Days => 'Afgelopen 7 dagen';
 
   @override
@@ -7433,6 +7435,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontChatSpokenAnswers => 'Gesproken antwoorden';
+
+  @override
+  String get frontChatStarterDueToday => 'Wat moet vandaag af?';
+
+  @override
+  String get frontChatStarterOverdue => 'Wat is over tijd?';
+
+  @override
+  String get frontChatStarterThisWeek => 'Waar heb ik deze week aan gewerkt?';
 
   @override
   String get frontChatTitle => 'Metgezel';

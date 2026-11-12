@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
@@ -97,6 +98,34 @@ class FrontChatHeader extends ConsumerWidget {
     void openDrawer() =>
         ref.read(frontConversationListOpenProvider.notifier).toggle();
 
+    // Under the drawer slid over it the row's end shows through the scrim,
+    // beside the drawer's own way back: its actions step aside, keeping
+    // their room, so one cross is not read for two.
+    final underDrawer =
+        !listBeside && ref.watch(frontConversationListOpenProvider);
+    Widget aside(Widget action) => Visibility(
+      visible: !underDrawer,
+      maintainSize: true,
+      maintainAnimation: true,
+      maintainState: true,
+      child: action,
+    );
+
+    // Where the user is: over a phone's or a tablet's thread the drawer
+    // that lists the conversations is shut, so the row names the open one.
+    // Her own name stays for one not begun, for the inbox — every
+    // conversation at once — and beside the drawer, which marks the open row.
+    final openTitle = listBeside || inboxOnly
+        ? null
+        : ref
+              .watch(frontConversationsProvider)
+              .value
+              ?.conversations
+              .where((c) => c.id == activeId)
+              .map((c) => c.title.trim())
+              .where((title) => title.isNotEmpty)
+              .firstOrNull;
+
     final row = <Widget>[
       if (!listBeside) ...[
         // Something waits: a quiet dot on the glyph, never a count in the
@@ -132,30 +161,40 @@ class FrontChatHeader extends ConsumerWidget {
       _CompanionFace(enabled: faceEnabled),
       Expanded(
         child: Text(
-          messages.frontChatTitle,
+          openTitle ?? messages.frontChatTitle,
           key: FrontChatHeaderKeys.title,
-          maxLines: 1,
+          // A conversation's title is longer than her name: a step smaller
+          // and on up to two lines, which the band's height already holds.
+          maxLines: openTitle == null ? 1 : 2,
           overflow: TextOverflow.ellipsis,
-          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-            color: tokens.colors.text.highEmphasis,
-          ),
+          style:
+              (openTitle == null
+                      ? tokens.typography.styles.subtitle.subtitle1
+                      : tokens.typography.styles.subtitle.subtitle2)
+                  .copyWith(color: tokens.colors.text.highEmphasis),
         ),
       ),
       if (!listBeside)
-        DesignSystemIconAction(
-          key: FrontChatHeaderKeys.newChat,
-          tooltip: messages.queryNewChat,
-          icon: LottiIcons.editNote,
-          // Already in a new, empty one: nothing to start.
-          onPressed: frontCanStartConversation(ref)
-              ? ref.read(frontChatControllerProvider.notifier).startConversation
-              : null,
+        aside(
+          DesignSystemIconAction(
+            key: FrontChatHeaderKeys.newChat,
+            tooltip: messages.queryNewChat,
+            icon: LottiIcons.editNote,
+            // Already in a new, empty one: nothing to start.
+            onPressed: frontCanStartConversation(ref)
+                ? ref
+                      .read(frontChatControllerProvider.notifier)
+                      .startConversation
+                : null,
+          ),
         ),
-      DesignSystemIconAction(
-        key: FrontChatHeaderKeys.close,
-        tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-        onPressed: onClose,
-        icon: LottiIcons.close,
+      aside(
+        DesignSystemIconAction(
+          key: FrontChatHeaderKeys.close,
+          tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+          onPressed: onClose,
+          icon: LottiIcons.close,
+        ),
       ),
     ];
 
@@ -172,7 +211,18 @@ class FrontChatHeader extends ConsumerWidget {
         padding: frontBandPadding(tokens),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: TapTargets.minimum),
-          child: Row(children: row),
+          // Over a thread on its own the row keeps the thread's measure, so
+          // on a wide panel its controls sit on the column they act on.
+          child: listBeside
+              ? Row(children: row)
+              : Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: kProseMeasureWidth,
+                    ),
+                    child: Row(children: row),
+                  ),
+                ),
         ),
       ),
     );
@@ -197,7 +247,7 @@ class _CompanionFace extends ConsumerWidget {
     final label = context.messages.frontChatCompanionShow;
     const face = FrontCompanionFigure(
       key: FrontChatHeaderKeys.figure,
-      size: ControlSizes.avatar,
+      size: ControlSizes.avatarCompact,
       rounded: true,
     );
     // Fades as it narrows, so her name and title slide into its room.

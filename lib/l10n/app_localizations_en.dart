@@ -7254,9 +7254,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontChatArchivedToast => 'Chat archived.';
 
   @override
-  String get frontChatCategoriesHeading => 'Categories';
-
-  @override
   String frontChatCategoryChip(String name) {
     return 'Category for this chat: $name';
   }
@@ -7344,6 +7341,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontChatPlaceholder => 'Ask anything…';
 
   @override
+  String frontChatPlaceholderScoped(String category) {
+    return 'Ask about $category…';
+  }
+
+  @override
   String get frontChatPrevious7Days => 'Previous 7 days';
 
   @override
@@ -7375,6 +7377,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontChatSpokenAnswers => 'Spoken answers';
+
+  @override
+  String get frontChatStarterDueToday => 'What is due today?';
+
+  @override
+  String get frontChatStarterOverdue => 'What is overdue?';
+
+  @override
+  String get frontChatStarterThisWeek => 'What did I work on this week?';
 
   @override
   String get frontChatTitle => 'Companion';

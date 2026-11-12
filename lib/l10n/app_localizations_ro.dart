@@ -7414,9 +7414,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatArchivedToast => 'Conversație arhivată.';
 
   @override
-  String get frontChatCategoriesHeading => 'Categorii';
-
-  @override
   String frontChatCategoryChip(String name) {
     return 'Categoria acestei conversații: $name';
   }
@@ -7506,6 +7503,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatPlaceholder => 'Întrebați orice…';
 
   @override
+  String frontChatPlaceholderScoped(String category) {
+    return 'Întrebați despre $category…';
+  }
+
+  @override
   String get frontChatPrevious7Days => 'Ultimele 7 zile';
 
   @override
@@ -7537,6 +7539,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontChatSpokenAnswers => 'Răspunsuri rostite';
+
+  @override
+  String get frontChatStarterDueToday => 'Ce este scadent astăzi?';
+
+  @override
+  String get frontChatStarterOverdue => 'Ce este întârziat?';
+
+  @override
+  String get frontChatStarterThisWeek => 'La ce am lucrat săptămâna aceasta?';
 
   @override
   String get frontChatTitle => 'Însoțitor';

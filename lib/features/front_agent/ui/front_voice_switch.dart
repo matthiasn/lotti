@@ -5,6 +5,7 @@ import 'package:lotti/features/companion/state/companion_customization_controlle
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
@@ -62,8 +63,15 @@ class FrontVoiceSwitch extends ConsumerWidget {
       toggled: speaks,
       child: DesignSystemListItem(
         key: FrontVoiceSwitchKeys.row,
-        title: label,
-        size: DesignSystemListItemSize.small,
+        titleContent: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: frontDrawerLabelStyle(
+            context,
+          ).copyWith(color: tokens.colors.text.mediumEmphasis),
+        ),
+        size: frontDrawerRowSize(context),
         borderRadius: BorderRadius.circular(tokens.radii.s),
         hoverBackgroundColor: tokens.colors.surface.enabled,
         leading: Icon(

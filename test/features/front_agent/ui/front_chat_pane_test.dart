@@ -58,6 +58,7 @@ import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
+import 'package:lotti/features/front_agent/ui/front_starter_prompts.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
@@ -386,6 +387,56 @@ void main() {
     // switch first.
     expect(find.text('Ask anything…'), findsOneWidget);
     expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+  });
+
+  testWidgets('an empty thread offers a first move: a starter question, a '
+      'tap away, sent in its own words', (tester) async {
+    when(
+      () => chatService.sendMessage(
+        text: 'What is due today?',
+        conversationId: 'c-1',
+      ),
+    ).thenAnswer((_) async {});
+    await pumpPane(tester);
+
+    expect(find.byType(FrontStarterPrompts), findsOne);
+    await tester.tap(find.byKey(FrontStarterPromptsKeys.dueToday));
+    await tester.pumpAndSettle();
+
+    verify(
+      () => chatService.sendMessage(
+        text: 'What is due today?',
+        conversationId: 'c-1',
+      ),
+    ).called(1);
+  });
+
+  testWidgets('a thread with something said offers no starters', (
+    tester,
+  ) async {
+    await pumpPane(
+      tester,
+      thread: () async => FrontChatThread(
+        messages: [message('u1', AgentChatRole.user, 'Hello', now)],
+      ),
+    );
+    expect(find.byType(FrontStarterPrompts), findsNothing);
+  });
+
+  testWidgets("the field's hint says what the conversation is narrowed to, "
+      'and "Ask anything…" when it is not', (tester) async {
+    final colony = CategoryTestUtils.createTestCategory(
+      id: 'colony',
+      name: 'Colony',
+      color: '#4CAF93',
+    );
+    await pumpPane(
+      tester,
+      storedScope: () => {'colony'},
+      mentionCategories: [colony],
+    );
+    expect(find.text('Ask about Colony…'), findsOne);
+    expect(find.text('Ask anything…'), findsNothing);
   });
 
   testWidgets('a thread still loading shows a shell', (tester) async {
@@ -917,7 +968,12 @@ void main() {
       expect(drawer.width, lessThanOrEqualTo(pane.width - TapTargets.minimum));
 
       // Picking a conversation opens it and closes the drawer.
-      await tester.tap(find.text('Two things.'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(FrontChatDrawer),
+          matching: find.text('Two things.'),
+        ),
+      );
       await settleDrawer(tester);
       expect(find.byType(FrontChatDrawer), findsNothing);
       expect(tester.state(find.byType(AgentChatView)), same(thread));
@@ -1038,7 +1094,12 @@ void main() {
       width.value = 300;
       await settleDrawer(tester);
       // Beside the thread, picking a conversation closes the drawer.
-      await tester.tap(find.text('Two things.'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(FrontChatDrawer),
+          matching: find.text('Two things.'),
+        ),
+      );
       await settleDrawer(tester);
 
       width.value = null;
@@ -1337,7 +1398,12 @@ void main() {
 
       // Opening a conversation from the drawer leaves the inbox.
       await openDrawer(tester);
-      await tester.tap(find.text('Two things.'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(FrontChatDrawer),
+          matching: find.text('Two things.'),
+        ),
+      );
       await settleDrawer(tester);
       expect(find.text('Fine.'), findsOneWidget);
     });

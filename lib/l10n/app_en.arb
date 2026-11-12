@@ -4567,7 +4567,6 @@
     }
   },
   "frontChatArchivedToast": "Chat archived.",
-  "frontChatCategoriesHeading": "Categories",
   "frontChatCategoryChip": "Category for this chat: {name}",
   "@frontChatCategoryChip": {
     "placeholders": {
@@ -4630,6 +4629,15 @@
   "frontChatOlder": "Older",
   "frontChatOpen": "Ask the companion",
   "frontChatPlaceholder": "Ask anything…",
+  "frontChatPlaceholderScoped": "Ask about {category}…",
+  "@frontChatPlaceholderScoped": {
+    "description": "Hint in the companion chat's field while the conversation is narrowed to one category.",
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
   "frontChatPrevious7Days": "Previous 7 days",
   "frontChatProfileChanged": "The companion now uses {profile}",
   "@frontChatProfileChanged": {
@@ -4660,6 +4668,18 @@
   "frontChatRowMenuHint": "Chat actions",
   "frontChatSearchChats": "Search chats",
   "frontChatSpokenAnswers": "Spoken answers",
+  "frontChatStarterDueToday": "What is due today?",
+  "@frontChatStarterDueToday": {
+    "description": "A starter question offered in an empty companion chat; a tap sends it as the user's first message."
+  },
+  "frontChatStarterOverdue": "What is overdue?",
+  "@frontChatStarterOverdue": {
+    "description": "A starter question offered in an empty companion chat; a tap sends it as the user's first message."
+  },
+  "frontChatStarterThisWeek": "What did I work on this week?",
+  "@frontChatStarterThisWeek": {
+    "description": "A starter question offered in an empty companion chat; a tap sends it as the user's first message."
+  },
   "frontChatTitle": "Companion",
   "frontChatYesterday": "Yesterday",
   "frontDayPlanMore": "{count} more",

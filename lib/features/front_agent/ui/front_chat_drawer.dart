@@ -70,10 +70,6 @@ class _FrontChatDrawerState extends ConsumerState<FrontChatDrawer> {
     void close() =>
         ref.read(frontConversationListOpenProvider.notifier).close();
     final canStart = frontCanStartConversation(ref);
-    final textInset = DesignSystemListItem.contentInset(
-      tokens,
-      frontDrawerRowSize(context),
-    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -106,7 +102,9 @@ class _FrontChatDrawerState extends ConsumerState<FrontChatDrawer> {
                     DesignSystemIconAction(
                       key: FrontChatDrawerKeys.close,
                       tooltip: messages.frontChatDrawerClose,
-                      icon: LottiIcons.close,
+                      // Back to the conversation: the cross is her
+                      // surface's own close, in the header beside this.
+                      icon: LottiIcons.chevronLeft,
                       onPressed: close,
                     ),
                 ],
@@ -125,8 +123,9 @@ class _FrontChatDrawerState extends ConsumerState<FrontChatDrawer> {
             key: FrontChatDrawerKeys.newChat,
             titleContent: Text(
               messages.queryNewChat,
-              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              style: frontDrawerLabelStyle(context).copyWith(
                 color: tokens.colors.interactive.enabled,
+                fontWeight: tokens.typography.weight.semiBold,
               ),
             ),
             size: frontDrawerRowSize(context),
@@ -155,7 +154,7 @@ class _FrontChatDrawerState extends ConsumerState<FrontChatDrawer> {
         // for what it finds.
         if (!widget.keyboardUp) ...[
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: textInset),
+            padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
             child: const DesignSystemDivider(),
           ),
           const FrontChatDrawerFooter(),
@@ -205,6 +204,17 @@ class FrontChatDrawerFooter extends ConsumerWidget {
       ),
     );
 
+    // Settings, quieter than the conversations over them, and in one
+    // style on every layout.
+    Widget label(String text) => Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: frontDrawerLabelStyle(
+        context,
+      ).copyWith(color: tokens.colors.text.mediumEmphasis),
+    );
+
     Widget icon(IconData glyph) => Icon(
       glyph,
       size: IconSizes.s,
@@ -236,7 +246,7 @@ class FrontChatDrawerFooter extends ConsumerWidget {
           if (identity is AgentIdentityEntity && profiles != null)
             DesignSystemListItem(
               key: FrontChatDrawerKeys.profile,
-              title: messages.frontChatProfileMenuItem,
+              titleContent: label(messages.frontChatProfileMenuItem),
               size: size,
               borderRadius: rounded,
               hoverBackgroundColor: tokens.colors.surface.enabled,
@@ -252,7 +262,7 @@ class FrontChatDrawerFooter extends ConsumerWidget {
             ),
           DesignSystemListItem(
             key: FrontChatDrawerKeys.internals,
-            title: messages.aiInternalsTitle,
+            titleContent: label(messages.aiInternalsTitle),
             size: size,
             borderRadius: rounded,
             hoverBackgroundColor: tokens.colors.surface.enabled,

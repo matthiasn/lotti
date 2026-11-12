@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/state/front_chat_category.dart';
@@ -23,15 +25,20 @@ abstract final class FrontCategoryChipKeys {
 /// ("Everything"), its outline. Never alone: wherever it stands, the
 /// category's name is said beside it or in the semantics around it.
 class FrontCategorySwatch extends StatelessWidget {
-  const FrontCategorySwatch({this.category, super.key});
+  const FrontCategorySwatch({this.category, super.key}) : _slot = false;
+
+  /// The swatch centred in a glyph-sized box: a row's leading slot, so its
+  /// label starts where the label of a row led by an icon does.
+  const FrontCategorySwatch.inSlot({this.category, super.key}) : _slot = true;
 
   final CategoryDefinition? category;
+  final bool _slot;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final color = category == null ? null : colorFromCssHex(category!.color);
-    return SizedBox.square(
+    final swatch = SizedBox.square(
       dimension: tokens.spacing.step3,
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -43,6 +50,12 @@ class FrontCategorySwatch extends StatelessWidget {
         ),
       ),
     );
+    return _slot
+        ? SizedBox.square(
+            dimension: IconSizes.s,
+            child: Center(child: swatch),
+          )
+        : swatch;
   }
 }
 
@@ -58,57 +71,23 @@ class FrontCategoryChip extends ConsumerWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final category = ref.watch(frontChatCategoryProvider);
-    final open = ref.watch(frontActiveConversationProvider).value != null;
+    final canOpen = ref.watch(frontActiveConversationProvider).value != null;
     final name = category?.name ?? messages.frontChatCategoryEverything;
-    final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-      side: BorderSide(color: tokens.colors.decorative.level02),
-    );
-    return Semantics(
-      container: true,
-      button: true,
-      enabled: open,
-      label: messages.frontChatCategoryChip(name),
-      onTap: open ? () => FrontCategorySheet.show(context) : null,
-      child: ExcludeSemantics(
-        child: Material(
-          type: MaterialType.transparency,
-          shape: shape,
-          child: InkWell(
-            key: FrontCategoryChipKeys.chip,
-            customBorder: shape,
-            onTap: open ? () => FrontCategorySheet.show(context) : null,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step3,
-                vertical: tokens.spacing.step2,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: tokens.spacing.step2,
-                children: [
-                  FrontCategorySwatch(category: category),
-                  Flexible(
-                    child: Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    LottiIcons.chevronDown,
-                    size: IconSizes.xs,
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+    void open() => FrontCategorySheet.show(context);
+    return DesignSystemChip(
+      key: FrontCategoryChipKeys.chip,
+      label: name,
+      semanticsLabel: messages.frontChatCategoryChip(name),
+      size: DesignSystemChipSize.compactPillTouch,
+      // The chip clips its avatar to a circle: the swatch keeps its own
+      // shape and size inside it.
+      avatar: Center(child: FrontCategorySwatch(category: category)),
+      trailing: Icon(
+        LottiIcons.chevronDown,
+        size: IconSizes.xs,
+        color: tokens.colors.text.mediumEmphasis,
       ),
+      onPressed: canOpen ? open : null,
     );
   }
 }
@@ -125,6 +104,9 @@ class FrontCategorySheet extends ConsumerWidget {
       ModalUtils.showSinglePageModal<void>(
         context: context,
         title: context.messages.frontChatCategorySheetTitle,
+        // The rows run edge to edge, as in her other pickers; the words
+        // over and under them keep the gutter themselves.
+        padding: EdgeInsets.zero,
         builder: (_) => const FrontCategorySheet(),
       );
 
@@ -148,6 +130,15 @@ class FrontCategorySheet extends ConsumerWidget {
       Navigator.of(context).pop();
     }
 
+    Widget gutter(Widget child, {double top = 0}) => Padding(
+      padding: EdgeInsets.only(
+        left: tokens.spacing.step5,
+        top: top,
+        right: tokens.spacing.step5,
+      ),
+      child: child,
+    );
+
     Widget row({
       required Key key,
       required String title,
@@ -158,9 +149,13 @@ class FrontCategorySheet extends ConsumerWidget {
         key: key,
         title: title,
         type: DesignSystemSelectionRowType.singleSelect,
+        size: DesignSystemListItemSize.small,
         selected: selected,
         selectedLabel: messages.designSystemSelectedLabel,
-        leading: FrontCategorySwatch(category: category),
+        // Said by the word and the tick: no band, so "selected" looks the
+        // same here as in the drawer.
+        showSelectedBackground: false,
+        leading: FrontCategorySwatch.inSlot(category: category),
         onTap: () => choose(category?.id),
       );
     }
@@ -170,30 +165,38 @@ class FrontCategorySheet extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: tokens.spacing.step4,
       children: [
-        Text(messages.frontChatCategorySheetBody, style: quiet),
+        gutter(
+          Text(messages.frontChatCategorySheetBody, style: quiet),
+          top: tokens.spacing.step4,
+        ),
         Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // The default, and the way back to it, where the eye lands.
+            row(
+              key: FrontCategoryChipKeys.everything,
+              title: messages.frontChatCategoryEverything,
+              category: null,
+            ),
             for (final category in options)
               row(
                 key: FrontCategoryChipKeys.option(category.id),
                 title: category.name,
                 category: category,
               ),
-            row(
-              key: FrontCategoryChipKeys.everything,
-              title: messages.frontChatCategoryEverything,
-              category: null,
-            ),
           ],
         ),
-        Text(
-          messages.frontChatCategorySheetMention,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.lowEmphasis,
+        // A note, a step under the choices.
+        gutter(
+          Text(
+            messages.frontChatCategorySheetMention,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
           ),
         ),
+        SizedBox(height: tokens.spacing.step2),
       ],
     );
   }
