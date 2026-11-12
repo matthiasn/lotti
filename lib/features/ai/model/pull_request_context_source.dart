@@ -8,6 +8,11 @@ enum PullRequestContextAudience {
   /// current, because what it reads can become a checklist suggestion
   /// (`SuggestRequiresRefresh` in `specs/tla/PullRequestSnapshot.tla`).
   taskAgent,
+
+  /// The companion answering about a pull request her chat showed: it sees
+  /// what the device last stored, in full whatever its state, since she
+  /// proposes nothing from it and GitHub is never asked at question time.
+  companion,
 }
 
 /// A task's linked pull requests as prompt context.

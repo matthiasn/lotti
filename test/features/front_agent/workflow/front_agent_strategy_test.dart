@@ -13,9 +13,11 @@ import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
+import 'package:lotti/features/front_agent/workflow/front_pull_request_lookups.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:mocktail/mocktail.dart';
@@ -23,6 +25,7 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../front_pull_request_test_data.dart';
 
 ChatCompletionMessageToolCall _call(
   String name,
@@ -80,6 +83,7 @@ void main() {
     FrontPullRequestSummarizer? pullRequestSummarizer,
     FrontRoutingIndex? routingIndex,
     List<FrontIndexRow> conversationTasks = const [],
+    FrontPullRequestLookups? pullRequests,
   }) => FrontAgentStrategy(
     syncService: syncService,
     domainLogger: domainLogger,
@@ -95,6 +99,7 @@ void main() {
     closedTaskLister: closedLister,
     pullRequestSummarizer: pullRequestSummarizer,
     conversationTasks: conversationTasks,
+    pullRequests: pullRequests,
   );
 
   Map<String, dynamic> segment({
@@ -1283,6 +1288,87 @@ hologram:x: not listed''');
         manager: manager,
       );
       expect(responses().last, contains('Closed tasks are unavailable'));
+    });
+  });
+
+  group('find_pull_requests and read_pull_requests', () {
+    final turnNow = DateTime(2026, 11, 2, 9);
+    final ledger = foundPullRequest(
+      7,
+      taskId: 'watering',
+      taskTitle: 'Water the seedlings',
+    );
+    FrontPullRequestLookups lookups() => FrontPullRequestLookups(
+      now: turnNow,
+      finder: (query) async => (
+        range: query.range!,
+        pullRequests: [
+          ledger,
+          foundPullRequest(8, taskId: 'shed'),
+        ],
+      ),
+      filter: (topic, candidates) async => [ledger.key],
+      reader: (pullRequests) async => 'stored details',
+      conversationPullRequests: [foundPullRequest(2, taskId: 'shed')],
+    );
+
+    test('what the filter kept becomes her cards, its task linkable by '
+        'title in her words; both calls count as answer lookups', () async {
+      final s = strategy(pullRequests: lookups());
+      await s.processToolCalls(
+        toolCalls: [
+          _call('find_pull_requests', {'topic': 'watering', 'pastDays': 14}),
+          _call('read_pull_requests', {
+            'ids': [ledger.key],
+          }, id: 'call-2'),
+        ],
+        manager: manager,
+      );
+
+      final [found, read] = responses();
+      expect(found, contains(ledger.key));
+      expect(found, isNot(contains('penguin/colony#8')));
+      expect(read, 'stored details');
+      expect(s.answerLookupCalls, 2);
+      expect(s.lookupCalls, 2);
+
+      expect(
+        s.acceptAnswer('That was Water the seedlings.'),
+        isTrue,
+      );
+      expect(
+        s.replyToUser,
+        'That was [Water the seedlings](lotti://task/watering).',
+      );
+      expect(s.replyComponents.last, {
+        'component': FrontReplyComponents.pullRequestCards,
+        'items': [frontPullRequestCardToJson(ledger.card)],
+      });
+    });
+
+    test('a refused call is answered and logged as an error', () async {
+      final s = strategy(pullRequests: lookups());
+      await s.processToolCalls(
+        toolCalls: [
+          _call('read_pull_requests', {
+            'ids': ['penguin/colony#99'],
+          }),
+        ],
+        manager: manager,
+      );
+      expect(responses().single, startsWith('Error: ids names'));
+      expect(s.lookupCalls, 0);
+      // A card she shows again from the conversation is drawn.
+      s.acceptAnswer('''
+<a2ui>
+surface("reply")
+root = PullRequestCards("Shown before", ["penguin/colony#2"])
+</a2ui>
+Here it is again.''');
+      expect(
+        s.replyComponents.map((c) => c['component']),
+        contains(FrontReplyComponents.pullRequestCards),
+      );
     });
   });
 

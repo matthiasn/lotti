@@ -1,5 +1,6 @@
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 
@@ -36,13 +37,15 @@ const int frontQuickRepliesMax = 3;
 /// writes them: `Text`, a short label shown between other parts and not
 /// spoken; `TaskCards` with `ids`, each `task:<id>`, `project:<id>` or a
 /// task's bare id, and optionally `notes`, a few words per id for its card;
+/// `PullRequestCards` with `ids`, each `owner/repo#number`;
 /// `ClosedTasks`, `LoggedTimeChart` and `PullRequestChart`, placing what a
 /// lookup made; and `QuickReplies` with up to [frontQuickRepliesMax]
 /// `options`. A `caption`, where she gave one, is kept as the component's
 /// accessibility label. Her prose passes through [link].
 ///
 /// A card must be a task or project of [visible] — what the turn could see,
-/// by `kind:id` — and a lookup's component one of [available]: nothing is
+/// by `kind:id` — a pull request card one of [pullRequests], by key, and a
+/// lookup's component one of [available]: nothing is
 /// drawn for an id she made up or a chart no lookup produced. Such a
 /// component is dropped and named in `dropped`, never a reason to lose her
 /// answer. Only a reply without prose throws a [FrontReplyException] —
@@ -56,8 +59,9 @@ const int frontQuickRepliesMax = 3;
 /// task's card shows a note; so does a line that says more than
 /// [frontCardNoteMax] characters, a sentence rather than a label). The list
 /// stays in `text`, so it is still spoken. Nothing a lookup found is lost
-/// either: the tasks of [dueRows] she listed nowhere follow as one more
-/// list, and [available] components she did not place follow in catalog
+/// either: the pull requests of [foundPullRequests] she showed nowhere
+/// follow as one more list of cards, the tasks of [dueRows] she listed
+/// nowhere as one more list, and [available] components she did not place follow in catalog
 /// order. A task is listed once, where it first stands, and never when it
 /// is one of [closedTaskIds], whose cards show it.
 FrontReply readFrontReply({
@@ -69,6 +73,8 @@ FrontReply readFrontReply({
   required String Function(String words) link,
   Set<String> closedTaskIds = const {},
   bool proseRequired = true,
+  Map<String, FrontFoundPullRequest> pullRequests = const {},
+  List<FrontFoundPullRequest> foundPullRequests = const [],
 }) {
   if (proseRequired && prose.trim().isEmpty) {
     throw const FrontReplyException('The reply has no prose.');
@@ -89,6 +95,23 @@ FrontReply readFrontReply({
     if (items.isEmpty) return;
     read.add({
       'component': FrontReplyComponents.taskCards,
+      'items': items,
+      'caption': ?_caption(caption),
+    });
+  }
+
+  final shownPullRequests = <String>{};
+  void pullRequestCards(
+    Iterable<FrontFoundPullRequest> found, {
+    Object? caption,
+  }) {
+    final items = [
+      for (final pr in found)
+        if (shownPullRequests.add(pr.key)) frontPullRequestCardToJson(pr.card),
+    ];
+    if (items.isEmpty) return;
+    read.add({
+      'component': FrontReplyComponents.pullRequestCards,
       'items': items,
       'caption': ?_caption(caption),
     });
@@ -132,6 +155,21 @@ FrontReply readFrontReply({
           }
         }
         cards(references, caption: component['caption']);
+      case {'ids': final List<Object?> ids}
+          when type == FrontReplyComponents.pullRequestCards:
+        final found = <FrontFoundPullRequest>[];
+        for (final id in ids) {
+          final pr = id is String ? pullRequests[id.trim()] : null;
+          if (pr == null) {
+            dropped.add(
+              '$id, not a pull request found this turn or listed under '
+              '<conversation_pull_requests>',
+            );
+          } else {
+            found.add(pr);
+          }
+        }
+        pullRequestCards(found, caption: component['caption']);
       case {'options': final List<Object?> options}
           when type == FrontReplyComponents.quickReplies:
         final replies = [
@@ -159,6 +197,7 @@ FrontReply readFrontReply({
     }
   }
 
+  pullRequestCards(foundPullRequests);
   cards([
     for (final row in dueRows)
       if (_kinds[row.kind] case final kind?)

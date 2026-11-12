@@ -10,7 +10,7 @@ import 'package:lotti/features/front_agent/workflow/front_reply_stream.dart';
 
 void main() {
   test(
-    'eight tools, never one, in a fixed order; her answer is not one of them',
+    'ten tools, never one, in a fixed order; her answer is not one of them',
     () {
       // A single tool makes DeepSeek rewrite tool_choice; the list is fixed
       // so the request prefix stays byte-stable across turns.
@@ -22,6 +22,8 @@ void main() {
         FrontAgentToolNames.summarizeLoggedTime,
         FrontAgentToolNames.listClosedTasks,
         FrontAgentToolNames.summarizePullRequests,
+        FrontAgentToolNames.findPullRequests,
+        FrontAgentToolNames.readPullRequests,
         FrontAgentToolNames.askUser,
       ]);
     },
@@ -233,7 +235,7 @@ void main() {
       ((readTldr.parameters['properties'] as Map)['ids'] as Map)['maxItems'],
       frontTldrIdsPerRead,
     );
-    final askUser = frontAgentTools[7];
+    final askUser = frontAgentTools[9];
     expect(
       ((askUser.parameters['properties'] as Map)['options'] as Map)['maxItems'],
       frontAskUserMaxOptions,
@@ -431,5 +433,69 @@ void main() {
         reason: tool,
       );
     }
+  });
+
+  group('finding and reading pull requests', () {
+    Map<Object?, Object?> properties(String name) =>
+        frontAgentTools
+                .singleWhere((t) => t.name == name)
+                .parameters['properties']
+            as Map;
+
+    test('find_pull_requests takes a topic and the window '
+        'summarize_pull_requests takes', () {
+      final find = frontAgentTools.singleWhere(
+        (t) => t.name == FrontAgentToolNames.findPullRequests,
+      );
+      expect(find.parameters['required'], ['topic']);
+      expect(properties(FrontAgentToolNames.findPullRequests).keys, [
+        'topic',
+        ...properties(FrontAgentToolNames.summarizePullRequests).keys,
+      ]);
+      expect(find.description, contains('at most $frontPullRequestsFoundMax'));
+    });
+
+    test('read_pull_requests names a few by key', () {
+      expect(
+        (properties(FrontAgentToolNames.readPullRequests)['ids']!
+            as Map)['maxItems'],
+        frontPullRequestIdsPerRead,
+      );
+    });
+
+    test('the prompt routes the which-task question to find_pull_requests, '
+        'a follow-up to read_pull_requests, and teaches the cards', () {
+      expect(
+        frontAgentSystemPrompt,
+        contains('call `find_pull_requests` with `topic`'),
+      );
+      expect(
+        frontAgentSystemPrompt,
+        contains('Call `read_pull_requests` with its id'),
+      );
+      expect(
+        frontAgentSystemPrompt,
+        contains('- `<conversation_pull_requests>`:'),
+      );
+      expect(frontAgentSystemPrompt, contains('`PullRequestCards` shows'));
+      expect(
+        frontAgentSystemPrompt,
+        contains(
+          'one `find_pull_requests` and one `read_pull_requests` per '
+          'turn at most',
+        ),
+      );
+    });
+
+    test('the refusals name the cap they enforce', () {
+      expect(
+        frontPullRequestFindExhaustedAnswer,
+        contains('$frontPullRequestFindsPerTurn used'),
+      );
+      expect(
+        frontPullRequestReadExhaustedAnswer,
+        contains('$frontPullRequestReadsPerTurn used'),
+      );
+    });
   });
 }

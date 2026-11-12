@@ -4,6 +4,8 @@ import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 
+import '../front_pull_request_test_data.dart';
+
 void main() {
   // Sunday 2026-11-08, mid-afternoon.
   final now = DateTime(2026, 11, 8, 15);
@@ -306,6 +308,108 @@ void main() {
           '1 linked pull request was never refreshed, so when it was opened '
           'is not known and it is not counted.',
         ),
+      );
+    });
+  });
+
+  group('pull request cards', () {
+    test('a card is stored as its key and task, and read back so', () {
+      const card = (key: 'penguin/colony#7', taskId: 'ledger');
+      expect(frontPullRequestCardToJson(card), {
+        'key': 'penguin/colony#7',
+        'taskId': 'ledger',
+      });
+      expect(
+        frontPullRequestCardsFromJson([
+          frontPullRequestCardToJson(card),
+        ]),
+        [card],
+      );
+    });
+
+    test('what this build cannot read is skipped, never thrown on', () {
+      expect(frontPullRequestCardsFromJson(null), isEmpty);
+      expect(frontPullRequestCardsFromJson('cards'), isEmpty);
+      expect(
+        frontPullRequestCardsFromJson([
+          {'key': 'penguin/colony#1'},
+          {'key': 7, 'taskId': 'ledger'},
+          {'key': 'penguin/colony#2', 'taskId': 'ledger'},
+        ]),
+        [(key: 'penguin/colony#2', taskId: 'ledger')],
+      );
+    });
+  });
+
+  group('FrontFoundPullRequest', () {
+    test('one line names its key, title, days, task and summary', () {
+      final pr = foundPullRequest(
+        7,
+        title: 'Fish\n  ledger',
+        taskTitle: 'Count the fish',
+        oneLiner: 'Adds the ledger the colony counts fish in.',
+        createdAt: DateTime(2026, 11, 2, 10),
+        mergedAt: DateTime(2026, 11, 3, 15),
+      );
+      expect(
+        pr.render(),
+        'penguin/colony#7 | Fish ledger | opened 2026-11-02 | '
+        'merged 2026-11-03 | task:ledger (Count the fish) | '
+        'Adds the ledger the colony counts fish in.',
+      );
+      expect(pr.card, (key: 'penguin/colony#7', taskId: 'ledger'));
+    });
+
+    test(
+      'an unknown opening, no merge and no summary are said or left out',
+      () {
+        expect(
+          foundPullRequest(8, oneLiner: '  ').render(),
+          'penguin/colony#8 | Pull request 8 | opened unknown | '
+          'task:ledger (Task ledger)',
+        );
+      },
+    );
+  });
+
+  group('renderFrontFoundPullRequests', () {
+    final range = InsightsRange(
+      startDay: epochDay(DateTime(2026, 11, 2)),
+      endDayExclusive: epochDay(DateTime(2026, 11, 9)),
+    );
+
+    test('lists what the filter kept, with how many it searched', () {
+      final text = renderFrontFoundPullRequests(
+        topic: 'fish ledger',
+        range: range,
+        searched: 40,
+        found: [foundPullRequest(7), foundPullRequest(9)],
+      );
+      expect(
+        text,
+        'Pull requests about "fish ledger", 2026-11-02 through 2026-11-08 '
+        '(40 searched), each as id | title | opened | merged | task | '
+        'summary:\n'
+        '- penguin/colony#7 | Pull request 7 | opened unknown | '
+        'task:ledger (Task ledger)\n'
+        '- penguin/colony#9 | Pull request 9 | opened unknown | '
+        'task:ledger (Task ledger)',
+      );
+    });
+
+    test('says plainly when none was about it, on one day', () {
+      expect(
+        renderFrontFoundPullRequests(
+          topic: 'igloo',
+          range: InsightsRange(
+            startDay: range.startDay,
+            endDayExclusive: range.startDay + 1,
+          ),
+          searched: 3,
+          found: const [],
+        ),
+        'None of the 3 pull requests opened or merged 2026-11-02 is about '
+        '"igloo".',
       );
     });
   });

@@ -739,11 +739,11 @@ void main() {
         final rows = await db.pullRequestStatRows();
 
         expect(
-          rows.map((row) => (row.entryId, row.taskCategoryId)),
+          rows.map((row) => (row.entryId, row.taskId, row.taskCategoryId)),
           unorderedEquals([
-            ('pr-1', 'colony'),
-            ('pr-1', null),
-            ('pr-2', 'colony'),
+            ('pr-1', 'task-a', 'colony'),
+            ('pr-1', 'task-b', null),
+            ('pr-2', 'task-a', 'colony'),
           ]),
         );
         final merged = rows.firstWhere((row) => row.entryId == 'pr-1');

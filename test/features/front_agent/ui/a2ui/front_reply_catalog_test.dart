@@ -12,6 +12,7 @@ import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
+import 'package:lotti/features/front_agent/ui/front_pull_request_cards.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -132,6 +133,44 @@ void main() {
     ];
     expect(order, [...order]..sort());
     expect(order.toSet(), hasLength(order.length));
+  });
+
+  testWidgets('pull request cards draw the chat cards of what she placed, '
+      'a task header opening the task through the chat', (tester) async {
+    final taps = FrontReplyTaps();
+    const placed = [
+      (key: 'penguin/colony#7', taskId: 'ledger'),
+      (key: 'penguin/colony#2', taskId: 'igloo'),
+    ];
+    await pumpReplySurfaces(tester, {
+      'a1': FrontReplySurface.compose(
+        surfaceId: 'a1',
+        components: [
+          {
+            'component': FrontReplyComponents.pullRequestCards,
+            'items': [
+              for (final card in placed) frontPullRequestCardToJson(card),
+            ],
+            'caption': 'Pull requests found',
+          },
+          const {
+            'component': FrontReplyComponents.pullRequestCards,
+            'items': <Object?>[],
+          },
+        ],
+      ),
+    }, taps: taps);
+
+    final drawn = tester.widget<FrontPullRequestCards>(part('c0'));
+    expect(drawn.cards, placed);
+    drawn.onOpenTask('ledger');
+    expect(taps.openedTasks, ['ledger']);
+    // An empty list draws no cards.
+    expect(find.byType(FrontPullRequestCards), findsOneWidget);
+    expect(
+      tester.getSemantics(part('c0')),
+      matchesSemantics(label: 'Pull requests found'),
+    );
   });
 
   testWidgets('a caption she gave is the screen-reader label of its '

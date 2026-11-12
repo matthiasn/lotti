@@ -30,6 +30,7 @@ void main() {
   }) => (
     entryId: '$entryId-$key',
     key: key,
+    taskId: 'task-$key',
     taskCategoryId: category,
     title: 'Title $key',
     authorLogin: author,

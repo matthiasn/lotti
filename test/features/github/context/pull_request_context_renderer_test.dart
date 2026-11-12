@@ -8,6 +8,13 @@ import 'package:lotti/features/github/domain/pull_request_summary.dart';
 
 import '../pull_request_fixtures.dart';
 
+/// The audiences of a task's context; the companion reads pull requests
+/// otherwise, and has its own tests.
+const List<PullRequestContextAudience> _taskAudiences = [
+  PullRequestContextAudience.codingPrompt,
+  PullRequestContextAudience.taskAgent,
+];
+
 void main() {
   const ref = PullRequestRef(owner: 'penguin', repo: 'colony', number: 12);
 
@@ -66,7 +73,7 @@ void main() {
   );
 
   test('nothing to render without pull requests', () {
-    for (final audience in PullRequestContextAudience.values) {
+    for (final audience in _taskAudiences) {
       expect(renderPullRequestContext(const [], audience: audience), isEmpty);
     }
   });
@@ -209,7 +216,7 @@ void main() {
       'with its summary: outcome, size and TL;DR, no branch, checks or '
       'description',
       () {
-        for (final audience in PullRequestContextAudience.values) {
+        for (final audience in _taskAudiences) {
           final text = render(
             PullRequestContextItem(
               ref: ref,
@@ -371,7 +378,7 @@ void main() {
     });
 
     test('both audiences are told what the brief form means', () {
-      for (final audience in PullRequestContextAudience.values) {
+      for (final audience in _taskAudiences) {
         expect(
           render(
             PullRequestContextItem(ref: ref, snapshot: merged, current: true),
@@ -459,7 +466,7 @@ void main() {
   });
 
   test('a pull request never observed is named, with nothing claimed', () {
-    for (final audience in PullRequestContextAudience.values) {
+    for (final audience in _taskAudiences) {
       final text = render(
         const PullRequestContextItem(
           ref: ref,
@@ -493,5 +500,77 @@ void main() {
         ),
     };
     expect(reasons, hasLength(GitHubFailureKind.values.length));
+  });
+
+  group('for the companion', () {
+    String companion(PullRequestContextItem item) =>
+        render(item, audience: PullRequestContextAudience.companion);
+
+    test('a merged one is shown in full as last stored, never claimed '
+        'current: its reviews, size, author and description are the '
+        'answer to a follow-up', () {
+      final merged = open.copyWith(
+        status: PullRequestStatus.merged,
+        mergedAt: DateTime.utc(2026, 3, 15, 11),
+        authorLogin: 'pingu',
+      );
+
+      expect(
+        companion(
+          PullRequestContextItem(
+            ref: ref,
+            snapshot: merged,
+            current: false,
+            summary: const PullRequestSummary(
+              oneLiner: 'Waddles faster.',
+              tldr: 'Makes penguins waddle twice as fast.',
+            ),
+          ),
+        ),
+        'Pull requests as the app last stored them, each with when GitHub was '
+        'last read for it; GitHub is not asked again for this answer. The '
+        'app stores no diff, no list of changed files and no reviewer names: '
+        'only what is shown here.\n'
+        '\n'
+        '### penguin/colony#12 — Waddle faster\n'
+        '- Last stored: observed 2026-03-15T12:00:05.000Z.\n'
+        '- State: merged at 2026-03-15T11:00:00.000Z\n'
+        '- TL;DR: Makes penguins waddle twice as fast.\n'
+        '- Branch: feat/pr-tracking → main\n'
+        '- Checks: failing (2 of 6 failed: lint, shard 3)\n'
+        '- Author: @pingu\n'
+        '- Reviews: approved (2)\n'
+        '- Size: +10 −2, 3 files, 4 commits\n'
+        '- Description:\n'
+        '  > Implements the waddle.\n'
+        '  >\n'
+        '  > Closes the ice-shelf item.',
+      );
+    });
+
+    test('an open one says whether it can merge', () {
+      expect(
+        companion(
+          PullRequestContextItem(ref: ref, snapshot: open, current: false),
+        ),
+        contains('- Merge: merge conflicts with the base'),
+      );
+    });
+
+    test('one never read says so, and claims nothing', () {
+      expect(
+        companion(
+          const PullRequestContextItem(
+            ref: ref,
+            snapshot: null,
+            current: false,
+          ),
+        ),
+        endsWith(
+          '### penguin/colony#12\n'
+          '- Never read from GitHub: its state is unknown.',
+        ),
+      );
+    });
   });
 }

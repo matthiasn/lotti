@@ -4,6 +4,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
@@ -232,5 +233,64 @@ void main() {
       ]),
       isEmpty,
     );
+  });
+
+  group('pull requests her cards showed', () {
+    (AgentMessageEntity, AgentMessagePayloadEntity) shownPullRequests(
+      List<FrontPullRequestCard> cards, {
+      required DateTime at,
+    }) => turn(
+      {
+        'text': 'That one.',
+        'surface': FrontReplySurface.compose(
+          surfaceId: 'r',
+          components: [
+            {
+              'component': FrontReplyComponents.pullRequestCards,
+              'items': [
+                for (final card in cards) frontPullRequestCardToJson(card),
+              ],
+            },
+          ],
+        ).message,
+      },
+      toolName: FrontAgentToolNames.replyToUser,
+      at: at,
+    );
+
+    test('are listed most recently shown first, each once, at most '
+        'frontConversationPullRequestsMax', () {
+      final conversation = [
+        shownPullRequests([
+          for (var n = 1; n <= frontConversationPullRequestsMax; n++)
+            (key: 'penguin/colony#$n', taskId: 'ledger'),
+        ], at: now.subtract(const Duration(hours: 1))),
+        // A user turn carries no cards, whatever its payload says.
+        turn({'text': 'and that one?'}),
+        shownPullRequests([
+          (key: 'penguin/colony#9', taskId: 'igloo'),
+          (key: 'penguin/colony#2', taskId: 'ledger'),
+        ], at: now),
+      ];
+
+      expect(frontConversationPullRequests(conversation), [
+        (key: 'penguin/colony#9', taskId: 'igloo'),
+        (key: 'penguin/colony#2', taskId: 'ledger'),
+        (key: 'penguin/colony#1', taskId: 'ledger'),
+        (key: 'penguin/colony#3', taskId: 'ledger'),
+        (key: 'penguin/colony#4', taskId: 'ledger'),
+      ]);
+    });
+
+    test('name the tasks holding them', () {
+      expect(
+        frontConversationTaskIds([
+          shownPullRequests([
+            (key: 'penguin/colony#9', taskId: 'igloo'),
+          ], at: now),
+        ]),
+        ['igloo'],
+      );
+    });
   });
 }

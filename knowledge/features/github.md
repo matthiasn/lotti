@@ -56,6 +56,10 @@ sources:
   - id: section
     resource: ../../lib/features/github/ui/task_pull_requests_section.dart
     title: TaskPullRequestsSection — the task's pull request card
+  - id: card
+    resource: ../../lib/features/github/ui/pull_requests_card.dart
+    title: PullRequestsCard and PullRequestRowList — the card and divided rows the task page and the companion share
+    last_modified: 2026-11-12
   - id: providers
     resource: ../../lib/features/github/state/github_providers.dart
     title: The token status, whether tracking is available, and whether a task shows its section
@@ -516,7 +520,10 @@ turned on again.
 
 # In the task
 
-`TaskPullRequestsSection` shows the task's pull requests in their own card,
+`TaskPullRequestsSection` shows the task's pull requests in their own card
+(`PullRequestsCard`, the rows inset with a hairline between them by
+`PullRequestRowList` — the same card the companion's chat draws a pull
+request in, under its task: see [front agent](front_agent.md)),
 directly after its linked tasks, once the task tracks pull requests or while
 one is linked (`taskShowsPullRequestsProvider`, next section). Each row
 leads with its state's glyph (`PullRequestGlyph`: open and draft neutral,
@@ -702,6 +709,12 @@ vanishing from the context.
   the same detail. A pull request whose refresh failed appears by name only,
   its state unknown — merged or not — so the agent cannot derive a
   suggestion from stale data (`SuggestRequiresRefresh`).
+- **The companion** (`read_pull_requests`, ADR 0165) reads a pull request
+  her chat showed as last stored — never refreshed for the question — in
+  full whatever its state: state, branch, checks, mergeability while open,
+  author, reviews, size, TL;DR and description, under a line saying when it
+  was observed (`Last stored: observed …`) and a guidance line that no
+  diff, file list or reviewer names are stored.
 - **Checklist suggestions** need no new tool: the section tells the agent to
   propose checking an item through the deferred `update_checklist_items` when
   a current pull request shows it done, naming the pull request in the

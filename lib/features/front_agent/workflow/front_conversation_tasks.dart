@@ -3,6 +3,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 
@@ -76,6 +77,11 @@ Iterable<(String, DateTime?)> _taskIdsOf(
       for (final id in surface?.taskIds ?? const <String>[]) {
         yield (id, null);
       }
+      // The task each pull request card shows it with.
+      for (final card
+          in surface?.pullRequestCards ?? const <FrontPullRequestCard>[]) {
+        yield (card.taskId, null);
+      }
     case FrontAgentToolNames.askUser:
       yield* linked(content['question']);
       if (content['options'] case final List<Object?> options) {
@@ -108,4 +114,28 @@ Iterable<(String, DateTime?)> _taskIdsOf(
         yield (id, null);
       }
   }
+}
+
+/// How many pull requests shown in the conversation the prompt carries.
+const int frontConversationPullRequestsMax = 5;
+
+/// The pull requests her replies in [turns] showed as cards, most recently
+/// shown first, each once, at most [frontConversationPullRequestsMax]: what
+/// "that PR" or "who reviewed it" resolves against.
+List<FrontPullRequestCard> frontConversationPullRequests(
+  Iterable<(AgentMessageEntity, AgentMessagePayloadEntity)> turns,
+) {
+  final replies = [
+    for (final (message, payload) in turns)
+      if (message.metadata.toolName == FrontAgentToolNames.replyToUser)
+        if (FrontReplySurface.fromJson(payload.content['surface'])
+            case final surface?)
+          (at: message.createdAt, cards: surface.pullRequestCards),
+  ]..sort((a, b) => b.at.compareTo(a.at));
+  final seen = <String>{};
+  return [
+    for (final reply in replies)
+      for (final card in reply.cards)
+        if (seen.add(card.key)) card,
+  ].take(frontConversationPullRequestsMax).toList();
 }

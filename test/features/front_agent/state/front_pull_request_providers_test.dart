@@ -28,6 +28,7 @@ void main() {
   PullRequestStatRowRecord row(String key, int day, int additions) => (
     entryId: 'entry-$key',
     key: key,
+    taskId: 'task-$key',
     taskCategoryId: null,
     title: key,
     authorLogin: null,

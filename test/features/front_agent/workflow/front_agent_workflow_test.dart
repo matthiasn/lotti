@@ -13,6 +13,7 @@ import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
@@ -32,6 +33,7 @@ import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
 import 'package:lotti/features/front_agent/workflow/front_inference_stall_guard.dart';
+import 'package:lotti/features/front_agent/workflow/front_pull_request_filter.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -43,6 +45,8 @@ import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../../agents/workflow/task_agent_workflow_test_helpers.dart';
 import '../../categories/test_utils.dart';
+import '../../github/pull_request_fixtures.dart';
+import '../front_pull_request_test_data.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -430,6 +434,8 @@ void main() {
                 'summarize_logged_time',
                 'list_closed_tasks',
                 'summarize_pull_requests',
+                'find_pull_requests',
+                'read_pull_requests',
                 // Her answer is the message she writes, not a tool.
                 'ask_user',
               ]);
@@ -1401,6 +1407,7 @@ void main() {
           (
             entryId: 'pr-entry',
             key: 'penguin/colony#7',
+            taskId: 'task-fish',
             taskCategoryId: 'home',
             title: 'Fish ledger',
             authorLogin: 'pingu',
@@ -1454,6 +1461,174 @@ void main() {
       });
       // No time was summed: nothing else to chart.
       expect(_replyData(payload).keys, ['pullRequests']);
+    });
+  });
+
+  group('which task some work was in', () {
+    test('the pull requests of the window are filtered by a call of its '
+        'own, outside her conversation; only what it kept reaches her, and '
+        'her reply shows it as a card with its task', () async {
+      PullRequestStatRowRecord row(int number) => (
+        entryId: 'e-$number',
+        key: 'matthiasn/lotti#$number',
+        taskId: 'garden',
+        taskCategoryId: 'work',
+        title: 'Pull request $number',
+        authorLogin: null,
+        createdAt: DateTime.utc(2026, 10, 30, 10),
+        mergedAt: null,
+        additions: 1,
+        deletions: 1,
+      );
+      PullRequestEntry entry(int number) {
+        final base = prEntry(
+          clock: const {'a': 1},
+          id: 'e-$number',
+          snapshot: prSnapshot(title: 'Pull request $number'),
+        );
+        return base.copyWith(data: base.data.copyWith(number: number));
+      }
+
+      when(
+        () => journalDb.pullRequestStatRows(),
+      ).thenAnswer((_) async => [row(7), row(8)]);
+      when(
+        () => journalDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => [makeGardenTask()]);
+      final pullRequestRepository = MockPullRequestRepository();
+      when(
+        () => pullRequestRepository.forTask('garden'),
+      ).thenAnswer((_) async => [entry(7), entry(8)]);
+      when(
+        () => pullRequestRepository.summaryOf(any(), any()),
+      ).thenAnswer((_) async => null);
+      final systems = <String?>[];
+      conversationRepository = MockConversationRepository(
+        manager,
+        onSystemMessage: systems.add,
+      );
+      workflow = FrontAgentWorkflow(
+        repository: repository,
+        syncService: syncService,
+        conversationRepository: conversationRepository,
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+        aiConfigRepository: aiConfigRepository,
+        indexBuilder: FrontRoutingIndexBuilder(
+          journalDb: journalDb,
+          agentRepository: repository,
+          pullRequestRepository: pullRequestRepository,
+        ),
+        domainLogger: domainLogger,
+      );
+      seedMessage();
+      final filterPrompts = <String>[];
+      var turns = 0;
+      conversationRepository
+        ..maxDelegateCalls = 3
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy == null) {
+                // The filter: no tools, nothing of her turn.
+                expect(tools, isNull);
+                filterPrompts.add(message);
+                when(() => manager.messages).thenReturn([
+                  const ChatCompletionMessage.assistant(
+                    content: 'matthiasn/lotti#7',
+                  ),
+                ]);
+                return null;
+              }
+              turns++;
+              when(() => manager.turnCount).thenReturn(turns);
+              if (turns == 1) {
+                final find = call('find_pull_requests', {
+                  'topic': 'the watering schedule',
+                  'pastDays': 14,
+                });
+                await (strategy as FrontAgentStrategy).processToolCalls(
+                  toolCalls: [find],
+                  manager: manager,
+                );
+                when(() => manager.messages).thenReturn([
+                  ChatCompletionMessage.assistant(toolCalls: [find]),
+                ]);
+              } else {
+                when(() => manager.messages).thenReturn([
+                  const ChatCompletionMessage.assistant(
+                    content: 'That was the Garden task.',
+                  ),
+                ]);
+              }
+              return null;
+            };
+      final told = <String>[];
+      when(
+        () => manager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
+        told.add(invocation.namedArguments[#response] as String);
+      });
+
+      final result = await withClock(
+        Clock.fixed(DateTime(2026, 11, 2, 9)),
+        run,
+      );
+
+      expect(result.success, isTrue);
+      expect(systems, [
+        frontAgentSystemMessage(CompanionSass.cheeky),
+        frontPullRequestFilterSystemMessage,
+      ]);
+      expect(filterPrompts.single, contains('Topic: the watering schedule'));
+      expect(filterPrompts.single, contains('- matthiasn/lotti#7 |'));
+      expect(filterPrompts.single, contains('- matthiasn/lotti#8 |'));
+      // Her conversation is told only what the filter kept.
+      expect(told.single, contains('matthiasn/lotti#7'));
+      expect(told.single, isNot(contains('matthiasn/lotti#8')));
+      // The filter's call is one call, billed to her turn, and cleaned up.
+      expect(conversationRepository.turnBudgets[1], 1);
+      expect(conversationRepository.deletedConversationIds, hasLength(2));
+      final reply = upserts.whereType<AgentMessagePayloadEntity>().singleWhere(
+        (p) => p.content.containsKey('surface'),
+      );
+      expect(
+        reply.content['text'],
+        'That was the [Garden](lotti://task/garden) task.',
+      );
+      expect(
+        FrontReplySurface.fromJson(reply.content['surface'])!.pullRequestCards,
+        [(key: 'matthiasn/lotti#7', taskId: 'garden')],
+      );
+    });
+
+    test('the pull requests the conversation showed are listed after its '
+        'tasks, before the clock', () {
+      final turn = renderFrontTurn(
+        index: FrontRoutingIndex(),
+        recent: const [],
+        input: 'who reviewed it?',
+        now: DateTime(2026, 11, 8, 18),
+        conversationPullRequests: [foundPullRequest(7, title: 'Fish ledger')],
+      );
+      final listed = turn.indexOf(
+        '<conversation_pull_requests>\n'
+        '${foundPullRequest(7, title: 'Fish ledger').render()}\n'
+        '</conversation_pull_requests>',
+      );
+      expect(listed, greaterThan(turn.indexOf('</conversation_tasks>')));
+      expect(listed, lessThan(turn.indexOf('<current_local_time>')));
     });
   });
 

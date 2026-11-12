@@ -6,6 +6,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
@@ -22,15 +23,19 @@ import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_live_answer.dart';
+import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
+import 'package:lotti/features/front_agent/service/front_pull_request_finder.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_model_resolution.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
 import 'package:lotti/features/front_agent/workflow/front_conversation_tasks.dart';
 import 'package:lotti/features/front_agent/workflow/front_inference_stall_guard.dart';
+import 'package:lotti/features/front_agent/workflow/front_pull_request_filter.dart';
+import 'package:lotti/features/front_agent/workflow/front_pull_request_lookups.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
@@ -204,7 +209,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
       );
       final index = await _indexBuilder.build(scope: scope, now: now);
       lap('index');
-      final (:recent, :taskIds) = await _recentTurns(
+      final (:recent, :taskIds, :pullRequestCards) = await _recentTurns(
         agentId,
         sourceMessageId,
       );
@@ -212,7 +217,60 @@ class FrontAgentWorkflow with AgentErrorLogging {
         taskIds,
         scope,
       );
+      final conversationPullRequests = await _indexBuilder.pullRequestsOf(
+        pullRequestCards,
+        scope,
+      );
       lap('history');
+      final inferenceRepo = FrontInferenceStallGuard(
+        CloudInferenceWrapper(
+          cloudRepository: _cloudInferenceRepository,
+          geminiThinkingMode: resolved.geminiThinkingMode,
+          // Every turn shares the system prompt, the tools and — until the
+          // record changes — the index: one key keeps them on one cache.
+          promptCacheKey: agentId,
+        ),
+        onRetry: () => _domainLogger.log(
+          LogDomain.agentWorkflow,
+          'front turn provider call stalled; sending it again',
+          subDomain: 'frontAgent',
+        ),
+      );
+      // A call of its own, outside her conversation, on her model and
+      // billed to her turn: a month of pull requests never enters it.
+      Future<String?> askOnce({
+        required String systemMessage,
+        required String prompt,
+      }) async {
+        final id = _conversationRepository.createConversation(
+          systemMessage: systemMessage,
+          maxTurns: 1,
+        );
+        try {
+          await _conversationRepository.sendMessage(
+            conversationId: id,
+            message: prompt,
+            model: resolved.modelId,
+            provider: resolved.provider,
+            inferenceRepo: inferenceRepo,
+            temperature: 0,
+            consumptionAgentId: recordConsumption ? agentId : null,
+            consumptionWakeRunKey: recordConsumption ? runKey : null,
+            consumptionThreadId: recordConsumption ? threadId : null,
+            rethrowInferenceErrors: true,
+            turnBudget: 1,
+          );
+          return _conversationRepository
+              .getConversation(id)
+              ?.messages
+              .whereType<ChatCompletionAssistantMessage>()
+              .lastOrNull
+              ?.content;
+        } finally {
+          _conversationRepository.deleteConversation(id);
+        }
+      }
+
       final replyId = frontAgentReplyMessageId(agentId, runKey);
       // Declared first: what shows her answer live reads its lookups.
       late final FrontAgentStrategy strategy;
@@ -248,24 +306,23 @@ class FrontAgentWorkflow with AgentErrorLogging {
                   startedAt: now,
                 ),
               ),
+        pullRequests: FrontPullRequestLookups(
+          now: now,
+          finder: _indexBuilder.pullRequestFinder(scope, now: now),
+          filter: frontPullRequestFilter(askOnce),
+          reader: _indexBuilder.pullRequestDetails,
+          conversationPullRequests: conversationPullRequests,
+          onFilterFailed: (error) => _domainLogger.log(
+            LogDomain.agentWorkflow,
+            'front pull request filter failed: ${error.runtimeType}',
+            subDomain: 'frontAgent',
+            level: InsightLevel.warn,
+          ),
+        ),
       );
       final tools = [
         for (final tool in frontAgentTools) tool.toChatCompletionTool(),
       ];
-      final inferenceRepo = FrontInferenceStallGuard(
-        CloudInferenceWrapper(
-          cloudRepository: _cloudInferenceRepository,
-          geminiThinkingMode: resolved.geminiThinkingMode,
-          // Every turn shares the system prompt, the tools and — until the
-          // record changes — the index: one key keeps them on one cache.
-          promptCacheKey: agentId,
-        ),
-        onRetry: () => _domainLogger.log(
-          LogDomain.agentWorkflow,
-          'front turn provider call stalled; sending it again',
-          subDomain: 'frontAgent',
-        ),
-      );
       conversationId = _conversationRepository.createConversation(
         systemMessage: frontAgentSystemMessage(_sass()),
         maxTurns: agentIdentity.config.maxTurnsPerWake,
@@ -278,6 +335,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
           index: index,
           recent: recent,
           conversationTasks: conversationTasks,
+          conversationPullRequests: conversationPullRequests,
           input: input,
           now: now,
         ),
@@ -471,15 +529,21 @@ class FrontAgentWorkflow with AgentErrorLogging {
   /// pending message's own conversation only: another chat is another
   /// subject, and its turns would steer the routing. With them, the tasks
   /// that whole conversation named ([frontConversationTaskIds]), which reach
-  /// back past the tail and its clipping, and count the door records too.
+  /// back past the tail and its clipping, and count the door records too;
+  /// and the pull requests its replies showed as cards
+  /// ([frontConversationPullRequests]).
   ///
   /// A persisted output carries the source message as its `operationId`;
   /// the strategy's own tool-call log rows share the tool name but not
   /// that, which is what keeps them out of the tail.
-  Future<({List<FrontRecentTurn> recent, List<String> taskIds})> _recentTurns(
-    String agentId,
-    String sourceMessageId,
-  ) async {
+  Future<
+    ({
+      List<FrontRecentTurn> recent,
+      List<String> taskIds,
+      List<FrontPullRequestCard> pullRequestCards,
+    })
+  >
+  _recentTurns(String agentId, String sourceMessageId) async {
     final messages = await _repository.getAgentMessages(agentId);
     final userTurns = [
       for (final m in messages)
@@ -521,7 +585,11 @@ class FrontAgentWorkflow with AgentErrorLogging {
           return byTime != 0 ? byTime : a.id.compareTo(b.id);
         });
     if (visible.isEmpty) {
-      return (recent: <FrontRecentTurn>[], taskIds: <String>[]);
+      return (
+        recent: <FrontRecentTurn>[],
+        taskIds: <String>[],
+        pullRequestCards: <FrontPullRequestCard>[],
+      );
     }
     final payloads = await _repository.getEntitiesByIds({
       for (final message in visible) message.contentEntryId!,
@@ -542,6 +610,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
           ? turns
           : turns.sublist(turns.length - frontRecentTurns),
       taskIds: frontConversationTaskIds(withPayloads),
+      pullRequestCards: frontConversationPullRequests(withPayloads),
     );
   }
 
@@ -676,8 +745,8 @@ void frontTakeAnswer(
 }
 
 /// The wake's user turn, by volatility: the index (changes when the record
-/// does), the recent turns (append-only), the tasks the conversation named
-/// (they grow with it), then the clock and the pending message (always
+/// does), the recent turns (append-only), the tasks and pull requests the
+/// conversation named (they grow with it), then the clock and the pending message (always
 /// new). The system prompt above them is constant.
 @visibleForTesting
 String renderFrontTurn({
@@ -686,6 +755,7 @@ String renderFrontTurn({
   required String input,
   required DateTime now,
   List<FrontIndexRow> conversationTasks = const [],
+  List<FrontFoundPullRequest> conversationPullRequests = const [],
 }) {
   final buffer = StringBuffer()
     ..writeln(index.render())
@@ -703,6 +773,13 @@ String renderFrontTurn({
   }
   buffer
     ..writeln('</conversation_tasks>')
+    ..writeln()
+    ..writeln('<conversation_pull_requests>');
+  for (final pr in conversationPullRequests) {
+    buffer.writeln(pr.render());
+  }
+  buffer
+    ..writeln('</conversation_pull_requests>')
     ..writeln()
     // The weekday spelled out: "this weekend" is days she must not count.
     ..writeln(

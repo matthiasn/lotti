@@ -85,7 +85,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 
 - `model/` — the fixed identity (`front_agent`), the dispatch shape and its
   thresholds, the routing index and its caps, what a due-task list, a
-  logged-time summary, a closed-task list and a pull request count hold,
+  logged-time summary, a closed-task list, a pull request count and a
+  found pull request hold,
   the links her words name tasks and projects with
   (`front_reference_links.dart`), the door record, the thread
   projection the chat surface renders, which entity a preview card is of
@@ -95,7 +96,10 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   (the rules in code), the conversation strategy (count-and-refuse lookups,
   how a turn ends, her words linked), her answer as she writes it — UI
   blocks, then prose (`front_reply_stream.dart`), shown while she writes
-  it (`model/front_live_answer.dart`) — the model resolution (its own setup, never a category's)
+  it (`model/front_live_answer.dart`) — the pull request search and read
+  (`front_pull_request_lookups.dart`) with its filter, a call apart from
+  her conversation (`front_pull_request_filter.dart`), the model
+  resolution (its own setup, never a category's)
   and the wake workflow that persists the dispatch record.
 - `service/` — the index builder over existing reads (and the due-task
   lister behind `list_due_tasks`, the logged-time summarizer behind
@@ -104,7 +108,9 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   task her reply draws as a card, and the pull
   request counter behind `summarize_pull_requests`, which reads only the
   pull requests the device stores and whose read her reply's charts of
-  them share), the
+  them share, and the finder behind `find_pull_requests` and
+  `read_pull_requests` — `front_pull_request_finder.dart` — which reads the
+  stored pull requests with their tasks and summaries), the
   singleton's lazy
   creation, the chat service that makes a user turn durable with a recovery
   record and runs the wake, the door walker, the owner titles, the thread

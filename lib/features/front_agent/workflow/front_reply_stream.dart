@@ -87,6 +87,22 @@ final Catalog<ComponentApi, FunctionImplementation> frontReplyAuthoringCatalog =
             required: ['caption', 'ids'],
           ),
         ),
+        ComponentApi(
+          name: FrontReplyComponents.pullRequestCards,
+          schema: S.object(
+            description:
+                'Pull requests as cards, each with its task. The app shows '
+                'each one live; pass only ids, as returned.',
+            properties: {
+              'caption': _caption(),
+              'ids': S.list(
+                items: S.string(),
+                description: 'Each as returned: owner/repo#number.',
+              ),
+            },
+            required: ['caption', 'ids'],
+          ),
+        ),
         _fromLookup(
           FrontReplyComponents.closedTasks,
           'The cards of every task list_closed_tasks found this turn.',
