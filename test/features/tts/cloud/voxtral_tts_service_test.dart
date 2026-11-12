@@ -69,6 +69,101 @@ void main() {
       call as String,
   ];
 
+  group('synthesizeStream', () {
+    String delta(List<int> bytes) =>
+        'event: speech.audio.delta\n'
+        'data: ${jsonEncode({'type': 'speech.audio.delta', 'audio_data': base64Encode(bytes)})}\n\n';
+    const done =
+        'event: speech.audio.done\n'
+        'data: {"type": "speech.audio.done", "usage": {}}\n\n';
+
+    Stream<Uint8List> stream(String body, {int status = 200}) =>
+        service(
+          (_) => http.Response(body, status),
+        ).synthesizeStream(
+          text: _text,
+          voiceId: 'v-de-1',
+          baseUrl: _baseUrl,
+          apiKey: _apiKey,
+        );
+
+    test("asks for one streamed WAV and emits each delta's audio in order, "
+        'up to done', () async {
+      final chunks = await stream(
+        '${delta([1, 2, 3])}'
+        // Not audio: skipped, whatever else the API comes to send.
+        'event: ping\ndata: {"type": "ping"}\n\n'
+        ': a comment\n\n'
+        '${delta([4, 5])}$done'
+        // Nothing after done is read.
+        '${delta([9])}',
+      ).toList();
+
+      expect(chunks, [
+        [1, 2, 3],
+        [4, 5],
+      ]);
+      final request = requests.single as http.Request;
+      expect(request.url.toString(), 'https://api.mistral.ai/v1/audio/speech');
+      expect(request.headers['Authorization'], 'Bearer $_apiKey');
+      expect(request.headers['Accept'], 'text/event-stream');
+      expect(jsonDecode(request.body), {
+        'model': VoxtralTtsService.defaultModel,
+        'input': _text,
+        'voice_id': 'v-de-1',
+        'response_format': 'wav',
+        'stream': true,
+      });
+      // Lengths and ids are logged, never the text.
+      expect(
+        loggedText(),
+        isNot(contains(contains('Äpfel'))),
+      );
+    });
+
+    test(
+      'a stream that is done without audio is empty, not a failure',
+      () async {
+        expect(await stream(done).toList(), isEmpty);
+      },
+    );
+
+    test('an event that is not JSON, or audio that is not base64, is an '
+        'invalid response', () async {
+      for (final body in [
+        'data: not json\n\n',
+        'data: {"type": "speech.audio.delta", "audio_data": "%%%"}\n\n',
+      ]) {
+        final error = await failure(stream(body).drain<void>());
+        expect(error.failure, CloudTtsFailure.invalidResponse, reason: body);
+      }
+    });
+
+    test('a refused request fails as the unstreamed one does', () async {
+      final error = await failure(stream('{}', status: 429).drain<void>());
+      expect(error.failure, CloudTtsFailure.rateLimited);
+    });
+
+    test('nothing is sent for empty text, a missing voice or no key', () async {
+      final voxtral = service((_) => http.Response(done, 200));
+      Stream<Uint8List> ask({
+        String text = 'Hi',
+        String voiceId = 'v',
+        String apiKey = _apiKey,
+      }) => voxtral.synthesizeStream(
+        text: text,
+        voiceId: voiceId,
+        baseUrl: _baseUrl,
+        apiKey: apiKey,
+      );
+
+      await expectLater(ask(text: '  ').drain<void>(), throwsArgumentError);
+      await expectLater(ask(voiceId: '').drain<void>(), throwsArgumentError);
+      await expectLater(ask(apiKey: '').drain<void>(), throwsArgumentError);
+      expect(requests, isEmpty);
+    });
+  });
+
   group('synthesize', () {
     test('posts the documented request and decodes audio_data', () async {
       final bytes =

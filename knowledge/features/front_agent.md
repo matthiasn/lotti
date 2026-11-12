@@ -1917,6 +1917,15 @@ was speaking first. It keeps those flags and her resolved setup watched, so
 they are known the moment the reply lands. A voice that fails surfaces the
 shared playback toast.
 
+**She is heard a fraction of a second after her answer lands.** With her
+profile's Voxtral voice the answer is one streamed synthesis, played while
+it is still arriving ([a cloud voice that can stream](tts.md#preparation-and-cancellation)):
+about half a second to her first word where a whole clip took two and a
+half, in one voice throughout. She is still spoken from her stored answer:
+her first word streams in only a fraction of a second before the turn
+ends, so speaking from that stream would gain little and would have to
+decide about her doors' answers before they exist.
+
 Besides answers to spoken turns she says one line of her own: the
 confirmation after *Make it a task* made a task
 ([a task from her words](#a-task-from-her-words)), spoken or typed turn

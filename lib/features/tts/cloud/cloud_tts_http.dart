@@ -57,35 +57,58 @@ class CloudTtsHttp {
       response = await http.Response.fromStream(
         await _client.send(request).timeout(timeout),
       ).timeout(timeout);
-    } on TimeoutException {
-      throw logged(
-        CloudTtsException(
-          CloudTtsFailure.timeout,
-          'No response within ${timeout.inSeconds} s',
-        ),
-        description: description,
-      );
-    } on SocketException catch (error) {
-      throw logged(
-        CloudTtsException(CloudTtsFailure.network, error.message),
-        description: description,
-      );
-    } on http.ClientException catch (error) {
-      throw logged(
-        CloudTtsException(CloudTtsFailure.network, error.message),
-        description: description,
-      );
-    } on HandshakeException catch (error) {
-      throw logged(
-        CloudTtsException(CloudTtsFailure.network, error.message),
-        description: description,
-      );
+    } on Object catch (error) {
+      final failure = _transportFailure(error);
+      if (failure == null) rethrow;
+      throw logged(failure, description: description);
     }
     if (response.statusCode != 200) {
       throw logged(_httpFailure(response), description: description);
     }
     return response;
   }
+
+  /// Sends [request] and returns the body of its 200 response as it
+  /// arrives, for an answer that is read while it is still being sent.
+  /// [timeout] bounds the wait for the response and for each further piece
+  /// of it. Every failure is logged with [description], as in [send].
+  Stream<List<int>> sendStreamed(
+    http.Request request, {
+    required String description,
+  }) async* {
+    request.followRedirects = false;
+    try {
+      final response = await _client.send(request).timeout(timeout);
+      if (response.statusCode != 200) {
+        throw _httpFailure(
+          await http.Response.fromStream(response).timeout(timeout),
+        );
+      }
+      yield* response.stream.timeout(timeout);
+    } on Object catch (error) {
+      final failure = error is CloudTtsException
+          ? error
+          : _transportFailure(error);
+      if (failure == null) rethrow;
+      throw logged(failure, description: description);
+    }
+  }
+
+  /// [error] as the failure of a request that never got an answer, or null
+  /// when it is not one of those.
+  CloudTtsException? _transportFailure(Object error) => switch (error) {
+    TimeoutException() => CloudTtsException(
+      CloudTtsFailure.timeout,
+      'No response within ${timeout.inSeconds} s',
+    ),
+    SocketException(:final message) ||
+    http.ClientException(:final message) ||
+    HandshakeException(:final message) => CloudTtsException(
+      CloudTtsFailure.network,
+      message,
+    ),
+    _ => null,
+  };
 
   /// Sends [request] and decodes its body as JSON; a body that is not JSON
   /// is an [CloudTtsFailure.invalidResponse], reported without echoing it.

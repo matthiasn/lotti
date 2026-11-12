@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
+import 'package:lotti/features/tts/cloud/cloud_tts_client.dart';
 import 'package:lotti/features/tts/cloud/cloud_tts_exception.dart';
 import 'package:lotti/features/tts/cloud/cloud_voice_catalog.dart';
 import 'package:lotti/features/tts/cloud/elevenlabs_tts_service.dart';
@@ -17,6 +18,8 @@ import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/ai_config_factories.dart';
+
+class _StreamingClient extends Mock implements StreamingCloudTtsClient {}
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -105,6 +108,98 @@ void main() {
         model: 'voxtral-mini-tts-2603',
       ),
     ).called(1);
+  });
+
+  group('a voice that sends its speech while it makes it', () {
+    late _StreamingClient streaming;
+    late CloudSpeechSynthesizer synth;
+
+    setUp(() {
+      streaming = _StreamingClient();
+      synth = CloudSpeechSynthesizer(
+        clients: {
+          InferenceProviderType.mistral: streaming,
+          InferenceProviderType.elevenLabs: elevenLabs,
+        },
+        catalogs: catalogs,
+        tempDirectory: () async => temp,
+      );
+      when(
+        () => streaming.synthesizeStream(
+          text: any(named: 'text'),
+          voiceId: any(named: 'voiceId'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          model: any(named: 'model'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          Uint8List(44),
+          Uint8List.fromList([1, 2, 3, 4]),
+        ]),
+      );
+    });
+
+    test('is told apart from one that does not', () {
+      expect(synth.canStream(route), isTrue);
+      expect(synthesizer.canStream(route), isFalse);
+    });
+
+    test('writes the stream into a temporary WAV as it arrives, in the '
+        "language's voice and the route's model, without its emoji", () async {
+      final clip = await synth.synthesizeToGrowingFile(
+        route: route,
+        text: 'Grüß dich 😀',
+        chosenVoices: const {},
+        canSend: allow,
+      );
+      await clip!.done;
+
+      expect(clip.file.parent.path, temp.path);
+      expect(clip.file.path, endsWith('.wav'));
+      expect(clip.isComplete, isTrue);
+      expect(clip.file.readAsBytesSync().sublist(44), [1, 2, 3, 4]);
+      verify(
+        () => streaming.synthesizeStream(
+          text: 'Grüß dich',
+          voiceId: 'v-de-f',
+          baseUrl: provider.baseUrl,
+          apiKey: 'key',
+          model: 'voxtral-mini-tts-2603',
+        ),
+      ).called(1);
+    });
+
+    test('asks nothing of the voice when it may not be sent, or there is '
+        'nothing to say', () async {
+      expect(
+        await synth.synthesizeToGrowingFile(
+          route: route,
+          text: 'Grüß dich',
+          chosenVoices: const {},
+          canSend: () async => false,
+        ),
+        isNull,
+      );
+      expect(
+        await synth.synthesizeToGrowingFile(
+          route: route,
+          text: '😀',
+          chosenVoices: const {},
+          canSend: allow,
+        ),
+        isNull,
+      );
+      verifyNever(
+        () => streaming.synthesizeStream(
+          text: any(named: 'text'),
+          voiceId: any(named: 'voiceId'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          model: any(named: 'model'),
+        ),
+      );
+    });
   });
 
   test("the user's voice for the language wins", () async {

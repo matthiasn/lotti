@@ -6,6 +6,7 @@ import 'package:lotti/features/tts/cloud/cloud_tts_client.dart';
 import 'package:lotti/features/tts/cloud/cloud_tts_exception.dart';
 import 'package:lotti/features/tts/cloud/cloud_voice_catalog_repository.dart';
 import 'package:lotti/features/tts/cloud/elevenlabs_tts_service.dart';
+import 'package:lotti/features/tts/cloud/growing_speech_clip.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
 import 'package:lotti/features/tts/engine/speech_text.dart';
@@ -51,6 +52,61 @@ class CloudSpeechSynthesizer {
     required Map<String, String> chosenVoices,
     required Future<bool> Function() canSend,
   }) async {
+    final request = await _request(route, text, chosenVoices, canSend);
+    if (request == null) return null;
+    final bytes = await request.client.synthesize(
+      text: request.spoken,
+      voiceId: request.voiceId,
+      baseUrl: route.provider.baseUrl,
+      apiKey: route.provider.apiKey,
+      model: route.model.providerModelId,
+    );
+    final file = await _newFile();
+    await file.writeAsBytes(bytes, flush: true);
+    return file;
+  }
+
+  /// Whether [route]'s provider can send its speech while it makes it, so
+  /// [synthesizeToGrowingFile] is worth asking for.
+  bool canStream(TtsCloudRoute route) =>
+      _clients[route.provider.inferenceProviderType] is StreamingCloudTtsClient;
+
+  /// As [synthesizeToFile], for a [route] that [canStream], but returns as
+  /// soon as the request is made: the file is written while the voice still
+  /// speaks into it, and can be played before it is whole (see
+  /// [GrowingSpeechClip]). The caller owns the clip: it cancels one it
+  /// gives up on, and deletes its file.
+  ///
+  /// Null, as there, when nothing may be sent or there is nothing to say.
+  Future<GrowingSpeechClip?> synthesizeToGrowingFile({
+    required TtsCloudRoute route,
+    required String text,
+    required Map<String, String> chosenVoices,
+    required Future<bool> Function() canSend,
+  }) async {
+    final request = await _request(route, text, chosenVoices, canSend);
+    if (request == null) return null;
+    final client = request.client as StreamingCloudTtsClient;
+    return GrowingSpeechClip.start(
+      await _newFile(),
+      client.synthesizeStream(
+        text: request.spoken,
+        voiceId: request.voiceId,
+        baseUrl: route.provider.baseUrl,
+        apiKey: route.provider.apiKey,
+        model: route.model.providerModelId,
+      ),
+    );
+  }
+
+  /// What is sent for [text] on [route] — its client, its voice and the
+  /// words — or null when nothing may be, or there is nothing to say.
+  Future<({CloudTtsClient client, String voiceId, String spoken})?> _request(
+    TtsCloudRoute route,
+    String text,
+    Map<String, String> chosenVoices,
+    Future<bool> Function() canSend,
+  ) async {
     final type = route.provider.inferenceProviderType;
     final client = _clients[type];
     if (client == null) {
@@ -71,17 +127,12 @@ class CloudSpeechSynthesizer {
     }
     final spoken = withoutEmoji(text);
     if (spoken.isEmpty || !await canSend()) return null;
-    final bytes = await client.synthesize(
-      text: spoken,
-      voiceId: voice.id,
-      baseUrl: route.provider.baseUrl,
-      apiKey: route.provider.apiKey,
-      model: route.model.providerModelId,
-    );
+    return (client: client, voiceId: voice.id, spoken: spoken);
+  }
+
+  Future<File> _newFile() async {
     final directory = await _tempDirectory();
-    final file = File('${directory.path}/tts_cloud_${_counter++}.wav');
-    await file.writeAsBytes(bytes, flush: true);
-    return file;
+    return File('${directory.path}/tts_cloud_${_counter++}.wav');
   }
 }
 

@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
+import 'package:lotti/features/tts/cloud/growing_speech_clip.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/engine/tts_engine.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
@@ -85,6 +87,9 @@ class FakeTtsAudioPlayer implements TtsAudioPlayer {
   int stopCount = 0;
   double? lastSpeed;
 
+  /// Where each [play] was asked to start, in order.
+  final List<Duration> startedFrom = <Duration>[];
+
   /// Held open, the player is still letting go of the audio session.
   Completer<void>? settling;
 
@@ -92,8 +97,13 @@ class FakeTtsAudioPlayer implements TtsAudioPlayer {
   Future<void> get settled => settling?.future ?? Future<void>.value();
 
   @override
-  Future<void> play(File file, {required double speed}) async {
+  Future<void> play(
+    File file, {
+    required double speed,
+    Duration from = Duration.zero,
+  }) async {
     playCount++;
+    startedFrom.add(from);
     lastSpeed = speed;
     if (playError != null) throw playError!;
   }
@@ -175,7 +185,26 @@ typedef CloudSynthesisCall = ({
 /// [error] — a [StateError] when neither is given, so a test that only
 /// observes routing never reaches playback.
 class FakeCloudSpeechSynthesizer implements CloudSpeechSynthesizer {
-  FakeCloudSpeechSynthesizer({this.output, this.error, this.catalogLoaded});
+  FakeCloudSpeechSynthesizer({
+    this.output,
+    this.error,
+    this.catalogLoaded,
+    this.streamed,
+    this.streamDirectory,
+    this.handingOver,
+  });
+
+  /// Awaited between making a growing clip and handing it to the caller,
+  /// standing in for the moment a stop can land in.
+  final Future<void>? handingOver;
+
+  /// When set, the voice can send its speech while it makes it: the WAV
+  /// bytes it sends for a text, written to a file in [streamDirectory].
+  final Stream<Uint8List> Function(String text)? streamed;
+  final Directory? streamDirectory;
+
+  /// Every clip handed out by [synthesizeToGrowingFile], in order.
+  final List<GrowingSpeechClip> growing = <GrowingSpeechClip>[];
 
   /// What a sent synthesis answers with; a test may set it later.
   File? output;
@@ -199,6 +228,29 @@ class FakeCloudSpeechSynthesizer implements CloudSpeechSynthesizer {
     if (!sent) return null;
     if (error case final error?) throw error;
     return output ?? (throw StateError('no cloud output configured'));
+  }
+
+  @override
+  bool canStream(TtsCloudRoute route) => streamed != null;
+
+  @override
+  Future<GrowingSpeechClip?> synthesizeToGrowingFile({
+    required TtsCloudRoute route,
+    required String text,
+    required Map<String, String> chosenVoices,
+    required Future<bool> Function() canSend,
+  }) async {
+    await catalogLoaded;
+    final sent = await canSend();
+    calls.add((route: route, text: text, voices: chosenVoices, sent: sent));
+    if (!sent) return null;
+    final clip = await GrowingSpeechClip.start(
+      File('${streamDirectory!.path}/clip_${growing.length}.wav'),
+      streamed!(text),
+    );
+    growing.add(clip);
+    await handingOver;
+    return clip;
   }
 }
 
