@@ -51,7 +51,42 @@ void main() {
     expect(listed(tester), ['t-1', 't-2', 't-3']);
   });
 
-  testWidgets('a reply whose stored surface changed is replaced, an '
+  testWidgets('a reply whose surface changes is updated in place: its '
+      'surface and what it already shows stay mounted', (tester) async {
+    final taps = FrontReplyTaps();
+    // Her answer while she writes it: the cards, then words under them.
+    FrontReplySurface writing(String? words) => FrontReplySurface.compose(
+      surfaceId: 'a1',
+      components: [
+        {
+          'component': FrontReplyComponents.taskCards,
+          'items': [task('t-1').toJson()],
+        },
+        if (words != null)
+          {'component': FrontReplyComponents.text, 'text': words},
+      ],
+    );
+    await pumpReplySurfaces(tester, {'a1': writing(null)}, taps: taps);
+    final surface = tester.widget<A2uiSurface>(find.byType(A2uiSurface));
+    final cards = tester.element(find.byType(FrontEntityPreviewList));
+
+    for (final words in ['Garden', 'Garden is the one.']) {
+      await pumpReplySurfaces(tester, {'a1': writing(words)}, taps: taps);
+      await tester.pump();
+
+      expect(find.text('words: $words'), findsOneWidget);
+      // Not recreated: the same surface, and the cards still mounted.
+      expect(
+        tester.widget<A2uiSurface>(find.byType(A2uiSurface)).surface,
+        same(surface.surface),
+      );
+      expect(tester.element(find.byType(FrontEntityPreviewList)), same(cards));
+      expect(listed(tester), ['t-1']);
+    }
+    expect(find.text('words: Garden'), findsNothing);
+  });
+
+  testWidgets('a reply that became words alone loses its surface, an '
       'unchanged one keeps its surface, and one that left is deleted', (
     tester,
   ) async {
