@@ -474,6 +474,7 @@ void main() {
     test('every provider of the feature builds from its leaves', () async {
       final tokens = MockGitHubTokenStorage();
       when(tokens.readLogin).thenAnswer((_) async => 'pingu');
+      final pullRequests = MockPullRequestRepository();
       final wired = ProviderContainer(
         overrides: [
           agentRepositoryProvider.overrideWithValue(repository),
@@ -508,6 +509,7 @@ void main() {
           // A Sunday-first region.
           firstDayOfWeekIndexProvider.overrideWith((ref) => 0),
           gitHubTokenStorageProvider.overrideWithValue(tokens),
+          pullRequestRepositoryProvider.overrideWithValue(pullRequests),
         ],
       );
       addTearDown(wired.dispose);
@@ -520,6 +522,8 @@ void main() {
       // Pull request counts are the user's own: the login the token was
       // checked against.
       expect(await builder.githubLogin!(), 'pingu');
+      // Finding and reading pull requests go through the linked entries.
+      expect(builder.pullRequestRepository, same(pullRequests));
       expect(wired.read(frontAgentWorkflowProvider), isA<FrontAgentWorkflow>());
       // What a running turn shows of her answer goes to the provider the
       // pane reads, and is taken down through it too.
