@@ -32,3 +32,21 @@ abstract interface class CloudTtsClient {
   /// Closes the underlying HTTP client.
   void close();
 }
+
+/// A [CloudTtsClient] that can also send its speech while it is making it.
+abstract interface class StreamingCloudTtsClient implements CloudTtsClient {
+  /// Speaks [text] with [voiceId] on [model] as one synthesis, and emits
+  /// the WAV file's bytes in order as they are made: the header first, its
+  /// length fields not filled in, since the length is not known yet.
+  ///
+  /// The stream ends without a byte for a text the provider makes no audio
+  /// of that way — a single short word, on Voxtral — which is no failure:
+  /// [synthesize] speaks it.
+  Stream<Uint8List> synthesizeStream({
+    required String text,
+    required String voiceId,
+    required String baseUrl,
+    required String apiKey,
+    required String model,
+  });
+}

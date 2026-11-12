@@ -20,6 +20,10 @@ sources:
     resource: ../../lib/features/tts/cloud/cloud_tts_http.dart
     title: The HTTP transport and typed failures every speech client shares
     last_modified: 2026-11-04
+  - id: growing-clip
+    resource: ../../lib/features/tts/cloud/growing_speech_clip.dart
+    title: GrowingSpeechClip — a WAV written while its cloud voice still speaks, playable before it is whole
+    last_modified: 2026-11-12
   - id: voxtral-service
     resource: ../../lib/features/tts/cloud/voxtral_tts_service.dart
     title: Voxtral speech and voice-catalog client
@@ -374,6 +378,65 @@ once made, is kept as the prepared result (below) for a replay. Model weights re
 native shutdown failures and still attempts file deletion. It ignores only a
 confirmed missing-file error; other filesystem failures are reported through
 the speech logging domain without including the temporary file path or content.
+
+**A cloud voice that can stream is played while it is still speaking.**
+Asked for a whole clip, a cloud voice takes about as long as its text is
+long before any audio exists: on Voxtral, 2.3–2.5 s for three sentences.
+Asked for one synthesis as a stream (`stream: true`: server-sent
+`speech.audio.delta` events carrying base64 WAV bytes, then
+`speech.audio.done`), the same answer's first audio is there after 0.3 s
+and all 12.6 s of it within 1.7 s — it arrives about seven times faster
+than it plays (live, 2026-11-12). It is one synthesis: one voice and one
+intonation from the first word to the last. Making an answer sentence by
+sentence and playing the clips in turn was tried first and dropped: each
+clip starts with its own intonation, and the seams are heard.
+
+`CloudSpeechSynthesizer.synthesizeToGrowingFile` writes that stream into a
+temporary WAV as it arrives (`GrowingSpeechClip`), for a provider whose
+client is a `StreamingCloudTtsClient` (`canStream`; Voxtral is, ElevenLabs
+is asked for a whole clip as before). The player reads the file like any
+other. `speak` starts it once the clip is **playable** — its header and two
+seconds of audio written, or the stream ended — which the live run reached
+0.46 s after the request.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Synthesizing: speak, a voice that can stream
+  Synthesizing --> Playing: the lead is written (or a short clip is whole)
+  Synthesizing --> Synthesizing: the stream ended without audio — asked for whole
+  Synthesizing --> Error: the stream failed before there was anything to play
+  Playing --> Playing: the file is whole — the state names it
+  Playing --> Playing: the player ran out before the voice finished — reopened where it stopped
+  Playing --> Stopped: the player reaches the end of a whole clip
+  Playing --> Stopped: stop — a part of a clip is deleted, a whole one kept
+  Playing --> Error: the stream failed, once the player has played what there was
+  Synthesizing --> Stopped: stop
+```
+
+- **Its header is filled in at the end.** A streamed WAV's two length
+  fields say `0xFFFFFFFF`; once the stream has ended the real lengths are
+  written in, so the mouth track's reader and a replay see an ordinary WAV.
+- **The mouth goes by the words until the file is whole.** While it is
+  being written the state's `clip` has an empty path — the companion's
+  speaker falls back to the words alone, as for any clip it cannot read —
+  and once it is whole the state names the file, and the mouth is shaped by
+  its sound from there on.
+- **A stall is survived, not hidden.** What is written stays ahead of what
+  is played unless the network stalls for longer than the lead. A player
+  that reaches the end of what is written before the voice has finished has
+  not ended the utterance: when the rest is there the clip is opened again
+  at the position it reached (`TtsAudioPlayer.play(from:)`), and the stall
+  is logged. If the stream failed instead, the utterance ends as a failure
+  — after what was written was spoken.
+- **Nothing partial is kept.** A stop while it is being written lets the
+  stream go and deletes the part of a clip; only a whole clip is kept for a
+  replay.
+- **A word may come back empty.** Voxtral ends the stream without audio
+  for a text of one short word ("Yes."); that is no failure, and the text
+  is then asked for as a whole clip.
+
+Not verified by ear on a device: how the player behaves at the very start
+of a file that is still growing.
 
 Speech settings also expose **Prepare chat audio automatically**, off by default.
 `TtsSettingsController` persists this device-local opt-in under

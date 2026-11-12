@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
 import 'package:lotti/features/tts/cloud/cloud_tts_exception.dart';
+import 'package:lotti/features/tts/cloud/growing_speech_clip.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
@@ -102,6 +103,10 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   Future<void> _preparation = Future<void>.value();
   _PreparedSpeech? _prepared;
 
+  /// The clip playing while its cloud voice is still writing it; null for
+  /// one that was whole before it played.
+  GrowingSpeechClip? _growing;
+
   /// The clip being played, with the key it was made under and the caller's
   /// gate — one record, so a playing file never lacks either.
   ({File file, _SpeechKey key, Future<bool> Function()? canPlay})? _playing;
@@ -120,7 +125,9 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       _cancelPlayerSubscriptions();
       final file = _playing?.file;
       _playing = null;
-      unawaited(_stopAndDelete(_player, file));
+      final growing = _growing;
+      _growing = null;
+      unawaited(_stopAndDelete(_player, file, growing));
     });
     // A new speed reaches the clip that is speaking, not only the next one.
     // A bundled sample keeps its natural speed ([playClip]).
@@ -268,20 +275,58 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         prepared.file = null;
         _prepared = null;
       }
+      GrowingSpeechClip? growing;
       if (file == null && cloudRoute != null) {
         try {
+          final cloud = ref.read(cloudSpeechSynthesizerProvider);
           // Checked again right before the text is uploaded: a stop, or the
-          // caller withdrawing permission, while the voice catalog loads
-          // must keep the text on the device.
-          file = await ref
-              .read(cloudSpeechSynthesizerProvider)
-              .synthesizeToFile(
-                route: cloudRoute,
-                text: text,
-                chosenVoices: settings.cloudVoiceByLanguage,
-                canSend: () async =>
-                    current() && (canPlay == null || await canPlay()),
-              );
+          // caller withdrawing permission, while the voice catalog loads —
+          // or while the caller is still being asked — must keep the text
+          // on the device.
+          Future<bool> canSend() async =>
+              current() && (canPlay == null || await canPlay()) && current();
+          var sent = true;
+          if (cloud.canStream(cloudRoute)) {
+            // One synthesis, played while it is still arriving: her first
+            // words are heard a fraction of a second in, in one voice.
+            final clip = await cloud.synthesizeToGrowingFile(
+              route: cloudRoute,
+              text: text,
+              chosenVoices: settings.cloudVoiceByLanguage,
+              canSend: canSend,
+            );
+            sent = clip != null;
+            if (clip != null) {
+              if (!current()) {
+                await _discard(clip);
+                return;
+              }
+              _growing = clip;
+              await clip.playable;
+              // A stop meanwhile took the clip and deleted it.
+              if (!current()) return;
+              final failure = clip.failure;
+              if (failure != null || !clip.hasAudio) {
+                _growing = null;
+                await _discard(clip);
+                if (failure != null) {
+                  Error.throwWithStackTrace(failure.error, failure.stackTrace);
+                }
+                // No audio that way, for a word or two: asked for whole.
+              } else {
+                growing = clip;
+                file = clip.file;
+              }
+            }
+          }
+          if (file == null && sent) {
+            file = await cloud.synthesizeToFile(
+              route: cloudRoute,
+              text: text,
+              chosenVoices: settings.cloudVoiceByLanguage,
+              canSend: canSend,
+            );
+          }
           if (file == null) {
             if (current()) _onPlaybackEnded();
             return;
@@ -330,15 +375,22 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         );
       }
       if (!current()) {
-        await _deleteFile(file);
+        // A stop took a clip still being written; any other is deleted here.
+        if (growing == null) await _deleteFile(file);
         return;
       }
       _playing = (file: file, key: key, canPlay: canPlay);
       final allowed = canPlay == null || await canPlay();
       if (!current() || !allowed) {
         if (identical(_playing?.file, file)) _playing = null;
-        // A stop meanwhile kept the clip for a replay: it is the slot's now.
-        if (!identical(_prepared?.file, file)) await _deleteFile(file);
+        if (identical(_growing, growing)) _growing = null;
+        if (growing != null) {
+          await _discard(growing);
+        } else if (!identical(_prepared?.file, file)) {
+          // A stop meanwhile kept the clip for a replay: it is the slot's
+          // now.
+          await _deleteFile(file);
+        }
         if (current()) _onPlaybackEnded();
         return;
       }
@@ -349,8 +401,15 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       state = state.copyWith(
         status: TtsPlaybackStatus.playing,
         sourceId: sourceId,
-        clip: (path: file.path, text: text),
+        // A clip still being written has no audio to read a mouth from yet:
+        // without a path she goes by the words, and gets the path — and
+        // with it the sound — once the file is whole ([_followGrowing]).
+        clip: (path: growing == null ? file.path : '', text: text),
       );
+      if (growing != null) {
+        // Nothing waits for it, and it handles its own outcome.
+        _followGrowing(growing, generation, text).ignore();
+      }
       // The speed now, not when synthesis began: it may have changed since.
       final speed = ref.read(ttsSettingsControllerProvider).speed;
       await player.play(file, speed: speed);
@@ -375,19 +434,101 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
               : 'Cloud speech failed (${cloudRoute.cacheKey})',
         );
       }
-      _cancelPlayerSubscriptions();
-      final file = _playing?.file;
-      _playing = null;
-      await _stopAndDelete(_player, file);
-      if (!current()) return;
-      state = state.copyWith(
-        status: TtsPlaybackStatus.error,
-        sourceId: sourceId,
-        clip: null,
-        errorMessage: error.toString(),
-      );
+      await _onSpeechFailed(error, sourceId, current);
     } finally {
       finished.complete();
+    }
+  }
+
+  /// An utterance of [sourceId] that could not be made or played, already
+  /// logged: its clip is deleted and the state says so.
+  Future<void> _onSpeechFailed(
+    Object error,
+    String sourceId,
+    bool Function() current,
+  ) async {
+    _cancelPlayerSubscriptions();
+    final file = _playing?.file;
+    _playing = null;
+    final growing = _growing;
+    _growing = null;
+    await _stopAndDelete(_player, file, growing);
+    if (!current()) return;
+    state = state.copyWith(
+      status: TtsPlaybackStatus.error,
+      sourceId: sourceId,
+      clip: null,
+      errorMessage: error.toString(),
+    );
+  }
+
+  /// Stops writing [clip] and deletes what was written of it.
+  Future<void> _discard(GrowingSpeechClip clip) async {
+    await clip.cancel();
+    await _deleteFile(clip.file);
+  }
+
+  /// Once [growing] is whole while it still plays, the state names its
+  /// file, so whoever shapes a mouth to the clip reads its sound from then
+  /// on. A stream that failed is dealt with when the player reaches the end
+  /// of what it wrote ([_resumeGrowing]): what is there is still spoken.
+  Future<void> _followGrowing(
+    GrowingSpeechClip growing,
+    int generation,
+    String text,
+  ) async {
+    await growing.done;
+    if (!ref.mounted ||
+        generation != _generation ||
+        !identical(_growing, growing) ||
+        !growing.isComplete ||
+        state.status != TtsPlaybackStatus.playing) {
+      return;
+    }
+    state = state.copyWith(clip: (path: growing.file.path, text: text));
+  }
+
+  /// The player reached the end of what was written of [growing] before
+  /// the voice had finished — the network stalled for longer than the lead
+  /// it started with. Once the rest is there, the clip is opened again
+  /// where it stopped; if the stream failed instead, so does the utterance.
+  Future<void> _resumeGrowing(GrowingSpeechClip growing) async {
+    final generation = _generation;
+    final sourceId = state.sourceId;
+    final at = state.position;
+    bool sameUtterance() => ref.mounted && generation == _generation;
+    bool current() => sameUtterance() && identical(_growing, growing);
+    try {
+      await growing.done;
+      if (!current() || sourceId == null) return;
+      if (growing.failure case (:final error, :final stackTrace)) {
+        Error.throwWithStackTrace(error, stackTrace);
+      }
+      _logger.log(
+        LogDomain.speech,
+        'Speech played faster than it arrived; resumed at '
+        '${at.inMilliseconds} ms',
+        subDomain: 'ttsPlayback.speak',
+      );
+      await _player?.play(
+        growing.file,
+        speed: ref.read(ttsSettingsControllerProvider).speed,
+        from: at,
+      );
+    } catch (error, stackTrace) {
+      if (!current() || sourceId == null) return;
+      if (error is! CloudTtsException) {
+        _logger.error(
+          LogDomain.speech,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'ttsPlayback.speak',
+          message: 'Cloud speech failed while it was arriving',
+        );
+      }
+      // The failure lets go of the clip, so only the utterance is asked
+      // about afterwards.
+      await _onSpeechFailed(error, sourceId, sameUtterance);
     }
   }
 
@@ -478,13 +619,18 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       return;
     }
     _generation++;
-    final played = _playing;
+    final growing = _growing;
+    _growing = null;
+    // A clip still being written is not all of the utterance: it is not
+    // kept for a replay, which would play it as if it were.
+    final partial = growing != null && !growing.isComplete;
+    final played = partial ? null : _playing;
     _playing = null;
     final player = _player;
     // Invalidate preparation and presentation before the native await.
     _onPlaybackEnded();
     final kept = _keepForReplay(played);
-    await _stopAndDelete(player, null);
+    await _stopAndDelete(player, null, partial ? growing : null);
     await kept;
   }
 
@@ -535,8 +681,12 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
     });
   }
 
-  /// The utterance played to its end: its clip is kept for a replay.
+  /// The utterance played to its end: its clip is kept for a replay. A
+  /// clip still being written has not ended, only run out ([_resumeGrowing]).
   Future<void> _onPlaybackFinished() async {
+    final growing = _growing;
+    if (growing != null && !growing.isComplete) return _resumeGrowing(growing);
+    _growing = null;
     final played = _playing;
     _playing = null;
     _onPlaybackEnded();
@@ -609,7 +759,13 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
     );
   }
 
-  Future<void> _stopAndDelete(TtsAudioPlayer? player, File? file) async {
+  /// Stops [player] and deletes [file] — and stops writing [growing] and
+  /// deletes what there is of it — whether or not the player stops cleanly.
+  Future<void> _stopAndDelete(
+    TtsAudioPlayer? player,
+    File? file, [
+    GrowingSpeechClip? growing,
+  ]) async {
     try {
       await player?.stop();
     } catch (error, stackTrace) {
@@ -621,6 +777,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       );
     } finally {
       await _deleteFile(file);
+      if (growing != null) await _discard(growing);
     }
   }
 
