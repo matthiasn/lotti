@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
@@ -113,10 +115,15 @@ class _Composer extends FrontChatController {
   /// What a tap on *Make it a task* answers: whether the task was made.
   bool makes = true;
   final madeDoors = <String>[];
+  final madeWith = <FrontTaskChoices>[];
 
   @override
-  Future<bool> makeTask(String doorId) async {
+  Future<bool> makeTask(
+    String doorId, {
+    required FrontTaskChoices choices,
+  }) async {
     madeDoors.add(doorId);
+    madeWith.add(choices);
     return makes;
   }
 
@@ -146,13 +153,26 @@ class _Host extends ConsumerWidget {
         ),
         TextButton(
           key: const Key('make-task'),
-          onPressed: () => FrontVoice.makeTask(ref, context, 'c-1', 'd-1'),
+          onPressed: () => FrontVoice.makeTask(
+            ref,
+            context,
+            'c-1',
+            'd-1',
+            choices: urgentToday,
+          ),
           child: const Text('make'),
         ),
       ],
     );
   }
 }
+
+/// What the user set the task up as, passed on to the composer as it is.
+final urgentToday = FrontTaskChoices(
+  start: FrontTaskStart.inProgress,
+  priority: TaskPriority.p0Urgent,
+  due: DateTime(2026, 11, 11),
+);
 
 /// `frontTaskCreatedSpoken` in English, the bench's locale.
 const _taskCreatedLine = 'Hey, dear, I created that task.';

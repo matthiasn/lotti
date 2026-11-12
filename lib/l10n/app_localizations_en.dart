@@ -7577,6 +7577,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontTaskReschedule => 'Reschedule…';
 
   @override
+  String get frontTaskSetupAsk => 'Here\'s what I heard. Change anything?';
+
+  @override
+  String get frontTaskSetupAskPlain => 'Anything to set before I make it?';
+
+  @override
+  String get frontTaskSetupCreate => 'Create task';
+
+  @override
+  String get frontTaskSetupPickDate => 'Pick a date…';
+
+  @override
+  String get frontTaskSetupToday => 'Today';
+
+  @override
+  String get frontTaskSetupTomorrow => 'Tomorrow';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Deepest reasoning; can increase latency and cost.';
 

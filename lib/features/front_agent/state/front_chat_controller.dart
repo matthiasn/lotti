@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_filing_service.dart';
@@ -476,10 +477,15 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   Future<void> takeBack(String doorId) =>
       _doorAction(doorId, (filing) => filing.takeBack(doorId));
 
-  /// Makes a task of an inbox item; whether it was made, so the surface can
-  /// say so aloud.
-  Future<bool> makeTask(String doorId) =>
-      _doorAction(doorId, (filing) => filing.makeTask(doorId));
+  /// Makes a task of an inbox item, set up as the user [choices]; whether
+  /// it was made, so the surface can say so aloud.
+  Future<bool> makeTask(
+    String doorId, {
+    required FrontTaskChoices choices,
+  }) => _doorAction(
+    doorId,
+    (filing) => filing.makeTask(doorId, choices: choices),
+  );
 
   /// Saves an inbox item as a note.
   Future<void> saveAsNote(String doorId) =>

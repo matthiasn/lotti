@@ -1,5 +1,7 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
@@ -8,7 +10,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
+import 'package:lotti/features/front_agent/ui/front_task_setup.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -24,6 +28,7 @@ void main() {
     FrontDestinationKind kind = FrontDestinationKind.task,
     String? ownerTitle = 'Garden',
     FrontDoorOutcome? outcome,
+    FrontTaskDraft? task,
   }) => FrontDoorRecord(
     segmentIndex: index,
     text: text,
@@ -33,6 +38,7 @@ void main() {
     status: outcome == null ? FrontDoorStatus.claimed : FrontDoorStatus.done,
     claimedAt: claimedAt,
     outcome: outcome,
+    task: task,
   );
 
   FrontDoorEntry entry(FrontDoorRecord record, {String? specialistReply}) =>
@@ -44,13 +50,19 @@ void main() {
 
   late List<(String, String)> acted;
 
+  /// How each task made from the card was set up.
+  late List<FrontTaskChoices> madeWith;
+
   FrontDoorActions actions() => FrontDoorActions(
     onFile: (id) => acted.add(('file', id)),
     onDecline: (id) => acted.add(('decline', id)),
     onUndoDecline: (id) => acted.add(('undo', id)),
     onTakeBack: (id) => acted.add(('take-back', id)),
     onOpen: (door) => acted.add(('open', door.doorId)),
-    onMakeTask: (id) => acted.add(('task', id)),
+    onMakeTask: (id, choices) {
+      acted.add(('task', id));
+      madeWith.add(choices);
+    },
     onMakeEvent: (id) => acted.add(('event', id)),
     onSaveNote: (id) => acted.add(('note', id)),
     onStartGoal: (door) => acted.add(('goal', door.doorId)),
@@ -60,7 +72,10 @@ void main() {
     onOpenLink: (url) => acted.add(('link', url)),
   );
 
-  setUp(() => acted = []);
+  setUp(() {
+    acted = [];
+    madeWith = [];
+  });
 
   Future<void> pump(
     WidgetTester tester,
@@ -556,6 +571,249 @@ void main() {
     });
   });
 
+  group('making an inbox item a task', () {
+    FrontDoorEntry waiting({
+      FrontTaskDraft? task,
+      FrontDoorOutcome outcome = const FrontDoorInbox(
+        newKind: FrontNewKind.task,
+      ),
+      int index = 0,
+    }) => entry(
+      record(
+        index: index,
+        text: 'Count the chicks, urgent.',
+        kind: FrontDestinationKind.newThing,
+        ownerTitle: null,
+        outcome: outcome,
+        task: task,
+      ),
+    );
+
+    testWidgets('asks how in place of its status, action and overflow, set '
+        'to what she read, and nothing is made until create', (tester) async {
+      await pump(tester, [
+        waiting(
+          task: const FrontTaskDraft(
+            title: 'Count the chicks',
+            priority: TaskPriority.p0Urgent,
+          ),
+        ),
+      ]);
+
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+
+      expect(find.byKey(FrontTaskSetupKeys.ask(0)), findsOne);
+      expect(find.byKey(const ValueKey('front-door-status-0')), findsNothing);
+      expect(find.byKey(const ValueKey('front-door-task-0')), findsNothing);
+      expect(menu(0), findsNothing);
+      final setup = tester.widget<FrontTaskSetup>(find.byType(FrontTaskSetup));
+      expect(
+        setup.initial,
+        const FrontTaskChoices(
+          start: FrontTaskStart.open,
+          priority: TaskPriority.p0Urgent,
+        ),
+      );
+      expect(acted, isEmpty);
+      // She heard a priority, and says so.
+      expect(setup.heard, isTrue);
+
+      await tester.tap(find.byKey(FrontTaskSetupKeys.create(0)));
+      expect(acted, [('task', 'd:door:0')]);
+      expect(madeWith, [setup.initial]);
+    });
+
+    testWidgets('cancel goes back to the card as it was', (tester) async {
+      await pump(tester, [waiting()]);
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+
+      await tester.tap(find.byKey(FrontTaskSetupKeys.back(0)));
+      await tester.pump();
+
+      expect(find.byType(FrontTaskSetup), findsNothing);
+      expect(statusOf(tester, 0), 'Where should this go?');
+      expect(menu(0), findsOne);
+      expect(acted, isEmpty);
+    });
+
+    testWidgets('the setup spins while the task is made and says so when it '
+        'was not', (tester) async {
+      await pump(tester, [waiting()]);
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+
+      await pump(tester, [waiting()], busy: {'d:door:0'});
+      var setup = tester.widget<FrontTaskSetup>(find.byType(FrontTaskSetup));
+      expect(setup.busy, isTrue);
+      expect(setup.failed, isFalse);
+
+      await pump(tester, [waiting()], failed: {'d:door:0'});
+      setup = tester.widget<FrontTaskSetup>(find.byType(FrontTaskSetup));
+      expect(setup.busy, isFalse);
+      expect(setup.failed, isTrue);
+    });
+
+    testWidgets('an item made, then taken back, offers make it a task '
+        'afresh rather than the setup it left', (tester) async {
+      await pump(tester, [waiting()]);
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+
+      await pump(tester, [
+        waiting(outcome: const FrontDoorTaskCreated(taskId: 't-1')),
+      ]);
+      expect(find.byType(FrontTaskSetup), findsNothing);
+
+      await pump(tester, [waiting()]);
+      expect(find.byType(FrontTaskSetup), findsNothing);
+      expect(find.byKey(const ValueKey('front-door-task-0')), findsOne);
+    });
+
+    testWidgets('while it is set up, the headline is the title she read, '
+        'and the words come back when it is left', (tester) async {
+      await pump(tester, [
+        waiting(task: const FrontTaskDraft(title: 'Count the chicks')),
+      ]);
+      expect(titleOf(tester, 0), 'Count the chicks, urgent.');
+
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+      expect(titleOf(tester, 0), 'Count the chicks');
+
+      await tester.tap(find.byKey(FrontTaskSetupKeys.back(0)));
+      await tester.pump();
+      expect(titleOf(tester, 0), 'Count the chicks, urgent.');
+    });
+
+    testWidgets('with no title read, the setup keeps the words as they were', (
+      tester,
+    ) async {
+      await pump(tester, [waiting()]);
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+      expect(titleOf(tester, 0), 'Count the chicks, urgent.');
+    });
+
+    testWidgets('words that set nothing get a plain ask, not a claim she '
+        'heard something', (tester) async {
+      for (final task in [null, const FrontTaskDraft(title: 'Count')]) {
+        await pump(tester, [waiting(task: task)]);
+        await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+        await tester.pump();
+        expect(
+          tester.widget<FrontTaskSetup>(find.byType(FrontTaskSetup)).heard,
+          isFalse,
+        );
+        await tester.tap(find.byKey(FrontTaskSetupKeys.back(0)));
+        await tester.pump();
+      }
+    });
+
+    testWidgets('while one item is set up, its create is the one filled '
+        'button: the others step back, and come forward when it is left', (
+      tester,
+    ) async {
+      await pump(tester, [waiting(), waiting(index: 1)]);
+      expect(
+        button(tester, 'task', 1).variant,
+        DesignSystemButtonVariant.primary,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+      expect(
+        button(tester, 'task', 1).variant,
+        DesignSystemButtonVariant.secondary,
+      );
+
+      await tester.tap(find.byKey(FrontTaskSetupKeys.back(0)));
+      await tester.pump();
+      expect(
+        button(tester, 'task', 1).variant,
+        DesignSystemButtonVariant.primary,
+      );
+    });
+
+    testWidgets('on a phone, create task ends where make it a task does, '
+        'the overflow slot kept', (tester) async {
+      tester.view
+        ..physicalSize = const Size(390, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pump(tester, [waiting(), waiting(index: 1)]);
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+
+      expect(
+        tester.getRect(find.byKey(FrontTaskSetupKeys.create(0))).right,
+        moreOrLessEquals(
+          tester.getRect(find.byKey(const ValueKey('front-door-task-1'))).right,
+        ),
+      );
+    });
+
+    testWidgets('one item is set up at a time: opening another leaves the '
+        'first, and Enter makes the one just opened', (tester) async {
+      await pump(tester, [waiting(), waiting(index: 1)]);
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('front-door-task-1')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(FrontTaskSetupKeys.ask(0)), findsNothing);
+      expect(find.byKey(FrontTaskSetupKeys.ask(1)), findsOne);
+      expect(
+        button(tester, 'task', 0).variant,
+        DesignSystemButtonVariant.secondary,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      expect(acted, [('task', 'd:door:1')]);
+    });
+
+    testWidgets('leaving a setup that is no longer open changes nothing', (
+      tester,
+    ) async {
+      await pump(tester, [waiting(), waiting(index: 1)]);
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+      final leaveFirst = tester
+          .widget<FrontTaskSetup>(find.byType(FrontTaskSetup))
+          .onBack;
+      await tester.tap(find.byKey(const ValueKey('front-door-task-1')));
+      await tester.pump();
+
+      leaveFirst();
+      await tester.pump();
+      expect(find.byKey(FrontTaskSetupKeys.ask(1)), findsOne);
+    });
+
+    testWidgets('an item gone from the card and back offers make it a task '
+        'afresh', (tester) async {
+      await pump(tester, [waiting()]);
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+
+      await pump(tester, [waiting(index: 1)]);
+      await pump(tester, [waiting()]);
+      expect(find.byType(FrontTaskSetup), findsNothing);
+      expect(find.byKey(const ValueKey('front-door-task-0')), findsOne);
+    });
+
+    testWidgets('a reload of the item keeps the setup open', (tester) async {
+      await pump(tester, [waiting()]);
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+
+      await pump(tester, [waiting()]);
+      expect(find.byType(FrontTaskSetup), findsOne);
+    });
+  });
+
   group('a settled card', () {
     testWidgets('filed under its task shows the done tile, opens on its one '
         'control, and undoes from the overflow', (tester) async {
@@ -754,7 +1012,6 @@ void main() {
         'Leave it',
       ]);
       await tapItem(tester, 'goal', 0);
-      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
       await openMenu(tester, 0);
       await tapItem(tester, 'event', 0);
       await openMenu(tester, 0);
@@ -763,7 +1020,6 @@ void main() {
       await tapItem(tester, 'decline', 0);
       expect(acted, [
         ('goal', 'd:door:0'),
-        ('task', 'd:door:0'),
         ('event', 'd:door:0'),
         ('note', 'd:door:0'),
         ('decline', 'd:door:0'),
@@ -792,7 +1048,7 @@ void main() {
               onUndoDecline: (_) {},
               onTakeBack: (_) {},
               onOpen: (_) {},
-              onMakeTask: (_) {},
+              onMakeTask: (_, _) {},
               onSaveNote: (_) {},
               onStartGoal: (_) {},
               onNewProject: (_) {},

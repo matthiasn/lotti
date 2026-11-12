@@ -7717,6 +7717,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontTaskReschedule => 'Přeplánovat…';
 
   @override
+  String get frontTaskSetupAsk => 'Tohle jsem slyšela. Chceš něco změnit?';
+
+  @override
+  String get frontTaskSetupAskPlain => 'Chceš něco nastavit, než ho vytvořím?';
+
+  @override
+  String get frontTaskSetupCreate => 'Vytvořit úkol';
+
+  @override
+  String get frontTaskSetupPickDate => 'Vybrat datum…';
+
+  @override
+  String get frontTaskSetupToday => 'Dnes';
+
+  @override
+  String get frontTaskSetupTomorrow => 'Zítra';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Nejhlubší uvažování; může zvýšit latenci a cenu.';
 

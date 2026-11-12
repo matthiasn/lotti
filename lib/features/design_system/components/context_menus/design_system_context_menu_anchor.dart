@@ -38,6 +38,7 @@ class DesignSystemContextMenuAnchor extends StatefulWidget {
     this.semanticsLabel,
     this.size = DesignSystemContextMenuSize.medium,
     this.fitContent = false,
+    this.consumeOutsideTap = false,
     super.key,
   });
 
@@ -65,6 +66,11 @@ class DesignSystemContextMenuAnchor extends StatefulWidget {
   /// would leave most of the default width empty.
   final bool fitContent;
 
+  /// Whether the tap that closes the menu from outside it stops there,
+  /// rather than also reaching what lies under it — for a menu that opens
+  /// over the very buttons that would act on it.
+  final bool consumeOutsideTap;
+
   @override
   State<DesignSystemContextMenuAnchor> createState() =>
       _DesignSystemContextMenuAnchorState();
@@ -88,6 +94,7 @@ class _DesignSystemContextMenuAnchorState
     return MenuAnchor(
       controller: _controller,
       alignmentOffset: Offset(0, tokens.spacing.step2),
+      consumeOutsideTap: widget.consumeOutsideTap,
       // The panel itself is invisible — DesignSystemContextMenu carries its own
       // surface, border-radius and shadow, so a second background here would
       // double up.
@@ -99,32 +106,38 @@ class _DesignSystemContextMenuAnchorState
         side: WidgetStatePropertyAll(BorderSide.none),
       ),
       menuChildren: [
-        DesignSystemContextMenu(
-          semanticsLabel: widget.semanticsLabel,
-          header: widget.header,
-          size: widget.size,
-          fitContent: widget.fitContent,
-          items: [
-            for (final item in widget.items)
-              DesignSystemContextMenuItem(
-                key: item.key,
-                label: item.label,
-                icon: item.icon,
-                iconColor: item.iconColor,
-                isDestructive: item.isDestructive,
-                isSelected: item.isSelected,
-                checked: item.checked,
-                startsGroup: item.startsGroup,
-                // A null callback is a disabled row and must stay one; only
-                // a real callback gets the close-then-fire wrapper.
-                onTap: item.onTap == null
-                    ? null
-                    : () {
-                        _controller.close();
-                        item.onTap!();
-                      },
-              ),
-          ],
+        // An invisible end inset: a menu that would run past the screen's
+        // trailing edge is pushed back by it, keeping the gutter the page
+        // keeps, instead of sitting flush against the edge.
+        Padding(
+          padding: EdgeInsetsDirectional.only(end: tokens.spacing.step5),
+          child: DesignSystemContextMenu(
+            semanticsLabel: widget.semanticsLabel,
+            header: widget.header,
+            size: widget.size,
+            fitContent: widget.fitContent,
+            items: [
+              for (final item in widget.items)
+                DesignSystemContextMenuItem(
+                  key: item.key,
+                  label: item.label,
+                  icon: item.icon,
+                  iconColor: item.iconColor,
+                  isDestructive: item.isDestructive,
+                  isSelected: item.isSelected,
+                  checked: item.checked,
+                  startsGroup: item.startsGroup,
+                  // A null callback is a disabled row and must stay one; only
+                  // a real callback gets the close-then-fire wrapper.
+                  onTap: item.onTap == null
+                      ? null
+                      : () {
+                          _controller.close();
+                          item.onTap!();
+                        },
+                ),
+            ],
+          ),
         ),
       ],
       builder: (context, controller, child) {

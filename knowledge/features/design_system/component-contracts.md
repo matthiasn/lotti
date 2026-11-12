@@ -11,7 +11,7 @@ sources:
   - id: components
     resource: ../../../lib/features/design_system/components
     title: Design-system components
-    last_modified: 2026-09-28
+    last_modified: 2026-11-12
   - id: rows-card
     resource: ../../../lib/features/design_system/components/cards/ds_rows_card.dart
     title: DsRowsCard — a short list of rows on one rounded card
@@ -325,7 +325,11 @@ menu where the pointer is — a right-click, or a long press on a touch screen,
 over an image in a pull request description — passes its own `MenuController`
 as `controller` and calls `open(position:)` on it with the offset within the
 trigger; the toggle keeps working on the same controller, and the anchor owns
-one of its own when none is given.
+one of its own when none is given. Every anchored menu keeps the page's
+`spacing.step5` gutter from the screen's trailing edge — an invisible end inset
+on the panel that pushes back a menu that would otherwise sit flush against
+it. `consumeOutsideTap` makes the tap that closes the menu stop there, for a
+menu opened over the very buttons that would act on it.
 
 `DesignSystemPopoverAnchor` (`components/popovers/`) is the same anchored
 overlay — `MenuAnchor` beneath a caller-built trigger, dismissed by an outside

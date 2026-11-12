@@ -314,7 +314,17 @@ final frontTaskMakerProvider = Provider<FrontTaskMaker>(
         draft,
         id: id,
         words: words,
-        startTimer: ref.read(timeServiceProvider).start,
+        // Both only act on the timer as it is: a retry asks again, and a
+        // timer already running on the entry is not started twice.
+        startTimer: (timer, task) async {
+          final time = ref.read(timeServiceProvider);
+          if (time.getCurrent()?.meta.id == timer.meta.id) return;
+          await time.start(timer, task);
+        },
+        stopTimer: (timerId) async {
+          final time = ref.read(timeServiceProvider);
+          if (time.getCurrent()?.meta.id == timerId) await time.stop();
+        },
         // Read on use: only a follow-up needs the project repository.
         inheritProject: ({required sourceTaskId, required newTaskId}) => ref
             .read(projectRepositoryProvider)
@@ -332,6 +342,33 @@ final frontTaskMakerProvider = Provider<FrontTaskMaker>(
   name: 'frontTaskMakerProvider',
 );
 
+/// [existing] — the task a retry found already made under its id — as
+/// [draft] sets it up: a create whose door record failed to follow may be
+/// retried with other choices, and the task takes the status, priority and
+/// due day the user last set, not the first. Unchanged when they agree;
+/// null when the update did not go through, so the retry fails rather than
+/// reporting a task made as the user did not set it up.
+Future<Task?> _asSetUp(
+  PersistenceLogic persistence,
+  Task existing,
+  FrontTaskDraft draft,
+) async {
+  final status = taskStatusFromString(draft.status.dbStatus);
+  final priority = draft.priority ?? TaskPriority.p2Medium;
+  final data = existing.data;
+  if (data.status.toDbString == status.toDbString &&
+      data.priority == priority &&
+      data.due == draft.due) {
+    return existing;
+  }
+  final updated = await persistence.updateTask(
+    journalEntityId: existing.meta.id,
+    change: (stored) =>
+        stored.withStatus(status).copyWith(priority: priority, due: draft.due),
+  );
+  return updated;
+}
+
 /// The task [draft] describes, under [id]: its title, instructions as the
 /// body, category, priority, due day and estimate — what the agent fills
 /// from the words; the rest is the user's on the task page.
@@ -345,16 +382,25 @@ final frontTaskMakerProvider = Provider<FrontTaskMaker>(
 ///
 /// Once written, the user's [words] are filed under it as a linked text
 /// entry — where the task came from, and what its agent reads — a follow-up
-/// is linked `followsUp` to its task, a draft that says the work is in
-/// progress makes it so, one that says when the work began also runs a
+/// is linked `followsUp` to its task, the task is made in the draft's
+/// [FrontTaskDraft.status], one that says when the work began also runs a
 /// timer from that moment ([startTimer], on a linked entry starting then),
 /// and [assignAgent] hands it the category's
 /// default agent, last, so the agent's first wake sees all of it.
 ///
 /// The creation path answers null for a rejected write, which for a
 /// deterministic id means the task is already there — the retry case — so
-/// that task is returned as it is, nothing added twice, and null when
-/// nothing is stored.
+/// that task is returned with nothing added twice, and null when nothing is
+/// stored. A retry brings it in line with how it is set up: its status,
+/// priority and due day, then its dictated timer — asked to run when the task
+/// is in progress ([startTimer], a no-op for the one already running), asked
+/// to stop otherwise ([stopTimer], only if it is the one running) — from the
+/// timer as it is, not from the status before, so a retry after a timer step
+/// that failed asks again.
+///
+/// The timer is best effort: a timer entry that could not be written is
+/// reported to [domainLogger], and the task stands without a running timer
+/// the user can start from its page.
 Future<Task?> makeFrontTask(
   PersistenceLogic persistence,
   JournalDb journalDb,
@@ -363,6 +409,7 @@ Future<Task?> makeFrontTask(
   required String words,
   required Future<void> Function(JournalEntity timer, JournalEntity task)
   startTimer,
+  required Future<void> Function(String timerId) stopTimer,
   required Future<bool> Function({
     required String sourceTaskId,
     required String newTaskId,
@@ -381,11 +428,33 @@ Future<Task?> makeFrontTask(
     null => null,
   };
   final categoryId = draft.categoryId ?? followed?.meta.categoryId;
+  // The dictated start, if any: a timer on a linked entry starting then.
+  Future<void> runTimer(Task task) async {
+    if (started == null) return;
+    final timer = await writeFrontTextEntry(
+      persistence,
+      journalDb,
+      '',
+      id: frontTaskTimerId(id),
+      linkedId: id,
+      categoryId: categoryId,
+      started: started.isAfter(now) ? now : started,
+    );
+    if (timer == null) {
+      domainLogger.error(
+        LogDomain.agentWorkflow,
+        StateError('The timer entry was not written.'),
+        subDomain: 'makeFrontTask',
+        message: 'No dictated timer for ${DomainLogger.sanitizeId(id)}',
+      );
+      return;
+    }
+    await startTimer(timer, task);
+  }
+
   final task = await persistence.createTaskEntry(
     data: TaskData(
-      status: taskStatusFromString(
-        draft.inProgress || started != null ? 'IN PROGRESS' : '',
-      ),
+      status: taskStatusFromString(draft.status.dbStatus),
       title: draft.title,
       statusHistory: [],
       dateTo: now,
@@ -400,7 +469,15 @@ Future<Task?> makeFrontTask(
   );
   if (task == null) {
     final existing = await _existing(journalDb, id);
-    return existing is Task ? existing : null;
+    if (existing is! Task) return null;
+    final setUp = await _asSetUp(persistence, existing, draft);
+    if (setUp == null) return null;
+    if (draft.status == FrontTaskStart.inProgress) {
+      await runTimer(setUp);
+    } else {
+      await stopTimer(frontTaskTimerId(id));
+    }
+    return setUp;
   }
   // shortcut: a crash between the task and these leaves a bare task the
   // user fills on its page; making them retryable needs per-step records.
@@ -435,18 +512,7 @@ Future<Task?> makeFrontTask(
       );
     }
   }
-  if (started != null) {
-    final timer = await writeFrontTextEntry(
-      persistence,
-      journalDb,
-      '',
-      id: frontTaskTimerId(id),
-      linkedId: id,
-      categoryId: categoryId,
-      started: started.isAfter(now) ? now : started,
-    );
-    if (timer != null) await startTimer(timer, task);
-  }
+  await runTimer(task);
   await assignAgent(task);
   return task;
 }

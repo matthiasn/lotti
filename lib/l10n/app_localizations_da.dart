@@ -7608,6 +7608,25 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontTaskReschedule => 'Flyt dato…';
 
   @override
+  String get frontTaskSetupAsk => 'Det her hørte jeg. Vil du ændre noget?';
+
+  @override
+  String get frontTaskSetupAskPlain =>
+      'Vil du indstille noget, før jeg laver den?';
+
+  @override
+  String get frontTaskSetupCreate => 'Opret opgave';
+
+  @override
+  String get frontTaskSetupPickDate => 'Vælg en dato…';
+
+  @override
+  String get frontTaskSetupToday => 'I dag';
+
+  @override
+  String get frontTaskSetupTomorrow => 'I morgen';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Dybeste ræsonnement; kan øge latenstid og omkostninger.';
 

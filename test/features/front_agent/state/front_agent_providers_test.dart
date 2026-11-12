@@ -94,6 +94,12 @@ class _RecordingWorkflow extends FrontAgentWorkflow {
 class _MockWalker extends Mock implements FrontDoorWalker {}
 
 void main() {
+  /// The setup of a task made of bare words, left as it was.
+  const asSaid = FrontTaskChoices(
+    start: FrontTaskStart.open,
+    priority: TaskPriority.p2Medium,
+  );
+
   setUpAll(registerAllFallbackValues);
 
   late MockAgentRepository repository;
@@ -909,7 +915,9 @@ void main() {
       );
 
       writeAnswers(verdict: true);
-      await wired.read(frontFilingServiceProvider).makeTask(doorId);
+      await wired
+          .read(frontFilingServiceProvider)
+          .makeTask(doorId, choices: asSaid);
 
       final data =
           verify(
@@ -942,6 +950,13 @@ void main() {
             getIt.registerSingleton<EntitiesCacheService>(cache),
       );
       addTearDown(tearDownTestGetIt);
+      final dictated = FrontTaskDraft(
+        title: 'Mulch the roses',
+        priority: TaskPriority.p1High,
+        due: DateTime(2026, 11, 8),
+        startedAt: started,
+        followsUpTaskId: 'roses',
+      );
       when(() => repository.getEntity('$doorId:payload')).thenAnswer(
         (_) async => makeTestMessagePayload(
           id: '$doorId:payload',
@@ -953,13 +968,7 @@ void main() {
             status: FrontDoorStatus.done,
             claimedAt: DateTime.utc(2026, 11, 8),
             outcome: const FrontDoorInbox(newKind: FrontNewKind.task),
-            task: FrontTaskDraft(
-              title: 'Mulch the roses',
-              priority: TaskPriority.p1High,
-              due: DateTime(2026, 11, 8),
-              startedAt: started,
-              followsUpTaskId: 'roses',
-            ),
+            task: dictated,
           ).toJson(),
         ),
       );
@@ -1032,7 +1041,9 @@ void main() {
 
       await withClock(
         Clock.fixed(now),
-        () => wired.read(frontFilingServiceProvider).makeTask(doorId),
+        () => wired
+            .read(frontFilingServiceProvider)
+            .makeTask(doorId, choices: FrontTaskChoices.of(dictated)),
       );
 
       final data =
@@ -1083,6 +1094,100 @@ void main() {
       ).called(1);
     });
 
+    group('a retry set up open over a task made in progress', () {
+      final id = frontDoorTaskId(doorId);
+
+      void retryOver() {
+        seed(const FrontDoorInbox());
+        when(
+          () => persistence.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+            id: any(named: 'id'),
+          ),
+        ).thenAnswer((_) async => null);
+        final existing = task(id, 'The hinge arrived.');
+        final running = existing.copyWith(
+          data: existing.data.copyWith(
+            status: TaskStatus.inProgress(
+              id: 'p',
+              createdAt: DateTime(2026),
+              utcOffset: 0,
+            ),
+          ),
+        );
+        when(
+          () => journalDb.journalEntityById(id),
+        ).thenAnswer((_) async => running);
+        when(
+          () => persistence.updateTask(
+            journalEntityId: id,
+            change: any(named: 'change'),
+          ),
+        ).thenAnswer((invocation) async {
+          final change =
+              invocation.namedArguments[#change]
+                  as TaskData Function(TaskData stored);
+          return running.copyWith(data: change(running.data));
+        });
+      }
+
+      test('a retry in progress does not start again the timer already '
+          'running on its entry, and starts it when it is not', () async {
+        final maker = wired.read(frontTaskMakerProvider);
+        retryOver();
+        when(
+          () => persistence.createDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(() => timeService.start(any(), any())).thenAnswer((_) async {});
+        final draft = FrontTaskDraft(
+          title: 'The hinge arrived.',
+          startedAt: DateTime(2026),
+          start: FrontTaskStart.inProgress,
+        );
+
+        when(
+          () => timeService.getCurrent(),
+        ).thenReturn(task(frontTaskTimerId(id), ''));
+        await maker(draft, id: id, words: 'The hinge arrived.');
+        verifyNever(() => timeService.start(any(), any()));
+
+        when(() => timeService.getCurrent()).thenReturn(null);
+        await maker(draft, id: id, words: 'The hinge arrived.');
+        verify(() => timeService.start(any(), any())).called(1);
+      });
+
+      test('stops the running timer when it is its dictated one', () async {
+        retryOver();
+        when(
+          () => timeService.getCurrent(),
+        ).thenReturn(task(frontTaskTimerId(id), ''));
+
+        await wired
+            .read(frontFilingServiceProvider)
+            .makeTask(doorId, choices: asSaid);
+
+        verify(() => timeService.stop()).called(1);
+      });
+
+      test('leaves a timer running on anything else', () async {
+        retryOver();
+        when(
+          () => timeService.getCurrent(),
+        ).thenReturn(task('elsewhere', ''));
+
+        await wired
+            .read(frontFilingServiceProvider)
+            .makeTask(doorId, choices: asSaid);
+
+        verifyNever(() => timeService.stop());
+      });
+    });
+
     test('a task the creation path refused because it is already there is '
         'the one recorded; one that is not there is nothing', () async {
       seed(const FrontDoorInbox());
@@ -1099,7 +1204,9 @@ void main() {
         () => journalDb.journalEntityById(id),
       ).thenAnswer((_) async => task(id, 'The hinge arrived.'));
 
-      await wired.read(frontFilingServiceProvider).makeTask(doorId);
+      await wired
+          .read(frontFilingServiceProvider)
+          .makeTask(doorId, choices: asSaid);
 
       final outcome =
           FrontDoorRecord.fromJson(
@@ -1116,7 +1223,9 @@ void main() {
 
       when(() => journalDb.journalEntityById(id)).thenAnswer((_) async => null);
       await expectLater(
-        wired.read(frontFilingServiceProvider).makeTask(doorId),
+        wired
+            .read(frontFilingServiceProvider)
+            .makeTask(doorId, choices: asSaid),
         throwsStateError,
       );
     });
@@ -1178,6 +1287,7 @@ void main() {
     late MockPersistenceLogic persistence;
     late MockJournalDb journalDb;
     late List<(JournalEntity, JournalEntity)> timers;
+    late List<String> stopped;
     late List<Task> assigned;
     late MockProjectRepository projects;
     late MockDomainLogger domainLogger;
@@ -1200,6 +1310,7 @@ void main() {
       persistence = MockPersistenceLogic();
       journalDb = MockJournalDb();
       timers = [];
+      stopped = [];
       assigned = [];
       projects = MockProjectRepository();
       domainLogger = MockDomainLogger();
@@ -1245,6 +1356,7 @@ void main() {
         id: taskId,
         words: 'Fix the login bug, high priority, started ten minutes ago.',
         startTimer: (timer, task) async => timers.add((timer, task)),
+        stopTimer: (timerId) async => stopped.add(timerId),
         inheritProject: projects.inheritProjectFromTask,
         domainLogger: domainLogger,
         assignAgent: (task) async => assigned.add(task),
@@ -1346,6 +1458,24 @@ void main() {
       expect(timers.single.$1.meta.dateFrom, now);
     });
 
+    test('a draft set up groomed is made groomed', () async {
+      stubCreation(written: true);
+      await make(
+        const FrontTaskDraft(title: 'Pack', start: FrontTaskStart.groomed),
+      );
+      final data =
+          verify(
+                () => persistence.createTaskEntry(
+                  data: captureAny(named: 'data'),
+                  entryText: any(named: 'entryText'),
+                  categoryId: any(named: 'categoryId'),
+                  id: taskId,
+                ),
+              ).captured.single
+              as TaskData;
+      expect(data.status, isA<TaskGroomed>());
+    });
+
     test('a draft in progress without a start is made in progress, and no '
         'timer runs', () async {
       stubCreation(written: true);
@@ -1396,6 +1526,7 @@ void main() {
           id: taskId,
           words: 'Create a follow-up to that one.',
           startTimer: (_, _) async {},
+          stopTimer: (_) async {},
           inheritProject: projects.inheritProjectFromTask,
           domainLogger: domainLogger,
           assignAgent: (_) async => events.add('agent'),
@@ -1573,12 +1704,17 @@ void main() {
     });
 
     test(
-      'the retry finds the task already there and adds nothing twice',
+      'the retry finds the task already there, adds nothing twice, and '
+      'asks its dictated timer to run again — a no-op if it already does',
       () async {
         stubCreation(written: false);
         final existing = made(
           TaskData(
-            status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
+            status: TaskStatus.inProgress(
+              id: 's',
+              createdAt: now,
+              utcOffset: 0,
+            ),
             statusHistory: const [],
             dateFrom: now,
             dateTo: now,
@@ -1594,16 +1730,223 @@ void main() {
         );
 
         expect(task, same(existing));
+        // Set up as it was: nothing to bring in line.
         verifyNever(
-          () => persistence.createDbEntity(
-            any(),
-            linkedId: any(named: 'linkedId'),
+          () => persistence.updateTask(
+            journalEntityId: any(named: 'journalEntityId'),
+            change: any(named: 'change'),
           ),
         );
-        expect(timers, isEmpty);
+        // The words are not filed again; only the timer is asked for, from
+        // the timer as it is rather than the status before.
+        final written = verify(
+          () => persistence.createDbEntity(
+            captureAny(),
+            linkedId: any(named: 'linkedId'),
+          ),
+        ).captured.cast<JournalEntity>();
+        expect(written.map((e) => e.meta.id), [frontTaskTimerId(taskId)]);
+        expect(timers.single.$1.meta.id, frontTaskTimerId(taskId));
+        expect(stopped, isEmpty);
         expect(assigned, isEmpty);
       },
     );
+
+    test('a retry set up otherwise brings the task already there in line: '
+        'the status, priority and due day the user last set', () async {
+      stubCreation(written: false);
+      final existing = made(
+        TaskData(
+          status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
+          statusHistory: const [],
+          dateFrom: now,
+          dateTo: now,
+          title: 'Fix the login bug',
+        ),
+      );
+      when(
+        () => journalDb.journalEntityById(taskId),
+      ).thenAnswer((_) async => existing);
+      when(
+        () => persistence.updateTask(
+          journalEntityId: taskId,
+          change: any(named: 'change'),
+        ),
+      ).thenAnswer((invocation) async {
+        final change =
+            invocation.namedArguments[#change]
+                as TaskData Function(TaskData stored);
+        return made(change(existing.data));
+      });
+
+      final task = await make(
+        FrontTaskDraft(
+          title: 'Fix the login bug',
+          priority: TaskPriority.p0Urgent,
+          due: DateTime(2026, 11, 12),
+          start: FrontTaskStart.groomed,
+        ),
+      );
+
+      expect(task!.data.status, isA<TaskGroomed>());
+      expect(task.data.statusHistory.single, isA<TaskGroomed>());
+      expect(task.data.priority, TaskPriority.p0Urgent);
+      expect(task.data.due, DateTime(2026, 11, 12));
+      expect(timers, isEmpty);
+      expect(assigned, isEmpty);
+    });
+
+    test(
+      'a retry whose update does not go through is no task made, so it can '
+      'be retried',
+      () async {
+        stubCreation(written: false);
+        final existing = made(
+          TaskData(
+            status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
+            statusHistory: const [],
+            dateFrom: now,
+            dateTo: now,
+            title: 'Fix the login bug',
+          ),
+        );
+        when(
+          () => journalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => existing);
+        when(
+          () => persistence.updateTask(
+            journalEntityId: taskId,
+            change: any(named: 'change'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final task = await make(
+          const FrontTaskDraft(
+            title: 'Fix the login bug',
+            priority: TaskPriority.p3Low,
+          ),
+        );
+
+        expect(task, isNull);
+      },
+    );
+
+    group('a retry that changes whether it is in progress', () {
+      Task withStatus(TaskStatus status) => made(
+        TaskData(
+          status: status,
+          statusHistory: const [],
+          dateFrom: now,
+          dateTo: now,
+          title: 'Fix the login bug',
+        ),
+      );
+
+      void retryOver(Task existing) {
+        stubCreation(written: false);
+        when(
+          () => journalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => existing);
+        when(
+          () => persistence.updateTask(
+            journalEntityId: taskId,
+            change: any(named: 'change'),
+          ),
+        ).thenAnswer((invocation) async {
+          final change =
+              invocation.namedArguments[#change]
+                  as TaskData Function(TaskData stored);
+          return made(change(existing.data));
+        });
+      }
+
+      test('set up open, as it already was, still asks its timer to stop — '
+          'a step that failed before is asked again', () async {
+        retryOver(
+          withStatus(TaskStatus.open(id: 's', createdAt: now, utcOffset: 0)),
+        );
+
+        await make(const FrontTaskDraft(title: 'Fix the login bug'));
+
+        expect(stopped, [frontTaskTimerId(taskId)]);
+        expect(timers, isEmpty);
+      });
+
+      test('set up open now, stops its dictated timer', () async {
+        retryOver(
+          withStatus(
+            TaskStatus.inProgress(id: 's', createdAt: now, utcOffset: 0),
+          ),
+        );
+
+        final task = await make(
+          const FrontTaskDraft(
+            title: 'Fix the login bug',
+            start: FrontTaskStart.open,
+          ),
+        );
+
+        expect(task!.data.status, isA<TaskOpen>());
+        expect(stopped, [frontTaskTimerId(taskId)]);
+        expect(timers, isEmpty);
+      });
+
+      test('set up in progress now, starts the dictated timer it did not '
+          'run before', () async {
+        retryOver(
+          withStatus(TaskStatus.open(id: 's', createdAt: now, utcOffset: 0)),
+        );
+        final started = now.subtract(const Duration(minutes: 10));
+
+        final task = await make(
+          FrontTaskDraft(
+            title: 'Fix the login bug',
+            startedAt: started,
+            start: FrontTaskStart.inProgress,
+          ),
+        );
+
+        expect(task!.data.status, isA<TaskInProgress>());
+        final (timer, on) = timers.single;
+        expect(timer.meta.id, frontTaskTimerId(taskId));
+        expect(timer.meta.dateFrom, started);
+        expect(on, same(task));
+        expect(stopped, isEmpty);
+      });
+    });
+
+    test('a dictated timer whose entry could not be written is reported, '
+        'and the task stands without it', () async {
+      stubCreation(written: true);
+      when(
+        () => persistence.createDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => false);
+      when(
+        () => journalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+
+      final task = await make(
+        FrontTaskDraft(
+          title: 'Fix the login bug',
+          startedAt: now.subtract(const Duration(minutes: 10)),
+        ),
+      );
+
+      expect(task?.meta.id, taskId);
+      expect(timers, isEmpty);
+      verify(
+        () => domainLogger.error(
+          LogDomain.agentWorkflow,
+          any(that: isA<StateError>()),
+          subDomain: 'makeFrontTask',
+          message: any(named: 'message'),
+        ),
+      ).called(1);
+      expect(assigned, hasLength(1));
+    });
   });
 }
 

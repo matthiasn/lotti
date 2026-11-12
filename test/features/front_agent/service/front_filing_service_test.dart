@@ -20,6 +20,12 @@ import '../../agents/test_data/entity_factories.dart';
 import '../../projects/test_utils.dart';
 
 void main() {
+  /// The setup of a task made of bare words, left as it was.
+  const asSaid = FrontTaskChoices(
+    start: FrontTaskStart.open,
+    priority: TaskPriority.p2Medium,
+  );
+
   setUpAll(registerAllFallbackValues);
 
   const doorId = 'dispatch-1:door:0';
@@ -592,7 +598,7 @@ void main() {
         kind: FrontDestinationKind.newThing,
         destinationId: null,
       );
-      await service.makeTask(doorId);
+      await service.makeTask(doorId, choices: asSaid);
       expect(madeTasks.single.$2, frontDoorTaskId(doorId, generation: 2));
       expect(
         frontDoorTaskId(doorId, generation: 2),
@@ -612,7 +618,10 @@ void main() {
         text: '  Buy a hose. ',
       );
       final tapped = DateTime.utc(2026, 11, 8, 9, 20);
-      await withClock(Clock.fixed(tapped), () => service.makeTask(doorId));
+      await withClock(
+        Clock.fixed(tapped),
+        () => service.makeTask(doorId, choices: asSaid),
+      );
       expect(madeTasks, [('Buy a hose.', frontDoorTaskId(doorId))]);
       final made = rewritten().outcome! as FrontDoorTaskCreated;
       expect(made.taskId, 'task-new');
@@ -635,7 +644,10 @@ void main() {
           text: ' I need to buy a hose by tomorrow, high priority. ',
           task: draft,
         );
-        await service.makeTask(doorId);
+        await service.makeTask(
+          doorId,
+          choices: FrontTaskChoices.of(draft),
+        );
         final (made, words) = madeDrafts.single;
         // Stored and read back with the record, field for field.
         expect(made.title, draft.title);
@@ -646,6 +658,36 @@ void main() {
         expect(madeTasks.single.$2, frontDoorTaskId(doorId));
       },
     );
+
+    test('makeTask makes the task as the user set it up, over what the '
+        'words said', () async {
+      seed(
+        const FrontDoorInbox(newKind: FrontNewKind.task),
+        kind: FrontDestinationKind.newThing,
+        destinationId: null,
+        text: 'Buy a hose, high priority.',
+        task: const FrontTaskDraft(
+          title: 'Buy a hose',
+          categoryId: 'cat-1',
+          priority: TaskPriority.p1High,
+        ),
+      );
+      await service.makeTask(
+        doorId,
+        choices: FrontTaskChoices(
+          start: FrontTaskStart.inProgress,
+          priority: TaskPriority.p0Urgent,
+          due: DateTime(2026, 11, 11),
+        ),
+      );
+      final (made, _) = madeDrafts.single;
+      expect(made.status, FrontTaskStart.inProgress);
+      expect(made.priority, TaskPriority.p0Urgent);
+      expect(made.due, DateTime(2026, 11, 11));
+      // What the user did not set up stays as the words said.
+      expect(made.title, 'Buy a hose');
+      expect(made.categoryId, 'cat-1');
+    });
 
     test(
       'makeEvent titles an event with the trimmed words under the id the '
@@ -727,7 +769,10 @@ void main() {
         destinationId: null,
       );
       taskFor = (_) => null;
-      await expectLater(service.makeTask(doorId), throwsStateError);
+      await expectLater(
+        service.makeTask(doorId, choices: asSaid),
+        throwsStateError,
+      );
       expect(upserts, isEmpty);
     });
 
@@ -738,7 +783,7 @@ void main() {
         throwsA(isA<FrontDoorStateException>()),
       );
       await expectLater(
-        service.makeTask(doorId),
+        service.makeTask(doorId, choices: asSaid),
         throwsA(isA<FrontDoorStateException>()),
       );
       await expectLater(

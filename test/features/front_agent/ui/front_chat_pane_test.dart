@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
@@ -37,6 +38,7 @@ import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
@@ -59,6 +61,7 @@ import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
+import 'package:lotti/features/front_agent/ui/front_task_setup.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/features/tasks/state/task_preview_provider.dart';
@@ -2744,17 +2747,32 @@ void main() {
       },
     );
 
-    testWidgets('make it a task makes the task through the filing service', (
-      tester,
-    ) async {
-      when(() => filing.makeTask('d:door:0')).thenAnswer((_) async {});
+    testWidgets('make it a task asks how, then makes the task as set up '
+        'through the filing service', (tester) async {
+      const urgent = FrontTaskChoices(
+        start: FrontTaskStart.open,
+        priority: TaskPriority.p0Urgent,
+      );
+      when(
+        () => filing.makeTask('d:door:0', choices: urgent),
+      ).thenAnswer((_) async {});
       await pumpPane(tester, thread: () async => inbox(FrontNewKind.task));
 
       await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
       await tester.pump();
+      // Asked how, nothing made yet.
+      expect(find.byKey(FrontTaskSetupKeys.ask(0)), findsOne);
+      verifyNever(() => filing.makeTask('d:door:0', choices: urgent));
+
+      await tester.tap(find.byKey(FrontTaskSetupKeys.priority(0)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(FrontTaskSetupKeys.option(0, 'P0')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(FrontTaskSetupKeys.create(0)));
+      await tester.pump();
       await tester.pump();
 
-      verify(() => filing.makeTask('d:door:0')).called(1);
+      verify(() => filing.makeTask('d:door:0', choices: urgent)).called(1);
     });
 
     testWidgets('make it an event makes the event through the filing '

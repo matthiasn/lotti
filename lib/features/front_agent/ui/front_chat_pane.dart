@@ -519,8 +519,13 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
       onDecline: controller.decline,
       onUndoDecline: controller.undoDecline,
       onTakeBack: controller.takeBack,
-      onMakeTask: (doorId) =>
-          FrontVoice.makeTask(ref, context, conversationId, doorId),
+      onMakeTask: (doorId, choices) => FrontVoice.makeTask(
+        ref,
+        context,
+        conversationId,
+        doorId,
+        choices: choices,
+      ),
       // Only where events are on: one made where they are off would be an
       // event the user has no page to find it on.
       onMakeEvent: eventsEnabled ? controller.makeEvent : null,
