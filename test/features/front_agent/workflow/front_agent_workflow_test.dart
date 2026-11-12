@@ -1546,7 +1546,7 @@ void main() {
                     content: 'matthiasn/lotti#7',
                   ),
                 ]);
-                return null;
+                return const InferenceUsage(inputTokens: 900, outputTokens: 4);
               }
               turns++;
               when(() => manager.turnCount).thenReturn(turns);
@@ -1569,7 +1569,7 @@ void main() {
                   ),
                 ]);
               }
-              return null;
+              return const InferenceUsage(inputTokens: 100, outputTokens: 10);
             };
       final told = <String>[];
       when(
@@ -1600,6 +1600,9 @@ void main() {
       // The filter's call is one call, billed to her turn, and cleaned up.
       expect(conversationRepository.turnBudgets[1], 1);
       expect(conversationRepository.deletedConversationIds, hasLength(2));
+      // Its tokens count toward the wake: both of her calls and the filter.
+      final usage = upserts.whereType<WakeTokenUsageEntity>().single;
+      expect((usage.inputTokens, usage.outputTokens), (1100, 24));
       final reply = upserts.whereType<AgentMessagePayloadEntity>().singleWhere(
         (p) => p.content.containsKey('surface'),
       );

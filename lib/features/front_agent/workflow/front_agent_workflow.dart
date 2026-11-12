@@ -237,7 +237,9 @@ class FrontAgentWorkflow with AgentErrorLogging {
         ),
       );
       // A call of its own, outside her conversation, on her model and
-      // billed to her turn: a month of pull requests never enters it.
+      // billed to her turn: a month of pull requests never enters it. Its
+      // tokens count toward the wake's usage too.
+      InferenceUsage? asideUsage;
       Future<String?> askOnce({
         required String systemMessage,
         required String prompt,
@@ -247,18 +249,21 @@ class FrontAgentWorkflow with AgentErrorLogging {
           maxTurns: 1,
         );
         try {
-          await _conversationRepository.sendMessage(
-            conversationId: id,
-            message: prompt,
-            model: resolved.modelId,
-            provider: resolved.provider,
-            inferenceRepo: inferenceRepo,
-            temperature: 0,
-            consumptionAgentId: recordConsumption ? agentId : null,
-            consumptionWakeRunKey: recordConsumption ? runKey : null,
-            consumptionThreadId: recordConsumption ? threadId : null,
-            rethrowInferenceErrors: true,
-            turnBudget: 1,
+          asideUsage = _merge(
+            asideUsage,
+            await _conversationRepository.sendMessage(
+              conversationId: id,
+              message: prompt,
+              model: resolved.modelId,
+              provider: resolved.provider,
+              inferenceRepo: inferenceRepo,
+              temperature: 0,
+              consumptionAgentId: recordConsumption ? agentId : null,
+              consumptionWakeRunKey: recordConsumption ? runKey : null,
+              consumptionThreadId: recordConsumption ? threadId : null,
+              rethrowInferenceErrors: true,
+              turnBudget: 1,
+            ),
           );
           return _conversationRepository
               .getConversation(id)
@@ -437,7 +442,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
       }
       await persistWakeTokenUsage(
         syncService: _syncService,
-        usage: usage,
+        usage: _merge(usage, asideUsage),
         agentId: agentId,
         runKey: runKey,
         threadId: threadId,
