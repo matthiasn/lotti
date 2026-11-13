@@ -61,6 +61,21 @@ profile that resolved for the surface names a read-aloud model, that cloud
 voice speaks instead (see [which voice speaks](#which-voice-speaks)). Either
 way the result plays through the app's existing `media_kit` stack.
 
+**Every clip reaches the audio output at 48 kHz.** The voices do not share a
+rate: Supertonic writes 44.1 kHz, Mistral and ElevenLabs answer with 24 kHz
+mono WAV (checked live 2026-11-13: header, length and pitch agree, and
+streamed and whole clips alike). An audio output that plays what it is given
+at the device's own rate, without resampling, speaks a 24 kHz voice twice as
+fast and an octave high on a 48 kHz device. `MediaKitTtsAudioPlayer` sets
+mpv's `audio-samplerate` to `48000` before it opens each clip, so mpv
+resamples and the output always gets the rate devices run at.
+
+**Speed is one setting, and live.** `TtsSettings.speed` (persisted as
+`TTS_SPEED`) is set in Settings → Speech and from the companion chat's drawer
+(*Reading speed*). The playback controller listens to it and changes the rate
+of the clip that is playing (`TtsAudioPlayer.setSpeed`), so a change is heard
+at once; a bundled voice sample keeps its natural speed.
+
 **On-device synthesis never leaves the device — but the model has to arrive
 first.** The
 weights are not bundled. `TtsModelRepository` checks the model directory for the
@@ -374,7 +389,7 @@ so answer text reaches a provider only on an explicit play.
 Its key includes source ID, exact answer text, voice, model and language; on a
 cloud route the model is the route's `cacheKey` and the voice the route's own or
 the one chosen for its language, so another voice never replays the old one's
-clip. Speed is applied at playback and does not invalidate the WAV.
+clip. Speed is applied at playback, live, and does not invalidate the WAV.
 
 **A replay plays the kept clip.** The same slot holds the WAV of an utterance
 that played to its end — or was stopped once its clip was made — under that

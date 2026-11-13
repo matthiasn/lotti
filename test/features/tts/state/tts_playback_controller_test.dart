@@ -129,6 +129,31 @@ void main() {
     verify(file.delete).called(1);
   });
 
+  test('a new speed reaches the clip that is playing, and nothing once it '
+      'has stopped', () async {
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    final h = harness(
+      player: player,
+      cloud: FakeCloudSpeechSynthesizer(output: preparedFile()),
+    );
+    final controller = controllerOf(h.container);
+    final settings = h.container.read(ttsSettingsControllerProvider.notifier);
+
+    await controller.speak(
+      sourceId: 'chat',
+      text: 'Zwei offen.',
+      cloudRoute: cloudRoute,
+    );
+    expect(player.lastSpeed, 1);
+    settings.setSpeed(1.25);
+    expect(player.speedChanges, [1.25]);
+
+    await controller.stop();
+    settings.setSpeed(2);
+    expect(player.speedChanges, [1.25]);
+  });
+
   Future<MockDomainLogger> mockLogger() async {
     final logger = MockDomainLogger();
     await getIt.unregister<DomainLogger>();
@@ -1485,6 +1510,9 @@ void main() {
 
       expect(player.playCount, 1);
       expect(player.lastSpeed, 1);
+      // A sample stays at natural speed when the speed changes under it.
+      h.container.read(ttsSettingsControllerProvider.notifier).setSpeed(2);
+      expect(player.speedChanges, isEmpty);
       final state = h.container.read(ttsPlaybackControllerProvider);
       expect(state.status, TtsPlaybackStatus.playing);
       expect(state.sourceId, 'onboarding-companion-voices');

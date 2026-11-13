@@ -98,6 +98,12 @@ class FakeTtsAudioPlayer implements TtsAudioPlayer {
     if (playError != null) throw playError!;
   }
 
+  /// Speeds set on the clip while it plays, in order.
+  final List<double> speedChanges = <double>[];
+
+  @override
+  Future<void> setSpeed(double speed) async => speedChanges.add(speed);
+
   @override
   Future<void> stop() async {
     stopCount++;

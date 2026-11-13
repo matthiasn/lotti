@@ -135,7 +135,7 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   (`front_chat_drawer.dart`: search, new chat, the conversations, her
   settings), the composer's category chip and its sheet
   (`front_category_chip.dart`), the hero that greets a conversation not begun
-  (her bust) and the starter questions under it (`front_starter_prompts.dart`), the drawer's row that mutes her (`front_voice_switch.dart`), the card of
+  (her bust) and the starter questions under it (`front_starter_prompts.dart`), the drawer's rows that mute her and set how fast she reads (`front_voice_switch.dart`), the card of
   rows a closed-task answer is drawn as (`front_task_list.dart`), the preview
   cards her lists of tasks and what her turn made are drawn as
   (`front_entity_preview_card.dart`; her reply is an A2UI v1.0 surface she

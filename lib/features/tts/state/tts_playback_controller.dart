@@ -122,6 +122,22 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       _playing = null;
       unawaited(_stopAndDelete(_player, file));
     });
+    // A new speed reaches the clip that is speaking, not only the next one.
+    // A bundled sample keeps its natural speed ([playClip]).
+    ref.listen(ttsSettingsControllerProvider.select((s) => s.speed), (
+      _,
+      speed,
+    ) {
+      final playing = _playing;
+      if (state.status != TtsPlaybackStatus.playing ||
+          playing == null ||
+          playing.key.model == _bundledClipModel) {
+        return;
+      }
+      // A rate the player refuses leaves the clip at its old speed; the next
+      // one opens at the new speed regardless.
+      _player?.setSpeed(speed).ignore();
+    });
     return const TtsPlaybackState();
   }
 

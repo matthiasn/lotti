@@ -16,6 +16,9 @@ abstract interface class TtsAudioPlayer {
   /// Opens [file] and starts playback at [speed]× (1.0 = natural).
   Future<void> play(File file, {required double speed});
 
+  /// Changes the rate of the clip that is playing, without restarting it.
+  Future<void> setSpeed(double speed);
+
   /// Halts playback; the controller treats this as the end of the utterance.
   Future<void> stop();
 
@@ -58,9 +61,21 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
   late final StreamSubscription<bool> _finished;
   int _generation = 0;
 
+  /// The rate every clip is handed to the audio output at. Some outputs play
+  /// whatever they are given at the device's own rate, without resampling:
+  /// a 24 kHz cloud voice (Mistral, ElevenLabs) then speaks twice as fast on
+  /// a 48 kHz device. mpv resamples to this rate itself, so the output always
+  /// gets the rate devices run at.
+  static const String outputSampleRate = '48000';
+
   @override
   Future<void> play(File file, {required double speed}) async {
     final generation = ++_generation;
+    final native = _player.platform;
+    if (native is NativePlayer) {
+      await native.setProperty('audio-samplerate', outputSampleRate);
+    }
+    if (generation != _generation) return;
     await _player.open(Media(file.path), play: false);
     if (generation != _generation) return;
     await _player.setRate(speed);
@@ -79,6 +94,9 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
       rethrow;
     }
   }
+
+  @override
+  Future<void> setSpeed(double speed) => _player.setRate(speed);
 
   @override
   Future<void> stop() async {
