@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.100]
+
+### Added
+
+- **Reading speed in the companion chat.** The chat's drawer has a *Reading
+  speed* row under *Spoken answers*: a tap steps from 0.5x to 2x. It is the
+  same setting as Settings → Speech, and a change is heard at once, in the
+  middle of an answer too.
+
+### Fixed
+
+- **A cloud voice could speak twice as fast as it should.** Mistral and
+  ElevenLabs voices arrive at 24 kHz, and an audio output that plays at the
+  device's own rate without converting them sped them up to double speed, an
+  octave high. Every read-aloud clip is now converted to 48 kHz before it is
+  played.
+- **Chats no longer jump when a chart or long answer arrives.** Every new
+  reply, card or chart snapped the conversation to the bottom the moment it
+  was laid out, often while you were still reading. New content now lands
+  without moving what you are looking at, and the thread then glides down to
+  it at reading pace. Touching, clicking, dragging or scrolling stops the
+  glide right where it is, and a reply that arrives while you are scrolled up
+  leaves you in place.
+
 ## [1.1.99]
 
 ### Added
