@@ -155,6 +155,18 @@ Contents:
   rows with no change set behind them, which confirm into the backfill queue,
   reject into a device-local dismissal, and are all queued by *Confirm all*.
 
+  **Status changes are never part of the batch.** A suggestion whose tool is in
+  `AgentToolRegistry.individualConfirmTools` (`set_task_status`;
+  `PendingSuggestion.confirmsIndividually`) renders below the Confirm-all rail
+  in a band of its own — `alert.warning` border, warning icon, *Status changes*
+  title and a line saying a task set to done leaves the open task lists. The
+  row itself names the target ("Set status to Done"). Its rows get no
+  Confirm-all pulse and no swipe nudge, the rail counts only the other rows,
+  and the shell passes only those to `_confirmAll`. The service enforces the
+  same rule: `ChangeSetConfirmationService.confirmAll` leaves those items
+  pending, so no bulk path — this card, the goal page's change-set card, or the
+  query chat's *Accept all* — can apply one. Only `confirmItem` does.
+
   A `link_task` row reads the target task's title in the reader's language:
   the agent's proposal names its target by id alone (its args are kept
   canonical for the fingerprint), so the row looks the title up at render

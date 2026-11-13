@@ -21,7 +21,9 @@ applied until the user confirms it.
   open pull request that implements it, or spin
   off a follow-up task carrying such a relationship — each arrives as a row the
   user can accept, dismiss, or swipe away. *Confirm all* takes the whole batch
-  at once.
+  at once — except status changes, which sit apart in a warning band below it
+  and are confirmed one at a time, because a task set to DONE leaves the open
+  task lists.
 - **Finds the task a note means.** When a note speaks of other work — a
   blocker, earlier work, a duplicate — the task agent searches the user's
   other tasks by meaning, on the device, reads the summary of a likely match,

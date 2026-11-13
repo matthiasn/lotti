@@ -803,6 +803,8 @@
   "aiCardProposalKindUpdate": "Opdatering",
   "aiCardReadMore": "Læs mere",
   "aiCardShowLess": "Vis mindre",
+  "aiCardStatusChangesHint": "Bekræft hver for sig. En færdig opgave forsvinder fra dine lister over åbne opgaver.",
+  "aiCardStatusChangesTitle": "Statusændringer",
   "aiCardTitle": "AI-oversigt",
   "aiCardUnmetRequestNoReason": "Mine observationer forklarer, hvad der gik galt.",
   "aiCardUnmetRequestShowObservations": "Se observationer",

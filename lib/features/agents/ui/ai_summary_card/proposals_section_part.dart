@@ -15,7 +15,9 @@ import 'package:material_ui/material_ui.dart';
 
 /// Proposals section sandwiched between the TLDR body and the controls
 /// footer: section title + pending count badge, the vertical list of
-/// [ProposalRow]s, and an optional "Confirm all" rail.
+/// [ProposalRow]s, an optional "Confirm all" rail, and under it the status
+/// changes ([PendingSuggestion.confirmsIndividually]) in a warning band of
+/// their own — rows Confirm all never touches.
 ///
 /// The card renders this only while [open] is non-empty. A header over an
 /// empty band said nothing the absence of rows did not already say, and cost
@@ -81,6 +83,47 @@ class ProposalsSection extends StatelessWidget {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
+    final bulk = [
+      for (final s in open)
+        if (!s.confirmsIndividually) s,
+    ];
+    final individual = [
+      for (final s in open)
+        if (s.confirmsIndividually) s,
+    ];
+
+    // A newly arrived proposal eases its own height open; the initial batch
+    // (and a row re-appearing mid-collapse) appears instantly.
+    // SizeFadeEntrance is a SizeTransition, so it composes with the row's own
+    // collapse on exit without fighting it. [inBulk] rows join the Confirm
+    // all sweep and the first of them carries the swipe hint; status rows
+    // take neither.
+    Widget row(PendingSuggestion s, int index, {bool inBulk = true}) =>
+        SizeFadeEntrance(
+          key: ValueKey('enter-${s.changeSet.id}-${s.itemIndex}'),
+          animate: newlyArrived.contains(s.fingerprint),
+          child:
+              rowBuilder?.call(s, index) ??
+              ProposalRow(
+                // Stable identity (set id + item index) so the row's
+                // timer/animation/busy state stays bound to its suggestion
+                // when the open list mutates (e.g. confirm-all), instead of
+                // index-based element reuse transferring it to a sibling.
+                key: ValueKey('open-${s.changeSet.id}-${s.itemIndex}'),
+                suggestion: s,
+                // Only the first pending row gets the swipe-affordance
+                // wiggle hint so the page doesn't pulse with every
+                // visible row.
+                isFirst: inBulk && index == 0,
+                confirmAllPulse: inBulk ? confirmAllPulse : 0,
+                cascadeIndex: index,
+                onResolveStart: onResolveStart,
+                onResolveEnd: onResolveEnd,
+                onOpenLinkedTask: onOpenLinkedTask,
+                settling: settling,
+                pendingCount: pendingCount ?? open.length,
+              ),
+        );
 
     return Container(
       decoration: BoxDecoration(
@@ -133,40 +176,7 @@ class ProposalsSection extends StatelessWidget {
               // No inter-row Padding here: each open row owns a trailing gap
               // (step4) *inside* its collapse subtree, so the gap closes with the
               // row when it leaves — no leftover spacing to snap on prune.
-              for (var i = 0; i < open.length; i++)
-                // A newly arrived proposal eases its own height open; the initial
-                // batch (and a row re-appearing mid-collapse) appears instantly.
-                // SizeFadeEntrance is a SizeTransition, so it composes with the
-                // row's own collapse on exit without fighting it.
-                SizeFadeEntrance(
-                  key: ValueKey(
-                    'enter-${open[i].changeSet.id}-${open[i].itemIndex}',
-                  ),
-                  animate: newlyArrived.contains(open[i].fingerprint),
-                  child:
-                      rowBuilder?.call(open[i], i) ??
-                      ProposalRow(
-                        // Stable identity (set id + item index) so the row's
-                        // timer/animation/busy state stays bound to its suggestion
-                        // when the open list mutates (e.g. confirm-all), instead of
-                        // index-based element reuse transferring it to a sibling.
-                        key: ValueKey(
-                          'open-${open[i].changeSet.id}-${open[i].itemIndex}',
-                        ),
-                        suggestion: open[i],
-                        // Only the first pending row gets the swipe-affordance
-                        // wiggle hint so the page doesn't pulse with every
-                        // visible row.
-                        isFirst: i == 0,
-                        confirmAllPulse: confirmAllPulse,
-                        cascadeIndex: i,
-                        onResolveStart: onResolveStart,
-                        onResolveEnd: onResolveEnd,
-                        onOpenLinkedTask: onOpenLinkedTask,
-                        settling: settling,
-                        pendingCount: pendingCount ?? open.length,
-                      ),
-                ),
+              for (var i = 0; i < bulk.length; i++) row(bulk[i], i),
               // Bottom rail: the one list-level operation, trailing-aligned.
               // Open rows already end with their own trailing gap, so the
               // rail needs none of its own. Always mounted and collapsed
@@ -190,6 +200,21 @@ class ProposalsSection extends StatelessWidget {
                         ? null
                         : () => unawaited(onConfirmAll!()),
                   ),
+                ),
+              ),
+              // Status changes sit apart, below the rail Confirm all serves:
+              // a DONE takes the task off every open list, so each one is
+              // decided on its own row. Same collapse as the rail when the
+              // last of them leaves.
+              SizeFadeCollapse(
+                key: const ValueKey('proposalStatusChanges'),
+                collapsed: individual.isEmpty,
+                duration: ProposalMotion.collapse,
+                child: _StatusChangesBand(
+                  rows: [
+                    for (var i = 0; i < individual.length; i++)
+                      row(individual[i], bulk.length + i, inBulk: false),
+                  ],
                 ),
               ),
             ],
@@ -278,6 +303,70 @@ class ProposalHistorySection extends StatelessWidget {
                         ),
                   ),
               ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The status-change band under the Confirm all rail: a warning hairline,
+/// a title and the one line that says what accepting costs, then the rows.
+/// Kept mounted while empty so its [SizeFadeCollapse] can ease it away.
+class _StatusChangesBand extends StatelessWidget {
+  const _StatusChangesBand({required this.rows});
+
+  final List<Widget> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final warning = tokens.colors.alert.warning;
+    final messages = context.messages;
+    return Padding(
+      padding: EdgeInsets.only(top: tokens.spacing.step3),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: warning.defaultColor),
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+        ),
+        child: Padding(
+          // No bottom inset: each row brings its own trailing gap.
+          padding: EdgeInsets.only(
+            left: tokens.spacing.step3,
+            top: tokens.spacing.step3,
+            right: tokens.spacing.step3,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    LottiIcons.warning,
+                    size: tokens.spacing.step5,
+                    color: warning.ink,
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  Flexible(
+                    child: Text(
+                      messages.aiCardStatusChangesTitle,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(color: warning.ink),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: tokens.spacing.step1),
+              Text(
+                messages.aiCardStatusChangesHint,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.aiCard.metaText,
+                ),
+              ),
+              SizedBox(height: tokens.spacing.step3),
+              ...rows,
             ],
           ),
         ),

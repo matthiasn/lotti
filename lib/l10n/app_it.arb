@@ -803,6 +803,8 @@
   "aiCardProposalKindUpdate": "Aggiornamento",
   "aiCardReadMore": "Leggi tutto",
   "aiCardShowLess": "Mostra di meno",
+  "aiCardStatusChangesHint": "Conferma ciascuno singolarmente. Un'attività completata esce dai tuoi elenchi di attività aperte.",
+  "aiCardStatusChangesTitle": "Cambi di stato",
   "aiCardTitle": "Riepilogo dell'AI",
   "aiCardUnmetRequestNoReason": "Le mie osservazioni spiegano cosa è andato storto.",
   "aiCardUnmetRequestShowObservations": "Vedi osservazioni",

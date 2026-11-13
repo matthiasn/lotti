@@ -2783,6 +2783,43 @@ void main() {
           ).called(1);
         });
       });
+      test('leaves a status change pending for its own confirm', () async {
+        final changeSet = makeTestChangeSet(
+          items: const [
+            ChangeItem(
+              toolName: TaskAgentToolNames.setTaskStatus,
+              args: {'status': 'DONE'},
+              humanSummary: 'Set status to DONE',
+            ),
+            ChangeItem(
+              toolName: TaskAgentToolNames.setTaskTitle,
+              args: {'title': 'Pending'},
+              humanSummary: 'Still pending',
+            ),
+          ],
+        );
+        final stored = persistUpsertedChangeSets(changeSet);
+        when(
+          () => mockToolDispatcher.dispatch(any(), any(), any()),
+        ).thenAnswer(
+          (_) async => const ToolExecutionResult(success: true, output: 'Done'),
+        );
+
+        await withClock(testClock, () async {
+          final results = await service.confirmAll(changeSet);
+
+          expect(results, hasLength(1));
+          final dispatched = verify(
+            () => mockToolDispatcher.dispatch(captureAny(), any(), any()),
+          ).captured;
+          expect(dispatched, [TaskAgentToolNames.setTaskTitle]);
+          expect(
+            stored().items.map((i) => i.status),
+            [ChangeItemStatus.pending, ChangeItemStatus.confirmed],
+          );
+        });
+      });
+
       test('returns empty when no items are pending', () async {
         final changeSet = makeTestChangeSet(
           items: const [

@@ -685,6 +685,8 @@
   "aiCardProposalKindUpdate": "Aktualisieren",
   "aiCardReadMore": "Mehr lesen",
   "aiCardShowLess": "Weniger anzeigen",
+  "aiCardStatusChangesHint": "Bestätige jede einzeln. Eine erledigte Aufgabe verschwindet aus deinen offenen Aufgabenlisten.",
+  "aiCardStatusChangesTitle": "Statusänderungen",
   "aiCardTitle": "KI-Zusammenfassung",
   "aiCardUnmetRequestNoReason": "Meine Beobachtungen sagen, was schiefgelaufen ist.",
   "aiCardUnmetRequestShowObservations": "Beobachtungen ansehen",

@@ -685,6 +685,8 @@
   "aiCardProposalKindUpdate": "Actualizați",
   "aiCardReadMore": "Citiți mai mult",
   "aiCardShowLess": "Afișați mai puțin",
+  "aiCardStatusChangesHint": "Confirmați fiecare separat. O sarcină finalizată dispare din listele dvs. de sarcini deschise.",
+  "aiCardStatusChangesTitle": "Modificări de stare",
   "aiCardTitle": "Rezumat AI",
   "aiCardUnmetRequestNoReason": "Observațiile mele explică ce nu a mers.",
   "aiCardUnmetRequestShowObservations": "Vedeți observațiile",

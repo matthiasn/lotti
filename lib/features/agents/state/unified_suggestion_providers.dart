@@ -6,6 +6,7 @@ import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill_providers.dart';
@@ -78,6 +79,11 @@ class PendingSuggestion {
 
   /// The missing inference this suggestion runs; null for an agent proposal.
   final InferenceBackfillCandidate? backfill;
+
+  /// Whether only its own confirm applies this suggestion — a status change,
+  /// shown apart from the rest and left out of "Confirm all".
+  bool get confirmsIndividually =>
+      AgentToolRegistry.individualConfirmTools.contains(item.toolName);
 }
 
 /// What the consolidated `AiSummaryCard` renders for a single task.

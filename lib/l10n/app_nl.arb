@@ -802,6 +802,8 @@
   "aiCardProposalKindUpdate": "Bijwerken",
   "aiCardReadMore": "Lees meer",
   "aiCardShowLess": "Minder tonen",
+  "aiCardStatusChangesHint": "Bevestig ze één voor één. Een afgeronde taak verdwijnt uit je lijsten met open taken.",
+  "aiCardStatusChangesTitle": "Statuswijzigingen",
   "aiCardTitle": "Samenvatting van de AI",
   "aiCardUnmetRequestNoReason": "Mijn opmerkingen leggen uit wat er misging.",
   "aiCardUnmetRequestShowObservations": "Opmerkingen bekijken",

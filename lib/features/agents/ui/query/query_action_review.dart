@@ -220,6 +220,17 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
         items.every((item) => item.status != ChangeItemStatus.pending);
     final loading = decision == true && saved.value == null && !saved.hasError;
     final perItem = items.length > 1 && decision != false && widget.canApply;
+    // Set-level buttons only while they can act: once the only pending
+    // changes are status changes, each row's own buttons decide them.
+    final setLevel =
+        items.length == 1 ||
+        items.any(
+          (item) =>
+              item.status == ChangeItemStatus.pending &&
+              !AgentToolRegistry.individualConfirmTools.contains(
+                item.toolName,
+              ),
+        );
     return Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step3),
       child: Column(
@@ -264,7 +275,7 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
               messages.aiCardProposalDismissed,
               style: tokens.typography.styles.others.caption,
             )
-          else if (!completed) ...[
+          else if (!completed && setLevel) ...[
             if (_failed || saved.hasError)
               Padding(
                 padding: EdgeInsets.only(bottom: tokens.spacing.step2),

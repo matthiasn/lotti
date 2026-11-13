@@ -1266,6 +1266,8 @@
   "aiCardProposalKindUpdate": "Update",
   "aiCardReadMore": "Read more",
   "aiCardShowLess": "Show less",
+  "aiCardStatusChangesHint": "Confirm each one on its own. A task set to done leaves your open task lists.",
+  "aiCardStatusChangesTitle": "Status changes",
   "aiCardTitle": "AI summary",
   "aiCardUnmetRequestNoReason": "My observations say what went wrong.",
   "@aiCardUnmetRequestNoReason": {

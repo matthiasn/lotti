@@ -405,9 +405,10 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     }
   }
 
-  /// Confirms every visible suggestion while retaining the whole batch until
-  /// each proposal row finishes its staggered exit animation. Backfill
-  /// suggestions are all queued, not just the first.
+  /// Confirms every visible suggestion in [pending] while retaining the whole
+  /// batch until each proposal row finishes its staggered exit animation.
+  /// Backfill suggestions are all queued, not just the first. The caller
+  /// leaves status changes out, and the service skips them as well.
   Future<void> _confirmAll(List<PendingSuggestion> pending) async {
     if (_confirmAllBusy || pending.isEmpty) return;
     // Start viewport stabilization before the first persistence call can grow
@@ -667,6 +668,10 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     // row committed by the user stays in `open` until its collapse finishes;
     // then the section — header, paddings, rail — collapses away as a unit
     // on the row's own clock, rather than unmounting in one frame.
+    final bulkOpen = [
+      for (final s in list?.open ?? const <PendingSuggestion>[])
+        if (!s.confirmsIndividually) s,
+    ];
     final proposalsSection = list == null || list.open.isEmpty
         ? null
         : ProposalsSection(
@@ -691,8 +696,10 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             // keeps it for the whole of a Confirm-all sweep: the rows prune
             // one at a time, and it must not drop out while the last is
             // still leaving.
-            onConfirmAll: list.open.length > 1 || _confirmAllSweeping
-                ? () => _confirmAll(list.open)
+            // Status changes never ride along: the section shows them apart,
+            // and each is confirmed on its own row.
+            onConfirmAll: bulkOpen.length > 1 || _confirmAllSweeping
+                ? () => _confirmAll(bulkOpen)
                 : null,
             onResolveStart: _onRowResolveStart,
             onResolveEnd: _onRowResolveEnd,

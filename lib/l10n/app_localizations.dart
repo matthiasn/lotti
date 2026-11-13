@@ -2982,6 +2982,18 @@ abstract class AppLocalizations {
   /// **'Status'**
   String get aiCardProposalKindStatus;
 
+  /// No description provided for @aiCardStatusChangesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm each one on its own. A task set to done leaves your open task lists.'**
+  String get aiCardStatusChangesHint;
+
+  /// No description provided for @aiCardStatusChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status changes'**
+  String get aiCardStatusChangesTitle;
+
   /// No description provided for @aiCardProposalKindUpdate.
   ///
   /// In en, this message translates to:
