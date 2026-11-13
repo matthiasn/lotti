@@ -283,7 +283,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
       return;
     }
     if (MediaQuery.disableAnimationsOf(context)) {
-      position.jumpTo(position.maxScrollExtent);
+      _jumpToEnd();
       return;
     }
     position.beginActivity(
@@ -303,7 +303,30 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final glide = _glide;
       if (!mounted || glide == null || !glide.isActive) return;
-      _scrollController.jumpTo(glide.destination);
+      // Short of the end only when the glide holds an end it saw laid out.
+      if (glide.destination < _scrollController.position.maxScrollExtent) {
+        _scrollController.jumpTo(glide.destination);
+      } else {
+        _jumpToEnd();
+      }
+    });
+  }
+
+  /// Lands on the end without motion. From far up, the end is the list's
+  /// estimate; the jump's own layout reaches the real one, so a landing
+  /// that this shows short is jumped once more.
+  void _jumpToEnd() {
+    final target = _scrollController.position.maxScrollExtent;
+    _scrollController.jumpTo(target);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients || _pointersDown > 0) {
+        return;
+      }
+      final position = _scrollController.position;
+      if (position.maxScrollExtent > target &&
+          !position.isScrollingNotifier.value) {
+        position.jumpTo(position.maxScrollExtent);
+      }
     });
   }
 
