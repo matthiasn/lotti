@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
@@ -121,6 +123,21 @@ void main() {
         isNull,
       );
       expect(find.byIcon(LottiIcons.chevronDown), findsOne);
+      // The design system's chip, with a full tap target.
+      final chip = tester.widget<DesignSystemChip>(
+        find.byKey(FrontCategoryChipKeys.chip),
+      );
+      expect(chip.size, DesignSystemChipSize.compactPillTouch);
+      expect(
+        tester.getSize(find.byKey(FrontCategoryChipKeys.chip)).height,
+        greaterThanOrEqualTo(
+          tester
+              .element(find.byType(FrontCategoryChip))
+              .designTokens
+              .spacing
+              .step9,
+        ),
+      );
     });
 
     testWidgets("names the conversation's category, and says what it is to "
@@ -130,7 +147,9 @@ void main() {
 
       expect(find.text('Habitat Engineering'), findsOne);
       expect(
-        tester.getSemantics(find.byType(FrontCategoryChip)),
+        tester.getSemantics(
+          find.bySemanticsLabel('Category for this chat: Habitat Engineering'),
+        ),
         isSemantics(
           label: 'Category for this chat: Habitat Engineering',
           isButton: true,
@@ -200,7 +219,9 @@ void main() {
         tester.widget<DesignSystemSelectionRow>(find.byKey(key)).selected;
 
     testWidgets('says what a category does, offers one row per category she '
-        'may see and "Everything" last, and says what @ does', (tester) async {
+        'may see under "Everything", the default, and says what @ does', (
+      tester,
+    ) async {
       await openSheet(tester);
 
       expect(
@@ -219,7 +240,7 @@ void main() {
           )
           .map((row) => row.title)
           .toList();
-      expect(rows, ['Penguin Operations', 'Habitat Engineering', 'Everything']);
+      expect(rows, ['Everything', 'Penguin Operations', 'Habitat Engineering']);
       // Each row wears its category's square; "Everything" its outline.
       final swatches = tester
           .widgetList<FrontCategorySwatch>(
@@ -230,7 +251,7 @@ void main() {
           )
           .map((swatch) => swatch.category)
           .toList();
-      expect(swatches, <CategoryDefinition?>[penguins, habitat, null]);
+      expect(swatches, <CategoryDefinition?>[null, penguins, habitat]);
     });
 
     testWidgets('checks the current one: "Everything" for none', (
@@ -247,6 +268,32 @@ void main() {
 
     testWidgets("checks the conversation's category", (tester) async {
       await openSheet(tester, stored: {'cat-penguins'});
+      // Said by the word and the tick, with no band behind the row.
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(FrontCategoryChipKeys.option('cat-penguins')),
+            )
+            .showSelectedBackground,
+        isFalse,
+      );
+      expect(find.text('Selected'), findsOne);
+      // Rows as dense as the drawer's, each led by its swatch in a
+      // glyph-sized slot so the names share one edge.
+      final row = find.byKey(FrontCategoryChipKeys.option('cat-penguins'));
+      expect(
+        tester.widget<DesignSystemSelectionRow>(row).size,
+        DesignSystemListItemSize.small,
+      );
+      expect(
+        tester.getSize(
+          find.descendant(
+            of: row,
+            matching: find.byType(FrontCategorySwatch),
+          ),
+        ),
+        const Size.square(IconSizes.s),
+      );
 
       expect(
         selected(tester, FrontCategoryChipKeys.option('cat-penguins')),

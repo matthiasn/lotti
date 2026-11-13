@@ -164,6 +164,15 @@ void main() {
       expect(search.center.dy, closeTo(close.center.dy, 1));
       expect(search.right, lessThanOrEqualTo(close.left));
       expect(find.text('Search chats'), findsOne);
+      // Back to the conversation, not a second cross beside her header's.
+      expect(
+        find.descendant(
+          of: find.byKey(FrontChatDrawerKeys.close),
+          matching: find.byIcon(LottiIcons.chevronLeft),
+        ),
+        findsOne,
+      );
+      expect(find.byIcon(LottiIcons.close), findsNothing);
 
       await tester.tap(find.byKey(FrontChatDrawerKeys.close));
       await tester.pump();
@@ -308,6 +317,28 @@ void main() {
       );
       expect(voice.bottom, lessThanOrEqualTo(profile.top));
       expect(profile.bottom, lessThanOrEqualTo(internals.top));
+      // Settings: one quiet label style, and one row size, on all three.
+      final tokens = tester.element(find.byType(FrontChatDrawer)).designTokens;
+      for (final label in ['Spoken answers', 'AI profile', 'Agent internals']) {
+        final style = tester.widget<Text>(find.text(label)).style!;
+        expect(
+          style.fontWeight,
+          tokens.typography.styles.body.bodySmall.fontWeight,
+          reason: label,
+        );
+        expect(style.color, tokens.colors.text.mediumEmphasis, reason: label);
+      }
+      expect(
+        {
+          for (final key in [
+            FrontVoiceSwitchKeys.row,
+            FrontChatDrawerKeys.profile,
+            FrontChatDrawerKeys.internals,
+          ])
+            tester.widget<DesignSystemListItem>(find.byKey(key)).size,
+        },
+        hasLength(1),
+      );
       // Below the list.
       expect(
         tester.getRect(find.byType(FrontConversationList)).bottom,

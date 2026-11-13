@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -17,6 +16,7 @@ import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
@@ -169,7 +169,7 @@ void main() {
         expect(order[i].center.dy, closeTo(order[0].center.dy, 0.5));
       }
       // Her face, a rounded tile.
-      expect(order[1].width, ControlSizes.avatar);
+      expect(order[1].width, ControlSizes.avatarCompact);
       final tile = tester.widget<Container>(
         find.descendant(
           of: find.byKey(FrontChatHeaderKeys.figure),
@@ -188,23 +188,98 @@ void main() {
       expect(closed, 1);
     });
 
-    testWidgets('her name is its one title, in the subtitle size: no line '
-        "for the conversation's title and no overflow menu", (tester) async {
+    testWidgets('over the thread its one title names the open conversation, '
+        'a step under her name in size and on two lines at most, in the same '
+        'band: no overflow menu', (tester) async {
       await pumpHeader(tester, conversations: census);
       final tokens = tester.element(find.byType(FrontChatHeader)).designTokens;
 
       final title = tester.widget<Text>(find.byKey(FrontChatHeaderKeys.title));
-      expect(title.data, 'Companion');
+      expect(title.data, 'Plan the census');
+      expect(title.maxLines, 2);
+      expect(title.overflow, TextOverflow.ellipsis);
+      expect(find.text('Companion'), findsNothing);
       expect(
         title.style!.fontSize,
-        tokens.typography.styles.subtitle.subtitle1.fontSize,
+        tokens.typography.styles.subtitle.subtitle2.fontSize,
       );
-      expect(find.text('Plan the census'), findsNothing);
       expect(find.byType(FrontMenuButton), findsNothing);
       // A tap target and the band inset tall: the drawer's top row's height.
       expect(
         tester.getSize(find.byType(FrontChatHeader)).height,
         TapTargets.minimum + 2 * tokens.spacing.step2,
+      );
+    });
+
+    group('her own name stays where no one conversation is the place', () {
+      String title(WidgetTester tester) =>
+          tester.widget<Text>(find.byKey(FrontChatHeaderKeys.title)).data!;
+
+      testWidgets('one not begun: the index does not list it yet — on one '
+          'line, in the subtitle size', (tester) async {
+        await pumpHeader(tester);
+        expect(title(tester), 'Companion');
+        final text = tester.widget<Text>(
+          find.byKey(FrontChatHeaderKeys.title),
+        );
+        expect(text.maxLines, 1);
+        expect(
+          text.style!.fontSize,
+          tester
+              .element(find.byType(FrontChatHeader))
+              .designTokens
+              .typography
+              .styles
+              .subtitle
+              .subtitle1
+              .fontSize,
+        );
+      });
+
+      testWidgets('the inbox, which is every conversation at once', (
+        tester,
+      ) async {
+        await pumpHeader(
+          tester,
+          conversations: census,
+          extra: [frontInboxFilterProvider.overrideWith(_InboxOn.new)],
+        );
+        expect(title(tester), 'Companion');
+      });
+
+      testWidgets('beside the drawer, which marks the open row itself', (
+        tester,
+      ) async {
+        await pumpHeader(tester, conversations: census, listBeside: true);
+        expect(title(tester), 'Companion');
+      });
+    });
+
+    testWidgets("on a wide panel the row keeps the thread's measure, centred, "
+        'so its controls sit on the column they act on; beside the drawer it '
+        'takes the width it is given', (tester) async {
+      const wide = 900.0;
+      await pumpHeader(tester, conversations: census, width: wide);
+      final header = tester.getRect(find.byType(FrontChatHeader));
+      final toggle = tester.getRect(find.byKey(FrontChatHeaderKeys.drawer));
+      final close = tester.getRect(find.byKey(FrontChatHeaderKeys.close));
+      expect(close.right - toggle.left, kProseMeasureWidth);
+      expect(
+        toggle.left - header.left,
+        moreOrLessEquals(header.right - close.right, epsilon: 0.5),
+      );
+
+      await pumpHeader(
+        tester,
+        conversations: census,
+        width: wide,
+        listBeside: true,
+      );
+      final tokens = tester.element(find.byType(FrontChatHeader)).designTokens;
+      expect(
+        tester.getRect(find.byKey(FrontChatHeaderKeys.close)).right,
+        tester.getRect(find.byType(FrontChatHeader)).right -
+            tokens.spacing.step5,
       );
     });
 
@@ -224,6 +299,37 @@ void main() {
       await tester.tap(find.byKey(FrontChatHeaderKeys.drawer));
       await tester.pump();
       expect(listOpen.read(), isFalse);
+    });
+
+    testWidgets("under the drawer slid over it the row's end steps aside, "
+        'keeping its room: one cross is never read for two', (tester) async {
+      await pumpHeader(tester, conversations: census);
+      final listOpen = containerOf(
+        tester,
+      ).listen(frontConversationListOpenProvider, (_, _) {});
+      addTearDown(listOpen.close);
+      bool painted(Key key) => tester
+          .widget<Visibility>(
+            find.ancestor(
+              of: find.byKey(key),
+              matching: find.byType(Visibility),
+            ),
+          )
+          .visible;
+      final closeAt = tester.getRect(find.byKey(FrontChatHeaderKeys.close));
+      expect(painted(FrontChatHeaderKeys.close), isTrue);
+      expect(painted(FrontChatHeaderKeys.newChat), isTrue);
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.drawer));
+      await tester.pump();
+      expect(painted(FrontChatHeaderKeys.close), isFalse);
+      expect(painted(FrontChatHeaderKeys.newChat), isFalse);
+      // Nothing in the row moves.
+      expect(tester.getRect(find.byKey(FrontChatHeaderKeys.close)), closeAt);
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.drawer));
+      await tester.pump();
+      expect(painted(FrontChatHeaderKeys.close), isTrue);
     });
 
     testWidgets('hands its focus node to the toggle, so the drawer can give '
@@ -431,7 +537,7 @@ void main() {
       expect(toggle, findsNothing);
       expect(
         tester.getRect(find.byKey(FrontChatHeaderKeys.title)).left,
-        lessThan(titleLeft - ControlSizes.avatar),
+        lessThan(titleLeft - ControlSizes.avatarCompact),
       );
 
       // The card put away, the face comes back.
@@ -496,7 +602,7 @@ void main() {
     });
 
     testWidgets('fits a 360 dp phone with every control showing: the drawer '
-        'toggle and the inbox count, her face, her name, a new chat and '
+        'toggle and the inbox count, her face, the title, a new chat and '
         'close', (tester) async {
       await pumpHeader(
         tester,
@@ -532,14 +638,14 @@ void main() {
         tester.getRect(find.byKey(FrontChatHeaderKeys.close)).right,
         lessThanOrEqualTo(header.right),
       );
-      // Her name laid out whole: no ellipsis drawn.
-      final paragraph = tester.renderObject<RenderParagraph>(
-        find.descendant(
-          of: find.byKey(FrontChatHeaderKeys.title),
-          matching: find.byType(RichText),
+      // The open conversation's title takes the room between her face and
+      // the row's end, and is cut there rather than pushing a control out.
+      expect(
+        tester.getRect(find.byKey(FrontChatHeaderKeys.title)).right,
+        lessThanOrEqualTo(
+          tester.getRect(find.byKey(FrontChatHeaderKeys.newChat)).left,
         ),
       );
-      expect(paragraph.didExceedMaxLines, isFalse);
     });
   });
 

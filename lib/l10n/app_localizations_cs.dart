@@ -7385,9 +7385,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatArchivedToast => 'Chat archivován.';
 
   @override
-  String get frontChatCategoriesHeading => 'Kategorie';
-
-  @override
   String frontChatCategoryChip(String name) {
     return 'Kategorie tohoto chatu: $name';
   }
@@ -7476,6 +7473,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatPlaceholder => 'Zeptej se na cokoli…';
 
   @override
+  String frontChatPlaceholderScoped(String category) {
+    return 'Zeptej se na téma $category…';
+  }
+
+  @override
   String get frontChatPrevious7Days => 'Posledních 7 dní';
 
   @override
@@ -7507,6 +7509,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontChatSpokenAnswers => 'Mluvené odpovědi';
+
+  @override
+  String get frontChatStarterDueToday => 'Co je dnes potřeba dokončit?';
+
+  @override
+  String get frontChatStarterOverdue => 'Co je po termínu?';
+
+  @override
+  String get frontChatStarterThisWeek => 'Na čem se tento týden pracovalo?';
 
   @override
   String get frontChatTitle => 'Společník';

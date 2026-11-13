@@ -7300,9 +7300,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatArchivedToast => 'Chatten arkiverad.';
 
   @override
-  String get frontChatCategoriesHeading => 'Kategorier';
-
-  @override
   String frontChatCategoryChip(String name) {
     return 'Kategori för den här chatten: $name';
   }
@@ -7391,6 +7388,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatPlaceholder => 'Fråga vad som helst…';
 
   @override
+  String frontChatPlaceholderScoped(String category) {
+    return 'Fråga om $category…';
+  }
+
+  @override
   String get frontChatPrevious7Days => 'Senaste 7 dagarna';
 
   @override
@@ -7422,6 +7424,16 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontChatSpokenAnswers => 'Upplästa svar';
+
+  @override
+  String get frontChatStarterDueToday => 'Vad ska vara klart i dag?';
+
+  @override
+  String get frontChatStarterOverdue => 'Vad är försenat?';
+
+  @override
+  String get frontChatStarterThisWeek =>
+      'Vad har jag jobbat med den här veckan?';
 
   @override
   String get frontChatTitle => 'Följeslagare';

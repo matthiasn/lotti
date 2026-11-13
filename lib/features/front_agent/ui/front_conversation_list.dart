@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
@@ -76,6 +77,16 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
   /// is, so it opens again on everything.
   String? _categoryFilter;
 
+  /// The filter chips' row, which scrolls sideways when they outrun the
+  /// drawer.
+  final _categoryChips = ScrollController();
+
+  @override
+  void dispose() {
+    _categoryChips.dispose();
+    super.dispose();
+  }
+
   void _closeList() =>
       ref.read(frontConversationListOpenProvider.notifier).close();
 
@@ -105,16 +116,22 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
     };
     CategoryDefinition? categoryOf(FrontConversation c) =>
         c.categoryIds.map((id) => categories[id]).nonNulls.firstOrNull;
-    final counts = <CategoryDefinition, int>{};
-    for (final c in all) {
-      if (categoryOf(c) case final category?) {
-        counts[category] = (counts[category] ?? 0) + 1;
-      }
-    }
+    // The ones a conversation is in.
+    final inUse = {for (final c in all) ?categoryOf(c)};
     // A filter on a category that has gone holds nothing back.
-    final filter = counts.keys
+    final filter = inUse
         .where((category) => category.id == _categoryFilter)
         .firstOrNull;
+    // By name, the one that is on first: seen without scrolling to it.
+    // One comparator, so the order never depends on the sort being stable.
+    final shownCategories =
+        [
+          for (final category in inUse)
+            if (!searching || category == filter) category,
+        ]..sort((a, b) {
+          if ((a == filter) != (b == filter)) return a == filter ? -1 : 1;
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
     final matching = [
       for (final c in all)
         if ((!searching || c.title.toLowerCase().contains(needle)) &&
@@ -162,12 +179,14 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
       padding: EdgeInsets.only(
         left: textInset,
         right: textInset,
-        bottom: tokens.spacing.step1,
+        bottom: tokens.spacing.step2,
       ),
       child: Text(
         label,
+        // Heavier than a row's preview line, which shares its size.
         style: tokens.typography.styles.others.caption.copyWith(
-          color: tokens.colors.text.lowEmphasis,
+          color: tokens.colors.text.mediumEmphasis,
+          fontWeight: tokens.typography.weight.semiBold,
         ),
       ),
     );
@@ -211,7 +230,7 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
             // At full strength while something waits; the badge counts it.
             titleContent: Text(
               messages.frontChatInboxTitle,
-              style: _labelStyle(context).copyWith(
+              style: frontDrawerLabelStyle(context).copyWith(
                 color: inboxCount > 0
                     ? tokens.colors.text.highEmphasis
                     : tokens.colors.text.mediumEmphasis,
@@ -244,51 +263,42 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
             },
           ),
         // The categories her conversations are in, each a filter on the
-        // history; a second tap on the one on shows everything again.
-        if (counts.isNotEmpty)
-          Padding(
-            padding: EdgeInsets.only(top: tokens.spacing.step4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+        // history, as one row of chips: a filter, not a place to go, and
+        // the history starts right under it. A second tap on the one on
+        // shows everything again. Over a search only the one that is on
+        // stays — still seen, still a tap from off.
+        if (shownCategories.isNotEmpty)
+          SingleChildScrollView(
+            controller: _categoryChips,
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              spacing: tokens.spacing.step2,
               children: [
-                sectionLabel(messages.frontChatCategoriesHeading),
-                for (final MapEntry(key: category, value: count)
-                    in counts.entries.toList()..sort(
-                      (a, b) => a.key.name.toLowerCase().compareTo(
-                        b.key.name.toLowerCase(),
-                      ),
-                    ))
-                  Semantics(
+                for (final category in shownCategories)
+                  DesignSystemChip(
+                    key: FrontConversationListKeys.category(category.id),
+                    label: category.name,
+                    size: DesignSystemChipSize.compactPillTouch,
+                    // The chip clips its avatar to a circle: the swatch
+                    // keeps its own shape and size inside it.
+                    avatar: Center(
+                      child: FrontCategorySwatch(category: category),
+                    ),
                     selected: category == filter,
-                    child: DesignSystemListItem(
-                      key: FrontConversationListKeys.category(category.id),
-                      titleContent: Text(
-                        category.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: _labelStyle(context).copyWith(
-                          color: tokens.colors.text.highEmphasis,
-                        ),
-                      ),
-                      size: rowSize,
-                      borderRadius: rounded,
-                      activated: category == filter,
-                      activatedBackgroundColor: tokens.colors.surface.hover,
-                      hoverBackgroundColor: tokens.colors.surface.enabled,
-                      leading: FrontCategorySwatch(category: category),
-                      trailing: _TrailingSlot(
-                        child: Text(
-                          '$count',
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(color: tokens.colors.text.lowEmphasis),
-                        ),
-                      ),
-                      onTap: () => setState(
+                    // The tint says it is on; the cross says a tap takes
+                    // it off.
+                    showRemove: category == filter,
+                    onPressed: () {
+                      setState(
                         () => _categoryFilter = category == filter
                             ? null
                             : category.id,
-                      ),
-                    ),
+                      );
+                      // The one picked moves to the head of the row: the
+                      // row goes back there with it, so it and its cross
+                      // are never left off-screen.
+                      if (_categoryChips.hasClients) _categoryChips.jumpTo(0);
+                    },
                   ),
               ],
             ),
@@ -306,7 +316,7 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
                   ? messages.frontChatNoMatchingChats
                   : messages.frontChatNoChats,
               textAlign: TextAlign.center,
-              style: _labelStyle(context).copyWith(
+              style: frontDrawerLabelStyle(context).copyWith(
                 color: tokens.colors.text.mediumEmphasis,
               ),
             ),
@@ -327,7 +337,7 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
                 // label.
                 titleContent: Text(
                   messages.frontChatArchivedRow(archived.length),
-                  style: _labelStyle(context).copyWith(
+                  style: frontDrawerLabelStyle(context).copyWith(
                     color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),
@@ -389,9 +399,10 @@ enum _Recency {
   };
 }
 
-/// A destination row's label style (Inbox, Archived): the size of a
-/// conversation's title, never larger, so the list's own items lead.
-TextStyle _labelStyle(BuildContext context) =>
+/// The drawer's one label style: its destinations (Inbox, Archived), its
+/// categories, a conversation's title — the open one alone set heavier —
+/// and her settings in the footer.
+TextStyle frontDrawerLabelStyle(BuildContext context) =>
     context.designTokens.typography.styles.body.bodySmall;
 
 /// Rows are touch-sized on a phone and compact on a wide window.
@@ -510,13 +521,14 @@ class _ConversationRowState extends State<_ConversationRow> {
     final glyph = tokens.spacing.step5;
     final conversation = widget.conversation;
     final preview = conversation.preview?.trim();
-    // A step brighter on the open row's fill, so it keeps its contrast there.
+    final hasPreview = preview != null && preview.isNotEmpty;
     final quiet = tokens.typography.styles.others.caption.copyWith(
-      color: widget.selected
-          ? tokens.colors.text.mediumEmphasis
-          : tokens.colors.text.lowEmphasis,
+      color: tokens.colors.text.mediumEmphasis,
     );
-    final titleStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
+    // The drawer's label style; the open one alone is heavier, so weight
+    // means "here".
+    final titleStyle = frontDrawerLabelStyle(context).copyWith(
+      fontWeight: widget.selected ? tokens.typography.weight.semiBold : null,
       // An archived one is quieter in tone as well as marked — unless it is
       // the open one, whose fill never carries dim text.
       color: conversation.archived && !widget.selected
@@ -529,18 +541,25 @@ class _ConversationRowState extends State<_ConversationRow> {
     final glyphCentre =
         DesignSystemListItem.verticalInset(tokens, _conversationRowSize) +
         _lineHeight(context, titleStyle) / 2;
-    final menuTop = math.max(0, glyphCentre - extent / 2).toDouble();
+    // With no answer under it the title is centred in the row, between
+    // its swatch and its menu, which then centre with it.
+    final menuTop = hasPreview
+        ? math.max(0, glyphCentre - extent / 2).toDouble()
+        : 0.0;
     // From the content's end to the glyph's far side, and a gap before it:
     // the target sits a quarter past the content's edge (see below).
     final menuRoom = extent / 4 + glyph / 2 + tokens.spacing.step3;
-    final glyphAlignment = Alignment(
-      0,
-      2 * (glyphCentre - menuTop - glyph / 2) / (extent - glyph) - 1,
-    );
+    final glyphAlignment = hasPreview
+        ? Alignment(
+            0,
+            2 * (glyphCentre - menuTop - glyph / 2) / (extent - glyph) - 1,
+          )
+        : Alignment.center;
     final row = DesignSystemListItem(
       // One line of title, one of where the conversation got to — her last
-      // answer, on the row's whole width, when there is one — so every row
-      // is the same height and the list scans.
+      // answer, on the row's whole width, when there is one. With no answer
+      // yet the title takes that second line itself, so a long one is not
+      // cut while the row has room.
       titleContent: ConstrainedBox(
         // Never shorter than the menu's whole tap target: a one-line chat
         // with no answer yet would leave its lower part outside the row.
@@ -554,20 +573,25 @@ class _ConversationRowState extends State<_ConversationRow> {
                   ),
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              // Room for the menu at the title's end, kept on every row: it
-              // shows on hover, focus and the open row, and nothing reflows.
-              padding: EdgeInsetsDirectional.only(end: menuRoom),
+              // Room for the menu at the title's end. Beside the
+              // conversation it is kept on every row, so a hover reflows
+              // nothing; over a phone's thread only where the menu shows,
+              // so no title is cut for a menu that is not there.
+              padding: EdgeInsetsDirectional.only(
+                end: showMenu || !widget.pinMenu ? menuRoom : 0,
+              ),
               child: Text(
                 conversation.title,
-                maxLines: 1,
+                maxLines: hasPreview ? 1 : 2,
                 overflow: TextOverflow.ellipsis,
                 style: titleStyle,
               ),
             ),
-            if (preview != null && preview.isNotEmpty) ...[
+            if (hasPreview) ...[
               SizedBox(height: tokens.spacing.step1),
               Text(
                 preview,
@@ -596,7 +620,7 @@ class _ConversationRowState extends State<_ConversationRow> {
               size: IconSizes.s,
               color: tokens.colors.text.mediumEmphasis,
             )
-          : FrontCategorySwatch(
+          : FrontCategorySwatch.inSlot(
               key: FrontConversationListKeys.swatch(conversation.id),
               category: widget.category,
             ),
@@ -634,7 +658,8 @@ class _ConversationRowState extends State<_ConversationRow> {
                 ) -
                 extent / 4,
             width: extent,
-            height: extent,
+            height: hasPreview ? extent : null,
+            bottom: hasPreview ? null : 0,
             child: Center(
               child: Visibility(
                 visible: showMenu,

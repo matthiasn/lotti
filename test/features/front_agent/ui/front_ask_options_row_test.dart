@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
@@ -13,7 +14,7 @@ void main() {
     FrontAskOption(kind: FrontDestinationKind.task, id: 't1', label: 'Pool'),
   ];
 
-  testWidgets('one chip per option, each answering in its own words', (
+  testWidgets('one button per option, each answering in its own words', (
     tester,
   ) async {
     final chosen = <FrontAskOption>[];
@@ -23,7 +24,19 @@ void main() {
       ),
     );
 
-    expect(find.byType(DesignSystemChip), findsNWidgets(2));
+    final buttons = find.byType(DesignSystemButton);
+    expect(buttons, findsNWidgets(2));
+    // What the question asks for: full-size neutral outlined buttons —
+    // never a filled twin of the user's own bubble — a clear gap apart.
+    for (final button in tester.widgetList<DesignSystemButton>(buttons)) {
+      expect(button.variant, DesignSystemButtonVariant.outlined);
+      expect(button.size, DesignSystemButtonSize.medium);
+    }
+    final tokens = tester.element(find.byType(FrontAskOptionsRow)).designTokens;
+    expect(
+      tester.getRect(buttons.last).left - tester.getRect(buttons.first).right,
+      tokens.spacing.step3,
+    );
     expect(find.text('Swim'), findsOneWidget);
     expect(find.text('Pool'), findsOneWidget);
 
@@ -31,7 +44,7 @@ void main() {
     expect(chosen.map((o) => o.id), ['t1']);
   });
 
-  testWidgets('while a turn is in flight the chips do not answer', (
+  testWidgets('while a turn is in flight the buttons do not answer', (
     tester,
   ) async {
     final chosen = <FrontAskOption>[];
@@ -47,8 +60,8 @@ void main() {
 
     await tester.tap(find.text('Swim'), warnIfMissed: false);
     expect(chosen, isEmpty);
-    for (final chip in tester.widgetList<DesignSystemChip>(
-      find.byType(DesignSystemChip),
+    for (final chip in tester.widgetList<DesignSystemButton>(
+      find.byType(DesignSystemButton),
     )) {
       expect(chip.onPressed, isNull);
     }

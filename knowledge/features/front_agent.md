@@ -272,6 +272,10 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_voice_controls.dart
     title: Her voice's stop / say-it-again control
     last_modified: 2026-11-09
+  - id: starter-prompts
+    resource: ../../lib/features/front_agent/ui/front_starter_prompts.dart
+    title: FrontStarterPrompts — the starter questions under her invitation in a conversation not begun
+    last_modified: 2026-11-12
   - id: hero
     resource: ../../lib/features/front_agent/ui/front_chat_hero.dart
     title: Her bust in the header and the hero, and FrontCompanionCard — her glass card over the thread
@@ -1355,7 +1359,8 @@ conversation is another subject.
 The conversations live in her **drawer** (`FrontChatDrawer`), as a Claude
 or ChatGPT window keeps them: a top row as tall as her header — the search
 (always there; what is typed narrows the list as `FrontConversationList.query`)
-and, over a phone's thread, a glyph back to the conversation — then a
+and, over a phone's thread, a chevron back to the conversation (the cross
+stays her surface's own close) — then a
 *New chat* row in the accent, the drawer's one action, then the list, then
 her settings (`FrontChatDrawerFooter`, [below](#the-chat-surface)), which
 step aside while the keyboard is up so a short screen keeps room for what
@@ -1394,21 +1399,34 @@ stateDiagram-v2
 ```
 
 `FrontConversationList` leads with *Inbox* while
-something waits; then *Categories*, every category she may see that a
-conversation is in, by name, each with its colour and how many conversations
-it holds — a tap narrows the history to them (with the search, if any), a
-second tap shows everything again, and a filter on a category she can no
-longer see holds nothing back; then the history grouped by recency — *Today*,
-*Yesterday*, *Previous 7 days*, *Older* — flat: each group's day a neutral
-low-emphasis caption, snug over its dense rows, no card and no hairlines. The
+something waits; then one row of filter chips (`DesignSystemChip`, scrolling
+sideways when they outrun the drawer), every category she may see that a
+conversation is in, by name, each with its colour — a filter, not a section
+of places to go, so the history starts right under it. A tap narrows the
+history to that category (with the search, if any), tints the chip, gives
+it a cross and moves it to the head of the row; a second tap shows
+everything again, and a filter on a category she can no
+longer see holds nothing back. Over a search the chips go, so what matched
+sits right under the field — but for the one that is on, which stays, still
+seen and a tap from off. Then the history
+grouped by recency — *Today*, *Yesterday*, *Previous 7 days*, *Older* —
+flat: each group's day a neutral medium-emphasis caption, snug over its
+dense rows, no card and no hairlines. The
 accent means "press", so a day never wears it; the open row's rounded fill
 (`surface.hover`, a step brighter than a hovered row's `surface.enabled`)
 is the one strong surface in the list.
 A row is one line of title over one line of her last answer on the row's
 whole width (`FrontConversation.preview`, the first line of her latest
 `reply_to_user` or `ask_user` in it, read by `FrontConversationService`),
-each cut with an ellipsis, so every row is the same height and the list
-scans — the answer left out when there is none. A row leads with its
+each cut with an ellipsis. With no answer yet the title takes that second
+line itself, centred in the row with its swatch and its menu. Room for the
+menu at the title's end is kept on every row beside the conversation, where
+a hover shows it, and over a phone's thread only on the row that shows one.
+Titles are
+set in the drawer's label style (`frontDrawerLabelStyle`), the open row
+alone heavier, so weight means "here"; her settings in the footer wear the
+same style at medium emphasis, at the drawer's row size on every layout. A
+row leads with its
 category's colour (`FrontCategorySwatch`), an outline for none or for one she
 may no longer see — an archived row the archive glyph instead — and names
 the category to assistive technology, so colour never stands alone. A row says no time of its
@@ -1450,8 +1468,10 @@ on first use) and invalidates the thread when the awaited turn completes; a
 failed turn keeps its durable id so the retry re-wakes the same turn.
 
 `FrontChatPane` is the thread on `AgentChatView` with day dividers
-(`dividerBuilder`), the door cards under a routed turn, the option chips
-under her **latest** question only (an older question's chips would answer
+(`dividerBuilder`), the door cards under a routed turn, the options —
+neutral outlined buttons (`FrontAskOptionsRow`), pressable at a glance and
+never a filled twin of the user's own bubble —
+under her **latest** question only (an older question's options would answer
 a question nobody is asking). The thread shows only what was said: no cost
 line under her words — what the open conversation has cost is the drawer's
 *Agent internals* row to say (`frontConversationCostProvider`, every run
@@ -1501,8 +1521,17 @@ waiting turn's words and the reply that carries its cards together.
 The header (`FrontChatHeader`) is **one row**: the drawer toggle — a menu
 glyph named *Chats* by its tooltip, a dot on it while the inbox holds
 something (its count is the drawer's) — her face
-in a rounded tile at `ControlSizes.avatar` (the spark when
-`enable_companion` is off), her name, *New chat* and close. A tap on her
+in a rounded tile at `ControlSizes.avatarCompact` (the spark when
+`enable_companion` is off), a title, *New chat* and close. The title says
+where the user is: over a phone's or a tablet's thread, where the drawer
+that lists the conversations is shut, it is the open conversation's title, a
+step under her name in size and on up to two lines; her own name stays for a conversation not begun, for the inbox —
+every conversation at once — and beside the drawer, which marks the open row
+itself. Over a thread on its own the row keeps the thread's measure
+(`kProseMeasureWidth`), centred, so on a wide panel its controls sit on the
+column they act on. *New chat* and close are the last two
+stepping aside, their room kept, while the drawer is slid over the row, so
+its cross is never read beside the drawer's way back. A tap on her
 face shows her glass card over the thread, in place (see
 [her voice](#her-voice)); to a screen reader it is a button named *Show
 companion*. While the card is out the face slides away (fading as it
@@ -1525,11 +1554,16 @@ naming the profile she has of her own, else the Settings default she follows
 conversation has cost (none in the inbox), opening `AgentInternalsPanel`.
 
 A conversation not begun opens on her bust at hero size (`FrontChatHero`)
-and her invitation, centred where the thread will be; once it has begun the
-thread is the conversation's alone. The thread is `conversational` and
+and her invitation, centred where the thread will be, with a first move
+under it: three starter questions (`FrontStarterPrompts`) as the outlined
+buttons her clarifying questions offer, a tap sending one in its own words.
+Once it has begun the thread is the conversation's alone. The thread is `conversational` and
 `voiceFirst` (see [chat input](agents/chat-input-and-reasoning.md)): her
 replies as prose, the user's words in a neutral bubble a step off the ground
-(`background.level02`), one pill field with the mic at its end and the
+(`background.level02`), one pill field — on the thread's own side gutter,
+so its edges are the bubbles', its hint saying what the conversation is
+narrowed to (*Ask about Colony…*; *Ask anything…* when it is not) — with
+the mic at its end and the
 conversation's category chip at the start of its controls row
 (`composerLeading`), and what she was told by voice sent as said.
 `showFrontChat` opens her surface over the app, as History opens: a dialog
@@ -1553,9 +1587,13 @@ category.
 
 **A conversation's category is picked where the words are typed.** The
 composer's chip (`FrontCategoryChip`) shows the open conversation's category
-— its colour, its name, a chevron — or *Everything*; a tap opens
-`FrontCategorySheet`, one row per category she may see plus *Everything*,
-the current one checked. Every turn sent from then on carries it: the
+— its colour, its name, a chevron, on a `DesignSystemChip` with a full tap
+target — or *Everything*; a tap opens
+`FrontCategorySheet`, *Everything* — the default — then one row per category
+she may see,
+the current one checked, by word and tick with no band behind it; the rows
+run edge to edge at the drawer's density, each swatch in a glyph-sized slot
+(`FrontCategorySwatch.inSlot`, as in the drawer) so names share one edge. Every turn sent from then on carries it: the
 controller writes it, as a set of one, under `frontCategoriesKey` in the
 turn's payload (`FrontChatService.appendMessage`; *Everything* writes no
 key), and her workflow narrows her allow-list by it, never widening it

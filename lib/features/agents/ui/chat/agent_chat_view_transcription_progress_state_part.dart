@@ -283,7 +283,12 @@ class _ChatComposer extends ConsumerWidget {
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.all(tokens.spacing.step4),
+        // The thread's own side gutter, so the field's edges are the
+        // bubbles' edges.
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step5,
+          vertical: tokens.spacing.step4,
+        ),
         child: maxWidth == null
             ? input
             : Center(
