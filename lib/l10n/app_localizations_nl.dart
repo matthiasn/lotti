@@ -7637,6 +7637,25 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontTaskReschedule => 'Vervaldatum wijzigen…';
 
   @override
+  String get frontTaskSetupAsk => 'Dit heb ik gehoord. Wil je iets aanpassen?';
+
+  @override
+  String get frontTaskSetupAskPlain =>
+      'Wil je iets instellen voordat ik hem aanmaak?';
+
+  @override
+  String get frontTaskSetupCreate => 'Taak aanmaken';
+
+  @override
+  String get frontTaskSetupPickDate => 'Kies een datum…';
+
+  @override
+  String get frontTaskSetupToday => 'Vandaag';
+
+  @override
+  String get frontTaskSetupTomorrow => 'Morgen';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'De diepste redenering; kan latency en kosten verhogen.';
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/task.dart';
 
 /// The longest title a draft keeps.
@@ -11,6 +12,67 @@ const int frontTaskMaxEstimateMinutes = 80 * 60;
 
 /// How far back a dictated timer may start, in minutes: one day.
 const int frontTaskMaxStartedMinutesAgo = 24 * 60;
+
+/// The status a task can be made in: what the user can choose before it is
+/// made. Blocked, on hold and the closed statuses are left to the task
+/// page — the first two ask a reason, and nothing is made done.
+enum FrontTaskStart {
+  open('OPEN'),
+  groomed('GROOMED'),
+  inProgress('IN PROGRESS');
+
+  const FrontTaskStart(this.dbStatus);
+
+  /// The status as `taskStatusFromString` reads it.
+  final String dbStatus;
+}
+
+/// What the user set on an inbox item before making it a task: its status,
+/// its priority and its due day (none for no due day). Seeded from what the
+/// router read from their words ([FrontTaskChoices.of]), so a tap on create
+/// alone makes the task as she understood it.
+@immutable
+class FrontTaskChoices {
+  const FrontTaskChoices({
+    required this.start,
+    required this.priority,
+    this.due,
+  });
+
+  /// What [draft] says, or the defaults for a task made of bare words:
+  /// open, medium priority, no due day.
+  factory FrontTaskChoices.of(FrontTaskDraft? draft) => FrontTaskChoices(
+    start: draft?.status ?? FrontTaskStart.open,
+    priority: draft?.priority ?? TaskPriority.p2Medium,
+    due: draft?.due,
+  );
+
+  final FrontTaskStart start;
+  final TaskPriority priority;
+
+  /// A local calendar day.
+  final DateTime? due;
+
+  FrontTaskChoices copyWith({
+    FrontTaskStart? start,
+    TaskPriority? priority,
+    DateTime? Function()? due,
+  }) => FrontTaskChoices(
+    start: start ?? this.start,
+    priority: priority ?? this.priority,
+    due: due == null ? this.due : due(),
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is FrontTaskChoices &&
+      other.start == start &&
+      other.priority == priority &&
+      other.due == due;
+
+  @override
+  int get hashCode => Object.hash(start, priority, due);
+}
 
 /// The task a `new` segment would become, as the router read it from the
 /// user's words: every field the agent fills at creation. What the draft
@@ -32,6 +94,7 @@ class FrontTaskDraft {
     this.inProgress = false,
     this.startedAt,
     this.followsUpTaskId,
+    this.start,
   });
 
   final String title;
@@ -56,6 +119,44 @@ class FrontTaskDraft {
 
   /// The task this one follows up on: linked `followsUp` when it is made.
   final String? followsUpTaskId;
+
+  /// The status the user chose before it was made; null where they chose
+  /// none, and [status] follows the words. Only [withChoices] sets it, on
+  /// the draft handed straight to the maker — never one that is stored.
+  final FrontTaskStart? start;
+
+  /// The status it is made in: the one chosen, else in progress when the
+  /// words say so or a timer runs, else open.
+  FrontTaskStart get status =>
+      start ??
+      (inProgress || startedAt != null
+          ? FrontTaskStart.inProgress
+          : FrontTaskStart.open);
+
+  /// Whether the words set any of the status, priority or due day — what
+  /// she can say she heard, rather than defaults she filled in.
+  bool get namesChoices =>
+      start != null ||
+      priority != null ||
+      due != null ||
+      inProgress ||
+      startedAt != null;
+
+  /// This draft as the user set it up: their status, priority and due day
+  /// over what the words said. A timer runs only in a task made in
+  /// progress — one chosen open is not being worked on.
+  FrontTaskDraft withChoices(FrontTaskChoices choices) => FrontTaskDraft(
+    title: title,
+    instructions: instructions,
+    categoryId: categoryId,
+    priority: choices.priority,
+    due: choices.due,
+    estimate: estimate,
+    inProgress: choices.start == FrontTaskStart.inProgress,
+    startedAt: choices.start == FrontTaskStart.inProgress ? startedAt : null,
+    followsUpTaskId: followsUpTaskId,
+    start: choices.start,
+  );
 
   /// Reads the model's `task` object. Null without a title; any other field
   /// the model got wrong is left out rather than failing the dispatch — a

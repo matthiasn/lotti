@@ -7739,6 +7739,26 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontTaskReschedule => 'Reprogramați…';
 
   @override
+  String get frontTaskSetupAsk =>
+      'Iată ce am înțeles. Doriți să schimbați ceva?';
+
+  @override
+  String get frontTaskSetupAskPlain =>
+      'Doriți să setați ceva înainte să o creez?';
+
+  @override
+  String get frontTaskSetupCreate => 'Creați sarcina';
+
+  @override
+  String get frontTaskSetupPickDate => 'Alegeți o dată…';
+
+  @override
+  String get frontTaskSetupToday => 'Astăzi';
+
+  @override
+  String get frontTaskSetupTomorrow => 'Mâine';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Raționament cel mai profund; poate crește latența și costul.';
 

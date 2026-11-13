@@ -7,6 +7,7 @@ import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
@@ -155,20 +156,21 @@ abstract final class FrontVoice {
       ..listen(frontJournalAccessProvider, (_, _) => speakWhenLanded());
   }
 
-  /// Makes a task of the inbox item [doorId] — the user's tap, the approval
-  /// — and once it is made says so aloud in [conversationId]
-  /// (`frontTaskCreatedSpoken`) through [speak], so her mute, her voice and
+  /// Makes a task of the inbox item [doorId], set up as the user
+  /// [choices] — their tap on create, the approval — and once it is made
+  /// says so aloud in [conversationId] (`frontTaskCreatedSpoken`) through [speak], so her mute, her voice and
   /// the take-over hold as for any answer. A task not made says nothing; the
   /// door shows the failure.
   static Future<void> makeTask(
     WidgetRef ref,
     BuildContext context,
     String? conversationId,
-    String doorId,
-  ) async {
+    String doorId, {
+    required FrontTaskChoices choices,
+  }) async {
     final made = await ref
         .read(frontChatControllerProvider.notifier)
-        .makeTask(doorId);
+        .makeTask(doorId, choices: choices);
     if (!made || conversationId == null || !context.mounted) return;
     await speak(
       ref,

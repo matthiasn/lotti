@@ -7705,6 +7705,26 @@ class AppLocalizationsPt extends AppLocalizations {
   String get frontTaskReschedule => 'Reagendar…';
 
   @override
+  String get frontTaskSetupAsk =>
+      'Foi isto que percebi. Queres mudar alguma coisa?';
+
+  @override
+  String get frontTaskSetupAskPlain =>
+      'Queres definir alguma coisa antes de eu a criar?';
+
+  @override
+  String get frontTaskSetupCreate => 'Criar tarefa';
+
+  @override
+  String get frontTaskSetupPickDate => 'Escolher uma data…';
+
+  @override
+  String get frontTaskSetupToday => 'Hoje';
+
+  @override
+  String get frontTaskSetupTomorrow => 'Amanhã';
+
+  @override
   String get geminiThinkingModeHighDescription =>
       'Raciocínio mais profundo; pode aumentar a latência e o custo.';
 

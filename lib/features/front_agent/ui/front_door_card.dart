@@ -8,6 +8,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
+import 'package:lotti/features/front_agent/ui/front_task_setup.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
@@ -51,8 +53,9 @@ class FrontDoorActions {
   /// Open what the door wrote.
   final ValueChanged<FrontDoorEntry> onOpen;
 
-  /// Make a task of an inbox item.
-  final ValueChanged<String> onMakeTask;
+  /// Make a task of an inbox item, by its id, set up as the user chose in
+  /// the card ([FrontTaskSetup]).
+  final void Function(String doorId, FrontTaskChoices choices) onMakeTask;
 
   /// Make an event of an inbox item; null where events are off, and the
   /// item offers no such way.
@@ -92,7 +95,11 @@ class FrontDoorActions {
 /// user's own words stay plain text. Her own answer from the
 /// journal is shown as hers, with the sources it cites, and only while
 /// [journalAccess] still shows all of them.
-class FrontDoorCard extends StatelessWidget {
+///
+/// While an inbox item is being set up as a task, its *Create task* is the
+/// card's one filled button: the other items' *Make it a task* step back to
+/// the secondary look until it is made or left.
+class FrontDoorCard extends StatefulWidget {
   const FrontDoorCard({
     required this.doors,
     this.actions,
@@ -119,8 +126,49 @@ class FrontDoorCard extends StatelessWidget {
   final Set<String> failedDoorIds;
 
   @override
+  State<FrontDoorCard> createState() => _FrontDoorCardState();
+}
+
+class _FrontDoorCardState extends State<FrontDoorCard> {
+  /// The door whose *Make it a task* was tapped: being set up as a task.
+  /// One at a time — opening another leaves the first, so Enter can only
+  /// ever make the one just opened.
+  String? _settingUp;
+
+  @override
+  void didUpdateWidget(FrontDoorCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Made, left or taken back: a task set up before is not being set up
+    // now — an item that waits again offers *Make it a task* afresh.
+    final before = {
+      for (final door in oldWidget.doors)
+        door.doorId: door.record.outcome.runtimeType,
+    };
+    final id = _settingUp;
+    if (id != null &&
+        !widget.doors.any(
+          (door) =>
+              door.doorId == id &&
+              door.record.outcome.runtimeType == before[id],
+        )) {
+      _settingUp = null;
+    }
+  }
+
+  void _setUp(String doorId, {required bool on}) => setState(
+    () => _settingUp = on ? doorId : (_settingUp == doorId ? null : _settingUp),
+  );
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final FrontDoorCard(
+      :doors,
+      :actions,
+      :journalAccess,
+      :busyDoorIds,
+      :failedDoorIds,
+    ) = widget;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: tokens.colors.background.level02,
@@ -149,6 +197,9 @@ class FrontDoorCard extends StatelessWidget {
                 journalAccess: journalAccess,
                 busy: busyDoorIds.contains(door.doorId),
                 failed: failedDoorIds.contains(door.doorId),
+                settingUp: _settingUp == door.doorId,
+                quiet: _settingUp != null && _settingUp != door.doorId,
+                onSetUp: ({required on}) => _setUp(door.doorId, on: on),
               ),
             ],
           ],
@@ -158,13 +209,18 @@ class FrontDoorCard extends StatelessWidget {
   }
 }
 
-/// One door as a card row: tile, words, status, action, overflow.
+/// One door as a card row: tile, words, status, action, overflow — or,
+/// for an inbox item being made a task, the question of how
+/// ([FrontTaskSetup]) in place of the status, action and overflow.
 class _DoorRow extends StatelessWidget {
   const _DoorRow({
     required this.door,
     required this.actions,
     required this.busy,
     required this.failed,
+    required this.settingUp,
+    required this.quiet,
+    required this.onSetUp,
     this.journalAccess,
     super.key,
   });
@@ -174,6 +230,15 @@ class _DoorRow extends StatelessWidget {
   final QueryAccessSnapshot? journalAccess;
   final bool busy;
   final bool failed;
+
+  /// Whether *Make it a task* was tapped and the task is being set up.
+  final bool settingUp;
+
+  /// Whether another item is being set up: this one's action steps back.
+  final bool quiet;
+
+  /// Starts (`on`) or leaves the setup.
+  final void Function({required bool on}) onSetUp;
 
   @override
   Widget build(BuildContext context) {
@@ -196,6 +261,7 @@ class _DoorRow extends StatelessWidget {
     var isAnswer = false;
     final String status;
     Widget? action;
+    Widget? setup;
     var sources = const <QueryEvidence>[];
     final menu = <DesignSystemContextMenuItem>[];
 
@@ -325,17 +391,37 @@ class _DoorRow extends StatelessWidget {
         ink = tokens.colors.alert.success.ink;
         if (acting != null) action = open();
       case FrontDoorInbox(:final newKind, :final ownerId):
-        title = words;
+        // While it is set up, the headline is the title she read — the one
+        // the task will be made with — so "here's what I heard" shows it.
+        title = acting != null && settingUp
+            ? record.task?.title ?? words
+            : words;
         status = ownerId == null
             ? messages.frontDoorInbox
             : messages.frontDoorInboxInstead;
         glyph = _guessGlyph(newKind);
-        if (acting != null) {
+        if (acting != null && settingUp) {
+          setup = FrontTaskSetup(
+            index: index,
+            initial: FrontTaskChoices.of(record.task),
+            heard: record.task?.namesChoices ?? false,
+            // The overflow's slot, which the setup takes over.
+            endInset:
+                tokens.spacing.step1 +
+                DesignSystemContextMenuButton.extent(tokens),
+            busy: busy,
+            failed: failed,
+            onCreate: (choices) => acting.onMakeTask(id, choices),
+            onBack: () => onSetUp(on: false),
+          );
+        } else if (acting != null) {
           action = DesignSystemButton(
             key: ValueKey('front-door-task-$index'),
             label: messages.frontDoorMakeTask,
-            isLoading: busy,
-            onPressed: guarded(() => acting.onMakeTask(id)),
+            variant: quiet
+                ? DesignSystemButtonVariant.secondary
+                : DesignSystemButtonVariant.primary,
+            onPressed: guarded(() => onSetUp(on: true)),
           );
           // The router's guess leads the other ways; leaving it comes last.
           final ways = [
@@ -495,29 +581,38 @@ class _DoorRow extends StatelessWidget {
                     null => null,
                   },
                 ),
-              SizedBox(height: tokens.spacing.step1),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      failed ? messages.frontDoorActionFailed : status,
-                      key: ValueKey('front-door-status-$index'),
-                      style: statusStyle,
-                    ),
-                  ),
-                  if (action != null) ...[
-                    SizedBox(width: tokens.spacing.step2),
-                    action,
-                  ],
-                  if (menu.isNotEmpty) ...[
-                    SizedBox(width: tokens.spacing.step1),
-                    DesignSystemContextMenuButton(
-                      key: ValueKey('front-door-menu-$index'),
-                      items: menu,
-                    ),
-                  ],
-                ],
+              // The setup is her question: a step more air above it groups it
+              // with its chips, not as a subtitle of the words.
+              SizedBox(
+                height: setup == null
+                    ? tokens.spacing.step1
+                    : tokens.spacing.step3,
               ),
+              if (setup != null)
+                setup
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        failed ? messages.frontDoorActionFailed : status,
+                        key: ValueKey('front-door-status-$index'),
+                        style: statusStyle,
+                      ),
+                    ),
+                    if (action != null) ...[
+                      SizedBox(width: tokens.spacing.step2),
+                      action,
+                    ],
+                    if (menu.isNotEmpty) ...[
+                      SizedBox(width: tokens.spacing.step1),
+                      DesignSystemContextMenuButton(
+                        key: ValueKey('front-door-menu-$index'),
+                        items: menu,
+                      ),
+                    ],
+                  ],
+                ),
             ],
           ),
         ),

@@ -87,11 +87,15 @@ sources:
   - id: filing
     resource: ../../lib/features/front_agent/service/front_filing_service.dart
     title: FrontFilingService — what the tap under a door writes
-    last_modified: 2026-11-09
+    last_modified: 2026-11-11
   - id: task-draft
     resource: ../../lib/features/front_agent/model/front_task_draft.dart
-    title: FrontTaskDraft — the task the router read from the words
-    last_modified: 2026-11-08
+    title: FrontTaskDraft — the task the router read from the words, and how the user set it up
+    last_modified: 2026-11-11
+  - id: task-setup
+    resource: ../../lib/features/front_agent/ui/front_task_setup.dart
+    title: FrontTaskSetup — status, priority and due day asked on the card before a task is made
+    last_modified: 2026-11-12
   - id: conversation-tasks
     resource: ../../lib/features/front_agent/workflow/front_conversation_tasks.dart
     title: frontConversationTaskIds — the tasks a conversation named, newest first
@@ -1055,15 +1059,18 @@ would deadlock inside the front wake, so the walker uses their
 # A task from her words
 
 ADR 0160. When the user dictates a task, she reads its fields from the
-words; the user's *Make it a task* tap — the confirmation, as for every
-write — makes it filled in, and started only when they said so.
+words; the user's *Make it a task* tap opens the card's setup, where the
+status, priority and due day she read can be changed, and *Create task* —
+the confirmation, as for every write — makes it as set up, and started only
+when they said so.
 
 ```mermaid
 flowchart LR
   W[spoken turn<br/>transcribed, clip deleted] --> R[routing: segment new / task<br/>+ task object]
   R -->|FrontTaskDraft.fromModel| V[draft on the segment,<br/>then on the door record]
   V --> I[inbox item, waiting]
-  I -->|Make it a task| M[makeFrontTask under frontDoorTaskId]
+  I -->|Make it a task| U[FrontTaskSetup on the card:<br/>status · priority · due, seeded from the draft]
+  U -->|Create task, FrontTaskChoices| M[makeFrontTask under frontDoorTaskId]
   M --> T[(task, in its category)]
   M --> E[(the words, a text entry linked under it)]
   M -->|draft has a start| C[(timer entry from that instant,<br/>TimeService.start)]
@@ -1078,8 +1085,9 @@ flowchart LR
 | title | agent | the words, short |
 | body | agent | `instructions`: what to do and how, without the turn's other topics |
 | category | agent | the category the user names, else her judgment from the work, the categories of `<conversation_tasks>` and what `<recent_turns>` were about — a task asked for in a conversation spent on one category's work, or its logged time, goes there, and her reply names it; left out only when the evidence points two ways or nowhere; dropped unless listed (and chosen, when the conversation is narrowed). Live eval scenarios `category_from_conversation` / `category_nowhere` |
-| priority, due day, estimate | agent, only when said | `P0`–`P3`, `YYYY-MM-DD`, minutes (≤ `frontTaskMaxEstimateMinutes`) |
-| status | agent, only when said | `inProgress`: *in progress*, and nothing more — "make it in progress" is a status, never a start |
+| priority, due day | agent, only when said; then the user, on the card | `P0`–`P3`, `YYYY-MM-DD`; the setup starts at what she read — medium and none when she read nothing — and the user's choice wins |
+| estimate | agent, only when said | minutes (≤ `frontTaskMaxEstimateMinutes`) |
+| status | agent, only when said; then the user, on the card | `inProgress`: *in progress*, and nothing more — "make it in progress" is a status, never a start. The setup offers open, groomed and in progress (`FrontTaskStart`); blocked and on hold ask a reason, so they stay on the task page |
 | timer | agent, only when a timer is asked for or a start is said | `startedMinutesAgo` (0–`frontTaskMaxStartedMinutesAgo`): *in progress*, and a timer entry linked under the task from that instant, running |
 | follows up on | agent, only for a follow-up | `followsUpTaskId`: a task in the index, a lookup this turn or `<conversation_tasks>`; anything else is dropped. Linked `followsUp` from the new task to it, and filed under its project |
 | task agent | category default | the category's `defaultTemplateId`; none without one |
@@ -1094,8 +1102,41 @@ workflow's `now`, handed to the strategy — so neither a slow inference nor a
 tap hours later moves when the user said the work began; a start after now
 runs from now. **Nothing is made without the tap**, asked for or only
 mentioned: the item waits in the inbox with its draft, and *Make it a task*
-makes the filled task under `frontDoorTaskId`. Without a stated start no
-timer runs, and the task is open unless the words put it in progress.
+asks how before anything is made. Its status line, action and overflow give
+way to `FrontTaskSetup`: one line in her voice and three chips — status,
+priority, due day — each opening a short menu where it sits (today,
+tomorrow, a day on the calendar, or none for the due day), so the setup is
+the conversation asking, never a form to leave it for. The chips start at
+`FrontTaskChoices.of(draft)`, so *Create task* alone makes the task as she
+read it; *Cancel* gives the card back as it was. Her line says what she heard
+only when the words set something (`FrontTaskDraft.namesChoices`), else it
+just asks; the headline turns to the draft's title — the one the task is made
+with — until the setup is left. Status and priority wear the task list's own
+glyphs, and the due chip warns for today and turns late for a past day, as the
+task will. *Cancel* and *Create task* share the chips' line where it fits and
+drop below it, at the end, where it does not; there *Create task* keeps the
+overflow's slot, so it ends where *Make it a task* does. The step takes focus
+as it opens: Enter creates and Escape leaves while it holds that focus itself,
+never once a chip or button in it does. A menu over the buttons closes on an
+outside tap without pressing them. Create hands the choices
+through `FrontVoice.makeTask` → `FrontChatController.makeTask` →
+`FrontFilingService.makeTask`, which makes `draft.withChoices(choices)`
+under `frontDoorTaskId`. A retry — the task made, its door record not — that
+finds the task already there brings its status, priority and due day in line
+with the choices it was retried with, rather than keeping the first, and its
+dictated timer too, from the timer as it is rather than the status before:
+asked to run when the task is in progress (a no-op for the one already
+running), asked to stop otherwise (only if it is the one running), so a retry
+after a timer step that failed asks again. An update that does not go through
+fails the retry, so the setup offers it again. The timer is best effort: an
+entry that could not be written is logged, and the task stands without it. Without a stated start no timer runs; a dictated
+start keeps its timer only while the task is set up in progress — one set up
+open or groomed is not being worked on. The setup is the card's own state,
+one item at a time: opening another leaves the first, so Enter can only make
+the one just opened, and while one is open the others' *Make it a task* steps
+back to the secondary look, its *Create task* the card's one filled button. A
+reload keeps it open; an item that waits again after *Undo*, or leaves the
+card and comes back, offers *Make it a task* afresh.
 Everything the user says about the task they ask for — its due day,
 priority, status, a timer — belongs to its one segment even as a sentence
 of its own (rule 10), so a trailing "make it due today and urgent" never
@@ -1135,7 +1176,7 @@ its title, never as a link — the task has no id yet (the live eval caught
 her linking an invented `lotti://task/task-new`) — and never says it was
 created; the card's *Made into a task* is the receipt.
 
-**After the tap she says it is made** (ADR 0162). The pane's *Make it a
+**After the tap she says it is made** (ADR 0162). The setup's *Create
 task* runs `FrontVoice.makeTask`: `FrontChatController.makeTask` answers
 whether the task was written, and only then she says
 `frontTaskCreatedSpoken` ("Hey, dear, I created that task.") through
@@ -1171,7 +1212,7 @@ stateDiagram-v2
   Day --> Inbox: Somewhere else — the words go to the inbox
   [*] --> Inbox: new / journal / unrouted walked
   Inbox --> SavedNote: Save as a note — text entry, owned by nothing
-  Inbox --> TaskCreated: Make it a task — from its draft, else titled with the words
+  Inbox --> TaskCreated: Make it a task, then Create task — from its draft as set up, else titled with the words
   Inbox --> EventCreated: Make it an event — tentative, titled with the words
   Inbox --> Left: Leave it — nothing written, nothing waits
   Left --> Proposal: Undo — when it came from a proposal

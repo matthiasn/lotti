@@ -12953,6 +12953,42 @@ abstract class AppLocalizations {
   /// **'Reschedule…'**
   String get frontTaskReschedule;
 
+  /// No description provided for @frontTaskSetupAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Here\'s what I heard. Change anything?'**
+  String get frontTaskSetupAsk;
+
+  /// No description provided for @frontTaskSetupAskPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything to set before I make it?'**
+  String get frontTaskSetupAskPlain;
+
+  /// No description provided for @frontTaskSetupCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create task'**
+  String get frontTaskSetupCreate;
+
+  /// No description provided for @frontTaskSetupPickDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a date…'**
+  String get frontTaskSetupPickDate;
+
+  /// No description provided for @frontTaskSetupToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get frontTaskSetupToday;
+
+  /// No description provided for @frontTaskSetupTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get frontTaskSetupTomorrow;
+
   /// No description provided for @geminiThinkingModeHighDescription.
   ///
   /// In en, this message translates to:

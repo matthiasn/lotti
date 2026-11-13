@@ -266,14 +266,18 @@ class FrontFilingService {
   }
 
   /// Makes a task of an inbox segment: the fields the router read from the
-  /// words when it read any, else titled with the words. The tap is the
-  /// approval.
-  Future<void> makeTask(String doorId) async {
+  /// words when it read any, else titled with the words — in the status,
+  /// priority and due day the user set up ([choices]). The tap on create is
+  /// the approval.
+  Future<void> makeTask(
+    String doorId, {
+    required FrontTaskChoices choices,
+  }) async {
     final (record, payload) = await _waiting<FrontDoorInbox>(doorId);
     final inbox = record.outcome! as FrontDoorInbox;
     final words = record.text.trim();
     final task = await _makeTask(
-      record.task ?? FrontTaskDraft(title: words),
+      (record.task ?? FrontTaskDraft(title: words)).withChoices(choices),
       id: frontDoorTaskId(doorId, generation: inbox.generation),
       words: words,
     );

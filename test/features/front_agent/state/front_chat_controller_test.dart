@@ -4,9 +4,11 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dart';
@@ -42,6 +44,12 @@ class _CountingBuilder extends FrontChatThreadBuilder {
 }
 
 void main() {
+  /// The setup of a task made of bare words, left as it was.
+  const asSaid = FrontTaskChoices(
+    start: FrontTaskStart.open,
+    priority: TaskPriority.p2Medium,
+  );
+
   late MockFrontAgentService agentService;
   late MockFrontChatService chatService;
   late MockFrontFilingService filing;
@@ -768,7 +776,9 @@ void main() {
     test('every action reaches its service call', () async {
       when(() => filing.undoDecline('d')).thenAnswer((_) async {});
       when(() => filing.takeBack('d')).thenAnswer((_) async {});
-      when(() => filing.makeTask('d')).thenAnswer((_) async {});
+      when(
+        () => filing.makeTask('d', choices: asSaid),
+      ).thenAnswer((_) async {});
       when(() => filing.saveAsNote('d')).thenAnswer((_) async {});
       when(() => filing.makeEvent('d')).thenAnswer((_) async {});
       final day = DateTime(2026, 11);
@@ -776,7 +786,7 @@ void main() {
       when(() => filing.markProjectCreated('d', 'p')).thenAnswer((_) async {});
       await controller().undoDecline('d');
       await controller().takeBack('d');
-      await controller().makeTask('d');
+      await controller().makeTask('d', choices: asSaid);
       await controller().saveAsNote('d');
       await controller().makeEvent('d');
       await controller().planDay('d', () async => day);
@@ -787,7 +797,7 @@ void main() {
       verifyInOrder([
         () => filing.undoDecline('d'),
         () => filing.takeBack('d'),
-        () => filing.makeTask('d'),
+        () => filing.makeTask('d', choices: asSaid),
         () => filing.saveAsNote('d'),
         () => filing.makeEvent('d'),
         () => filing.markDayPlanned('d', day),
@@ -799,14 +809,18 @@ void main() {
     test('making a task answers whether it was made: true once made, false '
         'when it failed or the door was already busy', () async {
       final gate = Completer<void>();
-      when(() => filing.makeTask('d1')).thenAnswer((_) => gate.future);
-      final made = controller().makeTask('d1');
-      expect(await controller().makeTask('d1'), isFalse);
+      when(
+        () => filing.makeTask('d1', choices: asSaid),
+      ).thenAnswer((_) => gate.future);
+      final made = controller().makeTask('d1', choices: asSaid);
+      expect(await controller().makeTask('d1', choices: asSaid), isFalse);
       gate.complete();
       expect(await made, isTrue);
 
-      when(() => filing.makeTask('d1')).thenThrow(StateError('gone'));
-      expect(await controller().makeTask('d1'), isFalse);
+      when(
+        () => filing.makeTask('d1', choices: asSaid),
+      ).thenThrow(StateError('gone'));
+      expect(await controller().makeTask('d1', choices: asSaid), isFalse);
       expect(state().failedDoorIds, {'d1'});
     });
 

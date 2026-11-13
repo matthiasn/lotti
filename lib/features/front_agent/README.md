@@ -55,7 +55,10 @@ its tap takes the words into the Daily OS planning for today. A task the
 user dictates ("make a task to fix the gate, high priority, I started ten
 minutes ago") waits for its tap too, but filled in: she reads its title,
 instructions, category, priority, due day, estimate and start from the
-words and says what she read, and *Make it a task* makes it with them —
+words and says what she read. *Make it a task* then asks, on the card,
+for its status, priority and due day — three chips set to what she read,
+each a short menu right there, under the title she read — and *Create
+task* (or Enter) makes it as set up —
 started only when they said so — with the words linked under it and the
 category's agent assigned. A follow-up ("a follow-up to that one") names
 the task it follows — any task the conversation named, finished ones too —

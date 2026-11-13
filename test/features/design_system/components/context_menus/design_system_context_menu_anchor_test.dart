@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -221,6 +222,71 @@ void main() {
       await tester.pumpAndSettle();
       expect(menu, findsOneWidget);
       expect(second.isOpen, isFalse);
+    });
+
+    testWidgets('a menu opened at the trailing edge keeps the page gutter '
+        'off it', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Align(
+            alignment: Alignment.topRight,
+            child: DesignSystemContextMenuAnchor(
+              items: [DesignSystemContextMenuItem(label: 'Row', onTap: () {})],
+              builder: (context, {required toggle, required isOpen}) =>
+                  TextButton(onPressed: toggle, child: const Text('Open')),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      final screen = tester.getRect(find.byType(Scaffold));
+      final menu = tester.getRect(find.byType(DesignSystemContextMenu));
+      final gutter = tester
+          .element(find.byType(DesignSystemContextMenu))
+          .designTokens
+          .spacing
+          .step5;
+      expect(menu.right, moreOrLessEquals(screen.right - gutter));
+    });
+
+    testWidgets('consumeOutsideTap: the tap that closes the menu does not '
+        'reach what is under it', (tester) async {
+      Future<int> outsideTaps({required bool consume}) async {
+        var under = 0;
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DesignSystemContextMenuAnchor(
+                  consumeOutsideTap: consume,
+                  items: [
+                    DesignSystemContextMenuItem(label: 'Row', onTap: () {}),
+                  ],
+                  builder: (context, {required toggle, required isOpen}) =>
+                      TextButton(onPressed: toggle, child: const Text('Open')),
+                ),
+                const SizedBox(height: 400),
+                TextButton(
+                  onPressed: () => under++,
+                  child: const Text('Under'),
+                ),
+              ],
+            ),
+          ),
+        );
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Under'), warnIfMissed: false);
+        await tester.pumpAndSettle();
+        expect(find.byType(DesignSystemContextMenu), findsNothing);
+        return under;
+      }
+
+      expect(await outsideTaps(consume: true), 0);
+      expect(await outsideTaps(consume: false), 1);
     });
   });
 }
