@@ -2567,6 +2567,10 @@
   "commonError": "Error",
   "commonLoading": "Loading...",
   "commonUnknown": "Unknown",
+  "companionCardCollapse": "Collapse",
+  "@companionCardCollapse": {
+    "description": "Tooltip of the button on the docked companion card that shrinks it back to her bust"
+  },
   "companionCardCustomize": "Customize",
   "@companionCardCustomize": {
     "description": "Menu row on the companion's floating card: closes the chat and opens her settings page, where her look is customized"
@@ -2575,9 +2579,17 @@
   "@companionCardDemo": {
     "description": "Menu row: the companion card fills the conversation area until dismissed, for demos"
   },
+  "companionCardDockedLabel": "Companion. Change the size, or hide it, from its options.",
+  "@companionCardDockedLabel": {
+    "description": "Screen-reader label of the companion's card docked under the desktop list of conversations (it does not move; Hide in its options puts it away, leaving her face in the header at the top)"
+  },
+  "companionCardExpand": "Expand",
+  "@companionCardExpand": {
+    "description": "Tooltip of the button on the docked companion card that grows it from her bust to all of her"
+  },
   "companionCardHide": "Hide",
   "@companionCardHide": {
-    "description": "Menu row and screen-reader tap hint on the floating companion card: puts the card away (a single tap on the card does the same)"
+    "description": "Menu row on the companion card: puts the card away, and her face in the chat header shows it again"
   },
   "companionCardLabel": "Companion. Drag to move; change the size from its options.",
   "@companionCardLabel": {

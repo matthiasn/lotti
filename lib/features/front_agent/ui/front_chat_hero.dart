@@ -121,10 +121,12 @@ class _SpeakingFigure extends ConsumerWidget {
 
 /// Her, head to toe, in the glass card floating over [conversationId]'s
 /// thread ([CompanionFloatingCard]) — where the user moved her, at the size
-/// they left her in [form]. She speaks the conversation's answers, holds the
-/// turn's pose as her bust in the header does, and points at what her latest
-/// reply lists ([frontStagePointsProvider]) while the thread is to her right.
-/// Its menu's customize row calls [onCustomize].
+/// they left her in [form] — or docked under a desktop's conversations
+/// ([CompanionCardForm.docked]), where collapsed she shows her bust. She
+/// speaks the conversation's answers, holds the turn's pose as her bust in
+/// the header does, and points at what her latest reply lists
+/// ([frontStagePointsProvider]) while the thread is to her right — always,
+/// docked. Its menu's customize row calls [onCustomize].
 class FrontCompanionCard extends ConsumerWidget {
   const FrontCompanionCard({
     required this.conversationId,
@@ -142,9 +144,12 @@ class FrontCompanionCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sourceId = frontVoiceSourceId(conversationId);
-    final leftHalf = ref.watch(
-      companionCardControllerProvider(form).select((p) => p.x < 0.5),
-    );
+    final docked = form == CompanionCardForm.docked;
+    final placement = companionCardControllerProvider(form);
+    final leftHalf = docked || ref.watch(placement.select((p) => p.x < 0.5));
+    final collapsed =
+        docked &&
+        ref.watch(placement.select((p) => p.height <= form.smallHeight));
     final pointing =
         leftHalf && ref.watch(frontStagePointsProvider(conversationId));
     final speaking = ref.watch(
@@ -154,7 +159,7 @@ class FrontCompanionCard extends ConsumerWidget {
     return CompanionFloatingCard(
       form: form,
       speaking: speaking,
-      // Her face in the header shows the card; the card puts itself away.
+      // Her face in the header shows the card; the card's menu puts it away.
       onHide: ref.read(frontCompanionCardShownProvider.notifier).toggle,
       onCustomize: onCustomize,
       // Decorative: the card carries its own label, and she says nothing a
@@ -164,6 +169,7 @@ class FrontCompanionCard extends ConsumerWidget {
           sourceId: sourceId,
           holding: pointing ? GestureName.pointRight : holding,
           dressedFor: frontCompanionDressedFor,
+          framing: collapsed ? CompanionFraming.bust : CompanionFraming.full,
         ),
       ),
     );

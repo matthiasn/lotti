@@ -3922,10 +3922,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get commonUnknown => 'Neznámé';
 
   @override
+  String get companionCardCollapse => 'Sbalit';
+
+  @override
   String get companionCardCustomize => 'Přizpůsobit';
 
   @override
   String get companionCardDemo => 'Velikost pro ukázku';
+
+  @override
+  String get companionCardDockedLabel =>
+      'Společník. Velikost změníš nebo ho skryješ v jeho možnostech.';
+
+  @override
+  String get companionCardExpand => 'Rozbalit';
 
   @override
   String get companionCardHide => 'Skrýt';

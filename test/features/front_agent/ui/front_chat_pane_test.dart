@@ -218,6 +218,8 @@ void main() {
     Future<FrontEntityPreview?> Function(FrontEntityKey key)? previews,
     bool reducedMotion = false,
     ValueListenable<double?>? listWidth,
+    // Tall enough that every message of the longest thread is built.
+    Size window = const Size(800, 2400),
   }) async {
     // The project creation resolves categories through the locator.
     final cache = MockEntitiesCacheService();
@@ -232,8 +234,6 @@ void main() {
     when(
       () => mocks.settingsDb.itemByKey(frontCompanionCardShownSettingsKey),
     ).thenAnswer((_) async => cardShown ? null : 'false');
-    // Tall enough that every message of the longest thread is built.
-    const window = Size(800, 2400);
     setTestSurfaceSize(tester, window);
     // Pushed, the pane sits on a route of its own over the app, as her
     // surface does, so leaving it can be seen.
@@ -2727,7 +2727,8 @@ void main() {
     testWidgets('a tap on her face fades her card in over the thread, in '
         'place — no page is pushed — between the header and the field, the '
         'thread keeping her height free after its end; a tap on the card '
-        'fades her out and gives the header her face back', (tester) async {
+        'keeps her, and Hide in her menu fades her out and gives the header '
+        'her face back', (tester) async {
       final observer = _PushObserver();
       await pumpPane(tester, companion: true, navigatorObservers: [observer]);
       final pushes = observer.pushed.length;
@@ -2771,14 +2772,100 @@ void main() {
         'c-1',
       );
 
-      // The face is gone while she is out: the card puts itself away.
+      // The face is gone while she is out: her card's menu puts it away.
       expect(toggle, findsNothing);
       await tester.tap(card);
       await tester.pump(kDoubleTapTimeout);
       await frames(tester);
+      expect(card, findsOne);
+
+      await tester.longPress(card);
+      await tester.pump();
+      await tester.tap(find.byKey(CompanionFloatingCardKeys.hide));
+      await frames(tester);
       expect(card, findsNothing);
       expect(inset(tester), 0);
       expect(toggle, findsOne);
+    });
+
+    testWidgets('beside the list, her card is docked under it, collapsed, '
+        'covering nothing of the thread; Hide in her menu puts her face back '
+        'in the header at the top', (tester) async {
+      final listWidth = ValueNotifier<double?>(300);
+      addTearDown(listWidth.dispose);
+      await pumpPane(
+        tester,
+        companion: true,
+        cardShown: true,
+        listWidth: listWidth,
+      );
+      await frames(tester);
+
+      final rect = tester.getRect(card);
+      final thread = tester.getRect(find.byType(AgentChatView));
+      expect(rect.right, lessThanOrEqualTo(thread.left));
+      expect(rect.width, 300 - 2 * 16);
+      expect(rect.height, CompanionCardForm.docked.smallHeight);
+      expect(
+        rect.top,
+        greaterThan(tester.getRect(find.byType(FrontChatDrawer)).bottom - 1),
+      );
+      expect(inset(tester), 0);
+      expect(
+        tester.widget<FrontCompanionCard>(find.byType(FrontCompanionCard)).form,
+        CompanionCardForm.docked,
+      );
+      expect(toggle, findsNothing);
+
+      await tester.longPress(card);
+      await tester.pump();
+      await tester.tap(find.byKey(CompanionFloatingCardKeys.hide));
+      await frames(tester);
+
+      expect(card, findsNothing);
+      expect(
+        tester.getRect(toggle).top,
+        lessThan(tester.getRect(find.byType(FrontChatHeader)).bottom),
+      );
+    });
+
+    testWidgets('beside the list, expanded, she stops where the drawer keeps '
+        'its rows and a few conversations; a window too short for her even '
+        'collapsed floats her over the thread instead', (tester) async {
+      final listWidth = ValueNotifier<double?>(300);
+      addTearDown(listWidth.dispose);
+      const kept = FrontChatPane.drawerKeptHeight;
+      final small = CompanionCardForm.docked.smallHeight;
+
+      await pumpPane(
+        tester,
+        companion: true,
+        cardShown: true,
+        listWidth: listWidth,
+        window: Size(800, kept + small + 100),
+      );
+      await frames(tester);
+      await tester.tap(find.byKey(CompanionFloatingCardKeys.expand));
+      await tester.pump(kDoubleTapTimeout);
+      await frames(tester);
+      // Card plus its foot margin fill what the drawer leaves; no overflow.
+      expect(tester.getRect(card).height, small + 100 - 16);
+      expect(tester.getRect(find.byType(FrontChatDrawer)).height, kept);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpPane(
+        tester,
+        companion: true,
+        cardShown: true,
+        listWidth: listWidth,
+        window: Size(800, kept + small - 1),
+      );
+      await frames(tester);
+      expect(
+        tester.widget<FrontCompanionCard>(find.byType(FrontCompanionCard)).form,
+        isNot(CompanionCardForm.docked),
+      );
+      expect(inset(tester), greaterThan(0));
     });
 
     testWidgets('out from the first open for a user who never hid her; '

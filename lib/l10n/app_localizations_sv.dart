@@ -3881,10 +3881,20 @@ class AppLocalizationsSv extends AppLocalizations {
   String get commonUnknown => 'Okänt';
 
   @override
+  String get companionCardCollapse => 'Fäll ihop';
+
+  @override
   String get companionCardCustomize => 'Anpassa';
 
   @override
   String get companionCardDemo => 'Demostorlek';
+
+  @override
+  String get companionCardDockedLabel =>
+      'Följeslagaren. Ändra storlek eller dölj den under alternativen.';
+
+  @override
+  String get companionCardExpand => 'Expandera';
 
   @override
   String get companionCardHide => 'Dölj';

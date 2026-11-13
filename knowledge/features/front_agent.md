@@ -2104,8 +2104,14 @@ its own**: `frontCompanionCardShownProvider` flips, and the pane's own
 and out (`AnimatedSwitcher`, `MotionDurations.short4`), still speaking on her
 source. The thread, its field, the header and the list stay where they are,
 so typing, `@` mentions, the microphone and Enter to send go on as before.
-The card puts itself away: a single tap on it, or *Hide* last in its menu
-(`CompanionFloatingCard.onHide`), and the face comes back to the header.
+Beside the list (a desktop window wide enough for `FrontChatPane.listWidth`)
+nothing floats over the thread (`FrontChatThreadView.cardDocked`): the card
+is docked at the foot of the sidebar, under the conversations and her
+settings, as wide as they are (`CompanionCardForm.docked`, see below), so it
+covers nothing of the conversation. A tap on the card does nothing; it is
+put away only by *Hide* last in its menu (`CompanionFloatingCard.onHide`,
+also reached with Enter or Space), and the face comes back to the header at
+the top.
 Whether she is shown is kept in SettingsDb (`FRONT_COMPANION_CARD_SHOWN`,
 device-local, like her placement): she is out until the user hides her, and
 stays hidden after a restart once they have. Until that value is read she is
@@ -2120,7 +2126,7 @@ stateDiagram-v2
   Reading --> Shown: nothing kept, shown kept, or unreadable
   Reading --> Hidden: hidden kept
   Hidden --> Shown: tap her face in the header
-  Shown --> Hidden: tap the card, or Hide in its menu
+  Shown --> Hidden: Hide in its menu
   note right of Reading: hidden meanwhile, so she never flashes in
   note right of Shown: the header face steps aside, and no card in the inbox or with the character off
 ```
@@ -2140,7 +2146,8 @@ starts on it moves it, a double tap switches Small ⇄ Large, a pinch sizes it
 anywhere between, and a long press — a right-click on a desktop — opens its
 menu (Small, Large, Demo size, Customize — which closes her surface and
 opens her settings page, `/settings/companion` —, Reset position and size,
-and Hide when its host gives `onHide`, which a single tap calls too). A desktop
+and Hide when its host gives `onHide`); so do Enter or Space on the focused
+card. A single tap does nothing. A desktop
 adds a grip on the corner facing the open screen, on hover, and Ctrl/⌘ +
 scroll. Wherever it sits, the card stays a margin (`spacing.step5`) inside
 the thread's area, and never taller or wider than that area allows. The
@@ -2160,6 +2167,28 @@ not synced), as shares of the room it travels in plus a height, so a card in
 a corner stays in it when the window resizes or the phone turns. Demo size
 is never saved: it fills the area until its "Usual size" button, a double
 tap, or the card is hidden.
+
+Docked (`CompanionCardForm.docked`, kept under `COMPANION_CARD_DOCKED`) the
+card never moves and has no grip, Ctrl/⌘ + scroll or Demo size: it is
+collapsed by default — her bust (`CompanionFraming.bust`) in a short strip
+— and expanded shows all of her. A button on its corner (Expand / Collapse),
+a double tap, or Small / Large in its menu switch between the two
+(`_DockedCompanion` in `front_chat_pane.dart`, animated by `AnimatedSize`).
+The drawer above always keeps `FrontChatPane.drawerKeptHeight` — its search,
+new chat and four settings rows and three conversations, a tap target each —
+so an expanded card stops short of that; a window too short to keep it with
+even the collapsed card floats her over the thread instead, as a narrower
+one does. Docked, the thread is always to her right, so
+she points at what she lists whenever she speaks it.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Collapsed: first run, reset
+  Collapsed --> Expanded: Expand, double tap, Large
+  Expanded --> Collapsed: Collapse, double tap, Small, reset
+  note right of Collapsed: her bust, the sidebar's width
+  note right of Expanded: all of her, leaving the drawer its kept height
+```
 
 ```mermaid
 stateDiagram-v2
@@ -2182,8 +2211,8 @@ While her voice plays in the conversation and her latest reply lists tasks
 or charts logged time (`frontStagePointsProvider` over
 `frontLatestReplyHasVisual`, in `state/front_stage_pointing.dart`), she
 holds `GestureName.pointRight` at the task rows or the chart as she says
-them — only while her card is in the left half, the conversation to her
-right — and lets her arm down when she stops. Otherwise she holds the turn's
+them — only while her card is in the left half, or docked, the conversation
+to her right — and lets her arm down when she stops. Otherwise she holds the turn's
 pose as her bust does (`FrontVoice.holdingOf`). The bust keeps one tree
 whatever she does, so her animator lives through a start and a stop.
 

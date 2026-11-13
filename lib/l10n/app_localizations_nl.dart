@@ -3897,10 +3897,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commonUnknown => 'Onbekend';
 
   @override
+  String get companionCardCollapse => 'Inklappen';
+
+  @override
   String get companionCardCustomize => 'Aanpassen';
 
   @override
   String get companionCardDemo => 'Demogrootte';
+
+  @override
+  String get companionCardDockedLabel =>
+      'Metgezel. Wijzig de grootte of verberg hem via de opties.';
+
+  @override
+  String get companionCardExpand => 'Uitvouwen';
 
   @override
   String get companionCardHide => 'Verbergen';

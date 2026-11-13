@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
+import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/companion_card_controller.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
@@ -142,15 +143,20 @@ void main() {
     expect(tester.getRect(card).bottom, area.height - 16);
   });
 
-  testWidgets('a tap on the card puts it away: the header shows her face '
-      'again', (tester) async {
+  testWidgets('a tap on the card keeps it; Hide in its menu puts it away: '
+      'the header shows her face again', (tester) async {
     await pumpCard(tester);
     final container = ProviderScope.containerOf(tester.element(card));
     expect(container.read(frontCompanionCardShownProvider), isTrue);
 
     await tester.tap(card);
     await tester.pump(kDoubleTapTimeout);
+    expect(container.read(frontCompanionCardShownProvider), isTrue);
 
+    await tester.longPress(card);
+    await tester.pump();
+    await tester.tap(find.byKey(CompanionFloatingCardKeys.hide));
+    await tester.pump();
     expect(container.read(frontCompanionCardShownProvider), isFalse);
   });
 
@@ -188,6 +194,25 @@ void main() {
     await pumpCard(tester, points: true, sending: true);
 
     expect(speaker(tester).holding, GestureName.pointRight);
+  });
+
+  testWidgets('docked, she shows her bust collapsed and all of her '
+      'expanded, and always points, the thread being to her right', (
+    tester,
+  ) async {
+    await pumpCard(
+      tester,
+      form: CompanionCardForm.docked,
+      points: true,
+      sending: true,
+    );
+    expect(speaker(tester).framing, CompanionFraming.bust);
+    expect(speaker(tester).holding, GestureName.pointRight);
+
+    await tester.tap(find.byKey(CompanionFloatingCardKeys.expand));
+    await tester.pump(kDoubleTapTimeout);
+    await _pumpFrames(tester);
+    expect(speaker(tester).framing, CompanionFraming.full);
   });
 
   testWidgets("in the right half she never points, holding the turn's pose "

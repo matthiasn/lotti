@@ -6540,6 +6540,12 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get commonUnknown;
 
+  /// Tooltip of the button on the docked companion card that shrinks it back to her bust
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get companionCardCollapse;
+
   /// Menu row on the companion's floating card: closes the chat and opens her settings page, where her look is customized
   ///
   /// In en, this message translates to:
@@ -6552,7 +6558,19 @@ abstract class AppLocalizations {
   /// **'Demo size'**
   String get companionCardDemo;
 
-  /// Menu row and screen-reader tap hint on the floating companion card: puts the card away (a single tap on the card does the same)
+  /// Screen-reader label of the companion's card docked under the desktop list of conversations (it does not move; Hide in its options puts it away, leaving her face in the header at the top)
+  ///
+  /// In en, this message translates to:
+  /// **'Companion. Change the size, or hide it, from its options.'**
+  String get companionCardDockedLabel;
+
+  /// Tooltip of the button on the docked companion card that grows it from her bust to all of her
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get companionCardExpand;
+
+  /// Menu row on the companion card: puts the card away, and her face in the chat header shows it again
   ///
   /// In en, this message translates to:
   /// **'Hide'**
