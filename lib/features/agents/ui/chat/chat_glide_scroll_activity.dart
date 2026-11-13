@@ -22,8 +22,7 @@ class ChatGlideScrollActivity extends ScrollActivity {
     ScrollPositionWithSingleContext position, {
     required this.speed,
     this.followGrowth = true,
-  }) : _position = position,
-       super(position) {
+  }) : super(position) {
     _ticker = position.context.vsync.createTicker(_tick)..start();
   }
 
@@ -44,7 +43,11 @@ class ChatGlideScrollActivity extends ScrollActivity {
     return held == null ? end : math.min(held, end);
   }
 
-  final ScrollPositionWithSingleContext _position;
+  /// The position this glide drives — read from the delegate, which the
+  /// scrollable swaps when it replaces its position (a device pixel ratio
+  /// change, say), never from the one it was created with.
+  ScrollPositionWithSingleContext get _position =>
+      delegate as ScrollPositionWithSingleContext;
   late final Ticker _ticker;
   Duration _lastTick = Duration.zero;
   double _velocity = 0;
@@ -72,7 +75,9 @@ class ChatGlideScrollActivity extends ScrollActivity {
     final remaining = end - _position.pixels;
     if (remaining < 0.5) {
       if (remaining > 0) delegate.setPixels(end);
-      delegate.goIdle();
+      // Idle when in range; brought back first when the end moved above the
+      // position (a viewport that grew under the glide).
+      delegate.goBallistic(0);
       return;
     }
     final seconds = elapsed.inMicroseconds / Duration.microsecondsPerSecond;

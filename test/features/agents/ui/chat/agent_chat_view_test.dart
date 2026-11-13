@@ -1049,6 +1049,7 @@ void main() {
     late StateSetter updateHost;
     late double cardHeight;
     late bool reduceMotion;
+    late bool sending;
 
     Future<void> pumpThread(
       WidgetTester tester, {
@@ -1056,6 +1057,7 @@ void main() {
     }) async {
       cardHeight = 10;
       reduceMotion = false;
+      sending = false;
       final history = [
         for (var index = 0; index < 30; index++)
           AgentChatMessage(
@@ -1081,7 +1083,7 @@ void main() {
                       agentId: 'goal-1',
                       agentName: 'Juno',
                       draft: '',
-                      isSending: false,
+                      isSending: sending,
                       history: AsyncData(history),
                       scrollOnReplies: scrollOnReplies,
                       onDraftChanged: (_) {},
@@ -1368,6 +1370,33 @@ void main() {
 
         expect(position(tester).extentAfter, 0);
       });
+
+      // A finger holds the list (a scroll of the reader's); a pressed mouse
+      // button — selecting text, holding the scrollbar — does not, so only
+      // the pointer count keeps the catch-up off it.
+      for (final kind in [PointerDeviceKind.touch, PointerDeviceKind.mouse]) {
+        testWidgets('the reader’s own turn does not pull a thread held by '
+            '${kind.name}', (tester) async {
+          await pumpThread(tester);
+          await tester.drag(find.byType(ListView), const Offset(0, 5000));
+          await tester.pumpAndSettle();
+          final gesture = await tester.startGesture(
+            tester.getCenter(find.byType(ListView)),
+            kind: kind,
+          );
+          await tester.pump();
+
+          updateHost(() => sending = true);
+          // The waiting dots pulse while sending, so frames are pumped.
+          for (var frame = 0; frame < 20; frame++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+
+          expect(position(tester).pixels, 0);
+          await gesture.up();
+          await tester.pump();
+        });
+      }
 
       testWidgets('nothing glides under a finger holding the thread', (
         tester,

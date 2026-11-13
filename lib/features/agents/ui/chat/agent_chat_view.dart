@@ -264,9 +264,9 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
 
   /// Glides to the latest: at reading pace as the thread grows under a
   /// reader who follows it, or quickly enough to catch up with the
-  /// reader's own turn ([catchUp]). A growing thread never restarts a
-  /// running glide (it follows the end anyway), never starts one under the
-  /// reader's finger and never cuts into a scroll of theirs. A host that
+  /// reader's own turn ([catchUp]). Nothing starts one under the reader's
+  /// finger or cuts into a scroll of theirs; only a catch-up replaces a
+  /// running glide (growth is followed by it anyway). A host that
   /// keeps replies where they start has its catch-up hold the end once it
   /// is laid out, so an answer growing under it is not followed. Under reduced motion
   /// the thread goes there at once instead.
@@ -276,11 +276,11 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     if (position is! ScrollPositionWithSingleContext) return;
     final distance = position.maxScrollExtent - position.pixels;
     if (distance <= 0) return;
-    if (!catchUp) {
-      final gliding = _glide?.isActive ?? false;
-      if (gliding || _pointersDown > 0 || position.isScrollingNotifier.value) {
-        return;
-      }
+    final gliding = _glide?.isActive ?? false;
+    if (_pointersDown > 0 ||
+        (position.isScrollingNotifier.value && !gliding) ||
+        (gliding && !catchUp)) {
+      return;
     }
     if (MediaQuery.disableAnimationsOf(context)) {
       position.jumpTo(position.maxScrollExtent);

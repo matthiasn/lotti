@@ -6,11 +6,15 @@ void main() {
   late ScrollController controller;
   late StateSetter setHost;
   late double tailHeight;
+  late double viewportHeight;
+  late ScrollPhysics? physics;
 
   Future<void> pumpList(WidgetTester tester) async {
     controller = ScrollController();
     addTearDown(controller.dispose);
     tailHeight = 0;
+    viewportHeight = 400;
+    physics = null;
     await tester.pumpWidget(
       Directionality(
         textDirection: TextDirection.ltr,
@@ -21,10 +25,11 @@ void main() {
             return Align(
               alignment: Alignment.topLeft,
               child: SizedBox(
-                height: 400,
+                height: viewportHeight,
                 width: 300,
                 child: ListView(
                   controller: controller,
+                  physics: physics,
                   children: [
                     const SizedBox(height: 1000),
                     SizedBox(height: tailHeight),
@@ -107,6 +112,40 @@ void main() {
     expect(position().pixels, 600);
     expect(position().extentAfter, 800);
     expect(activity.destination, 600);
+  });
+
+  testWidgets('keeps driving the position the list swaps in mid-glide', (
+    tester,
+  ) async {
+    await pumpList(tester);
+    glide();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    final before = position();
+
+    // Physics of another kind make the scrollable replace its position and
+    // hand the running activity over, as a device pixel ratio change does.
+    setHost(() => physics = const BouncingScrollPhysics());
+    await tester.pump();
+    expect(position(), isNot(same(before)));
+
+    await tester.pumpAndSettle();
+    expect(position().pixels, position().maxScrollExtent);
+  });
+
+  testWidgets('is brought back in range when the viewport outgrows the '
+      'end mid-glide', (tester) async {
+    await pumpList(tester);
+    glide(speed: 1000);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 650));
+    expect(position().pixels, greaterThan(440));
+
+    setHost(() => viewportHeight = 580);
+    await tester.pumpAndSettle();
+
+    expect(position().maxScrollExtent, 420);
+    expect(position().pixels, 420);
   });
 
   testWidgets('is replaced by the reader taking hold of the list', (

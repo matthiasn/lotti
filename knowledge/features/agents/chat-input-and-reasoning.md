@@ -41,7 +41,8 @@ end every frame, so a growing reply is followed without restarting, and,
 unlike `animateTo`'s activity, leaves cards under it tappable. As an ordinary
 activity it is replaced by whatever the reader does: a touch holds the list,
 a mouse click stops it where it is, a wheel or drag takes over, and no glide
-starts under a held finger or into a fling. Under reduced motion
+starts — not even for the reader's own turn — under a held finger or
+pressed button, or into a scroll of theirs. Under reduced motion
 (`MediaQuery.disableAnimationsOf`) nothing glides: the thread goes where the
 glide would have taken it at once, and a glide running when the setting turns
 on lands there. A reply that arrives while the
