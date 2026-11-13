@@ -949,6 +949,122 @@ void main() {
     expect(find.textContaining('Message 29'), findsNothing);
   });
 
+  group('under reduced motion, the reader’s own turn is landed on', () {
+    Future<ScrollPosition Function()> catchUp(
+      WidgetTester tester, {
+      required List<AgentChatMessage> history,
+      required String ownTurn,
+    }) async {
+      var thread = history;
+      late StateSetter updateHost;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          StatefulBuilder(
+            builder: (context, setState) {
+              updateHost = setState;
+              return Scaffold(
+                body: MediaQuery(
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(disableAnimations: true),
+                  child: SizedBox(
+                    height: 420,
+                    child: AgentChatView(
+                      agentId: 'goal-1',
+                      agentName: 'Juno',
+                      draft: '',
+                      isSending: false,
+                      history: AsyncData(thread),
+                      scrollOnReplies: false,
+                      onDraftChanged: (_) {},
+                      onSend: () {},
+                      onRetry: () {},
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(ListView), const Offset(0, 100000));
+      await tester.pumpAndSettle();
+      ScrollPosition position() => tester
+          .state<ScrollableState>(
+            find.descendant(
+              of: find.byType(ListView),
+              matching: find.byType(Scrollable),
+            ),
+          )
+          .position;
+      expect(position().pixels, 0);
+
+      updateHost(
+        () => thread = [
+          ...thread,
+          AgentChatMessage(
+            id: 'mine',
+            role: AgentChatRole.user,
+            text: ownTurn,
+            createdAt: DateTime(2026, 8, 11, 11),
+          ),
+        ],
+      );
+      for (var frame = 0; frame < 4; frame++) {
+        await tester.pump();
+      }
+      return position;
+    }
+
+    testWidgets('past rows the list had only estimated, far below', (
+      tester,
+    ) async {
+      // Short rows up top and tall ones below: from the top, the list's
+      // guess at its end falls thousands of pixels short of the real one.
+      final position = await catchUp(
+        tester,
+        history: [
+          for (var index = 0; index < 60; index++)
+            AgentChatMessage(
+              id: '$index',
+              role: AgentChatRole.agent,
+              text: index < 30
+                  ? 'Row $index'
+                  : 'Row $index ${'with a great deal more to say ' * 12}',
+              createdAt: DateTime(2026, 8, 11, 9, index),
+            ),
+        ],
+        ownTurn: 'My own turn',
+      );
+
+      expect(position().extentAfter, 0);
+      expect(find.text('My own turn'), findsOneWidget);
+    });
+
+    testWidgets('when only the turn itself outgrows the estimate', (
+      tester,
+    ) async {
+      // Even rows, and a turn taller than them: the jump lands with the
+      // end laid out but a little short of it.
+      final position = await catchUp(
+        tester,
+        history: [
+          for (var index = 0; index < 60; index++)
+            AgentChatMessage(
+              id: '$index',
+              role: AgentChatRole.agent,
+              text: 'Row $index',
+              createdAt: DateTime(2026, 8, 11, 9, index),
+            ),
+        ],
+        ownTurn: 'My own turn ${'and more of it ' * 30}',
+      );
+
+      expect(position().extentAfter, 0);
+    });
+  });
+
   testWidgets('without reply scrolling, only the reader’s own message pulls '
       'a scrolled conversation to the latest', (tester) async {
     AgentChatMessage message(int index, AgentChatRole role) => AgentChatMessage(
@@ -1397,6 +1513,32 @@ void main() {
           await tester.pump();
         });
       }
+
+      testWidgets('reduced motion landing a held catch-up keeps it off '
+          'the answer that grew under it', (tester) async {
+        await pumpThread(tester, scrollOnReplies: false);
+        await tester.drag(find.byType(ListView), const Offset(0, 5000));
+        await tester.pumpAndSettle();
+
+        updateHost(() => sending = true);
+        await tester.pump();
+        // Until the catch-up nears the end and holds it.
+        while (position(tester).extentAfter > 200) {
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        await tester.pump(const Duration(milliseconds: 16));
+        final held = position(tester).maxScrollExtent;
+
+        updateHost(() {
+          cardHeight = 600;
+          reduceMotion = true;
+        });
+        await tester.pump();
+        await tester.pump();
+
+        expect(position(tester).pixels, held);
+        expect(position(tester).extentAfter, greaterThan(500));
+      });
 
       testWidgets('nothing glides under a finger holding the thread', (
         tester,

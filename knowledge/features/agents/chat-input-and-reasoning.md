@@ -44,8 +44,9 @@ a mouse click stops it where it is, a wheel or drag takes over, and no glide
 starts — not even for the reader's own turn — under a held finger or
 pressed button, or into a scroll of theirs. Under reduced motion
 (`MediaQuery.disableAnimationsOf`) nothing glides: the thread goes where the
-glide would have taken it at once, and a glide running when the setting turns
-on lands there. A reply that arrives while the
+glide would have taken it at once (a jump from far up lands on the list's
+estimate of its end, so a landing its layout shows short is jumped once
+more), and a glide running when the setting turns on lands there. A reply that arrives while the
 reader is scrolled up leaves them where they are. The reader turning back
 up (`UserScrollNotification`, `ScrollDirection.forward`) stops the following
 at once; where any scroll ends decides whether it resumes (within
