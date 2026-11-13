@@ -3929,7 +3929,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get companionCardDockedLabel =>
-      'Compagno. Cambia la dimensione o spostalo in alto dalle sue opzioni.';
+      'Compagno. Cambia la dimensione o nascondilo dalle sue opzioni.';
 
   @override
   String get companionCardExpand => 'Espandi';

@@ -2172,10 +2172,13 @@ Docked (`CompanionCardForm.docked`, kept under `COMPANION_CARD_DOCKED`) the
 card never moves and has no grip, Ctrl/⌘ + scroll or Demo size: it is
 collapsed by default — her bust (`CompanionFraming.bust`) in a short strip
 — and expanded shows all of her. A button on its corner (Expand / Collapse),
-a double tap, or Small / Large in its menu switch between the two, and an
-expanded card never takes more than half the sidebar's height from the
-conversations above it (`_DockedCompanion` in `front_chat_pane.dart`,
-animated by `AnimatedSize`). Docked, the thread is always to her right, so
+a double tap, or Small / Large in its menu switch between the two
+(`_DockedCompanion` in `front_chat_pane.dart`, animated by `AnimatedSize`).
+The drawer above always keeps `FrontChatPane.drawerKeptHeight` — its search,
+new chat and four settings rows and three conversations, a tap target each —
+so an expanded card stops short of that; a window too short to keep it with
+even the collapsed card floats her over the thread instead, as a narrower
+one does. Docked, the thread is always to her right, so
 she points at what she lists whenever she speaks it.
 
 ```mermaid
@@ -2184,7 +2187,7 @@ stateDiagram-v2
   Collapsed --> Expanded: Expand, double tap, Large
   Expanded --> Collapsed: Collapse, double tap, Small, reset
   note right of Collapsed: her bust, the sidebar's width
-  note right of Expanded: all of her, at most half the sidebar
+  note right of Expanded: all of her, leaving the drawer its kept height
 ```
 
 ```mermaid

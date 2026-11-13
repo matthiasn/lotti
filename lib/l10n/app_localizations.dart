@@ -6546,10 +6546,10 @@ abstract class AppLocalizations {
   /// **'Demo size'**
   String get companionCardDemo;
 
-  /// Screen-reader label of the companion's card docked under the desktop list of conversations (it does not move; Hide in its options puts her face in the header at the top)
+  /// Screen-reader label of the companion's card docked under the desktop list of conversations (it does not move; Hide in its options puts it away, leaving her face in the header at the top)
   ///
   /// In en, this message translates to:
-  /// **'Companion. Change the size, or move it to the top, from its options.'**
+  /// **'Companion. Change the size, or hide it, from its options.'**
   String get companionCardDockedLabel;
 
   /// Tooltip of the button on the docked companion card that grows it from her bust to all of her

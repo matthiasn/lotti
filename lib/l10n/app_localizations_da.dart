@@ -3877,7 +3877,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get companionCardDockedLabel =>
-      'Følgesvend. Skift størrelse, eller flyt den til toppen, under indstillingerne.';
+      'Følgesvend. Skift størrelse, eller skjul den, under indstillingerne.';
 
   @override
   String get companionCardExpand => 'Udvid';

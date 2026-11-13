@@ -3937,7 +3937,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get companionCardDockedLabel =>
-      'Compagnon. Change la taille ou déplace-le en haut dans ses options.';
+      'Compagnon. Change la taille ou masque-le dans ses options.';
 
   @override
   String get companionCardExpand => 'Agrandir';

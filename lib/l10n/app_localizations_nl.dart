@@ -3900,7 +3900,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get companionCardDockedLabel =>
-      'Metgezel. Wijzig de grootte of verplaats hem naar boven via de opties.';
+      'Metgezel. Wijzig de grootte of verberg hem via de opties.';
 
   @override
   String get companionCardExpand => 'Uitvouwen';

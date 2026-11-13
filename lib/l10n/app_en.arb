@@ -2577,9 +2577,9 @@
   "@companionCardDemo": {
     "description": "Menu row: the companion card fills the conversation area until dismissed, for demos"
   },
-  "companionCardDockedLabel": "Companion. Change the size, or move it to the top, from its options.",
+  "companionCardDockedLabel": "Companion. Change the size, or hide it, from its options.",
   "@companionCardDockedLabel": {
-    "description": "Screen-reader label of the companion's card docked under the desktop list of conversations (it does not move; Hide in its options puts her face in the header at the top)"
+    "description": "Screen-reader label of the companion's card docked under the desktop list of conversations (it does not move; Hide in its options puts it away, leaving her face in the header at the top)"
   },
   "companionCardExpand": "Expand",
   "@companionCardExpand": {

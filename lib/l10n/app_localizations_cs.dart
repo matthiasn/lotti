@@ -3925,7 +3925,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get companionCardDockedLabel =>
-      'Společník. Velikost změníš nebo ho přesuneš nahoru v jeho možnostech.';
+      'Společník. Velikost změníš nebo ho skryješ v jeho možnostech.';
 
   @override
   String get companionCardExpand => 'Rozbalit';

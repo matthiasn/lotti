@@ -83,6 +83,12 @@ class FrontChatPane extends ConsumerStatefulWidget {
   /// rest. Over a phone's thread the drawer is as wide as that at most.
   static const double listShare = 0.38;
 
+  /// The height the drawer beside the conversation keeps above her docked
+  /// card: its search, new chat and four settings rows, and three
+  /// conversations — a tap target each. A window too short for that and her
+  /// collapsed card floats her over the thread instead.
+  static const double drawerKeptHeight = TapTargets.minimum * 9;
+
   final VoidCallback onClose;
 
   /// The width of the drawer kept beside the conversation, on a window wide
@@ -192,55 +198,63 @@ class _FrontChatPaneState extends ConsumerState<FrontChatPane>
         }
       },
       child: beside
-          ? Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // A step off the conversation's ground: the drawer is the
-                // sheet's sidebar, not more of the thread.
-                ColoredBox(
-                  color: tokens.colors.background.level02,
-                  child: SizedBox(
-                    width: listWidth,
-                    child: LayoutBuilder(
-                      builder: (context, sidebar) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+          ? LayoutBuilder(
+              builder: (context, panel) {
+                // Docked only where the drawer keeps its rows and a few
+                // conversations above her; a shorter window floats her over the
+                // thread, as a narrower one does.
+                final dockRoom =
+                    panel.maxHeight - FrontChatPane.drawerKeptHeight;
+                final docked = dockRoom >= CompanionCardForm.docked.smallHeight;
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // A step off the conversation's ground: the drawer is the
+                    // sheet's sidebar, not more of the thread.
+                    ColoredBox(
+                      color: tokens.colors.background.level02,
+                      child: SizedBox(
+                        width: listWidth,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: FrontChatDrawer(
+                                beside: true,
+                                keyboardUp: widget.keyboardUp,
+                              ),
+                            ),
+                            // Expanded, she still leaves the drawer its room.
+                            if (docked)
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxHeight: dockRoom,
+                                ),
+                                child: _DockedCompanion(onClose: onClose),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const DesignSystemDivider(
+                      orientation: DesignSystemDividerOrientation.vertical,
+                    ),
+                    Expanded(
+                      child: Column(
                         children: [
+                          FrontChatHeader(onClose: onClose, listBeside: true),
                           Expanded(
-                            child: FrontChatDrawer(
-                              beside: true,
-                              keyboardUp: widget.keyboardUp,
+                            child: FrontChatThreadView(
+                              onClose: onClose,
+                              cardDocked: docked,
                             ),
-                          ),
-                          // Expanded, she still leaves the conversations
-                          // half of the sidebar.
-                          ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxHeight: sidebar.maxHeight / 2,
-                            ),
-                            child: _DockedCompanion(onClose: onClose),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ),
-                const DesignSystemDivider(
-                  orientation: DesignSystemDividerOrientation.vertical,
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      FrontChatHeader(onClose: onClose, listBeside: true),
-                      Expanded(
-                        child: FrontChatThreadView(
-                          onClose: onClose,
-                          cardDocked: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             )
           : LayoutBuilder(
               builder: (context, constraints) => Stack(

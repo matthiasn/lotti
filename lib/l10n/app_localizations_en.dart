@@ -3862,7 +3862,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get companionCardDockedLabel =>
-      'Companion. Change the size, or move it to the top, from its options.';
+      'Companion. Change the size, or hide it, from its options.';
 
   @override
   String get companionCardExpand => 'Expand';

@@ -369,8 +369,7 @@ void main() {
 
       expect(
         find.semantics.byLabel(
-          'Companion. Change the size, or move it to the top, from its '
-          'options.',
+          'Companion. Change the size, or hide it, from its options.',
         ),
         findsOneWidget,
       );

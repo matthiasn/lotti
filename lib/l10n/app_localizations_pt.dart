@@ -3919,7 +3919,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get companionCardDockedLabel =>
-      'Acompanhante. Muda o tamanho ou move-o para cima nas opções.';
+      'Acompanhante. Muda o tamanho ou oculta-o nas opções.';
 
   @override
   String get companionCardExpand => 'Expandir';

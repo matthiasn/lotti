@@ -3911,7 +3911,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get companionCardDockedLabel =>
-      'Begleitung. In den Optionen änderst du die Größe oder schiebst sie nach oben.';
+      'Begleitung. In den Optionen änderst du die Größe oder blendest sie aus.';
 
   @override
   String get companionCardExpand => 'Ausklappen';
