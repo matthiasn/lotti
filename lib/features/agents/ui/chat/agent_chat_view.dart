@@ -266,7 +266,10 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
   /// reader who follows it, or quickly enough to catch up with the
   /// reader's own turn ([catchUp]). A growing thread never restarts a
   /// running glide (it follows the end anyway), never starts one under the
-  /// reader's finger and never cuts into a scroll of theirs.
+  /// reader's finger and never cuts into a scroll of theirs. A host that
+  /// keeps replies where they start has its catch-up hold the end once it
+  /// is laid out, so an answer growing under it is not followed. Under reduced motion
+  /// the thread goes there at once instead.
   void _glideToLatest({bool catchUp = false}) {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
@@ -279,14 +282,29 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
         return;
       }
     }
+    if (MediaQuery.disableAnimationsOf(context)) {
+      position.jumpTo(position.maxScrollExtent);
+      return;
+    }
     position.beginActivity(
       _glide = ChatGlideScrollActivity(
         position,
         speed: catchUp
             ? math.max(_readingPace, distance / _catchUpSeconds)
             : _readingPace,
+        followGrowth: widget.scrollOnReplies,
       ),
     );
+  }
+
+  /// Reduced motion turned on while a glide runs: it lands where it was
+  /// heading, at once.
+  void _landGlideWithoutMotion() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final glide = _glide;
+      if (!mounted || glide == null || !glide.isActive) return;
+      _scrollController.jumpTo(glide.destination);
+    });
   }
 
   /// Brings the thread to its latest after the frame: at once when it has
@@ -327,6 +345,10 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     _wasSending = widget.isSending;
     if (ownTurn || (opened && widget.scrollOnReplies)) {
       _scrollToLatest(instant: opened);
+    }
+    if (MediaQuery.disableAnimationsOf(context) &&
+        (_glide?.isActive ?? false)) {
+      _landGlideWithoutMotion();
     }
 
     return LayoutBuilder(

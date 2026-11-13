@@ -84,6 +84,31 @@ void main() {
     expect(position().pixels, 1400);
   });
 
+  testWidgets('not following growth, it holds the end once laid out', (
+    tester,
+  ) async {
+    await pumpList(tester);
+    final activity = ChatGlideScrollActivity(
+      position(),
+      speed: 2000,
+      followGrowth: false,
+    );
+    position().beginActivity(activity);
+    await tester.pump();
+    // Within the cache extent of the end: the end is laid out and held.
+    while (position().extentAfter > 250) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await tester.pump(const Duration(milliseconds: 16));
+
+    setHost(() => tailHeight = 800);
+    await tester.pumpAndSettle();
+
+    expect(position().pixels, 600);
+    expect(position().extentAfter, 800);
+    expect(activity.destination, 600);
+  });
+
   testWidgets('is replaced by the reader taking hold of the list', (
     tester,
   ) async {

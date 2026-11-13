@@ -27,7 +27,10 @@ and turn off scrolling on new replies (`scrollOnReplies: false`) so a reader
 stays on earlier evidence. A thread opens at its latest message (one jump —
 opening is no arrival to watch); after that **nothing arriving moves the
 viewport on the frame it lands**. A new user turn, or the start of sending,
-catches up with a quick glide (about 0.6 s, however far up the reader was).
+catches up with a quick glide (about 0.6 s, however far up the reader was);
+in a host that keeps replies where they start, that catch-up reads the end
+live only until it is laid out — before that it is the list's estimate — and
+holds it from then on, so an answer growing under it is not followed.
 While the reader is at the bottom the thread **follows its latest message as
 it grows** — a reply, its cards, a door's answer and a lazily built list's
 real height all arrive after the reply's own frame — by gliding toward the
@@ -38,7 +41,10 @@ end every frame, so a growing reply is followed without restarting, and,
 unlike `animateTo`'s activity, leaves cards under it tappable. As an ordinary
 activity it is replaced by whatever the reader does: a touch holds the list,
 a mouse click stops it where it is, a wheel or drag takes over, and no glide
-starts under a held finger or into a fling. A reply that arrives while the
+starts under a held finger or into a fling. Under reduced motion
+(`MediaQuery.disableAnimationsOf`) nothing glides: the thread goes where the
+glide would have taken it at once, and a glide running when the setting turns
+on lands there. A reply that arrives while the
 reader is scrolled up leaves them where they are. The reader turning back
 up (`UserScrollNotification`, `ScrollDirection.forward`) stops the following
 at once; where any scroll ends decides whether it resumes (within

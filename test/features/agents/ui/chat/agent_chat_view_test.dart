@@ -1018,17 +1018,44 @@ void main() {
     expect(position().extentAfter, 0);
     expect(find.textContaining('Message 31'), findsOneWidget);
     expect(find.textContaining('Message 0'), findsNothing);
+
+    // An answer that starts growing while the catch-up still runs is not
+    // followed: the reader keeps its beginning and evidence in view.
+    updateHost(() => history = [...history, message(32, AgentChatRole.user)]);
+    await tester.pump();
+    await tester.pump();
+    updateHost(
+      () => history = [
+        ...history,
+        AgentChatMessage(
+          id: 'answer',
+          role: AgentChatRole.agent,
+          text: 'Answer begins here. ${'More evidence follows. ' * 120}',
+          createdAt: DateTime(2026, 8, 11, 10),
+        ),
+      ],
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Message 32'), findsOneWidget);
+    // The (collapsed) answer stands below, its first line in view.
+    expect(position().extentAfter, greaterThan(200));
+    expect(
+      tester.getRect(find.textContaining('Answer begins here')).top,
+      lessThan(tester.getRect(find.byType(ListView)).bottom),
+    );
   });
 
   group('following the latest as the thread grows', () {
     late StateSetter updateHost;
     late double cardHeight;
+    late bool reduceMotion;
 
     Future<void> pumpThread(
       WidgetTester tester, {
       bool scrollOnReplies = true,
     }) async {
       cardHeight = 10;
+      reduceMotion = false;
       final history = [
         for (var index = 0; index < 30; index++)
           AgentChatMessage(
@@ -1044,27 +1071,33 @@ void main() {
             builder: (context, setState) {
               updateHost = setState;
               return Scaffold(
-                body: SizedBox(
-                  height: 420,
-                  child: AgentChatView(
-                    agentId: 'goal-1',
-                    agentName: 'Juno',
-                    draft: '',
-                    isSending: false,
-                    history: AsyncData(history),
-                    scrollOnReplies: scrollOnReplies,
-                    onDraftChanged: (_) {},
-                    onSend: () {},
-                    onRetry: () {},
-                    // The latest reply's card arrives after the reply, as
-                    // a door's answer does, and grows the thread with no
-                    // new message.
-                    attachmentBuilder: (context, message) => message.id == '29'
-                        ? SizedBox(
-                            key: const ValueKey('late-card'),
-                            height: cardHeight,
-                          )
-                        : null,
+                body: MediaQuery(
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(disableAnimations: reduceMotion),
+                  child: SizedBox(
+                    height: 420,
+                    child: AgentChatView(
+                      agentId: 'goal-1',
+                      agentName: 'Juno',
+                      draft: '',
+                      isSending: false,
+                      history: AsyncData(history),
+                      scrollOnReplies: scrollOnReplies,
+                      onDraftChanged: (_) {},
+                      onSend: () {},
+                      onRetry: () {},
+                      // The latest reply's card arrives after the reply, as
+                      // a door's answer does, and grows the thread with no
+                      // new message.
+                      attachmentBuilder: (context, message) =>
+                          message.id == '29'
+                          ? SizedBox(
+                              key: const ValueKey('late-card'),
+                              height: cardHeight,
+                            )
+                          : null,
+                    ),
                   ),
                 ),
               );
@@ -1288,6 +1321,52 @@ void main() {
 
         expect(position(tester).pixels, stopped);
         expect(position(tester).extentAfter, greaterThan(300));
+      });
+
+      testWidgets('under reduced motion, what arrives is jumped to at once', (
+        tester,
+      ) async {
+        await pumpThread(tester);
+        updateHost(() => reduceMotion = true);
+        await tester.pump();
+
+        await growWithoutSettling(tester);
+        await tester.pump();
+
+        expect(position(tester).extentAfter, 0);
+      });
+
+      testWidgets('reduced motion turned on mid-glide lands it at once', (
+        tester,
+      ) async {
+        await pumpThread(tester);
+        await growWithoutSettling(tester);
+        for (var frame = 0; frame < 5; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(position(tester).extentAfter, greaterThan(300));
+
+        updateHost(() => reduceMotion = true);
+        await tester.pump();
+        await tester.pump();
+
+        expect(position(tester).extentAfter, 0);
+      });
+
+      testWidgets('a cancelled touch does not keep blocking the glide', (
+        tester,
+      ) async {
+        await pumpThread(tester);
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(ListView)),
+        );
+        await gesture.cancel();
+        await tester.pump();
+
+        await growWithoutSettling(tester);
+        await tester.pumpAndSettle();
+
+        expect(position(tester).extentAfter, 0);
       });
 
       testWidgets('nothing glides under a finger holding the thread', (

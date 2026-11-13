@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
@@ -7,7 +8,8 @@ import 'package:flutter/widgets.dart';
 /// lands below is read into view instead of jumped to.
 ///
 /// The end is read on every frame, so a reply that keeps growing while the
-/// glide runs is followed to its new end. The glide eases in over
+/// glide runs is followed to its new end — unless [followGrowth] is off.
+/// The glide eases in over
 /// [_rampIn] and brakes evenly into the end over [_settle] instead of
 /// stopping dead.
 ///
@@ -19,6 +21,7 @@ class ChatGlideScrollActivity extends ScrollActivity {
   ChatGlideScrollActivity(
     ScrollPositionWithSingleContext position, {
     required this.speed,
+    this.followGrowth = true,
   }) : _position = position,
        super(position) {
     _ticker = position.context.vsync.createTicker(_tick)..start();
@@ -26,6 +29,20 @@ class ChatGlideScrollActivity extends ScrollActivity {
 
   /// Logical pixels a second at full pace.
   final double speed;
+
+  /// Whether growth at the end is followed. When off — a host that keeps
+  /// replies where they start — the end is still read live until it is laid
+  /// out (within the cache extent; before that it is the list's estimate),
+  /// and held from then on, so an answer growing under the glide is not.
+  final bool followGrowth;
+  double? _heldEnd;
+
+  /// Where the glide is heading now. Never beyond the list's end.
+  double get destination {
+    final end = _position.maxScrollExtent;
+    final held = _heldEnd;
+    return held == null ? end : math.min(held, end);
+  }
 
   final ScrollPositionWithSingleContext _position;
   late final Ticker _ticker;
@@ -46,7 +63,12 @@ class ChatGlideScrollActivity extends ScrollActivity {
     final dt =
         (elapsed - _lastTick).inMicroseconds / Duration.microsecondsPerSecond;
     _lastTick = elapsed;
-    final end = _position.maxScrollExtent;
+    if (!followGrowth &&
+        _heldEnd == null &&
+        _position.extentAfter <= RenderAbstractViewport.defaultCacheExtent) {
+      _heldEnd = _position.maxScrollExtent;
+    }
+    final end = destination;
     final remaining = end - _position.pixels;
     if (remaining < 0.5) {
       if (remaining > 0) delegate.setPixels(end);
