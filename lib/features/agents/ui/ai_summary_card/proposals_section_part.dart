@@ -211,6 +211,7 @@ class ProposalsSection extends StatelessWidget {
                 collapsed: individual.isEmpty,
                 duration: ProposalMotion.collapse,
                 child: _StatusChangesBand(
+                  afterRail: onConfirmAll != null,
                   rows: [
                     for (var i = 0; i < individual.length; i++)
                       row(individual[i], bulk.length + i, inBulk: false),
@@ -315,29 +316,40 @@ class ProposalHistorySection extends StatelessWidget {
 /// a title and the one line that says what accepting costs, then the rows.
 /// Kept mounted while empty so its [SizeFadeCollapse] can ease it away.
 class _StatusChangesBand extends StatelessWidget {
-  const _StatusChangesBand({required this.rows});
+  const _StatusChangesBand({required this.rows, required this.afterRail});
 
   final List<Widget> rows;
+
+  /// Whether the Confirm all rail stands above the band. The rail ends flush
+  /// while a row ends with its own step4 gap, so the band tops up the
+  /// difference to sit step5 below either one.
+  final bool afterRail;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final warning = tokens.colors.alert.warning;
     final messages = context.messages;
-    return Padding(
-      padding: EdgeInsets.only(top: tokens.spacing.step3),
+    final inset = tokens.spacing.step4;
+    // A group break, one step past the row rhythm. Eases on the rail's own
+    // clock, so the band holds its place while the rail collapses away.
+    return AnimatedPadding(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : ProposalMotion.collapse,
+      curve: ProposalMotion.collapseCurve,
+      padding: EdgeInsets.only(
+        top: afterRail ? tokens.spacing.step5 : tokens.spacing.step2,
+      ),
       child: DecoratedBox(
         decoration: BoxDecoration(
           border: Border.all(color: warning.defaultColor),
           borderRadius: BorderRadius.circular(tokens.radii.m),
         ),
         child: Padding(
-          // No bottom inset: each row brings its own trailing gap.
-          padding: EdgeInsets.only(
-            left: tokens.spacing.step3,
-            top: tokens.spacing.step3,
-            right: tokens.spacing.step3,
-          ),
+          // Even on all four sides: the last row's own step4 trailing gap is
+          // the bottom inset.
+          padding: EdgeInsets.only(left: inset, top: inset, right: inset),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

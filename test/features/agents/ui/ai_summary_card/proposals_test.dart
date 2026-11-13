@@ -392,6 +392,54 @@ void main() {
         expect(doneRow, findsOneWidget);
       });
 
+      testWidgets('the band sits one even step below what precedes it and '
+          'insets its content evenly', (tester) async {
+        Rect bandBox() => tester.getRect(
+          find.descendant(of: band, matching: find.byType(DecoratedBox)).first,
+        );
+        // A row's visible card ends where its own step4 trailing gap begins.
+        double visibleBottom(Finder row) => tester.getRect(row).bottom - 12;
+
+        // With the rail: the gap runs from the Confirm all button.
+        await pumpCard(tester, [bulkSet('cs-a'), bulkSet('cs-b')]);
+        expect(bandBox().top - tester.getRect(rail).bottom, 16);
+
+        final statusRow = find.descendant(
+          of: band,
+          matching: find.byType(ProposalRow),
+        );
+        final box = bandBox();
+        final row = tester.getRect(statusRow);
+        expect(row.left - box.left, 12);
+        expect(box.right - row.right, 12);
+        expect(box.bottom - visibleBottom(statusRow), 12);
+        // The title line sets the header's height; the icon centres in it.
+        expect(
+          tester
+                  .getRect(
+                    find.descendant(
+                      of: band,
+                      matching: find.text('Status changes'),
+                    ),
+                  )
+                  .top -
+              box.top,
+          12,
+        );
+
+        // Without it: the same gap, from the last row's card.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await pumpCard(tester, [bulkSet('cs-a')]);
+        final lastBulk = find
+            .byType(ProposalRow)
+            .evaluate()
+            .map((e) => find.byWidget(e.widget))
+            .firstWhere(
+              (f) => find.descendant(of: band, matching: f).evaluate().isEmpty,
+            );
+        expect(bandBox().top - visibleBottom(lastBulk), 16);
+      });
+
       testWidgets('are confirmed only by their own row, and do not count '
           'toward the Confirm all rail', (tester) async {
         final service = await pumpCard(tester, [bulkSet('cs-a')]);
