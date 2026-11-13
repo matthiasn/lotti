@@ -4,6 +4,67 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.99]
+
+### Added
+
+- **The companion finds the task some work was in from your pull requests.**
+  Ask "what was the task where I worked on the A2UI notation in the past two
+  weeks?" and she names the task, with its pull requests shown below as the
+  same cards the task page has: title, summary line and status, a tap for the
+  details, and the task itself one tap away. The pull requests of those weeks
+  are sorted by a separate request to her model, so only the ones about your
+  question reach the conversation. Ask a follow-up — "who reviewed it?", "is
+  it merged?" — and she answers from what the app stored about that pull
+  request.
+
+### Changed
+
+- **The companion says each thing once, and her cards and charts come with
+  every answer.** Her answer used to be assembled from two places for words,
+  so a sentence could be shown twice and read aloud twice. She now writes one
+  answer: what is on the screen first, then what she says about it. Short
+  labels between cards are shown but not spoken, and cards and charts carry a
+  description for screen readers.
+- **The companion's answer appears while she is still working on it.** When
+  you ask what is due, how much time you logged, what you closed or about your
+  pull requests, the cards or the chart are drawn as soon as she has looked
+  them up — a third to half of the wait earlier — and her words appear as she
+  writes them instead of all at once at the end.
+- **Set up a task before the companion makes it.** Tapping "Make it a task"
+  under something you told the companion now asks how, right in the chat: its
+  status, priority and due date as three chips, already set to what she
+  understood from your words, under the title she will give the task. Urgent
+  shows red and a task due today shows orange, as they will in your task list.
+  Change any of them with a tap — the due date offers today, tomorrow, a day
+  on the calendar or none — then create the task as you set it up, or press
+  Enter.
+- Menus no longer open flush against the edge of the screen.
+- **The companion chat is easier to read and to act in.** The choices under
+  one of her questions are now clear buttons instead of small faint chips. An
+  empty chat offers three starter questions. On a phone or tablet the header
+  names the conversation you are in, and the field says which category the
+  chat is narrowed to.
+- **The companion's drawer shows more of your history.** Categories are one
+  row of filter chips above the list instead of a section of rows. Long
+  conversation titles take a second line rather than being cut off, and a
+  search shows what it found directly under the field.
+
+### Fixed
+
+- **A question about what is overdue or due was now and then handed on instead
+  of answered.** After looking the tasks up, the companion could route the
+  question to another agent and leave it without an answer. She now answers it
+  herself.
+- **An AI provider account that ran out of credit now says so.** An empty
+  prepaid balance or a reached spend limit used to read as a rate limit ("wait
+  a moment, then try again"), a bad request or a bare "That didn't send."
+  Lotti now recognises the out-of-credit answers of OpenAI, Anthropic,
+  OpenRouter, Mistral, Gemini, Melious, Alibaba Cloud and ElevenLabs. The AI
+  error panel and the companion, goal and person chats show the provider's own
+  words, so you can see which account to top up, and background agents stop
+  retrying every few minutes against an empty balance.
+
 ## [1.1.98]
 
 ### Added
