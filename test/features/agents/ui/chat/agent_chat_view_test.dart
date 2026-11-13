@@ -1008,23 +1008,56 @@ void main() {
     expect(position().pixels, 0);
 
     updateHost(() => history = [...history, message(31, AgentChatRole.user)]);
-    await tester.pumpAndSettle();
-    // The jump targets the extent known when the frame ends; lazily laid
-    // out rows can still grow it afterwards, so assert the jump, not an
-    // exact final offset.
-    expect(position().pixels, greaterThan(position().maxScrollExtent / 2));
+    await tester.pump();
+    await tester.pump();
+    // Caught up with by a glide, not jumped to.
+    expect(position().pixels, lessThan(position().maxScrollExtent / 4));
+    for (var frame = 0; frame < 15; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(position().extentAfter, 0);
+    expect(find.textContaining('Message 31'), findsOneWidget);
     expect(find.textContaining('Message 0'), findsNothing);
+
+    // An answer that starts growing while the catch-up still runs is not
+    // followed: the reader keeps its beginning and evidence in view.
+    updateHost(() => history = [...history, message(32, AgentChatRole.user)]);
+    await tester.pump();
+    await tester.pump();
+    updateHost(
+      () => history = [
+        ...history,
+        AgentChatMessage(
+          id: 'answer',
+          role: AgentChatRole.agent,
+          text: 'Answer begins here. ${'More evidence follows. ' * 120}',
+          createdAt: DateTime(2026, 8, 11, 10),
+        ),
+      ],
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Message 32'), findsOneWidget);
+    // The (collapsed) answer stands below, its first line in view.
+    expect(position().extentAfter, greaterThan(200));
+    expect(
+      tester.getRect(find.textContaining('Answer begins here')).top,
+      lessThan(tester.getRect(find.byType(ListView)).bottom),
+    );
   });
 
   group('following the latest as the thread grows', () {
     late StateSetter updateHost;
     late double cardHeight;
+    late bool reduceMotion;
+    late bool sending;
 
     Future<void> pumpThread(
       WidgetTester tester, {
       bool scrollOnReplies = true,
     }) async {
       cardHeight = 10;
+      reduceMotion = false;
+      sending = false;
       final history = [
         for (var index = 0; index < 30; index++)
           AgentChatMessage(
@@ -1040,27 +1073,33 @@ void main() {
             builder: (context, setState) {
               updateHost = setState;
               return Scaffold(
-                body: SizedBox(
-                  height: 420,
-                  child: AgentChatView(
-                    agentId: 'goal-1',
-                    agentName: 'Juno',
-                    draft: '',
-                    isSending: false,
-                    history: AsyncData(history),
-                    scrollOnReplies: scrollOnReplies,
-                    onDraftChanged: (_) {},
-                    onSend: () {},
-                    onRetry: () {},
-                    // The latest reply's card arrives after the reply, as
-                    // a door's answer does, and grows the thread with no
-                    // new message.
-                    attachmentBuilder: (context, message) => message.id == '29'
-                        ? SizedBox(
-                            key: const ValueKey('late-card'),
-                            height: cardHeight,
-                          )
-                        : null,
+                body: MediaQuery(
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(disableAnimations: reduceMotion),
+                  child: SizedBox(
+                    height: 420,
+                    child: AgentChatView(
+                      agentId: 'goal-1',
+                      agentName: 'Juno',
+                      draft: '',
+                      isSending: sending,
+                      history: AsyncData(history),
+                      scrollOnReplies: scrollOnReplies,
+                      onDraftChanged: (_) {},
+                      onSend: () {},
+                      onRetry: () {},
+                      // The latest reply's card arrives after the reply, as
+                      // a door's answer does, and grows the thread with no
+                      // new message.
+                      attachmentBuilder: (context, message) =>
+                          message.id == '29'
+                          ? SizedBox(
+                              key: const ValueKey('late-card'),
+                              height: cardHeight,
+                            )
+                          : null,
+                    ),
                   ),
                 ),
               );
@@ -1205,6 +1244,177 @@ void main() {
 
       expect(position(tester).pixels, 0);
       expect(find.textContaining('Message 0'), findsOneWidget);
+    });
+
+    group('gliding to what arrives', () {
+      Future<void> growWithoutSettling(WidgetTester tester) async {
+        updateHost(() => cardHeight = 600);
+        // The card lays out; the glide starts after that frame.
+        await tester.pump();
+        await tester.pump();
+      }
+
+      testWidgets('the viewport stays put when the card lands, then glides '
+          'down at reading pace to the end', (tester) async {
+        await pumpThread(tester);
+        final before = position(tester).pixels;
+
+        await growWithoutSettling(tester);
+        expect(position(tester).pixels, before);
+        final distance = position(tester).maxScrollExtent - before;
+        expect(distance, greaterThan(500));
+
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
+        final early = position(tester).pixels - before;
+        // Moving, eased in, nowhere near a jump.
+        expect(early, inExclusiveRange(0, 40));
+
+        for (var frame = 0; frame < 10; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        final afterOneSecond = position(tester).pixels - before;
+        expect(afterOneSecond, inInclusiveRange(early + 50, 120));
+
+        await tester.pumpAndSettle();
+        expect(position(tester).extentAfter, 0);
+      });
+
+      testWidgets('a touch mid-glide hands the thread to the reader', (
+        tester,
+      ) async {
+        await pumpThread(tester);
+        await growWithoutSettling(tester);
+        for (var frame = 0; frame < 10; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(ListView)),
+        );
+        await tester.pump();
+        final held = position(tester).pixels;
+        for (var frame = 0; frame < 20; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(position(tester).pixels, held);
+
+        // Let go far from the end, the reader keeps that place.
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(position(tester).pixels, held);
+        expect(position(tester).extentAfter, greaterThan(300));
+      });
+
+      testWidgets('a mouse click mid-glide stops it too', (tester) async {
+        await pumpThread(tester);
+        await growWithoutSettling(tester);
+        for (var frame = 0; frame < 10; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        await tester.tapAt(
+          tester.getCenter(find.byType(ListView)),
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pump();
+        final stopped = position(tester).pixels;
+        await tester.pumpAndSettle();
+
+        expect(position(tester).pixels, stopped);
+        expect(position(tester).extentAfter, greaterThan(300));
+      });
+
+      testWidgets('under reduced motion, what arrives is jumped to at once', (
+        tester,
+      ) async {
+        await pumpThread(tester);
+        updateHost(() => reduceMotion = true);
+        await tester.pump();
+
+        await growWithoutSettling(tester);
+        await tester.pump();
+
+        expect(position(tester).extentAfter, 0);
+      });
+
+      testWidgets('reduced motion turned on mid-glide lands it at once', (
+        tester,
+      ) async {
+        await pumpThread(tester);
+        await growWithoutSettling(tester);
+        for (var frame = 0; frame < 5; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(position(tester).extentAfter, greaterThan(300));
+
+        updateHost(() => reduceMotion = true);
+        await tester.pump();
+        await tester.pump();
+
+        expect(position(tester).extentAfter, 0);
+      });
+
+      testWidgets('a cancelled touch does not keep blocking the glide', (
+        tester,
+      ) async {
+        await pumpThread(tester);
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(ListView)),
+        );
+        await gesture.cancel();
+        await tester.pump();
+
+        await growWithoutSettling(tester);
+        await tester.pumpAndSettle();
+
+        expect(position(tester).extentAfter, 0);
+      });
+
+      // A finger holds the list (a scroll of the reader's); a pressed mouse
+      // button — selecting text, holding the scrollbar — does not, so only
+      // the pointer count keeps the catch-up off it.
+      for (final kind in [PointerDeviceKind.touch, PointerDeviceKind.mouse]) {
+        testWidgets('the reader’s own turn does not pull a thread held by '
+            '${kind.name}', (tester) async {
+          await pumpThread(tester);
+          await tester.drag(find.byType(ListView), const Offset(0, 5000));
+          await tester.pumpAndSettle();
+          final gesture = await tester.startGesture(
+            tester.getCenter(find.byType(ListView)),
+            kind: kind,
+          );
+          await tester.pump();
+
+          updateHost(() => sending = true);
+          // The waiting dots pulse while sending, so frames are pumped.
+          for (var frame = 0; frame < 20; frame++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+
+          expect(position(tester).pixels, 0);
+          await gesture.up();
+          await tester.pump();
+        });
+      }
+
+      testWidgets('nothing glides under a finger holding the thread', (
+        tester,
+      ) async {
+        await pumpThread(tester);
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(ListView)),
+        );
+        final before = position(tester).pixels;
+
+        await growWithoutSettling(tester);
+        for (var frame = 0; frame < 20; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(position(tester).pixels, before);
+        await gesture.up();
+      });
     });
 
     testWidgets('back at the bottom, it follows again', (tester) async {
