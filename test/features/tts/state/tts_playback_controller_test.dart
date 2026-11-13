@@ -154,6 +154,52 @@ void main() {
     expect(player.speedChanges, [1.25]);
   });
 
+  test('a speed changed while the clip is being made is the speed it '
+      'starts at', () async {
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    late ProviderContainer container;
+    final h = harness(
+      player: player,
+      engine: FakeTtsEngine(
+        output: preparedFile(),
+        onSynthesize: () => container
+            .read(ttsSettingsControllerProvider.notifier)
+            .setSpeed(1.5),
+      ),
+    );
+    container = h.container;
+
+    await controllerOf(h.container).speak(sourceId: 'chat', text: 'Answer');
+
+    expect(player.lastSpeed, 1.5);
+    expect(player.rate, 1.5);
+  });
+
+  test('a speed changed while the player opens the clip is not overwritten '
+      'by the rate it opens at', () async {
+    final player = FakeTtsAudioPlayer()..opening = Completer<void>();
+    addTearDown(player.dispose);
+    final h = harness(
+      player: player,
+      cloud: FakeCloudSpeechSynthesizer(output: preparedFile()),
+    );
+
+    final speaking = controllerOf(h.container).speak(
+      sourceId: 'chat',
+      text: 'Zwei offen.',
+      cloudRoute: cloudRoute,
+    );
+    await pumpEventQueue();
+    expect(player.playCount, 1);
+    h.container.read(ttsSettingsControllerProvider.notifier).setSpeed(1.75);
+    player.opening!.complete();
+    await speaking;
+
+    expect(player.lastSpeed, 1);
+    expect(player.rate, 1.75);
+  });
+
   Future<MockDomainLogger> mockLogger() async {
     final logger = MockDomainLogger();
     await getIt.unregister<DomainLogger>();

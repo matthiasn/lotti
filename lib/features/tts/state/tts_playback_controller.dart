@@ -351,7 +351,13 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         sourceId: sourceId,
         clip: (path: file.path, text: text),
       );
-      await player.play(file, speed: settings.speed);
+      // The speed now, not when synthesis began: it may have changed since.
+      final speed = ref.read(ttsSettingsControllerProvider).speed;
+      await player.play(file, speed: speed);
+      // A change while the player was opening was applied and then
+      // overwritten by the rate `play` sets: put the latest one back.
+      final latest = ref.read(ttsSettingsControllerProvider).speed;
+      if (current() && latest != speed) await player.setSpeed(latest);
     } catch (error, stackTrace) {
       if (!current()) return;
       // The cloud clients log their own request failures with their detail;

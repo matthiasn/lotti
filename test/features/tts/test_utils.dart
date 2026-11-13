@@ -91,18 +91,30 @@ class FakeTtsAudioPlayer implements TtsAudioPlayer {
   @override
   Future<void> get settled => settling?.future ?? Future<void>.value();
 
+  /// Held open, [play] is still opening the clip; it sets its rate once this
+  /// completes, as the media_kit player does.
+  Completer<void>? opening;
+
+  /// The rate the clip plays at: set by [play] once open, and by [setSpeed].
+  double? rate;
+
   @override
   Future<void> play(File file, {required double speed}) async {
     playCount++;
     lastSpeed = speed;
     if (playError != null) throw playError!;
+    await opening?.future;
+    rate = speed;
   }
 
   /// Speeds set on the clip while it plays, in order.
   final List<double> speedChanges = <double>[];
 
   @override
-  Future<void> setSpeed(double speed) async => speedChanges.add(speed);
+  Future<void> setSpeed(double speed) async {
+    speedChanges.add(speed);
+    rate = speed;
+  }
 
   @override
   Future<void> stop() async {
