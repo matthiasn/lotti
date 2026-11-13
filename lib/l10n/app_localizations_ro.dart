@@ -3934,10 +3934,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commonUnknown => 'Necunoscut';
 
   @override
+  String get companionCardCollapse => 'Restrângeți';
+
+  @override
   String get companionCardCustomize => 'Personalizați';
 
   @override
   String get companionCardDemo => 'Dimensiune pentru demonstrație';
+
+  @override
+  String get companionCardDockedLabel =>
+      'Însoțitor. Schimbați dimensiunea sau mutați-l sus din opțiuni.';
+
+  @override
+  String get companionCardExpand => 'Extindeți';
 
   @override
   String get companionCardHide => 'Ascundeți';

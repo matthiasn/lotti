@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/companion_card_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
@@ -26,6 +27,7 @@ abstract final class CompanionFloatingCardKeys {
   static const Key customize = Key('companion-floating-card-customize');
   static const Key reset = Key('companion-floating-card-reset');
   static const Key hide = Key('companion-floating-card-hide');
+  static const Key expand = Key('companion-floating-card-expand');
 }
 
 /// The companion over a conversation: [figure] in a glass card that floats
@@ -38,12 +40,18 @@ abstract final class CompanionFloatingCardKeys {
 /// card: everywhere else the thread scrolls as usual.
 ///
 /// Drag the card to move it; double-tap Small ⇄ Large; pinch it to any size
-/// in between; a long press (a right-click on a desktop) opens its menu —
-/// Small, Large, Demo size, customize, reset, and Hide when the host gives
-/// [onHide], which a single tap calls too. A desktop also resizes from a
+/// in between; a long press (a right-click on a desktop, Enter or Space
+/// from a keyboard) opens its menu — Small, Large, Demo size, customize,
+/// reset, and Hide when the host gives [onHide]. A single tap does nothing:
+/// the card is put away only from its menu. A desktop also resizes from a
 /// grip on the card's corner that faces the open screen, shown on hover,
 /// and with Ctrl/⌘ + scroll. Demo size fills the area and is never saved:
 /// it ends from its own button, a double tap, or when the card goes away.
+///
+/// [CompanionCardForm.docked] is the card held in its host's layout rather
+/// than over it: as wide as its parent, as tall as its placement (capped by
+/// the parent) at the parent's foot, never moved, with no Demo size; a button on it, a double
+/// tap or its menu collapses and expands it.
 ///
 /// While [speaking], the card's edge takes the interactive accent.
 class CompanionFloatingCard extends ConsumerStatefulWidget {
@@ -64,7 +72,7 @@ class CompanionFloatingCard extends ConsumerStatefulWidget {
   /// Opens the page that customizes her — the menu's customize row.
   final VoidCallback onCustomize;
 
-  /// Puts the card away — a single tap, and the menu's last row.
+  /// Puts the card away — the menu's last row.
   final VoidCallback? onHide;
 
   final bool speaking;
@@ -112,6 +120,29 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final placement = ref.watch(companionCardControllerProvider(widget.form));
+    if (widget.form == CompanionCardForm.docked) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final height = math.min(placement.height, constraints.maxHeight);
+          // At the foot of whatever room it is given, as tall as it is.
+          return Align(
+            alignment: Alignment.bottomCenter,
+            heightFactor: 1,
+            child: SizedBox(
+              width: constraints.maxWidth,
+              height: height,
+              child: _card(
+                context,
+                placement: placement,
+                height: height,
+                travelX: 0,
+                travelY: 0,
+              ),
+            ),
+          );
+        },
+      );
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
         final margin = tokens.spacing.step5;
@@ -168,6 +199,7 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
     final tokens = context.designTokens;
     final messages = context.messages;
     final form = widget.form;
+    final docked = form == CompanionCardForm.docked;
     final small = !_demo && placement.height <= form.smallHeight;
     final large = !_demo && placement.height >= form.largeHeight;
     final colors = tokens.colors;
@@ -198,8 +230,23 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
                 child: widget.figure,
               ),
             ),
+            if (docked)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.all(tokens.spacing.step2),
+                  child: DesignSystemIconAction(
+                    key: CompanionFloatingCardKeys.expand,
+                    tooltip: small
+                        ? messages.companionCardExpand
+                        : messages.companionCardCollapse,
+                    icon: small ? LottiIcons.expandFull : LottiIcons.shrinkFull,
+                    onPressed: _controller.toggleSize,
+                  ),
+                ),
+              )
             // The grabber says the card moves; it has no gesture of its own.
-            if (!_demo)
+            else if (!_demo)
               Align(
                 alignment: Alignment.topCenter,
                 child: Padding(
@@ -259,13 +306,14 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
             _controller.resizeTo(form.largeHeight);
           },
         ),
-        DesignSystemContextMenuItem(
-          key: CompanionFloatingCardKeys.demo,
-          label: messages.companionCardDemo,
-          icon: LottiIcons.expandFull,
-          isSelected: _demo,
-          onTap: () => setState(() => _demo = true),
-        ),
+        if (!docked)
+          DesignSystemContextMenuItem(
+            key: CompanionFloatingCardKeys.demo,
+            label: messages.companionCardDemo,
+            icon: LottiIcons.expandFull,
+            isSelected: _demo,
+            onTap: () => setState(() => _demo = true),
+          ),
         DesignSystemContextMenuItem(
           key: CompanionFloatingCardKeys.customize,
           label: messages.companionCardCustomize,
@@ -293,34 +341,34 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
       ],
       builder: (context, {required toggle, required isOpen}) => Semantics(
         container: true,
-        label: messages.companionCardLabel,
+        label: docked
+            ? messages.companionCardDockedLabel
+            : messages.companionCardLabel,
         onLongPressHint: messages.companionCardOptions,
         onLongPress: () => _showMenu(Offset.zero),
-        onTapHint: widget.onHide == null ? null : messages.companionCardHide,
-        onTap: widget.onHide,
-        // Focusable once the host can put it away: Enter or Space hides it,
-        // as a tap does, so a keyboard is never stuck with it.
+        // Focusable: Enter or Space opens the menu — where Hide is — as a
+        // long press does, so a keyboard is never stuck with the card.
         child: FocusableActionDetector(
-          enabled: widget.onHide != null,
           actions: {
             ActivateIntent: CallbackAction<ActivateIntent>(
-              onInvoke: (_) => widget.onHide?.call(),
+              onInvoke: (_) => _showMenu(Offset.zero),
             ),
           },
           child: MouseRegion(
-            cursor: _demo ? MouseCursor.defer : SystemMouseCursors.grab,
+            cursor: _demo || docked
+                ? MouseCursor.defer
+                : SystemMouseCursors.grab,
             onEnter: (_) => setState(() => _hovered = true),
             onExit: (_) => setState(() => _hovered = false),
             child: Listener(
               onPointerSignal: (event) => _scaleOnScroll(event, height),
               child: GestureDetector(
                 key: CompanionFloatingCardKeys.card,
-                onTap: widget.onHide,
                 onDoubleTap: _toggleSize,
                 onLongPressStart: (details) => _showMenu(details.localPosition),
                 onSecondaryTapUp: (details) => _showMenu(details.localPosition),
                 onScaleStart: (_) => _pinchStart = height,
-                onScaleUpdate: _demo
+                onScaleUpdate: _demo || docked
                     ? null
                     : (details) {
                         if (_resizing) return;
@@ -349,7 +397,11 @@ class _CompanionFloatingCardState extends ConsumerState<CompanionFloatingCard> {
   /// Ctrl/⌘ + scroll over the card scales it; a plain scroll is left to the
   /// thread, which `AgentChatView` forwards it to.
   void _scaleOnScroll(PointerSignalEvent event, double height) {
-    if (_demo || event is! PointerScrollEvent) return;
+    if (_demo ||
+        widget.form == CompanionCardForm.docked ||
+        event is! PointerScrollEvent) {
+      return;
+    }
     final keyboard = HardwareKeyboard.instance;
     if (!keyboard.isControlPressed && !keyboard.isMetaPressed) return;
     GestureBinding.instance.pointerSignalResolver.register(event, (event) {

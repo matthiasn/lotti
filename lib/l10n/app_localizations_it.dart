@@ -3919,10 +3919,20 @@ class AppLocalizationsIt extends AppLocalizations {
   String get commonUnknown => 'Sconosciuto';
 
   @override
+  String get companionCardCollapse => 'Comprimi';
+
+  @override
   String get companionCardCustomize => 'Personalizza';
 
   @override
   String get companionCardDemo => 'Dimensione demo';
+
+  @override
+  String get companionCardDockedLabel =>
+      'Compagno. Cambia la dimensione o spostalo in alto dalle sue opzioni.';
+
+  @override
+  String get companionCardExpand => 'Espandi';
 
   @override
   String get companionCardHide => 'Nascondi';

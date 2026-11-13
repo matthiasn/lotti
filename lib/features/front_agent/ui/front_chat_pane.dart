@@ -62,7 +62,8 @@ final RegExp _taskRoute = RegExp(r'^/tasks/([^/?]+)$');
 /// The companion's chat: one of the user's conversations with her, under
 /// her one-row header, in the shared [AgentChatView] — and her drawer
 /// ([FrontChatDrawer]): slid over the thread on a phone, beside it on a
-/// desktop window.
+/// desktop window. Beside it, her card is docked under the drawer rather than
+/// floated over the thread, so it covers nothing of the conversation.
 ///
 /// What differs from a goal's or a person's chat is what hangs off a
 /// message: under a routed turn, the doors it was taken through and what
@@ -200,9 +201,26 @@ class _FrontChatPaneState extends ConsumerState<FrontChatPane>
                   color: tokens.colors.background.level02,
                   child: SizedBox(
                     width: listWidth,
-                    child: FrontChatDrawer(
-                      beside: true,
-                      keyboardUp: widget.keyboardUp,
+                    child: LayoutBuilder(
+                      builder: (context, sidebar) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: FrontChatDrawer(
+                              beside: true,
+                              keyboardUp: widget.keyboardUp,
+                            ),
+                          ),
+                          // Expanded, she still leaves the conversations
+                          // half of the sidebar.
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight: sidebar.maxHeight / 2,
+                            ),
+                            child: _DockedCompanion(onClose: onClose),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -213,7 +231,12 @@ class _FrontChatPaneState extends ConsumerState<FrontChatPane>
                   child: Column(
                     children: [
                       FrontChatHeader(onClose: onClose, listBeside: true),
-                      Expanded(child: FrontChatThreadView(onClose: onClose)),
+                      Expanded(
+                        child: FrontChatThreadView(
+                          onClose: onClose,
+                          cardDocked: true,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -338,6 +361,61 @@ class _DrawerLayer extends ConsumerWidget {
   }
 }
 
+/// Which conversation her card shows for, or null for none: only while the
+/// header's face has it shown ([frontCompanionCardShownProvider]), and never
+/// with the character off, nor in the inbox, which gathers every
+/// conversation. Watches what it reads.
+String? _companionCardFor(WidgetRef ref) =>
+    ref.watch(frontCompanionCardShownProvider) &&
+        !ref.watch(frontInboxFilterProvider) &&
+        (ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false)
+    ? ref.watch(frontActiveConversationProvider).value
+    : null;
+
+/// Her settings are a page of the app: she closes first.
+VoidCallback _openCompanionSettings(VoidCallback onClose) => () {
+  onClose();
+  beamToNamed('/settings/companion');
+};
+
+/// Her card docked under the conversations beside a desktop's thread
+/// ([CompanionCardForm.docked]), as wide as they are, collapsed until the
+/// user expands it: it covers nothing of the conversation. Hidden from its
+/// menu, it leaves her face in the header at the top, which brings it back.
+class _DockedCompanion extends ConsumerWidget {
+  const _DockedCompanion({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final spacing = context.designTokens.spacing;
+    final cardFor = _companionCardFor(ref);
+    return AnimatedSize(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : MotionDurations.short4,
+      curve: MotionCurves.standard,
+      alignment: Alignment.bottomCenter,
+      child: cardFor == null
+          ? const SizedBox.shrink()
+          : Padding(
+              padding: EdgeInsets.fromLTRB(
+                spacing.step5,
+                0,
+                spacing.step5,
+                spacing.step5,
+              ),
+              child: FrontCompanionCard(
+                conversationId: cardFor,
+                form: CompanionCardForm.docked,
+                onCustomize: _openCompanionSettings(onClose),
+              ),
+            ),
+    );
+  }
+}
+
 /// Stable keys for the pane's own parts.
 @visibleForTesting
 abstract final class FrontChatPaneKeys {
@@ -348,9 +426,17 @@ abstract final class FrontChatPaneKeys {
 /// on, every turn still waiting on the user. In the pane under her header;
 /// while the header's face has it shown ([frontCompanionCardShownProvider]),
 /// her glass card floats over the thread ([FrontCompanionCard]), fading in
-/// and out where the user left it.
+/// and out where the user left it — unless [cardDocked].
 class FrontChatThreadView extends ConsumerStatefulWidget {
-  const FrontChatThreadView({required this.onClose, super.key});
+  const FrontChatThreadView({
+    required this.onClose,
+    this.cardDocked = false,
+    super.key,
+  });
+
+  /// Her card is docked beside the thread (a desktop window's sidebar), so
+  /// nothing floats over it.
+  final bool cardDocked;
 
   /// Closes her surface. Everything that leaves her for a page goes through
   /// this, never `maybePop`: while the list or the inbox is open, back is
@@ -437,14 +523,7 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
     final latestId = thread?.messages.lastOrNull?.id;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final inboxIds = thread?.inboxMessageIds ?? const <String>{};
-    // Her card goes with her figure and her voice: never with the character
-    // off, nor in the inbox, which gathers every conversation.
-    final cardFor =
-        ref.watch(frontCompanionCardShownProvider) &&
-            !inboxOnly &&
-            (ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false)
-        ? conversationId
-        : null;
+    final cardFor = widget.cardDocked ? null : _companionCardFor(ref);
     final cardForm = isDesktopLayout(context)
         ? CompanionCardForm.desktop
         : CompanionCardForm.phone;
@@ -599,11 +678,7 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
               : FrontCompanionCard(
                   conversationId: cardFor,
                   form: cardForm,
-                  // Her settings are a page of the app: she closes first.
-                  onCustomize: () {
-                    onClose();
-                    beamToNamed('/settings/companion');
-                  },
+                  onCustomize: _openCompanionSettings(onClose),
                 ),
         ),
         threadBottomInset: cardInset,

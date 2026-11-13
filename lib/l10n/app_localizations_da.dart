@@ -3867,10 +3867,20 @@ class AppLocalizationsDa extends AppLocalizations {
   String get commonUnknown => 'Ukendt';
 
   @override
+  String get companionCardCollapse => 'Fold sammen';
+
+  @override
   String get companionCardCustomize => 'Tilpas';
 
   @override
   String get companionCardDemo => 'Demostørrelse';
+
+  @override
+  String get companionCardDockedLabel =>
+      'Følgesvend. Skift størrelse, eller flyt den til toppen, under indstillingerne.';
+
+  @override
+  String get companionCardExpand => 'Udvid';
 
   @override
   String get companionCardHide => 'Skjul';

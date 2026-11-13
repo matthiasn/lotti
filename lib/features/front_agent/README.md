@@ -148,7 +148,9 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   (`front_voice_controls.dart`: stop her, or have her say her latest answer
   again from the start, in the voice she said it in), her card
   (`FrontCompanionCard` in `front_chat_hero.dart`: her, head to toe, in a
-  glass card floating over the thread, moved and resized by the user,
+  glass card floating over the thread, moved and resized by the user — on
+  a desktop window with the list beside the thread, docked under the list,
+  collapsed until expanded —
   pointing at the tasks she lists as she says them
   (`state/front_stage_pointing.dart`)),
   the drawer's

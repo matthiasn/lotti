@@ -6,9 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/providers/service_providers.dart';
 
-/// Where the companion's floating card sits over a conversation, and how
-/// tall it is: one placement for a phone, one for a desktop window, since a
-/// size that suits one does not suit the other.
+/// Where the companion's card sits by a conversation, and how tall it is: one
+/// placement for a phone, one for a desktop window, since a size that suits
+/// one does not suit the other — and one for the card [docked] under a
+/// desktop's list of conversations, which never moves and only grows.
 enum CompanionCardForm {
   phone(
     settingsKey: 'COMPANION_CARD_PHONE',
@@ -19,6 +20,14 @@ enum CompanionCardForm {
     settingsKey: 'COMPANION_CARD_DESKTOP',
     smallHeight: 240,
     largeHeight: 480,
+  ),
+
+  /// Under the conversations beside a desktop's thread, as wide as they
+  /// are: collapsed to her bust by default, expanded to all of her.
+  docked(
+    settingsKey: 'COMPANION_CARD_DOCKED',
+    smallHeight: 160,
+    largeHeight: 440,
   );
 
   const CompanionCardForm({
@@ -31,11 +40,12 @@ enum CompanionCardForm {
   /// synced — a window on one machine says nothing about another's.
   final String settingsKey;
 
-  /// The card's height when first shown, and the size a double tap returns
-  /// to from anything larger.
+  /// The card's height when first shown — collapsed, where [docked] — and
+  /// the size a double tap returns to from anything larger.
   final double smallHeight;
 
-  /// The size a double tap grows the card to: big enough to watch her talk.
+  /// The size a double tap grows the card to — expanded, where [docked]:
+  /// big enough to watch her talk.
   final double largeHeight;
 
   /// The first placement: small, in the bottom-right corner.

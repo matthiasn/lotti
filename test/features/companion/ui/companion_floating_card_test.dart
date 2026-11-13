@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/gestures.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/state/companion_card_controller.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
 
 /// The area the card floats over, as a conversation's thread gives it.
@@ -225,31 +227,35 @@ void main() {
   });
 
   group('a host that can put it away', () {
-    testWidgets('has it hidden by a single tap, never by a double tap', (
-      tester,
-    ) async {
-      await pumpCard(tester, hideable: true);
+    for (final form in CompanionCardForm.values) {
+      testWidgets('never has it hidden by a tap or a double tap: '
+          '${form.name}', (tester) async {
+        await pumpCard(tester, form: form, hideable: true);
 
-      await doubleTap(tester);
-      expect(hides, 0);
-      expect(cardRect(tester).height, CompanionCardForm.phone.largeHeight);
+        await tester.tap(card);
+        await tester.pump(kDoubleTapTimeout);
+        expect(hides, 0);
+        expect(card, findsOneWidget);
 
-      await tester.tap(card);
-      await tester.pump(kDoubleTapTimeout);
-      expect(hides, 1);
-      expect(behindTaps, 0);
-    });
+        await doubleTap(tester);
+        expect(hides, 0);
+        expect(cardRect(tester).height, form.largeHeight);
+        expect(behindTaps, 0);
+      });
+    }
 
-    testWidgets('a keyboard hides it too: focused, Space puts it away', (
-      tester,
-    ) async {
+    testWidgets('a keyboard opens its menu with Space, and hides it from '
+        'there', (tester) async {
       await pumpCard(tester, hideable: true);
       Focus.of(tester.element(find.byKey(const Key('figure')))).requestFocus();
       await tester.pump();
 
       await tester.sendKeyEvent(LogicalKeyboardKey.space);
       await tester.pump();
+      expect(hides, 0);
 
+      await tester.tap(find.byKey(CompanionFloatingCardKeys.hide));
+      await tester.pump();
       expect(hides, 1);
     });
 
@@ -262,19 +268,24 @@ void main() {
       expect(hides, 1);
     });
 
-    testWidgets('a screen reader hides it with the tap action', (
-      tester,
-    ) async {
+    testWidgets('a screen reader has no tap that hides it; its long press '
+        'opens the menu', (tester) async {
       final semantics = tester.ensureSemantics();
       await pumpCard(tester, hideable: true);
       final label = find.semantics.byLabel(
         'Companion. Drag to move; change the size from its options.',
       );
 
-      tester.semantics.tap(label);
+      expect(
+        label.evaluate().single.getSemanticsData().hasAction(
+          SemanticsAction.tap,
+        ),
+        isFalse,
+      );
+      tester.semantics.longPress(label);
       await tester.pump();
-
-      expect(hides, 1);
+      expect(find.byKey(CompanionFloatingCardKeys.hide), findsOneWidget);
+      expect(hides, 0);
       semantics.dispose();
     });
 
@@ -288,6 +299,82 @@ void main() {
 
       expect(find.byKey(CompanionFloatingCardKeys.hide), findsNothing);
       expect(behindTaps, 0);
+    });
+  });
+
+  group('docked', () {
+    const docked = CompanionCardForm.docked;
+    final expand = find.byKey(CompanionFloatingCardKeys.expand);
+
+    testWidgets('is collapsed by default, as wide as its host, at its foot', (
+      tester,
+    ) async {
+      await pumpCard(tester, form: docked);
+
+      final rect = cardRect(tester);
+      expect(
+        rect,
+        Rect.fromLTRB(
+          0,
+          _area.height - docked.smallHeight,
+          _area.width,
+          _area.height,
+        ),
+      );
+      expect(findMaterialTooltip('Expand'), findsOneWidget);
+    });
+
+    testWidgets('its button expands it and collapses it again', (
+      tester,
+    ) async {
+      await pumpCard(tester, form: docked);
+
+      await tester.tap(expand);
+      await tester.pump(kDoubleTapTimeout);
+      expect(cardRect(tester).height, docked.largeHeight);
+      expect(findMaterialTooltip('Collapse'), findsOneWidget);
+
+      await tester.tap(expand);
+      await tester.pump(kDoubleTapTimeout);
+      expect(cardRect(tester).height, docked.smallHeight);
+    });
+
+    testWidgets('expanded, it never grows past its host', (tester) async {
+      await pumpCard(tester, form: docked, area: const Size(300, 200));
+
+      await tester.tap(expand);
+      await tester.pump(kDoubleTapTimeout);
+
+      expect(cardRect(tester).height, 200);
+    });
+
+    testWidgets('never moves, and its menu has no Demo size', (tester) async {
+      await pumpCard(tester, form: docked);
+      final before = cardRect(tester);
+
+      await tester.drag(card, const Offset(80, 120));
+      await tester.pump();
+      expect(cardRect(tester), before);
+
+      await openMenu(tester);
+      expect(find.byKey(CompanionFloatingCardKeys.demo), findsNothing);
+      expect(find.byKey(CompanionFloatingCardKeys.large), findsOneWidget);
+    });
+
+    testWidgets('says to a screen reader that it does not move', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pumpCard(tester, form: docked);
+
+      expect(
+        find.semantics.byLabel(
+          'Companion. Change the size, or move it to the top, from its '
+          'options.',
+        ),
+        findsOneWidget,
+      );
+      semantics.dispose();
     });
   });
 

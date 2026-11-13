@@ -3927,10 +3927,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonUnknown => 'Inconnu';
 
   @override
+  String get companionCardCollapse => 'Réduire';
+
+  @override
   String get companionCardCustomize => 'Personnaliser';
 
   @override
   String get companionCardDemo => 'Taille démo';
+
+  @override
+  String get companionCardDockedLabel =>
+      'Compagnon. Change la taille ou déplace-le en haut dans ses options.';
+
+  @override
+  String get companionCardExpand => 'Agrandir';
 
   @override
   String get companionCardHide => 'Masquer';

@@ -3901,10 +3901,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonUnknown => 'Unbekannt';
 
   @override
+  String get companionCardCollapse => 'Einklappen';
+
+  @override
   String get companionCardCustomize => 'Anpassen';
 
   @override
   String get companionCardDemo => 'Demogröße';
+
+  @override
+  String get companionCardDockedLabel =>
+      'Begleitung. In den Optionen änderst du die Größe oder schiebst sie nach oben.';
+
+  @override
+  String get companionCardExpand => 'Ausklappen';
 
   @override
   String get companionCardHide => 'Ausblenden';
