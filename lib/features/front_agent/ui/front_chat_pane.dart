@@ -400,11 +400,10 @@ class _DockedCompanion extends ConsumerWidget {
       child: cardFor == null
           ? const SizedBox.shrink()
           : Padding(
-              padding: EdgeInsets.fromLTRB(
-                spacing.step5,
-                0,
-                spacing.step5,
-                spacing.step5,
+              padding: EdgeInsets.only(
+                left: spacing.step5,
+                right: spacing.step5,
+                bottom: spacing.step5,
               ),
               child: FrontCompanionCard(
                 conversationId: cardFor,
