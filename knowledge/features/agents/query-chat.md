@@ -507,7 +507,8 @@ rejects its pending rest, and closes it to further per-item decisions.
 `confirmAll` — except a status change, which `confirmAll` leaves pending for
 its own row; a set of one item is that item's own decision and goes through
 `confirmItem`. Once only status changes are pending, `QueryActionReview`
-drops the set-level buttons. `resolveItem` confirms or rejects one through
+drops the set-level buttons but keeps its "could not be applied" line for a
+row whose own confirm failed. `resolveItem` confirms or rejects one through
 `confirmItem`/`rejectItem`, leaving the rest pending. Either way the service
 authorizes the chat and live targets before every dispatch through the shared
 task handlers and `ChangeSetConfirmationService`. One in-flight guard per
