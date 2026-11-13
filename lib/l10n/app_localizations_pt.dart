@@ -1719,6 +1719,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Estado';
 
   @override
+  String get aiCardStatusChangesHint =>
+      'Confirma cada uma em separado. Uma tarefa concluída sai das tuas listas de tarefas abertas.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Alterações de estado';
+
+  @override
   String get aiCardProposalKindUpdate => 'Atualizar';
 
   @override

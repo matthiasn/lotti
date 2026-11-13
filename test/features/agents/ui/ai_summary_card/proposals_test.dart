@@ -212,9 +212,9 @@ void main() {
         id: 'cs-a',
         items: const [
           ChangeItem(
-            toolName: 'set_task_status',
-            args: {'status': 'GROOMED'},
-            humanSummary: 'Set status to GROOMED',
+            toolName: 'update_task_estimate',
+            args: {'minutes': 45},
+            humanSummary: 'Set estimate to 45 minutes',
           ),
         ],
       );
@@ -276,15 +276,198 @@ void main() {
       verify(() => notifier.notify(any())).called(1);
     });
 
+    group('status changes', () {
+      final done = makeTestChangeSet(
+        id: 'cs-done',
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_status',
+            args: {'status': 'DONE'},
+            humanSummary: 'Set status to DONE',
+          ),
+        ],
+      );
+      PendingSuggestion pendingOf(ChangeSetEntity cs) => PendingSuggestion(
+        changeSet: cs,
+        itemIndex: 0,
+        item: cs.items.first,
+        fingerprint: 'fp-${cs.id}',
+      );
+      final band = find.byKey(const ValueKey('proposalStatusChanges'));
+      final rail = find.byKey(const ValueKey('proposalBottomRail'));
+
+      Future<MockChangeSetConfirmationService> pumpCard(
+        WidgetTester tester,
+        List<ChangeSetEntity> bulk,
+      ) async {
+        final service = MockChangeSetConfirmationService();
+        when(() => service.confirmAll(any())).thenAnswer(
+          (_) async => const [ToolExecutionResult(success: true, output: 'ok')],
+        );
+        when(() => service.confirmItem(any(), any())).thenAnswer(
+          (_) async => const ToolExecutionResult(success: true, output: 'ok'),
+        );
+        final bench = AgentTestBench(
+          confirmationService: service,
+          updateNotifications: MockUpdateNotifications(),
+          suggestions: UnifiedSuggestionList(
+            // The status change arrives first; it must still sit apart.
+            open: [pendingOf(done), for (final cs in bulk) pendingOf(cs)],
+            activity: const [],
+          ),
+        );
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        return service;
+      }
+
+      ChangeSetEntity bulkSet(String id) => makeTestChangeSet(
+        id: id,
+        items: const [
+          ChangeItem(
+            toolName: 'update_task_priority',
+            args: {'priority': 'P1'},
+            humanSummary: 'Raise priority to P1',
+          ),
+        ],
+      );
+
+      testWidgets('sit in a warning band under the rail naming the target '
+          'status, and Confirm all leaves them pending', (tester) async {
+        final csA = bulkSet('cs-a');
+        final csB = bulkSet('cs-b');
+        final service = await pumpCard(tester, [csA, csB]);
+
+        expect(
+          find.descendant(of: band, matching: find.text('Status changes')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: band,
+            matching: find.textContaining('leaves your open task lists'),
+          ),
+          findsOneWidget,
+        );
+        final doneRow = find.descendant(
+          of: band,
+          matching: find.textContaining('Set status to Done'),
+        );
+        expect(doneRow, findsOneWidget);
+        // Exactly the one status row lives in the band; the bulk rows don't.
+        expect(
+          find.descendant(of: band, matching: find.byType(ProposalRow)),
+          findsOneWidget,
+        );
+        expect(
+          tester.getTopLeft(band).dy,
+          greaterThanOrEqualTo(tester.getBottomLeft(rail).dy),
+        );
+        final warning = tester.element(band).designTokens.colors.alert.warning;
+        final border =
+            tester
+                    .widgetList<DecoratedBox>(
+                      find.descendant(
+                        of: band,
+                        matching: find.byType(DecoratedBox),
+                      ),
+                    )
+                    .map((box) => box.decoration)
+                    .whereType<BoxDecoration>()
+                    .first
+                    .border!
+                as Border;
+        expect(border.top.color, warning.defaultColor);
+
+        await tester.tap(find.text('Confirm all'));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 2));
+
+        verify(() => service.confirmAll(csA)).called(1);
+        verify(() => service.confirmAll(csB)).called(1);
+        verifyNever(() => service.confirmAll(done));
+        verifyNever(() => service.confirmItem(any(), any()));
+        // The sweep took the bulk rows; the DONE row is still waiting.
+        expect(doneRow, findsOneWidget);
+      });
+
+      testWidgets('the band sits one even step below what precedes it and '
+          'insets its content evenly', (tester) async {
+        Rect bandBox() => tester.getRect(
+          find.descendant(of: band, matching: find.byType(DecoratedBox)).first,
+        );
+        // A row's visible card ends where its own step4 trailing gap begins.
+        double visibleBottom(Finder row) => tester.getRect(row).bottom - 12;
+
+        // With the rail: the gap runs from the Confirm all button.
+        await pumpCard(tester, [bulkSet('cs-a'), bulkSet('cs-b')]);
+        expect(bandBox().top - tester.getRect(rail).bottom, 16);
+
+        final statusRow = find.descendant(
+          of: band,
+          matching: find.byType(ProposalRow),
+        );
+        final box = bandBox();
+        final row = tester.getRect(statusRow);
+        expect(row.left - box.left, 12);
+        expect(box.right - row.right, 12);
+        expect(box.bottom - visibleBottom(statusRow), 12);
+        // The title line sets the header's height; the icon centres in it.
+        expect(
+          tester
+                  .getRect(
+                    find.descendant(
+                      of: band,
+                      matching: find.text('Status changes'),
+                    ),
+                  )
+                  .top -
+              box.top,
+          12,
+        );
+
+        // Without it: the same gap, from the last row's card.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await pumpCard(tester, [bulkSet('cs-a')]);
+        final lastBulk = find
+            .byType(ProposalRow)
+            .evaluate()
+            .map((e) => find.byWidget(e.widget))
+            .firstWhere(
+              (f) => find.descendant(of: band, matching: f).evaluate().isEmpty,
+            );
+        expect(bandBox().top - visibleBottom(lastBulk), 16);
+      });
+
+      testWidgets('are confirmed only by their own row, and do not count '
+          'toward the Confirm all rail', (tester) async {
+        final service = await pumpCard(tester, [bulkSet('cs-a')]);
+
+        // One bulk row plus one status row: nothing for Confirm all to do.
+        expect(tester.widget<SizeFadeCollapse>(rail).collapsed, isTrue);
+        expect(tester.widget<SizeFadeCollapse>(band).collapsed, isFalse);
+
+        await tester.tap(
+          find.descendant(of: band, matching: find.byIcon(LottiIcons.confirm)),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(() => service.confirmItem(done, 0)).called(1);
+        verifyNever(() => service.confirmAll(any()));
+      });
+    });
+
     testWidgets('Confirm-all queues every backfill suggestion, not just the '
         'first, beside the change sets it confirms', (tester) async {
       final cs = makeTestChangeSet(
         id: 'cs-a',
         items: const [
           ChangeItem(
-            toolName: 'set_task_status',
-            args: {'status': 'GROOMED'},
-            humanSummary: 'Set status to GROOMED',
+            toolName: 'update_task_estimate',
+            args: {'minutes': 45},
+            humanSummary: 'Set estimate to 45 minutes',
           ),
         ],
       );
@@ -870,9 +1053,9 @@ void main() {
         id: 'cs-fail',
         items: const [
           ChangeItem(
-            toolName: 'set_task_status',
-            args: {'status': 'GROOMED'},
-            humanSummary: 'Set status to GROOMED',
+            toolName: 'update_task_estimate',
+            args: {'minutes': 45},
+            humanSummary: 'Set estimate to 45 minutes',
           ),
           ChangeItem(
             toolName: 'update_task_priority',
@@ -938,9 +1121,9 @@ void main() {
         id: 'cs-partial',
         items: const [
           ChangeItem(
-            toolName: 'set_task_status',
-            args: {'status': 'GROOMED'},
-            humanSummary: 'Set status to GROOMED',
+            toolName: 'update_task_estimate',
+            args: {'minutes': 45},
+            humanSummary: 'Set estimate to 45 minutes',
           ),
           ChangeItem(
             toolName: 'update_task_priority',
@@ -1035,9 +1218,9 @@ void main() {
             open: [
               makePending(
                 id: 'open-a',
-                toolName: 'set_task_status',
-                args: const {'status': 'GROOMED'},
-                humanSummary: 'Set status to GROOMED',
+                toolName: 'update_task_estimate',
+                args: const {'minutes': 45},
+                humanSummary: 'Set estimate to 45 minutes',
               ),
               makePending(
                 id: 'open-b',
@@ -1327,9 +1510,9 @@ void main() {
           id: 'cs-busy-a',
           items: const [
             ChangeItem(
-              toolName: 'set_task_status',
-              args: {'status': 'GROOMED'},
-              humanSummary: 'Set status to GROOMED',
+              toolName: 'update_task_estimate',
+              args: {'minutes': 45},
+              humanSummary: 'Set estimate to 45 minutes',
             ),
           ],
         );
@@ -1429,9 +1612,9 @@ void main() {
             open: [
               makePending(
                 id: 'a',
-                toolName: 'set_task_status',
-                args: const {'status': 'GROOMED'},
-                humanSummary: 'Set status to GROOMED',
+                toolName: 'update_task_estimate',
+                args: const {'minutes': 45},
+                humanSummary: 'Set estimate to 45 minutes',
               ),
               makePending(
                 id: 'b',
@@ -1476,8 +1659,8 @@ void main() {
           id: 'retain-a',
           items: const [
             ChangeItem(
-              toolName: 'set_task_status',
-              args: {'status': 'Alpha proposal'},
+              toolName: 'set_task_title',
+              args: {'title': 'Alpha proposal'},
               humanSummary: 'Alpha proposal',
             ),
           ],
@@ -1660,9 +1843,9 @@ void main() {
           id: 'cs-guard-a',
           items: const [
             ChangeItem(
-              toolName: 'set_task_status',
-              args: {'status': 'GROOMED'},
-              humanSummary: 'Set status to GROOMED',
+              toolName: 'update_task_estimate',
+              args: {'minutes': 45},
+              humanSummary: 'Set estimate to 45 minutes',
             ),
           ],
         );
@@ -1771,9 +1954,9 @@ void main() {
           id: 'cs-cascade-a',
           items: const [
             ChangeItem(
-              toolName: 'set_task_status',
-              args: {'status': 'GROOMED'},
-              humanSummary: 'Set status to GROOMED',
+              toolName: 'update_task_estimate',
+              args: {'minutes': 45},
+              humanSummary: 'Set estimate to 45 minutes',
             ),
           ],
         );
@@ -1867,9 +2050,9 @@ void main() {
       id: id,
       items: const [
         ChangeItem(
-          toolName: 'set_task_status',
-          args: {'status': 'GROOMED'},
-          humanSummary: 'Set status to GROOMED',
+          toolName: 'update_task_estimate',
+          args: {'minutes': 45},
+          humanSummary: 'Set estimate to 45 minutes',
         ),
         ChangeItem(
           toolName: 'update_task_priority',

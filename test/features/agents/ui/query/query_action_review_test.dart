@@ -588,6 +588,41 @@ void main() {
       expect(find.text('Accept all'), findsOneWidget);
     });
 
+    testWidgets('a status change left pending keeps only its own controls', (
+      tester,
+    ) async {
+      const done = ChangeItem(
+        toolName: 'set_task_status',
+        args: {'status': 'DONE'},
+        humanSummary: 'Set status to DONE',
+      );
+      saved =
+          AgentDomainEntity.changeSet(
+                id: 'query-chat:question:actions',
+                agentId: 'agent',
+                taskId: 'task',
+                threadId: 'chat',
+                runKey: 'query-chat:question',
+                status: ChangeSetStatus.partiallyResolved,
+                items: [
+                  answer.proposedActions.first.copyWith(
+                    status: ChangeItemStatus.confirmed,
+                  ),
+                  done,
+                ],
+                createdAt: DateTime(2026, 9, 13),
+                vectorClock: null,
+              )
+              as ChangeSetEntity;
+      await pump(tester, approved: true);
+
+      expect(find.textContaining('Set status to Done'), findsOneWidget);
+      expect(rowActions(), findsOneWidget);
+      // Neither Accept all nor its Retry could apply it.
+      expect(find.text('Accept all'), findsNothing);
+      expect(find.text('Retry'), findsNothing);
+    });
+
     testWidgets('a failed confirm keeps the change open and says so', (
       tester,
     ) async {

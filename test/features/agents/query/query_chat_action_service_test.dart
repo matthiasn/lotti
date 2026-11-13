@@ -152,6 +152,63 @@ void main() {
     },
   );
 
+  group('status changes', () {
+    const done = ChangeItem(
+      toolName: 'set_task_status',
+      args: {'status': 'DONE'},
+      humanSummary: 'Set status to DONE',
+    );
+
+    /// Replaces the reviewed answer with one proposing [actions].
+    Future<void> propose(List<ChangeItem> actions) async {
+      final asked = await bench.store.ask('agent', chat, 'Close it.');
+      question = asked.id;
+      await bench.store.publish(
+        'agent',
+        chat,
+        QueryBuiltAnswer(
+          answer: QueryChatAnswer(
+            questionId: question,
+            text: 'Review these changes.',
+            coverage: const QueryCoverage(),
+            proposedActions: actions,
+            dependencies: (asked.data as QueryChatQuestion).dependencies,
+          ),
+        ),
+      );
+    }
+
+    test('Accept all leaves a status change for its own confirm', () async {
+      await propose([items.first, done]);
+
+      await resolve();
+      expect(calls, ['add_checklist_item']);
+
+      final applied = await service.resolveItem(
+        agentId: 'agent',
+        chatId: chat,
+        questionId: question,
+        itemIndex: 1,
+        approved: true,
+      );
+      expect(applied?.success, isTrue);
+      expect(calls, ['add_checklist_item', 'set_task_status']);
+      expect(modes, [
+        ChecklistApprovalMode.confirmAll,
+        ChecklistApprovalMode.individual,
+      ]);
+    });
+
+    test('a lone status change is its own Accept', () async {
+      await propose([done]);
+
+      final results = await resolve();
+      expect(results.map((r) => r.success), [true]);
+      expect(calls, ['set_task_status']);
+      expect(modes, [ChecklistApprovalMode.individual]);
+    });
+  });
+
   group('per-item decisions', () {
     Future<ToolExecutionResult?> resolveItem(
       int index, {

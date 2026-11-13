@@ -692,6 +692,8 @@
   "aiCardProposalKindUpdate": "Aktualizovat",
   "aiCardReadMore": "Číst více",
   "aiCardShowLess": "Skrýt podrobnosti",
+  "aiCardStatusChangesHint": "Potvrď každou zvlášť. Hotový úkol zmizí z tvých seznamů otevřených úkolů.",
+  "aiCardStatusChangesTitle": "Změny stavu",
   "aiCardTitle": "Souhrn AI",
   "aiCardUnmetRequestNoReason": "Co se pokazilo, najdeš v mých pozorováních.",
   "aiCardUnmetRequestShowObservations": "Zobrazit pozorování",

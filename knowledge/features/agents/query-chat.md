@@ -504,7 +504,10 @@ any per-item decision never creates it and never dispatches anything; a
 dismissal after one hands the opened set back so `QueryChatActionService`
 rejects its pending rest, and closes it to further per-item decisions.
 `QueryChatActionService.resolve` confirms every pending item through
-`confirmAll`; `resolveItem` confirms or rejects one through
+`confirmAll` — except a status change, which `confirmAll` leaves pending for
+its own row; a set of one item is that item's own decision and goes through
+`confirmItem`. Once only status changes are pending, `QueryActionReview`
+drops the set-level buttons. `resolveItem` confirms or rejects one through
 `confirmItem`/`rejectItem`, leaving the rest pending. Either way the service
 authorizes the chat and live targets before every dispatch through the shared
 task handlers and `ChangeSetConfirmationService`. One in-flight guard per

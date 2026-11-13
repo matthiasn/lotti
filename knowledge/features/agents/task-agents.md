@@ -1358,8 +1358,9 @@ not the mutation boundary where it would block legitimate edits.
   decision; `changeSetId`, `conversationId` and `originatingMessageId` trace the
   saved proposal back to the question event.
 - `approvalMode` records the gesture: `confirmItem` — a chat row's own
-  confirm — uses `individual`; `confirmAll` — chat's Accept or Accept all —
-  uses `confirm_all`, even when only one item is in the set.
+  confirm, or Accept on a set of one item — uses `individual`; `confirmAll` —
+  chat's Accept all — uses `confirm_all`. A status change is never in a
+  `confirmAll`; it is always `individual`.
 - `source: chat_suggestion`, `appliedBy: task_agent` and `agentId` distinguish
   human authorization from the executing agent. No model identity is invented.
 

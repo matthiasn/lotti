@@ -543,9 +543,9 @@ void main() {
       (tester) async {
         final pending = makePending(
           id: 'p1',
-          toolName: 'set_task_status',
-          args: const {'status': 'GROOMED'},
-          humanSummary: 'Set status to GROOMED',
+          toolName: 'update_task_estimate',
+          args: const {'minutes': 45},
+          humanSummary: 'Set estimate to 45 minutes',
         );
         final bench = AgentTestBench(
           mediaQueryData: reducedMotionStandard,
@@ -564,7 +564,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pump(ProposalMotion.nudge);
 
-        expect(find.textContaining('Status · '), findsOneWidget);
+        expect(find.textContaining('Estimate · '), findsOneWidget);
         expect(rowTransform(tester)!.getTranslation().x, 0);
         expect(tester.takeException(), isNull);
       },
@@ -576,11 +576,12 @@ void main() {
         // Compact bench → animations enabled → the nudge is scheduled in
         // didChangeDependencies. After the 350ms start delay the controller
         // forwards a single peek toward confirm (right), then settles back.
+        // A status change never carries the nudge, so the row is an estimate.
         final pending = makePending(
           id: 'p1',
-          toolName: 'set_task_status',
-          args: const {'status': 'GROOMED'},
-          humanSummary: 'Set status to GROOMED',
+          toolName: 'update_task_estimate',
+          args: const {'minutes': 45},
+          humanSummary: 'Set estimate to 45 minutes',
         );
         final bench = AgentTestBench(
           suggestions: UnifiedSuggestionList(
@@ -593,7 +594,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.textContaining('Status · '), findsOneWidget);
+        expect(find.textContaining('Estimate · '), findsOneWidget);
         // At rest before the start delay.
         expect(rowTransform(tester)!.getTranslation().x, 0);
 
@@ -620,17 +621,49 @@ void main() {
       },
     );
 
+    testWidgets('a status change never carries the swipe nudge', (
+      tester,
+    ) async {
+      // A status change is the only row and so the first one, yet it must not
+      // advertise the swipe that would close the task.
+      final bench = AgentTestBench(
+        suggestions: UnifiedSuggestionList(
+          open: [
+            makePending(
+              id: 'p1',
+              toolName: 'set_task_status',
+              args: const {'status': 'DONE'},
+              humanSummary: 'Set status to DONE',
+            ),
+          ],
+          activity: const [],
+        ),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 350));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 60));
+        expect(rowTransform(tester)!.getTranslation().x, 0);
+      }
+      await tester.pump(ProposalMotion.nudge);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets(
       'the swipe nudge does not re-fire once it has played this session',
       (tester) async {
         // Seed the session flag as already-shown: a freshly-mounted first row
         // must not peek, proving the guard lives in session scope (not per
-        // row) so promoting a new row to first never replays it.
+        // row) so promoting a new row to first never replays it. An estimate,
+        // not a status change: those never nudge, which would pass vacuously.
         final pending = makePending(
           id: 'p1',
-          toolName: 'set_task_status',
-          args: const {'status': 'GROOMED'},
-          humanSummary: 'Set status to GROOMED',
+          toolName: 'update_task_estimate',
+          args: const {'minutes': 45},
+          humanSummary: 'Set estimate to 45 minutes',
         );
         final bench = AgentTestBench(
           suggestions: UnifiedSuggestionList(
@@ -651,7 +684,7 @@ void main() {
         await tester.pump(ProposalMotion.nudge);
 
         // The row never peeked — the nudge was suppressed by the session flag.
-        expect(find.textContaining('Status · '), findsOneWidget);
+        expect(find.textContaining('Estimate · '), findsOneWidget);
         expect(rowTransform(tester)!.getTranslation().x, 0);
         expect(tester.takeException(), isNull);
       },

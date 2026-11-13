@@ -1712,6 +1712,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Status';
 
   @override
+  String get aiCardStatusChangesHint =>
+      'Bekräfta var och en för sig. En klar uppgift försvinner från dina listor med öppna uppgifter.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Statusändringar';
+
+  @override
   String get aiCardProposalKindUpdate => 'Uppdatering';
 
   @override

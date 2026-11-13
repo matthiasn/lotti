@@ -73,7 +73,9 @@ class QueryChatActionService {
 
   /// Resolves every pending item of the reviewed set: acceptance confirms
   /// them as one `confirmAll` gesture, dismissal rejects them. Items already
-  /// decided one by one keep their verdicts.
+  /// decided one by one keep their verdicts. A set of one item is that item's
+  /// own decision, so a lone status change can be accepted here; in a larger
+  /// set it waits for [resolveItem].
   Future<List<ToolExecutionResult>> resolve({
     required String agentId,
     required String chatId,
@@ -92,7 +94,11 @@ class QueryChatActionService {
       return const <ToolExecutionResult>[];
     }
     final service = _confirmation(agentId, chatId, questionId);
-    if (approved) return service.confirmAll(set);
+    if (approved) {
+      return set.items.length == 1
+          ? [await service.confirmItem(set, 0)]
+          : service.confirmAll(set);
+    }
     for (final (index, item) in set.items.indexed) {
       if (item.status == ChangeItemStatus.pending) {
         await service.rejectItem(set, index);

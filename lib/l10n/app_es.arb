@@ -685,6 +685,8 @@
   "aiCardProposalKindUpdate": "Actualizar",
   "aiCardReadMore": "Leer más",
   "aiCardShowLess": "Mostrar menos",
+  "aiCardStatusChangesHint": "Confirma cada uno por separado. Una tarea terminada sale de tus listas de tareas abiertas.",
+  "aiCardStatusChangesTitle": "Cambios de estado",
   "aiCardTitle": "Resumen de IA",
   "aiCardUnmetRequestNoReason": "Mis observaciones explican qué salió mal.",
   "aiCardUnmetRequestShowObservations": "Ver observaciones",

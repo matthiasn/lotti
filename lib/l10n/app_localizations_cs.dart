@@ -1714,6 +1714,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Stav';
 
   @override
+  String get aiCardStatusChangesHint =>
+      'Potvrď každou zvlášť. Hotový úkol zmizí z tvých seznamů otevřených úkolů.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Změny stavu';
+
+  @override
   String get aiCardProposalKindUpdate => 'Aktualizovat';
 
   @override

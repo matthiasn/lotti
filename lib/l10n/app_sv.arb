@@ -803,6 +803,8 @@
   "aiCardProposalKindUpdate": "Uppdatering",
   "aiCardReadMore": "Läs mer",
   "aiCardShowLess": "Visa mindre",
+  "aiCardStatusChangesHint": "Bekräfta var och en för sig. En klar uppgift försvinner från dina listor med öppna uppgifter.",
+  "aiCardStatusChangesTitle": "Statusändringar",
   "aiCardTitle": "AI-sammanfattning",
   "aiCardUnmetRequestNoReason": "Mina observationer förklarar vad som gick fel.",
   "aiCardUnmetRequestShowObservations": "Visa observationer",

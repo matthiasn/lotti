@@ -198,6 +198,13 @@ abstract final class AgentToolRegistry {
     TaskAgentToolNames.updateTimeEntry,
   };
 
+  /// Deferred tools the user confirms one at a time, never through a
+  /// "Confirm all" gesture: a status change moves the task between lists, and
+  /// DONE takes it off every open-task view.
+  static const individualConfirmTools = <String>{
+    TaskAgentToolNames.setTaskStatus,
+  };
+
   /// Batch tools that should be exploded into individual change item entries.
   ///
   /// Each entry maps a tool name to the JSON key that contains the array of

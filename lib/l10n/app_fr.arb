@@ -685,6 +685,8 @@
   "aiCardProposalKindUpdate": "Mettre à jour",
   "aiCardReadMore": "Lire plus",
   "aiCardShowLess": "Afficher moins",
+  "aiCardStatusChangesHint": "Confirme-les un par un. Une tâche terminée disparaît de tes listes de tâches ouvertes.",
+  "aiCardStatusChangesTitle": "Changements de statut",
   "aiCardTitle": "Résumé IA",
   "aiCardUnmetRequestNoReason": "Mes observations expliquent ce qui n'a pas marché.",
   "aiCardUnmetRequestShowObservations": "Voir les observations",

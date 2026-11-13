@@ -1697,6 +1697,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Status';
 
   @override
+  String get aiCardStatusChangesHint =>
+      'Confirm each one on its own. A task set to done leaves your open task lists.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Status changes';
+
+  @override
   String get aiCardProposalKindUpdate => 'Update';
 
   @override

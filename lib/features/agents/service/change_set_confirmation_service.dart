@@ -841,7 +841,9 @@ class ChangeSetConfirmationService {
   }
 
   /// Confirms all pending items in the change set, returning the results
-  /// of each tool dispatch.
+  /// of each tool dispatch. Items in
+  /// [AgentToolRegistry.individualConfirmTools] stay pending: they are only
+  /// ever applied by their own [confirmItem].
   Future<List<ToolExecutionResult>> confirmAll(
     ChangeSetEntity changeSet,
   ) async {
@@ -852,7 +854,10 @@ class ChangeSetConfirmationService {
     var current = await _resolution.freshChangeSet(changeSet);
 
     for (var i = 0; i < current.items.length; i++) {
-      if (current.items[i].status == ChangeItemStatus.pending) {
+      if (current.items[i].status == ChangeItemStatus.pending &&
+          !AgentToolRegistry.individualConfirmTools.contains(
+            current.items[i].toolName,
+          )) {
         final result = await _confirmItem(
           current,
           i,

@@ -2,6 +2,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 
 void main() {
+  test('the default task list leaves closed tasks out', () {
+    // A confirmed DONE (e.g. an agent's status proposal) must drop the task
+    // from the open list the user starts with.
+    expect(defaultSelectedTaskStatuses, isNot(contains('DONE')));
+    expect(defaultSelectedTaskStatuses, isNot(contains('REJECTED')));
+    // Non-empty: an empty selection means every status, DONE included.
+    expect(defaultSelectedTaskStatuses, isNotEmpty);
+  });
+
   group('TasksFilter.fromJson', () {
     test('round-trips a fully populated filter', () {
       const filter = TasksFilter(
