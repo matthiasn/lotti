@@ -243,6 +243,7 @@ class FrontChatDrawerFooter extends ConsumerWidget {
         children: [
           // Her voice is the open conversation's: none in the inbox.
           FrontVoiceSwitch(conversationId: inboxOnly ? null : activeId),
+          const FrontVoiceSpeedRow(),
           if (identity is AgentIdentityEntity && profiles != null)
             DesignSystemListItem(
               key: FrontChatDrawerKeys.profile,

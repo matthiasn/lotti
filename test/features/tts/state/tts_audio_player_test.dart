@@ -25,6 +25,7 @@ void main() {
     completedController = StreamController<bool>.broadcast();
 
     when(() => player.stream).thenReturn(stream);
+    when(() => player.platform).thenReturn(null);
     when(() => stream.position).thenAnswer((_) => positionController.stream);
     when(() => stream.duration).thenAnswer((_) => durationController.stream);
     when(() => stream.completed).thenAnswer((_) => completedController.stream);
@@ -85,6 +86,45 @@ void main() {
       ]);
     },
   );
+
+  test('every clip reaches the output resampled to 48 kHz, so a 24 kHz '
+      'cloud voice is never played at twice its speed', () async {
+    final native = MockNativePlayer();
+    when(() => player.platform).thenReturn(native);
+    when(() => native.setProperty(any(), any())).thenAnswer((_) async {});
+
+    await build().play(File('/tmp/tts.wav'), speed: 1);
+
+    verifyInOrder([
+      () => native.setProperty('audio-samplerate', '48000'),
+      () => player.open(any(), play: false),
+      () => player.play(),
+    ]);
+  });
+
+  test('a stop while the output rate is set prevents late playback', () async {
+    final native = MockNativePlayer();
+    final pending = Completer<void>();
+    when(() => player.platform).thenReturn(native);
+    when(() => native.setProperty(any(), any())).thenAnswer(
+      (_) => pending.future,
+    );
+    final audio = build();
+
+    final play = audio.play(File('/tmp/tts.wav'), speed: 1);
+    await audio.stop();
+    pending.complete();
+    await play;
+
+    verifyNever(() => player.open(any(), play: any(named: 'play')));
+    verifyNever(() => player.play());
+  });
+
+  test('setSpeed changes the rate of the clip that is playing', () async {
+    await build().setSpeed(1.75);
+    verify(() => player.setRate(1.75)).called(1);
+    verifyNever(() => player.open(any(), play: any(named: 'play')));
+  });
 
   test('stop stops the underlying player', () async {
     await build().stop();

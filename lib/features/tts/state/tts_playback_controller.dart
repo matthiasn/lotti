@@ -122,6 +122,22 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       _playing = null;
       unawaited(_stopAndDelete(_player, file));
     });
+    // A new speed reaches the clip that is speaking, not only the next one.
+    // A bundled sample keeps its natural speed ([playClip]).
+    ref.listen(ttsSettingsControllerProvider.select((s) => s.speed), (
+      _,
+      speed,
+    ) {
+      final playing = _playing;
+      if (state.status != TtsPlaybackStatus.playing ||
+          playing == null ||
+          playing.key.model == _bundledClipModel) {
+        return;
+      }
+      // A rate the player refuses leaves the clip at its old speed; the next
+      // one opens at the new speed regardless.
+      _player?.setSpeed(speed).ignore();
+    });
     return const TtsPlaybackState();
   }
 
@@ -335,7 +351,13 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         sourceId: sourceId,
         clip: (path: file.path, text: text),
       );
-      await player.play(file, speed: settings.speed);
+      // The speed now, not when synthesis began: it may have changed since.
+      final speed = ref.read(ttsSettingsControllerProvider).speed;
+      await player.play(file, speed: speed);
+      // A change while the player was opening was applied and then
+      // overwritten by the rate `play` sets: put the latest one back.
+      final latest = ref.read(ttsSettingsControllerProvider).speed;
+      if (current() && latest != speed) await player.setSpeed(latest);
     } catch (error, stackTrace) {
       if (!current()) return;
       // The cloud clients log their own request failures with their detail;

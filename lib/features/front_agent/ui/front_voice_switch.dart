@@ -7,6 +7,9 @@ import 'package:lotti/features/design_system/components/toggles/design_system_to
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
+import 'package:lotti/features/tts/model/tts_settings.dart';
+import 'package:lotti/features/tts/state/tts_settings_controller.dart';
+import 'package:lotti/features/tts/ui/widgets/tts_speed_selector.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -16,6 +19,7 @@ import 'package:material_ui/material_ui.dart';
 abstract final class FrontVoiceSwitchKeys {
   static const Key row = Key('front-chat-voice-row');
   static const Key toggle = Key('front-chat-voice-switch');
+  static const Key speed = Key('front-chat-voice-speed');
 }
 
 /// Her saved customization while she may be muted from her chat: once it is
@@ -97,6 +101,56 @@ class FrontVoiceSwitch extends ConsumerWidget {
           ],
         ),
         onTap: toggle,
+      ),
+    );
+  }
+}
+
+/// The step after [speed] in [kTtsSpeedSequence], back to the slowest after
+/// the fastest. A speed between steps moves to the next one up.
+@visibleForTesting
+double nextTtsSpeed(double speed) => kTtsSpeedSequence.firstWhere(
+  (step) => step > speed,
+  orElse: () => kTtsSpeedSequence.first,
+);
+
+/// How fast she speaks, under "Spoken answers" while she answers aloud: a
+/// tap moves to the next step, as the recordings player's speed does. The
+/// same setting as Settings → Speech, so it is every read-aloud's speed, and
+/// a change reaches the clip she is speaking at once.
+class FrontVoiceSpeedRow extends ConsumerWidget {
+  const FrontVoiceSpeedRow({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (_mutable(ref)?.speaksReplies != true) return const SizedBox.shrink();
+    final tokens = context.designTokens;
+    final quiet = tokens.colors.text.mediumEmphasis;
+    final speed = ref.watch(
+      ttsSettingsControllerProvider.select((s) => s.speed),
+    );
+    final value = '${TtsSpeedSelector.formatSpeed(speed)}x';
+    return Semantics(
+      value: value,
+      child: DesignSystemListItem(
+        key: FrontVoiceSwitchKeys.speed,
+        titleContent: Text(
+          context.messages.speechSettingsSpeedLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: frontDrawerLabelStyle(context).copyWith(color: quiet),
+        ),
+        size: frontDrawerRowSize(context),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        hoverBackgroundColor: tokens.colors.surface.enabled,
+        leading: Icon(LottiIcons.speed, size: IconSizes.s, color: quiet),
+        trailing: Text(
+          value,
+          style: tokens.typography.styles.others.caption.copyWith(color: quiet),
+        ),
+        onTap: () => ref
+            .read(ttsSettingsControllerProvider.notifier)
+            .setSpeed(nextTtsSpeed(speed)),
       ),
     );
   }

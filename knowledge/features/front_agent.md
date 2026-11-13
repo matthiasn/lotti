@@ -246,8 +246,8 @@ sources:
     last_modified: 2026-11-08
   - id: voice-switch
     resource: ../../lib/features/front_agent/ui/front_voice_switch.dart
-    title: FrontVoiceSwitch — the drawer's "Spoken answers" row, her mute beside her replay
-    last_modified: 2026-11-11
+    title: FrontVoiceSwitch and FrontVoiceSpeedRow — the drawer's "Spoken answers" row, her mute beside her replay, and her reading speed under it
+    last_modified: 2026-11-13
   - id: drawer
     resource: ../../lib/features/front_agent/ui/front_chat_drawer.dart
     title: FrontChatDrawer and FrontChatDrawerFooter — search, new chat, the conversations, her settings
@@ -1548,7 +1548,8 @@ The drawer's foot (`FrontChatDrawerFooter`) holds her settings as rows that
 say their value: *Spoken answers* (`FrontVoiceSwitch`) while the companion is
 on, with the way to have her say her latest answer again
 (`FrontVoiceButton`) beside the switch — none in the inbox, which is no one
-conversation; *AI profile*, once she exists and the profiles are loaded,
+conversation; *Reading speed* (`FrontVoiceSpeedRow`) under it while she
+answers aloud, a tap stepping to the next speed; *AI profile*, once she exists and the profiles are loaded,
 naming the profile she has of her own, else the Settings default she follows
 (`FrontProfileChoice`); and *Agent internals*, with what the open
 conversation has cost (none in the inbox), opening `AgentInternalsPanel`.
@@ -2073,6 +2074,10 @@ companion is on; her card is the header's. `FrontVoiceSwitch` mutes her: it writ
 `speaksReplies`, the same setting as the companion settings' switch, so a
 mute here holds everywhere and stops her mid-sentence; it is shown only
 once that setting has loaded, since a mute is never guessed at.
+`FrontVoiceSpeedRow`, under it while she answers aloud, says the read-aloud
+speed (`TtsSettings.speed`, the same setting as Settings → Speech) and a tap
+moves it a step through `kTtsSpeedSequence`, from 2x back to 0.5x; the clip
+she is speaking changes speed at once.
 `FrontVoiceButton` is
 the shared `TtsSourcePlayButton` on her source: while she speaks it stops
 her — shown then even if she was muted meanwhile, so a stop is always in

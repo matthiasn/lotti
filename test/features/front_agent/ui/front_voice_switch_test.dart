@@ -12,7 +12,9 @@ import 'package:lotti/features/front_agent/state/front_conversation_providers.da
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_switch.dart';
+import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
+import 'package:lotti/features/tts/state/tts_settings_controller.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -41,8 +43,26 @@ class _Custom extends CompanionCustomizationController {
   }
 }
 
+/// The read-aloud settings at a given speed, recording every speed set.
+class _Speed extends TtsSettingsController {
+  _Speed(this.initial);
+
+  final double initial;
+  final saved = <double>[];
+
+  @override
+  TtsSettings build() => TtsSettings(speed: initial);
+
+  @override
+  void setSpeed(double speed) {
+    saved.add(speed);
+    state = state.copyWith(speed: speed);
+  }
+}
+
 void main() {
   late _Custom custom;
+  late _Speed speed;
 
   Future<void> pump(
     WidgetTester tester, {
@@ -50,15 +70,23 @@ void main() {
     bool companion = true,
     bool speaks = true,
     bool loaded = true,
+    double initialSpeed = 1,
   }) async {
     custom = _Custom(speaks: speaks, isLoaded: loaded);
+    speed = _Speed(initialSpeed);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Scaffold(
           body: Center(
             child: SizedBox(
               width: 320,
-              child: FrontVoiceSwitch(conversationId: conversationId),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FrontVoiceSwitch(conversationId: conversationId),
+                  const FrontVoiceSpeedRow(),
+                ],
+              ),
             ),
           ),
         ),
@@ -68,6 +96,7 @@ void main() {
                 Stream.value(flag == enableCompanionFlag && companion),
           ),
           companionCustomizationProvider.overrideWith(() => custom),
+          ttsSettingsControllerProvider.overrideWith(() => speed),
           // What her replay beside the switch reads.
           ttsEngineProvider.overrideWithValue(FakeTtsEngine()),
           agentResolvedSetupProvider.overrideWith((ref, id) async => null),
@@ -178,5 +207,54 @@ void main() {
   ) async {
     await pump(tester, companion: false);
     expect(find.byKey(FrontVoiceSwitchKeys.row), findsNothing);
+  });
+
+  group('reading speed', () {
+    test('steps up through the speeds, back to the slowest after the '
+        'fastest, and from between two steps to the next one up', () {
+      expect(nextTtsSpeed(1), 1.25);
+      expect(nextTtsSpeed(0.5), 0.75);
+      expect(nextTtsSpeed(2), 0.5);
+      expect(nextTtsSpeed(1.1), 1.25);
+    });
+
+    testWidgets('shows her speed under "Spoken answers", and a tap saves the '
+        'next step', (tester) async {
+      await pump(tester, initialSpeed: 1.75);
+      final row = find.byKey(FrontVoiceSwitchKeys.speed);
+
+      expect(
+        find.descendant(of: row, matching: find.text('Reading speed')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: row, matching: find.text('1.75x')),
+        findsOneWidget,
+      );
+
+      await tester.tap(row);
+      await tester.pump();
+      expect(speed.saved, [2]);
+      expect(
+        find.descendant(of: row, matching: find.text('2x')),
+        findsOneWidget,
+      );
+    });
+
+    for (final (name, companion, speaks, loaded) in [
+      ('muted', true, false, true),
+      ('the companion is off', false, true, true),
+      ('her settings are not loaded yet', true, true, false),
+    ]) {
+      testWidgets('is not shown while $name', (tester) async {
+        await pump(
+          tester,
+          companion: companion,
+          speaks: speaks,
+          loaded: loaded,
+        );
+        expect(find.byKey(FrontVoiceSwitchKeys.speed), findsNothing);
+      });
+    }
   });
 }
