@@ -11,7 +11,7 @@ sources:
   - id: chat
     resource: ../../../lib/features/agents/ui/chat
     title: Shared agent chat components
-    last_modified: 2026-11-11
+    last_modified: 2026-11-13
   - id: evolution
     resource: ../../../lib/features/agents/ui/evolution/widgets
     title: Agent improvement conversation widgets
@@ -24,19 +24,48 @@ sources:
 relationship agents and [scoped queries](query-chat.md). Query hosts supply
 their own projected history and conversation ID, activity and footer slots,
 and turn off scrolling on new replies (`scrollOnReplies: false`) so a reader
-stays on earlier evidence; a new user turn, or the start of sending, still
-scrolls to the latest message. After that the thread **follows its latest
-message as it grows** while the reader is at the bottom: a reply's cards or a
-door's answer arrive after the reply's own frame, and a lazily built list's
-real height after the first jump, so one jump landed short. The reader
-turning back up — a drag, a wheel, toward the top (`UserScrollNotification`,
-`ScrollDirection.forward`) — stops the following at once; where any scroll
-ends decides whether it resumes (within `spacing.step9` of the bottom). The
-first is what keeps a long thread readable: while the following held through
-a slow drag still near the bottom, every row laid out above corrected the
-list's extent, each correction jumped back to the end, and the reader never
-got off the bottom. A conversation restored where it was left keeps its
-place until something new arrives.
+stays on earlier evidence. A thread opens at its latest message (one jump —
+opening is no arrival to watch); after that **nothing arriving moves the
+viewport on the frame it lands**. A new user turn, or the start of sending,
+catches up with a quick glide (about 0.6 s, however far up the reader was).
+While the reader is at the bottom the thread **follows its latest message as
+it grows** — a reply, its cards, a door's answer and a lazily built list's
+real height all arrive after the reply's own frame — by gliding toward the
+end at reading pace (80 px/s, eased in, braking evenly into the end) rather
+than jumping, so a chart or a long block is read into view.
+`ChatGlideScrollActivity` is that glide: a scroll activity that re-reads the
+end every frame, so a growing reply is followed without restarting, and,
+unlike `animateTo`'s activity, leaves cards under it tappable. As an ordinary
+activity it is replaced by whatever the reader does: a touch holds the list,
+a mouse click stops it where it is, a wheel or drag takes over, and no glide
+starts under a held finger or into a fling. A reply that arrives while the
+reader is scrolled up leaves them where they are. The reader turning back
+up (`UserScrollNotification`, `ScrollDirection.forward`) stops the following
+at once; where any scroll ends decides whether it resumes (within
+`spacing.step9` of the bottom). The first is what keeps a long thread
+readable: while the following held through a slow drag still near the
+bottom, every row laid out above corrected the list's extent, each
+correction pulled back to the end, and the reader never got off the bottom.
+A conversation restored where it was left keeps its place until something
+new arrives.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Following: opened (jump to the end)
+    [*] --> Reading: restored conversation
+    Following --> Gliding: thread grows (reading pace)
+    Gliding --> Gliding: grows again (end re-read)
+    Gliding --> Following: reached the end
+    Gliding --> Held: touch or click
+    Following --> Held: touch
+    Held --> Following: let go near the bottom
+    Held --> Reading: let go further up
+    Following --> Reading: scrolled up
+    Reading --> Following: scroll ends near the bottom
+    Reading --> Gliding: own turn (catch-up)
+    Following --> Gliding: own turn (catch-up)
+```
+
 While a reply is on its way the thread shows `AgentTypingIndicator`'s
 pulsing dots (unspaced inside the bubble), stopped under reduced motion; a
 test of a sending thread pumps frames rather than settling.

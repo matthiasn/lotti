@@ -1008,11 +1008,15 @@ void main() {
     expect(position().pixels, 0);
 
     updateHost(() => history = [...history, message(31, AgentChatRole.user)]);
-    await tester.pumpAndSettle();
-    // The jump targets the extent known when the frame ends; lazily laid
-    // out rows can still grow it afterwards, so assert the jump, not an
-    // exact final offset.
-    expect(position().pixels, greaterThan(position().maxScrollExtent / 2));
+    await tester.pump();
+    await tester.pump();
+    // Caught up with by a glide, not jumped to.
+    expect(position().pixels, lessThan(position().maxScrollExtent / 4));
+    for (var frame = 0; frame < 15; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(position().extentAfter, 0);
+    expect(find.textContaining('Message 31'), findsOneWidget);
     expect(find.textContaining('Message 0'), findsNothing);
   });
 
@@ -1205,6 +1209,104 @@ void main() {
 
       expect(position(tester).pixels, 0);
       expect(find.textContaining('Message 0'), findsOneWidget);
+    });
+
+    group('gliding to what arrives', () {
+      Future<void> growWithoutSettling(WidgetTester tester) async {
+        updateHost(() => cardHeight = 600);
+        // The card lays out; the glide starts after that frame.
+        await tester.pump();
+        await tester.pump();
+      }
+
+      testWidgets('the viewport stays put when the card lands, then glides '
+          'down at reading pace to the end', (tester) async {
+        await pumpThread(tester);
+        final before = position(tester).pixels;
+
+        await growWithoutSettling(tester);
+        expect(position(tester).pixels, before);
+        final distance = position(tester).maxScrollExtent - before;
+        expect(distance, greaterThan(500));
+
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
+        final early = position(tester).pixels - before;
+        // Moving, eased in, nowhere near a jump.
+        expect(early, inExclusiveRange(0, 40));
+
+        for (var frame = 0; frame < 10; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        final afterOneSecond = position(tester).pixels - before;
+        expect(afterOneSecond, inInclusiveRange(early + 50, 120));
+
+        await tester.pumpAndSettle();
+        expect(position(tester).extentAfter, 0);
+      });
+
+      testWidgets('a touch mid-glide hands the thread to the reader', (
+        tester,
+      ) async {
+        await pumpThread(tester);
+        await growWithoutSettling(tester);
+        for (var frame = 0; frame < 10; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(ListView)),
+        );
+        await tester.pump();
+        final held = position(tester).pixels;
+        for (var frame = 0; frame < 20; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(position(tester).pixels, held);
+
+        // Let go far from the end, the reader keeps that place.
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(position(tester).pixels, held);
+        expect(position(tester).extentAfter, greaterThan(300));
+      });
+
+      testWidgets('a mouse click mid-glide stops it too', (tester) async {
+        await pumpThread(tester);
+        await growWithoutSettling(tester);
+        for (var frame = 0; frame < 10; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        await tester.tapAt(
+          tester.getCenter(find.byType(ListView)),
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pump();
+        final stopped = position(tester).pixels;
+        await tester.pumpAndSettle();
+
+        expect(position(tester).pixels, stopped);
+        expect(position(tester).extentAfter, greaterThan(300));
+      });
+
+      testWidgets('nothing glides under a finger holding the thread', (
+        tester,
+      ) async {
+        await pumpThread(tester);
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(ListView)),
+        );
+        final before = position(tester).pixels;
+
+        await growWithoutSettling(tester);
+        for (var frame = 0; frame < 20; frame++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(position(tester).pixels, before);
+        await gesture.up();
+      });
     });
 
     testWidgets('back at the bottom, it follows again', (tester) async {

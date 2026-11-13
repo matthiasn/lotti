@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_typing_indicator.dart';
+import 'package:lotti/features/agents/ui/chat/chat_glide_scroll_activity.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_error_message.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -56,12 +57,27 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
   }
 
   /// Whether the thread keeps to its latest message as it grows: set by
-  /// every scroll to the latest, cleared once the user scrolls away from
-  /// the bottom, set again when they come back. A reply's cards, a door's
+  /// the reader's own turn, cleared once the user scrolls away from the
+  /// bottom, set again when they come back. A reply's cards, a door's
   /// answer and a lazily built list's real height all arrive after the
   /// reply's own frame; following the growth keeps the newest in view
   /// where a single jump landed short of it.
   bool _followLatest = true;
+
+  /// The glide toward the latest, while one runs ([_glideToLatest]).
+  ChatGlideScrollActivity? _glide;
+
+  /// Pointers down on the thread: while the reader holds it, nothing
+  /// starts a glide under their finger.
+  int _pointersDown = 0;
+
+  /// What arrives below glides into view at about the pace it is read, in
+  /// logical pixels a second — never a jump.
+  static const _readingPace = 80.0;
+
+  /// The reader's own turn is caught up with within about this long,
+  /// however far up they were.
+  static const _catchUpSeconds = 0.6;
 
   /// Laid-out reply heights, keyed by message id, owned by the LIST rather
   /// than by the item.
@@ -225,19 +241,66 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
               when widget.scrollOnReplies &&
                   _followLatest &&
                   metrics.extentAfter > 0:
-            _scrollToLatest();
+            _glideToLatest();
         }
         return false;
       },
-      child: list,
+      // Any touch or click on the thread is the reader taking over: the
+      // glide stops where it is. A touch also holds the list on its own;
+      // a mouse click does not.
+      child: Listener(
+        onPointerDown: (_) {
+          _pointersDown++;
+          if (_glide?.isActive ?? false) {
+            _scrollController.jumpTo(_scrollController.offset);
+          }
+        },
+        onPointerUp: (_) => _pointersDown--,
+        onPointerCancel: (_) => _pointersDown--,
+        child: list,
+      ),
     );
   }
 
-  void _scrollToLatest() {
+  /// Glides to the latest: at reading pace as the thread grows under a
+  /// reader who follows it, or quickly enough to catch up with the
+  /// reader's own turn ([catchUp]). A growing thread never restarts a
+  /// running glide (it follows the end anyway), never starts one under the
+  /// reader's finger and never cuts into a scroll of theirs.
+  void _glideToLatest({bool catchUp = false}) {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position is! ScrollPositionWithSingleContext) return;
+    final distance = position.maxScrollExtent - position.pixels;
+    if (distance <= 0) return;
+    if (!catchUp) {
+      final gliding = _glide?.isActive ?? false;
+      if (gliding || _pointersDown > 0 || position.isScrollingNotifier.value) {
+        return;
+      }
+    }
+    position.beginActivity(
+      _glide = ChatGlideScrollActivity(
+        position,
+        speed: catchUp
+            ? math.max(_readingPace, distance / _catchUpSeconds)
+            : _readingPace,
+      ),
+    );
+  }
+
+  /// Brings the thread to its latest after the frame: at once when it has
+  /// just opened ([instant]) — opening is no arrival to watch — and with a
+  /// catch-up glide for the reader's own turn.
+  void _scrollToLatest({required bool instant}) {
     _followLatest = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) return;
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      if (instant) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      } else {
+        _glideToLatest(catchUp: true);
+      }
     });
   }
 
@@ -251,15 +314,20 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
         );
     final messages = historyAsync.value;
     final latestMessageId = messages?.lastOrNull?.id;
-    final shouldScroll =
+    final changed = messages != null && _lastMessageId != latestMessageId;
+    // The thread's first content opens at its end. After that only the
+    // reader's own turn pulls it down; a reply arriving is followed as
+    // growth ([_followThread]), so a reader scrolled up keeps their place.
+    final opened = changed && _lastMessageId == null;
+    final ownTurn =
         messages != null &&
-        ((_lastMessageId != latestMessageId &&
-                (widget.scrollOnReplies ||
-                    messages.lastOrNull?.role == AgentChatRole.user)) ||
+        ((changed && messages.lastOrNull?.role == AgentChatRole.user) ||
             (!_wasSending && widget.isSending));
     _lastMessageId = latestMessageId;
     _wasSending = widget.isSending;
-    if (shouldScroll) _scrollToLatest();
+    if (ownTurn || (opened && widget.scrollOnReplies)) {
+      _scrollToLatest(instant: opened);
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
