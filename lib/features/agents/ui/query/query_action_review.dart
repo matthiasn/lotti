@@ -275,7 +275,9 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
               messages.aiCardProposalDismissed,
               style: tokens.typography.styles.others.caption,
             )
-          else if (!completed && setLevel) ...[
+          else if (!completed) ...[
+            // Shown even without the set-level buttons: a failed confirm on a
+            // status change's own row must still say why it is still open.
             if (_failed || saved.hasError)
               Padding(
                 padding: EdgeInsets.only(bottom: tokens.spacing.step2),
@@ -284,31 +286,32 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
                   style: tokens.typography.styles.others.caption,
                 ),
               ),
-            Wrap(
-              spacing: tokens.spacing.step2,
-              runSpacing: tokens.spacing.step2,
-              children: [
-                DesignSystemButton(
-                  label: decision == true
-                      ? messages.projectNextStepRetry
-                      : items.length > 1
-                      ? messages.queryActionsAcceptAll
-                      : messages.queryActionsAccept,
-                  isLoading: _busy || loading,
-                  onPressed: widget.canApply ? () => _resolve(true) : null,
-                ),
-                if (decision == null)
+            if (setLevel)
+              Wrap(
+                spacing: tokens.spacing.step2,
+                runSpacing: tokens.spacing.step2,
+                children: [
                   DesignSystemButton(
-                    label: items.length > 1
-                        ? messages.queryActionsDismissAll
-                        : messages.queryActionsDismiss,
-                    variant: DesignSystemButtonVariant.tertiary,
-                    onPressed: _busy || !widget.canApply
-                        ? null
-                        : () => _resolve(false),
+                    label: decision == true
+                        ? messages.projectNextStepRetry
+                        : items.length > 1
+                        ? messages.queryActionsAcceptAll
+                        : messages.queryActionsAccept,
+                    isLoading: _busy || loading,
+                    onPressed: widget.canApply ? () => _resolve(true) : null,
                   ),
-              ],
-            ),
+                  if (decision == null)
+                    DesignSystemButton(
+                      label: items.length > 1
+                          ? messages.queryActionsDismissAll
+                          : messages.queryActionsDismiss,
+                      variant: DesignSystemButtonVariant.tertiary,
+                      onPressed: _busy || !widget.canApply
+                          ? null
+                          : () => _resolve(false),
+                    ),
+                ],
+              ),
           ],
         ],
       ),

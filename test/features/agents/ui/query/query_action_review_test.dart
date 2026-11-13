@@ -621,6 +621,22 @@ void main() {
       // Neither Accept all nor its Retry could apply it.
       expect(find.text('Accept all'), findsNothing);
       expect(find.text('Retry'), findsNothing);
+
+      // Its own confirm failing still says so, with no set-level buttons.
+      stubItem(
+        (_, {required approved}) => const ToolExecutionResult(
+          success: false,
+          output: 'Storage unavailable',
+        ),
+      );
+      await tester.tap(findMaterialTooltip('Confirm'));
+      await tester.pump();
+      expect(
+        find.textContaining('Some changes could not be applied'),
+        findsOneWidget,
+      );
+      expect(find.text('Retry'), findsNothing);
+      expect(rowActions(), findsOneWidget);
     });
 
     testWidgets('a failed confirm keeps the change open and says so', (
