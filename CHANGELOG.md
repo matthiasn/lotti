@@ -4,6 +4,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.102]
+
+### Added
+
+- **Eleven v4 Turbo for reading aloud.** An ElevenLabs provider now offers
+  ElevenLabs' newest real-time voice, more expressive than the earlier ones
+  and in 94 languages; it starts speaking in well under half a second.
+- **Lotti sounds like a grandmother by default.** Without a voice chosen for a
+  language, a cloud voice now prefers an older woman — including voices saved
+  to your ElevenLabs account from its Voice Library — then a middle-aged one.
+
+### Changed
+
+- **A task with time tracked on it is suggested as in progress.** When a task
+  is still open but you have recorded time on it, or you dictate a new task
+  along with the time you spent, the task agent now suggests moving it to *In
+  Progress*. The suggestion sits with the other status changes for you to
+  confirm on its own, and it isn't made when the task notes say the work is
+  blocked or on hold.
+- **A new chat with the companion no longer shows her twice.** An empty
+  conversation used to greet you with a small round picture of her above the
+  invitation, while her card, or her face at the top of the chat, already
+  showed her on the same screen. The round picture is gone, and the invitation
+  and the starter questions have moved up into its place.
+- **Asking the companion to roast you gets a roast, built on what you actually
+  did.** It answers in the tone you ask for, in short paragraphs. When it
+  finds a task, it also reads the notes, recordings and checklists linked to
+  it, and knows the task's due date, its status and how long it has had that
+  status, so "due in October, still open" comes from your data rather than a
+  guess. Every jab points at the entry it comes from, one with nothing behind
+  it is left out, and it teases your habits, never your health, body, grief,
+  money worries or the people around you.
+- **Answers from your journal show each point with its evidence.** Instead of
+  a block of text with footnote marks that showed as blank dots, every point
+  of the answer is followed by the entries it rests on — what each one is,
+  when, and the words it quotes — and a tap opens the entry.
+- **A cloud voice starts speaking in about half a second.** With a Voxtral or
+  ElevenLabs voice, the companion and every other read-aloud used to wait
+  until the whole text had been turned into audio — two and a half seconds for
+  three sentences, longer for more. The audio is now played while it is still
+  arriving, as one continuous take in one voice.
+
+### Fixed
+
+- **Reading aloud keeps working offline.** When a cloud voice cannot be
+  reached and the on-device voice is installed, the on-device voice reads the
+  text instead of showing an error.
+
 ## [1.1.101]
 
 ### Changed
