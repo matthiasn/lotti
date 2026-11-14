@@ -134,8 +134,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   aside while the card is out, her name, a new chat, close), her drawer
   (`front_chat_drawer.dart`: search, new chat, the conversations, her
   settings), the composer's category chip and its sheet
-  (`front_category_chip.dart`), the hero that greets a conversation not begun
-  (her bust) and the starter questions under it (`front_starter_prompts.dart`), the drawer's rows that mute her and set how fast she reads (`front_voice_switch.dart`), the card of
+  (`front_category_chip.dart`), the invitation that greets a conversation not
+  begun and the starter questions under it (`front_starter_prompts.dart`), the drawer's rows that mute her and set how fast she reads (`front_voice_switch.dart`), the card of
   rows a closed-task answer is drawn as (`front_task_list.dart`), the preview
   cards her lists of tasks and what her turn made are drawn as
   (`front_entity_preview_card.dart`; her reply is an A2UI v1.0 surface she
@@ -147,7 +147,7 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   she may speak, the pose she holds), her voice's control
   (`front_voice_controls.dart`: stop her, or have her say her latest answer
   again from the start, in the voice she said it in), her card
-  (`FrontCompanionCard` in `front_chat_hero.dart`: her, head to toe, in a
+  (`FrontCompanionCard` in `front_companion_figure.dart`: her, head to toe, in a
   glass card floating over the thread, moved and resized by the user — on
   a desktop window with the list beside the thread, docked under the list,
   collapsed until expanded —

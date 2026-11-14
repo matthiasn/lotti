@@ -18,7 +18,7 @@ import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_stage_pointing.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
-import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
+import 'package:lotti/features/front_agent/ui/front_companion_figure.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:material_ui/material_ui.dart';

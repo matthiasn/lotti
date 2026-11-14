@@ -27,7 +27,6 @@ import 'package:lotti/features/front_agent/state/front_conversation_providers.da
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
-import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_actions.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_controls.dart';
 import 'package:lotti/features/front_agent/ui/front_voice_switch.dart';
@@ -76,7 +75,7 @@ void main() {
             body: Center(
               child: SizedBox(
                 width: width,
-                // The header over the hero, as the pane lays them out.
+                // At its own height, as the pane's column lays it out.
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -85,7 +84,6 @@ void main() {
                       listBeside: listBeside,
                       drawerFocusNode: drawerFocus,
                     ),
-                    const FrontChatHero(),
                   ],
                 ),
               ),
@@ -413,7 +411,7 @@ void main() {
     expect(find.byType(CompanionView), findsNothing);
     expect(
       find.descendant(
-        of: find.byKey(FrontChatHeroKeys.figure),
+        of: find.byKey(FrontChatHeaderKeys.figure),
         matching: find.byIcon(LottiIcons.aiSpark),
       ),
       findsOneWidget,
@@ -424,7 +422,7 @@ void main() {
     await pumpHeader(tester, companion: true);
     expect(
       find.descendant(
-        of: find.byKey(FrontChatHeroKeys.figure),
+        of: find.byKey(FrontChatHeaderKeys.figure),
         matching: find.byType(CompanionView),
       ),
       findsOneWidget,
@@ -451,7 +449,7 @@ void main() {
 
       final speaker = tester.widget<CompanionSpeaker>(
         find.descendant(
-          of: find.byKey(FrontChatHeroKeys.figure),
+          of: find.byKey(FrontChatHeaderKeys.figure),
           matching: find.byType(CompanionSpeaker),
         ),
       );
@@ -472,7 +470,7 @@ void main() {
       );
       Element figure() => tester.element(
         find.descendant(
-          of: find.byKey(FrontChatHeroKeys.figure),
+          of: find.byKey(FrontChatHeaderKeys.figure),
           matching: find.byType(CompanionSpeaker),
         ),
       );
@@ -586,7 +584,7 @@ void main() {
       await pumpHeader(tester, companion: true, activeLoading: true);
 
       final standing = find.descendant(
-        of: find.byKey(FrontChatHeroKeys.figure),
+        of: find.byKey(FrontChatHeaderKeys.figure),
         matching: find.byType(CompanionView),
       );
       expect(standing, findsOne);
@@ -720,22 +718,6 @@ void main() {
       await tester.pump();
       expect(listOpen.read(), isTrue);
     });
-  });
-
-  testWidgets('the hero that greets a conversation not begun is her figure '
-      'alone, at hero size', (tester) async {
-    await pumpHeader(tester);
-
-    final figure = tester.getRect(find.byKey(FrontChatHeroKeys.figure));
-    expect(figure.width, ControlSizes.avatarHero);
-    // Who she is and what about is the header's to say, not the hero's.
-    expect(
-      find.descendant(
-        of: find.byKey(FrontChatHeroKeys.hero),
-        matching: find.byType(Text),
-      ),
-      findsNothing,
-    );
   });
 }
 

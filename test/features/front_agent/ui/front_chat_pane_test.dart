@@ -19,6 +19,7 @@ import 'package:lotti/features/ai_consumption/model/consumption_aggregation_mode
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/companion/state/companion_card_controller.dart';
 import 'package:lotti/features/companion/ui/companion_floating_card.dart';
+import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
@@ -53,8 +54,8 @@ import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_category_chip.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_drawer.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
-import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
+import 'package:lotti/features/front_agent/ui/front_companion_figure.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
@@ -359,6 +360,11 @@ void main() {
     });
   }
 
+  /// What a conversation not begun says in place of a thread.
+  const invitation =
+      'Ask about a task, a goal, a project or a person, or tell what '
+      'happened. The right agent answers, and nothing is filed until you tap.';
+
   /// Lets the drawer slide all the way in or out: its ticker starts on the
   /// frame after the change and settles a frame after its last value.
   Future<void> settleDrawer(WidgetTester tester) async {
@@ -379,14 +385,7 @@ void main() {
     await pumpPane(tester);
 
     expect(find.byType(FrontChatHeader), findsOneWidget);
-    expect(
-      find.text(
-        'Ask about a task, a goal, a project or a person, or tell what '
-        'happened. The right agent answers, and nothing is filed until you '
-        'tap.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text(invitation), findsOneWidget);
     // One field for typing and talking: the mic at its end, no mode to
     // switch first.
     expect(find.text('Ask anything…'), findsOneWidget);
@@ -1188,35 +1187,145 @@ void main() {
     });
   });
 
-  testWidgets('a begun conversation leads with its first message — she is '
-      'in the header — and one not begun greets with her figure', (
-    tester,
-  ) async {
-    var fresh = false;
-    await pumpPane(
+  group('a conversation not begun', () {
+    final greeting = find.ancestor(
+      of: find.text(invitation),
+      matching: find.byType(SingleChildScrollView),
+    );
+    // She animates while she is on screen, so no settle.
+    Future<void> frames(WidgetTester tester) async {
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+    }
+
+    testWidgets('a begun one shows its messages and no greeting; starting '
+        'a new one swaps them for her invitation and the starters', (
       tester,
-      thread: () async => FrontChatThread(
-        messages: [
-          if (!fresh) message('m0', AgentChatRole.user, 'Penguin count 0', now),
-        ],
-      ),
-    );
-    final container = ProviderScope.containerOf(
-      tester.element(find.byType(FrontChatHeader)),
-    );
-    expect(find.byKey(FrontChatHeroKeys.hero), findsNothing);
-    final header = tester.getRect(find.byType(FrontChatHeader));
-    final first = tester.getRect(find.text('Penguin count 0'));
-    expect(first.top - header.bottom, lessThan(ControlSizes.avatarHero));
+    ) async {
+      var fresh = false;
+      await pumpPane(
+        tester,
+        thread: () async => FrontChatThread(
+          messages: [
+            if (!fresh)
+              message('m0', AgentChatRole.user, 'Penguin count 0', now),
+          ],
+        ),
+      );
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(FrontChatHeader)),
+      );
+      expect(find.text(invitation), findsNothing);
+      expect(find.byType(FrontStarterPrompts), findsNothing);
+      expect(find.text('Penguin count 0'), findsOne);
 
-    fresh = true;
-    container
-      ..invalidate(frontChatThreadProvider)
-      ..read(frontPickedConversationProvider.notifier).startNew();
-    await tester.pump();
-    await tester.pump();
+      fresh = true;
+      container
+        ..invalidate(frontChatThreadProvider)
+        ..read(frontPickedConversationProvider.notifier).startNew();
+      await tester.pump();
+      await tester.pump();
 
-    expect(find.byKey(FrontChatHeroKeys.hero), findsOne);
+      expect(find.text('Penguin count 0'), findsNothing);
+      expect(find.text(invitation), findsOne);
+      expect(find.byType(FrontStarterPrompts), findsOne);
+    });
+
+    testWidgets('her invitation leads the greeting — nothing above it but '
+        'the gutter — with the starters under it', (tester) async {
+      await pumpPane(tester);
+      final gutter = tester
+          .element(find.byType(FrontChatPane))
+          .designTokens
+          .spacing
+          .step5;
+
+      final words = tester.getRect(find.text(invitation));
+      final starters = tester.getRect(find.byType(FrontStarterPrompts));
+      expect(words.top - tester.getRect(greeting).top, gutter);
+      expect(starters.top - words.bottom, gutter);
+    });
+
+    testWidgets('the greeting sits in the middle of the room between her '
+        'header and the field', (tester) async {
+      await pumpPane(tester, window: const Size(800, 900));
+
+      final header = tester.getRect(find.byType(FrontChatHeader));
+      final field = tester.getRect(find.byKey(DesignSystemChatInputKeys.card));
+      final words = tester.getRect(find.text(invitation));
+      final starters = tester.getRect(find.byType(FrontStarterPrompts));
+      final room = tester.getRect(
+        find.ancestor(of: greeting, matching: find.byType(Center)).first,
+      );
+      // The room is the thread's: under the header, over the field.
+      expect(room.top, greaterThanOrEqualTo(header.bottom));
+      expect(room.bottom, lessThanOrEqualTo(field.top));
+      // As much room over her words as under the starters.
+      expect(
+        words.top - room.top,
+        closeTo(room.bottom - starters.bottom, 0.5),
+      );
+    });
+
+    testWidgets('with her card hidden she is her face in the header alone: '
+        'the greeting draws no second figure of her', (tester) async {
+      await pumpPane(tester, companion: true);
+      await frames(tester);
+
+      expect(find.text(invitation), findsOne);
+      expect(find.byType(FrontCompanionCard), findsNothing);
+      final figure = find.byType(FrontCompanionFigure);
+      expect(figure, findsOne);
+      expect(
+        find.descendant(
+          of: find.byType(FrontChatHeader),
+          matching: figure,
+        ),
+        findsOne,
+      );
+      expect(find.byType(CompanionView), findsOne);
+    });
+
+    testWidgets('with her card out she is on it alone: neither the greeting '
+        'nor the header draws another figure of her', (tester) async {
+      await pumpPane(tester, companion: true, cardShown: true);
+      await frames(tester);
+
+      expect(find.text(invitation), findsOne);
+      expect(find.byType(FrontCompanionCard), findsOne);
+      expect(find.byType(FrontCompanionFigure), findsNothing);
+      expect(find.byType(CompanionView), findsOne);
+    });
+
+    testWidgets('with the character off the spark stands in the header '
+        'alone: the greeting draws none', (tester) async {
+      await pumpPane(tester);
+
+      expect(find.text(invitation), findsOne);
+      expect(find.byType(CompanionView), findsNothing);
+      final spark = find.byIcon(LottiIcons.aiSpark);
+      expect(spark, findsOne);
+      expect(
+        find.descendant(of: find.byType(FrontChatHeader), matching: spark),
+        findsOne,
+      );
+    });
+
+    testWidgets('the inbox, empty, says so in words and offers no starters', (
+      tester,
+    ) async {
+      await pumpPane(tester);
+      ProviderScope.containerOf(
+        tester.element(find.byType(FrontChatPane)),
+      ).read(frontInboxFilterProvider.notifier).toggle();
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text(invitation), findsNothing);
+      expect(find.byType(FrontStarterPrompts), findsNothing);
+      expect(find.text('Nothing is waiting for you.'), findsOne);
+    });
   });
 
   testWidgets('the thread and the field under it keep to one reading '
