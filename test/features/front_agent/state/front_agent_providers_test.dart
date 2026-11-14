@@ -24,7 +24,10 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
@@ -58,8 +61,10 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/test_get_it.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart' show testTextEntry;
 import '../../agents/test_data/entity_factories.dart';
 import '../../agents/workflow/task_agent_workflow_test_helpers.dart';
+import '../../ai/test_utils.dart' show AiTestDataFactory;
 import '../../categories/test_utils.dart';
 
 /// A workflow that records what the runner asked of it instead of routing.
@@ -1279,6 +1284,375 @@ void main() {
         ).called(1);
       },
     );
+  });
+
+  group('what is generated with a task', () {
+    const doorId = 'd:door:0';
+    late List<TriggerSkillParams> triggered;
+
+    /// A container whose skill trigger records what it was asked to run,
+    /// then settles as [trigger] says.
+    ProviderContainer wiredWith({
+      Future<void> Function()? trigger,
+      Task? made,
+      bool defaultDraws = true,
+    }) {
+      // Whether a cover can be drawn is asked of the resolver: here the
+      // Settings default answers.
+      final resolver = MockProfileAutomationResolver();
+      final provider = AiTestDataFactory.createTestProvider();
+      when(resolver.resolveDefaultProfile).thenAnswer(
+        (_) async => ResolvedProfile(
+          thinkingModelId: 'thinking',
+          thinkingProvider: provider,
+          imageGenerationModelId: defaultDraws ? 'imagen' : null,
+          imageGenerationProvider: defaultDraws ? provider : null,
+        ),
+      );
+      final syncService = MockAgentSyncService();
+      when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+      final notifications = MockUpdateNotifications();
+      when(() => notifications.notifyUiOnly(any())).thenReturn(null);
+      when(() => repository.getEntity('$doorId:payload')).thenAnswer(
+        (_) async => makeTestMessagePayload(
+          id: '$doorId:payload',
+          agentId: frontAgentId,
+          content: FrontDoorRecord(
+            segmentIndex: 0,
+            text: 'Check the ice-pad weather window.',
+            kind: FrontDestinationKind.newThing,
+            status: FrontDoorStatus.done,
+            claimedAt: DateTime.utc(2026, 10, 26),
+            outcome: const FrontDoorInbox(newKind: FrontNewKind.task),
+          ).toJson(),
+        ),
+      );
+      final wired = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(repository),
+          agentSyncServiceProvider.overrideWithValue(syncService),
+          journalDbProvider.overrideWithValue(MockJournalDb()),
+          updateNotificationsProvider.overrideWithValue(notifications),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+          profileAutomationResolverProvider.overrideWithValue(resolver),
+          frontTaskMakerProvider.overrideWithValue(
+            (draft, {required id, required words}) async => made,
+          ),
+          triggerSkillProvider.overrideWith((ref, params) async {
+            triggered.add(params);
+            await trigger?.call();
+          }),
+        ],
+      );
+      addTearDown(wired.dispose);
+      return wired;
+    }
+
+    setUp(() => triggered = []);
+
+    test('each extra names the built-in skill that generates it', () {
+      expect(frontTaskExtraSkillId(FrontTaskExtra.coverArt), skillImageGenId);
+      expect(
+        frontTaskExtraSkillId(FrontTaskExtra.codingPrompt),
+        skillPromptGenId,
+      );
+    });
+
+    for (final (extra, skillId) in [
+      (FrontTaskExtra.coverArt, skillImageGenId),
+      (FrontTaskExtra.codingPrompt, skillPromptGenId),
+    ]) {
+      test('${extra.name} runs its skill on the words filed under the task, '
+          'with the task as its context', () async {
+        final wired = wiredWith();
+
+        wired.read(frontTaskExtraStarterProvider)(extra, taskId: 'task-1');
+        await pumpEventQueue();
+
+        expect(triggered, [
+          (
+            entityId: frontTaskWordsId('task-1'),
+            skillId: skillId,
+            linkedTaskId: 'task-1',
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          ),
+        ]);
+      });
+    }
+
+    test('starting does not wait for the generation to finish', () async {
+      final gate = Completer<void>();
+      final wired = wiredWith(trigger: () => gate.future);
+
+      wired.read(frontTaskExtraStarterProvider)(
+        FrontTaskExtra.coverArt,
+        taskId: 'task-1',
+      );
+      await pumpEventQueue();
+
+      // Asked for, and still running: the starter returned without it.
+      expect(triggered, hasLength(1));
+      expect(gate.isCompleted, isFalse);
+      gate.complete();
+      await pumpEventQueue();
+    });
+
+    test('a generation that fails is not an error of the task made', () async {
+      final wired = wiredWith(
+        trigger: () async => throw StateError('no image model'),
+      );
+
+      wired.read(frontTaskExtraStarterProvider)(
+        FrontTaskExtra.coverArt,
+        taskId: 'task-1',
+      );
+      // An unhandled rejection here would fail the test.
+      await pumpEventQueue();
+
+      expect(triggered, hasLength(1));
+    });
+
+    test(
+      'the filing service starts what the user asked for through it',
+      () async {
+        final wired = wiredWith(
+          made: makeWorkflowTestTask('task-made'),
+        );
+
+        await wired
+            .read(frontFilingServiceProvider)
+            .makeTask(
+              doorId,
+              choices: const FrontTaskChoices(
+                start: FrontTaskStart.open,
+                priority: TaskPriority.p2Medium,
+                coverArt: true,
+              ),
+              codingPrompt: true,
+            );
+        await pumpEventQueue();
+
+        expect(
+          [for (final run in triggered) (run.skillId, run.linkedTaskId)],
+          [(skillImageGenId, 'task-made'), (skillPromptGenId, 'task-made')],
+        );
+        expect(
+          triggered.map((run) => run.entityId).toSet(),
+          {frontTaskWordsId('task-made')},
+        );
+      },
+    );
+
+    test('where no profile can draw, the filing service leaves the cover '
+        'out and starts the prompt alone', () async {
+      final wired = wiredWith(
+        made: makeWorkflowTestTask('task-made'),
+        defaultDraws: false,
+      );
+
+      await wired
+          .read(frontFilingServiceProvider)
+          .makeTask(
+            doorId,
+            choices: const FrontTaskChoices(
+              start: FrontTaskStart.open,
+              priority: TaskPriority.p2Medium,
+              coverArt: true,
+            ),
+            codingPrompt: true,
+          );
+      await pumpEventQueue();
+
+      expect([for (final run in triggered) run.skillId], [skillPromptGenId]);
+    });
+  });
+
+  group('frontCoverArtAvailableProvider', () {
+    late MockProfileAutomationResolver resolver;
+    final provider = AiTestDataFactory.createTestProvider();
+
+    ResolvedProfile profile({required bool draws}) => ResolvedProfile(
+      thinkingModelId: 'thinking',
+      thinkingProvider: provider,
+      imageGenerationModelId: draws ? 'imagen' : null,
+      imageGenerationProvider: draws ? provider : null,
+    );
+
+    late MockJournalDb journalDb;
+
+    Future<bool> available(
+      String? categoryId, {
+      ResolvedProfile? ofCategory,
+      ResolvedProfile? settingsDefault,
+      String? followsUpTaskId,
+    }) {
+      when(
+        () => resolver.resolveForCategory(any()),
+      ).thenAnswer((_) async => ofCategory);
+      when(
+        () => resolver.resolveDefaultProfile(),
+      ).thenAnswer((_) async => settingsDefault);
+      final wired = ProviderContainer(
+        overrides: [
+          profileAutomationResolverProvider.overrideWithValue(resolver),
+          journalDbProvider.overrideWithValue(journalDb),
+        ],
+      );
+      addTearDown(wired.dispose);
+      final source = (categoryId: categoryId, followsUpTaskId: followsUpTaskId);
+      // Held across the read, as the pane's watch holds it.
+      final subscription = wired.listen(
+        frontCoverArtAvailableProvider(source),
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      return wired.read(frontCoverArtAvailableProvider(source).future);
+    }
+
+    setUp(() {
+      resolver = MockProfileAutomationResolver();
+      journalDb = MockJournalDb();
+      when(
+        () => journalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+    });
+
+    group('a follow-up that names no category', () {
+      Task followed({String? categoryId, DateTime? deletedAt}) {
+        final task = makeWorkflowTestTask('task-roses');
+        return task.copyWith(
+          meta: task.meta.copyWith(
+            categoryId: categoryId,
+            deletedAt: deletedAt,
+          ),
+        );
+      }
+
+      test("is asked about in its followed task's category", () async {
+        when(
+          () => journalDb.journalEntityById('task-roses'),
+        ).thenAnswer((_) async => followed(categoryId: 'cat-garden'));
+
+        expect(
+          await available(
+            null,
+            followsUpTaskId: 'task-roses',
+            ofCategory: profile(draws: true),
+          ),
+          isTrue,
+        );
+        verify(() => resolver.resolveForCategory('cat-garden')).called(1);
+      });
+
+      test('a category it names wins, the followed task never read', () async {
+        expect(
+          await available(
+            'cat-work',
+            followsUpTaskId: 'task-roses',
+            ofCategory: profile(draws: true),
+          ),
+          isTrue,
+        );
+        verify(() => resolver.resolveForCategory('cat-work')).called(1);
+        verifyNever(() => journalDb.journalEntityById(any()));
+      });
+
+      test('a followed task that is gone, deleted, or no task leaves it in '
+          'no category: only the Settings default is asked', () async {
+        for (final entity in <JournalEntity?>[
+          null,
+          followed(categoryId: 'cat-garden', deletedAt: DateTime(2026, 11)),
+          testTextEntry,
+        ]) {
+          when(
+            () => journalDb.journalEntityById('task-roses'),
+          ).thenAnswer((_) async => entity);
+
+          expect(
+            await available(
+              null,
+              followsUpTaskId: 'task-roses',
+              ofCategory: profile(draws: true),
+            ),
+            isFalse,
+            reason: '${entity?.runtimeType}',
+          );
+        }
+        verifyNever(() => resolver.resolveForCategory(any()));
+      });
+
+      test('a followed task in no category leaves it in none', () async {
+        when(
+          () => journalDb.journalEntityById('task-roses'),
+        ).thenAnswer((_) async => followed());
+
+        expect(
+          await available(
+            null,
+            followsUpTaskId: 'task-roses',
+            settingsDefault: profile(draws: true),
+          ),
+          isTrue,
+        );
+        verifyNever(() => resolver.resolveForCategory(any()));
+      });
+    });
+
+    test(
+      'a category whose profile draws can, the default never asked',
+      () async {
+        expect(
+          await available('cat-1', ofCategory: profile(draws: true)),
+          isTrue,
+        );
+        verify(() => resolver.resolveForCategory('cat-1')).called(1);
+        verifyNever(() => resolver.resolveDefaultProfile());
+      },
+    );
+
+    test('a category whose profile cannot draw falls back on the Settings '
+        'default', () async {
+      expect(
+        await available(
+          'cat-1',
+          ofCategory: profile(draws: false),
+          settingsDefault: profile(draws: true),
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'a category with no profile falls back on the Settings default',
+      () async {
+        expect(
+          await available('cat-1', settingsDefault: profile(draws: true)),
+          isTrue,
+        );
+      },
+    );
+
+    test('a task in no category asks only the Settings default', () async {
+      expect(
+        await available(null, settingsDefault: profile(draws: true)),
+        isTrue,
+      );
+      verifyNever(() => resolver.resolveForCategory(any()));
+    });
+
+    test('with no profile that draws, none can', () async {
+      expect(
+        await available(
+          'cat-1',
+          ofCategory: profile(draws: false),
+          settingsDefault: profile(draws: false),
+        ),
+        isFalse,
+      );
+      expect(await available(null), isFalse);
+    });
   });
 
   group('makeFrontTask', () {

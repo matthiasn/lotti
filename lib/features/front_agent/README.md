@@ -56,11 +56,16 @@ user dictates ("make a task to fix the gate, high priority, I started ten
 minutes ago") waits for its tap too, but filled in: she reads its title,
 instructions, category, priority, due day, estimate and start from the
 words and says what she read. *Make it a task* then asks, on the card,
-for its status, priority and due day — three chips set to what she read,
-each a short menu right there, under the title she read — and *Create
-task* (or Enter) makes it as set up —
+for its status, priority, due day and cover art — four chips set to what
+she read, each a short menu right there, under the title she read — and
+*Create task* (or Enter) makes it as set up —
 started only when they said so — with the words linked under it and the
-category's agent assigned. A follow-up ("a follow-up to that one") names
+category's agent assigned. Cover art chosen there is generated from those
+words once the task exists, and *Task with a coding prompt* in the item's
+menu makes the task as she read it and has a coding prompt written from
+them — neither needs a recording. Both arrive on the task's preview card
+in the chat: the cover as its thumbnail, the prompt as a short summary
+under the task, each announced while it is being made. A follow-up ("a follow-up to that one") names
 the task it follows — any task the conversation named, finished ones too —
 and the tap links the two as *follows up on*. The user keeps many **conversations** with her, as in a ChatGPT
 or Claude window: each a subject of its own, titled by its first question,
@@ -68,7 +73,7 @@ listed newest first by recency in her **drawer** — slid over the thread
 from the header's toggle on a phone, beside it on a desktop window — with
 its search, a new chat, the categories they are in, and her settings at its
 foot, renamed, archived or deleted there. What nothing owns waits in the **inbox** — every conversation,
-filtered — with chips that make it a task, start a goal or project with
+filtered — with chips that make it a task, with a coding prompt if wanted, start a goal or project with
 its words, make it an event titled with them (where Events are on), or save
 it as a note, or
 leave it. What a tap made is drawn under her reply as a **preview card**,

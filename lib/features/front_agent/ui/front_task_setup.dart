@@ -26,6 +26,7 @@ abstract final class FrontTaskSetupKeys {
   static Key priority(int index) =>
       ValueKey('front-task-setup-priority-$index');
   static Key due(int index) => ValueKey('front-task-setup-due-$index');
+  static Key cover(int index) => ValueKey('front-task-setup-cover-$index');
   static Key create(int index) => ValueKey('front-task-setup-create-$index');
   static Key back(int index) => ValueKey('front-task-setup-back-$index');
 
@@ -35,8 +36,9 @@ abstract final class FrontTaskSetupKeys {
 }
 
 /// What an inbox item's card asks once *Make it a task* is tapped: one line
-/// in her voice, then the task's status, priority and due day as three
-/// chips, each opening a short menu right where it sits — the conversation
+/// in her voice, then the task's status, priority and due day — and cover
+/// art, where a profile can draw one ([coverArtAvailable]) — as chips, each
+/// opening a short menu right where it sits — the conversation
 /// is never left for a form — and create. The chips and the two buttons
 /// share one line where it fits, the buttons at its end; where it does not,
 /// the buttons drop below, still at the end ([_Band]).
@@ -57,6 +59,7 @@ class FrontTaskSetup extends StatefulWidget {
     required this.onCreate,
     required this.onBack,
     this.heard = false,
+    this.coverArtAvailable = false,
     this.endInset = 0,
     this.busy = false,
     this.failed = false,
@@ -66,6 +69,11 @@ class FrontTaskSetup extends StatefulWidget {
   /// Whether the words set any of the chips: she says what she heard only
   /// when she heard something, else she just asks.
   final bool heard;
+
+  /// Whether cover art can be drawn for the task: the cover chip is offered
+  /// only then, and a cover the words asked for is left out otherwise —
+  /// nothing is asked for that could not arrive.
+  final bool coverArtAvailable;
 
   /// Room kept after *Create task* — the overflow's slot in the row it
   /// replaces, so *Create task* ends where *Make it a task* did.
@@ -184,6 +192,7 @@ class _FrontTaskSetupState extends State<FrontTaskSetup> {
       required String label,
       required String semanticsLabel,
       required List<DesignSystemContextMenuItem> items,
+      bool unset = false,
     }) => DesignSystemContextMenuAnchor(
       fitContent: true,
       // The menus open over Cancel and Create: the tap that closes one must
@@ -201,9 +210,17 @@ class _FrontTaskSetupState extends State<FrontTaskSetup> {
               color: tokens.colors.text.mediumEmphasis,
             ),
             semanticsLabel: semanticsLabel,
-            size: DesignSystemChipSize.compactPillTouch,
+            // The taller pill: four chips wrap to two rows on a phone, and
+            // the rows must read as one group.
+            size: DesignSystemChipSize.pillTouch,
             outlined: true,
             selected: isOpen,
+            // Open is a state of the chip, not the card's accent: Create
+            // task stays the one accented control.
+            quietSelection: true,
+            // A chip that says nothing is set steps back, so what is set
+            // is what the eye lands on.
+            mutedLabel: unset,
             onPressed: enabled ? toggle : null,
           ),
     );
@@ -233,86 +250,143 @@ class _FrontTaskSetupState extends State<FrontTaskSetup> {
       context,
     );
     final priorityLabel = _choices.priority.localizedLabel(context);
+    final cover = widget.coverArtAvailable && _choices.coverArt;
+    final coverLabel = cover
+        ? messages.frontTaskSetupCover
+        : messages.frontTaskSetupNoCover;
 
+    // One even grid: neighbours stand a step4 apart, and rows — laid edge to
+    // edge — about as far, by what each chip's target keeps around its pill.
+    // The chips go in two pairs, so where they do not share a line the break
+    // is always status and priority, then due day and cover: never one the
+    // length of a label decides.
+    final gap = tokens.spacing.step4;
     final chips = Wrap(
-      spacing: tokens.spacing.step2,
-      runSpacing: tokens.spacing.step2,
+      spacing: gap,
       children: [
-        chip(
-          key: FrontTaskSetupKeys.status(index),
-          glyph: _StatusGlyph(_choices.start),
-          label: statusLabel,
-          semanticsLabel: '${messages.taskStatusLabel} $statusLabel',
-          items: [
-            for (final start in FrontTaskStart.values)
-              option(
-                start.name,
-                taskLabelFromStatusString(start.dbStatus, context),
-                selected: start == _choices.start,
-                onTap: () => _set(_choices.copyWith(start: start)),
+        Wrap(
+          spacing: gap,
+          children: [
+            chip(
+              key: FrontTaskSetupKeys.status(index),
+              glyph: _StatusGlyph(_choices.start),
+              label: statusLabel,
+              semanticsLabel: '${messages.taskStatusLabel} $statusLabel',
+              // Open and medium are what a task is made with when nothing
+              // was said: they step back like a due day not set, so what
+              // was heard or chosen is what stands out.
+              unset: _choices.start == FrontTaskStart.open,
+              items: [
+                for (final start in FrontTaskStart.values)
+                  option(
+                    start.name,
+                    taskLabelFromStatusString(start.dbStatus, context),
+                    selected: start == _choices.start,
+                    onTap: () => _set(_choices.copyWith(start: start)),
+                  ),
+              ],
+            ),
+            chip(
+              key: FrontTaskSetupKeys.priority(index),
+              glyph: TaskShowcasePriorityGlyph(
+                priority: _choices.priority,
               ),
+              label: priorityLabel,
+              semanticsLabel: messages.taskPriorityTooltip(priorityLabel),
+              unset: _choices.priority == TaskPriority.p2Medium,
+              items: [
+                for (final priority in TaskPriority.values)
+                  option(
+                    priority.short,
+                    priority.localizedLabel(context),
+                    selected: priority == _choices.priority,
+                    onTap: () => _set(_choices.copyWith(priority: priority)),
+                  ),
+              ],
+            ),
           ],
         ),
-        chip(
-          key: FrontTaskSetupKeys.priority(index),
-          glyph: TaskShowcasePriorityGlyph(
-            priority: _choices.priority,
-          ),
-          label: priorityLabel,
-          semanticsLabel: messages.taskPriorityTooltip(priorityLabel),
-          items: [
-            for (final priority in TaskPriority.values)
-              option(
-                priority.short,
-                priority.localizedLabel(context),
-                selected: priority == _choices.priority,
-                onTap: () => _set(_choices.copyWith(priority: priority)),
+        Wrap(
+          spacing: gap,
+          children: [
+            chip(
+              key: FrontTaskSetupKeys.due(index),
+              glyph: Icon(
+                LottiIcons.calendar,
+                size: IconSizes.s,
+                color: dueInk,
               ),
-          ],
-        ),
-        chip(
-          key: FrontTaskSetupKeys.due(index),
-          glyph: Icon(
-            LottiIcons.calendar,
-            size: IconSizes.s,
-            color: dueInk,
-          ),
-          label: dueLabel,
-          semanticsLabel: dueLabel,
-          items: [
-            option(
-              'today',
-              messages.frontTaskSetupToday,
-              selected: due == today,
-              // The day as of the tap, not of the last build: a setup left
-              // open over midnight must not save yesterday.
-              onTap: () => _set(_choices.copyWith(due: _today)),
+              label: dueLabel,
+              semanticsLabel: dueLabel,
+              unset: due == null,
+              items: [
+                option(
+                  'today',
+                  messages.frontTaskSetupToday,
+                  selected: due == today,
+                  // The day as of the tap, not of the last build: a setup left
+                  // open over midnight must not save yesterday.
+                  onTap: () => _set(_choices.copyWith(due: _today)),
+                ),
+                option(
+                  'tomorrow',
+                  messages.frontTaskSetupTomorrow,
+                  selected: due == tomorrow,
+                  onTap: () => _set(_choices.copyWith(due: _tomorrow)),
+                ),
+                option(
+                  'pick',
+                  messages.frontTaskSetupPickDate,
+                  selected: due != null && due != today && due != tomorrow,
+                  onTap: _pickDate,
+                ),
+                option(
+                  'none',
+                  messages.taskNoDueDateLabel,
+                  selected: due == null,
+                  startsGroup: true,
+                  onTap: () => _set(_choices.copyWith(due: () => null)),
+                ),
+              ],
             ),
-            option(
-              'tomorrow',
-              messages.frontTaskSetupTomorrow,
-              selected: due == tomorrow,
-              onTap: () => _set(_choices.copyWith(due: _tomorrow)),
-            ),
-            option(
-              'pick',
-              messages.frontTaskSetupPickDate,
-              selected: due != null && due != today && due != tomorrow,
-              onTap: _pickDate,
-            ),
-            option(
-              'none',
-              messages.taskNoDueDateLabel,
-              selected: due == null,
-              startsGroup: true,
-              onTap: () => _set(_choices.copyWith(due: () => null)),
-            ),
+            if (widget.coverArtAvailable)
+              chip(
+                key: FrontTaskSetupKeys.cover(index),
+                // Neutral ink, stronger once one is asked for: status, priority
+                // and due day carry the row's colour, and a fourth hue would
+                // compete with them.
+                glyph: Icon(
+                  LottiIcons.image,
+                  size: IconSizes.s,
+                  color: cover
+                      ? tokens.colors.text.highEmphasis
+                      : tokens.colors.text.mediumEmphasis,
+                ),
+                label: coverLabel,
+                semanticsLabel: coverLabel,
+                unset: !cover,
+                items: [
+                  option(
+                    'cover',
+                    messages.frontTaskSetupCoverGenerate,
+                    selected: cover,
+                    onTap: () => _set(_choices.copyWith(coverArt: true)),
+                  ),
+                  option(
+                    'no-cover',
+                    messages.frontTaskSetupNoCover,
+                    selected: !cover,
+                    startsGroup: true,
+                    onTap: () => _set(_choices.copyWith(coverArt: false)),
+                  ),
+                ],
+              ),
           ],
         ),
       ],
     );
 
-    void create() => widget.onCreate(_choices);
+    void create() => widget.onCreate(_choices.copyWith(coverArt: cover));
 
     // As tall as the row it replaces, whose overflow sets its height: the
     // gap above the divider stays what it was.
@@ -322,13 +396,17 @@ class _FrontTaskSetupState extends State<FrontTaskSetup> {
     final actions = Wrap(
       alignment: WrapAlignment.end,
       crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: tokens.spacing.step2,
+      // As far apart as the chips: the two buttons do opposite things, and
+      // must not be the card's closest pair.
+      spacing: tokens.spacing.step4,
       runSpacing: tokens.spacing.step1,
       children: [
         DesignSystemButton(
           key: FrontTaskSetupKeys.back(index),
           label: messages.cancelButton,
           variant: DesignSystemButtonVariant.quiet,
+          // As tall a target as a chip's, the pill as it was.
+          tapTargetSize: MaterialTapTargetSize.padded,
           onPressed: enabled ? widget.onBack : null,
         ),
         DesignSystemButton(
@@ -336,6 +414,7 @@ class _FrontTaskSetupState extends State<FrontTaskSetup> {
           label: widget.failed
               ? messages.frontDoorTryAgain
               : messages.frontTaskSetupCreate,
+          tapTargetSize: MaterialTapTargetSize.padded,
           isLoading: widget.busy,
           onPressed: enabled ? create : null,
         ),
@@ -364,8 +443,13 @@ class _FrontTaskSetupState extends State<FrontTaskSetup> {
           // No gap: the chips' touch boxes already pad them from the
           // question they answer.
           _Band(
-            gap: tokens.spacing.step3,
-            runGap: tokens.spacing.step1,
+            // On a shared line the buttons stand clearly further from the
+            // chips than the chips do from each other.
+            gap: tokens.spacing.step6,
+            // Further from the chips than the chips' rows are from each
+            // other: the buttons act on the group, they are not its third
+            // row.
+            runGap: tokens.spacing.step4,
             endInset: widget.endInset,
             children: [
               chips,
@@ -410,7 +494,8 @@ class _StatusGlyph extends StatelessWidget {
 /// Lays its two children — the chips, then the buttons — on one line when
 /// they fit, the buttons at the end and both centred on it; otherwise the
 /// buttons go [runGap] below the chips, still at the end. The buttons keep
-/// [endInset] clear after them, unless that alone would break the one line.
+/// [endInset] clear after them either way: a line that fits only without it
+/// is stacked.
 class _Band extends MultiChildRenderObjectWidget {
   const _Band({
     required this.gap,
@@ -500,17 +585,16 @@ class _RenderBand extends RenderBox
     Size lead,
     Size trail,
   ) {
-    final line = lead.width + _gap + trail.width;
+    final line = lead.width + _gap + trail.width + _endInset;
+    // One line only where it fits with the room after the buttons, so they
+    // end at the same place on a shared line as on a stacked one: a value
+    // changed never moves create sideways.
     final oneLine = line <= constraints.maxWidth;
-    final width = constraints.hasBoundedWidth
-        ? constraints.maxWidth
-        : line + _endInset;
-    // The inset is kept where it fits: on a shared line only if the line
-    // still fits with it; on a stacked one only as much as the buttons
-    // leave, so they never reach past the band's start, where a tap would
-    // miss them.
+    final width = constraints.hasBoundedWidth ? constraints.maxWidth : line;
+    // Stacked, the inset is kept only as far as the buttons leave it, so
+    // they never reach past the band's start, where a tap would miss them.
     final inset = oneLine
-        ? (line + _endInset <= constraints.maxWidth ? _endInset : 0.0)
+        ? _endInset
         : math.max(0, math.min(_endInset, width - trail.width)).toDouble();
     final Offset leadAt;
     final Offset trailAt;

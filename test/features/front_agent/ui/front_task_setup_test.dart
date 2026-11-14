@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
@@ -44,11 +46,13 @@ void main() {
     TextDirection direction = TextDirection.ltr,
     bool heard = false,
     double endInset = 0,
+    bool coverArtAvailable = true,
   }) async {
     final setup = FrontTaskSetup(
       index: 0,
       initial: initial,
       heard: heard,
+      coverArtAvailable: coverArtAvailable,
       endInset: endInset,
       busy: busy,
       failed: failed,
@@ -239,8 +243,9 @@ void main() {
       });
     });
 
-    testWidgets('on a shared line, keeps the room after create only while '
-        'the line still fits with it', (tester) async {
+    testWidgets('on a shared line, keeps the room after create; a line '
+        'that fits only without it is stacked, so create ends at the same '
+        'place either way', (tester) async {
       await withClock(Clock.fixed(now), () async {
         wideView(tester);
         await pump(tester, width: 1400, endInset: 44);
@@ -249,22 +254,34 @@ void main() {
           moreOrLessEquals(1400 - 44),
         );
 
-        // Just wide enough for one line without the room: the room goes.
+        // Just too narrow for one line with the room: it stacks, the room
+        // kept.
         final status = rectOf(tester, FrontTaskSetupKeys.status(0));
-        final due = rectOf(tester, FrontTaskSetupKeys.due(0));
+        // The last chip of the row.
+        final cover = rectOf(tester, FrontTaskSetupKeys.cover(0));
         final back = rectOf(tester, FrontTaskSetupKeys.back(0));
         final create = rectOf(tester, FrontTaskSetupKeys.create(0));
         final band =
             tester.renderObject<RenderBox>(find.byType(Wrap).first).parent!
                 as RenderBox;
         final dynamic gaps = band;
-        final tight =
-            (due.right - status.left) +
+        final withRoom =
+            (cover.right - status.left) +
             (gaps.gap as double) +
             (create.right - back.left) +
-            1;
+            44;
         await tester.pumpWidget(const SizedBox());
-        await pump(tester, width: tight, endInset: 44);
+        await pump(tester, width: withRoom - 1, endInset: 44);
+        final stacked = rectOf(tester, FrontTaskSetupKeys.create(0));
+        expect(
+          stacked.top,
+          greaterThan(rectOf(tester, FrontTaskSetupKeys.status(0)).bottom),
+        );
+        expect(stacked.right, moreOrLessEquals(withRoom - 1 - 44));
+
+        // Exactly wide enough: one line again, the room still kept.
+        await tester.pumpWidget(const SizedBox());
+        await pump(tester, width: withRoom, endInset: 44);
         final shared = rectOf(tester, FrontTaskSetupKeys.create(0));
         expect(
           shared.center.dy,
@@ -272,7 +289,7 @@ void main() {
             rectOf(tester, FrontTaskSetupKeys.status(0)).center.dy,
           ),
         );
-        expect(shared.right, moreOrLessEquals(tight));
+        expect(shared.right, moreOrLessEquals(withRoom - 44));
       });
     });
 
@@ -584,6 +601,395 @@ void main() {
     });
   });
 
+  group('cover art', () {
+    Icon glyphOf(WidgetTester tester) => tester.widget<Icon>(
+      find.descendant(
+        of: find.byKey(FrontTaskSetupKeys.cover(0)),
+        matching: find.byIcon(LottiIcons.image),
+      ),
+    );
+    DsTokens tokensOf(WidgetTester tester) =>
+        tester.element(find.byType(FrontTaskSetup)).designTokens;
+
+    /// The row of the cover chip's menu that sets [option].
+    DesignSystemContextMenuItem row(WidgetTester tester, String option) =>
+        tester
+            .widget<DesignSystemContextMenuAnchor>(
+              find.ancestor(
+                of: find.byKey(FrontTaskSetupKeys.cover(0)),
+                matching: find.byType(DesignSystemContextMenuAnchor),
+              ),
+            )
+            .items
+            .singleWhere(
+              (item) => item.key == FrontTaskSetupKeys.option(0, option),
+            );
+
+    testWidgets('is none until asked for: the chip says so, in the quiet '
+        'ink, and create makes the task without one', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await pump(tester);
+
+        final cover = chip(tester, FrontTaskSetupKeys.cover(0));
+        expect(cover.label, 'No cover art');
+        expect(cover.semanticsLabel, 'No cover art');
+        expect(
+          glyphOf(tester).color,
+          tokensOf(tester).colors.text.mediumEmphasis,
+        );
+
+        await create(tester);
+        expect(created.single.coverArt, isFalse);
+      });
+    });
+
+    testWidgets('its menu offers generating one and none, the one in force '
+        'selected, none set apart as for the due day', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await pump(tester);
+
+        await tester.tap(find.byKey(FrontTaskSetupKeys.cover(0)));
+        await tester.pumpAndSettle();
+
+        final generate = row(tester, 'cover');
+        final none = row(tester, 'no-cover');
+        // Both are on screen, in the menu that opened where the chip sits.
+        expect(find.text('Generate cover art'), findsOne);
+        expect(generate.label, 'Generate cover art');
+        expect(generate.isSelected, isFalse);
+        expect(none.label, 'No cover art');
+        expect(none.isSelected, isTrue);
+        expect(none.startsGroup, isTrue);
+        expect(generate.startsGroup, isFalse);
+      });
+    });
+
+    testWidgets('picked from its chip, the chip says so in stronger ink — '
+        'neutral, no fourth hue in the row — and the task is made with one, '
+        'nothing else changed', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        final read = FrontTaskChoices(
+          start: FrontTaskStart.groomed,
+          priority: TaskPriority.p1High,
+          due: today,
+        );
+        await pump(tester, initial: read);
+
+        await choose(tester, FrontTaskSetupKeys.cover(0), 'cover');
+
+        expect(labelOf(tester, FrontTaskSetupKeys.cover(0)), 'Cover art');
+        expect(
+          glyphOf(tester).color,
+          tokensOf(tester).colors.text.highEmphasis,
+        );
+        await create(tester);
+        expect(created, [read.copyWith(coverArt: true)]);
+      });
+    });
+
+    testWidgets('one she heard asked for starts on, and can be turned off '
+        'again', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await pump(
+          tester,
+          initial: plain.copyWith(coverArt: true),
+          heard: true,
+        );
+        expect(labelOf(tester, FrontTaskSetupKeys.cover(0)), 'Cover art');
+
+        await tester.tap(find.byKey(FrontTaskSetupKeys.cover(0)));
+        await tester.pumpAndSettle();
+        expect(row(tester, 'cover').isSelected, isTrue);
+        await tester.tap(find.byKey(FrontTaskSetupKeys.option(0, 'no-cover')));
+        await tester.pumpAndSettle();
+
+        expect(labelOf(tester, FrontTaskSetupKeys.cover(0)), 'No cover art');
+        await create(tester);
+        expect(created, [plain]);
+      });
+    });
+
+    group('where no profile can draw one', () {
+      testWidgets('the chip is not offered, the other three are', (
+        tester,
+      ) async {
+        await withClock(Clock.fixed(now), () async {
+          await pump(tester, coverArtAvailable: false);
+
+          expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsNothing);
+          expect(find.byIcon(LottiIcons.image), findsNothing);
+          expect(find.byType(DesignSystemChip), findsNWidgets(3));
+        });
+      });
+
+      testWidgets('a cover the words asked for is left out of the task '
+          'made, the rest kept', (tester) async {
+        await withClock(Clock.fixed(now), () async {
+          final read = FrontTaskChoices(
+            start: FrontTaskStart.groomed,
+            priority: TaskPriority.p1High,
+            due: today,
+            coverArt: true,
+          );
+          await pump(tester, initial: read, coverArtAvailable: false);
+
+          await create(tester);
+
+          expect(created, [read.copyWith(coverArt: false)]);
+        });
+      });
+
+      testWidgets('once one can, the chip appears with what the words asked '
+          'for still set', (tester) async {
+        await withClock(Clock.fixed(now), () async {
+          final read = plain.copyWith(coverArt: true);
+          await pump(tester, initial: read, coverArtAvailable: false);
+          expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsNothing);
+
+          await pump(tester, initial: read);
+
+          expect(labelOf(tester, FrontTaskSetupKeys.cover(0)), 'Cover art');
+          await create(tester);
+          expect(created, [read]);
+        });
+      });
+    });
+
+    testWidgets('is the last of the four chips', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await pump(tester);
+
+        final keys = tester
+            .widgetList<DesignSystemChip>(find.byType(DesignSystemChip))
+            .map((chip) => chip.key)
+            .toList();
+        expect(keys, [
+          FrontTaskSetupKeys.status(0),
+          FrontTaskSetupKeys.priority(0),
+          FrontTaskSetupKeys.due(0),
+          FrontTaskSetupKeys.cover(0),
+        ]);
+      });
+    });
+  });
+
+  group('the chips as a group', () {
+    testWidgets('each is the taller touch pill, outlined, and opens in the '
+        'quiet neutral selection so create stays the one accent', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await pump(tester);
+
+        for (final key in [
+          FrontTaskSetupKeys.status(0),
+          FrontTaskSetupKeys.priority(0),
+          FrontTaskSetupKeys.due(0),
+          FrontTaskSetupKeys.cover(0),
+        ]) {
+          final it = chip(tester, key);
+          expect(it.size, DesignSystemChipSize.pillTouch, reason: '$key');
+          expect(it.outlined, isTrue);
+          expect(it.quietSelection, isTrue);
+        }
+      });
+    });
+
+    testWidgets('wrapped onto several rows, the rows stand no further apart '
+        'than their own pills are tall, and the buttons further from the '
+        'chips than the rows are from each other', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await pump(tester, width: 300);
+
+        Rect pill(Key key) => tester.getRect(
+          find.descendant(of: find.byKey(key), matching: find.byType(Ink)),
+        );
+        final pills = [
+          for (final key in [
+            FrontTaskSetupKeys.status(0),
+            FrontTaskSetupKeys.priority(0),
+            FrontTaskSetupKeys.due(0),
+            FrontTaskSetupKeys.cover(0),
+          ])
+            pill(key),
+        ];
+        // The rows the chips wrapped onto, top to bottom.
+        final rows = {for (final rect in pills) rect.top: rect}.values.toList()
+          ..sort((a, b) => a.top.compareTo(b.top));
+        expect(rows.length, greaterThan(1));
+        var rowGap = 0.0;
+        for (var i = 1; i < rows.length; i++) {
+          rowGap = rows[i].top - rows[i - 1].bottom;
+          expect(rowGap, greaterThan(0));
+          expect(rowGap, lessThan(rows[i].height));
+        }
+        final buttons = tester.getRect(
+          find.byKey(FrontTaskSetupKeys.create(0)),
+        );
+        expect(buttons.top - rows.last.bottom, greaterThan(rowGap));
+      });
+    });
+
+    testWidgets('where all four do not share a line, they break as two '
+        'pairs — status and priority, then due day and cover — whatever '
+        'their labels are', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        tester.view
+          ..physicalSize = const Size(1600, 800)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        for (final initial in [
+          // The longest labels, and the shortest.
+          plain,
+          FrontTaskChoices(
+            start: FrontTaskStart.open,
+            priority: TaskPriority.p3Low,
+            due: today,
+            coverArt: true,
+          ),
+        ]) {
+          await tester.pumpWidget(const SizedBox());
+          Rect of(Key key) => tester.getRect(find.byKey(key));
+          // Wide enough for one line: measure it, then take a little off.
+          await pump(tester, initial: initial, width: 1400);
+          final oneLine =
+              of(FrontTaskSetupKeys.cover(0)).right -
+              of(FrontTaskSetupKeys.status(0)).left;
+          await tester.pumpWidget(const SizedBox());
+          await pump(tester, initial: initial, width: oneLine - 1);
+
+          final status = of(FrontTaskSetupKeys.status(0));
+          final priority = of(FrontTaskSetupKeys.priority(0));
+          final due = of(FrontTaskSetupKeys.due(0));
+          final cover = of(FrontTaskSetupKeys.cover(0));
+          expect(priority.top, status.top, reason: '$initial');
+          expect(cover.top, due.top);
+          expect(due.top, greaterThan(status.top));
+          // The second pair starts where the first does.
+          expect(due.left, status.left);
+        }
+      });
+    });
+
+    testWidgets('a chip at what a task is made with when nothing was said '
+        'steps back; one that carries a value heard or chosen does not', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        final all = [
+          FrontTaskSetupKeys.status(0),
+          FrontTaskSetupKeys.priority(0),
+          FrontTaskSetupKeys.due(0),
+          FrontTaskSetupKeys.cover(0),
+        ];
+        // Open, medium, no due day, no cover: nothing was said.
+        await pump(tester);
+        for (final key in all) {
+          expect(chip(tester, key).mutedLabel, isTrue, reason: '$key');
+        }
+
+        await tester.pumpWidget(const SizedBox());
+        await pump(
+          tester,
+          initial: FrontTaskChoices(
+            start: FrontTaskStart.groomed,
+            priority: TaskPriority.p3Low,
+            due: today,
+            coverArt: true,
+          ),
+        );
+        for (final key in all) {
+          expect(chip(tester, key).mutedLabel, isFalse, reason: '$key');
+        }
+      });
+    });
+
+    testWidgets('a value chosen from its chip stops stepping back', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await pump(tester);
+        expect(chip(tester, FrontTaskSetupKeys.priority(0)).mutedLabel, isTrue);
+
+        await choose(tester, FrontTaskSetupKeys.priority(0), 'P0');
+
+        expect(
+          chip(tester, FrontTaskSetupKeys.priority(0)).mutedLabel,
+          isFalse,
+        );
+        // The others are as they were.
+        expect(chip(tester, FrontTaskSetupKeys.status(0)).mutedLabel, isTrue);
+      });
+    });
+
+    testWidgets('cancel and create are as tall a target as a chip, and as '
+        'far apart as two chips', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        tester.view
+          ..physicalSize = const Size(1600, 800)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await pump(tester, width: 1400);
+
+        final back = tester.getRect(find.byKey(FrontTaskSetupKeys.back(0)));
+        final make = tester.getRect(find.byKey(FrontTaskSetupKeys.create(0)));
+        final status = tester.getRect(find.byKey(FrontTaskSetupKeys.status(0)));
+        expect(back.height, status.height);
+        expect(make.height, status.height);
+        for (final key in [
+          FrontTaskSetupKeys.back(0),
+          FrontTaskSetupKeys.create(0),
+        ]) {
+          expect(
+            tester.widget<DesignSystemButton>(find.byKey(key)).tapTargetSize,
+            MaterialTapTargetSize.padded,
+          );
+        }
+        final tokens = tester.element(find.byType(FrontTaskSetup)).designTokens;
+        expect(
+          make.left - back.right,
+          moreOrLessEquals(tokens.spacing.step4),
+        );
+        // On the shared line, further from the chips than the chips are
+        // from each other.
+        expect(
+          back.left -
+              tester.getRect(find.byKey(FrontTaskSetupKeys.cover(0))).right,
+          greaterThan(tokens.spacing.step4),
+        );
+      });
+    });
+
+    testWidgets('side by side, chips keep the same gap between each '
+        'neighbour', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        tester.view
+          ..physicalSize = const Size(1600, 800)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await pump(tester, width: 1400);
+
+        final rects = [
+          for (final key in [
+            FrontTaskSetupKeys.status(0),
+            FrontTaskSetupKeys.priority(0),
+            FrontTaskSetupKeys.due(0),
+            FrontTaskSetupKeys.cover(0),
+          ])
+            tester.getRect(find.byKey(key)),
+        ];
+        final tokens = tester.element(find.byType(FrontTaskSetup)).designTokens;
+        for (var i = 1; i < rects.length; i++) {
+          expect(
+            rects[i].left - rects[i - 1].right,
+            moreOrLessEquals(tokens.spacing.step4),
+          );
+          expect(rects[i].top, rects.first.top);
+        }
+      });
+    });
+  });
+
   testWidgets('cancel goes back, nothing made', (tester) async {
     await withClock(Clock.fixed(now), () async {
       await pump(tester);
@@ -613,6 +1019,7 @@ void main() {
         FrontTaskSetupKeys.status(0),
         FrontTaskSetupKeys.priority(0),
         FrontTaskSetupKeys.due(0),
+        FrontTaskSetupKeys.cover(0),
       ]) {
         expect(chip(tester, key).onPressed, isNull);
       }

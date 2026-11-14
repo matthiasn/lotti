@@ -18,11 +18,13 @@ import 'package:lotti/features/design_system/components/dividers/design_system_d
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_live_answer.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_category.dart';
@@ -623,6 +625,15 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
         doorId,
         choices: choices,
       ),
+      // The task as she read it, and a coding prompt written from the words.
+      onMakePrompt: (doorId, choices) => FrontVoice.makeTask(
+        ref,
+        context,
+        conversationId,
+        doorId,
+        choices: choices,
+        codingPrompt: true,
+      ),
       // Only where events are on: one made where they are off would be an
       // event the user has no page to find it on.
       onMakeEvent: eventsEnabled ? controller.makeEvent : null,
@@ -843,6 +854,22 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
                 FrontEntityPreviewList(
                   key: ValueKey('front-entity-previews-${message.id}'),
                   references: previews,
+                  // What her turn made is where its cover and its coding
+                  // prompt arrive, seen before the task is opened.
+                  showsGenerated: true,
+                  // A prompt being written is said only of a task a coding
+                  // prompt was asked for here: a design or research prompt
+                  // started on its page reports the same way.
+                  codingPromptTaskIds: {
+                    for (final door
+                        in thread?.doorsCarriedBy(message.id) ??
+                            const <FrontDoorEntry>[])
+                      if (door.record.outcome case FrontDoorTaskCreated(
+                        :final taskId,
+                        :final extras,
+                      ) when extras.contains(FrontTaskExtra.codingPrompt))
+                        taskId,
+                  },
                   onOpen: openMade,
                 ),
             ],
@@ -857,13 +884,34 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
           final doors = thread.doorsCarriedBy(message.id);
           final card = doors == null || doors.isEmpty
               ? null
-              : FrontDoorCard(
-                  key: ValueKey('front-doors-${message.id}'),
-                  doors: doors,
-                  actions: actions,
-                  busyDoorIds: composer.busyDoorIds,
-                  failedDoorIds: composer.failedDoorIds,
-                  journalAccess: journalAccess,
+              : Consumer(
+                  builder: (context, ref, _) => FrontDoorCard(
+                    key: ValueKey('front-doors-${message.id}'),
+                    doors: doors,
+                    actions: actions,
+                    busyDoorIds: composer.busyDoorIds,
+                    failedDoorIds: composer.failedDoorIds,
+                    // The waiting items a cover can be drawn for, by the
+                    // category each one's task would land in — its own,
+                    // or its followed task's. Known a moment after it is
+                    // asked: the chip is offered once it is.
+                    coverArtDoorIds: {
+                      for (final door in doors)
+                        if (door.record.outcome is FrontDoorInbox)
+                          if (ref
+                                  .watch(
+                                    frontCoverArtAvailableProvider((
+                                      categoryId: door.record.task?.categoryId,
+                                      followsUpTaskId:
+                                          door.record.task?.followsUpTaskId,
+                                    )),
+                                  )
+                                  .value ??
+                              false)
+                            door.doorId,
+                    },
+                    journalAccess: journalAccess,
+                  ),
                 );
           // Chips only under her latest question: an older one has been
           // answered, or walked away from, and its options would send a reply

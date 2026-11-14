@@ -117,13 +117,18 @@ class _Composer extends FrontChatController {
   final madeDoors = <String>[];
   final madeWith = <FrontTaskChoices>[];
 
+  /// Whether each task was asked for with a coding prompt.
+  final madeWithPrompt = <bool>[];
+
   @override
   Future<bool> makeTask(
     String doorId, {
     required FrontTaskChoices choices,
+    bool codingPrompt = false,
   }) async {
     madeDoors.add(doorId);
     madeWith.add(choices);
+    madeWithPrompt.add(codingPrompt);
     return makes;
   }
 
@@ -161,6 +166,18 @@ class _Host extends ConsumerWidget {
             choices: urgentToday,
           ),
           child: const Text('make'),
+        ),
+        TextButton(
+          key: const Key('make-prompt'),
+          onPressed: () => FrontVoice.makeTask(
+            ref,
+            context,
+            'c-1',
+            'd-1',
+            choices: urgentToday,
+            codingPrompt: true,
+          ),
+          child: const Text('prompt'),
         ),
       ],
     );
@@ -688,6 +705,34 @@ void main() {
 
       expect(composer.madeDoors, ['d-1']);
       expect(voice.spoken, isEmpty);
+    });
+  });
+
+  group('a task made with a coding prompt', () {
+    testWidgets('asks the composer for the prompt, with the choices as they '
+        'are, and is confirmed aloud like any task', (tester) async {
+      await pumpHost(tester);
+
+      await tester.tap(find.byKey(const Key('make-prompt')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(composer.madeDoors, ['d-1']);
+      expect(composer.madeWith, [urgentToday]);
+      expect(composer.madeWithPrompt, [true]);
+      expect(voice.spoken, [
+        (sourceId: frontVoiceSourceId('c-1'), text: _taskCreatedLine),
+      ]);
+    });
+
+    testWidgets('a plain task asks for no prompt', (tester) async {
+      await pumpHost(tester);
+
+      await tester.tap(find.byKey(const Key('make-task')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(composer.madeWithPrompt, [false]);
     });
   });
 

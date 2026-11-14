@@ -2,15 +2,19 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_capture_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/state/front_entity_preview_provider.dart';
+import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/tasks/state/task_preview_provider.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -548,4 +552,115 @@ void main() {
       });
     });
   });
+
+  group('frontTaskCodingPromptProvider', () {
+    AiResponseEntry response(
+      String id, {
+      required String text,
+      AiResponseType type = AiResponseType.promptGeneration,
+      String? skillId = skillPromptGenId,
+    }) => AiResponseEntry(
+      meta: testTask.meta.copyWith(id: id),
+      data: AiResponseData(
+        model: 'model',
+        systemMessage: '',
+        prompt: '',
+        thoughts: '',
+        response: text,
+        type: type,
+        skillId: skillId,
+      ),
+    );
+
+    /// The summary shown for a task whose linked AI responses are [linked],
+    /// newest first as the controller hands them over.
+    Future<String?> promptOf(List<AiResponseEntry> linked) {
+      final wired = ProviderContainer(
+        overrides: [
+          linkedAiResponsesControllerProvider('ice-pad').overrideWith(
+            () => _FixedResponses('ice-pad', linked),
+          ),
+        ],
+      );
+      addTearDown(wired.dispose);
+      final sub = wired.listen(
+        frontTaskCodingPromptProvider('ice-pad'),
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+      return wired.read(frontTaskCodingPromptProvider('ice-pad').future);
+    }
+
+    test('is the summary of the coding prompt written for the task', () async {
+      expect(
+        await promptOf([
+          response(
+            'p1',
+            text:
+                '## Summary\nCheck the crosswind limits.\n\n'
+                '## Prompt\nYou are a launch engineer.',
+          ),
+        ]),
+        'Check the crosswind limits.',
+      );
+    });
+
+    test('is the newest when several were written', () async {
+      expect(
+        await promptOf([
+          response('new', text: '## Summary\nNewest.\n## Prompt\nB'),
+          response('old', text: '## Summary\nOlder.\n## Prompt\nA'),
+        ]),
+        'Newest.',
+      );
+    });
+
+    test('a prompt stored before skills were named counts as a coding '
+        'prompt', () async {
+      expect(
+        await promptOf([response('p1', text: 'Fix the gate.', skillId: null)]),
+        'Fix the gate.',
+      );
+    });
+
+    test('a design or research prompt, an analysis or a summary is not '
+        'one', () async {
+      expect(
+        await promptOf([
+          response('d', text: 'Design it.', skillId: skillDesignPromptId),
+          response('r', text: 'Research it.', skillId: skillResearchPromptId),
+          response(
+            'a',
+            text: 'A photo.',
+            type: AiResponseType.imageAnalysis,
+            skillId: null,
+          ),
+          response(
+            'i',
+            text: 'An image prompt.',
+            type: AiResponseType.imagePromptGeneration,
+          ),
+        ]),
+        isNull,
+      );
+    });
+
+    test('a task with nothing written for it has none', () async {
+      expect(await promptOf(const []), isNull);
+    });
+
+    test('a prompt that says nothing is none', () async {
+      expect(await promptOf([response('p1', text: '  \n  ')]), isNull);
+    });
+  });
+}
+
+/// A task's linked AI responses, fixed.
+class _FixedResponses extends LinkedAiResponsesController {
+  _FixedResponses(super.entryId, this._responses);
+
+  final List<AiResponseEntry> _responses;
+
+  @override
+  Future<List<AiResponseEntry>> build() async => _responses;
 }

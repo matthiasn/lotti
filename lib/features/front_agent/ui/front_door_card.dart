@@ -33,6 +33,7 @@ class FrontDoorActions {
     required this.onTakeBack,
     required this.onOpen,
     required this.onMakeTask,
+    required this.onMakePrompt,
     required this.onSaveNote,
     required this.onStartGoal,
     required this.onNewProject,
@@ -63,6 +64,10 @@ class FrontDoorActions {
   /// Make a task of an inbox item, by its id, set up as the user chose in
   /// the card ([FrontTaskSetup]).
   final void Function(String doorId, FrontTaskChoices choices) onMakeTask;
+
+  /// Make a task of an inbox item, by its id, with the choices she read
+  /// from the words, and have a coding prompt written for it from them.
+  final void Function(String doorId, FrontTaskChoices choices) onMakePrompt;
 
   /// Make an event of an inbox item; null where events are off, and the
   /// item offers no such way.
@@ -112,11 +117,17 @@ class FrontDoorCard extends StatefulWidget {
     this.actions,
     this.busyDoorIds = const {},
     this.failedDoorIds = const {},
+    this.coverArtDoorIds = const {},
     this.journalAccess,
     super.key,
   });
 
   final List<FrontDoorEntry> doors;
+
+  /// The waiting items a cover can be drawn for, by their door ids: those
+  /// whose task would land in a category with a profile that draws. An
+  /// item's setup offers its cover chip only when it is one of them.
+  final Set<String> coverArtDoorIds;
 
   /// The live visibility of the sources journal answers cite; null until it
   /// is known, and a journal answer stays hidden until then.
@@ -175,6 +186,7 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
       :journalAccess,
       :busyDoorIds,
       :failedDoorIds,
+      :coverArtDoorIds,
     ) = widget;
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -204,6 +216,7 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
                 journalAccess: journalAccess,
                 busy: busyDoorIds.contains(door.doorId),
                 failed: failedDoorIds.contains(door.doorId),
+                coverArtAvailable: coverArtDoorIds.contains(door.doorId),
                 settingUp: _settingUp == door.doorId,
                 quiet: _settingUp != null && _settingUp != door.doorId,
                 onSetUp: ({required on}) => _setUp(door.doorId, on: on),
@@ -228,11 +241,16 @@ class _DoorRow extends StatelessWidget {
     required this.settingUp,
     required this.quiet,
     required this.onSetUp,
+    required this.coverArtAvailable,
     this.journalAccess,
     super.key,
   });
 
   final FrontDoorEntry door;
+
+  /// Whether a cover can be drawn for the task this item would become
+  /// ([FrontDoorCard.coverArtDoorIds]).
+  final bool coverArtAvailable;
   final FrontDoorActions? actions;
   final QueryAccessSnapshot? journalAccess;
   final bool busy;
@@ -291,6 +309,22 @@ class _DoorRow extends StatelessWidget {
       variant: DesignSystemButtonVariant.secondary,
       onPressed: acting == null ? null : guarded(() => acting.onOpen(door)),
     );
+
+    // A task or an event the door made: done, opened, or taken back.
+    void made() {
+      glyph = LottiIcons.confirmCircled;
+      ink = tokens.colors.alert.success.ink;
+      if (acting == null) return;
+      action = open();
+      menu.add(
+        item(
+          'take-back',
+          messages.frontDoorUndo,
+          LottiIcons.undo,
+          () => acting.onTakeBack(id),
+        ),
+      );
+    }
 
     switch (record.outcome) {
       case null:
@@ -420,6 +454,9 @@ class _DoorRow extends StatelessWidget {
             index: index,
             initial: FrontTaskChoices.of(record.task),
             heard: record.task?.namesChoices ?? false,
+            // Offered where a profile can draw one for the task it would
+            // become: elsewhere the chip is not there to ask.
+            coverArtAvailable: coverArtAvailable,
             // The overflow's slot, which the setup takes over.
             endInset:
                 tokens.spacing.step1 +
@@ -440,6 +477,12 @@ class _DoorRow extends StatelessWidget {
           );
           // The router's guess leads the other ways; leaving it comes last.
           final ways = [
+            (
+              'prompt',
+              messages.frontDoorMakePrompt,
+              LottiIcons.code,
+              () => acting.onMakePrompt(id, FrontTaskChoices.of(record.task)),
+            ),
             (
               'goal',
               messages.frontDoorStartGoal,
@@ -506,24 +549,22 @@ class _DoorRow extends StatelessWidget {
             ),
           );
         }
-      case FrontDoorTaskCreated() || FrontDoorEventCreated():
+      case FrontDoorTaskCreated(:final extras):
         title = words;
-        status = record.outcome is FrontDoorEventCreated
-            ? messages.frontDoorEventCreated
-            : messages.frontDoorTaskCreated;
-        glyph = LottiIcons.confirmCircled;
-        ink = tokens.colors.alert.success.ink;
-        if (acting != null) {
-          action = open();
-          menu.add(
-            item(
-              'take-back',
-              messages.frontDoorUndo,
-              LottiIcons.undo,
-              () => acting.onTakeBack(id),
-            ),
-          );
-        }
+        // What was asked for with the task is said after it, in the order
+        // it was offered: the prompt's menu row, then the cover's chip.
+        status = [
+          messages.frontDoorTaskCreated,
+          if (extras.contains(FrontTaskExtra.codingPrompt))
+            messages.frontDoorPromptRequested,
+          if (extras.contains(FrontTaskExtra.coverArt))
+            messages.frontDoorCoverRequested,
+        ].join(' · ');
+        made();
+      case FrontDoorEventCreated():
+        title = words;
+        status = messages.frontDoorEventCreated;
+        made();
       case FrontDoorDeclined(:final ownerId):
         title = words;
         status = ownerId == null
@@ -677,9 +718,9 @@ class _DoorRow extends StatelessWidget {
                         style: statusStyle,
                       ),
                     ),
-                    if (action != null) ...[
+                    if (action case final button?) ...[
                       SizedBox(width: tokens.spacing.step2),
-                      action,
+                      button,
                     ],
                     if (menu.isNotEmpty) ...[
                       SizedBox(width: tokens.spacing.step1),

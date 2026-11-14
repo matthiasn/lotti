@@ -43,6 +43,104 @@ void main() {
     );
 
     testWidgets(
+      "a touch pill keeps the compact touch pill's target and type, with a "
+      'taller pill inside it: two rows of them stand closer than their own '
+      'height',
+      (tester) async {
+        Future<({Rect target, Rect painted})> measure(
+          DesignSystemChipSize size,
+        ) async {
+          await _pumpChip(
+            tester,
+            DesignSystemChip(
+              label: 'Notes',
+              outlined: true,
+              size: size,
+              onPressed: () {},
+            ),
+          );
+          return (
+            target: tester.getRect(find.byType(InkWell).first),
+            painted: tester.getRect(find.byType(Ink).first),
+          );
+        }
+
+        final compact = await measure(DesignSystemChipSize.compactPillTouch);
+        final pill = await measure(DesignSystemChipSize.pillTouch);
+
+        // The same target, the same caption type.
+        expect(pill.target.height, compact.target.height);
+        expect(
+          DefaultTextStyle.of(
+            tester.element(find.text('Notes')),
+          ).style.fontSize,
+          dsTokensLight.typography.styles.others.caption.fontSize,
+        );
+        // More of it is drawn, centred in it, and still inside it.
+        expect(pill.painted.height, greaterThan(compact.painted.height));
+        expect(pill.painted.height, lessThan(pill.target.height));
+        expect(pill.painted.center.dy, pill.target.center.dy);
+        // What two stacked rows leave between their pills is less than a
+        // pill; for the compact one it is more.
+        expect(
+          pill.target.height - pill.painted.height,
+          lessThan(pill.painted.height),
+        );
+        expect(
+          compact.target.height - compact.painted.height,
+          greaterThan(compact.painted.height),
+        );
+      },
+    );
+
+    testWidgets('a muted label wears the medium-emphasis ink, any other '
+        'the high-emphasis one', (tester) async {
+      Future<Color?> labelInk({required bool muted}) async {
+        await _pumpChip(
+          tester,
+          DesignSystemChip(
+            label: 'No due date',
+            outlined: true,
+            mutedLabel: muted,
+            onPressed: () {},
+          ),
+        );
+        return DefaultTextStyle.of(
+          tester.element(find.text('No due date')),
+        ).style.color;
+      }
+
+      final muted = await labelInk(muted: true);
+      final plain = await labelInk(muted: false);
+      final ds = tester.element(find.byType(DesignSystemChip)).designTokens;
+      expect(muted, ds.colors.text.mediumEmphasis);
+      expect(plain, ds.colors.text.highEmphasis);
+      expect(muted, isNot(plain));
+    });
+
+    testWidgets('a touch pill answers a tap at the edge of its target', (
+      tester,
+    ) async {
+      var taps = 0;
+      await _pumpChip(
+        tester,
+        DesignSystemChip(
+          label: 'Notes',
+          outlined: true,
+          size: DesignSystemChipSize.pillTouch,
+          onPressed: () => taps++,
+        ),
+      );
+      final rect = tester.getRect(find.byType(InkWell).first);
+      final painted = tester.getRect(find.byType(Ink).first);
+      expect(painted.contains(rect.topCenter + const Offset(0, 1)), isFalse);
+
+      await tester.tapAt(rect.topCenter + const Offset(0, 1));
+
+      expect(taps, 1);
+    });
+
+    testWidgets(
       'outlined filters stay quiet until selected and retain activation semantics',
       (tester) async {
         var taps = 0;

@@ -12,6 +12,7 @@ import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -42,6 +43,25 @@ void main() {
   late JournalEvent? Function(String title) eventFor;
   late List<(FrontTaskDraft, String)> madeDrafts;
   late List<String> deleted;
+
+  /// What was started for a task once it was made, in order.
+  late List<(FrontTaskExtra, String)> started;
+
+  /// The record rewrites and the starts, in the order they happened.
+  late List<String> order;
+
+  /// Whether a cover can be drawn for a task in a category, and the
+  /// categories it was asked for.
+  late bool Function(String? categoryId) canDraw;
+  late List<String?> coverAsked;
+
+  /// The task each of those drafts follows, which decides its category
+  /// when it names none.
+  late List<String?> coverAskedFollowing;
+  late MockDomainLogger logger;
+
+  /// What starting an extra does, beyond being recorded.
+  late void Function(FrontTaskExtra extra) onStart;
   late bool deleteResult;
   late JournalEntity? Function(String text) entryFor;
   late Task? Function(String title) taskFor;
@@ -128,11 +148,19 @@ void main() {
     );
     madeDrafts = [];
     deleted = [];
+    started = [];
+    order = [];
+    canDraw = (_) => true;
+    coverAsked = [];
+    coverAskedFollowing = [];
+    logger = MockDomainLogger();
+    onStart = (_) {};
     deleteResult = true;
     entryFor = (text) => textEntry('entry-1', text);
     taskFor = (title) => task('task-new', title);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
+      order.add('record');
     });
     when(() => notifications.notifyUiOnly(any())).thenReturn(null);
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
@@ -161,6 +189,17 @@ void main() {
         deleted.add(id);
         return deleteResult;
       },
+      startExtra: (extra, {required taskId}) {
+        started.add((extra, taskId));
+        order.add('start ${extra.name}');
+        onStart(extra);
+      },
+      canDrawCover: (draft) async {
+        coverAsked.add(draft.categoryId);
+        coverAskedFollowing.add(draft.followsUpTaskId);
+        return canDraw(draft.categoryId);
+      },
+      domainLogger: logger,
     );
   });
 
@@ -791,6 +830,200 @@ void main() {
         throwsA(isA<FrontDoorStateException>()),
       );
       expect(madeEvents, isEmpty);
+    });
+  });
+
+  group('what is generated with a task', () {
+    const withCover = FrontTaskChoices(
+      start: FrontTaskStart.open,
+      priority: TaskPriority.p2Medium,
+      coverArt: true,
+    );
+
+    void seedInbox({FrontTaskDraft? draft}) => seed(
+      const FrontDoorInbox(newKind: FrontNewKind.task),
+      kind: FrontDestinationKind.newThing,
+      destinationId: null,
+      text: 'Check the ice-pad weather window.',
+      task: draft,
+    );
+
+    FrontDoorTaskCreated created() =>
+        rewritten().outcome! as FrontDoorTaskCreated;
+
+    test('a task made as said starts nothing and stores no extras', () async {
+      seedInbox();
+      await service.makeTask(doorId, choices: asSaid);
+      expect(started, isEmpty);
+      expect(created().extras, isEmpty);
+      expect(created().toJson().containsKey('extras'), isFalse);
+    });
+
+    test('cover art chosen in the setup is started for the task and kept on '
+        'the outcome', () async {
+      seedInbox();
+      await service.makeTask(doorId, choices: withCover);
+      expect(started, [(FrontTaskExtra.coverArt, 'task-new')]);
+      expect(created().extras, {FrontTaskExtra.coverArt});
+      // The maker is told too, so the draft it makes says what was chosen.
+      expect(madeDrafts.single.$1.coverArt, isTrue);
+    });
+
+    test('a coding prompt asked for is started for the task and kept on the '
+        'outcome, with no cover art', () async {
+      seedInbox();
+      await service.makeTask(doorId, choices: asSaid, codingPrompt: true);
+      expect(started, [(FrontTaskExtra.codingPrompt, 'task-new')]);
+      expect(created().extras, {FrontTaskExtra.codingPrompt});
+      expect(madeDrafts.single.$1.coverArt, isFalse);
+    });
+
+    test('both are started, each once', () async {
+      seedInbox();
+      await service.makeTask(doorId, choices: withCover, codingPrompt: true);
+      expect(started, [
+        (FrontTaskExtra.coverArt, 'task-new'),
+        (FrontTaskExtra.codingPrompt, 'task-new'),
+      ]);
+      expect(created().extras, FrontTaskExtra.values.toSet());
+    });
+
+    test("cover art the words asked for rides the draft's choices", () async {
+      const draft = FrontTaskDraft(title: 'Check the weather', coverArt: true);
+      seedInbox(draft: draft);
+      await service.makeTask(doorId, choices: FrontTaskChoices.of(draft));
+      expect(started, [(FrontTaskExtra.coverArt, 'task-new')]);
+    });
+
+    test('the user turning the cover off wins over the words', () async {
+      seedInbox(
+        draft: const FrontTaskDraft(title: 'Check the weather', coverArt: true),
+      );
+      await service.makeTask(doorId, choices: asSaid);
+      expect(started, isEmpty);
+      expect(madeDrafts.single.$1.coverArt, isFalse);
+    });
+
+    test(
+      'nothing is started before the record says the task is made',
+      () async {
+        seedInbox();
+        await service.makeTask(doorId, choices: withCover, codingPrompt: true);
+        expect(order, ['record', 'start coverArt', 'start codingPrompt']);
+      },
+    );
+
+    group('where no profile can draw a cover', () {
+      setUp(() => canDraw = (_) => false);
+
+      test('a cover chosen is left out: not made with, not started, not '
+          'said to be requested', () async {
+        seedInbox();
+        await service.makeTask(doorId, choices: withCover);
+        expect(madeDrafts.single.$1.coverArt, isFalse);
+        expect(started, isEmpty);
+        expect(created().extras, isEmpty);
+      });
+
+      test('a coding prompt asked for with it still is, the cover the words '
+          'asked for dropped', () async {
+        const draft = FrontTaskDraft(
+          title: 'Check the weather',
+          categoryId: 'cat-1',
+          coverArt: true,
+        );
+        seedInbox(draft: draft);
+        await service.makeTask(
+          doorId,
+          choices: FrontTaskChoices.of(draft),
+          codingPrompt: true,
+        );
+        expect(started, [(FrontTaskExtra.codingPrompt, 'task-new')]);
+        expect(created().extras, {FrontTaskExtra.codingPrompt});
+        // Asked for the category she read the task into.
+        expect(coverAsked, ['cat-1']);
+      });
+    });
+
+    test("whether a cover can be drawn is asked for the draft's category, "
+        'none for bare words, and only when one was chosen', () async {
+      seedInbox(
+        draft: const FrontTaskDraft(title: 'Check', categoryId: 'cat-9'),
+      );
+      await service.makeTask(doorId, choices: asSaid);
+      expect(coverAsked, isEmpty);
+
+      await service.makeTask(doorId, choices: withCover);
+      expect(coverAsked, ['cat-9']);
+
+      seedInbox();
+      await service.makeTask(doorId, choices: withCover);
+      expect(coverAsked, ['cat-9', null]);
+    });
+
+    test('a follow-up is asked about with the task it follows, whose '
+        'category it will be made in', () async {
+      seedInbox(
+        draft: const FrontTaskDraft(
+          title: 'Check again',
+          followsUpTaskId: 'task-roses',
+        ),
+      );
+
+      await service.makeTask(doorId, choices: withCover);
+
+      expect(coverAsked, [null]);
+      expect(coverAskedFollowing, ['task-roses']);
+    });
+
+    test('a start that throws is logged and never fails the task made: the '
+        'record stands and the other extra still starts', () async {
+      seedInbox();
+      final failure = StateError('container gone');
+      onStart = (extra) {
+        if (extra == FrontTaskExtra.coverArt) throw failure;
+      };
+
+      await service.makeTask(doorId, choices: withCover, codingPrompt: true);
+
+      expect(created().extras, FrontTaskExtra.values.toSet());
+      expect(started.map((start) => start.$1), FrontTaskExtra.values);
+      verify(
+        () => logger.error(
+          LogDomain.agentWorkflow,
+          failure,
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'makeTask.startExtra',
+          message: any(named: 'message', that: contains('coverArt')),
+        ),
+      ).called(1);
+    });
+
+    test('a task that was not created starts nothing', () async {
+      seedInbox();
+      taskFor = (_) => null;
+      await expectLater(
+        service.makeTask(doorId, choices: withCover, codingPrompt: true),
+        throwsStateError,
+      );
+      expect(started, isEmpty);
+    });
+
+    test('a record that did not follow starts nothing, so the retry starts '
+        'each once', () async {
+      seedInbox();
+      when(
+        () => syncService.upsertEntity(any()),
+      ).thenAnswer((_) async => throw StateError('sync down'));
+      await expectLater(
+        service.makeTask(doorId, choices: withCover),
+        throwsStateError,
+      );
+      expect(started, isEmpty);
+
+      when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+      await service.makeTask(doorId, choices: withCover);
+      expect(started, [(FrontTaskExtra.coverArt, 'task-new')]);
     });
   });
 }

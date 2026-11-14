@@ -7580,6 +7580,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorChangeDay => 'Změnit dnešek';
 
   @override
+  String get frontDoorCoverRequested => 'obálka vyžádána';
+
+  @override
   String get frontDoorDayPlanned => 'Dnešní plán změněn';
 
   @override
@@ -7650,6 +7653,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorMakeEvent => 'Udělat z toho událost';
 
   @override
+  String get frontDoorMakePrompt => 'Úkol s kódovacím promptem';
+
+  @override
   String get frontDoorMakeTask => 'Udělat z toho úkol';
 
   @override
@@ -7671,6 +7677,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontDoorProjectCreated => 'Vytvořen projekt';
+
+  @override
+  String get frontDoorPromptRequested => 'kódovací prompt vyžádán';
 
   @override
   String frontDoorProposal(String owner) {
@@ -7731,6 +7740,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Zvětšit graf';
 
   @override
+  String get frontPreviewCoverDrawing => 'Kreslím obálku…';
+
+  @override
+  String get frontPreviewCoverFailed => 'Obálku se nepodařilo nakreslit';
+
+  @override
+  String get frontPreviewPromptFailed => 'Kódovací prompt se nepodařilo napsat';
+
+  @override
+  String get frontPreviewPromptWriting => 'Píšu kódovací prompt…';
+
+  @override
   String get frontPullRequestsLinesAdded => 'Přidané řádky';
 
   @override
@@ -7759,7 +7780,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontTaskSetupAskPlain => 'Chceš něco nastavit, než ho vytvořím?';
 
   @override
+  String get frontTaskSetupCover => 'Obálka';
+
+  @override
+  String get frontTaskSetupCoverGenerate => 'Vytvořit obálku';
+
+  @override
   String get frontTaskSetupCreate => 'Vytvořit úkol';
+
+  @override
+  String get frontTaskSetupNoCover => 'Bez obálky';
 
   @override
   String get frontTaskSetupPickDate => 'Vybrat datum…';

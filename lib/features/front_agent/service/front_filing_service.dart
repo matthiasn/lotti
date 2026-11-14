@@ -9,6 +9,7 @@ import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Writes the user's words as a text entry under [id]: linked under
@@ -32,6 +33,17 @@ typedef FrontTaskMaker =
       required String id,
       required String words,
     });
+
+/// Starts generating [extra] for the task [taskId], from the words filed
+/// under it. Fire and forget: the task is made either way, and the run
+/// reports on the task itself.
+typedef FrontTaskExtraStarter =
+    void Function(FrontTaskExtra extra, {required String taskId});
+
+/// Whether cover art can be drawn for the task a draft would become, in the
+/// category it will be made in: the one it names, else the one of the task
+/// it follows.
+typedef FrontCoverArtCheck = Future<bool> Function(FrontTaskDraft draft);
 
 /// Makes an event titled [title] under [id]. Returns it — the one created,
 /// or the one already there — or null when nothing is stored.
@@ -75,6 +87,9 @@ class FrontFilingService {
     required FrontTaskMaker makeTask,
     required FrontEventMaker makeEvent,
     required FrontEntryDeleter deleteEntry,
+    required FrontTaskExtraStarter startExtra,
+    required FrontCoverArtCheck canDrawCover,
+    required DomainLogger domainLogger,
   }) : this._(
          repository,
          syncService,
@@ -84,6 +99,9 @@ class FrontFilingService {
          makeTask,
          makeEvent,
          deleteEntry,
+         startExtra,
+         canDrawCover,
+         domainLogger,
        );
 
   const FrontFilingService._(
@@ -95,6 +113,9 @@ class FrontFilingService {
     this._makeTask,
     this._makeEvent,
     this._deleteEntry,
+    this._startExtra,
+    this._canDrawCover,
+    this._domainLogger,
   );
 
   final AgentRepository _repository;
@@ -105,6 +126,9 @@ class FrontFilingService {
   final FrontTaskMaker _makeTask;
   final FrontEventMaker _makeEvent;
   final FrontEntryDeleter _deleteEntry;
+  final FrontTaskExtraStarter _startExtra;
+  final FrontCoverArtCheck _canDrawCover;
+  final DomainLogger _domainLogger;
 
   /// Files the proposed segment under its owner — a task or a project: a
   /// text entry with the user's words, linked under the owner and in its
@@ -269,19 +293,39 @@ class FrontFilingService {
   /// words when it read any, else titled with the words — in the status,
   /// priority and due day the user set up ([choices]). The tap on create is
   /// the approval.
+  ///
+  /// What the user asked for with it — cover art in [choices], a coding
+  /// prompt with [codingPrompt] — is kept on the outcome and started only
+  /// once the record says the task is made: a retry after a record that did
+  /// not follow starts each once, never a second paid run.
+  ///
+  /// Cover art is asked for only where one can be drawn for the category
+  /// the task will be made in — a follow-up's is its task's when the words
+  /// named none: this is the one place every way of making a task passes, so
+  /// a cover the words asked for is dropped here whichever control made the
+  /// task, and the outcome never says one was requested that could not
+  /// arrive. A start that fails is logged, never an error of the task made:
+  /// the record already says it is.
   Future<void> makeTask(
     String doorId, {
     required FrontTaskChoices choices,
+    bool codingPrompt = false,
   }) async {
     final (record, payload) = await _waiting<FrontDoorInbox>(doorId);
     final inbox = record.outcome! as FrontDoorInbox;
     final words = record.text.trim();
+    final draft = record.task ?? FrontTaskDraft(title: words);
+    final coverArt = choices.coverArt && await _canDrawCover(draft);
     final task = await _makeTask(
-      (record.task ?? FrontTaskDraft(title: words)).withChoices(choices),
+      draft.withChoices(choices.copyWith(coverArt: coverArt)),
       id: frontDoorTaskId(doorId, generation: inbox.generation),
       words: words,
     );
     if (task == null) throw StateError('The task was not created.');
+    final extras = {
+      if (coverArt) FrontTaskExtra.coverArt,
+      if (codingPrompt) FrontTaskExtra.codingPrompt,
+    };
     await _rewrite(
       payload,
       record.done(
@@ -290,9 +334,25 @@ class FrontFilingService {
           newKind: inbox.newKind,
           generation: inbox.generation,
           at: clock.now().toUtc(),
+          extras: extras,
         ),
       ),
     );
+    for (final extra in extras) {
+      try {
+        _startExtra(extra, taskId: task.meta.id);
+      } catch (error, stackTrace) {
+        _domainLogger.error(
+          LogDomain.agentWorkflow,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'makeTask.startExtra',
+          message:
+              'Could not start ${extra.name} for '
+              '${DomainLogger.sanitizeId(task.meta.id)}',
+        );
+      }
+    }
   }
 
   /// Makes an event of an inbox segment, titled with the words. The tap is

@@ -1,12 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -33,11 +36,17 @@ import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/entry_tools.dart';
 import 'package:material_ui/material_ui.dart';
 
+part 'front_entity_preview_generated_part.dart';
+
 /// Stable keys for her preview cards.
 @visibleForTesting
 abstract final class FrontEntityPreviewKeys {
   static Key card(String id) => Key('front-entity-preview-$id');
   static Key cover(String id) => Key('front-entity-preview-cover-$id');
+  static Key coverDrawing(String id) =>
+      Key('front-entity-preview-cover-drawing-$id');
+  static Key generated(String id, String name) =>
+      Key('front-entity-preview-generated-$id-$name');
   static Key estimate(String id) => Key('front-entity-preview-estimate-$id');
   static Key priority(String id) => Key('front-entity-preview-priority-$id');
   static Key block(String id, int index) =>
@@ -51,15 +60,28 @@ abstract final class FrontEntityPreviewKeys {
 /// or what her words list: a task as a compact card, an event, a project or
 /// a person as the app's own card or row for it, a day's plan as its
 /// blocks. [onOpen] is given the reference of the card tapped.
+///
+/// With [showsGenerated] — the cards of what a turn made — a task's card
+/// also shows what is being generated for it: its cover while it is drawn,
+/// and the coding prompt written for it.
 class FrontEntityPreviewList extends StatelessWidget {
   const FrontEntityPreviewList({
     required this.references,
     required this.onOpen,
+    this.showsGenerated = false,
+    this.codingPromptTaskIds = const {},
     super.key,
   });
 
   final List<FrontEntityReference> references;
   final ValueChanged<FrontEntityReference> onOpen;
+
+  /// Whether a task's card shows what is generated for it.
+  final bool showsGenerated;
+
+  /// The tasks a coding prompt was asked for where they were made: only
+  /// their cards say one is being written, or could not be.
+  final Set<String> codingPromptTaskIds;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -72,6 +94,8 @@ class FrontEntityPreviewList extends StatelessWidget {
           FrontEntityKind.task => FrontEntityPreviewCompactCard(
             key: FrontEntityPreviewKeys.card(reference.id),
             reference: reference,
+            showsGenerated: showsGenerated,
+            codingPromptRequested: codingPromptTaskIds.contains(reference.id),
             onTap: () => onOpen(reference),
           ),
           FrontEntityKind.event => FrontEntityPreviewRichCard(
@@ -106,15 +130,33 @@ class FrontEntityPreviewList extends StatelessWidget {
 /// status, reschedule it, move it to a project — through the pickers its
 /// own page uses. Until it has loaded, or if it is gone, the title it was
 /// made with stands alone, and still opens it.
+///
+/// With [showsGenerated], the card of a task her chat made is also where
+/// what was asked for with it arrives, so it is seen before the task is
+/// opened: the cover's place says it is being drawn until the thumbnail
+/// takes it, and the coding prompt's summary sits under the task once it is
+/// written — the full prompt is on the task's page, a tap away.
 class FrontEntityPreviewCompactCard extends ConsumerWidget {
   const FrontEntityPreviewCompactCard({
     required this.reference,
     required this.onTap,
+    this.showsGenerated = false,
+    this.codingPromptRequested = false,
     super.key,
   });
 
   final FrontEntityReference reference;
   final VoidCallback onTap;
+
+  /// Whether the card shows what is generated for the task.
+  final bool showsGenerated;
+
+  /// Whether a coding prompt was asked for with the task: only then does
+  /// the card say one is being written, or could not be. Every prompt skill
+  /// reports its run the same way, so without this a design or research
+  /// prompt started on the task's page would be announced as a coding one.
+  /// A coding prompt that exists is shown either way.
+  final bool codingPromptRequested;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -126,11 +168,18 @@ class FrontEntityPreviewCompactCard extends ConsumerWidget {
       final FrontTaskPreview task => _TaskQuickActions(
         task: task,
         child: _PreviewSurface(
-          child: _TaskPreviewContent(
-            task: task,
-            note: reference.note,
-            onTap: onTap,
-          ),
+          child: showsGenerated
+              ? _TaskWithGenerated(
+                  task: task,
+                  note: reference.note,
+                  codingPromptRequested: codingPromptRequested,
+                  onTap: onTap,
+                )
+              : _TaskPreviewContent(
+                  task: task,
+                  note: reference.note,
+                  onTap: onTap,
+                ),
         ),
       ),
       _ => _TitleOnly(reference: reference, onTap: onTap),
@@ -404,9 +453,14 @@ class _TaskPreviewContent extends ConsumerWidget {
     required this.task,
     required this.onTap,
     this.note,
+    this.drawingCover = false,
   });
 
   final FrontTaskPreview task;
+
+  /// Whether its cover is being drawn: until it arrives, the cover's place
+  /// holds a tile in the AI ink rather than the status glyph.
+  final bool drawingCover;
 
   /// What she said of this task where she listed it, such as its logged
   /// time: the first line under the title.
@@ -450,7 +504,23 @@ class _TaskPreviewContent extends ConsumerWidget {
       ].join(', '),
       // The cover, when it has one; else how it stands.
       leading: coverArtId == null
-          ? StatusGlyph(status: task.status, tooltip: statusLabel)
+          ? drawingCover
+                ? Container(
+                    key: FrontEntityPreviewKeys.coverDrawing(task.entityId),
+                    width: ControlSizes.iconChip,
+                    height: ControlSizes.iconChip,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: tokens.colors.aiCard.accentSoft,
+                      borderRadius: BorderRadius.circular(tokens.radii.s),
+                    ),
+                    child: Icon(
+                      LottiIcons.image,
+                      size: IconSizes.s,
+                      color: tokens.colors.aiCard.accent,
+                    ),
+                  )
+                : StatusGlyph(status: task.status, tooltip: statusLabel)
           : ClipRRect(
               key: FrontEntityPreviewKeys.cover(task.entityId),
               borderRadius: BorderRadius.circular(tokens.radii.s),

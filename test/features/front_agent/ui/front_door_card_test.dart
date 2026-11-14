@@ -70,6 +70,10 @@ void main() {
       acted.add(('task', id));
       madeWith.add(choices);
     },
+    onMakePrompt: (id, choices) {
+      acted.add(('prompt', id));
+      madeWith.add(choices);
+    },
     onMakeEvent: (id) => acted.add(('event', id)),
     onSaveNote: (id) => acted.add(('note', id)),
     onStartGoal: (door) => acted.add(('goal', door.doorId)),
@@ -91,6 +95,8 @@ void main() {
     Set<String> busy = const {},
     Set<String> failed = const {},
     QueryAccessSnapshot? journalAccess,
+    // The items a cover can be drawn for: by default, the first.
+    Set<String> coverArtDoorIds = const {'d:door:0'},
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -99,6 +105,7 @@ void main() {
           actions: withActions ? actions() : null,
           busyDoorIds: busy,
           failedDoorIds: failed,
+          coverArtDoorIds: coverArtDoorIds,
           journalAccess: journalAccess,
         ),
       ),
@@ -854,6 +861,74 @@ void main() {
       expect(madeWith, [setup.initial]);
     });
 
+    group('the cover art chip', () {
+      FrontDoorEntry inbox() => entry(
+        record(
+          index: 0,
+          text: 'Check the ice-pad weather window.',
+          kind: FrontDestinationKind.newThing,
+          ownerTitle: null,
+          outcome: const FrontDoorInbox(newKind: FrontNewKind.task),
+          task: const FrontTaskDraft(
+            title: 'Check the ice-pad weather window',
+          ),
+        ),
+      );
+
+      Future<void> openSetup(WidgetTester tester) async {
+        await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+        await tester.pump();
+        await tester.pump();
+      }
+
+      testWidgets('is offered for an item a cover can be drawn for', (
+        tester,
+      ) async {
+        await pump(tester, [inbox()]);
+        await openSetup(tester);
+
+        expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsOne);
+      });
+
+      testWidgets('is not offered for one it cannot, and the task is made '
+          'without one', (tester) async {
+        await pump(tester, [inbox()], coverArtDoorIds: const {});
+        await openSetup(tester);
+
+        expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsNothing);
+        await tester.tap(find.byKey(FrontTaskSetupKeys.create(0)));
+        await tester.pump();
+        expect(madeWith.single.coverArt, isFalse);
+      });
+
+      testWidgets('is per item: another item on the card being drawable '
+          'offers this one nothing', (tester) async {
+        await pump(
+          tester,
+          [inbox()],
+          coverArtDoorIds: const {'d:door:1'},
+        );
+        await openSetup(tester);
+
+        expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsNothing);
+      });
+
+      testWidgets('appears in a setup already open once it is known one can '
+          'be drawn', (tester) async {
+        await pump(tester, [inbox()], coverArtDoorIds: const {});
+        await openSetup(tester);
+        expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsNothing);
+        // The setup is there and usable meanwhile.
+        expect(find.byKey(FrontTaskSetupKeys.create(0)), findsOne);
+
+        await pump(tester, [inbox()]);
+
+        expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsOne);
+        // Still the setup that was open, not a card pumped afresh.
+        expect(find.byKey(FrontTaskSetupKeys.ask(0)), findsOne);
+      });
+    });
+
     testWidgets('cancel goes back to the card as it was', (tester) async {
       await pump(tester, [waiting()]);
       await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
@@ -968,14 +1043,24 @@ void main() {
 
     testWidgets('on a phone, create task ends where make it a task does, '
         'the overflow slot kept', (tester) async {
+      // A phone's width with room for the two buttons side by side in the
+      // test font, whose glyphs are a full em wide: narrower, the buttons
+      // take the overflow's slot rather than run past the card's start.
       tester.view
-        ..physicalSize = const Size(390, 900)
+        ..physicalSize = const Size(430, 900)
         ..devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await pump(tester, [waiting(), waiting(index: 1)]);
       await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
       await tester.pump();
 
+      // Stacked under the chips, as on a phone.
+      expect(
+        tester.getRect(find.byKey(FrontTaskSetupKeys.create(0))).top,
+        greaterThan(
+          tester.getRect(find.byKey(FrontTaskSetupKeys.status(0))).bottom,
+        ),
+      );
       expect(
         tester.getRect(find.byKey(FrontTaskSetupKeys.create(0))).right,
         moreOrLessEquals(
@@ -1097,6 +1182,87 @@ void main() {
       await openMenu(tester, 0);
       await tapItem(tester, 'take-back', 0);
       expect(acted, [('open', 'd:door:1'), ('take-back', 'd:door:0')]);
+    });
+
+    group('a task made with something asked for', () {
+      Future<void> pumpMade(
+        WidgetTester tester,
+        Set<FrontTaskExtra> extras,
+      ) => pump(tester, [
+        entry(
+          record(
+            index: 0,
+            text: 'Check the ice-pad weather window.',
+            kind: FrontDestinationKind.newThing,
+            ownerTitle: null,
+            outcome: FrontDoorTaskCreated(taskId: 't-1', extras: extras),
+          ),
+        ),
+      ]);
+
+      for (final (extras, status) in [
+        (<FrontTaskExtra>{}, 'Made into a task'),
+        (
+          {FrontTaskExtra.codingPrompt},
+          'Made into a task · coding prompt requested',
+        ),
+        (
+          {FrontTaskExtra.coverArt},
+          'Made into a task · cover art requested',
+        ),
+        (
+          {FrontTaskExtra.coverArt, FrontTaskExtra.codingPrompt},
+          'Made into a task · coding prompt requested · '
+              'cover art requested',
+        ),
+      ]) {
+        testWidgets('says "$status"', (tester) async {
+          await pumpMade(tester, extras);
+
+          expect(statusOf(tester, 0), status);
+        });
+      }
+
+      testWidgets('is a settled card like any task: the done tile, open on '
+          'its one control, undo in the overflow', (tester) async {
+        await pumpMade(tester, {FrontTaskExtra.coverArt});
+
+        expect(glyph(tester, 0).icon, LottiIcons.confirmCircled);
+        expect(button(tester, 'open', 0).label, 'Open');
+        await tester.tap(find.byKey(const ValueKey('front-door-open-0')));
+        expect(await openMenu(tester, 0), ['Undo']);
+        await tapItem(tester, 'take-back', 0);
+        expect(acted, [('open', 'd:door:0'), ('take-back', 'd:door:0')]);
+      });
+
+      testWidgets('read-only, it still says what was asked for and offers '
+          'nothing', (tester) async {
+        await pump(
+          tester,
+          [
+            entry(
+              record(
+                index: 0,
+                text: 'Check the ice-pad weather window.',
+                kind: FrontDestinationKind.newThing,
+                ownerTitle: null,
+                outcome: const FrontDoorTaskCreated(
+                  taskId: 't-1',
+                  extras: {FrontTaskExtra.codingPrompt},
+                ),
+              ),
+            ),
+          ],
+          withActions: false,
+        );
+
+        expect(
+          statusOf(tester, 0),
+          'Made into a task · coding prompt requested',
+        );
+        expect(find.byType(DesignSystemButton), findsNothing);
+        expect(menu(0), findsNothing);
+      });
     });
 
     testWidgets('made into an event shows the done tile and says so, opens '
@@ -1237,6 +1403,7 @@ void main() {
 
       expect(await openMenu(tester, 0), [
         'Start a goal…',
+        'Task with a coding prompt',
         'Make it an event',
         'Save as a note',
         'Leave it',
@@ -1279,6 +1446,7 @@ void main() {
               onTakeBack: (_) {},
               onOpen: (_) {},
               onMakeTask: (_, _) {},
+              onMakePrompt: (_, _) {},
               onSaveNote: (_) {},
               onStartGoal: (_) {},
               onNewProject: (_) {},
@@ -1290,6 +1458,7 @@ void main() {
       await tester.pump();
 
       expect(await openMenu(tester, 0), [
+        'Task with a coding prompt',
         'Start a goal…',
         'Save as a note',
         'Leave it',
@@ -1332,6 +1501,7 @@ void main() {
       expect(statusOf(tester, 2), 'Where should this go instead?');
       expect(await openMenu(tester, 0), [
         'New project…',
+        'Task with a coding prompt',
         'Start a goal…',
         'Make it an event',
         'Save as a note',
@@ -1339,6 +1509,7 @@ void main() {
       ]);
       await tapItem(tester, 'project', 0);
       expect(await openMenu(tester, 1), [
+        'Task with a coding prompt',
         'Start a goal…',
         'Make it an event',
         'Save as a note',
@@ -1347,6 +1518,92 @@ void main() {
       await tester.tapAt(Offset.zero);
       await tester.pumpAndSettle();
       expect(acted, [('project', 'd:door:0')]);
+    });
+
+    group('with a coding prompt', () {
+      FrontDoorEntry inbox({FrontTaskDraft? task}) => entry(
+        record(
+          index: 0,
+          text: 'Check the ice-pad weather window, high priority.',
+          kind: FrontDestinationKind.newThing,
+          ownerTitle: null,
+          outcome: const FrontDoorInbox(newKind: FrontNewKind.task),
+          task: task,
+        ),
+      );
+
+      testWidgets('is the first other way of an item she read as a task, '
+          'under the code glyph', (tester) async {
+        await pump(tester, [inbox()]);
+
+        final items = await openMenu(tester, 0);
+        expect(items.first, 'Task with a coding prompt');
+        final row = tester
+            .widget<DesignSystemContextMenuButton>(menu(0))
+            .items
+            .first;
+        expect(row.icon, LottiIcons.code);
+        expect(row.key, const ValueKey('front-door-prompt-0'));
+      });
+
+      testWidgets('makes the task as she read it, with no setup in between', (
+        tester,
+      ) async {
+        await pump(tester, [
+          inbox(
+            task: FrontTaskDraft(
+              title: 'Check the ice-pad weather window',
+              priority: TaskPriority.p1High,
+              due: DateTime(2026, 11, 20),
+              coverArt: true,
+            ),
+          ),
+        ]);
+
+        await openMenu(tester, 0);
+        await tapItem(tester, 'prompt', 0);
+
+        expect(acted, [('prompt', 'd:door:0')]);
+        expect(
+          madeWith.single,
+          FrontTaskChoices(
+            start: FrontTaskStart.open,
+            priority: TaskPriority.p1High,
+            due: DateTime(2026, 11, 20),
+            coverArt: true,
+          ),
+        );
+        // Asked from the menu: the setup never opened.
+        expect(find.byType(FrontTaskSetup), findsNothing);
+      });
+
+      testWidgets('words she read nothing from make a plain open task', (
+        tester,
+      ) async {
+        await pump(tester, [inbox()]);
+
+        await openMenu(tester, 0);
+        await tapItem(tester, 'prompt', 0);
+
+        expect(
+          madeWith.single,
+          const FrontTaskChoices(
+            start: FrontTaskStart.open,
+            priority: TaskPriority.p2Medium,
+          ),
+        );
+      });
+
+      testWidgets('takes no tap while the item is busy', (tester) async {
+        await pump(tester, [inbox()], busy: {'d:door:0'});
+
+        final row = tester
+            .widget<DesignSystemContextMenuButton>(menu(0))
+            .items
+            .first;
+        expect(row.key, const ValueKey('front-door-prompt-0'));
+        expect(row.onTap, isNull);
+      });
     });
 
     testWidgets('without actions the cards are read-only', (tester) async {
