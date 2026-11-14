@@ -192,8 +192,8 @@ const String mistralVoxtralTtsModelId = 'voxtral-mini-tts-3-0';
 /// the API's default, the most natural of the v2 voices; and the
 /// low-latency one at half the price. `eleven_v3` is not curated: it takes
 /// 5,000 characters per request, and a long report is sent whole, so it
-/// would fail where these (10k, 10k and 40k) do not; it is also the slowest
-/// to start. It and `eleven_v4` can still be added by hand.
+/// would fail where these (10k, 10k and 40k) do not; it also starts about
+/// three times later than v4 Turbo. It and `eleven_v4` can still be added by hand.
 const String elevenLabsV4TurboModelId = 'eleven_v4_turbo';
 const String elevenLabsMultilingualV2ModelId = 'eleven_multilingual_v2';
 const String elevenLabsFlashV25ModelId = 'eleven_flash_v2_5';

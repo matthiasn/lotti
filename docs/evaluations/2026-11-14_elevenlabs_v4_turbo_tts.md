@@ -15,7 +15,8 @@ with the text — up to 4 s on Voxtral, 6 s on v3 or v4. Streamed, every
 model starts within 0.7 s, and **v4 Turbo's first audio arrives 130–200 ms
 after the request, whatever the length of the text** — ElevenLabs' ~150 ms
 claim holds from here. In lotti, which starts once two seconds of audio
-are written, that is **0.29–0.43 s** to the first word. v4 Turbo is also
+are written, the clip is **playable after 0.29–0.43 s** (when a device
+player then sounds it was not measured, §10). v4 Turbo is also
 the most expressive of the models measured (§5). **Recommendation: adopt v4
 Turbo, streamed, as the ElevenLabs read-aloud model** (§9). It is in this
 change: ElevenLabs now streams through #5084's pipeline, and v4 Turbo is
@@ -98,10 +99,10 @@ five times; all stay ahead of playback once started.
 
 Met, streamed: 128–200 ms over 15 runs at all three lengths. Not met
 unstreamed — no model can, as the clip has to exist first. In lotti the
-first word comes ~150–280 ms later than the first byte, because playback
+clip is playable ~150–280 ms after the first byte, because playback
 waits for two seconds of audio. That lead was chosen for Voxtral before
 these numbers existed; since audio never ran short in any run, a shorter
-lead for v4 Turbo would bring the first word to ~0.2 s. It is left at two
+lead for v4 Turbo would make it playable at ~0.2 s. It is left at two
 seconds until a growing file has been heard on a device (§10).
 
 ### 3.4 Cost
@@ -252,7 +253,8 @@ app needs *Text to Speech*, *Voices: read* and *Models: read*.
    of the expressive models (0.29–0.43 s in lotti, flat with length), the
    widest pitch range measured, 94 languages, 10,000 characters per
    request, and half the cost of the current default. In this change.
-2. **Do not adopt v3.** Slowest to start (0.85–0.9 s in lotti), 5,000 characters
+2. **Do not adopt v3.** Slow to start (playable after 0.85–0.9 s, three
+   times v4 Turbo; only v4 is slower), 5,000 characters
    per request, no text-to-speech socket, narrowest pitch range here.
 3. **v4 (not Turbo)** only where a second's wait does not matter; it is not
    more expressive than v4 Turbo on this measure and costs twice as much.

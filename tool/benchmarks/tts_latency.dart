@@ -186,6 +186,20 @@ Future<void> main(List<String> args) async {
           .split(',');
   final modes = (opts['modes'] ?? 'rest,stream,ws').split(',');
 
+  // Looked up once, before the warm-up, and bounded: without it Voxtral is
+  // left out, not the whole run.
+  String? voxtralVoice;
+  if (opts.containsKey('voxtral') && _mistralKey != null) {
+    try {
+      voxtralVoice = await _voxtralVoice().timeout(const Duration(seconds: 20));
+    } on Object catch (e) {
+      // A lookup that hangs is ended with its client.
+      _http.close(force: true);
+      _http = _newClient();
+      stderr.writeln('Voxtral left out, no voice: $e');
+    }
+  }
+
   // Warm the connection, as the app's long-lived client is, and time a
   // round trip that synthesizes nothing.
   final rtt = <int>[];
@@ -199,16 +213,6 @@ Future<void> main(List<String> args) async {
   stderr.writeln(
     'ElevenLabs GET models round trip (warm): ${rtt.skip(1).toList()} ms',
   );
-
-  // Looked up once; without it Voxtral is left out, not the whole run.
-  String? voxtralVoice;
-  if (opts.containsKey('voxtral') && _mistralKey != null) {
-    try {
-      voxtralVoice = await _voxtralVoice();
-    } on Object catch (e) {
-      stderr.writeln('Voxtral left out, no voice: $e');
-    }
-  }
 
   final samples = <Sample>[];
   for (var rep = 0; rep < reps; rep++) {
