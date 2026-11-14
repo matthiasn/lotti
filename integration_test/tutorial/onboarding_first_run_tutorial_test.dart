@@ -9,7 +9,7 @@
 ///  2. choose an AI brain → Melious,
 ///  3. the API key is typed into the obscured field (read from
 ///     `MELIOUS_API_KEY`, never revealed, never spoken) and verified live,
-///  4. the success beat and the first life area,
+///  4. the first life area, where she says the key worked,
 ///  5. the first task is dictated through the virtual microphone,
 ///  6. Lotti structures it, and the created card opens the real task page.
 @Tags(['tutorial-video'])
@@ -136,37 +136,6 @@ void main() {
 
       await driver.step('choose_brain', () async {
         await tapLabel(l10n.onboardingWelcomeOneKeyButton);
-        await driver.pumpUntilFound(panel('make-her-yours'));
-      });
-
-      await driver.step('make_her_yours', () async {
-        await driver.holdUntil(
-          driver.timeline.elapsed + const Duration(milliseconds: 1500),
-        );
-        final keep = find.descendant(
-          of: panel('make-her-yours'),
-          matching: find.text(l10n.onboardingMakeHerYoursContinue),
-        );
-        await tester.ensureVisible(keep);
-        await tester.pump();
-        await tapLabel(
-          l10n.onboardingMakeHerYoursContinue,
-          within: panel('make-her-yours'),
-        );
-        await driver.pumpUntilFound(panel('voices'));
-      });
-
-      await driver.step('voices', () async {
-        await driver.holdUntil(
-          driver.timeline.elapsed + const Duration(milliseconds: 1500),
-        );
-        final next = find.descendant(
-          of: panel('voices'),
-          matching: find.text(l10n.onboardingVoicesContinue),
-        );
-        await tester.ensureVisible(next);
-        await tester.pump();
-        await tapLabel(l10n.onboardingVoicesContinue, within: panel('voices'));
         await driver.pumpUntilFound(panel('connect'));
       });
 
@@ -227,22 +196,13 @@ void main() {
         );
         // Connecting saves the provider and runs the FTUE model seeding
         // against Melious — a network round-trip, recorded as a wait.
+        // The areas open the moment it has: there is no success screen
+        // in between.
         await driver.pumpUntil(
-          () => panel('success').evaluate().isNotEmpty,
+          () => panel('category').evaluate().isNotEmpty,
           description: 'the provider connected and its models seeded',
           timeout: const Duration(minutes: 2),
         );
-      });
-
-      await driver.step('connected', () async {
-        await driver.holdUntil(
-          driver.timeline.elapsed + const Duration(milliseconds: 1500),
-        );
-        await tapLabel(
-          l10n.onboardingSuccessContinue,
-          within: panel('success'),
-        );
-        await driver.pumpUntilFound(panel('category'));
       });
 
       await driver.step('choose_areas', () async {

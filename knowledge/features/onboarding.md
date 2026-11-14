@@ -40,12 +40,21 @@ flowchart TD
     L[First launch · no provider configured] -->|eligible| W[OnboardingWelcomeModal]
     L -->|budget spent / already completed| NONE[no auto-show · replay via Settings › Onboarding]
     W --> WL[welcome · the companion + her one-key promise + CTA]
-    WL -->|Get started with one key| MY[make me yours · her look, optional]
-    MY -->|Looks good / Skip for now| VO[the voices · a sample each, optional]
-    VO -->|Next: your key| CN[connect · one recommended card]
+    WL -->|Get started with one key| CN[connect · one recommended card]
     CN -->|Other providers| CNO[the remaining provider tiles]
+    CN --> KEY[the key · verified live]
+    CNO --> KEY
+    KEY -->|Connect| AR[areas · she says the key worked]
+    AR -->|Continue| FT[first task · speak, tap a suggestion or type]
+    WL -->|Explore with sample data| DEMO[the demo world · nothing recorded]
     WL -->|Look around first| SK[skip → onDismiss · no persistence, grace period preserved]
 ```
+
+**Five panels, each asking for one thing.** Nothing optional stands between
+the welcome and the key, and no panel exists only to be tapped away: a
+connected key opens the areas directly, and that step's bubble is where the
+connection is confirmed. Her look and her voices are settings (Settings ›
+Companion, Settings › Speech), not steps of the first run.
 
 **Skipping preserves the grace period** — it records no completion, so the
 welcome remains eligible to reappear within its cadence budget.
@@ -80,25 +89,6 @@ points at her.
   the one key she needs (`onboardingCompanionWelcomeLine`). The panel keeps its
   artwork and its own promise only where a host passes no companion — the
   animation gallery.
-- **"Make me yours".** Between the welcome and the key, an optional step
-  (`OnboardingMakeHerYoursStep`): she stands full length beside her bubble,
-  over a row of choices each for her outfit ("Surprise me" or one of hers),
-  skin tone, hair style and hair colour. Each pick is written at once to
-  `companionCustomizationProvider` — the store Settings › Companion edits — so
-  she wears it as it is made, and "Skip for now" only moves on. The step
-  records `companionCustomizeShown`, `companionCustomized` (the first pick of
-  a visit) and `companionCustomizeSkipped`.
-- **The voices.** After it, an optional step (`OnboardingVoicesStep`): her
-  bust beside her bubble, then a card for each voice she can have — on the
-  device (free, private), Mistral's Voxtral (comes with the recommended key)
-  and ElevenLabs (with a key of its own). Each card plays its bundled sample
-  through her (`TtsPlaybackController.playClip`) under her step's source, so
-  she says it with her mouth in time; starting one stops whatever was
-  speaking, and tapping the one playing stops it. The samples are one English
-  sentence (`onboardingVoiceSampleText`), as a note under the cards says. The
-  step records `voiceSamplesShown`, and `voiceSamplePlayed` with the voice as
-  its provider dimension; `providerModalShown` is recorded when the user
-  leaves it for the key.
 - **The connect step.** A bust, `ControlSizes.avatarHero` square, beside a
   bubble in which she recommends the one key.
 - **The key step.** A bust at the end of the title row
@@ -107,19 +97,22 @@ points at her.
   empty, thinking while the key is checked and while the provider is set up
   after Connect, a thumbs-up when it is verified, a shrug when it is turned
   down. She says nothing there; the status line carries the words.
-- **Her first words.** On the success beat she takes the checkmark's place
-  (`OnboardingSuccessView.lead`, `OnboardingFirstWords`): a bust celebrating
-  beside her bubble. The provider's seeded profile is resolved
-  (`resolveByProfileId`) and, where its read-aloud slot names a cloud voice —
-  Mistral's does, Voxtral — she says "There, now you can hear me too!" in it,
-  in the app's language (`OnboardingCompanion.cloudVoice`). That one line is
-  spoken **whatever the read-aloud flag says**: it is fixed text, sent to the
-  provider the user has just connected, and the flag is off by default, so
-  otherwise no new user would ever hear her. Without such a voice, or when
-  the profile does not resolve, she is silent and her bubble says she is
-  ready.
-- **The areas.** A bust beside a bubble holding the step's explanation
-  (`OnboardingCategoryView.companion`).
+- **The areas, and her first words.** The key step leads straight here, so
+  this is where she says it worked: a bust celebrating beside a bubble
+  (`OnboardingCategoryView.companion`) that opens with her first words and
+  goes on to explain the areas — one line, said as one. The provider's seeded
+  profile is resolved (`onboardingFirstWords`, `resolveByProfileId`) and,
+  where its read-aloud slot names a cloud voice — Mistral's does, Voxtral —
+  the bubble opens "There, now you can hear me too!" and she says the whole
+  line in that voice, in the app's language (`OnboardingCompanion.cloudVoice`).
+  That line is spoken **whatever the read-aloud flag says**: it is fixed text,
+  sent to the provider the user has just connected, and the flag is off by
+  default, so otherwise no new user would ever hear her. Without such a voice,
+  or when the profile does not resolve, the bubble opens with her being ready
+  instead, and she speaks only by the rules every other line follows. While
+  the profile is still being resolved the bubble shows that same line but she
+  does not say it: said that early, it would start in the voice on hand and
+  start over in the cloud voice a moment later.
 - **The first-task step.** A bust, `ControlSizes.avatarHero` square, above the
   headline (`OnboardingFirstTaskView.companion`), whose headline — and, at
   the prompt, its guidance — is her bubble; the view stays free of providers
@@ -130,11 +123,8 @@ Each moment is an `OnboardingCompanionBeat`:
 | Beat | When | She |
 |---|---|---|
 | `welcome` | the welcome panel | waves once |
-| `dressUp` | the "make me yours" step | opens her arms once |
-| `voices` | the voices step | opens her hands once |
 | `key` · `keyChecking` · `keyVerified` · `keyRejected` | the key step, by its check | waits · holds `think` · thumbs up · shrugs |
-| `firstWords` | the success beat | celebrates once, saying her first words |
-| `areas` | the area step | opens her arms once |
+| `areas` | the area step, reached as the key works | celebrates once, saying her first words |
 | `recommend` | the connect step | presents the recommended card once |
 | `prompt` | the first-task prompt | waves once |
 | `listening` | the mic is open | holds `listen` |

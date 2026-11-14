@@ -268,14 +268,6 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Get started with one key'));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Skip for now'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Skip for now'));
-        await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Next: your key'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Next: your key'));
-        await tester.pumpAndSettle();
         await tester.tap(find.text('Other providers'));
         await tester.pumpAndSettle();
         await tester.ensureVisible(find.text('Ollama'));
@@ -288,7 +280,7 @@ void main() {
         expect(find.text('Connection verified'), findsOneWidget);
         await tester.tap(find.text('Connect'));
         await tester.pumpAndSettle();
-        expect(find.text('Get started'), findsOneWidget);
+        expect(find.text('Where should your AI work?'), findsOneWidget);
 
         // The gate is not retired until the modal actually closes.
         expect(
@@ -299,7 +291,7 @@ void main() {
         // Close the modal by tapping outside the panel: the flow ends with a
         // connected provider, so `onCompleted` fires and persists the flag.
         final panelTop = tester
-            .getTopLeft(find.byKey(const ValueKey('onboarding-success')))
+            .getTopLeft(find.byKey(const ValueKey('onboarding-category')))
             .dy;
         await tester.tapAt(Offset(195, panelTop - 20));
         await tester.pumpAndSettle();

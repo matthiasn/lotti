@@ -146,7 +146,7 @@ When only a new or changed case needs publishing, pass its IDs to the manifest
 builder so the existing catalog remains untouched. For example:
 
 ```bash
-npm run manifest -- --locales en,de --cases onboarding/api-key,onboarding/success
+npm run manifest -- --locales en,de --cases onboarding/api-key,onboarding/categories
 ```
 
 Use `--skip-manifest` only to prepare an incomplete locale catalog before a

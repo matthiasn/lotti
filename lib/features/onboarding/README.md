@@ -5,16 +5,15 @@ them to one moment: speak a thought, and watch it become a structured task.
 
 ## What it does for the user
 
-- **Explains the promise, then delivers it.** A short welcome, then connecting an
-  AI provider, then the live voice-to-task moment — not a tour of menus.
-- **Lets the user make her theirs.** An optional step before the key: her
-  outfit, skin tone, hair and hair colour, saved as they are picked and
-  editable later in Settings › Companion.
-- **Lets the user hear the voices.** An optional step plays a sample of each
-  voice she can have: on the device, Mistral's Voxtral, and ElevenLabs.
+- **Explains the promise, then delivers it.** Five panels, each asking for one
+  thing: a short welcome, the one key, pasting it, picking areas, and the live
+  voice-to-task moment — not a tour of menus, and nothing optional on the way.
+  Her look and her voices are settings, in Settings › Companion and Settings ›
+  Speech.
 - **Hears her for the first time when the key works.** She thinks while the
-  key is checked and, once it is connected, says her first words in the
-  provider's own voice where it has one (Mistral's Voxtral).
+  key is checked and, once it is connected, the areas open with her first
+  words, in the provider's own voice where it has one (Mistral's Voxtral). No
+  screen sits in between just to be tapped away.
 - **Says what it takes: one API key.** The connect step leads with one
   recommended provider, Mistral, whose single key covers thinking,
   transcription and the voice; the others sit behind a disclosure.
