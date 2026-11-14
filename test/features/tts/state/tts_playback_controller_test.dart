@@ -273,6 +273,32 @@ void main() {
       expect(state().status, TtsPlaybackStatus.stopped);
     });
 
+    test('a speed changed while the player is opened again after a stall is '
+        'not overwritten by the rate it reopens at', () async {
+      build();
+      final speaking = speak();
+      final growing = await clip();
+      audio.add(Uint8List.fromList([...header, ...samples(lead)]));
+      await speaking;
+      player
+        ..emitPosition(const Duration(milliseconds: 1900))
+        ..complete();
+      await pumpEventQueue();
+
+      player.opening = Completer<void>();
+      audio.add(samples(5000));
+      await audio.close();
+      await growing.done;
+      await pumpEventQueue();
+      expect(player.playCount, 2);
+      h.container.read(ttsSettingsControllerProvider.notifier).setSpeed(1.75);
+      player.opening!.complete();
+      await pumpEventQueue();
+
+      expect(player.lastSpeed, 1);
+      expect(player.rate, 1.75);
+    });
+
     test('a stream that fails after she began ends the utterance as a '
         'failure when the player has played what there was', () async {
       build();
@@ -376,6 +402,47 @@ void main() {
       expect(growing.file.existsSync(), isFalse);
       expect(audio.hasListener, isFalse);
       expect(state().status, TtsPlaybackStatus.stopped);
+    });
+
+    test('a whole clip a stop kept for a replay, while the play was still '
+        'being allowed, is not deleted when that answer comes', () async {
+      build();
+      var hold = false;
+      final questions = <Completer<bool>>[];
+      Future<bool> canPlay() {
+        if (!hold) return Future.value(true);
+        final question = Completer<bool>();
+        questions.add(question);
+        return question.future;
+      }
+
+      final speaking = speak(canPlay: canPlay);
+      final growing = await clip();
+      hold = true;
+      audio.add(Uint8List.fromList([...header, ...samples(lead)]));
+      await audio.close();
+      await growing.done;
+      while (questions.isEmpty) {
+        await pumpEventQueue();
+      }
+
+      // Stopped while the play is asked about: the whole clip is kept.
+      final stopping = controller().stop();
+      while (questions.length < 2) {
+        await pumpEventQueue();
+      }
+      questions.first.complete(false); // the play: no
+      await speaking;
+      questions.last.complete(true); // the replay: yes
+      await stopping;
+      await pumpEventQueue();
+
+      expect(growing.isComplete, isTrue);
+      expect(growing.file.existsSync(), isTrue);
+      hold = false;
+      await speak(canPlay: canPlay);
+      expect(player.lastFile?.path, growing.file.path);
+      expect(cloud.growing, hasLength(1));
     });
 
     test('leaving while the voice is still writing lets the stream go and '

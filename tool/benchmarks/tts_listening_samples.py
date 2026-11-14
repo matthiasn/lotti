@@ -4,6 +4,7 @@ python3 -I tool/benchmarks/tts_listening_samples.py .env outdir
 Writes <outdir>/<label>.mp3 and <outdir>/samples.json (label, model, voice, text).
 """
 import json
+import os
 import re
 import subprocess
 import sys
@@ -13,6 +14,7 @@ env = dict(l.strip().split('=', 1) for l in open(sys.argv[1]) if '=' in l and no
 EL = env['ELEVEN_LABS_API_KEY'].strip('"\'')
 MI = env.get('MISTRAL_API_KEY', '').strip('"\'')
 out = sys.argv[2]
+os.makedirs(out, exist_ok=True)
 
 TAGGED = ('[sighs] Okay... three tasks slipped again this week. [warmly] But honestly? '
           "That's fine. You shipped the big one on Tuesday, [excited] and that was the hard part!")

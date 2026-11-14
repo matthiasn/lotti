@@ -170,6 +170,34 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'asks again as the request is made: a stop while its file was '
+      'being prepared sends nothing, and leaves a clip without audio',
+      () async {
+        var asked = 0;
+        // Yes while the voice is resolved, no once the clip starts reading.
+        final clip = await synth.synthesizeToGrowingFile(
+          route: route,
+          text: 'Grüß dich',
+          chosenVoices: const {},
+          canSend: () async => ++asked == 1,
+        );
+        await clip!.done;
+
+        expect(asked, 2);
+        expect(clip.hasAudio, isFalse);
+        verifyNever(
+          () => streaming.synthesizeStream(
+            text: any(named: 'text'),
+            voiceId: any(named: 'voiceId'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            model: any(named: 'model'),
+          ),
+        );
+      },
+    );
+
     test('asks nothing of the voice when it may not be sent, or there is '
         'nothing to say', () async {
       expect(

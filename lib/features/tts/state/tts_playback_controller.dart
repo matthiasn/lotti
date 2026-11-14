@@ -396,12 +396,14 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       if (!current() || !allowed) {
         if (identical(_playing?.file, file)) _playing = null;
         if (identical(_growing, growing)) _growing = null;
-        if (growing != null) {
-          await _discard(growing);
-        } else if (!identical(_prepared?.file, file)) {
-          // A stop meanwhile kept the clip for a replay: it is the slot's
-          // now.
-          await _deleteFile(file);
+        // A stop meanwhile may have kept the clip — a streamed one once it
+        // was whole — for a replay: it is the slot's now.
+        if (!identical(_prepared?.file, file)) {
+          if (growing != null) {
+            await _discard(growing);
+          } else {
+            await _deleteFile(file);
+          }
         }
         if (current()) _onPlaybackEnded();
         return;
@@ -422,13 +424,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         // Nothing waits for it, and it handles its own outcome.
         _followGrowing(growing, generation, text).ignore();
       }
-      // The speed now, not when synthesis began: it may have changed since.
-      final speed = ref.read(ttsSettingsControllerProvider).speed;
-      await player.play(file, speed: speed);
-      // A change while the player was opening was applied and then
-      // overwritten by the rate `play` sets: put the latest one back.
-      final latest = ref.read(ttsSettingsControllerProvider).speed;
-      if (current() && latest != speed) await player.setSpeed(latest);
+      await _playAtLatestSpeed(player, file, current);
     } catch (error, stackTrace) {
       if (!current()) return;
       // The cloud clients log their own request failures with their detail;
@@ -522,11 +518,10 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         '${at.inMilliseconds} ms',
         subDomain: 'ttsPlayback.speak',
       );
-      await _player?.play(
-        growing.file,
-        speed: ref.read(ttsSettingsControllerProvider).speed,
-        from: at,
-      );
+      final player = _player;
+      if (player != null) {
+        await _playAtLatestSpeed(player, growing.file, current, from: at);
+      }
     } catch (error, stackTrace) {
       if (!current() || sourceId == null) return;
       if (error is! CloudTtsException) {
@@ -674,6 +669,22 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         }
       },
     );
+  }
+
+  /// Plays [file] from [from] at the speed set now, not when synthesis
+  /// began. A change while the player was opening was applied and then
+  /// overwritten by the rate `play` sets, so the latest one is put back
+  /// while the utterance is still [current].
+  Future<void> _playAtLatestSpeed(
+    TtsAudioPlayer player,
+    File file,
+    bool Function() current, {
+    Duration from = Duration.zero,
+  }) async {
+    final speed = ref.read(ttsSettingsControllerProvider).speed;
+    await player.play(file, speed: speed, from: from);
+    final latest = ref.read(ttsSettingsControllerProvider).speed;
+    if (current() && latest != speed) await player.setSpeed(latest);
   }
 
   void _listenToPlayer(TtsAudioPlayer player) {

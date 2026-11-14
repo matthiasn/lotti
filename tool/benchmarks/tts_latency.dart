@@ -136,7 +136,15 @@ class AudioClock {
   }
 }
 
-late final HttpClient _http;
+HttpClient _newClient() =>
+    HttpClient()..idleTimeout = const Duration(seconds: 30);
+
+/// Replaced after a timeout, so a request still running cannot share the
+/// next sample's connection.
+HttpClient _http = _newClient();
+
+/// The socket of the sample in progress, closed if it times out.
+WebSocket? _socket;
 late final String _elevenKey;
 String? _mistralKey;
 String? _audioDir;
@@ -177,7 +185,6 @@ Future<void> main(List<String> args) async {
               'eleven_v4_turbo,eleven_v4,eleven_v3,eleven_flash_v2_5,eleven_multilingual_v2')
           .split(',');
   final modes = (opts['modes'] ?? 'rest,stream,ws').split(',');
-  _http = HttpClient()..idleTimeout = const Duration(seconds: 30);
 
   // Warm the connection, as the app's long-lived client is, and time a
   // round trip that synthesizes nothing.
@@ -192,6 +199,16 @@ Future<void> main(List<String> args) async {
   stderr.writeln(
     'ElevenLabs GET models round trip (warm): ${rtt.skip(1).toList()} ms',
   );
+
+  // Looked up once; without it Voxtral is left out, not the whole run.
+  String? voxtralVoice;
+  if (opts.containsKey('voxtral') && _mistralKey != null) {
+    try {
+      voxtralVoice = await _voxtralVoice();
+    } on Object catch (e) {
+      stderr.writeln('Voxtral left out, no voice: $e');
+    }
+  }
 
   final samples = <Sample>[];
   for (var rep = 0; rep < reps; rep++) {
@@ -213,8 +230,7 @@ Future<void> main(List<String> args) async {
           _report(s);
         }
       }
-      if (opts.containsKey('voxtral') && _mistralKey != null) {
-        final voice = await _voxtralVoice();
+      if (voxtralVoice case final voice?) {
         for (final mode in ['rest', 'stream']) {
           final s = Sample('mistral', _voxtralModel, mode, text);
           await _guard(s, () => _voxtral(s, voice, stream: mode == 'stream'));
@@ -238,8 +254,17 @@ Future<void> main(List<String> args) async {
 Future<void> _guard(Sample s, Future<void> Function() run) async {
   try {
     await run().timeout(const Duration(seconds: 90));
+  } on TimeoutException catch (e) {
+    // A timeout does not stop the request: end it, so it cannot skew the
+    // samples after it.
+    _http.close(force: true);
+    _http = _newClient();
+    await _socket?.close();
+    s.error = e.toString().split('\n').first;
   } on Object catch (e) {
     s.error = e.toString().split('\n').first;
+  } finally {
+    _socket = null;
   }
 }
 
@@ -326,7 +351,10 @@ Future<void> _elevenWs(Sample s, {bool dialogue = false}) async {
   final uri =
       '$wss/${dialogue ? 'text-to-dialogue' : 'text-to-speech/$_voice'}/stream-input'
       '?model_id=${s.model}&output_format=pcm_24000';
-  final ws = await WebSocket.connect(uri, headers: {'xi-api-key': _elevenKey});
+  final ws = _socket = await WebSocket.connect(
+    uri,
+    headers: {'xi-api-key': _elevenKey},
+  );
   final sw = Stopwatch();
   final clock = AudioClock(sw, wav: false);
   final done = Completer<void>();
@@ -477,7 +505,12 @@ String _markdown(List<Sample> samples) {
       );
       continue;
     }
-    int median(List<int> xs) => (xs..sort())[xs.length ~/ 2];
+    int median(List<int> xs) {
+      xs.sort();
+      final mid = xs.length ~/ 2;
+      return xs.length.isOdd ? xs[mid] : ((xs[mid - 1] + xs[mid]) / 2).round();
+    }
+
     final first = ok.map((s) => s.firstAudioMs!).toList()..sort();
     rows.add(
       '| ${key.replaceAll('|', ' | ')} | ${median(first)} ms (${first.first}–${first.last}) '

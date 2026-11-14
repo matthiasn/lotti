@@ -15,7 +15,7 @@ with the text — up to 4 s on Voxtral, 6 s on v3 or v4. Streamed, every
 model starts within 0.7 s, and **v4 Turbo's first audio arrives 130–200 ms
 after the request, whatever the length of the text** — ElevenLabs' ~150 ms
 claim holds from here. In lotti, which starts once two seconds of audio
-are written, that is **0.30–0.44 s** to the first word. v4 Turbo is also
+are written, that is **0.29–0.43 s** to the first word. v4 Turbo is also
 the most expressive of the models measured (§5). **Recommendation: adopt v4
 Turbo, streamed, as the ElevenLabs read-aloud model** (§9). It is in this
 change: ElevenLabs now streams through #5084's pipeline, and v4 Turbo is
@@ -66,17 +66,17 @@ Whole clips: the full request. Streamed: *playable in lotti*.
 | Voice | Mode | Short | Conversational | Long |
 |---|---|---|---|---|
 | Voxtral (`main`) | whole | 469 ms | 1,023 ms | 3,893 ms |
-| Voxtral (#5084) | streamed | 390 ms | 546 ms | 515 ms |
+| Voxtral (#5084) | streamed | 354 ms | 500 ms | 506 ms |
 | Multilingual v2 (`main` default) | whole | 199 ms | 332 ms | 992 ms |
-| Multilingual v2 | streamed | 235 ms | 329 ms | 536 ms |
+| Multilingual v2 | streamed | 226 ms | 302 ms | 526 ms |
 | Flash v2.5 | whole | 132 ms | 210 ms | 589 ms |
-| Flash v2.5 | streamed | 161 ms | 215 ms | 229 ms |
+| Flash v2.5 | streamed | 152 ms | 212 ms | 216 ms |
 | v3 | whole | 991 ms | 2,307 ms | 6,265 ms |
-| v3 | streamed | 900 ms | 916 ms | 914 ms |
+| v3 | streamed | 850 ms | 901 ms | 902 ms |
 | v4 | whole | 675 ms | 1,734 ms | 6,330 ms |
-| v4 | streamed | 728 ms | 1,231 ms | 1,116 ms |
+| v4 | streamed | 690 ms | 1,096 ms | 1,110 ms |
 | **v4 Turbo** | whole | 281 ms | 797 ms | 2,583 ms |
-| **v4 Turbo** | **streamed** | **301 ms** | **402 ms** | **443 ms** |
+| **v4 Turbo** | **streamed** | **287 ms** | **396 ms** | **433 ms** |
 
 ### 3.2 Time to first audio byte (medians, min–max of 3)
 
@@ -98,7 +98,7 @@ five times; all stay ahead of playback once started.
 
 Met, streamed: 128–200 ms over 15 runs at all three lengths. Not met
 unstreamed — no model can, as the clip has to exist first. In lotti the
-first word comes ~150–290 ms later than the first byte, because playback
+first word comes ~150–280 ms later than the first byte, because playback
 waits for two seconds of audio. That lead was chosen for Voxtral before
 these numbers existed; since audio never ran short in any run, a shorter
 lead for v4 Turbo would bring the first word to ~0.2 s. It is left at two
@@ -249,14 +249,14 @@ app needs *Text to Speech*, *Voices: read* and *Models: read*.
 ## 9. Recommendation
 
 1. **Adopt `eleven_v4_turbo`, streamed, for ElevenLabs.** The fastest start
-   of the expressive models (0.3–0.44 s in lotti, flat with length), the
+   of the expressive models (0.29–0.43 s in lotti, flat with length), the
    widest pitch range measured, 94 languages, 10,000 characters per
    request, and half the cost of the current default. In this change.
-2. **Do not adopt v3.** Slowest to start (0.9 s in lotti), 5,000 characters
+2. **Do not adopt v3.** Slowest to start (0.85–0.9 s in lotti), 5,000 characters
    per request, no text-to-speech socket, narrowest pitch range here.
 3. **v4 (not Turbo)** only where a second's wait does not matter; it is not
    more expressive than v4 Turbo on this measure and costs twice as much.
-4. **Keep Voxtral streamed** (#5084) as the EU-hosted voice: 0.4–0.55 s in
+4. **Keep Voxtral streamed** (#5084) as the EU-hosted voice: 0.35–0.51 s in
    lotti, a smaller pitch range.
 5. **Keep the on-device voice** as the default and the offline fallback.
 

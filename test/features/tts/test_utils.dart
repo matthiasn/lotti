@@ -87,6 +87,9 @@ class FakeTtsAudioPlayer implements TtsAudioPlayer {
   int stopCount = 0;
   double? lastSpeed;
 
+  /// The clip [play] was last asked to open.
+  File? lastFile;
+
   /// Where each [play] was asked to start, in order.
   final List<Duration> startedFrom = <Duration>[];
 
@@ -112,6 +115,7 @@ class FakeTtsAudioPlayer implements TtsAudioPlayer {
     playCount++;
     startedFrom.add(from);
     lastSpeed = speed;
+    lastFile = file;
     if (playError != null) throw playError!;
     await opening?.future;
     rate = speed;

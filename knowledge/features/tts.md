@@ -255,7 +255,12 @@ echoes the rejected value, and a body that is not JSON is not kept at all.
 Failures the client does not log itself — a missing voice, the on-device
 engine, the player — are logged by `TtsPlaybackController` before it turns to
 the error state the toast reports. It refuses redirects, which would carry the
-credential to another host, and plain HTTP anywhere but loopback.
+credential to another host, and plain HTTP anywhere but loopback. Every
+request is an `AbortableRequest`: one that times out is aborted rather than
+left running, and a stream let go of — a stop, a recording about to start —
+aborts its request at once, also while the answer is still awaited, so
+letting go never waits on the provider. A stream's failures along its body
+are typed and logged like those before it.
 
 `CloudSpeechSynthesizer` turns a route and a text into the same temporary WAV
 the on-device engine writes, so everything after synthesis — playback,
@@ -422,8 +427,8 @@ temporary WAV as it arrives (`GrowingSpeechClip`), for a provider whose
 client is a `StreamingCloudTtsClient` (`canStream`; Voxtral and ElevenLabs
 both are). The player reads the file like any other. `speak` starts it once
 the clip is **playable** — its header and two seconds of audio written, or
-the stream ended — which the live runs reached 0.39–0.55 s after the request
-on Voxtral and 0.30–0.44 s on ElevenLabs `eleven_v4_turbo` (2026-11-14,
+the stream ended — which the live runs reached 0.35–0.51 s after the request
+on Voxtral and 0.29–0.43 s on ElevenLabs `eleven_v4_turbo` (2026-11-14,
 `tool/benchmarks/tts_latency.dart`). Every streamed run there had its audio
 arrive ahead of playback from the first byte on, so the two-second lead is
 now the larger part of the wait on v4 Turbo, whose first byte comes at
@@ -461,7 +466,15 @@ stateDiagram-v2
   — after what was written was spoken.
 - **Nothing partial is kept.** A stop while it is being written lets the
   stream go and deletes the part of a clip; only a whole clip is kept for a
-  replay.
+  replay — and stays kept when a question about playing it, still pending
+  at the stop, is answered later.
+- **Whole means the provider said so.** A Voxtral stream that ends before
+  `speech.audio.done` is a cut-off clip and fails as an invalid response;
+  ElevenLabs' stream is whole when its body ends, a broken connection being
+  a network failure.
+- **Sending is asked about last thing.** `synthesizeToGrowingFile` asks
+  `canSend` again the moment the clip starts reading — after its file is
+  prepared, right before the request — so a stop meanwhile sends nothing.
 - **A word may come back empty.** Voxtral ends the stream without audio
   for a text of one short word ("Yes."); that is no failure, and the text
   is then asked for as a whole clip.

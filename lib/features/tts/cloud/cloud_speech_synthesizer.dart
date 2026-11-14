@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -87,16 +88,22 @@ class CloudSpeechSynthesizer {
     final request = await _request(route, text, chosenVoices, canSend);
     if (request == null) return null;
     final client = request.client as StreamingCloudTtsClient;
-    return GrowingSpeechClip.start(
-      await _newFile(),
-      client.synthesizeStream(
+    // Asked once more as the request is made — when the clip starts
+    // reading: preparing its file waits on the file system, and a stop or
+    // a withdrawn permission meanwhile must keep the text on the device.
+    // A no is a stream without audio, which the caller ends quietly.
+    Stream<Uint8List> gated() async* {
+      if (!await canSend()) return;
+      yield* client.synthesizeStream(
         text: request.spoken,
         voiceId: request.voiceId,
         baseUrl: route.provider.baseUrl,
         apiKey: route.provider.apiKey,
         model: route.model.providerModelId,
-      ),
-    );
+      );
+    }
+
+    return GrowingSpeechClip.start(await _newFile(), gated());
   }
 
   /// What is sent for [text] on [route] — its client, its voice and the

@@ -169,6 +169,7 @@ class VoxtralTtsService implements StreamingCloudTtsClient {
     _http.log(description);
     final stopwatch = Stopwatch()..start();
     var bytes = 0;
+    var done = false;
     final lines = _http
         .sendStreamed(request, description: description)
         .transform(utf8.decoder)
@@ -185,7 +186,10 @@ class VoxtralTtsService implements StreamingCloudTtsClient {
         );
       }
       if (event is! Map<String, dynamic>) continue;
-      if (event['type'] == 'speech.audio.done') break;
+      if (event['type'] == 'speech.audio.done') {
+        done = true;
+        break;
+      }
       final audio = event['audio_data'];
       if (event['type'] != 'speech.audio.delta' || audio is! String) continue;
       final Uint8List chunk;
@@ -202,6 +206,14 @@ class VoxtralTtsService implements StreamingCloudTtsClient {
       }
       bytes += chunk.length;
       yield chunk;
+    }
+    // Only `done` says the speech is all there: an answer that just stops
+    // is a cut-off clip, which must not be taken for a whole one.
+    if (!done) {
+      throw _http.invalidResponse(
+        'Speech stream ended before speech.audio.done',
+        description: description,
+      );
     }
     _http.log(
       'Speech stream: $bytes bytes in ${stopwatch.elapsedMilliseconds} ms',

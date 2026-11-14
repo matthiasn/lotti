@@ -121,6 +121,19 @@ void main() {
       );
     });
 
+    test('an answer that stops before done is a cut-off clip: what came is '
+        'emitted, then an invalid response, never a clean end', () async {
+      final chunks = <Uint8List>[];
+      final error = await failure(
+        stream(delta([1, 2, 3])).forEach(chunks.add),
+      );
+
+      expect(chunks, [
+        [1, 2, 3],
+      ]);
+      expect(error.failure, CloudTtsFailure.invalidResponse);
+    });
+
     test(
       'a stream that is done without audio is empty, not a failure',
       () async {

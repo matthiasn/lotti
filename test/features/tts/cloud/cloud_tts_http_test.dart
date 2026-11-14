@@ -130,6 +130,101 @@ void main() {
         expect(error!.message, 'No response within 5 s');
       });
     });
+
+    CloudTtsHttp over(http.Client client, {Duration? timeout}) => CloudTtsHttp(
+      domainLogger: logger,
+      providerName: 'Acme',
+      subDomain: 'AcmeTts',
+      requestIdHeaders: const [],
+      timeout: timeout ?? const Duration(seconds: 60),
+      httpClient: client,
+    );
+
+    test('a stop while the answer is still awaited aborts the request and '
+        'does not wait for the provider', () async {
+      final client = _HangingClient();
+      final subscription = over(
+        client,
+      ).sendStreamed(request(), description: _description).listen((_) {});
+      await pumpEventQueue();
+
+      // Completes now, not when the provider answers or the timeout ends.
+      await subscription.cancel().timeout(const Duration(seconds: 1));
+      await pumpEventQueue();
+
+      expect(client.aborted, isTrue);
+    });
+
+    test('a request that times out is aborted, not left running', () {
+      fakeAsync((async) {
+        final client = _HangingClient();
+        over(client, timeout: const Duration(seconds: 5))
+            .sendStreamed(request(), description: _description)
+            .drain<void>()
+            .ignore();
+        async.elapse(const Duration(seconds: 6));
+
+        expect(client.aborted, isTrue);
+      });
+    });
+
+    test('a body that breaks off after its first piece is a typed, logged '
+        'network failure after that piece', () async {
+      final events = <Object>[];
+      final done = Completer<void>();
+      over(
+            MockClient.streaming(
+              (_, _) async => http.StreamedResponse(
+                Stream.fromFutures([
+                  Future.value([1, 2]),
+                  Future.error(http.ClientException('Connection closed')),
+                ]),
+                200,
+              ),
+            ),
+          )
+          .sendStreamed(request(), description: _description)
+          .listen(
+            events.add,
+            onError: events.add,
+            onDone: done.complete,
+          );
+      await done.future;
+
+      expect(events.first, [1, 2]);
+      expect(
+        events.last,
+        isA<CloudTtsException>()
+            .having((e) => e.failure, 'failure', CloudTtsFailure.network)
+            .having((e) => e.message, 'message', 'Connection closed'),
+      );
+      verify(
+        () => logger.error(
+          LogDomain.speech,
+          any(),
+          subDomain: 'AcmeTts',
+          stackTrace: any(named: 'stackTrace'),
+          message: any(named: 'message'),
+        ),
+      ).called(1);
+    });
+  });
+
+  test('send aborts a request that timed out', () {
+    fakeAsync((async) {
+      final client = _HangingClient();
+      CloudTtsHttp(
+        domainLogger: logger,
+        providerName: 'Acme',
+        subDomain: 'AcmeTts',
+        requestIdHeaders: const [],
+        timeout: const Duration(seconds: 5),
+        httpClient: client,
+      ).send(request(), description: _description).ignore();
+      async.elapse(const Duration(seconds: 6));
+
+      expect(client.aborted, isTrue);
+    });
   });
 
   group('send', () {
@@ -456,6 +551,21 @@ void main() {
     ).close();
     expect(closed, isTrue);
   });
+}
+
+/// Never answers; an aborted request fails at once, as `IOClient`'s does.
+class _HangingClient extends http.BaseClient {
+  bool aborted = false;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    final answer = Completer<http.StreamedResponse>();
+    (request as http.Abortable).abortTrigger?.then((_) {
+      aborted = true;
+      answer.completeError(http.RequestAbortedException(request.url));
+    });
+    return answer.future;
+  }
 }
 
 class _ClosingClient extends http.BaseClient {
