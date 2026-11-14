@@ -677,7 +677,7 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
     );
 
     return FrontReplySurfaces(
-      surfaces: thread?.surfacesByMessageId ?? const {},
+      surfaces: thread?.surfaces ?? const {},
       logger: ref.watch(domainLoggerProvider),
       // A reply she offered and the user tapped is their next turn, in its
       // own words — as a chip under a clarifying question is.

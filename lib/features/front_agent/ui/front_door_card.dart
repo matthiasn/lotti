@@ -1,4 +1,6 @@
-import 'package:intl/intl.dart';
+import 'package:a2ui_core/a2ui_core.dart';
+import 'package:a2ui_flutter/a2ui_flutter.dart';
+import 'package:collection/collection.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -7,14 +9,17 @@ import 'package:lotti/features/design_system/components/context_menus/design_sys
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
+import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
+import 'package:lotti/features/front_agent/ui/a2ui/front_reply_surfaces.dart';
+import 'package:lotti/features/front_agent/ui/front_cited_source_row.dart';
 import 'package:lotti/features/front_agent/ui/front_task_setup.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
-import 'package:lotti/widgets/markdown/citation_badge.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// What the user can do under a door. Every callback takes the door's id,
@@ -265,6 +270,8 @@ class _DoorRow extends StatelessWidget {
     Widget? action;
     Widget? setup;
     var sources = const <QueryEvidence>[];
+    // Her journal answer's points, when the thread drew them a surface.
+    SurfaceModel<ComponentImplementation>? answerSurface;
     final menu = <DesignSystemContextMenuItem>[];
 
     DesignSystemContextMenuItem item(
@@ -301,7 +308,13 @@ class _DoorRow extends StatelessWidget {
             ) ??
             false;
         title = visible ? answer.text : messages.frontDoorAnswerHidden;
-        if (visible) sources = answer.evidence;
+        if (visible) {
+          sources = answer.evidence;
+          answerSurface = FrontReplySurfaces.surfaceOf(
+            context,
+            frontDoorAnswerSurfaceId(id),
+          );
+        }
         isAnswer = visible;
         status = [
           messages.frontDoorFromJournal,
@@ -552,7 +565,43 @@ class _DoorRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (isAnswer)
+              if (answerSurface != null)
+                // Her journal answer as its points, each with the entries it
+                // rests on: an A2UI surface of the reply catalog, composed by
+                // the app (`FrontChatThread.surfaces`).
+                FrontReplyScope(
+                  key: ValueKey('front-door-text-$index'),
+                  surface: answerSurface,
+                  prose: (markdown) => AgentMarkdownView(
+                    markdown,
+                    style: titleStyle,
+                    onLinkTap: switch (acting?.onOpenLink) {
+                      final open? => (url, _) => open(url),
+                      null => null,
+                    },
+                  ),
+                  onOpen: (_) {},
+                  onOpenTask: (_) {},
+                  onOpenSource: switch (acting?.onOpenEvidence) {
+                    final open? => (cited) {
+                      if (sources.firstWhereOrNull(
+                            (e) => e.source.id == cited.id,
+                          )
+                          case final evidence?) {
+                        open(evidence);
+                      }
+                    },
+                    null => null,
+                  },
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: A2uiSurface(
+                      key: ObjectKey(answerSurface),
+                      surface: answerSurface,
+                    ),
+                  ),
+                )
+              else if (isAnswer)
                 // The card is drawn on a plain box; a link's ink needs a
                 // surface of its own.
                 Material(
@@ -582,9 +631,9 @@ class _DoorRow extends StatelessWidget {
                   key: ValueKey('front-door-text-$index'),
                   style: titleStyle,
                 ),
-              // The evidence is set apart from the answer under a heading
-              // of its own, so the words read first and the sources after.
-              if (sources.isNotEmpty)
+              // Without its surface the answer is her Markdown, and the
+              // evidence is set apart under a heading of its own.
+              if (answerSurface == null && sources.isNotEmpty)
                 Padding(
                   padding: EdgeInsets.only(
                     top: tokens.spacing.step4,
@@ -598,16 +647,17 @@ class _DoorRow extends StatelessWidget {
                     ),
                   ),
                 ),
-              for (final (number, source) in sources.indexed)
-                _SourceRow(
-                  key: ValueKey('front-door-source-$index-$number'),
-                  number: number + 1,
-                  evidence: source,
-                  onOpen: switch (acting?.onOpenEvidence) {
-                    final open? => () => open(source),
-                    null => null,
-                  },
-                ),
+              if (answerSurface == null)
+                for (final (number, source) in sources.indexed)
+                  FrontCitedSourceRow(
+                    key: ValueKey('front-door-source-$index-$number'),
+                    number: number + 1,
+                    source: FrontCitedSource.fromEvidence(source),
+                    onOpen: switch (acting?.onOpenEvidence) {
+                      final open? => () => open(source),
+                      null => null,
+                    },
+                  ),
               // The setup is her question: a step more air above it groups it
               // with its chips, not as a subtitle of the words.
               SizedBox(
@@ -684,107 +734,6 @@ class _DoorRow extends StatelessWidget {
       FrontDestinationKind.journal ||
       FrontDestinationKind.unrouted => messages.frontDoorKindOther,
     };
-  }
-}
-
-/// One source a journal answer cites, numbered as the answer cites it: the
-/// badge its citations wear, what it is and when, and the passage it gave,
-/// opening the source on a tap.
-class _SourceRow extends StatelessWidget {
-  const _SourceRow({
-    required this.number,
-    required this.evidence,
-    required this.onOpen,
-    super.key,
-  });
-
-  final int number;
-  final QueryEvidence evidence;
-  final VoidCallback? onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final caption = tokens.typography.styles.others.caption;
-    final quote = evidence.quote.trim();
-    // A recording's label is its file name, which says nothing a reader can
-    // use; what it is and when does.
-    final label =
-        evidence.kind == QuerySourceKind.recording &&
-            evidence.textVersion.startsWith('transcript:')
-        ? messages.queryRecordingTranscript
-        : evidence.label;
-    final date = DateFormat.yMMMd(
-      Localizations.localeOf(context).toString(),
-    ).add_Hm().format(evidence.sourceDate.toLocal());
-    // The card is drawn on a plain box; the ink needs a surface of its own.
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CitationBadge('$number'),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text.rich(
-                      TextSpan(
-                        text: label,
-                        children: [
-                          TextSpan(
-                            text: ' · $date',
-                            style: caption.copyWith(
-                              color: tokens.colors.text.lowEmphasis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: caption.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
-                    ),
-                    if (quote.isNotEmpty)
-                      // The passage as quoted, set off by a rule like a
-                      // blockquote.
-                      Container(
-                        margin: EdgeInsets.only(top: tokens.spacing.step1),
-                        padding: EdgeInsetsDirectional.only(
-                          start: tokens.spacing.step3,
-                        ),
-                        decoration: BoxDecoration(
-                          border: BorderDirectional(
-                            start: BorderSide(
-                              color: tokens.colors.decorative.level02,
-                            ),
-                          ),
-                        ),
-                        child: Text(
-                          quote,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: caption.copyWith(
-                            color: tokens.colors.text.mediumEmphasis,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 

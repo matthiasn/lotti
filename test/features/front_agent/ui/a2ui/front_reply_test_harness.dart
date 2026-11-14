@@ -1,5 +1,6 @@
 import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/state/front_entity_preview_provider.dart';
@@ -17,6 +18,7 @@ class FrontReplyTaps {
   final opened = <FrontEntityReference>[];
   final openedTasks = <String>[];
   final quickReplies = <String>[];
+  final openedSources = <FrontCitedSource>[];
 }
 
 /// Pumps the replies of [surfaces] — by reply id — as a thread does: one
@@ -31,6 +33,7 @@ Future<void> pumpReplySurfaces(
   DomainLogger? logger,
   Set<String> shownIds = const {},
   bool canReply = true,
+  bool canOpenSources = true,
 }) async {
   await setUpTestGetIt();
   addTearDown(tearDownTestGetIt);
@@ -56,6 +59,9 @@ Future<void> pumpReplySurfaces(
                         onOpenTask: taps.openedTasks.add,
                         shownIds: shownIds,
                         canReply: canReply,
+                        onOpenSource: canOpenSources
+                            ? taps.openedSources.add
+                            : null,
                         child: A2uiSurface(
                           key: ObjectKey(surface),
                           surface: surface,

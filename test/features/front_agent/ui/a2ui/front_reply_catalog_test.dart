@@ -1,7 +1,9 @@
 import 'package:a2ui_core/a2ui_core.dart';
 import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
+import 'package:lotti/features/front_agent/ui/front_cited_source_row.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_cards.dart';
@@ -363,5 +366,103 @@ void main() {
     expect(base.updateShouldNotify(scope(words: Text.new)), isTrue);
     expect(base.updateShouldNotify(scope(shown: {'t-2'})), isTrue);
     expect(base.updateShouldNotify(scope(canReply: false)), isTrue);
+  });
+
+  group('CitedPoints', () {
+    final note = FrontCitedSource(
+      id: 'e-hinge',
+      kind: QuerySourceKind.text,
+      label: 'Colony chores',
+      date: DateTime.utc(2026, 10, 27, 17),
+      quote: 'Feeder hinge: this week, for real.',
+    );
+    final memo = FrontCitedSource(
+      id: 'e-memo',
+      kind: QuerySourceKind.recording,
+      label: '2026-10-20_07-15-02-311.m4a',
+      date: DateTime.utc(2026, 10, 20, 7),
+      quote: 'I really do need to fix that hinge.',
+      transcript: true,
+    );
+    FrontReplySurface answer(List<FrontCitedPoint> points) =>
+        FrontReplySurface.citedAnswer(surfaceId: 'j1', points: points);
+
+    testWidgets('draws each point in her words with the entries it rests on '
+        'right under it, in order', (tester) async {
+      await pumpReplySurfaces(tester, {
+        'j1': answer([
+          FrontCitedPoint(text: 'Promised twice.', sources: [note, memo]),
+          const FrontCitedPoint(text: 'And no plan since.'),
+        ]),
+      }, taps: FrontReplyTaps());
+
+      double top(Finder finder) => tester.getTopLeft(finder).dy;
+      final first = find.text('words: Promised twice.');
+      final second = find.text('words: And no plan since.');
+      final noteRow = find.byKey(const ValueKey('front-cited-source-e-hinge'));
+      final memoRow = find.byKey(const ValueKey('front-cited-source-e-memo'));
+      expect(top(first), lessThan(top(noteRow)));
+      expect(top(noteRow), lessThan(top(memoRow)));
+      expect(top(memoRow), lessThan(top(second)));
+      // The recording is named for what it is, never its file name.
+      expect(find.textContaining('.m4a', findRichText: true), findsNothing);
+      expect(
+        find.descendant(
+          of: memoRow,
+          matching: find.textContaining(
+            'Recording transcript',
+            findRichText: true,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a tap on an entry opens it', (tester) async {
+      final taps = FrontReplyTaps();
+      await pumpReplySurfaces(tester, {
+        'j1': answer([
+          FrontCitedPoint(text: 'Promised.', sources: [note, memo]),
+        ]),
+      }, taps: taps);
+
+      await tester.tap(find.byKey(const ValueKey('front-cited-source-e-memo')));
+
+      expect(taps.openedSources.map((s) => s.id), ['e-memo']);
+    });
+
+    testWidgets('without a way to open them the entries are still named, '
+        'just not tappable', (tester) async {
+      await pumpReplySurfaces(
+        tester,
+        {
+          'j1': answer([
+            FrontCitedPoint(text: 'Promised.', sources: [note]),
+          ]),
+        },
+        taps: FrontReplyTaps(),
+        canOpenSources: false,
+      );
+
+      final row = find.byKey(const ValueKey('front-cited-source-e-hinge'));
+      expect(row, findsOneWidget);
+      expect(
+        tester
+            .widget<InkWell>(
+              find.descendant(of: row, matching: find.byType(InkWell)),
+            )
+            .onTap,
+        isNull,
+      );
+    });
+
+    testWidgets('no points draw nothing', (tester) async {
+      await pumpReplySurfaces(tester, {
+        'j1': answer(const []),
+      }, taps: FrontReplyTaps());
+
+      expect(find.byType(FrontCitedSourceRow), findsNothing);
+      expect(find.textContaining('words:'), findsNothing);
+    });
   });
 }

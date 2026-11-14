@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
@@ -241,6 +243,58 @@ void main() {
         components: [text('Hi.')],
       ).pullRequestCards,
       isEmpty,
+    );
+  });
+
+  test('a journal answer is a surface the app composes alone: its points '
+      'in the data model, one CitedPoints bound to them', () {
+    final points = [
+      FrontCitedPoint(
+        text: 'Promised twice.',
+        sources: [
+          FrontCitedSource(
+            id: 'e1',
+            kind: QuerySourceKind.text,
+            label: 'Colony chores',
+            date: DateTime.utc(2026, 10, 27),
+          ),
+        ],
+      ),
+    ];
+
+    final surface = FrontReplySurface.citedAnswer(
+      surfaceId: 'answer:d:door:0',
+      points: points,
+    );
+
+    expect(surface.surfaceId, 'answer:d:door:0');
+    final create = surface.message['createSurface']! as Map;
+    expect(create['catalogId'], frontReplyCatalogId);
+    expect(create['dataModel'], {
+      FrontReplyData.answer: [for (final point in points) point.toJson()],
+    });
+    expect(create['components'], [
+      {
+        'id': 'root',
+        'component': FrontReplyComponents.reply,
+        'children': ['c0'],
+      },
+      {
+        'id': 'c0',
+        'component': FrontReplyComponents.citedPoints,
+        'data': {'@path': '/answer'},
+      },
+    ]);
+    // Drawn by the processor, unlike a reply of words alone.
+    expect(surface.wordsOnly, isFalse);
+    expect(
+      FrontReplySurface.fromJson(surface.message)!.surfaceId,
+      'answer:d:door:0',
+    );
+    // Never hers to place.
+    expect(
+      FrontReplyComponents.composable,
+      isNot(contains(FrontReplyComponents.citedPoints)),
     );
   });
 }

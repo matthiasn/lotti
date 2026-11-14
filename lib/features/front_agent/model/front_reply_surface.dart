@@ -1,3 +1,4 @@
+import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
@@ -39,6 +40,12 @@ abstract final class FrontReplyComponents {
   /// Short replies the user can tap to answer (`options`).
   static const quickReplies = 'QuickReplies';
 
+  /// A journal answer's points, each with the entries it rests on (`data`,
+  /// bound at `/answer`). Never hers to write: the app composes a journal
+  /// answer's surface from what the journal search verified
+  /// ([FrontReplySurface.citedAnswer]).
+  static const citedPoints = 'CitedPoints';
+
   /// What she may compose a reply from, in the order the tool lists them.
   static const List<String> composable = [
     text,
@@ -66,6 +73,9 @@ abstract final class FrontReplyData {
   static const closedTasks = 'closedTasks';
   static const loggedTime = 'loggedTime';
   static const pullRequests = 'pullRequests';
+
+  /// A journal answer's points ([FrontReplyComponents.citedPoints]).
+  static const answer = 'answer';
 
   /// The data-model key a lookup's component is bound to.
   static const Map<String, String> byComponent = {
@@ -141,6 +151,36 @@ class FrontReplySurface {
       },
     });
   }
+
+  /// The surface journal answer [points] are drawn on, composed by the app
+  /// alone: a `CitedPoints` bound to the points at `/answer`, so each claim
+  /// is drawn with the entries it rests on rather than as Markdown with
+  /// footnote numbers.
+  factory FrontReplySurface.citedAnswer({
+    required String surfaceId,
+    required List<FrontCitedPoint> points,
+  }) => FrontReplySurface({
+    'version': frontReplyProtocolVersion,
+    'createSurface': {
+      'surfaceId': surfaceId,
+      'catalogId': frontReplyCatalogId,
+      'dataModel': {
+        FrontReplyData.answer: [for (final point in points) point.toJson()],
+      },
+      'components': const [
+        {
+          'id': 'root',
+          'component': FrontReplyComponents.reply,
+          'children': ['c0'],
+        },
+        {
+          'id': 'c0',
+          'component': FrontReplyComponents.citedPoints,
+          'data': {'@path': '/${FrontReplyData.answer}'},
+        },
+      ],
+    },
+  });
 
   /// The stored A2UI message, as a message processor takes it.
   final Map<String, Object?> message;

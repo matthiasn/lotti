@@ -4,7 +4,13 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 
 /// A citation in an answer: `[n]`, naming the n-th piece of evidence, with
 /// the whitespace before it so a removed one leaves no gap behind.
-final _citation = RegExp(r'\s*\[(\d+)\]');
+final queryCitation = RegExp(r'\s*\[(\d+)\]');
+
+/// [answer]'s paragraphs, split at blank lines: an answer's points.
+List<String> queryAnswerParagraphs(String answer) => [
+  for (final paragraph in answer.split(RegExp(r'\n[ \t]*\n')))
+    if (paragraph.trim().isNotEmpty) paragraph.trim(),
+];
 
 /// [answer] with every citation that names no evidence taken out, given
 /// [evidenceCount] pieces of evidence numbered from 1.
@@ -16,7 +22,7 @@ final _citation = RegExp(r'\s*\[(\d+)\]');
 /// the whole answer away for it failed the question for nothing. Every
 /// citation left names a piece of evidence that exists.
 String withKnownCitations(String answer, int evidenceCount) =>
-    answer.replaceAllMapped(_citation, (match) {
+    answer.replaceAllMapped(queryCitation, (match) {
       final number = int.parse(match.group(1)!);
       return number >= 1 && number <= evidenceCount ? match.group(0)! : '';
     }).trim();
@@ -29,9 +35,10 @@ String withKnownCitations(String answer, int evidenceCount) =>
 /// showed. When no paragraph cites anything — there was nothing to cite,
 /// and the roast says so — it is left as it is.
 String withCitedParagraphs(String roast) {
-  final paragraphs = roast.split(RegExp(r'\n[ \t]*\n'));
-  final cited = paragraphs.where(_citation.hasMatch).toList();
-  return cited.isEmpty ? roast : cited.join('\n\n').trim();
+  final cited = queryAnswerParagraphs(
+    roast,
+  ).where(queryCitation.hasMatch).toList();
+  return cited.isEmpty ? roast : cited.join('\n\n');
 }
 
 /// What reading the next source may do, re-checked against the live access

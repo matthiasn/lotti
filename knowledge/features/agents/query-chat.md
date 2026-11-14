@@ -748,6 +748,15 @@ often the status changed), read from the database, and the input carries
 today's date — so "due in October, still open" is stated, not inferred from a
 quote.
 
+**An answer has points.** `queryAnswerPoints` (`query_answer_points.dart`)
+reads an answer as its paragraphs, each a point whose `[n]` citations —
+those naming evidence — are lifted out as its sources, each once, in the
+order first cited; a paragraph of citations alone adds them to the point
+before it. The model writes text so the answer streams; a surface that
+draws points, like the companion's `CitedPoints`, shows each claim with the
+evidence it rests on instead of footnote numbers. `withCitedParagraphs`
+reads paragraphs the same way (`queryAnswerParagraphs`).
+
 **A roast is decided once, in the plan.** The plan step returns `roast`,
 true only when the user asks to be roasted, teased or judged; the same flag
 reaches synthesis and the guard, so the three never read the question

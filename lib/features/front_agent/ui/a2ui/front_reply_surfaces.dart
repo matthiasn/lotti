@@ -6,11 +6,12 @@ import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The A2UI surfaces of one conversation's replies: one message processor
-/// of [frontReplyCatalog] for the whole thread, fed each reply's stored
-/// surface.
+/// The A2UI surfaces of one conversation: one message processor of
+/// [frontReplyCatalog] for the whole thread, fed each reply's stored surface
+/// and the surface the app composes for each journal answer's points.
 ///
-/// [surfaces] are the replies to draw, by reply id. A reply new to the
+/// [surfaces] are what to draw, by id: a reply's id, or a journal answer's
+/// `frontDoorAnswerSurfaceId`. A reply new to the
 /// thread is created, and one that left the thread is deleted. One whose
 /// surface changed — her answer growing while she writes it, a reply
 /// re-read after sync — is updated in place (`updateDataModel`, then

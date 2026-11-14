@@ -1,3 +1,4 @@
+import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
@@ -11,12 +12,15 @@ import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
+import 'package:lotti/features/front_agent/ui/a2ui/front_reply_surfaces.dart';
+import 'package:lotti/features/front_agent/ui/front_cited_source_row.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_setup.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:lotti/widgets/markdown/citation_badge.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
@@ -410,6 +414,76 @@ void main() {
         'Oct 20, 2026 00:00',
       );
       expect(find.textContaining('.m4a'), findsNothing);
+    });
+
+    /// The card as the chat draws it: inside the thread's surfaces, which
+    /// hold the one composed for this answer's points.
+    Future<void> pumpInThread(
+      WidgetTester tester,
+      FrontDoorEntry door,
+      QueryAccessSnapshot journalAccess,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          FrontReplySurfaces(
+            surfaces: FrontChatThread(
+              messages: const [],
+              doorsByMessageId: {
+                'u1': [door],
+              },
+            ).surfaces,
+            logger: MockDomainLogger(),
+            onQuickReply: (_) {},
+            child: FrontDoorCard(
+              doors: [door],
+              actions: actions(),
+              journalAccess: journalAccess,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('in the chat, draws as its points through the reply '
+        'catalog, each with the entry it rests on, which opens on a tap', (
+      tester,
+    ) async {
+      await pumpInThread(tester, answered(), access());
+
+      expect(find.byType(A2uiSurface), findsOneWidget);
+      expect(
+        tester
+            .widget<AgentMarkdownView>(
+              find.descendant(
+                of: find.byType(A2uiSurface),
+                matching: find.byType(AgentMarkdownView),
+              ),
+            )
+            .text,
+        'After the feeder repair.',
+      );
+      // The entry sits with its point; no list of sources after the words.
+      expect(find.byKey(const ValueKey('front-door-sources-0')), findsNothing);
+      expect(find.byType(CitationBadge), findsNothing);
+
+      await tester.tap(
+        find.byKey(const ValueKey('front-cited-source-feeder-note')),
+      );
+      expect(acted, [('source', 'feeder-note')]);
+    });
+
+    testWidgets('in the chat, a hidden answer draws no points at all', (
+      tester,
+    ) async {
+      await pumpInThread(tester, answered(), access(privateNote: true));
+
+      expect(find.byType(A2uiSurface), findsNothing);
+      expect(find.byType(FrontCitedSourceRow), findsNothing);
+      expect(
+        titleOf(tester, 0),
+        'Hidden: it draws on something you can no longer see.',
+      );
     });
 
     testWidgets('is hidden once a source it rests on is no longer visible, '

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
+import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
@@ -59,6 +60,9 @@ class FrontDoorEntry {
 /// The front thread as the chat surface renders it: the visible messages in
 /// order, and what hangs off each one — the options of a clarifying
 /// question, the doors of a routed turn.
+/// The id of the surface the journal answer of door [doorId] is drawn on.
+String frontDoorAnswerSurfaceId(String doorId) => 'answer:$doorId';
+
 @immutable
 class FrontChatThread {
   const FrontChatThread({
@@ -135,6 +139,26 @@ class FrontChatThread {
         entry.key,
         carrierOf(entry.key),
       },
+  };
+
+  /// Every surface the thread draws: [surfacesByMessageId], and the one a
+  /// journal answer's door draws its points on, by
+  /// [frontDoorAnswerSurfaceId]. The app composes the latter from the
+  /// answer's verified evidence; the door card decides whether it shows.
+  Map<String, FrontReplySurface> get surfaces => {
+    ...surfacesByMessageId,
+    for (final doors in doorsByMessageId.values)
+      for (final door in doors)
+        if (door.record.outcome case final FrontDoorAnswer answer
+            when answer.fromJournal)
+          if (FrontCitedPoint.fromAnswer(answer.text, answer.evidence)
+              case final points when points.isNotEmpty)
+            frontDoorAnswerSurfaceId(
+              door.doorId,
+            ): FrontReplySurface.citedAnswer(
+              surfaceId: frontDoorAnswerSurfaceId(door.doorId),
+              points: points,
+            ),
   };
 
   /// How many doors wait on the user, across the thread.

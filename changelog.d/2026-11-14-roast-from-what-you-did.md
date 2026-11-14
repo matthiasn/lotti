@@ -5,3 +5,7 @@
   status. So "due in October, still open" comes from your data rather than a
   guess. Every joke in a roast points at the entry it comes from; one with
   nothing behind it is left out.
+- **Answers from your journal show each point with its evidence.** Instead of
+  a block of text with numbered footnotes, every point of the answer is
+  followed by the entries it rests on — what each one is, when, and the words
+  it quotes — and a tap opens the entry.
