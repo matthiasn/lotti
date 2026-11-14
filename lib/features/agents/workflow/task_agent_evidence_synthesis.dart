@@ -275,8 +275,10 @@ after a pending investigation.
             'qualifier and does not authorize changing the task due date.',
       TaskAgentToolNames.setTaskStatus =>
         '$baseDescription Only call when the user explicitly requests a '
-            'status transition. Describing work as blocked, in progress, or '
-            'on hold is report evidence, not mutation authority.',
+            'status transition, or for IN PROGRESS when time is tracked on an '
+            'OPEN task (a `## Status` section, or a time entry you propose in '
+            'this wake). Describing work as blocked, in progress, or on hold '
+            'is report evidence, not mutation authority.',
       TaskAgentToolNames.updateReport => updateReportDescription(
         baseDescription,
       ),

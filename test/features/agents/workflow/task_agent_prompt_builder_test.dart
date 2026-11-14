@@ -423,6 +423,32 @@ Use the task language and omit empty sections.
       }
     });
 
+    test('both scaffolds tell the agent to propose IN PROGRESS for an OPEN '
+        'task with tracked time — the compact one as its only exception', () {
+      const rule = TaskAgentPromptBuilder.inProgressCueRule;
+      expect(rule, contains('`## Status` section'));
+      // The creation wake: the time entry is still only a proposal.
+      expect(rule, contains('when you propose `create_time_entry`'));
+      expect(rule, contains('`set_task_status` with IN PROGRESS'));
+      expect(rule, contains('blocked, waiting or on hold'));
+
+      expect(
+        TaskAgentPromptBuilder.taskAgentCompactScaffold,
+        contains('The one\n  exception to the explicit request: $rule'),
+      );
+      for (final modelId in ['models/gemini-flash', 'qwen3.5-122b-a10b']) {
+        expect(
+          TaskAgentPromptBuilder.buildSystemPrompt(
+            version: makeTestTemplateVersion(),
+            soulVersion: null,
+            modelId: modelId,
+          ),
+          contains(rule),
+          reason: modelId,
+        );
+      }
+    });
+
     test('both scaffolds tell the agent to propose a project the user names '
         'but the category lacks — and only such a project', () {
       const rule = TaskAgentPromptBuilder.createProjectCueRule;

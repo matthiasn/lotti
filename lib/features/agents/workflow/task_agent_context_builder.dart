@@ -8,6 +8,7 @@ import 'package:lotti/classes/ai_input.dart';
 import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/projection/decision_events.dart';
@@ -24,6 +25,7 @@ import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dar
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/agents/workflow/task_project_options.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/logic/repositories/task_progress_repository.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -47,6 +49,13 @@ const taskObservationLookback = 20;
 const taskNeedsProjectNotice =
     'This task belongs to no project. The projects of its category it could '
     'belong to:';
+
+/// The wake payload's `## Status` section, for an OPEN task with time tracked
+/// on it: work has begun. See the scaffolds' status guidance
+/// (`TaskAgentPromptBuilder.inProgressCueRule`).
+const taskTimeTrackedWhileOpenNotice =
+    'This task is still OPEN, but time has been tracked on it, so work on it '
+    'has begun.';
 
 class TaskAgentContextBuilder {
   TaskAgentContextBuilder({
@@ -422,6 +431,39 @@ class TaskAgentContextBuilder {
     }
   }
 
+  /// Whether [task] is OPEN — and has never been anything else — while time
+  /// is tracked on it: a timer running for it, or linked entries whose time
+  /// counts towards its time spent. A task the user moved back to OPEN keeps
+  /// that status, and one BLOCKED or ON HOLD is not OPEN. A failed read
+  /// answers false: the cue is optional, the wake is not.
+  Future<bool> _hasTimeTrackedWhileOpen(
+    Task? task,
+    TimeService? timeService,
+    String taskId,
+  ) async {
+    if (task == null ||
+        task.data.status is! TaskOpen ||
+        task.data.statusHistory.any((status) => status is! TaskOpen)) {
+      return false;
+    }
+    if (timeService?.getCurrent() != null &&
+        timeService?.linkedFrom?.id == taskId) {
+      return true;
+    }
+    try {
+      final linked = await journalDb.getLinkedEntities(taskId);
+      return TaskProgressRepository.sumTimeSpentFromEntities(linked) >
+          Duration.zero;
+    } catch (error, stackTrace) {
+      logError(
+        'failed to read the time tracked on the task',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
   /// Converts [AgentToolRegistry.taskAgentTools] to OpenAI-compatible
   /// [ChatCompletionTool] objects.
   ///
@@ -658,6 +700,13 @@ class TaskAgentContextBuilder {
     );
     if (editableTimeEntriesSection.isNotEmpty) {
       buffer.write(editableTimeEntriesSection);
+    }
+
+    if (await _hasTimeTrackedWhileOpen(task, timeService, taskId)) {
+      buffer
+        ..writeln('## Status')
+        ..writeln(taskTimeTrackedWhileOpenNotice)
+        ..writeln();
     }
 
     // In compacted mode, resolved verdicts live in the `## Task Log` as

@@ -298,8 +298,9 @@ void main() {
 
       Future<MockChangeSetConfirmationService> pumpCard(
         WidgetTester tester,
-        List<ChangeSetEntity> bulk,
-      ) async {
+        List<ChangeSetEntity> bulk, {
+        ChangeSetEntity? status,
+      }) async {
         final service = MockChangeSetConfirmationService();
         when(() => service.confirmAll(any())).thenAnswer(
           (_) async => const [ToolExecutionResult(success: true, output: 'ok')],
@@ -312,7 +313,10 @@ void main() {
           updateNotifications: MockUpdateNotifications(),
           suggestions: UnifiedSuggestionList(
             // The status change arrives first; it must still sit apart.
-            open: [pendingOf(done), for (final cs in bulk) pendingOf(cs)],
+            open: [
+              pendingOf(status ?? done),
+              for (final cs in bulk) pendingOf(cs),
+            ],
             activity: const [],
           ),
         );
@@ -390,6 +394,43 @@ void main() {
         verifyNever(() => service.confirmItem(any(), any()));
         // The sweep took the bulk rows; the DONE row is still waiting.
         expect(doneRow, findsOneWidget);
+      });
+
+      testWidgets('an IN PROGRESS proposal for an OPEN task with tracked '
+          'time sits in the band, not among the bulk suggestions', (
+        tester,
+      ) async {
+        final inProgress = makeTestChangeSet(
+          id: 'cs-in-progress',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN PROGRESS'},
+              humanSummary: 'Set status to IN PROGRESS',
+            ),
+          ],
+        );
+        final csA = bulkSet('cs-a');
+        final csB = bulkSet('cs-b');
+        final service = await pumpCard(tester, [csA, csB], status: inProgress);
+
+        final row = find.textContaining('Set status to In Progress');
+        // Its one row is the band's, and the band is the only status row.
+        expect(row, findsOneWidget);
+        expect(find.descendant(of: band, matching: row), findsOneWidget);
+        expect(
+          find.descendant(of: band, matching: find.byType(ProposalRow)),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Confirm all'));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 2));
+
+        verify(() => service.confirmAll(csA)).called(1);
+        verify(() => service.confirmAll(csB)).called(1);
+        verifyNever(() => service.confirmAll(inProgress));
+        expect(row, findsOneWidget);
       });
 
       testWidgets('the band sits one even step below what precedes it and '

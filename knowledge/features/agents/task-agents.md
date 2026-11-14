@@ -43,15 +43,15 @@ sources:
   - id: prompt-builder
     resource: ../../../lib/features/agents/workflow/task_agent_prompt_builder.dart
     title: Stock and compact task-agent scaffolds
-    last_modified: 2026-11-06
+    last_modified: 2026-11-14
   - id: evidence-synthesis
     resource: ../../../lib/features/agents/workflow/task_agent_evidence_synthesis.dart
     title: Evidence-first task and report tool contracts
-    last_modified: 2026-09-14
+    last_modified: 2026-11-14
   - id: context-builder
     resource: ../../../lib/features/agents/workflow/task_agent_context_builder.dart
     title: Task wake context and report publication state
-    last_modified: 2026-09-22
+    last_modified: 2026-11-14
   - id: time-entry-update
     resource: ../../../lib/features/agents/tools/time_entry_update_handler.dart
     title: TimeEntryUpdateHandler — one text/range edit for every time entry
@@ -930,6 +930,24 @@ is their decision, so the agent proposes it instead of flagging an unmet
 request — and the proposal row leads with a large check in bold accent text,
 since closing is the one terminal suggestion. It still applies only on the
 user's confirm. REJECTED stays user-only (`TaskStatusHandler.userOnlyStatuses`).
+
+It also proposes IN PROGRESS for an OPEN task that time is tracked on, the one
+status it may propose without the user asking. `TaskAgentContextBuilder` adds a
+`## Status` section (`taskTimeTrackedWhileOpenNotice`) after the time-entry
+sections when the task is OPEN, its status history holds nothing but OPEN (a
+task the user moved back to OPEN keeps that status), and either a timer runs for
+it or its linked entries count towards its time spent
+(`TaskProgressRepository.sumTimeSpentFromEntities`, the task header's own sum).
+A failed read leaves the section out. `TaskAgentPromptBuilder.inProgressCueRule`,
+in the full scaffold and as the compact scaffold's one exception to its
+explicit-request-only status rule, tells the agent to propose IN PROGRESS then,
+and also in a wake that itself proposes `create_time_entry` on an OPEN task. A
+task dictated with its time recording stays OPEN until that entry is confirmed,
+and a wake after the confirm (one runs unless automatic updates are off or the
+cadence is "only after recordings") would come too late. The agent leaves the
+status alone when the task log says the work is blocked, waiting or on hold.
+Like every `set_task_status` proposal, it shows in the card's status band and
+never in Confirm all (see [UI surfaces](ui-surfaces.md)).
 
 The one-call-per-wake rule stops a small model burning its turns on one tool.
 `AgentToolRegistry.repeatableDeferredTools` is its carve-out, and the strategy
