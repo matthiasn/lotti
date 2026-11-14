@@ -112,7 +112,8 @@ points at her.
   instead, and she speaks only by the rules every other line follows. While
   the profile is still being resolved the bubble shows that same line but she
   does not say it: said that early, it would start in the voice on hand and
-  start over in the cloud voice a moment later.
+  start over in the cloud voice a moment later. A lookup that fails is final
+  (`onboardingConnectedProfileProvider` does not retry), for the same reason.
 - **The first-task step.** A bust, `ControlSizes.avatarHero` square, above the
   headline (`OnboardingFirstTaskView.companion`), whose headline — and, at
   the prompt, its guidance — is her bubble; the view stays free of providers
@@ -138,7 +139,8 @@ long as the beat lasts.
 surface already shows. She speaks it only where the voice is on hand —
 `enable_ai_summary_tts` on, a device voice, and its model **already
 installed** — and never starts the model download: on a true first run she is
-silent and the caption carries the words. The line is `null` while the mic is
+silent and the caption carries the words, the areas' line in a connected
+provider's cloud voice excepted. The line is `null` while the mic is
 open, which stops her, so she never talks into the recording. Turning
 read-aloud off, here or by sync from another device, silences her at once. The welcome's
 promise is said once per modal: back on the welcome from the connect step, she

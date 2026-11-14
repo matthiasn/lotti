@@ -187,14 +187,21 @@ void main() {
   ) async {
     when(
       () => resolver.resolveByProfileId('broken'),
-    ).thenAnswer((_) async => throw StateError('no such profile'));
+      // An Exception, the kind Riverpod retries by default (an Error it never
+      // does): a database or network hiccup, not a bug.
+    ).thenAnswer((_) async => throw Exception('lookup failed'));
 
     final words = await pumpWords(tester, profileId: 'broken');
 
     expect(words().line, m.onboardingFirstWordsQuiet);
     expect(words().voice, isNull);
-    // Riverpod retries the lookup, and reports loading while it does: she
-    // is not kept silent for it.
     expect(words().settled, isTrue);
+
+    // The failure is final: no retry is pending that could land a voice
+    // after she has begun the quiet line, and have her start over.
+    await tester.pump(const Duration(seconds: 30));
+    verify(() => resolver.resolveByProfileId('broken')).called(1);
+    expect(words().settled, isTrue);
+    expect(words().voice, isNull);
   });
 }

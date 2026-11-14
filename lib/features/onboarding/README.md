@@ -24,8 +24,10 @@ them to one moment: speak a thought, and watch it become a structured task.
 - **Has a face.** The companion leads it, whether or not she is switched on
   elsewhere: she introduces herself on the welcome, recommends the one key,
   then waves the user on, listens while they record, thinks while the task is
-  structured and celebrates when it lands. Her lines are speech bubbles. Where the on-device voice is already installed
-  she says the headlines aloud; on a first run, she is silent.
+  structured and celebrates when it lands. Her lines are speech bubbles. Where
+  the on-device voice is already installed she says the headlines aloud. On a
+  first run it is not, so she is silent until the key works, and after that
+  too unless the connected provider gives her a cloud voice.
 - **Can be replayed on purpose.** Settings › Onboarding reopens it any time.
 - **Sets up areas with real consent.** Creating the first areas is also where
   automatic transcription and image analysis are switched on — because the user
