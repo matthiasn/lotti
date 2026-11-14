@@ -386,6 +386,8 @@ void main() {
         '## Erreicht\nAPI ausgeliefert.\n\n## 🔗 Links\nKeine Links gefunden.',
         '## Erreicht\nAPI ausgeliefert.\n\n## Links\n- Keine',
         '## Erreicht\nAPI ausgeliefert.\n\n### Liens\nAucun lien externe.',
+        // An undefined reference renders as plain text, not as a link.
+        '## Erreicht\nAPI ausgeliefert.\n\n## Links\n[Task][missing]',
       ]) {
         expect(
           TaskAgentReportPolicy.withoutEmptySections(report),

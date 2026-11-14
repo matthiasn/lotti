@@ -253,10 +253,10 @@ A report already exists. Before publishing, identify a new or corrected task fac
     unicode: true,
   );
 
-  /// An inline link, a full or collapsed reference link, a link reference
-  /// definition, or a bare URL.
+  /// An inline link, a link reference definition, or a bare URL. Reference
+  /// links count only through a defined label, see `withoutEmptySections`.
   static final _link = RegExp(
-    r'\]\(|\]\[|^\s{0,3}\[[^\]]+\]:\s*\S|https?://|www\.',
+    r'\]\(|^\s{0,3}\[[^\]]+\]:\s*\S|https?://|www\.',
   );
 
   /// The label of each link reference definition in a report, lowercased.
@@ -295,8 +295,9 @@ A report already exists. Before publishing, identify a new or corrected task fac
   static String withoutEmptySections(String report) {
     final lines = report.split('\n');
     final kept = <String>[];
-    // A shortcut reference `[Task]` is a link only when its label is defined
-    // somewhere in the report, often below the section that uses it.
+    // A reference link — `[Task][task]`, `[Task][]` or `[Task]` — is a link
+    // only when a bracketed label in it is defined somewhere in the report,
+    // often below the section that uses it; undefined, it renders as text.
     final definedLabels = {
       for (final match in _definitionLabel.allMatches(report))
         match.group(1)!.trim().toLowerCase(),
