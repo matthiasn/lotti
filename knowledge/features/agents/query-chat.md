@@ -280,9 +280,23 @@ flowchart LR
   Plan --> K["keyword terms"]
   M --> C["candidates in visible categories,<br/>meaning first"]
   K --> C
-  C --> E["shortlist, exact passages"]
+  C --> S["shortlist"]
+  S --> D["each task followed by up to 4<br/>linked notes, recordings, checklists"]
+  D --> E["exact passages,<br/>task facts per evidence"]
   E --> A["FrontDoorAnswer with<br/>numbered evidence"]
 ```
+
+**A task found is read with its details.** A search finds a task by what it
+says; what was said and done about it, and when, is in what is linked to it.
+After the shortlist, `QueryJournalCrawler.withTaskDetails` follows each
+chosen task with up to four of its linked entries (`maxDetailsPerTask`),
+newest first: notes, recordings, checklists — never another task or a
+project, which are neighbours rather than details. Each passes the filters a
+discovered document does (visible, in the corpus's categories, of the kind
+asked for), one already chosen is not read twice, and the corpus returned
+knows the details so their sources and affiliations resolve. The details
+are inspected like any source, inside the same call and evidence budgets.
+A task-scoped chat already reads its home task's links as part of its home.
 
 The planned searches feed the crawler for task, project and category scopes
 too, within their own category, wherever the crawl expands past the home
@@ -728,14 +742,32 @@ citation that is published still opens its evidence card.
 **An answer is written in the register it was asked in.** The synthesis
 prompt asks for short paragraphs, one point each, every citation right after
 the claim it supports and quotes of a few words at most; a plain fact gets a
-sentence or two. A request to be roasted, teased or judged gets a playful
-roast rather than a report: affectionate, aimed at habits and patterns the
-evidence shows, never at body, health, grief, money worries or another
-person, every jab resting on a cited entry and nothing the evidence does not
-show. A request about the user that names no topic — *roast me*, *how am I
-doing* — is planned as searches for their recent habits, struggles, slipped
-plans and complaints, since searching for the words themselves found nothing
-to say. This is model guidance; the citation guard above still applies.
+sentence or two. Each piece of evidence carries the facts of the task it is
+or belongs to (`queryTaskFacts`: status and since when, created, due, how
+often the status changed), read from the database, and the input carries
+today's date — so "due in October, still open" is stated, not inferred from a
+quote.
+
+**A roast is decided once, in the plan.** The plan step returns `roast`,
+true only when the user asks to be roasted, teased or judged; the same flag
+reaches synthesis and the guard, so the three never read the question
+differently. A topic-less request (*roast me*, *how am I doing*) is planned
+as searches for recent habits, struggles, slipped plans and complaints, since
+searching for the words found nothing to say. A roast's material is the gap
+between what the user said and what they did — a plan promised and slipped,
+the same task put off, a due date long past on an open task, a status that
+keeps moving, a project begun and left, a complaint that returns. Each
+paragraph is one jab: a specific observation (a date, a count, the user's
+own words), the joke, its citation. It aims at habits, never at body,
+health, grief, money worries or another person, and says nothing the
+evidence does not show; too little evidence is said in a line, not padded.
+
+**A roast's jab without a source is not said.** `withCitedParagraphs`
+(`query_answer_guards.dart`) drops every paragraph of a roast that cites
+nothing, after `withKnownCitations` has removed citations that name no
+evidence. A roast with no citation at all is left as it is: it had nothing
+to cite and says so. Answers that are not roasts keep uncited paragraphs —
+"nothing says when it will be done" is a fair sentence with no source.
 
 `QueryTextInference` uses the profile's optional Chat route, falling back to
 resolved Thinking only when Chat is unset. An unavailable selected Chat model

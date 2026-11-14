@@ -21,6 +21,19 @@ String withKnownCitations(String answer, int evidenceCount) =>
       return number >= 1 && number <= evidenceCount ? match.group(0)! : '';
     }).trim();
 
+/// [roast] without its paragraphs that cite nothing.
+///
+/// Each paragraph of a roast is a jab, and a jab is only fair when it
+/// points at the entry it comes from; one that cites nothing is a joke
+/// about no one in particular, or about something the evidence never
+/// showed. When no paragraph cites anything — there was nothing to cite,
+/// and the roast says so — it is left as it is.
+String withCitedParagraphs(String roast) {
+  final paragraphs = roast.split(RegExp(r'\n[ \t]*\n'));
+  final cited = paragraphs.where(_citation.hasMatch).toList();
+  return cited.isEmpty ? roast : cited.join('\n\n').trim();
+}
+
 /// What reading the next source may do, re-checked against the live access
 /// snapshot right before each part of it is read ([sourceGate]).
 enum QuerySourceGate {

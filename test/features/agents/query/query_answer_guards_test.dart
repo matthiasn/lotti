@@ -62,4 +62,26 @@ void main() {
       ]);
     }, tags: 'glados');
   });
+
+  group('withCitedParagraphs', () {
+    test('drops a jab that cites nothing and keeps the cited ones in '
+        'order', () {
+      expect(
+        withCitedParagraphs(
+          'Due in October [1].\n\nClassic you.\n  \n"This week" [2].',
+        ),
+        'Due in October [1].\n\n"This week" [2].',
+      );
+    });
+
+    test('keeps a whole paragraph for one citation anywhere in it', () {
+      const roast = 'Alright. The hinge [1] is winning.\nBold strategy.';
+      expect(withCitedParagraphs(roast), roast);
+    });
+
+    test('leaves a roast with nothing to cite as it is: it says so', () {
+      const roast = 'Too little here for a fair roast.\n\nTry me next week.';
+      expect(withCitedParagraphs(roast), roast);
+    });
+  });
 }
