@@ -16,10 +16,14 @@ abstract interface class TtsAudioPlayer {
   /// Opens [file] and starts playback at [speed]× (1.0 = natural), from
   /// [from] into it — for a file that was still being written when the
   /// player reached the end of what was there.
+  ///
+  /// A [growing] file is still being written: the player waits at the end of
+  /// what is there for more rather than ending.
   Future<void> play(
     File file, {
     required double speed,
     Duration from = Duration.zero,
+    bool growing = false,
   });
 
   /// Changes the rate of the clip that is playing, without restarting it.
@@ -74,11 +78,20 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
   /// gets the rate devices run at.
   static const String outputSampleRate = '48000';
 
+  /// mpv's prefix for a local file that is still being written: at its end
+  /// mpv waits up to 2 s for more instead of ending. Without it mpv follows
+  /// the file only if it sees it grow, and with media_kit's cache it reads
+  /// to the end at once — between two bursts of a cloud voice it then ends
+  /// at what was there when it opened (reproduced on mpv 0.37 with
+  /// media_kit's options, 2026-11-15).
+  static const String appendingScheme = 'appending://';
+
   @override
   Future<void> play(
     File file, {
     required double speed,
     Duration from = Duration.zero,
+    bool growing = false,
   }) async {
     final generation = ++_generation;
     final native = _player.platform;
@@ -87,7 +100,10 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
     }
     if (generation != _generation) return;
     await _player.open(
-      Media(file.path, start: from == Duration.zero ? null : from),
+      Media(
+        growing ? '$appendingScheme${file.path}' : file.path,
+        start: from == Duration.zero ? null : from,
+      ),
       play: false,
     );
     if (generation != _generation) return;

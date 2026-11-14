@@ -198,6 +198,9 @@ void main() {
         expect(cloud.calls, hasLength(1));
         expect(player.playCount, 2);
         expect(player.startedFrom, [Duration.zero, Duration.zero]);
+        // Opened while it was being written, the player waits at its end
+        // for more; replayed whole, it is opened as it is.
+        expect(player.openedGrowing, [true, false]);
       },
     );
 
@@ -216,6 +219,8 @@ void main() {
 
       expect(player.playCount, 1);
       expect(state().clip, (path: growing.file.path, text: text));
+      // Whole before it was opened: nothing to wait for at its end.
+      expect(player.openedGrowing, [false]);
     });
 
     test(
@@ -317,6 +322,7 @@ void main() {
       expect(player.playCount, 2);
       // Where the audio it read ended — nothing heard twice.
       expect(player.startedFrom, [Duration.zero, seen]);
+      expect(player.openedGrowing, [true, false]);
       verify(
         () => logger.log(
           LogDomain.speech,

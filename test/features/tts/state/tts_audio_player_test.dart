@@ -69,6 +69,23 @@ void main() {
     expect(opened.last.uri, endsWith('/tmp/clip.wav'));
   });
 
+  test('a file still being written is opened for mpv to wait at its end '
+      'for more; a whole one is opened as it is', () async {
+    final opened = <Media>[];
+    when(() => player.open(any(), play: any(named: 'play'))).thenAnswer((
+      invocation,
+    ) async {
+      opened.add(invocation.positionalArguments.single as Media);
+    });
+    final audio = build();
+
+    await audio.play(File('/tmp/clip.wav'), speed: 1, growing: true);
+    await audio.play(File('/tmp/clip.wav'), speed: 1);
+
+    expect(opened.first.uri, 'appending:///tmp/clip.wav');
+    expect(opened.last.uri, '/tmp/clip.wav');
+  });
+
   for (final pauseAt in ['open', 'rate']) {
     test('stop during $pauseAt prevents late native playback', () async {
       final pending = Completer<void>();

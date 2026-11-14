@@ -470,7 +470,13 @@ stateDiagram-v2
   once, and when that happens in a pause between two bursts of audio it
   ends at what was there when it opened — about five seconds into a clip
   ElevenLabs had long finished sending (reproduced against mpv 0.37 with
-  media_kit's options, 2026-11-15). So an end the player reports while the
+  media_kit's options, 2026-11-15). So a clip still being written is opened
+  as growing (`TtsAudioPlayer.play(growing:)`, mpv's `appending://`): at
+  the end of what is there mpv waits up to 2 s for more instead of ending.
+  It costs nothing while the voice finishes more than 2 s before playback
+  does — ElevenLabs and Voxtral finish far earlier — and a clip that is
+  already whole when it opens is opened plainly. As a safety net for a
+  longer stall, an end the player reports while the
   clip is not whole, or before `GrowingSpeechClip.audioLength` was heard,
   is not the utterance's: once the stream has ended the clip is opened
   again (`TtsAudioPlayer.play(from:)`) where the player got to — the later
