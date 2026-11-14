@@ -253,8 +253,20 @@ A report already exists. Before publishing, identify a new or corrected task fac
     unicode: true,
   );
 
-  /// A Markdown link target or a bare URL.
-  static final _link = RegExp(r'\]\(|https?://|www\.');
+  /// An inline link, a full or collapsed reference link, a link reference
+  /// definition, or a bare URL.
+  static final _link = RegExp(
+    r'\]\(|\]\[|^\s{0,3}\[[^\]]+\]:\s*\S|https?://|www\.',
+  );
+
+  /// The label of each link reference definition in a report, lowercased.
+  static final _definitionLabel = RegExp(
+    r'^\s{0,3}\[([^\]]+)\]:\s*\S',
+    multiLine: true,
+  );
+
+  /// A bracketed label that a shortcut reference link would resolve.
+  static final _bracketedLabel = RegExp(r'\[([^\]]+)\]');
 
   /// [report] cleaned of notes and empty sections, or unchanged when that
   /// would leave nothing.
@@ -283,6 +295,19 @@ A report already exists. Before publishing, identify a new or corrected task fac
   static String withoutEmptySections(String report) {
     final lines = report.split('\n');
     final kept = <String>[];
+    // A shortcut reference `[Task]` is a link only when its label is defined
+    // somewhere in the report, often below the section that uses it.
+    final definedLabels = {
+      for (final match in _definitionLabel.allMatches(report))
+        match.group(1)!.trim().toLowerCase(),
+    };
+    bool hasLink(String line) =>
+        _link.hasMatch(line) ||
+        _bracketedLabel
+            .allMatches(line)
+            .any(
+              (m) => definedLabels.contains(m.group(1)!.trim().toLowerCase()),
+            );
     for (var index = 0; index < lines.length; index++) {
       final heading = RegExp(r'^(#{2,6})\s+\S').firstMatch(lines[index]);
       if (heading == null) {
@@ -304,7 +329,7 @@ A report already exists. Before publishing, identify a new or corrected task fac
           .replaceAll(RegExp(r'[^\p{L}\s]', unicode: true), '')
           .trim();
       final isLinklessLinks =
-          _linksHeading.hasMatch(headingText) && !body.any(_link.hasMatch);
+          _linksHeading.hasMatch(headingText) && !body.any(hasLink);
       if (body.isEmpty || isEmptyClaim || isLinklessLinks) {
         index = end - 1;
         continue;

@@ -400,6 +400,10 @@ void main() {
         '## 🔗 Links\n- [PR 12](https://example.com/pull/12)',
         '## Verweise\nSiehe [Aufgabe](/tasks/abc).',
         '## Links und Quellen\nKeine.\nDas Handbuch liegt im Büro.',
+        // Reference links, whose targets sit in a definition, not inline.
+        '## Progress\nReady.\n\n## Links\n[Task][task]\n\n[task]: /tasks/abc',
+        '## Links\n[Task][]\n\n## Notes\nSee below.\n\n[task]: /tasks/abc',
+        '## Links\n[Task]\n\n## Notes\nSee below.\n\n[task]: /tasks/abc',
       ]) {
         expect(
           TaskAgentReportPolicy.withoutEmptySections(report),
