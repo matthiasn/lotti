@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.101]
+
+### Changed
+
+- **Confirm all no longer changes a task's status.** A suggestion to set a
+  task's status — above all to Done, which takes the task off your open task
+  lists — now sits apart, below the other suggestions, in a band marked
+  *Status changes* that names the status it would set. Each one is confirmed
+  on its own row; *Confirm all* on the task card and *Accept all* in the task
+  chat apply everything else and leave status changes waiting for you.
+- **On a desktop, the companion no longer covers the conversation.** With the
+  list of chats beside the conversation, her card now sits at the foot of that
+  list, as wide as it is, instead of floating over the messages. It starts
+  collapsed to her face and shoulders; the button on its corner, a double
+  click, or Large in its menu expands it to all of her. Hide in the menu (a
+  right-click) moves her to her face at the top of the chat, which brings her
+  back.
+
+### Fixed
+
+- **With reduced motion on, sending in a scrolled-up question chat could leave
+  your message off screen.** The chat jumped to where it guessed the end was,
+  and in a long conversation that guess could fall far short. It now checks
+  where the end really is and lands on your message.
+- **A single tap on the companion's card no longer hides it.** Tapping or
+  clicking her by accident put her away on phones and desktops alike. Now only
+  Hide in her menu (a long press, or a right-click) does that; Enter or Space
+  opens the menu from a keyboard.
+
 ## [1.1.100]
 
 ### Added
