@@ -768,7 +768,19 @@ only text that says nothing:
 
 - a sentence, coordinate clause, trailing clause or bullet that merely reports
   absent metadata ("No estimate or due date is set");
-- a Markdown section whose body is only "none" or is empty.
+- a Markdown section whose body is only "none" or is empty;
+- a links section (`Links`, `Verweise`, `Liens`, `Enlaces`, … — one name per
+  shipped language) whose body holds no link, whatever it says instead. The
+  "none" check above only knows English, so "Keine Links gefunden" would
+  otherwise publish an empty Links section on a German task.
+
+Headings follow the task language like the prose does:
+`TaskAgentReportPolicy.languageRule`, rendered in both scaffolds, tells the
+model to translate the section headings a directive names, and
+`conditionalSectionRule` asks for each required heading "translated into the
+task language" rather than in the directive's English spelling. No widget
+writes a report heading; they are all model-written Markdown, so this is where
+a German task's report becomes German.
 
 A sentence that carries anything else is kept whole, including a subordinate
 clause that cannot stand alone ("No deadline is set yet, though the March
