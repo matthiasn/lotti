@@ -38,8 +38,8 @@ import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_category_chip.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_drawer.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
-import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
+import 'package:lotti/features/front_agent/ui/front_companion_figure.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
@@ -718,8 +718,9 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
               color: colorFromCssHex(category.color),
             ),
         ],
-        // A conversation not begun opens on her, and what she can do, in the
-        // middle of where the thread will be.
+        // A conversation not begun opens on what she can do, in the middle
+        // of where the thread will be. No figure of her: her card, or her
+        // face in the header, already shows her.
         emptyState: inboxOnly
             ? null
             : Center(
@@ -732,7 +733,6 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const FrontChatHero(),
                         Text(
                           messages.frontChatEmpty,
                           textAlign: TextAlign.center,

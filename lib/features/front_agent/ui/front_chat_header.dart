@@ -8,7 +8,7 @@ import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
-import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
+import 'package:lotti/features/front_agent/ui/front_companion_figure.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -232,7 +232,8 @@ class FrontChatHeader extends ConsumerWidget {
 /// Her face at the head of the conversation, a rounded tile: a tap floats
 /// her glass card over the thread ([frontCompanionCardShownProvider]), in
 /// place — never a page of its own — and the face slides away while the card
-/// is out, since she is already on screen; the card hides itself again.
+/// is out, since she is already on screen; Hide in the card's menu brings
+/// the face back.
 /// Only her face, never a control, while she cannot float: with the
 /// character off, or in the inbox.
 class _CompanionFace extends ConsumerWidget {
@@ -248,7 +249,6 @@ class _CompanionFace extends ConsumerWidget {
     const face = FrontCompanionFigure(
       key: FrontChatHeaderKeys.figure,
       size: ControlSizes.avatarCompact,
-      rounded: true,
     );
     // Fades as it narrows, so her name and title slide into its room.
     return AnimatedSwitcher(

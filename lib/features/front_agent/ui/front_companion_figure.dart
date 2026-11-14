@@ -16,46 +16,14 @@ import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Stable keys for the hero.
-@visibleForTesting
-abstract final class FrontChatHeroKeys {
-  static const Key hero = Key('front-chat-hero');
-  static const Key figure = Key('front-chat-figure');
-}
-
-/// She greets a conversation not begun: her bust, large, where the thread
-/// will be. Once it has begun the header carries her, so the thread is the
-/// conversation's alone.
-class FrontChatHero extends StatelessWidget {
-  const FrontChatHero({super.key});
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    key: FrontChatHeroKeys.hero,
-    padding: EdgeInsets.only(bottom: context.designTokens.spacing.step5),
-    child: const Center(
-      child: FrontCompanionFigure(
-        key: FrontChatHeroKeys.figure,
-        size: ControlSizes.avatarHero,
-      ),
-    ),
-  );
-}
-
-/// Her bust in the session's outfit at [size], in a circle or — [rounded] —
-/// a rounded tile; the spark every agent wears when the companion character
-/// is switched off.
+/// Her bust in the session's outfit, a rounded tile [size] square — her face
+/// in the header; the spark every agent wears when the companion character
+/// is switched off. A conversation not begun shows no figure of its own,
+/// since that face or her card is already on screen.
 class FrontCompanionFigure extends ConsumerWidget {
-  const FrontCompanionFigure({
-    required this.size,
-    this.rounded = false,
-    super.key,
-  });
+  const FrontCompanionFigure({required this.size, super.key});
 
   final double size;
-
-  /// A rounded tile rather than a circle: her face in the header.
-  final bool rounded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -71,8 +39,7 @@ class FrontCompanionFigure extends ConsumerWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: tokens.colors.aiCard.accentSoft,
-          shape: rounded ? BoxShape.rectangle : BoxShape.circle,
-          borderRadius: rounded ? BorderRadius.circular(tokens.radii.m) : null,
+          borderRadius: BorderRadius.circular(tokens.radii.m),
           border: Border.all(color: tokens.colors.aiCard.border),
         ),
         child: companionOn

@@ -147,7 +147,7 @@ sources:
   - id: pane
     resource: ../../lib/features/front_agent/ui/front_chat_pane.dart
     title: FrontChatPane — the thread on the shared AgentChatView, and the drawer over or beside it
-    last_modified: 2026-11-11
+    last_modified: 2026-11-14
   - id: sheet
     resource: ../../lib/features/front_agent/ui/front_chat_surface.dart
     title: showFrontChat — her surface over the app
@@ -276,10 +276,10 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_starter_prompts.dart
     title: FrontStarterPrompts — the starter questions under her invitation in a conversation not begun
     last_modified: 2026-11-12
-  - id: hero
-    resource: ../../lib/features/front_agent/ui/front_chat_hero.dart
-    title: Her bust in the header and the hero, and FrontCompanionCard — her glass card over the thread
-    last_modified: 2026-11-09
+  - id: figure
+    resource: ../../lib/features/front_agent/ui/front_companion_figure.dart
+    title: FrontCompanionFigure — her bust in the header — and FrontCompanionCard — her glass card over the thread
+    last_modified: 2026-11-14
   - id: stage-pointing
     resource: ../../lib/features/front_agent/state/front_stage_pointing.dart
     title: frontStagePointsProvider — she points at the tasks she lists, from her card
@@ -1554,10 +1554,11 @@ naming the profile she has of her own, else the Settings default she follows
 (`FrontProfileChoice`); and *Agent internals*, with what the open
 conversation has cost (none in the inbox), opening `AgentInternalsPanel`.
 
-A conversation not begun opens on her bust at hero size (`FrontChatHero`)
-and her invitation, centred where the thread will be, with a first move
-under it: three starter questions (`FrontStarterPrompts`) as the outlined
-buttons her clarifying questions offer, a tap sending one in its own words.
+A conversation not begun opens on her invitation, centred where the thread
+will be, with a first move under it: three starter questions
+(`FrontStarterPrompts`) as the outlined buttons her clarifying questions
+offer, a tap sending one in its own words. It draws no figure of her: her
+card, or her face in the header while the card is hidden, already shows her.
 Once it has begun the thread is the conversation's alone. The thread is `conversational` and
 `voiceFirst` (see [chat input](agents/chat-input-and-reasoning.md)): her
 replies as prose, the user's words in a neutral bubble a step off the ground
