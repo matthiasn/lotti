@@ -7,17 +7,20 @@ import 'package:lotti/features/tts/cloud/cloud_tts_client.dart';
 import 'package:lotti/features/tts/cloud/cloud_tts_exception.dart';
 import 'package:lotti/features/tts/cloud/cloud_tts_http.dart';
 import 'package:lotti/features/tts/cloud/cloud_voice_catalog.dart';
+import 'package:lotti/features/tts/engine/wav_writer.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Client for the ElevenLabs text-to-speech API.
 ///
-/// Three calls against the ElevenLabs provider's `baseUrl`
+/// Four calls against the ElevenLabs provider's `baseUrl`
 /// (`https://api.elevenlabs.io/v1`), each authenticated by its API key in
 /// the `xi-api-key` header (checked against the published OpenAPI document
 /// on 2026-11-04):
 ///
 /// - [synthesize]: `POST text-to-speech/{voice_id}?output_format=wav_24000`
 ///   with `text` and `model_id`; the answer is the audio itself.
+/// - [synthesizeStream]: the same at `text-to-speech/{voice_id}/stream`,
+///   answered with the audio while it is still being made.
 /// - [fetchVoices]: `GET models`, for the languages the model speaks, then
 ///   `GET voices` — the premade voices and the account's own and saved ones,
 ///   in one unpaged list.
@@ -30,7 +33,7 @@ import 'package:lotti/services/domain_logging.dart';
 /// as the on-device engine's output does, and 44.1 kHz WAV needs a Pro plan.
 /// No `language_code` is sent, as `eleven_multilingual_v2` does not take it;
 /// the multilingual models read the language from the text.
-class ElevenLabsTtsService implements CloudTtsClient {
+class ElevenLabsTtsService implements StreamingCloudTtsClient {
   ElevenLabsTtsService({
     required DomainLogger domainLogger,
     http.Client? httpClient,
@@ -50,6 +53,12 @@ class ElevenLabsTtsService implements CloudTtsClient {
 
   /// 24 kHz WAV: available on every plan, unlike 44.1 kHz.
   static const String outputFormat = 'wav_24000';
+
+  /// What a stream is asked for. The API streams no WAV ("WAV is only
+  /// supported for non-streaming requests", checked live 2026-11-14), so it
+  /// sends raw 24 kHz 16-bit mono PCM: the samples of [outputFormat].
+  static const String streamFormat = 'pcm_24000';
+  static const int _streamSampleRate = 24000;
 
   final CloudTtsHttp _http;
 
@@ -101,6 +110,61 @@ class ElevenLabsTtsService implements CloudTtsClient {
       '${stopwatch.elapsedMilliseconds} ms',
     );
     return bytes;
+  }
+
+  /// Speaks [text] with [voiceId] as one synthesis and emits a WAV file's
+  /// bytes as the audio arrives: `POST text-to-speech/{voice_id}/stream`
+  /// in [streamFormat], behind a WAV header whose lengths are not known yet.
+  ///
+  /// The header goes out with the first audio, so a stream that fails or
+  /// brings no audio emits nothing. Checked live 2026-11-14 on
+  /// `eleven_v4_turbo`: the first audio 140–165 ms after the request, a
+  /// 28 s answer whole in 2.5 s.
+  ///
+  /// Throws as [synthesize] does, on the first listen or along the stream.
+  @override
+  Stream<Uint8List> synthesizeStream({
+    required String text,
+    required String voiceId,
+    required String baseUrl,
+    required String apiKey,
+    String model = defaultModel,
+  }) async* {
+    if (text.trim().isEmpty) throw ArgumentError('Text cannot be empty');
+    if (voiceId.isEmpty) throw ArgumentError('Voice id cannot be empty');
+    CloudTtsHttp.requireKey(apiKey);
+
+    final uri = CloudTtsHttp.endpoint(
+      baseUrl,
+      'text-to-speech/${Uri.encodeComponent(voiceId)}/stream',
+    ).replace(queryParameters: const {'output_format': streamFormat});
+    final request = http.Request('POST', uri)
+      ..headers.addAll(_headers(apiKey, accept: 'audio/pcm'))
+      ..headers['Content-Type'] = 'application/json'
+      ..body = jsonEncode(<String, dynamic>{'text': text, 'model_id': model});
+
+    // Lengths and ids only: the text is the user's content.
+    final description =
+        'Streamed speech request (${uri.path}): ${text.length} chars, '
+        'voice $voiceId, model $model, $streamFormat';
+    _http.log(description);
+    final stopwatch = Stopwatch()..start();
+    var bytes = 0;
+    await for (final chunk in _http.sendStreamed(
+      request,
+      description: description,
+    )) {
+      if (chunk.isEmpty) continue;
+      if (bytes == 0) {
+        _http.log('First audio after ${stopwatch.elapsedMilliseconds} ms');
+        yield wavHeader(_streamSampleRate);
+      }
+      bytes += chunk.length;
+      yield chunk is Uint8List ? chunk : Uint8List.fromList(chunk);
+    }
+    _http.log(
+      'Speech stream: $bytes bytes in ${stopwatch.elapsedMilliseconds} ms',
+    );
   }
 
   /// Fetches every voice the account can use, each offered for the

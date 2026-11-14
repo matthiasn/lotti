@@ -9,6 +9,7 @@ import 'package:http/testing.dart';
 import 'package:lotti/features/tts/cloud/cloud_tts_exception.dart';
 import 'package:lotti/features/tts/cloud/cloud_voice_catalog.dart';
 import 'package:lotti/features/tts/cloud/elevenlabs_tts_service.dart';
+import 'package:lotti/features/tts/engine/wav_writer.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -94,6 +95,92 @@ void main() {
     ).captured)
       call as String,
   ];
+
+  group('synthesizeStream', () {
+    Stream<Uint8List> stream(
+      List<List<int>> pieces, {
+      int status = 200,
+      String model = 'eleven_v4_turbo',
+    }) =>
+        ElevenLabsTtsService(
+          domainLogger: logger,
+          httpClient: MockClient.streaming((request, _) async {
+            requests.add(request as http.Request);
+            return http.StreamedResponse(Stream.fromIterable(pieces), status);
+          }),
+        ).synthesizeStream(
+          text: _text,
+          voiceId: 'voice 1',
+          baseUrl: _baseUrl,
+          apiKey: _apiKey,
+          model: model,
+        );
+
+    test('asks the stream endpoint for 24 kHz PCM and emits it as a WAV: '
+        'a header of unknown length, then each piece in order', () async {
+      final chunks = await stream([
+        [1, 2, 3],
+        [],
+        [4, 5],
+      ]).toList();
+
+      expect(chunks, [
+        wavHeader(24000),
+        [1, 2, 3],
+        [4, 5],
+      ]);
+      final request = requests.single;
+      expect(request.method, 'POST');
+      expect(
+        request.url.toString(),
+        'https://api.elevenlabs.io/v1/text-to-speech/voice%201/stream'
+        '?output_format=pcm_24000',
+      );
+      expect(request.headers['xi-api-key'], _apiKey);
+      expect(request.headers['Accept'], 'audio/pcm');
+      expect(jsonDecode(request.body), {
+        'text': _text,
+        'model_id': 'eleven_v4_turbo',
+      });
+      // Lengths and ids are logged, never the text.
+      final logged = loggedText();
+      expect(logged, contains(startsWith('Streamed speech request')));
+      expect(logged, isNot(contains(contains(_text))));
+    });
+
+    test(
+      'a stream without audio emits nothing, not even the header',
+      () async {
+        expect(await stream([[], []]).toList(), isEmpty);
+      },
+    );
+
+    test('a refused request fails as the unstreamed one does', () async {
+      final error = await failure(
+        stream([utf8.encode('{}')], status: 429).drain<void>(),
+      );
+      expect(error.failure, CloudTtsFailure.rateLimited);
+    });
+
+    test('nothing is sent for empty text, a missing voice or no key', () async {
+      final eleven = service((_) => http.Response('', 200));
+      Stream<Uint8List> ask({
+        String text = 'Hi',
+        String voiceId = 'v',
+        String apiKey = _apiKey,
+      }) => eleven.synthesizeStream(
+        text: text,
+        voiceId: voiceId,
+        baseUrl: _baseUrl,
+        apiKey: apiKey,
+      );
+
+      await expectLater(ask(text: '  ').drain<void>(), throwsArgumentError);
+      await expectLater(ask(voiceId: '').drain<void>(), throwsArgumentError);
+      await expectLater(ask(apiKey: '').drain<void>(), throwsArgumentError);
+      expect(requests, isEmpty);
+    });
+  });
 
   group('synthesize', () {
     test('posts the text to the voice as 24 kHz WAV with the key in '

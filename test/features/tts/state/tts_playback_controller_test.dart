@@ -226,13 +226,15 @@ void main() {
       final growing = await clip();
       audio
         ..add(Uint8List.fromList([...header, ...samples(100)]))
+        // A server failure: an unreachable voice would fall back to the
+        // on-device one instead (see 'an unreachable cloud voice').
         ..addError(
-          const CloudTtsException(CloudTtsFailure.network, 'connection lost'),
+          const CloudTtsException(CloudTtsFailure.server, 'stream broke off'),
         );
       await speaking;
 
       expect(state().status, TtsPlaybackStatus.error);
-      expect(state().errorMessage, contains('connection lost'));
+      expect(state().errorMessage, contains('stream broke off'));
       expect(player.playCount, 0);
       expect(growing.file.existsSync(), isFalse);
       // Not asked for again whole: it failed, it was not empty.
@@ -590,6 +592,96 @@ void main() {
         subDomain: 'ttsPlayback.speak',
       ),
     ).called(1);
+  });
+
+  group('an unreachable cloud voice', () {
+    for (final failure in [CloudTtsFailure.network, CloudTtsFailure.timeout]) {
+      test('(${failure.name}) falls back to the installed on-device voice, '
+          'and says why in the log', () async {
+        final logger = await mockLogger();
+        final engine = FakeTtsEngine();
+        final player = FakeTtsAudioPlayer();
+        addTearDown(player.dispose);
+        final h = harness(
+          engine: engine,
+          player: player,
+          cloud: FakeCloudSpeechSynthesizer(
+            error: CloudTtsException(failure, 'offline'),
+          ),
+        );
+
+        await controllerOf(
+          h.container,
+        ).speak(sourceId: 'task-1', text: 'Hallo', cloudRoute: cloudRoute);
+
+        expect(engine.calls.single.text, 'Hallo');
+        expect(player.playCount, 1);
+        expect(
+          h.container.read(ttsPlaybackControllerProvider).status,
+          TtsPlaybackStatus.playing,
+        );
+        verify(
+          () => logger.log(
+            LogDomain.speech,
+            'Cloud voice unreachable (${failure.name}); '
+            'the on-device voice speaks',
+            subDomain: 'ttsPlayback.speak',
+          ),
+        ).called(1);
+      });
+    }
+
+    test('is a failure when the on-device model is not installed: its '
+        'download is never offered offline', () async {
+      final engine = FakeTtsEngine();
+      final repo = FakeTtsModelRepository(installed: false);
+      var asked = false;
+      final h = harness(
+        engine: engine,
+        repo: repo,
+        cloud: FakeCloudSpeechSynthesizer(
+          error: const CloudTtsException(CloudTtsFailure.network, 'offline'),
+        ),
+      );
+
+      await controllerOf(h.container).speak(
+        sourceId: 'task-1',
+        text: 'Hallo',
+        cloudRoute: cloudRoute,
+        confirmModelDownload: (_) async => asked = true,
+      );
+
+      final state = h.container.read(ttsPlaybackControllerProvider);
+      expect(state.status, TtsPlaybackStatus.error);
+      expect(state.errorMessage, contains('network'));
+      expect(engine.calls, isEmpty);
+      expect(asked, isFalse);
+      expect(repo.ensureCount, 0);
+    });
+
+    test('a provider that answered with a refusal is not unreachable: no '
+        'fallback, even with the on-device voice installed', () async {
+      final engine = FakeTtsEngine();
+      final h = harness(
+        engine: engine,
+        cloud: FakeCloudSpeechSynthesizer(
+          error: const CloudTtsException(
+            CloudTtsFailure.unauthorized,
+            'missing the permission voices_read',
+          ),
+        ),
+      );
+
+      await controllerOf(
+        h.container,
+      ).speak(sourceId: 'task-1', text: 'Hallo', cloudRoute: cloudRoute);
+
+      expect(
+        h.container.read(ttsPlaybackControllerProvider).status,
+        TtsPlaybackStatus.error,
+      );
+      expect(engine.calls, isEmpty);
+    });
   });
 
   test('the on-device clip a missing cloud voice fell back to is not '

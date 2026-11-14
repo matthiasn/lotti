@@ -1704,13 +1704,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Status';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Bekræft hver for sig. En færdig opgave forsvinder fra dine lister over åbne opgaver.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Statusændringer';
-
-  @override
   String get aiCardProposalKindUpdate => 'Opdatering';
 
   @override
@@ -1718,6 +1711,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Vis mindre';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Bekræft hver for sig. En færdig opgave forsvinder fra dine lister over åbne opgaver.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Statusændringer';
 
   @override
   String get aiCardTitle => 'AI-oversigt';

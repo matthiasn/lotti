@@ -332,19 +332,31 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
             return;
           }
         } on CloudTtsException catch (error) {
-          if (error.failure != CloudTtsFailure.noVoice || !engine.isSupported) {
-            rethrow;
-          }
           // The cloud voice has no voice for the language, and nothing was
-          // sent; the on-device voice, which infers the language from the
-          // text, speaks it instead of a failure. Its clip is kept under the
-          // on-device key: replayed for the cloud route it would skip asking
-          // the cloud again, and outlive a change of the on-device voice.
+          // sent; or the provider cannot be reached at all. Either way the
+          // on-device voice, which infers the language from the text, speaks
+          // it instead of a failure — but offline only when it is installed:
+          // its download needs the network that just failed.
+          final unreachable =
+              error.failure == CloudTtsFailure.network ||
+              error.failure == CloudTtsFailure.timeout;
+          final fallBack =
+              engine.isSupported &&
+              (error.failure == CloudTtsFailure.noVoice ||
+                  unreachable && await repo.isInstalled(settings.modelId));
+          if (!fallBack) rethrow;
+          if (!current()) return;
+          // Its clip is kept under the on-device key: replayed for the cloud
+          // route it would skip asking the cloud again, and outlive a change
+          // of the on-device voice.
           key = _keyFor(sourceId, text, language, settings, null);
           _logger.log(
             LogDomain.speech,
-            'No cloud voice for ${cloudRoute.languageCode}; '
-            'the on-device voice speaks',
+            unreachable
+                ? 'Cloud voice unreachable (${error.failure.name}); '
+                      'the on-device voice speaks'
+                : 'No cloud voice for ${cloudRoute.languageCode}; '
+                      'the on-device voice speaks',
             subDomain: 'ttsPlayback.speak',
           );
         }

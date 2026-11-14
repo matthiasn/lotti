@@ -1729,13 +1729,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Statut';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Confirme-les un par un. Une tâche terminée disparaît de tes listes de tâches ouvertes.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Changements de statut';
-
-  @override
   String get aiCardProposalKindUpdate => 'Mettre à jour';
 
   @override
@@ -1743,6 +1736,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Afficher moins';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Confirme-les un par un. Une tâche terminée disparaît de tes listes de tâches ouvertes.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Changements de statut';
 
   @override
   String get aiCardTitle => 'Résumé IA';

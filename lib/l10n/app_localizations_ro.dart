@@ -1725,13 +1725,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Stare';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Confirmați fiecare separat. O sarcină finalizată dispare din listele dvs. de sarcini deschise.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Modificări de stare';
-
-  @override
   String get aiCardProposalKindUpdate => 'Actualizați';
 
   @override
@@ -1739,6 +1732,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Afișați mai puțin';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Confirmați fiecare separat. O sarcină finalizată dispare din listele dvs. de sarcini deschise.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Modificări de stare';
 
   @override
   String get aiCardTitle => 'Rezumat AI';

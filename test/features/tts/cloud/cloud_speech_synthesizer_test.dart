@@ -487,6 +487,8 @@ void main() {
         clients[InferenceProviderType.elevenLabs],
         isA<ElevenLabsTtsService>(),
       );
+      // Both voices are played while they are still being made.
+      expect(clients.values, everyElement(isA<StreamingCloudTtsClient>()));
       expect(container.read(cloudSpeechSynthesizerProvider), isNotNull);
       expect(container.read(cloudVoiceCatalogRepositoryProvider), isNotNull);
       // Reading again yields the same clients: no second HTTP pool.

@@ -699,6 +699,16 @@ const List<KnownModel> voxtralModels = [
 /// but *Read aloud* offers them.
 const List<KnownModel> elevenLabsModels = [
   KnownModel(
+    providerModelId: elevenLabsV4TurboModelId,
+    name: 'Eleven v4 Turbo',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.audio],
+    isReasoningModel: false,
+    description:
+        'Expressive voices in 94 languages that start speaking almost at '
+        'once. Reads summaries and answers aloud.',
+  ),
+  KnownModel(
     providerModelId: elevenLabsMultilingualV2ModelId,
     name: 'Eleven Multilingual v2',
     inputModalities: [Modality.text],

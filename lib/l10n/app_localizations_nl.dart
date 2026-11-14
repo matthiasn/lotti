@@ -1713,13 +1713,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Status';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Bevestig ze één voor één. Een afgeronde taak verdwijnt uit je lijsten met open taken.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Statuswijzigingen';
-
-  @override
   String get aiCardProposalKindUpdate => 'Bijwerken';
 
   @override
@@ -1727,6 +1720,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Minder tonen';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Bevestig ze één voor één. Een afgeronde taak verdwijnt uit je lijsten met open taken.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Statuswijzigingen';
 
   @override
   String get aiCardTitle => 'Samenvatting van de AI';
