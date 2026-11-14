@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
@@ -1432,54 +1434,6 @@ void main() {
 
         expect(planSystem, contains('"searches"'));
       });
-
-      test('a request to be roasted is searched for the material of one and '
-          'answered as one, in short cited paragraphs', () async {
-        String? planSystem;
-        String? answerSystem;
-        await QueryAnswerBuilder(
-          maxBatchBytes: 1,
-          crawler: bench.crawler,
-          access: bench.crawler.access,
-          inference: QueryTextInference(
-            generate: (system, prompt) {
-              if (system.contains('Rephrase')) {
-                planSystem = system;
-                return Stream.value(
-                  jsonEncode({'question': 'Roast me', 'terms': <String>[]}),
-                );
-              }
-              if (system.contains('Shortlist sources')) {
-                return Stream.value(jsonEncode({'ids': <String>[]}));
-              }
-              answerSystem = system;
-              return Stream.value(
-                jsonEncode({'answer': 'Nothing found.', 'conclusion': ''}),
-              );
-            },
-          ),
-        ).build(
-          chat: chat,
-          question: question,
-          memories: [],
-          cancellation: cancellation,
-          onProgress: (_, {required expanded}) {},
-        );
-
-        // A topic-less "roast me" otherwise searched for the words "roast me".
-        expect(planSystem, contains('roast me'));
-        expect(planSystem, contains('slipped plans'));
-        expect(
-          answerSystem,
-          allOf(
-            contains('gets a playful roast, not a report'),
-            contains('never at body, health, grief, money worries'),
-            contains('every jab rests on a cited entry'),
-            contains('short paragraphs, one point each'),
-            isNot(contains('short answer with citations')),
-          ),
-        );
-      });
     });
 
     test(
@@ -2114,4 +2068,190 @@ void main() {
       },
     );
   }
+
+  group('a request to be roasted', () {
+    late QueryTestBench bench;
+    late Map<String, dynamic> planInput;
+    Map<String, dynamic>? answerInput;
+    late List<String> extracted;
+    late bool roast;
+
+    setUp(() {
+      roast = true;
+      answerInput = null;
+      extracted = [];
+      bench = QueryTestBench()
+        ..add('hinge-note', category: categoryMindfulness.id)
+        ..link('hinge', 'hinge-note')
+        ..meaningResults = {
+          'slipped plans': ['hinge', 'other-1'],
+        };
+      // More than the shortlist reads without choosing.
+      for (var i = 1; i <= 4; i++) {
+        bench.add('other-$i', category: categoryMindfulness.id);
+      }
+      bench.entries['hinge'] = testTask.copyWith(
+        meta: testTask.meta.copyWith(
+          id: 'hinge',
+          categoryId: categoryMindfulness.id,
+          dateFrom: DateTime(2026, 9),
+        ),
+        data: testTask.data.copyWith(
+          title: 'Fix the feeder hinge',
+          due: DateTime(2026, 10, 3),
+          status: TaskStatus.open(
+            id: 's3',
+            createdAt: DateTime(2026, 10, 20),
+            utcOffset: 0,
+          ),
+          statusHistory: [
+            TaskStatus.open(
+              id: 's1',
+              createdAt: DateTime(2026, 9),
+              utcOffset: 0,
+            ),
+            TaskStatus.inProgress(
+              id: 's2',
+              createdAt: DateTime(2026, 9, 15),
+              utcOffset: 0,
+            ),
+            TaskStatus.open(
+              id: 's3',
+              createdAt: DateTime(2026, 10, 20),
+              utcOffset: 0,
+            ),
+          ],
+        ),
+      );
+    });
+
+    Future<QueryBuiltAnswer> build(String answer) => withClock(
+      Clock.fixed(DateTime(2026, 11, 14, 9)),
+      () =>
+          QueryAnswerBuilder(
+            maxBatchBytes: 1,
+            crawler: bench.crawler,
+            access: bench.crawler.access,
+            inference: QueryTextInference(
+              generate: (system, prompt) {
+                final input = jsonDecode(prompt) as Map<String, dynamic>;
+                if (system.contains('Rephrase')) {
+                  planInput = input;
+                  return Stream.value(
+                    jsonEncode({
+                      'question': 'What plans of mine slipped?',
+                      'terms': <String>[],
+                      'searches': ['slipped plans'],
+                      'roast': roast,
+                    }),
+                  );
+                }
+                if (system.contains('Shortlist sources')) {
+                  return Stream.value(
+                    jsonEncode({
+                      'ids': ['hinge'],
+                    }),
+                  );
+                }
+                if (system.contains('Extract passages')) {
+                  extracted.add(input['source'] as String);
+                  return Stream.value(
+                    jsonEncode({
+                      'passages': [
+                        {'quote': input['source']},
+                      ],
+                    }),
+                  );
+                }
+                answerInput = input;
+                return Stream.value(
+                  jsonEncode({'answer': answer, 'conclusion': ''}),
+                );
+              },
+            ),
+          ).build(
+            chat: QueryChatHistory(
+              id: 'chat',
+              scope: QueryScope.journal,
+              title: 'Roast me',
+              private: false,
+              archived: false,
+              lastActivity: date,
+              events: [question],
+              unread: false,
+            ),
+            question: question,
+            memories: const [],
+            cancellation: QueryCancellation(),
+            onProgress: (_, {required expanded}) {},
+          ),
+    );
+
+    test('reads a task it finds with what is linked to it, right after it, '
+        'and leaves the rest unread', () async {
+      final result = await build('The hinge [1] still waits [2].');
+
+      expect(planInput, isNotNull);
+      // The task as found, then its linked note — never the note the
+      // shortlist passed over.
+      expect(extracted, ['- test task text', 'Feeder decision in hinge-note.']);
+      expect(result.answer.evidence.map((e) => e.source.id), [
+        'hinge',
+        'hinge-note',
+      ]);
+      // The note is read as the task's: its title rides along.
+      expect(result.answer.evidence.last.affiliations, [
+        'Fix the feeder hinge',
+      ]);
+    });
+
+    test("hands the writer the task's facts and today, and says it is a "
+        'roast', () async {
+      await build('The hinge [1] still waits [2].');
+
+      final facts = {
+        'title': 'Fix the feeder hinge',
+        'status': 'OPEN',
+        'statusSince': '2026-10-20',
+        'created': '2026-09-01',
+        'due': '2026-10-03',
+        'statusChanges': 3,
+      };
+      expect(answerInput!['roast'], isTrue);
+      expect(answerInput!['today'], '2026-11-14');
+      final evidence = (answerInput!['evidence'] as List)
+          .cast<Map<String, dynamic>>();
+      // The task itself, and the note linked to it, both carry them.
+      expect(evidence.map((e) => e['tasks']), [
+        [facts],
+        [facts],
+      ]);
+    });
+
+    test('drops a jab that cites nothing', () async {
+      final result = await build(
+        'Due October 3, open since [1].\n\n'
+        'Classic you, honestly.\n\n'
+        '"This week", it says [2].',
+      );
+
+      expect(
+        result.answer.text,
+        'Due October 3, open since [1].\n\n"This week", it says [2].',
+      );
+    });
+
+    test('an answer that is no roast keeps a paragraph without a '
+        'citation', () async {
+      roast = false;
+      const answer =
+          'The hinge was due October 3 [1].\n\n'
+          'Nothing says when it will be fixed.';
+
+      final result = await build(answer);
+
+      expect(result.answer.text, answer);
+      expect(answerInput!['roast'], isFalse);
+    });
+  });
 }

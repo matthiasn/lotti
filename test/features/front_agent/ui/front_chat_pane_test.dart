@@ -2802,17 +2802,18 @@ void main() {
       ),
     );
 
+    // Her answer is drawn as its cited points, through the reply catalog.
     // A task opens on top of her, as every task she names does...
     await expectTaskOpensOverPane(
       tester,
       observer,
-      find.byKey(const ValueKey('front-door-source-0-0')),
+      find.byKey(const ValueKey('front-cited-source-0-0')),
       't-1',
       paths,
     );
     // ...any other source leaves her for its own page.
-    for (var i = 1; i < cited.length; i++) {
-      await tester.tap(find.byKey(ValueKey('front-door-source-0-$i')));
+    for (final row in [1, 2]) {
+      await tester.tap(find.byKey(ValueKey('front-cited-source-0-$row')));
       await tester.pump();
     }
 

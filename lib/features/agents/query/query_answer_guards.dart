@@ -4,7 +4,25 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 
 /// A citation in an answer: `[n]`, naming the n-th piece of evidence, with
 /// the whitespace before it so a removed one leaves no gap behind.
-final _citation = RegExp(r'\s*\[(\d+)\]');
+final queryCitation = RegExp(r'\s*\[(\d+)\]');
+
+/// [answer]'s paragraphs, split at blank lines — `\n` or `\r\n` — with a
+/// paragraph of citations alone joined to the one before it, whose claim it
+/// cites: an answer's points.
+List<String> queryAnswerParagraphs(String answer) {
+  final paragraphs = <String>[];
+  for (final part in answer.split(RegExp(r'\r?\n[ \t]*\r?\n'))) {
+    final paragraph = part.trim();
+    if (paragraph.isEmpty) continue;
+    if (paragraphs.isNotEmpty &&
+        paragraph.replaceAll(queryCitation, '').trim().isEmpty) {
+      paragraphs.add('${paragraphs.removeLast()} $paragraph');
+    } else {
+      paragraphs.add(paragraph);
+    }
+  }
+  return paragraphs;
+}
 
 /// [answer] with every citation that names no evidence taken out, given
 /// [evidenceCount] pieces of evidence numbered from 1.
@@ -16,10 +34,24 @@ final _citation = RegExp(r'\s*\[(\d+)\]');
 /// the whole answer away for it failed the question for nothing. Every
 /// citation left names a piece of evidence that exists.
 String withKnownCitations(String answer, int evidenceCount) =>
-    answer.replaceAllMapped(_citation, (match) {
+    answer.replaceAllMapped(queryCitation, (match) {
       final number = int.parse(match.group(1)!);
       return number >= 1 && number <= evidenceCount ? match.group(0)! : '';
     }).trim();
+
+/// [roast] without its paragraphs that cite nothing.
+///
+/// Each paragraph of a roast is a jab, and a jab is only fair when it
+/// points at the entry it comes from; one that cites nothing is a joke
+/// about no one in particular, or about something the evidence never
+/// showed. When no paragraph cites anything — there was nothing to cite,
+/// and the roast says so — it is left as it is.
+String withCitedParagraphs(String roast) {
+  final cited = queryAnswerParagraphs(
+    roast,
+  ).where(queryCitation.hasMatch).toList();
+  return cited.isEmpty ? roast : cited.join('\n\n');
+}
 
 /// What reading the next source may do, re-checked against the live access
 /// snapshot right before each part of it is read ([sourceGate]).

@@ -648,4 +648,195 @@ void main() {
       },
     );
   });
+
+  group('withTaskDetails', () {
+    final category = categoryMindfulness.id;
+    late QueryTestBench bench;
+
+    /// Adds a note linked to [task], dated [day] of October 2026.
+    void detail(
+      String id,
+      int day, {
+      String task = 'task',
+      String? inCategory,
+    }) {
+      bench
+        ..add(id, category: inCategory ?? category)
+        ..link(task, id);
+      bench.entries[id] = bench.entries[id]!.copyWith(
+        meta: bench.entries[id]!.meta.copyWith(
+          dateFrom: DateTime(2026, 10, day),
+        ),
+      );
+    }
+
+    void task(String id) => bench.entries[id] = testTask.copyWith(
+      meta: testTask.meta.copyWith(id: id, categoryId: category),
+    );
+
+    setUp(() {
+      bench = QueryTestBench()..add('lead', category: category);
+      task('task');
+    });
+
+    Future<({QueryCorpus corpus, List<QuerySourceDocument> documents})>
+    detailed({QuerySourceKind? kind}) async {
+      final corpus = await bench.crawler.discover(
+        QueryScope.journal,
+        const [],
+        homeOnly: true,
+      );
+      final selected = [
+        for (final id in ['lead', 'task'])
+          QuerySourceDocument.fromEntry(bench.entries[id]!)!,
+      ];
+      return bench.crawler.withTaskDetails(corpus, selected, kind: kind);
+    }
+
+    List<String> ids(List<QuerySourceDocument> documents) =>
+        documents.map((d) => d.entry.meta.id).toList();
+
+    test('follows a task with its four newest details, and the corpus knows '
+        'them and what they belong to', () async {
+      for (var day = 1; day <= 5; day++) {
+        detail('note-$day', day);
+      }
+
+      final result = await detailed();
+
+      expect(ids(result.documents), [
+        'lead',
+        'task',
+        'note-5',
+        'note-4',
+        'note-3',
+        'note-2',
+      ]);
+      expect(ids(result.corpus.documents), containsAll(['note-5', 'note-2']));
+      expect(result.corpus.access.entries.keys, contains('note-5'));
+      expect(result.corpus.affiliations['note-5']!.labels, [
+        testTask.data.title,
+      ]);
+    });
+
+    test('reads no hidden link, no entry it may not show or outside the '
+        'selection, and no other task', () async {
+      detail('shown', 1);
+      bench
+        ..link('task', 'hidden', hidden: true)
+        ..add('hidden', category: category);
+      detail('private', 2);
+      bench.entries['private'] = bench.entries['private']!.copyWith(
+        meta: bench.entries['private']!.meta.copyWith(private: true),
+      );
+      detail('elsewhere', 3, inCategory: 'nowhere');
+      task('neighbour');
+      bench.link('task', 'neighbour');
+
+      final result = await detailed();
+
+      expect(ids(result.documents), ['lead', 'task', 'shown']);
+    });
+
+    test('keeps to the kind asked for', () async {
+      detail('note', 1);
+
+      final result = await detailed(kind: QuerySourceKind.recording);
+
+      expect(ids(result.documents), ['lead', 'task']);
+    });
+
+    test('a detail already chosen is not read twice', () async {
+      detail('lead', 1);
+
+      final result = await detailed();
+
+      expect(ids(result.documents), ['lead', 'task']);
+    });
+
+    test("a question's named categories hold for details too", () async {
+      bench.categories.add(
+        categoryMindfulness.copyWith(id: 'other', name: 'Other'),
+      );
+      detail('here', 1);
+      detail('there', 2, inCategory: 'other');
+      final corpus = await bench.crawler.discover(
+        QueryScope.journal,
+        const [],
+        narrowTo: {category},
+      );
+
+      final result = await bench.crawler.withTaskDetails(corpus, [
+        QuerySourceDocument.fromEntry(bench.entries['task']!)!,
+      ]);
+
+      expect(corpus.narrowedTo, {category});
+      expect(ids(result.documents), ['task', 'here']);
+      expect(result.corpus.narrowedTo, {category});
+    });
+
+    for (final eventsEnabled in [true, false]) {
+      test('a linked event is a detail only while events are on '
+          '(${eventsEnabled ? 'on' : 'off'})', () async {
+        bench
+          ..eventsEnabled = eventsEnabled
+          ..link('task', 'picnic');
+        bench.entries['picnic'] = JournalEvent(
+          meta: testTask.meta.copyWith(id: 'picnic', categoryId: category),
+          data: const EventData(
+            title: 'Ice garden picnic',
+            stars: 0,
+            status: EventStatus.completed,
+          ),
+        );
+
+        final result = await detailed();
+
+        expect(ids(result.documents), [
+          'lead',
+          'task',
+          if (eventsEnabled) 'picnic',
+        ]);
+      });
+    }
+
+    test('a linked recording without a transcript is counted as unread, as '
+        'discovery counts one', () async {
+      bench.link('task', 'memo');
+      bench.entries['memo'] = testAudioEntry.copyWith(
+        meta: testAudioEntry.meta.copyWith(id: 'memo', categoryId: category),
+        entryText: null,
+        data: testAudioEntry.data.copyWith(transcripts: []),
+      );
+
+      final result = await detailed();
+
+      expect(ids(result.documents), ['lead', 'task']);
+      final coverage = result.corpus.coverage;
+      expect(coverage.incomplete, isTrue);
+      expect(coverage.missingTranscripts, 1);
+      expect(coverage.unreadableSources.single.id, 'memo');
+      // Only recordings were asked for: still counted.
+      final recordings = await detailed(kind: QuerySourceKind.recording);
+      expect(recordings.corpus.coverage.missingTranscripts, 1);
+      // Notes were asked for: a recording is no concern of theirs.
+      final notes = await detailed(kind: QuerySourceKind.text);
+      expect(notes.corpus.coverage.missingTranscripts, 0);
+    });
+
+    test('without a task, or one with nothing linked, the selection and '
+        'corpus are returned as they are', () async {
+      final corpus = await bench.crawler.discover(
+        QueryScope.journal,
+        const [],
+        homeOnly: true,
+      );
+      final selected = [QuerySourceDocument.fromEntry(bench.entries['task']!)!];
+
+      final result = await bench.crawler.withTaskDetails(corpus, selected);
+
+      expect(result.documents, same(selected));
+      expect(result.corpus, same(corpus));
+    });
+  });
 }

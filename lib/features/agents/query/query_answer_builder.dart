@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_answer_guards.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/query/query_summary_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_summary_reader.dart';
 import 'package:lotti/features/agents/query/query_task_action_planner.dart';
+import 'package:lotti/features/agents/query/query_task_facts.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 
 part 'query_answer_builder_prompts_part.dart';
@@ -312,7 +314,8 @@ class QueryAnswerBuilder {
           system:
               '${_untrusted}Rephrase the question using only this chat context. '
               'Return {"question":"standalone question", "terms":["up to 5 specific search terms"], '
-              '$_searchesField${nameable.isEmpty ? '' : ', $_categoriesField'}}.',
+              '$_searchesField, $_roastField'
+              '${nameable.isEmpty ? '' : ', $_categoriesField'}}.',
           input: {
             'question': asked.text,
             'conversation': context,
@@ -320,6 +323,7 @@ class QueryAnswerBuilder {
           },
           cancellation: cancellation,
         );
+    final roast = plan['roast'] == true;
     final effectiveQuestion = plan['question'] is String
         ? plan['question'] as String
         : asked.text;
@@ -338,7 +342,7 @@ class QueryAnswerBuilder {
         batchPlan['sufficient'] != true ||
         batchPlan['searchCategory'] == true ||
         homeCorpus!.coverage.incomplete;
-    final corpus =
+    var corpus =
         batchPlan != null &&
             (!needsExpansion ||
                 restrictToHome ||
@@ -385,6 +389,7 @@ class QueryAnswerBuilder {
       access: corpus.access,
       coverage: corpus.coverage,
       affiliations: corpus.affiliations,
+      narrowedTo: corpus.narrowedTo,
     );
     var incomplete = corpus.coverage.incomplete;
     List<QuerySourceDocument> selected;
@@ -425,6 +430,17 @@ class QueryAnswerBuilder {
       );
       selected = shortlist.documents;
       incomplete = incomplete || shortlist.incomplete;
+    }
+    final detailed = await crawler.withTaskDetails(
+      corpus,
+      selected,
+      kind: kind,
+    );
+    cancellation.check();
+    (:corpus, documents: selected) = detailed;
+    incomplete = incomplete || corpus.coverage.incomplete;
+    for (final source in corpus.coverage.unreadableSources) {
+      dependencies[source.id] = source;
     }
     for (final document in [...cachedDocuments, ...selected]) {
       cancellation.check();
@@ -484,12 +500,7 @@ class QueryAnswerBuilder {
           } else {
             calls++;
             inspected = await inference.complete(
-              system:
-                  '${_untrusted}Extract passages relevant to the question. '
-                  'Return {"passages":[{"quote":"EXACT contiguous source text", '
-                  '"summary":"short relevance summary","reason":"why relevant"}]}. '
-                  'If irrelevant, return {"passages":[]}. Never paraphrase a quote. '
-                  'Include enough surrounding discussion to preserve decisions, disagreement and qualifications.',
+              system: _extractSystem,
               input: {
                 'question': effectiveQuestion,
                 'source': section,
@@ -669,27 +680,13 @@ class QueryAnswerBuilder {
       ),
     );
     final result = await inference.complete(
-      system:
-          '${_untrusted}Answer from the supplied evidence and relevant memories only. '
-          'Cite evidence numbers as [1], [2]. Distinguish recorded decisions, suggestions and inference. '
-          'When evidence conflicts show the disagreement. With no evidence say what could not be established; '
-          'incomplete coverage never proves a discussion did not happen. '
-          '$_registerRule '
-          'Return {"answer":"the answer with citations, a sentence or two for a plain fact", "conclusion":"one useful durable conclusion, or empty"}. '
-          'A remembered conclusion is not a newly verified source.',
+      system: _answerSystem,
       input: {
         'question': asked.text,
         'conversation': context,
-        'evidence': [
-          for (var i = 0; i < evidence.length; i++)
-            {
-              'number': i + 1,
-              'label': evidence[i].label,
-              'date': evidence[i].sourceDate.toIso8601String(),
-              'quote': evidence[i].quote,
-              'affiliations': evidence[i].affiliations,
-            },
-        ],
+        'roast': roast,
+        'today': queryDay(clock.now()),
+        'evidence': _answerEvidence(evidence, current, corpus.affiliations),
         'memories': [
           for (final event in recalled)
             {'id': event.id, 'text': (event.data as QueryChatMemory).text},
@@ -702,9 +699,11 @@ class QueryAnswerBuilder {
     );
     final drafted = result['answer'];
     // A citation naming no evidence is dropped, not the whole answer.
-    final text = drafted is String
+    final known = drafted is String
         ? withKnownCitations(drafted, evidence.length)
         : '';
+    // A roast's jab without a source is not said.
+    final text = roast ? withCitedParagraphs(known) : known;
     if (text.isEmpty) throw const FormatException('Invalid query answer');
     // The draft on screen showed the dropped citation: it shows the answer.
     if (text != drafted) onAnswerText?.call(text);
@@ -945,13 +944,7 @@ class QueryAnswerBuilder {
       throw const QueryScopeUnavailable();
     }
     final result = await inference.complete(
-      system:
-          '${_untrusted}Shortlist sources for exact-text inspection. '
-          'Review these source previews together. Return '
-          '{"ids":["source id"]} in descending relevance, at most 8 sources. '
-          'Prefer sources likely to contain the requested discussion or decision. '
-          'Previews may be truncated; include plausible sources even when uncertain. '
-          'Use only IDs supplied here. Return no quotes or answer.',
+      system: _shortlistSystem,
       input: {
         'question': question,
         'sources': [

@@ -1,8 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 
 void main() {
   FrontDoorEntry door(String id, FrontDoorOutcome? outcome) => FrontDoorEntry(
@@ -104,5 +107,76 @@ void main() {
     expect(thread.doorsCarriedBy('ask3')!.single.doorId, 'c');
     // The inbox filter keeps the words and the carrier together.
     expect(thread.inboxMessageIds, {'u1', 'r1', 'u3', 'ask3'});
+  });
+
+  test("the thread's surfaces are its replies' and one per journal answer "
+      'with points, under its own id; an answer of an owner gets none', () {
+    final evidence = QueryEvidence(
+      source: const QuerySourceRef(
+        id: 'e1',
+        private: false,
+        categoryPrivate: false,
+        categoryId: 'c',
+      ),
+      kind: QuerySourceKind.text,
+      label: 'Colony chores',
+      sourceDate: DateTime.utc(2026, 10, 27),
+      textVersion: 'entryText',
+      fingerprint: 'f',
+      sourceText: 'Fix the hinge.',
+      start: 0,
+      end: 14,
+      summary: '',
+    );
+    final reply = FrontReplySurface.compose(
+      surfaceId: 'a1',
+      components: const [
+        {
+          'component': FrontReplyComponents.quickReplies,
+          'options': ['Ok'],
+        },
+      ],
+    );
+    final thread = FrontChatThread(
+      messages: const [],
+      surfacesByMessageId: {'a1': reply},
+      doorsByMessageId: {
+        'u1': [
+          door(
+            'd:door:0',
+            FrontDoorAnswer(
+              text: 'Promised [1].',
+              summaryBased: false,
+              incomplete: false,
+              fromJournal: true,
+              evidence: [evidence],
+            ),
+          ),
+          door(
+            'd:door:1',
+            const FrontDoorAnswer(
+              text: 'On track.',
+              summaryBased: true,
+              incomplete: false,
+            ),
+          ),
+          door('d:door:2', null),
+        ],
+      },
+    );
+
+    final surfaces = thread.surfaces;
+
+    expect(surfaces.keys, ['a1', frontDoorAnswerSurfaceId('d:door:0')]);
+    expect(surfaces['a1'], same(reply));
+    final create =
+        surfaces[frontDoorAnswerSurfaceId('d:door:0')]!
+                .message['createSurface']!
+            as Map;
+    final points = FrontCitedPoint.listFromJson(
+      (create['dataModel']! as Map)[FrontReplyData.answer],
+    );
+    expect(points.single.text, 'Promised.');
+    expect(points.single.sources.single.id, 'e1');
   });
 }

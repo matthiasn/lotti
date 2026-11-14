@@ -4,12 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:json_schema_builder/json_schema_builder.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
+import 'package:lotti/features/front_agent/ui/front_cited_source_row.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_cards.dart';
@@ -34,6 +36,7 @@ class FrontReplyScope extends InheritedWidget {
     required super.child,
     this.shownIds = const {},
     this.canReply = true,
+    this.onOpenSource,
     super.key,
   });
 
@@ -52,6 +55,10 @@ class FrontReplyScope extends InheritedWidget {
   /// only under her latest reply.
   final bool canReply;
 
+  /// Opens an entry a journal answer's point rests on; null leaves the
+  /// entries unopenable.
+  final ValueChanged<FrontCitedSource>? onOpenSource;
+
   static FrontReplyScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<FrontReplyScope>();
     assert(scope != null, 'A reply surface is drawn in a FrontReplyScope');
@@ -65,6 +72,7 @@ class FrontReplyScope extends InheritedWidget {
       onOpen != oldWidget.onOpen ||
       onOpenTask != oldWidget.onOpenTask ||
       canReply != oldWidget.canReply ||
+      onOpenSource != oldWidget.onOpenSource ||
       !setEquals(shownIds, oldWidget.shownIds);
 }
 
@@ -260,6 +268,44 @@ final ComponentImplementation _pullRequestChart = _fromLookup(
   },
 );
 
+/// A journal answer's points, each followed by the entries it rests on, so
+/// a claim and its evidence are read together. Bound at `data` to what the
+/// journal search verified; the app composes it, never the model.
+final ComponentImplementation _citedPoints = _fromLookup(
+  FrontReplyComponents.citedPoints,
+  (context, key, data) {
+    final points = FrontCitedPoint.listFromJson(data);
+    if (points.isEmpty) return null;
+    final scope = FrontReplyScope.of(context);
+    final tokens = context.designTokens;
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: tokens.spacing.step4,
+      children: [
+        for (final (index, point) in points.indexed)
+          Column(
+            key: ValueKey('front-cited-point-$index'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              scope.prose(point.text),
+              // Keyed by place: one entry may give a point two passages.
+              for (final (row, source) in point.sources.indexed)
+                FrontCitedSourceRow(
+                  key: ValueKey('front-cited-source-$index-$row'),
+                  source: source,
+                  onOpen: switch (scope.onOpenSource) {
+                    final open? => () => open(source),
+                    null => null,
+                  },
+                ),
+            ],
+          ),
+      ],
+    );
+  },
+);
+
 final _quickReplies = ComponentImplementation(
   name: FrontReplyComponents.quickReplies,
   schema: S.object(
@@ -312,5 +358,6 @@ final CatalogImplementation frontReplyCatalog = CatalogImplementation(
     _loggedTimeChart,
     _pullRequestChart,
     _quickReplies,
+    _citedPoints,
   ],
 );

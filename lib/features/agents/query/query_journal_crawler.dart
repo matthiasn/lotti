@@ -120,6 +120,7 @@ class QueryCorpus {
     required this.access,
     required this.coverage,
     required this.affiliations,
+    this.narrowedTo,
   });
 
   final QueryScope scope;
@@ -130,12 +131,18 @@ class QueryCorpus {
   final QueryCoverage coverage;
   final Map<String, QueryAffiliation> affiliations;
 
+  /// The categories the question named, which narrow a journal crawl
+  /// further than the page's selection (`''` is the uncategorized bucket);
+  /// null when it named none.
+  final Set<String>? narrowedTo;
+
   /// Whether an entry filed in category [id] belongs to this corpus: the
   /// scope's own category, or for the journal any category [snapshot] shows
-  /// within the page's selection.
+  /// within the page's selection and the categories the question named.
   bool admits(QueryAccessSnapshot snapshot, String? id) => scope.spansCategories
       ? snapshot.allowsCategory(id) &&
-            (scope.journalCategoryIds?.contains(id ?? '') ?? true)
+            (scope.journalCategoryIds?.contains(id ?? '') ?? true) &&
+            (narrowedTo?.contains(id ?? '') ?? true)
       : id == categoryId;
 
   /// Whether this corpus may still be read under [snapshot]: its category is
@@ -382,6 +389,126 @@ class QueryJournalCrawler {
         unreadableSources: unreadableSources,
       ),
       affiliations: await _affiliations(documents),
+      narrowedTo: scope.spansCategories ? narrowTo : null,
+    );
+  }
+
+  /// At most this many entries linked to one task are read beside it.
+  static const maxDetailsPerTask = 4;
+
+  /// [selected] with each task in it followed by its details: the notes,
+  /// recordings and checklists linked to it, newest first, at most
+  /// [maxDetailsPerTask] each. A search finds a task by what it says; what
+  /// was said and done about it — and when — is in what is linked to it.
+  ///
+  /// A detail passes the filters a discovered document does: visible, in
+  /// [corpus]'s categories, of [kind] when one is given. Another task or a
+  /// project is a neighbour, not a detail, and is not read. The returned
+  /// corpus knows the details, so their sources and affiliations resolve.
+  Future<({QueryCorpus corpus, List<QuerySourceDocument> documents})>
+  withTaskDetails(
+    QueryCorpus corpus,
+    List<QuerySourceDocument> selected, {
+    QuerySourceKind? kind,
+  }) async {
+    final taskIds = {
+      for (final document in selected)
+        if (document.entry is Task) document.entry.meta.id,
+    };
+    if (taskIds.isEmpty) return (corpus: corpus, documents: selected);
+    final linked = <String, Set<String>>{};
+    for (final link in await journal.linksForEntryIdsBidirectional(taskIds)) {
+      if (link.hidden == true || link.deletedAt != null) continue;
+      for (final (task, other) in [
+        (link.fromId, link.toId),
+        (link.toId, link.fromId),
+      ]) {
+        if (taskIds.contains(task) && task != other) {
+          (linked[task] ??= {}).add(other);
+        }
+      }
+    }
+    if (linked.isEmpty) return (corpus: corpus, documents: selected);
+    final current = await access.load({
+      ...corpus.access.entries.keys,
+      for (final document in selected) document.entry.meta.id,
+      for (final ids in linked.values) ...ids,
+    });
+    final known = {for (final document in selected) document.entry.meta.id};
+    final events = await journal.getConfigFlag(enableEventsFlag);
+    final details = <String, List<QuerySourceDocument>>{};
+    final untranscribed = <QuerySourceRef>[];
+    for (final MapEntry(key: task, value: ids) in linked.entries) {
+      final entries = [
+        for (final id in ids)
+          if (current.entries[id] case final entry?)
+            // What discovery reads ([sourceTypes]), but never another task
+            // or a project: a neighbour, not a detail.
+            if ((entry is JournalEntry ||
+                    entry is JournalAudio ||
+                    entry is JournalImage ||
+                    entry is Checklist ||
+                    entry is ChecklistItem ||
+                    (events && entry is JournalEvent)) &&
+                current.allowsEntry(entry) &&
+                corpus.admits(current, entry.meta.categoryId))
+              entry,
+      ]..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+      for (final entry in entries) {
+        if ((details[task]?.length ?? 0) == maxDetailsPerTask) break;
+        if (!known.add(entry.meta.id)) continue;
+        final document = QuerySourceDocument.fromEntry(entry);
+        if (document == null) {
+          if (entry is JournalAudio &&
+              (kind == null || kind == QuerySourceKind.recording)) {
+            untranscribed.add(current.reference(entry));
+          }
+          continue;
+        }
+        if (kind != null && document.kind != kind) continue;
+        (details[task] ??= []).add(document);
+      }
+    }
+    final added = [for (final documents in details.values) ...documents];
+    if (added.isEmpty && untranscribed.isEmpty) {
+      return (corpus: corpus, documents: selected);
+    }
+    final inCorpus = {
+      for (final document in corpus.documents) document.entry.meta.id,
+    };
+    return (
+      corpus: QueryCorpus(
+        scope: corpus.scope,
+        categoryId: corpus.categoryId,
+        homeIds: corpus.homeIds,
+        documents: [
+          ...corpus.documents,
+          ...added.where((d) => !inCorpus.contains(d.entry.meta.id)),
+        ],
+        access: current,
+        coverage: untranscribed.isEmpty
+            ? corpus.coverage
+            : corpus.coverage.copyWith(
+                incomplete: true,
+                missingTranscripts:
+                    corpus.coverage.missingTranscripts + untranscribed.length,
+                unreadableSources: [
+                  ...corpus.coverage.unreadableSources,
+                  ...untranscribed,
+                ],
+              ),
+        affiliations: {
+          ...corpus.affiliations,
+          ...await _affiliations(added),
+        },
+        narrowedTo: corpus.narrowedTo,
+      ),
+      documents: [
+        for (final document in selected) ...[
+          document,
+          ...?details[document.entry.meta.id],
+        ],
+      ],
     );
   }
 

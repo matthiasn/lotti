@@ -1053,12 +1053,36 @@ never widens. The door record keeps the answer's evidence and dependencies.
 category, a config flag or lockdown changes, and `FrontDoorCard` shows the
 answer — attributed "From your journal", with its numbered sources that open
 on a tap — only while every dependency is still visible, and hides it until
-that is known. The sources sit under a *Sources* heading of their own, each
-led by the same `CitationBadge` its `[n]` wears in the words, so the two read
-as a pair; a tap on a citation in the words opens the source it names, as its
-row does, and a number naming no listed source opens nothing. A row names its
-source by what it is and when — a recording as *Recording transcript*, never
-its file name — and sets the quoted passage off with a rule.
+that is known.
+
+**Her journal answer is drawn as its points, through the reply catalog.**
+The answer is still written as text — it streams while the model writes it —
+but it is not shown as Markdown with footnote numbers. `FrontChatThread.surfaces`
+composes, for each journal answer, an A2UI surface of the reply catalog
+(`FrontReplySurface.citedAnswer`, id `frontDoorAnswerSurfaceId`): a root
+`Reply` holding one `CitedPoints` bound to the points at `/answer`. The points
+come from `FrontCitedPoint.fromAnswer`: each paragraph a point, its `[n]`
+citations lifted out (`queryAnswerPoints`) and replaced by the verified
+evidence they name. `FrontReplySurfaces` feeds those surfaces to the
+thread's one processor beside the replies', and `FrontDoorCard` mounts its
+door's — only while the answer is visible — in a `FrontReplyScope` whose
+`onOpenSource` opens the entry. `CitedPoints` draws each point in her words
+with its entries right under it (`FrontCitedSourceRow`): what each is and
+when — a recording as *Recording transcript*, never its file name; a note
+named by its first line by its date alone, since the quote says the rest —
+and the quoted passage set off by a rule, opening on a tap. Nothing of it is
+the model's but the words of the points. Without a surface — none was drawn,
+or the processor refused it — the card falls back to her Markdown, its
+`[n]` as `CitationBadge`s, and the sources under a *Sources* heading.
+
+```mermaid
+flowchart LR
+  A["FrontDoorAnswer<br/>(text with [n], evidence)"] --> P["FrontCitedPoint.fromAnswer<br/>paragraph = point, [n] = its entries"]
+  P --> S["FrontReplySurface.citedAnswer<br/>Reply → CitedPoints @ /answer"]
+  S --> R["FrontReplySurfaces<br/>(the thread's processor)"]
+  R --> C["FrontDoorCard: A2uiSurface<br/>while the answer is visible"]
+  C --> O["onOpenSource → the entry's page"]
+```
 
 The walker never awaits a specialist's wake: the goal and person chat
 services' `sendMessage` awaits its own completion and at concurrency 1 that
@@ -1660,7 +1684,9 @@ what she may write — `Reply` (children, top to bottom), `Text` (a short
 label between parts), `TaskCards(caption, ids, notes?)`,
 `PullRequestCards(caption, ids)`, `ClosedTasks(caption)`, `LoggedTimeChart(caption)`,
 `PullRequestChart(caption)` and `QuickReplies(options)` — flat, with no
-data in it: **she never passes data to a component**. A card names a task
+data in it: **she never passes data to a component**. The catalog has one
+component she cannot write: `CitedPoints`, which only the app composes, for a
+journal answer's points (see *Her journal answer is drawn as its points*). A card names a task
 or project by id and reads it live; a lookup's component only places what
 the app wrote from that lookup. `frontReplyPromptSnippet` is the library's
 description of that catalog and two examples in the exact format, which
