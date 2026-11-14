@@ -3657,6 +3657,86 @@ void main() {
         });
       }
 
+      test(
+        'a run declined for want of a profile says so under the task '
+        'as well as the entry, so a surface following the task sees it',
+        () async {
+          late ProviderContainer scope;
+          when(
+            () => mockResolver.resolveForSubject('task-1'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockResolver.resolveDefaultProfile(),
+          ).thenAnswer((_) async => null);
+          scope = ProviderContainer(
+            overrides: withServiceOverrides([
+              skillRegistryProvider.overrideWithValue([
+                skillOf(SkillType.promptGeneration),
+              ]),
+              profileAutomationResolverProvider.overrideWithValue(mockResolver),
+              profileAutomationServiceProvider.overrideWithValue(
+                mockAutomationService,
+              ),
+              skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            ]),
+          );
+          containersToDispose.add(scope);
+          // Watched, as the surfaces that show them watch them.
+          for (final id in ['words-1', 'task-1']) {
+            scope
+              ..listen(
+                inferenceStatusControllerProvider((
+                  id: id,
+                  aiResponseType: AiResponseType.promptGeneration,
+                )),
+                (_, _) {},
+              )
+              ..listen(
+                inferenceErrorControllerProvider((
+                  id: id,
+                  aiResponseType: AiResponseType.promptGeneration,
+                )),
+                (_, _) {},
+              );
+          }
+
+          await scope.read(
+            triggerSkillProvider((
+              entityId: 'words-1',
+              skillId: 'skill-${SkillType.promptGeneration.name}',
+              linkedTaskId: 'task-1',
+              referenceImages: null,
+              overrideModelId: null,
+              geminiThinkingMode: null,
+            )).future,
+          );
+
+          verifyZeroInteractions(mockRunner);
+          for (final id in ['words-1', 'task-1']) {
+            expect(
+              scope.read(
+                inferenceStatusControllerProvider((
+                  id: id,
+                  aiResponseType: AiResponseType.promptGeneration,
+                )),
+              ),
+              InferenceStatus.error,
+              reason: id,
+            );
+            expect(
+              scope.read(
+                inferenceErrorControllerProvider((
+                  id: id,
+                  aiResponseType: AiResponseType.promptGeneration,
+                )),
+              ),
+              isNotNull,
+              reason: id,
+            );
+          }
+        },
+      );
+
       test('a skill that generates nothing takes no default: an image '
           'analysis on a task with no profile still declines', () async {
         await trigger(

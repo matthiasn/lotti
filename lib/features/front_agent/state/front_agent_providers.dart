@@ -19,6 +19,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/tools/ensure_link.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -231,6 +232,13 @@ final frontFilingServiceProvider = Provider<FrontFilingService>(
       return deleted;
     },
     startExtra: ref.watch(frontTaskExtraStarterProvider),
+    // Asked of the resolver itself, not through the card's provider: the
+    // tap must get its answer whether or not anything is watching.
+    canDrawCover: (categoryId) => frontCoverArtAvailable(
+      ref.read(profileAutomationResolverProvider),
+      categoryId,
+    ),
+    domainLogger: ref.watch(domainLoggerProvider),
   ),
   name: 'frontFilingServiceProvider',
 );
@@ -245,17 +253,28 @@ final frontFilingServiceProvider = Provider<FrontFilingService>(
 /// exists; these two are what it resolves from.
 final FutureProviderFamily<bool, String?> frontCoverArtAvailableProvider =
     FutureProvider.autoDispose.family<bool, String?>(
-      (ref, categoryId) async {
-        final resolver = ref.watch(profileAutomationResolverProvider);
-        if (categoryId != null) {
-          final ofCategory = await resolver.resolveForCategory(categoryId);
-          if (ofCategory?.imageGenerationProvider != null) return true;
-        }
-        final fallback = await resolver.resolveDefaultProfile();
-        return fallback?.imageGenerationProvider != null;
-      },
+      (ref, categoryId) => frontCoverArtAvailable(
+        ref.watch(profileAutomationResolverProvider),
+        categoryId,
+      ),
       name: 'frontCoverArtAvailableProvider',
     );
+
+/// The rule behind [frontCoverArtAvailableProvider], asked of [resolver]:
+/// the category's default profile names an image-generation model, or the
+/// Settings default does. One rule for the chip that offers a cover and for
+/// the filing that asks for one.
+Future<bool> frontCoverArtAvailable(
+  ProfileAutomationResolver resolver,
+  String? categoryId,
+) async {
+  if (categoryId != null) {
+    final ofCategory = await resolver.resolveForCategory(categoryId);
+    if (ofCategory?.imageGenerationProvider != null) return true;
+  }
+  final fallback = await resolver.resolveDefaultProfile();
+  return fallback?.imageGenerationProvider != null;
+}
 
 /// The built-in skill that generates [extra].
 String frontTaskExtraSkillId(FrontTaskExtra extra) => switch (extra) {

@@ -1294,7 +1294,20 @@ void main() {
     ProviderContainer wiredWith({
       Future<void> Function()? trigger,
       Task? made,
+      bool defaultDraws = true,
     }) {
+      // Whether a cover can be drawn is asked of the resolver: here the
+      // Settings default answers.
+      final resolver = MockProfileAutomationResolver();
+      final provider = AiTestDataFactory.createTestProvider();
+      when(resolver.resolveDefaultProfile).thenAnswer(
+        (_) async => ResolvedProfile(
+          thinkingModelId: 'thinking',
+          thinkingProvider: provider,
+          imageGenerationModelId: defaultDraws ? 'imagen' : null,
+          imageGenerationProvider: defaultDraws ? provider : null,
+        ),
+      );
       final syncService = MockAgentSyncService();
       when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
       final notifications = MockUpdateNotifications();
@@ -1319,6 +1332,8 @@ void main() {
           agentSyncServiceProvider.overrideWithValue(syncService),
           journalDbProvider.overrideWithValue(MockJournalDb()),
           updateNotificationsProvider.overrideWithValue(notifications),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+          profileAutomationResolverProvider.overrideWithValue(resolver),
           frontTaskMakerProvider.overrideWithValue(
             (draft, {required id, required words}) async => made,
           ),
@@ -1428,6 +1443,29 @@ void main() {
         );
       },
     );
+
+    test('where no profile can draw, the filing service leaves the cover '
+        'out and starts the prompt alone', () async {
+      final wired = wiredWith(
+        made: makeWorkflowTestTask('task-made'),
+        defaultDraws: false,
+      );
+
+      await wired
+          .read(frontFilingServiceProvider)
+          .makeTask(
+            doorId,
+            choices: const FrontTaskChoices(
+              start: FrontTaskStart.open,
+              priority: TaskPriority.p2Medium,
+              coverArt: true,
+            ),
+            codingPrompt: true,
+          );
+      await pumpEventQueue();
+
+      expect([for (final run in triggered) run.skillId], [skillPromptGenId]);
+    });
   });
 
   group('frontCoverArtAvailableProvider', () {

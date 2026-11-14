@@ -869,13 +869,32 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
           final doors = thread.doorsCarriedBy(message.id);
           final card = doors == null || doors.isEmpty
               ? null
-              : FrontDoorCard(
-                  key: ValueKey('front-doors-${message.id}'),
-                  doors: doors,
-                  actions: actions,
-                  busyDoorIds: composer.busyDoorIds,
-                  failedDoorIds: composer.failedDoorIds,
-                  journalAccess: journalAccess,
+              : Consumer(
+                  builder: (context, ref, _) => FrontDoorCard(
+                    key: ValueKey('front-doors-${message.id}'),
+                    doors: doors,
+                    actions: actions,
+                    busyDoorIds: composer.busyDoorIds,
+                    failedDoorIds: composer.failedDoorIds,
+                    // Where a cover can be drawn, for the categories of
+                    // the tasks its waiting items would become. Known a
+                    // moment after it is asked: the chip is offered once
+                    // it is.
+                    coverArtCategories: {
+                      for (final door in doors)
+                        if (door.record.outcome is FrontDoorInbox)
+                          if (ref
+                                  .watch(
+                                    frontCoverArtAvailableProvider(
+                                      door.record.task?.categoryId,
+                                    ),
+                                  )
+                                  .value ??
+                              false)
+                            door.record.task?.categoryId,
+                    },
+                    journalAccess: journalAccess,
+                  ),
                 );
           // Chips only under her latest question: an older one has been
           // answered, or walked away from, and its options would send a reply

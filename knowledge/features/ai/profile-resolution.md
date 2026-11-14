@@ -94,7 +94,9 @@ companion's chat often is one), and cover art needs a profile naming an
 image-generation model. The Settings default is taken only when it can run the
 skill; when it cannot either, the task's profile stands and the run declines or
 fails as before. A model picked by hand (`overrideModelId`) needs no image
-slot, so that run keeps the task's profile and never asks the default. Skills whose
+slot, so that run keeps the task's profile and never asks the default. A run
+declined for want of a profile reports its error under the entry and under its
+task, as a failed run does, so a surface that follows the task shows it. Skills whose
 `contextPolicy` is `fullTask` are hidden from the popup for entries without task
 context, except `Summarize Recording`, and the provider declines them without a
 task except for transcription and audio-summary skills.
