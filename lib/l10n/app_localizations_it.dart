@@ -7569,6 +7569,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontDoorChangeDay => 'Cambia oggi';
 
   @override
+  String get frontDoorCoverRequested => 'copertina richiesta';
+
+  @override
   String get frontDoorDayPlanned => 'Piano di oggi cambiato';
 
   @override
@@ -7639,6 +7642,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontDoorMakeEvent => 'Fanne un evento';
 
   @override
+  String get frontDoorMakePrompt => 'Attività con prompt di codice';
+
+  @override
   String get frontDoorMakeTask => 'Fanne un’attività';
 
   @override
@@ -7660,6 +7666,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get frontDoorProjectCreated => 'Trasformato in progetto';
+
+  @override
+  String get frontDoorPromptRequested => 'prompt di codice richiesto';
 
   @override
   String frontDoorProposal(String owner) {
@@ -7720,6 +7729,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Ingrandisci il grafico';
 
   @override
+  String get frontPreviewCoverDrawing => 'Creazione della copertina…';
+
+  @override
+  String get frontPreviewCoverFailed => 'Impossibile creare la copertina';
+
+  @override
+  String get frontPreviewPromptFailed =>
+      'Impossibile scrivere il prompt di codice';
+
+  @override
+  String get frontPreviewPromptWriting => 'Scrittura del prompt di codice…';
+
+  @override
   String get frontPullRequestsLinesAdded => 'Righe aggiunte';
 
   @override
@@ -7750,7 +7772,16 @@ class AppLocalizationsIt extends AppLocalizations {
       'Vuoi impostare qualcosa prima che la crei?';
 
   @override
+  String get frontTaskSetupCover => 'Copertina';
+
+  @override
+  String get frontTaskSetupCoverGenerate => 'Genera una copertina';
+
+  @override
   String get frontTaskSetupCreate => 'Crea attività';
+
+  @override
+  String get frontTaskSetupNoCover => 'Nessuna copertina';
 
   @override
   String get frontTaskSetupPickDate => 'Scegli una data…';

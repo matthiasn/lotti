@@ -7572,6 +7572,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontDoorChangeDay => 'Cambiar hoy';
 
   @override
+  String get frontDoorCoverRequested => 'portada solicitada';
+
+  @override
   String get frontDoorDayPlanned => 'Plan de hoy cambiado';
 
   @override
@@ -7642,6 +7645,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontDoorMakeEvent => 'Convertir en evento';
 
   @override
+  String get frontDoorMakePrompt => 'Tarea con prompt de programación';
+
+  @override
   String get frontDoorMakeTask => 'Convertir en tarea';
 
   @override
@@ -7663,6 +7669,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get frontDoorProjectCreated => 'Convertido en proyecto';
+
+  @override
+  String get frontDoorPromptRequested => 'prompt de programación solicitado';
 
   @override
   String frontDoorProposal(String owner) {
@@ -7723,6 +7732,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Ampliar gráfico';
 
   @override
+  String get frontPreviewCoverDrawing => 'Dibujando la portada…';
+
+  @override
+  String get frontPreviewCoverFailed => 'No se pudo dibujar la portada';
+
+  @override
+  String get frontPreviewPromptFailed =>
+      'No se pudo escribir el prompt de programación';
+
+  @override
+  String get frontPreviewPromptWriting =>
+      'Escribiendo el prompt de programación…';
+
+  @override
   String get frontPullRequestsLinesAdded => 'Líneas añadidas';
 
   @override
@@ -7752,7 +7775,16 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Quieres ajustar algo antes de que la cree?';
 
   @override
+  String get frontTaskSetupCover => 'Portada';
+
+  @override
+  String get frontTaskSetupCoverGenerate => 'Generar portada';
+
+  @override
   String get frontTaskSetupCreate => 'Crear tarea';
+
+  @override
+  String get frontTaskSetupNoCover => 'Sin portada';
 
   @override
   String get frontTaskSetupPickDate => 'Elegir una fecha…';

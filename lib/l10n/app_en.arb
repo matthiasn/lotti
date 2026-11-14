@@ -4735,6 +4735,7 @@
     }
   },
   "frontDoorChangeDay": "Change today",
+  "frontDoorCoverRequested": "cover art requested",
   "frontDoorDayPlanned": "Today's plan changed",
   "frontDoorDayProposal": "Change today's plan?",
   "frontDoorDeclined": "Not filed",
@@ -4783,6 +4784,7 @@
   "frontDoorLeaveIt": "Leave it",
   "frontDoorLeft": "Left here in the thread",
   "frontDoorMakeEvent": "Make it an event",
+  "frontDoorMakePrompt": "Task with a coding prompt",
   "frontDoorMakeTask": "Make it a task",
   "frontDoorNewProject": "New project…",
   "frontDoorNoAgent": "{owner} has no agent to ask yet.",
@@ -4797,6 +4799,7 @@
   "frontDoorNotThis": "Somewhere else",
   "frontDoorOpen": "Open",
   "frontDoorProjectCreated": "Made into a project",
+  "frontDoorPromptRequested": "coding prompt requested",
   "frontDoorProposal": "File this under {owner}?",
   "@frontDoorProposal": {
     "placeholders": {
@@ -4854,6 +4857,10 @@
     }
   },
   "frontLoggedTimeExpand": "Expand chart",
+  "frontPreviewCoverDrawing": "Drawing the cover…",
+  "frontPreviewCoverFailed": "The cover could not be drawn",
+  "frontPreviewPromptFailed": "The coding prompt could not be written",
+  "frontPreviewPromptWriting": "Writing the coding prompt…",
   "frontPullRequestsLinesAdded": "Lines added",
   "@frontPullRequestsLinesAdded": {
     "description": "Chart toggle and series name under the companion's answer about pull requests: lines the pull requests opened that day added."
@@ -4872,7 +4879,10 @@
   "frontTaskReschedule": "Reschedule…",
   "frontTaskSetupAsk": "Here's what I heard. Change anything?",
   "frontTaskSetupAskPlain": "Anything to set before I make it?",
+  "frontTaskSetupCover": "Cover art",
+  "frontTaskSetupCoverGenerate": "Generate cover art",
   "frontTaskSetupCreate": "Create task",
+  "frontTaskSetupNoCover": "No cover art",
   "frontTaskSetupPickDate": "Pick a date…",
   "frontTaskSetupToday": "Today",
   "frontTaskSetupTomorrow": "Tomorrow",

@@ -824,6 +824,30 @@ void main() {
       expect(state().failedDoorIds, {'d1'});
     });
 
+    test('a task asked for with a coding prompt reaches the filing with the '
+        'prompt asked for, and one without does not', () async {
+      when(
+        () => filing.makeTask('d1', choices: asSaid, codingPrompt: true),
+      ).thenAnswer((_) async {});
+      when(
+        () => filing.makeTask('d2', choices: asSaid),
+      ).thenAnswer((_) async {});
+
+      expect(
+        await controller().makeTask('d1', choices: asSaid, codingPrompt: true),
+        isTrue,
+      );
+      expect(await controller().makeTask('d2', choices: asSaid), isTrue);
+
+      verifyInOrder([
+        () => filing.makeTask('d1', choices: asSaid, codingPrompt: true),
+        () => filing.makeTask('d2', choices: asSaid),
+      ]);
+      verifyNever(
+        () => filing.makeTask('d2', choices: asSaid, codingPrompt: true),
+      );
+    });
+
     test("the doors' state survives a send settling either way", () async {
       when(() => filing.decline('d1')).thenThrow(StateError('gone'));
       await controller().decline('d1');

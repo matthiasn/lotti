@@ -1,12 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -38,6 +41,10 @@ import 'package:material_ui/material_ui.dart';
 abstract final class FrontEntityPreviewKeys {
   static Key card(String id) => Key('front-entity-preview-$id');
   static Key cover(String id) => Key('front-entity-preview-cover-$id');
+  static Key coverDrawing(String id) =>
+      Key('front-entity-preview-cover-drawing-$id');
+  static Key generated(String id, String name) =>
+      Key('front-entity-preview-generated-$id-$name');
   static Key estimate(String id) => Key('front-entity-preview-estimate-$id');
   static Key priority(String id) => Key('front-entity-preview-priority-$id');
   static Key block(String id, int index) =>
@@ -51,15 +58,23 @@ abstract final class FrontEntityPreviewKeys {
 /// or what her words list: a task as a compact card, an event, a project or
 /// a person as the app's own card or row for it, a day's plan as its
 /// blocks. [onOpen] is given the reference of the card tapped.
+///
+/// With [showsGenerated] — the cards of what a turn made — a task's card
+/// also shows what is being generated for it: its cover while it is drawn,
+/// and the coding prompt written for it.
 class FrontEntityPreviewList extends StatelessWidget {
   const FrontEntityPreviewList({
     required this.references,
     required this.onOpen,
+    this.showsGenerated = false,
     super.key,
   });
 
   final List<FrontEntityReference> references;
   final ValueChanged<FrontEntityReference> onOpen;
+
+  /// Whether a task's card shows what is generated for it.
+  final bool showsGenerated;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -72,6 +87,7 @@ class FrontEntityPreviewList extends StatelessWidget {
           FrontEntityKind.task => FrontEntityPreviewCompactCard(
             key: FrontEntityPreviewKeys.card(reference.id),
             reference: reference,
+            showsGenerated: showsGenerated,
             onTap: () => onOpen(reference),
           ),
           FrontEntityKind.event => FrontEntityPreviewRichCard(
@@ -106,15 +122,25 @@ class FrontEntityPreviewList extends StatelessWidget {
 /// status, reschedule it, move it to a project — through the pickers its
 /// own page uses. Until it has loaded, or if it is gone, the title it was
 /// made with stands alone, and still opens it.
+///
+/// With [showsGenerated], the card of a task her chat made is also where
+/// what was asked for with it arrives, so it is seen before the task is
+/// opened: the cover's place says it is being drawn until the thumbnail
+/// takes it, and the coding prompt's summary sits under the task once it is
+/// written — the full prompt is on the task's page, a tap away.
 class FrontEntityPreviewCompactCard extends ConsumerWidget {
   const FrontEntityPreviewCompactCard({
     required this.reference,
     required this.onTap,
+    this.showsGenerated = false,
     super.key,
   });
 
   final FrontEntityReference reference;
   final VoidCallback onTap;
+
+  /// Whether the card shows what is generated for the task.
+  final bool showsGenerated;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -126,15 +152,174 @@ class FrontEntityPreviewCompactCard extends ConsumerWidget {
       final FrontTaskPreview task => _TaskQuickActions(
         task: task,
         child: _PreviewSurface(
-          child: _TaskPreviewContent(
-            task: task,
-            note: reference.note,
-            onTap: onTap,
-          ),
+          child: showsGenerated
+              ? _TaskWithGenerated(
+                  task: task,
+                  note: reference.note,
+                  onTap: onTap,
+                )
+              : _TaskPreviewContent(
+                  task: task,
+                  note: reference.note,
+                  onTap: onTap,
+                ),
         ),
       ),
       _ => _TitleOnly(reference: reference, onTap: onTap),
     };
+  }
+}
+
+/// A task's card content with what is generated for it: the cover's place
+/// marked while it is drawn, then a line per generation still running or
+/// failed, and the coding prompt's summary once there is one. Nothing is
+/// added for a task nothing was asked for.
+///
+/// The runs report under the task's id as they do on its page
+/// ([inferenceStatusControllerProvider]), so a run started from either place
+/// shows here. A status is kept in memory only: after a restart a cover or a
+/// prompt that arrived still shows, a run that never finished says nothing.
+class _TaskWithGenerated extends ConsumerWidget {
+  const _TaskWithGenerated({
+    required this.task,
+    required this.onTap,
+    this.note,
+  });
+
+  final FrontTaskPreview task;
+  final String? note;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final id = task.entityId;
+    InferenceStatus statusOf(AiResponseType type) => ref.watch(
+      inferenceStatusControllerProvider((id: id, aiResponseType: type)),
+    );
+    // A cover that arrived is the whole story: its run no longer matters.
+    final cover = task.coverArtId == null
+        ? statusOf(AiResponseType.imageGeneration)
+        : InferenceStatus.idle;
+    // `.value`: a reload keeps the summary shown until the new one lands.
+    final prompt = ref.watch(frontTaskCodingPromptProvider(id)).value;
+    final writing = prompt == null
+        ? statusOf(AiResponseType.promptGeneration)
+        : InferenceStatus.idle;
+
+    final caption = tokens.typography.styles.others.caption;
+    Widget line(
+      String name,
+      IconData glyph,
+      String text, {
+      bool failed = false,
+    }) {
+      final ink = failed
+          ? tokens.colors.alert.error.ink
+          : tokens.colors.aiCard.accent;
+      return Row(
+        key: FrontEntityPreviewKeys.generated(id, name),
+        spacing: tokens.spacing.step2,
+        children: [
+          Icon(glyph, size: IconSizes.xs, color: ink),
+          Expanded(
+            child: Text(text, style: caption.copyWith(color: ink)),
+          ),
+        ],
+      );
+    }
+
+    final lines = [
+      if (cover == InferenceStatus.running)
+        line(
+          'cover-drawing',
+          LottiIcons.image,
+          messages.frontPreviewCoverDrawing,
+        )
+      else if (cover == InferenceStatus.error)
+        line(
+          'cover-failed',
+          LottiIcons.image,
+          messages.frontPreviewCoverFailed,
+          failed: true,
+        ),
+      if (prompt != null)
+        Column(
+          key: FrontEntityPreviewKeys.generated(id, 'prompt'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: tokens.spacing.step1,
+          children: [
+            Row(
+              spacing: tokens.spacing.step2,
+              children: [
+                Icon(
+                  LottiIcons.code,
+                  size: IconSizes.xs,
+                  color: tokens.colors.aiCard.accent,
+                ),
+                Text(
+                  messages.promptGenerationCardTitle,
+                  style: caption.copyWith(color: tokens.colors.aiCard.accent),
+                ),
+              ],
+            ),
+            Text(
+              prompt,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: caption.copyWith(color: tokens.colors.text.mediumEmphasis),
+            ),
+          ],
+        )
+      else if (writing == InferenceStatus.running)
+        line(
+          'prompt-writing',
+          LottiIcons.code,
+          messages.frontPreviewPromptWriting,
+        )
+      else if (writing == InferenceStatus.error)
+        line(
+          'prompt-failed',
+          LottiIcons.code,
+          messages.frontPreviewPromptFailed,
+          failed: true,
+        ),
+    ];
+
+    final content = _TaskPreviewContent(
+      task: task,
+      note: note,
+      onTap: onTap,
+      drawingCover: cover == InferenceStatus.running,
+    );
+    if (lines.isEmpty) return content;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        content,
+        const DesignSystemDivider(),
+        // Part of the card: a tap on it opens the task, as the row does.
+        Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+                vertical: tokens.spacing.step3,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: tokens.spacing.step2,
+                children: lines,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -404,9 +589,14 @@ class _TaskPreviewContent extends ConsumerWidget {
     required this.task,
     required this.onTap,
     this.note,
+    this.drawingCover = false,
   });
 
   final FrontTaskPreview task;
+
+  /// Whether its cover is being drawn: until it arrives, the cover's place
+  /// holds a tile in the AI ink rather than the status glyph.
+  final bool drawingCover;
 
   /// What she said of this task where she listed it, such as its logged
   /// time: the first line under the title.
@@ -450,7 +640,23 @@ class _TaskPreviewContent extends ConsumerWidget {
       ].join(', '),
       // The cover, when it has one; else how it stands.
       leading: coverArtId == null
-          ? StatusGlyph(status: task.status, tooltip: statusLabel)
+          ? drawingCover
+                ? Container(
+                    key: FrontEntityPreviewKeys.coverDrawing(task.entityId),
+                    width: ControlSizes.iconChip,
+                    height: ControlSizes.iconChip,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: tokens.colors.aiCard.accentSoft,
+                      borderRadius: BorderRadius.circular(tokens.radii.s),
+                    ),
+                    child: Icon(
+                      LottiIcons.image,
+                      size: IconSizes.s,
+                      color: tokens.colors.aiCard.accent,
+                    ),
+                  )
+                : StatusGlyph(status: task.status, tooltip: statusLabel)
           : ClipRRect(
               key: FrontEntityPreviewKeys.cover(task.entityId),
               borderRadius: BorderRadius.circular(tokens.radii.s),

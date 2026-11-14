@@ -5,8 +5,8 @@ description: The repeating patterns that are contract rather than coincidence �
 resource: ../../../lib/features/design_system/components
 tags: [design-system, components, accessibility, layout]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-29T12:00:00Z }
-stale_after: 2027-03-27
+generated: { by: claude-code/fable-5.2, at: 2026-11-14T12:00:00Z }
+stale_after: 2027-05-14
 sources:
   - id: components
     resource: ../../../lib/features/design_system/components
@@ -1211,3 +1211,21 @@ Its painted pill stays at content height and is centered inside the full target;
 tapping the transparent outer target still activates it. Scoped query filters
 use this variant. Hover/selection retain the shared palette, and ordinary
 `compactPill` metrics remain unchanged.
+
+`DesignSystemChipSize.pillTouch` is the same chip — caption type, pill radius,
+the `spacing.step9` target — with a taller painted pill inside it
+(`spacing.step3` above and below the label instead of `step1`). It exists for
+chips that **wrap onto several rows**: a `compactPillTouch` pill fills less
+than half its target, so two rows laid by a `Wrap` stand a whole target's
+slack apart, several times the gap between neighbours, and the second row
+reads as a group of its own. With the taller pill, rows laid edge to edge
+(`runSpacing` zero) sit about as far apart as chips side by side, and what
+can be tapped is close to what is drawn. The companion chat's task setup uses
+it; a single row of filters keeps `compactPillTouch`.
+
+`DesignSystemChip.mutedLabel` draws the label in `text.mediumEmphasis`, the
+ink the chip's glyph and chevron accessories already wear. It is for a chip
+that says nothing is set ("No due date") among chips that carry a value: the
+set ones are what the eye lands on, and the unset one stays as tappable. It
+changes the label's ink only — never the outline, the target or the
+semantics.

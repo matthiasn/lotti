@@ -7523,6 +7523,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontDoorChangeDay => 'Heute ändern';
 
   @override
+  String get frontDoorCoverRequested => 'Titelbild angefordert';
+
+  @override
   String get frontDoorDayPlanned => 'Heutiger Plan geändert';
 
   @override
@@ -7593,6 +7596,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontDoorMakeEvent => 'Zum Ereignis machen';
 
   @override
+  String get frontDoorMakePrompt => 'Aufgabe mit Coding-Prompt';
+
+  @override
   String get frontDoorMakeTask => 'Zur Aufgabe machen';
 
   @override
@@ -7614,6 +7620,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get frontDoorProjectCreated => 'Zum Projekt gemacht';
+
+  @override
+  String get frontDoorPromptRequested => 'Coding-Prompt angefordert';
 
   @override
   String frontDoorProposal(String owner) {
@@ -7674,6 +7683,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Diagramm vergrößern';
 
   @override
+  String get frontPreviewCoverDrawing => 'Titelbild wird gezeichnet…';
+
+  @override
+  String get frontPreviewCoverFailed =>
+      'Das Titelbild konnte nicht gezeichnet werden';
+
+  @override
+  String get frontPreviewPromptFailed =>
+      'Der Coding-Prompt konnte nicht geschrieben werden';
+
+  @override
+  String get frontPreviewPromptWriting => 'Coding-Prompt wird geschrieben…';
+
+  @override
   String get frontPullRequestsLinesAdded => 'Hinzugefügte Zeilen';
 
   @override
@@ -7704,7 +7727,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Möchtest du etwas festlegen, bevor ich sie anlege?';
 
   @override
+  String get frontTaskSetupCover => 'Titelbild';
+
+  @override
+  String get frontTaskSetupCoverGenerate => 'Titelbild generieren';
+
+  @override
   String get frontTaskSetupCreate => 'Aufgabe anlegen';
+
+  @override
+  String get frontTaskSetupNoCover => 'Kein Titelbild';
 
   @override
   String get frontTaskSetupPickDate => 'Datum wählen…';

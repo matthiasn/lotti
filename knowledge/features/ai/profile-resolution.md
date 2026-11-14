@@ -5,8 +5,8 @@ description: Which profile drives a run, the optional Chat, audio post-processin
 resource: ../../../lib/features/ai/util/profile_resolver.dart
 tags: [ai, profiles, resolution, pinning, privacy]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-03T12:00:00Z }
-stale_after: 2027-02-03
+generated: { by: claude-code/fable-5.2, at: 2026-11-14T12:00:00Z }
+stale_after: 2027-02-14
 sources:
   - id: device-default
     resource: ../../../lib/features/ai/repository/ai_config_repository.dart
@@ -35,7 +35,7 @@ sources:
   - id: trigger
     resource: ../../../lib/features/ai/state/skill_trigger_providers.dart
     title: triggerSkillProvider
-    last_modified: 2026-11-03
+    last_modified: 2026-11-14
   - id: automation-service
     resource: ../../../lib/features/ai/services/profile_automation_service.dart
     title: The transcription fallback — the subject's agent and own profile, its category's, then Settings default
@@ -86,7 +86,15 @@ profile has no transcription slot, goes to
 subject — the task, else the first live goal, person, project or event entry
 linking to the recording — and its category: that is
 [the transcription profile](#the-transcription-profile) rule, or nothing; a recording
-summary that resolves no profile falls back to `resolveDefaultProfile`. Skills whose
+summary that resolves no profile falls back to `resolveDefaultProfile`. So does
+a **generating skill on a task** — cover art, or a coding, design, research or
+image prompt — whose task resolves no profile that can run it: a task filed in
+no category has no agent and no profile of its own (a task made in the
+companion's chat often is one), and cover art needs a profile naming an
+image-generation model. The Settings default is taken only when it can run the
+skill; when it cannot either, the task's profile stands and the run declines or
+fails as before. A model picked by hand (`overrideModelId`) needs no image
+slot, so that run keeps the task's profile and never asks the default. Skills whose
 `contextPolicy` is `fullTask` are hidden from the popup for entries without task
 context, except `Summarize Recording`, and the provider declines them without a
 task except for transcription and audio-summary skills.
@@ -97,6 +105,9 @@ flowchart TD
   LinkTask --> HasTask{"linkedTaskId != null?"}
 
   HasTask -->|yes| SubjectBranch["resolveForSubject(taskId)"]
+  Result --> NeedsGen{"Generating skill on a task, with no profile that can run it?"}
+  NeedsGen -->|"yes, and the Settings default can"| GenDefault["resolveDefaultProfile"]
+  GenDefault --> Runnable
   HasTask -->|no| IsStt{"Transcription?"}
   IsStt -->|yes| Result
   IsStt -->|no| HasCategory{"Entry has categoryId?"}

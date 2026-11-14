@@ -1,6 +1,7 @@
 import 'package:a2ui_core/a2ui_core.dart';
 import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:collection/collection.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
+import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_surfaces.dart';
 import 'package:lotti/features/front_agent/ui/front_cited_source_row.dart';
@@ -33,6 +35,7 @@ class FrontDoorActions {
     required this.onTakeBack,
     required this.onOpen,
     required this.onMakeTask,
+    required this.onMakePrompt,
     required this.onSaveNote,
     required this.onStartGoal,
     required this.onNewProject,
@@ -63,6 +66,10 @@ class FrontDoorActions {
   /// Make a task of an inbox item, by its id, set up as the user chose in
   /// the card ([FrontTaskSetup]).
   final void Function(String doorId, FrontTaskChoices choices) onMakeTask;
+
+  /// Make a task of an inbox item, by its id, with the choices she read
+  /// from the words, and have a coding prompt written for it from them.
+  final void Function(String doorId, FrontTaskChoices choices) onMakePrompt;
 
   /// Make an event of an inbox item; null where events are off, and the
   /// item offers no such way.
@@ -292,6 +299,22 @@ class _DoorRow extends StatelessWidget {
       onPressed: acting == null ? null : guarded(() => acting.onOpen(door)),
     );
 
+    // A task or an event the door made: done, opened, or taken back.
+    void made() {
+      glyph = LottiIcons.confirmCircled;
+      ink = tokens.colors.alert.success.ink;
+      if (acting == null) return;
+      action = open();
+      menu.add(
+        item(
+          'take-back',
+          messages.frontDoorUndo,
+          LottiIcons.undo,
+          () => acting.onTakeBack(id),
+        ),
+      );
+    }
+
     switch (record.outcome) {
       case null:
         title = words;
@@ -416,18 +439,31 @@ class _DoorRow extends StatelessWidget {
             : messages.frontDoorInboxInstead;
         glyph = _guessGlyph(newKind);
         if (acting != null && settingUp) {
-          setup = FrontTaskSetup(
-            index: index,
-            initial: FrontTaskChoices.of(record.task),
-            heard: record.task?.namesChoices ?? false,
-            // The overflow's slot, which the setup takes over.
-            endInset:
-                tokens.spacing.step1 +
-                DesignSystemContextMenuButton.extent(tokens),
-            busy: busy,
-            failed: failed,
-            onCreate: (choices) => acting.onMakeTask(id, choices),
-            onBack: () => onSetUp(on: false),
+          setup = Consumer(
+            builder: (context, ref, _) => FrontTaskSetup(
+              index: index,
+              initial: FrontTaskChoices.of(record.task),
+              heard: record.task?.namesChoices ?? false,
+              // Offered once it is known a profile can draw one: until
+              // then, and where none can, the chip is not there to ask.
+              coverArtAvailable:
+                  ref
+                      .watch(
+                        frontCoverArtAvailableProvider(
+                          record.task?.categoryId,
+                        ),
+                      )
+                      .value ??
+                  false,
+              // The overflow's slot, which the setup takes over.
+              endInset:
+                  tokens.spacing.step1 +
+                  DesignSystemContextMenuButton.extent(tokens),
+              busy: busy,
+              failed: failed,
+              onCreate: (choices) => acting.onMakeTask(id, choices),
+              onBack: () => onSetUp(on: false),
+            ),
           );
         } else if (acting != null) {
           // Only a task the user asked for — one she drafted — leads with
@@ -452,6 +488,12 @@ class _DoorRow extends StatelessWidget {
                 LottiIcons.checkboxChecked,
                 () => onSetUp(on: true),
               ),
+            (
+              'prompt',
+              messages.frontDoorMakePrompt,
+              LottiIcons.code,
+              () => acting.onMakePrompt(id, FrontTaskChoices.of(record.task)),
+            ),
             (
               'goal',
               messages.frontDoorStartGoal,
@@ -518,24 +560,22 @@ class _DoorRow extends StatelessWidget {
             ),
           );
         }
-      case FrontDoorTaskCreated() || FrontDoorEventCreated():
+      case FrontDoorTaskCreated(:final extras):
         title = words;
-        status = record.outcome is FrontDoorEventCreated
-            ? messages.frontDoorEventCreated
-            : messages.frontDoorTaskCreated;
-        glyph = LottiIcons.confirmCircled;
-        ink = tokens.colors.alert.success.ink;
-        if (acting != null) {
-          action = open();
-          menu.add(
-            item(
-              'take-back',
-              messages.frontDoorUndo,
-              LottiIcons.undo,
-              () => acting.onTakeBack(id),
-            ),
-          );
-        }
+        // What was asked for with the task is said after it, in the order
+        // it was offered: the prompt's menu row, then the cover's chip.
+        status = [
+          messages.frontDoorTaskCreated,
+          if (extras.contains(FrontTaskExtra.codingPrompt))
+            messages.frontDoorPromptRequested,
+          if (extras.contains(FrontTaskExtra.coverArt))
+            messages.frontDoorCoverRequested,
+        ].join(' · ');
+        made();
+      case FrontDoorEventCreated():
+        title = words;
+        status = messages.frontDoorEventCreated;
+        made();
       case FrontDoorDeclined(:final ownerId):
         title = words;
         status = ownerId == null
@@ -689,9 +729,9 @@ class _DoorRow extends StatelessWidget {
                         style: statusStyle,
                       ),
                     ),
-                    if (action != null) ...[
+                    if (action case final button?) ...[
                       SizedBox(width: tokens.spacing.step2),
-                      action,
+                      button,
                     ],
                     if (menu.isNotEmpty) ...[
                       SizedBox(width: tokens.spacing.step1),

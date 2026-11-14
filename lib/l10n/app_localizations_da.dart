@@ -7472,6 +7472,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontDoorChangeDay => 'Ændr dagen';
 
   @override
+  String get frontDoorCoverRequested => 'omslag bestilt';
+
+  @override
   String get frontDoorDayPlanned => 'Dagens plan ændret';
 
   @override
@@ -7542,6 +7545,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontDoorMakeEvent => 'Lav det til en begivenhed';
 
   @override
+  String get frontDoorMakePrompt => 'Opgave med kodningsprompt';
+
+  @override
   String get frontDoorMakeTask => 'Lav det til en opgave';
 
   @override
@@ -7563,6 +7569,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontDoorProjectCreated => 'Lavet til et projekt';
+
+  @override
+  String get frontDoorPromptRequested => 'kodningsprompt bestilt';
 
   @override
   String frontDoorProposal(String owner) {
@@ -7624,6 +7633,18 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Forstør diagram';
 
   @override
+  String get frontPreviewCoverDrawing => 'Tegner omslaget…';
+
+  @override
+  String get frontPreviewCoverFailed => 'Omslaget kunne ikke tegnes';
+
+  @override
+  String get frontPreviewPromptFailed => 'Kodningsprompten kunne ikke skrives';
+
+  @override
+  String get frontPreviewPromptWriting => 'Skriver kodningsprompten…';
+
+  @override
   String get frontPullRequestsLinesAdded => 'Tilføjede linjer';
 
   @override
@@ -7652,7 +7673,16 @@ class AppLocalizationsDa extends AppLocalizations {
       'Vil du indstille noget, før jeg laver den?';
 
   @override
+  String get frontTaskSetupCover => 'Omslag';
+
+  @override
+  String get frontTaskSetupCoverGenerate => 'Generer omslag';
+
+  @override
   String get frontTaskSetupCreate => 'Opret opgave';
+
+  @override
+  String get frontTaskSetupNoCover => 'Intet omslag';
 
   @override
   String get frontTaskSetupPickDate => 'Vælg en dato…';

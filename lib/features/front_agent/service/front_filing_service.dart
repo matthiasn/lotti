@@ -33,6 +33,12 @@ typedef FrontTaskMaker =
       required String words,
     });
 
+/// Starts generating [extra] for the task [taskId], from the words filed
+/// under it. Fire and forget: the task is made either way, and the run
+/// reports on the task itself.
+typedef FrontTaskExtraStarter =
+    void Function(FrontTaskExtra extra, {required String taskId});
+
 /// Makes an event titled [title] under [id]. Returns it — the one created,
 /// or the one already there — or null when nothing is stored.
 typedef FrontEventMaker =
@@ -75,6 +81,7 @@ class FrontFilingService {
     required FrontTaskMaker makeTask,
     required FrontEventMaker makeEvent,
     required FrontEntryDeleter deleteEntry,
+    required FrontTaskExtraStarter startExtra,
   }) : this._(
          repository,
          syncService,
@@ -84,6 +91,7 @@ class FrontFilingService {
          makeTask,
          makeEvent,
          deleteEntry,
+         startExtra,
        );
 
   const FrontFilingService._(
@@ -95,6 +103,7 @@ class FrontFilingService {
     this._makeTask,
     this._makeEvent,
     this._deleteEntry,
+    this._startExtra,
   );
 
   final AgentRepository _repository;
@@ -105,6 +114,7 @@ class FrontFilingService {
   final FrontTaskMaker _makeTask;
   final FrontEventMaker _makeEvent;
   final FrontEntryDeleter _deleteEntry;
+  final FrontTaskExtraStarter _startExtra;
 
   /// Files the proposed segment under its owner — a task or a project: a
   /// text entry with the user's words, linked under the owner and in its
@@ -269,9 +279,15 @@ class FrontFilingService {
   /// words when it read any, else titled with the words — in the status,
   /// priority and due day the user set up ([choices]). The tap on create is
   /// the approval.
+  ///
+  /// What the user asked for with it — cover art in [choices], a coding
+  /// prompt with [codingPrompt] — is kept on the outcome and started only
+  /// once the record says the task is made: a retry after a record that did
+  /// not follow starts each once, never a second paid run.
   Future<void> makeTask(
     String doorId, {
     required FrontTaskChoices choices,
+    bool codingPrompt = false,
   }) async {
     final (record, payload) = await _waiting<FrontDoorInbox>(doorId);
     final inbox = record.outcome! as FrontDoorInbox;
@@ -282,6 +298,10 @@ class FrontFilingService {
       words: words,
     );
     if (task == null) throw StateError('The task was not created.');
+    final extras = {
+      if (choices.coverArt) FrontTaskExtra.coverArt,
+      if (codingPrompt) FrontTaskExtra.codingPrompt,
+    };
     await _rewrite(
       payload,
       record.done(
@@ -290,9 +310,13 @@ class FrontFilingService {
           newKind: inbox.newKind,
           generation: inbox.generation,
           at: clock.now().toUtc(),
+          extras: extras,
         ),
       ),
     );
+    for (final extra in extras) {
+      _startExtra(extra, taskId: task.meta.id);
+    }
   }
 
   /// Makes an event of an inbox segment, titled with the words. The tap is
