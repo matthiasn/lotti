@@ -11,7 +11,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
+import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_surfaces.dart';
 import 'package:lotti/features/front_agent/ui/front_cited_source_row.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
@@ -471,6 +473,49 @@ void main() {
         find.byKey(const ValueKey('front-cited-source-0-0')),
       );
       expect(acted, [('source', 'feeder-note')]);
+    });
+
+    testWidgets('in the chat, a link in a point opens as any link of hers '
+        'does, and the surface opens nothing but links and its sources', (
+      tester,
+    ) async {
+      await pumpInThread(
+        tester,
+        entry(
+          record(
+            index: 0,
+            text: 'How is the garden?',
+            kind: FrontDestinationKind.journal,
+            ownerTitle: null,
+            outcome: FrontDoorAnswer(
+              text: 'After the [feeder](/journal/feeder-note) repair [1].',
+              summaryBased: false,
+              incomplete: false,
+              fromJournal: true,
+              evidence: [evidence],
+              dependencies: [source],
+            ),
+          ),
+        ),
+        access(),
+      );
+
+      await tester.tap(find.text('feeder'));
+      expect(acted, [('link', '/journal/feeder-note')]);
+
+      // Its points carry no entity cards: those callbacks do nothing.
+      final scope = tester.widget<FrontReplyScope>(
+        find.byType(FrontReplyScope),
+      );
+      scope.onOpen(
+        const FrontEntityReference(
+          kind: FrontEntityKind.task,
+          id: 't',
+          title: 'T',
+        ),
+      );
+      scope.onOpenTask('t');
+      expect(acted, [('link', '/journal/feeder-note')]);
     });
 
     testWidgets('in the chat, a hidden answer draws no points at all', (

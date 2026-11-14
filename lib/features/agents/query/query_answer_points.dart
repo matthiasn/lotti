@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:lotti/features/agents/query/query_answer_guards.dart';
+import 'package:meta/meta.dart';
 
 /// One point of an answer: what it says, and the pieces of evidence it
 /// rests on, numbered from 1 as the answer cites them.
@@ -12,18 +12,6 @@ class QueryAnswerPoint {
 
   /// The evidence numbers it cites, each once, in the order first cited.
   final List<int> sources;
-
-  @override
-  bool operator ==(Object other) =>
-      other is QueryAnswerPoint &&
-      other.text == text &&
-      listEquals(other.sources, sources);
-
-  @override
-  int get hashCode => Object.hash(text, Object.hashAll(sources));
-
-  @override
-  String toString() => 'QueryAnswerPoint($text, $sources)';
 }
 
 /// [answer] as its points: a paragraph each, its `[n]` citations of the
