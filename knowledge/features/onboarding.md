@@ -142,7 +142,9 @@ installed** — and never starts the model download: on a true first run she is
 silent and the caption carries the words, the areas' line in a connected
 provider's cloud voice excepted. The line is `null` while the mic is
 open, which stops her, so she never talks into the recording. Turning
-read-aloud off, here or by sync from another device, silences her at once. The welcome's
+read-aloud off, here or by sync from another device, silences her at once —
+again except the areas' line in a cloud voice, which the flag neither starts
+nor stops. The welcome's
 promise is said once per modal: back on the welcome from the connect step, she
 waves but stays quiet.
 
