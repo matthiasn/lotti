@@ -1233,7 +1233,11 @@ Three properties are contract:
   extra) is where both land. Its cover's place holds a tile in the AI ink
   while the cover is drawn, then the thumbnail; under the task's row, below a
   rule, a line says *Drawing the cover…* or *Writing the coding prompt…*
-  while a run is going and that it could not be done when it failed, and the
+  while a run is going and that it could not be done when it failed — of a
+  prompt only on the card of a task a coding prompt was asked for here
+  (`codingPromptTaskIds`, from the door's `extras`), since a design or
+  research prompt started on the task's page reports under the same type —
+  and the
   coding prompt's summary (`frontTaskCodingPromptProvider`: the newest coding
   prompt linked under the task, its `## Summary` read by
   `generatedPromptSummary`, three lines at most) sits there once written. A
@@ -1249,16 +1253,17 @@ Three properties are contract:
   the journal, as its timer entry does.
 
 **The chip is offered only where a cover can be drawn.**
-`frontCoverArtAvailableProvider(categoryId)` answers for the category she read
-the task into: its default profile names an image-generation model, or the
-Settings default does — the two the run resolves from, since the task's own
-profile is only known once the task exists. The pane watches it for the
-categories of the items a card shows and hands the card
-`coverArtCategories`, plain data, from which the setup gets
+`frontCoverArtAvailableProvider` answers for the category the task will be
+made in (`frontTaskCategoryId`: the one the draft names, else the one of the
+task it follows, as `makeFrontTask` files it): its default profile names an
+image-generation model, or the Settings default does — the two the run
+resolves from, since the task's own profile is only known once the task
+exists. The pane watches it for each waiting item a card shows and hands the
+card `coverArtDoorIds`, plain data, from which the setup gets
 `FrontTaskSetup.coverArtAvailable`; until it is known, and where no profile
 draws, the chip is not there. **The same rule is enforced where the task is
-made**: `FrontFilingService.makeTask` asks `frontCoverArtAvailable` for the
-draft's category before it keeps a cover in the choices, so a cover the words
+made**: `FrontFilingService.makeTask` asks `frontCoverArtAvailable` for that
+same category before it keeps a cover in the choices, so a cover the words
 asked for is dropped whichever control made the task — the setup or *Task
 with a coding prompt* — and nothing is requested, or said to be, that could
 not arrive.

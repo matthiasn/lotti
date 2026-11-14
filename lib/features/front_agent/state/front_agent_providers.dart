@@ -234,31 +234,61 @@ final frontFilingServiceProvider = Provider<FrontFilingService>(
     startExtra: ref.watch(frontTaskExtraStarterProvider),
     // Asked of the resolver itself, not through the card's provider: the
     // tap must get its answer whether or not anything is watching.
-    canDrawCover: (categoryId) => frontCoverArtAvailable(
+    canDrawCover: (draft) async => frontCoverArtAvailable(
       ref.read(profileAutomationResolverProvider),
-      categoryId,
+      await frontTaskCategoryId(
+        ref.read(journalDbProvider),
+        categoryId: draft.categoryId,
+        followsUpTaskId: draft.followsUpTaskId,
+      ),
     ),
     domainLogger: ref.watch(domainLoggerProvider),
   ),
   name: 'frontFilingServiceProvider',
 );
 
-/// Whether cover art can be drawn for a task made in a category, by its id
-/// (none for a task filed in no category): a profile the run
-/// can reach names an image-generation model — the category's default
-/// profile, or the device's Settings default, which the run falls back to.
+/// What decides the category a task made from a draft lands in: the one the
+/// draft names, and the task it follows.
+typedef FrontTaskCategorySource = ({
+  String? categoryId,
+  String? followsUpTaskId,
+});
+
+/// Whether cover art can be drawn for the task a draft would become: a
+/// profile the run can reach names an image-generation model — the default
+/// profile of the category the task will be made in
+/// ([frontTaskCategoryId]), or the device's Settings default, which the run
+/// falls back to.
 ///
 /// What the setup's cover chip is offered on, so it never asks for a cover
 /// nothing could draw. The task's own profile is only known once the task
 /// exists; these two are what it resolves from.
-final FutureProviderFamily<bool, String?> frontCoverArtAvailableProvider =
-    FutureProvider.autoDispose.family<bool, String?>(
-      (ref, categoryId) => frontCoverArtAvailable(
+final FutureProviderFamily<bool, FrontTaskCategorySource>
+frontCoverArtAvailableProvider = FutureProvider.autoDispose
+    .family<bool, FrontTaskCategorySource>(
+      (ref, source) async => frontCoverArtAvailable(
         ref.watch(profileAutomationResolverProvider),
-        categoryId,
+        await frontTaskCategoryId(
+          ref.watch(journalDbProvider),
+          categoryId: source.categoryId,
+          followsUpTaskId: source.followsUpTaskId,
+        ),
       ),
       name: 'frontCoverArtAvailableProvider',
     );
+
+/// The category a task made from a draft lands in, as [makeFrontTask] files
+/// it: the one the draft names, else the one of the task it follows — none
+/// when it names none and follows nothing, or nothing that is still a task.
+Future<String?> frontTaskCategoryId(
+  JournalDb journalDb, {
+  required String? categoryId,
+  required String? followsUpTaskId,
+}) async {
+  if (categoryId != null || followsUpTaskId == null) return categoryId;
+  final followed = await _existing(journalDb, followsUpTaskId);
+  return followed is Task ? followed.meta.categoryId : null;
+}
 
 /// The rule behind [frontCoverArtAvailableProvider], asked of [resolver]:
 /// the category's default profile names an image-generation model, or the

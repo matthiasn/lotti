@@ -198,6 +198,10 @@ void main() {
     expect(find.byType(FrontChatPane), findsOne);
   }
 
+  /// What the pane asked about drawing a cover for, in order.
+  final coverArtAsked = <FrontTaskCategorySource>[];
+  setUp(coverArtAsked.clear);
+
   Future<void> pumpPane(
     WidgetTester tester, {
     Future<FrontChatThread> Function()? thread,
@@ -270,10 +274,10 @@ void main() {
             disableAnimations: reducedMotion,
           ),
           overrides: [
-            frontCoverArtAvailableProvider.overrideWith(
-              (ref, categoryId) async =>
-                  coverArtCategories.contains(categoryId),
-            ),
+            frontCoverArtAvailableProvider.overrideWith((ref, source) async {
+              coverArtAsked.add(source);
+              return coverArtCategories.contains(source.categoryId);
+            }),
             frontChatThreadProvider.overrideWith(
               (ref) => (thread ?? () async => FrontChatThread.empty)(),
             ),
@@ -2002,18 +2006,60 @@ void main() {
       title: 'Audit the cold-chain freezer logs',
     );
 
-    FrontDoorEntry madeTask(int index, String taskId, String words) =>
-        FrontDoorEntry(
-          doorId: 'd:door:$index',
-          record: FrontDoorRecord(
-            segmentIndex: index,
-            text: words,
-            kind: FrontDestinationKind.newThing,
-            status: FrontDoorStatus.done,
-            claimedAt: now.toUtc(),
-            outcome: FrontDoorTaskCreated(taskId: taskId),
-          ),
-        );
+    FrontDoorEntry madeTask(
+      int index,
+      String taskId,
+      String words, {
+      Set<FrontTaskExtra> extras = const {},
+    }) => FrontDoorEntry(
+      doorId: 'd:door:$index',
+      record: FrontDoorRecord(
+        segmentIndex: index,
+        text: words,
+        kind: FrontDestinationKind.newThing,
+        status: FrontDoorStatus.done,
+        claimedAt: now.toUtc(),
+        outcome: FrontDoorTaskCreated(taskId: taskId, extras: extras),
+      ),
+    );
+
+    testWidgets('only the tasks a coding prompt was asked for with are '
+        'named as such to their cards: one made with cover art alone, or '
+        'with nothing, is not', (tester) async {
+      await pumpPane(
+        tester,
+        thread: () async => FrontChatThread(
+          messages: [
+            message('u1', AgentChatRole.user, 'Ice pad, freezers.', now),
+            message('a1', AgentChatRole.agent, 'Made them tasks.', now),
+          ],
+          doorsByMessageId: {
+            'u1': [
+              madeTask(
+                0,
+                't-9',
+                iceRef.title,
+                extras: {FrontTaskExtra.codingPrompt, FrontTaskExtra.coverArt},
+              ),
+              madeTask(
+                1,
+                't-8',
+                coldRef.title,
+                extras: {FrontTaskExtra.coverArt},
+              ),
+            ],
+          },
+          entityPreviewsByMessageId: const {
+            'a1': [iceRef, coldRef],
+          },
+        ),
+      );
+
+      final list = tester.widget<FrontEntityPreviewList>(
+        find.byKey(const ValueKey('front-entity-previews-a1')),
+      );
+      expect(list.codingPromptTaskIds, {'t-9'});
+    });
 
     testWidgets('a reply whose turn made tasks draws each as a preview card '
         'under her words, above her doors, and a card opens its task on top '
@@ -2049,6 +2095,8 @@ void main() {
       expect(list.references, [iceRef, coldRef]);
       // What her turn made is where its cover and coding prompt arrive.
       expect(list.showsGenerated, isTrue);
+      // No coding prompt was asked for with these.
+      expect(list.codingPromptTaskIds, isEmpty);
       final words = tester.getTopLeft(
         find.textContaining('Made them tasks.', findRichText: true),
       );
@@ -3023,7 +3071,9 @@ void main() {
     });
 
     testWidgets('the setup offers cover art where a profile can draw one '
-        "for the task's category, and not where none can", (tester) async {
+        'for the task the item would become, and not where none can', (
+      tester,
+    ) async {
       await pumpPane(
         tester,
         thread: () async => inbox(FrontNewKind.task),
@@ -3037,8 +3087,8 @@ void main() {
       expect(
         tester
             .widget<FrontDoorCard>(find.byType(FrontDoorCard))
-            .coverArtCategories,
-        {null},
+            .coverArtDoorIds,
+        {'d:door:0'},
       );
 
       await tester.pumpWidget(const SizedBox());
@@ -3055,8 +3105,44 @@ void main() {
       expect(
         tester
             .widget<FrontDoorCard>(find.byType(FrontDoorCard))
-            .coverArtCategories,
+            .coverArtDoorIds,
         isEmpty,
+      );
+    });
+
+    testWidgets("a follow-up's cover is asked about with the task it "
+        'follows, whose category it will be made in', (tester) async {
+      await pumpPane(
+        tester,
+        thread: () async => FrontChatThread(
+          messages: [
+            message('u1', AgentChatRole.user, 'A follow-up to that.', now),
+          ],
+          doorsByMessageId: {
+            'u1': [
+              FrontDoorEntry(
+                doorId: 'd:door:0',
+                record: FrontDoorRecord(
+                  segmentIndex: 0,
+                  text: 'A follow-up to that.',
+                  kind: FrontDestinationKind.newThing,
+                  status: FrontDoorStatus.done,
+                  claimedAt: now.toUtc(),
+                  outcome: const FrontDoorInbox(newKind: FrontNewKind.task),
+                  task: const FrontTaskDraft(
+                    title: 'Follow up',
+                    followsUpTaskId: 'task-roses',
+                  ),
+                ),
+              ),
+            ],
+          },
+        ),
+      );
+
+      expect(
+        coverArtAsked,
+        contains((categoryId: null, followsUpTaskId: 'task-roses')),
       );
     });
 

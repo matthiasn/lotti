@@ -3629,6 +3629,38 @@ void main() {
         verifyNever(() => mockResolver.resolveDefaultProfile());
       });
 
+      test('a model picked by hand for a task with no profile runs under '
+          'the Settings default, on the model picked', () async {
+        final settingsDefault = profile('default');
+        String? ranWith;
+        when(
+          () => mockRunner.runImageGeneration(
+            entryId: any(named: 'entryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            referenceImages: any(named: 'referenceImages'),
+            overrideModelId: any(named: 'overrideModelId'),
+          ),
+        ).thenAnswer((invocation) async {
+          ranOn.add(
+            (invocation.namedArguments[#automationResult] as AutomationResult)
+                .resolvedProfile,
+          );
+          ranWith = invocation.namedArguments[#overrideModelId] as String?;
+        });
+
+        await trigger(
+          SkillType.imageGeneration,
+          ofTask: null,
+          // No image slot of its own: the picked model needs none.
+          settingsDefault: settingsDefault,
+          overrideModelId: 'picked',
+        );
+
+        expect(ranOn, [settingsDefault]);
+        expect(ranWith, 'picked');
+      });
+
       for (final type in [
         SkillType.promptGeneration,
         SkillType.imagePromptGeneration,

@@ -110,17 +110,17 @@ class FrontDoorCard extends StatefulWidget {
     this.actions,
     this.busyDoorIds = const {},
     this.failedDoorIds = const {},
-    this.coverArtCategories = const {},
+    this.coverArtDoorIds = const {},
     this.journalAccess,
     super.key,
   });
 
   final List<FrontDoorEntry> doors;
 
-  /// The categories a cover can be drawn in for a task made there — null
-  /// among them for a task filed in no category. An item's setup offers its
-  /// cover chip only when its task's category is one of them.
-  final Set<String?> coverArtCategories;
+  /// The waiting items a cover can be drawn for, by their door ids: those
+  /// whose task would land in a category with a profile that draws. An
+  /// item's setup offers its cover chip only when it is one of them.
+  final Set<String> coverArtDoorIds;
 
   /// The live visibility of the sources journal answers cite; null until it
   /// is known, and a journal answer stays hidden until then.
@@ -179,7 +179,7 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
       :journalAccess,
       :busyDoorIds,
       :failedDoorIds,
-      :coverArtCategories,
+      :coverArtDoorIds,
     ) = widget;
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -209,7 +209,7 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
                 journalAccess: journalAccess,
                 busy: busyDoorIds.contains(door.doorId),
                 failed: failedDoorIds.contains(door.doorId),
-                coverArtCategories: coverArtCategories,
+                coverArtAvailable: coverArtDoorIds.contains(door.doorId),
                 settingUp: _settingUp == door.doorId,
                 quiet: _settingUp != null && _settingUp != door.doorId,
                 onSetUp: ({required on}) => _setUp(door.doorId, on: on),
@@ -234,15 +234,16 @@ class _DoorRow extends StatelessWidget {
     required this.settingUp,
     required this.quiet,
     required this.onSetUp,
-    required this.coverArtCategories,
+    required this.coverArtAvailable,
     this.journalAccess,
     super.key,
   });
 
   final FrontDoorEntry door;
 
-  /// See [FrontDoorCard.coverArtCategories].
-  final Set<String?> coverArtCategories;
+  /// Whether a cover can be drawn for the task this item would become
+  /// ([FrontDoorCard.coverArtDoorIds]).
+  final bool coverArtAvailable;
   final FrontDoorActions? actions;
   final QueryAccessSnapshot? journalAccess;
   final bool busy;
@@ -438,11 +439,9 @@ class _DoorRow extends StatelessWidget {
             index: index,
             initial: FrontTaskChoices.of(record.task),
             heard: record.task?.namesChoices ?? false,
-            // Offered where a profile can draw one for the task's category:
-            // elsewhere the chip is not there to ask.
-            coverArtAvailable: coverArtCategories.contains(
-              record.task?.categoryId,
-            ),
+            // Offered where a profile can draw one for the task it would
+            // become: elsewhere the chip is not there to ask.
+            coverArtAvailable: coverArtAvailable,
             // The overflow's slot, which the setup takes over.
             endInset:
                 tokens.spacing.step1 +

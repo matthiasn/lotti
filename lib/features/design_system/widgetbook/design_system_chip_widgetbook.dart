@@ -35,11 +35,7 @@ class _ChipOverviewPage extends StatelessWidget {
             title: 'State Matrix',
             child: _ChipStateMatrix(),
           ),
-          SizedBox(height: 32),
-          _ChipSection(
-            title: 'Size Scale',
-            child: _ChipSizeScale(),
-          ),
+          _ChipSizeSection(),
         ],
       ),
     );
@@ -122,6 +118,23 @@ class _ChipCombinationScale extends StatelessWidget {
   }
 }
 
+/// The size scale under the sections above it, set off by the page's gap
+/// between sections, from the spacing tokens.
+class _ChipSizeSection extends StatelessWidget {
+  const _ChipSizeSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(top: context.designTokens.spacing.step7),
+      child: const _ChipSection(
+        title: 'Size Scale',
+        child: _ChipSizeScale(),
+      ),
+    );
+  }
+}
+
 /// One outlined chip per [DesignSystemChipSize], named after it, on one
 /// line: the touch sizes show how much of their target each draws.
 class _ChipSizeScale extends StatelessWidget {
@@ -130,7 +143,7 @@ class _ChipSizeScale extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 16,
+      spacing: context.designTokens.spacing.step5,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         for (final size in DesignSystemChipSize.values)

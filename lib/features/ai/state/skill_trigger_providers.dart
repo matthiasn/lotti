@@ -236,9 +236,12 @@ final triggerSkillProvider = FutureProvider.autoDispose
             // the device's Settings default, the profile the companion
             // herself falls back to. So does cover art whose task profile
             // names no image model, when the default names one. A model the
-            // user picked by hand needs no slot, and a default that cannot
-            // run the skill either changes nothing: the run then declines or
-            // fails where it did before.
+            // user picked by hand needs no image slot, so a task profile
+            // without one stands and the default is not asked; a task with
+            // no profile at all still takes the default, as the profile the
+            // picked model runs under — the picked model is the one used.
+            // A default that cannot run the skill either changes nothing:
+            // the run then declines or fails where it did before.
             if (_generates(skill) &&
                 !_canGenerate(
                   resolvedProfile,

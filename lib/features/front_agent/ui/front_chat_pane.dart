@@ -18,11 +18,13 @@ import 'package:lotti/features/design_system/components/dividers/design_system_d
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_live_answer.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
+import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_category.dart';
@@ -855,6 +857,19 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
                   // What her turn made is where its cover and its coding
                   // prompt arrive, seen before the task is opened.
                   showsGenerated: true,
+                  // A prompt being written is said only of a task a coding
+                  // prompt was asked for here: a design or research prompt
+                  // started on its page reports the same way.
+                  codingPromptTaskIds: {
+                    for (final door
+                        in thread?.doorsCarriedBy(message.id) ??
+                            const <FrontDoorEntry>[])
+                      if (door.record.outcome case FrontDoorTaskCreated(
+                        :final taskId,
+                        :final extras,
+                      ) when extras.contains(FrontTaskExtra.codingPrompt))
+                        taskId,
+                  },
                   onOpen: openMade,
                 ),
             ],
@@ -876,22 +891,24 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
                     actions: actions,
                     busyDoorIds: composer.busyDoorIds,
                     failedDoorIds: composer.failedDoorIds,
-                    // Where a cover can be drawn, for the categories of
-                    // the tasks its waiting items would become. Known a
-                    // moment after it is asked: the chip is offered once
-                    // it is.
-                    coverArtCategories: {
+                    // The waiting items a cover can be drawn for, by the
+                    // category each one's task would land in — its own,
+                    // or its followed task's. Known a moment after it is
+                    // asked: the chip is offered once it is.
+                    coverArtDoorIds: {
                       for (final door in doors)
                         if (door.record.outcome is FrontDoorInbox)
                           if (ref
                                   .watch(
-                                    frontCoverArtAvailableProvider(
-                                      door.record.task?.categoryId,
-                                    ),
+                                    frontCoverArtAvailableProvider((
+                                      categoryId: door.record.task?.categoryId,
+                                      followsUpTaskId:
+                                          door.record.task?.followsUpTaskId,
+                                    )),
                                   )
                                   .value ??
                               false)
-                            door.record.task?.categoryId,
+                            door.doorId,
                     },
                     journalAccess: journalAccess,
                   ),

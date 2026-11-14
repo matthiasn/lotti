@@ -134,6 +134,7 @@ void main() {
     CategoryDefinition? category,
     List<Override> extra = const [],
     bool showsGenerated = false,
+    Set<String> codingPromptTaskIds = const {},
   }) async {
     opened = [];
     final cache = MockEntitiesCacheService();
@@ -159,6 +160,7 @@ void main() {
             child: FrontEntityPreviewList(
               references: references,
               showsGenerated: showsGenerated,
+              codingPromptTaskIds: codingPromptTaskIds,
               onOpen: opened.add,
             ),
           ),
@@ -533,12 +535,15 @@ void main() {
       Set<AiResponseType> running = const {},
       Set<AiResponseType> failed = const {},
       bool showsGenerated = true,
+      // Whether a coding prompt was asked for where the task was made.
+      bool promptRequested = true,
     }) async {
       promptReads = [];
       await pump(
         tester,
         load: (_) async => task ?? ice(),
         showsGenerated: showsGenerated,
+        codingPromptTaskIds: {if (promptRequested) 'ice-pad'},
         extra: [
           frontTaskCodingPromptProvider.overrideWith((ref, id) async {
             promptReads.add(id);
@@ -755,6 +760,58 @@ void main() {
             'The coding prompt could not be written',
           ).style!.color,
           tokensOf(tester).colors.alert.error.ink,
+        );
+      });
+
+      testWidgets('a task no coding prompt was asked for says nothing of '
+          'one being written or failing: a design or research prompt '
+          'started on its page reports the same way', (tester) async {
+        await pumpMade(
+          tester,
+          running: {AiResponseType.promptGeneration},
+          promptRequested: false,
+        );
+        expect(line('prompt-writing'), findsNothing);
+        expect(find.byType(DesignSystemDivider), findsNothing);
+
+        await tester.pumpWidget(const SizedBox());
+        await pumpMade(
+          tester,
+          failed: {AiResponseType.promptGeneration},
+          promptRequested: false,
+        );
+        expect(line('prompt-failed'), findsNothing);
+      });
+
+      testWidgets('a coding prompt that exists is shown whether or not one '
+          'was asked for here', (tester) async {
+        await pumpMade(
+          tester,
+          prompt: 'Confirm the crosswind limits.',
+          promptRequested: false,
+        );
+
+        expect(line('prompt'), findsOneWidget);
+      });
+
+      testWidgets('its name is cut to the card on one line, never drawn '
+          'past its edge', (tester) async {
+        await pumpMade(tester, prompt: 'Confirm the crosswind limits.');
+
+        final name = tester.widget<Text>(
+          find.descendant(
+            of: line('prompt'),
+            matching: find.text('AI Coding Prompt'),
+          ),
+        );
+        expect(name.maxLines, 1);
+        expect(name.overflow, TextOverflow.ellipsis);
+        expect(
+          find.ancestor(
+            of: find.text('AI Coding Prompt'),
+            matching: find.byType(Flexible),
+          ),
+          findsWidgets,
         );
       });
 

@@ -13,12 +13,16 @@ class _TaskWithGenerated extends ConsumerWidget {
   const _TaskWithGenerated({
     required this.task,
     required this.onTap,
+    required this.codingPromptRequested,
     this.note,
   });
 
   final FrontTaskPreview task;
   final String? note;
   final VoidCallback onTap;
+
+  /// See [FrontEntityPreviewCompactCard.codingPromptRequested].
+  final bool codingPromptRequested;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,7 +38,9 @@ class _TaskWithGenerated extends ConsumerWidget {
         : InferenceStatus.idle;
     // `.value`: a reload keeps the summary shown until the new one lands.
     final prompt = ref.watch(frontTaskCodingPromptProvider(id)).value;
-    final writing = prompt == null
+    // Said only of a coding prompt asked for here: the design and research
+    // prompts report under the same type.
+    final writing = prompt == null && codingPromptRequested
         ? statusOf(AiResponseType.promptGeneration)
         : InferenceStatus.idle;
 
@@ -88,9 +94,17 @@ class _TaskWithGenerated extends ConsumerWidget {
                   size: IconSizes.xs,
                   color: tokens.colors.aiCard.accent,
                 ),
-                Text(
-                  messages.promptGenerationCardTitle,
-                  style: caption.copyWith(color: tokens.colors.aiCard.accent),
+                // Bounded by the card: large text or a long translation is
+                // cut, never drawn past its edge.
+                Flexible(
+                  child: Text(
+                    messages.promptGenerationCardTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: caption.copyWith(
+                      color: tokens.colors.aiCard.accent,
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -88,8 +88,8 @@ void main() {
     Set<String> busy = const {},
     Set<String> failed = const {},
     QueryAccessSnapshot? journalAccess,
-    // Where a cover can be drawn: by default, for a task in no category.
-    Set<String?> coverArtCategories = const {null},
+    // The items a cover can be drawn for: by default, the first.
+    Set<String> coverArtDoorIds = const {'d:door:0'},
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -98,7 +98,7 @@ void main() {
           actions: withActions ? actions() : null,
           busyDoorIds: busy,
           failedDoorIds: failed,
-          coverArtCategories: coverArtCategories,
+          coverArtDoorIds: coverArtDoorIds,
           journalAccess: journalAccess,
         ),
       ),
@@ -632,16 +632,15 @@ void main() {
     });
 
     group('the cover art chip', () {
-      FrontDoorEntry inbox({String? categoryId}) => entry(
+      FrontDoorEntry inbox() => entry(
         record(
           index: 0,
           text: 'Check the ice-pad weather window.',
           kind: FrontDestinationKind.newThing,
           ownerTitle: null,
           outcome: const FrontDoorInbox(newKind: FrontNewKind.task),
-          task: FrontTaskDraft(
+          task: const FrontTaskDraft(
             title: 'Check the ice-pad weather window',
-            categoryId: categoryId,
           ),
         ),
       );
@@ -652,17 +651,18 @@ void main() {
         await tester.pump();
       }
 
-      testWidgets('is offered where a cover can be drawn for a task in no '
-          'category', (tester) async {
+      testWidgets('is offered for an item a cover can be drawn for', (
+        tester,
+      ) async {
         await pump(tester, [inbox()]);
         await openSetup(tester);
 
         expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsOne);
       });
 
-      testWidgets('is not offered where none can, and the task is made '
+      testWidgets('is not offered for one it cannot, and the task is made '
           'without one', (tester) async {
-        await pump(tester, [inbox()], coverArtCategories: const {});
+        await pump(tester, [inbox()], coverArtDoorIds: const {});
         await openSetup(tester);
 
         expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsNothing);
@@ -671,29 +671,21 @@ void main() {
         expect(madeWith.single.coverArt, isFalse);
       });
 
-      testWidgets('follows the category she read the task into, not '
-          'another one a cover can be drawn in', (tester) async {
+      testWidgets('is per item: another item on the card being drawable '
+          'offers this one nothing', (tester) async {
         await pump(
           tester,
-          [inbox(categoryId: 'cat-work')],
-          coverArtCategories: const {'cat-work'},
+          [inbox()],
+          coverArtDoorIds: const {'d:door:1'},
         );
         await openSetup(tester);
-        expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsOne);
 
-        await tester.pumpWidget(const SizedBox());
-        await pump(
-          tester,
-          [inbox(categoryId: 'cat-home')],
-          coverArtCategories: const {'cat-work', null},
-        );
-        await openSetup(tester);
         expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsNothing);
       });
 
       testWidgets('appears in a setup already open once it is known one can '
           'be drawn', (tester) async {
-        await pump(tester, [inbox()], coverArtCategories: const {});
+        await pump(tester, [inbox()], coverArtDoorIds: const {});
         await openSetup(tester);
         expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsNothing);
         // The setup is there and usable meanwhile.
