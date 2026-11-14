@@ -12094,19 +12094,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingFirstWordsVoiced => 'Zo, nu kun je me ook horen!';
 
   @override
-  String get onboardingMakeHerYoursContinue => 'Ziet er goed uit';
-
-  @override
-  String get onboardingMakeHerYoursLine =>
-      'Kies hoe ik eruitzie. Je kunt dit altijd aanpassen in Instellingen › Metgezel.';
-
-  @override
-  String get onboardingMakeHerYoursSkip => 'Nu overslaan';
-
-  @override
-  String get onboardingMakeHerYoursTitle => 'Kies mijn uiterlijk';
-
-  @override
   String get onboardingMetricsActiveDays => 'Actieve dagen';
 
   @override
@@ -12137,60 +12124,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get onboardingRecordingStyleTryVoice => 'Probeer het met je stem';
-
-  @override
-  String get onboardingSuccessContinue => 'Aan de slag';
-
-  @override
-  String get onboardingSuccessSubtitle =>
-      'Je AI-hersenen zijn verbonden en klaar om je woorden in taken te veranderen.';
-
-  @override
-  String get onboardingSuccessTitle => 'Je bent helemaal klaar.';
-
-  @override
-  String get onboardingVoiceElevenLabsDescription =>
-      'Optioneel, met een eigen ElevenLabs-sleutel.';
-
-  @override
-  String get onboardingVoiceElevenLabsName => 'ElevenLabs';
-
-  @override
-  String get onboardingVoiceOnDeviceDescription =>
-      'Gratis en privé. Werkt offline na een eenmalige download.';
-
-  @override
-  String get onboardingVoiceOnDeviceName => 'Op je apparaat';
-
-  @override
-  String onboardingVoicePlay(String voice) {
-    return '„$voice” afspelen';
-  }
-
-  @override
-  String get onboardingVoicesContinue => 'Volgende: je sleutel';
-
-  @override
-  String get onboardingVoicesEnglishNote =>
-      'De voorbeelden zijn in het Engels. Elke stem spreekt ook veel andere talen.';
-
-  @override
-  String get onboardingVoicesLine =>
-      'Ik kan met verschillende stemmen praten. Tik op een stem om hem te horen. Je kunt altijd wisselen in Instellingen › Toespraak.';
-
-  @override
-  String get onboardingVoicesTitle => 'Hoor hoe ik kan klinken';
-
-  @override
-  String onboardingVoiceStop(String voice) {
-    return '„$voice” stoppen';
-  }
-
-  @override
-  String get onboardingVoiceVoxtralDescription => 'Zit bij je Mistral-sleutel.';
-
-  @override
-  String get onboardingVoiceVoxtralName => 'Mistral Voxtral';
 
   @override
   String get onboardingWelcomeConnectButton => 'Kies uw AI-hersenen';

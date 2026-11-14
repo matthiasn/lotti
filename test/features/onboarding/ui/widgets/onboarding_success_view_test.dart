@@ -12,7 +12,6 @@ void main() {
   Future<void> pumpView(
     WidgetTester tester, {
     bool reduceMotion = false,
-    Widget? lead,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -25,7 +24,6 @@ void main() {
                 'Your AI brain is connected and ready to turn your words into tasks.',
             continueLabel: 'Get started',
             onContinue: () {},
-            lead: lead,
           ),
         ),
         mediaQueryData: MediaQueryData(
@@ -97,22 +95,5 @@ void main() {
 
     expect(find.byType(OnboardingSuccessView), findsNothing);
     expect(tester.takeException(), isNull);
-  });
-
-  testWidgets("a lead takes the checkmark's place, above the copy", (
-    tester,
-  ) async {
-    await pumpView(
-      tester,
-      reduceMotion: true,
-      lead: const SizedBox(key: ValueKey('lead'), width: 40, height: 40),
-    );
-
-    expect(find.byKey(const ValueKey('lead')), findsOneWidget);
-    expect(find.byIcon(LottiIcons.confirm), findsNothing);
-    expect(
-      tester.getBottomLeft(find.byKey(const ValueKey('lead'))).dy,
-      lessThan(tester.getTopLeft(find.text("You're all set")).dy),
-    );
   });
 }

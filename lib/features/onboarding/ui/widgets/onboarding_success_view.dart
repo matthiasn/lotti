@@ -18,13 +18,8 @@ class OnboardingSuccessView extends StatefulWidget {
     required this.subtitle,
     required this.continueLabel,
     required this.onContinue,
-    this.lead,
     super.key,
   });
-
-  /// Shown in the checkmark's place, scaling in as it would: onboarding puts
-  /// the companion there, saying her first words. Null shows the checkmark.
-  final Widget? lead;
 
   final Color accent;
   final String title;
@@ -122,13 +117,11 @@ class _OnboardingSuccessViewState extends State<OnboardingSuccessView>
                         ),
                       );
                     },
-                    child:
-                        widget.lead ??
-                        _CheckMark(
-                          size: _checkSize,
-                          accent: widget.accent,
-                          iconColor: tokens.colors.text.onInteractiveAlert,
-                        ),
+                    child: _CheckMark(
+                      size: _checkSize,
+                      accent: widget.accent,
+                      iconColor: tokens.colors.text.onInteractiveAlert,
+                    ),
                   ),
                 ),
                 SizedBox(height: tokens.spacing.step6),

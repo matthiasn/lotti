@@ -12276,19 +12276,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Voilà, maintenant tu peux aussi m\'entendre !';
 
   @override
-  String get onboardingMakeHerYoursContinue => 'C\'est parfait';
-
-  @override
-  String get onboardingMakeHerYoursLine =>
-      'Choisis à quoi je ressemble. Tu peux tout changer quand tu veux dans Paramètres › Compagne.';
-
-  @override
-  String get onboardingMakeHerYoursSkip => 'Passer pour l\'instant';
-
-  @override
-  String get onboardingMakeHerYoursTitle => 'Choisis mon look';
-
-  @override
   String get onboardingMetricsActiveDays => 'Jours actifs';
 
   @override
@@ -12320,61 +12307,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onboardingRecordingStyleTryVoice => 'Essaie avec ta voix';
-
-  @override
-  String get onboardingSuccessContinue => 'C\'est parti';
-
-  @override
-  String get onboardingSuccessSubtitle =>
-      'Ton cerveau IA est connecté, prêt à transformer tes mots en tâches.';
-
-  @override
-  String get onboardingSuccessTitle => 'Tout est prêt';
-
-  @override
-  String get onboardingVoiceElevenLabsDescription =>
-      'Facultatif, avec sa propre clé ElevenLabs.';
-
-  @override
-  String get onboardingVoiceElevenLabsName => 'ElevenLabs';
-
-  @override
-  String get onboardingVoiceOnDeviceDescription =>
-      'Gratuit et privé. Fonctionne hors ligne après un téléchargement unique.';
-
-  @override
-  String get onboardingVoiceOnDeviceName => 'Sur ton appareil';
-
-  @override
-  String onboardingVoicePlay(String voice) {
-    return 'Écouter la voix « $voice »';
-  }
-
-  @override
-  String get onboardingVoicesContinue => 'Suivant : ta clé';
-
-  @override
-  String get onboardingVoicesEnglishNote =>
-      'Les exemples sont en anglais. Chaque voix parle aussi beaucoup d\'autres langues.';
-
-  @override
-  String get onboardingVoicesLine =>
-      'Je peux parler avec différentes voix. Touche-en une pour l\'écouter. Tu peux en changer quand tu veux dans Paramètres › Parole.';
-
-  @override
-  String get onboardingVoicesTitle => 'Écoute les voix que je peux avoir';
-
-  @override
-  String onboardingVoiceStop(String voice) {
-    return 'Arrêter la voix « $voice »';
-  }
-
-  @override
-  String get onboardingVoiceVoxtralDescription =>
-      'Incluse avec ta clé Mistral.';
-
-  @override
-  String get onboardingVoiceVoxtralName => 'Mistral Voxtral';
 
   @override
   String get onboardingWelcomeConnectButton => 'Choisir ton cerveau IA';
