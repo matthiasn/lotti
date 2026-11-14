@@ -431,6 +431,7 @@ void main() {
           id: 'rachel',
           name: 'Voice rachel',
           gender: 'female',
+          age: 'middle_aged',
           languages: ['en', 'de'],
           tags: ['american', 'calm', 'middle aged', 'social media'],
           type: CloudVoiceType.preset,

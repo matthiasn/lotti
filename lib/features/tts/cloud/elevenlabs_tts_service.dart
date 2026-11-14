@@ -281,6 +281,7 @@ class ElevenLabsTtsService implements StreamingCloudTtsClient {
       id: id,
       name: name,
       gender: labels['gender'],
+      age: labels['age'],
       languages: modelLanguages.isNotEmpty
           ? modelLanguages
           : ownLanguages.toList(growable: false),

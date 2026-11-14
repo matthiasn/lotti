@@ -50,6 +50,9 @@ void main() {
       expect(voice.languages, ['de', 'de-AT']);
       expect(voice.type, CloudVoiceType.preset);
       expect(voice.tags, isEmpty);
+      expect(voice.age, 'adult');
+      // The age survives the device cache.
+      expect(CloudVoice.fromJson(voice.toJson()).age, 'adult');
     });
 
     test('keeps the mood tags, and through the device cache', () {
@@ -147,6 +150,43 @@ void main() {
         _catalog(const [_emma, _klaus]).resolve(languageCode: 'de'),
         _klaus,
       );
+    });
+
+    test('defaults to the voice closest to a grandmother: an older woman, '
+        'saved or preset, then a middle-aged female preset, then a female '
+        'preset', () {
+      CloudVoice voice(
+        String id, {
+        String? age,
+        String gender = 'female',
+        CloudVoiceType type = CloudVoiceType.preset,
+      }) => CloudVoice(
+        id: id,
+        name: id,
+        gender: gender,
+        age: age,
+        languages: const ['de'],
+        type: type,
+      );
+      final young = voice('young', age: 'young');
+      final middle = voice('middle', age: 'Middle aged');
+      final oldMan = voice('old-man', age: 'old', gender: 'male');
+      final savedGran = voice('gran', age: 'old', type: CloudVoiceType.custom);
+      final middleSaved = voice(
+        'middle-saved',
+        age: 'middle_aged',
+        type: CloudVoiceType.custom,
+      );
+      String? pick(List<CloudVoice> voices) =>
+          _catalog(voices).resolve(languageCode: 'de')?.id;
+
+      // A saved library voice counts: the first older woman wins.
+      expect(pick([young, middle, oldMan, savedGran]), 'gran');
+      // No older woman: a middle-aged preset, however the age is written —
+      // a saved middle-aged voice does not jump the presets.
+      expect(pick([young, middleSaved, middle, oldMan]), 'middle');
+      // Neither: the first female preset, as before.
+      expect(pick([oldMan, young, middleSaved]), 'young');
     });
 
     test('defaults to the first female preset over earlier voices', () {

@@ -194,7 +194,7 @@ flowchart TD
   Client -->|no| Local
   Client -->|Mistral or ElevenLabs| Cloud["TtsCloudRoute: the provider's voice in the text's language"]
   Cloud --> Voice{"Voice for the language?"}
-  Voice -->|user's choice, else first female preset, else any| Speak["provider's speech endpoint → temporary WAV"]
+  Voice -->|user's choice, else an older woman, else a female preset, else any| Speak["provider's speech endpoint → temporary WAV"]
   Voice -->|none, on-device voice supported| Local
   Voice -->|none, no on-device voice| NoVoice["error: noVoice — nothing sent"]
   Speak --> Reached{"Provider reached?"}
@@ -279,9 +279,15 @@ never answers from the old account's voices, fresh or offline; a cache
 written before accounts were recorded is refreshed at once and answers only
 when that refresh fails. `CloudVoiceCatalog.resolve` picks the voice for a
 language: the user's choice for that language while the catalog still has it
-(`TtsSettings.cloudVoiceByLanguage`, `TTS_CLOUD_VOICES`), else the language's
-first female preset, else its first voice. No provider names a voice per
-language, so this default is ours. Choices are kept per provider
+(`TtsSettings.cloudVoiceByLanguage`, `TTS_CLOUD_VOICES`), else the voice
+closest to Lotti, who speaks as a grandmother: the language's first older
+woman (`CloudVoice.age` is `old`; a Voice Library voice the account saved
+counts, and the account's own voices come in the same catalog as the
+presets), else its first middle-aged female preset, else its first female
+preset, else its first voice. No provider names a voice per language, so
+this default is ours. The age is the API's own label (ElevenLabs `young`,
+`middle_aged`, `old`), kept in the cached catalog; it also shows among the
+voice's tags in the picker. Choices are kept per provider
 (`cloudVoiceChoiceKey`): Mistral's under the bare language — the format from
 before a second provider type spoke, so earlier picks stay — every other
 provider's under `<providerId>/<language>`, so a voice of one account (a
