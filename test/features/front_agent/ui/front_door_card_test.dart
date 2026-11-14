@@ -468,7 +468,7 @@ void main() {
       expect(find.byType(CitationBadge), findsNothing);
 
       await tester.tap(
-        find.byKey(const ValueKey('front-cited-source-feeder-note')),
+        find.byKey(const ValueKey('front-cited-source-0-0')),
       );
       expect(acted, [('source', 'feeder-note')]);
     });

@@ -754,6 +754,76 @@ void main() {
       expect(ids(result.documents), ['lead', 'task']);
     });
 
+    test("a question's named categories hold for details too", () async {
+      bench.categories.add(
+        categoryMindfulness.copyWith(id: 'other', name: 'Other'),
+      );
+      detail('here', 1);
+      detail('there', 2, inCategory: 'other');
+      final corpus = await bench.crawler.discover(
+        QueryScope.journal,
+        const [],
+        narrowTo: {category},
+      );
+
+      final result = await bench.crawler.withTaskDetails(corpus, [
+        QuerySourceDocument.fromEntry(bench.entries['task']!)!,
+      ]);
+
+      expect(corpus.narrowedTo, {category});
+      expect(ids(result.documents), ['task', 'here']);
+      expect(result.corpus.narrowedTo, {category});
+    });
+
+    for (final eventsEnabled in [true, false]) {
+      test('a linked event is a detail only while events are on '
+          '(${eventsEnabled ? 'on' : 'off'})', () async {
+        bench
+          ..eventsEnabled = eventsEnabled
+          ..link('task', 'picnic');
+        bench.entries['picnic'] = JournalEvent(
+          meta: testTask.meta.copyWith(id: 'picnic', categoryId: category),
+          data: const EventData(
+            title: 'Ice garden picnic',
+            stars: 0,
+            status: EventStatus.completed,
+          ),
+        );
+
+        final result = await detailed();
+
+        expect(ids(result.documents), [
+          'lead',
+          'task',
+          if (eventsEnabled) 'picnic',
+        ]);
+      });
+    }
+
+    test('a linked recording without a transcript is counted as unread, as '
+        'discovery counts one', () async {
+      bench.link('task', 'memo');
+      bench.entries['memo'] = testAudioEntry.copyWith(
+        meta: testAudioEntry.meta.copyWith(id: 'memo', categoryId: category),
+        entryText: null,
+        data: testAudioEntry.data.copyWith(transcripts: []),
+      );
+
+      final result = await detailed();
+
+      expect(ids(result.documents), ['lead', 'task']);
+      final coverage = result.corpus.coverage;
+      expect(coverage.incomplete, isTrue);
+      expect(coverage.missingTranscripts, 1);
+      expect(coverage.unreadableSources.single.id, 'memo');
+      // Only recordings were asked for: still counted.
+      final recordings = await detailed(kind: QuerySourceKind.recording);
+      expect(recordings.corpus.coverage.missingTranscripts, 1);
+      // Notes were asked for: a recording is no concern of theirs.
+      final notes = await detailed(kind: QuerySourceKind.text);
+      expect(notes.corpus.coverage.missingTranscripts, 0);
+    });
+
     test('without a task, or one with nothing linked, the selection and '
         'corpus are returned as they are', () async {
       final corpus = await bench.crawler.discover(

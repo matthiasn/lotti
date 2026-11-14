@@ -44,4 +44,11 @@ void main() {
       point('- fed\n- counted', [1, 2]),
     ]);
   });
+
+  test('paragraphs split at Windows line endings too', () {
+    expect(queryAnswerPoints('Fed [1].\r\n\r\nCounted [2].', 2), [
+      point('Fed.', [1]),
+      point('Counted.', [2]),
+    ]);
+  });
 }

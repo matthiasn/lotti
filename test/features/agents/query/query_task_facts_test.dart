@@ -62,7 +62,14 @@ void main() {
       QuerySourceDocument.fromEntry(bench.entries['hinge']!)!,
     ]);
 
-    expect(queryTaskFacts(read.corpus, ref(read.corpus, 'hinge')), [facts]);
+    expect(
+      queryTaskFacts(
+        read.corpus.access,
+        read.corpus.affiliations,
+        ref(read.corpus, 'hinge'),
+      ),
+      [facts],
+    );
   });
 
   test('a note speaks for the task it is linked to', () async {
@@ -70,7 +77,14 @@ void main() {
       QuerySourceDocument.fromEntry(bench.entries['hinge']!)!,
     ]);
 
-    expect(queryTaskFacts(read.corpus, ref(read.corpus, 'note')), [facts]);
+    expect(
+      queryTaskFacts(
+        read.corpus.access,
+        read.corpus.affiliations,
+        ref(read.corpus, 'note'),
+      ),
+      [facts],
+    );
   });
 
   test('a task with no due date says none, and a note with no task says '
@@ -82,27 +96,55 @@ void main() {
     final read = await corpus();
 
     expect(
-      queryTaskFacts(read, ref(read, 'hinge')).single.containsKey('due'),
+      queryTaskFacts(
+        read.access,
+        read.affiliations,
+        ref(read, 'hinge'),
+      ).single.containsKey('due'),
       isFalse,
     );
-    expect(queryTaskFacts(read, ref(read, 'note')), isEmpty);
+    expect(
+      queryTaskFacts(read.access, read.affiliations, ref(read, 'note')),
+      isEmpty,
+    );
   });
 
-  test('a task the reader may no longer see is left out', () async {
+  test('facts come from the snapshot handed in: a task it holds speaks, '
+      'one it does not or may no longer show is left out', () async {
     final read = await bench.crawler.withTaskDetails(await corpus(), [
       QuerySourceDocument.fromEntry(bench.entries['hinge']!)!,
     ]);
-    final hidden = QueryCorpus(
-      scope: read.corpus.scope,
-      categoryId: read.corpus.categoryId,
-      homeIds: read.corpus.homeIds,
-      documents: read.corpus.documents,
-      access: await bench.crawler.access.load(['note']),
-      coverage: read.corpus.coverage,
-      affiliations: read.corpus.affiliations,
-    );
+    final note = ref(read.corpus, 'note');
+    final access = bench.crawler.access;
 
-    expect(queryTaskFacts(hidden, ref(read.corpus, 'note')), isEmpty);
+    // The task is not in the crawl's own snapshot, only in the one handed in.
+    expect(
+      queryTaskFacts(
+        await access.load(['note', 'hinge']),
+        read.corpus.affiliations,
+        note,
+      ),
+      [facts],
+    );
+    expect(
+      queryTaskFacts(
+        await access.load(['note']),
+        read.corpus.affiliations,
+        note,
+      ),
+      isEmpty,
+    );
+    bench.entries['hinge'] = bench.entries['hinge']!.copyWith(
+      meta: bench.entries['hinge']!.meta.copyWith(private: true),
+    );
+    expect(
+      queryTaskFacts(
+        await access.load(['note', 'hinge']),
+        read.corpus.affiliations,
+        note,
+      ),
+      isEmpty,
+    );
   });
 
   test('a day is the local calendar day', () {

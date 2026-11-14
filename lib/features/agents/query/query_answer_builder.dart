@@ -389,6 +389,7 @@ class QueryAnswerBuilder {
       access: corpus.access,
       coverage: corpus.coverage,
       affiliations: corpus.affiliations,
+      narrowedTo: corpus.narrowedTo,
     );
     var incomplete = corpus.coverage.incomplete;
     List<QuerySourceDocument> selected;
@@ -437,6 +438,10 @@ class QueryAnswerBuilder {
     );
     cancellation.check();
     (:corpus, documents: selected) = detailed;
+    incomplete = incomplete || corpus.coverage.incomplete;
+    for (final source in corpus.coverage.unreadableSources) {
+      dependencies[source.id] = source;
+    }
     for (final document in [...cachedDocuments, ...selected]) {
       cancellation.check();
       final batch = _matchingBatch(document, batched);
@@ -681,17 +686,7 @@ class QueryAnswerBuilder {
         'conversation': context,
         'roast': roast,
         'today': queryDay(clock.now()),
-        'evidence': [
-          for (var i = 0; i < evidence.length; i++)
-            {
-              'number': i + 1,
-              'label': evidence[i].label,
-              'date': evidence[i].sourceDate.toIso8601String(),
-              'quote': evidence[i].quote,
-              'affiliations': evidence[i].affiliations,
-              'tasks': queryTaskFacts(corpus, evidence[i].source),
-            },
-        ],
+        'evidence': _answerEvidence(evidence, current, corpus.affiliations),
         'memories': [
           for (final event in recalled)
             {'id': event.id, 'text': (event.data as QueryChatMemory).text},

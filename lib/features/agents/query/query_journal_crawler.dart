@@ -120,6 +120,7 @@ class QueryCorpus {
     required this.access,
     required this.coverage,
     required this.affiliations,
+    this.narrowedTo,
   });
 
   final QueryScope scope;
@@ -130,12 +131,18 @@ class QueryCorpus {
   final QueryCoverage coverage;
   final Map<String, QueryAffiliation> affiliations;
 
+  /// The categories the question named, which narrow a journal crawl
+  /// further than the page's selection (`''` is the uncategorized bucket);
+  /// null when it named none.
+  final Set<String>? narrowedTo;
+
   /// Whether an entry filed in category [id] belongs to this corpus: the
   /// scope's own category, or for the journal any category [snapshot] shows
-  /// within the page's selection.
+  /// within the page's selection and the categories the question named.
   bool admits(QueryAccessSnapshot snapshot, String? id) => scope.spansCategories
       ? snapshot.allowsCategory(id) &&
-            (scope.journalCategoryIds?.contains(id ?? '') ?? true)
+            (scope.journalCategoryIds?.contains(id ?? '') ?? true) &&
+            (narrowedTo?.contains(id ?? '') ?? true)
       : id == categoryId;
 
   /// Whether this corpus may still be read under [snapshot]: its category is
@@ -382,6 +389,7 @@ class QueryJournalCrawler {
         unreadableSources: unreadableSources,
       ),
       affiliations: await _affiliations(documents),
+      narrowedTo: scope.spansCategories ? narrowTo : null,
     );
   }
 
@@ -427,13 +435,21 @@ class QueryJournalCrawler {
       for (final ids in linked.values) ...ids,
     });
     final known = {for (final document in selected) document.entry.meta.id};
+    final events = await journal.getConfigFlag(enableEventsFlag);
     final details = <String, List<QuerySourceDocument>>{};
+    final untranscribed = <QuerySourceRef>[];
     for (final MapEntry(key: task, value: ids) in linked.entries) {
       final entries = [
         for (final id in ids)
           if (current.entries[id] case final entry?)
-            if (entry is! Task &&
-                entry is! ProjectEntry &&
+            // What discovery reads ([sourceTypes]), but never another task
+            // or a project: a neighbour, not a detail.
+            if ((entry is JournalEntry ||
+                    entry is JournalAudio ||
+                    entry is JournalImage ||
+                    entry is Checklist ||
+                    entry is ChecklistItem ||
+                    (events && entry is JournalEvent)) &&
                 current.allowsEntry(entry) &&
                 corpus.admits(current, entry.meta.categoryId))
               entry,
@@ -442,14 +458,21 @@ class QueryJournalCrawler {
         if ((details[task]?.length ?? 0) == maxDetailsPerTask) break;
         if (!known.add(entry.meta.id)) continue;
         final document = QuerySourceDocument.fromEntry(entry);
-        if (document == null || (kind != null && document.kind != kind)) {
+        if (document == null) {
+          if (entry is JournalAudio &&
+              (kind == null || kind == QuerySourceKind.recording)) {
+            untranscribed.add(current.reference(entry));
+          }
           continue;
         }
+        if (kind != null && document.kind != kind) continue;
         (details[task] ??= []).add(document);
       }
     }
     final added = [for (final documents in details.values) ...documents];
-    if (added.isEmpty) return (corpus: corpus, documents: selected);
+    if (added.isEmpty && untranscribed.isEmpty) {
+      return (corpus: corpus, documents: selected);
+    }
     final inCorpus = {
       for (final document in corpus.documents) document.entry.meta.id,
     };
@@ -463,11 +486,22 @@ class QueryJournalCrawler {
           ...added.where((d) => !inCorpus.contains(d.entry.meta.id)),
         ],
         access: current,
-        coverage: corpus.coverage,
+        coverage: untranscribed.isEmpty
+            ? corpus.coverage
+            : corpus.coverage.copyWith(
+                incomplete: true,
+                missingTranscripts:
+                    corpus.coverage.missingTranscripts + untranscribed.length,
+                unreadableSources: [
+                  ...corpus.coverage.unreadableSources,
+                  ...untranscribed,
+                ],
+              ),
         affiliations: {
           ...corpus.affiliations,
           ...await _affiliations(added),
         },
+        narrowedTo: corpus.narrowedTo,
       ),
       documents: [
         for (final document in selected) ...[

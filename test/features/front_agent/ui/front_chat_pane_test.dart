@@ -2698,13 +2698,13 @@ void main() {
     await expectTaskOpensOverPane(
       tester,
       observer,
-      find.byKey(const ValueKey('front-cited-source-t-1')),
+      find.byKey(const ValueKey('front-cited-source-0-0')),
       't-1',
       paths,
     );
     // ...any other source leaves her for its own page.
-    for (final id in ['p-1', 'e-1']) {
-      await tester.tap(find.byKey(ValueKey('front-cited-source-$id')));
+    for (final row in [1, 2]) {
+      await tester.tap(find.byKey(ValueKey('front-cited-source-0-$row')));
       await tester.pump();
     }
 

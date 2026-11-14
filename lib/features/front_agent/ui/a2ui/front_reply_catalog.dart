@@ -289,9 +289,10 @@ final ComponentImplementation _citedPoints = _fromLookup(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               scope.prose(point.text),
-              for (final source in point.sources)
+              // Keyed by place: one entry may give a point two passages.
+              for (final (row, source) in point.sources.indexed)
                 FrontCitedSourceRow(
-                  key: ValueKey('front-cited-source-${source.id}'),
+                  key: ValueKey('front-cited-source-$index-$row'),
                   source: source,
                   onOpen: switch (scope.onOpenSource) {
                     final open? => () => open(source),

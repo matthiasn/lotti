@@ -6,11 +6,23 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 /// the whitespace before it so a removed one leaves no gap behind.
 final queryCitation = RegExp(r'\s*\[(\d+)\]');
 
-/// [answer]'s paragraphs, split at blank lines: an answer's points.
-List<String> queryAnswerParagraphs(String answer) => [
-  for (final paragraph in answer.split(RegExp(r'\n[ \t]*\n')))
-    if (paragraph.trim().isNotEmpty) paragraph.trim(),
-];
+/// [answer]'s paragraphs, split at blank lines — `\n` or `\r\n` — with a
+/// paragraph of citations alone joined to the one before it, whose claim it
+/// cites: an answer's points.
+List<String> queryAnswerParagraphs(String answer) {
+  final paragraphs = <String>[];
+  for (final part in answer.split(RegExp(r'\r?\n[ \t]*\r?\n'))) {
+    final paragraph = part.trim();
+    if (paragraph.isEmpty) continue;
+    if (paragraphs.isNotEmpty &&
+        paragraph.replaceAll(queryCitation, '').trim().isEmpty) {
+      paragraphs.add('${paragraphs.removeLast()} $paragraph');
+    } else {
+      paragraphs.add(paragraph);
+    }
+  }
+  return paragraphs;
+}
 
 /// [answer] with every citation that names no evidence taken out, given
 /// [evidenceCount] pieces of evidence numbered from 1.

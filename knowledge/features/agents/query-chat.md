@@ -292,8 +292,12 @@ After the shortlist, `QueryJournalCrawler.withTaskDetails` follows each
 chosen task with up to four of its linked entries (`maxDetailsPerTask`),
 newest first: notes, recordings, checklists — never another task or a
 project, which are neighbours rather than details. Each passes the filters a
-discovered document does (visible, in the corpus's categories, of the kind
-asked for), one already chosen is not read twice, and the corpus returned
+discovered document does: one of the source types discovery reads (an event
+only while events are on), visible, in the corpus's categories — which keep
+the categories the question named (`QueryCorpus.narrowedTo`), so a task in
+one cannot bring in a note from another — and of the kind asked for. A
+linked recording without a transcript is counted unread, as discovery counts
+one. A detail already chosen is not read twice, and the corpus returned
 knows the details so their sources and affiliations resolve. The details
 are inspected like any source, inside the same call and evidence budgets.
 A task-scoped chat already reads its home task's links as part of its home.
@@ -744,12 +748,15 @@ prompt asks for short paragraphs, one point each, every citation right after
 the claim it supports and quotes of a few words at most; a plain fact gets a
 sentence or two. Each piece of evidence carries the facts of the task it is
 or belongs to (`queryTaskFacts`: status and since when, created, due, how
-often the status changed), read from the database, and the input carries
+often the status changed), read from the live snapshot of the answer's
+dependencies — which holds every task the evidence is linked to, whether or
+not the crawl found it — and the input carries
 today's date — so "due in October, still open" is stated, not inferred from a
 quote.
 
 **An answer has points.** `queryAnswerPoints` (`query_answer_points.dart`)
-reads an answer as its paragraphs, each a point whose `[n]` citations —
+reads an answer as its paragraphs (`queryAnswerParagraphs`: split at blank
+lines, `\n` or `\r\n`), each a point whose `[n]` citations —
 those naming evidence — are lifted out as its sources, each once, in the
 order first cited; a paragraph of citations alone adds them to the point
 before it. The model writes text so the answer streams; a surface that

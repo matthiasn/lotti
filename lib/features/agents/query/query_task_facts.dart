@@ -2,24 +2,27 @@ import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
+import 'package:lotti/features/agents/query/query_source_access.dart';
 
 /// The facts of the tasks a piece of evidence speaks for: the task it is,
-/// or the tasks it is linked to. Status, how long it has held it, the due
-/// date and how often the status moved are what a passage alone cannot
-/// show — "due in October, still open" is said from these, not inferred
-/// from a quote. Read from [corpus]; a task it cannot show is left out.
+/// or the tasks it is linked to ([affiliations]). Status, how long it has
+/// held it, the due date and how often the status moved are what a passage
+/// alone cannot show — "due in October, still open" is said from these, not
+/// inferred from a quote. Read from [access], which must hold those tasks —
+/// the snapshot of the answer's dependencies does; a task it cannot show is
+/// left out.
 List<Map<String, Object>> queryTaskFacts(
-  QueryCorpus corpus,
+  QueryAccessSnapshot access,
+  Map<String, QueryAffiliation> affiliations,
   QuerySourceRef source,
 ) {
   final ids = {
     source.id,
-    ...?corpus.affiliations[source.id]?.sources.map((s) => s.id),
+    ...?affiliations[source.id]?.sources.map((s) => s.id),
   };
   return [
     for (final id in ids)
-      if (corpus.access.entries[id] case final Task task
-          when corpus.access.allowsEntry(task))
+      if (access.entries[id] case final Task task when access.allowsEntry(task))
         {
           'title': task.data.title,
           'status': task.data.status.toDbString,

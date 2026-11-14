@@ -33,8 +33,8 @@ class QueryAnswerPoint {
 /// is written; drawn, each point carries the sources it rests on beside it,
 /// so a claim and its evidence are read together instead of matched up by
 /// footnote numbers. A citation naming no evidence is dropped, as
-/// [withKnownCitations] does; a paragraph that is only citations adds its
-/// sources to the point before it.
+/// [withKnownCitations] does; a paragraph that is only citations cites the
+/// point before it ([queryAnswerParagraphs]).
 List<QueryAnswerPoint> queryAnswerPoints(String answer, int evidenceCount) {
   final points = <QueryAnswerPoint>[];
   for (final paragraph in queryAnswerParagraphs(answer)) {
@@ -46,22 +46,10 @@ List<QueryAnswerPoint> queryAnswerPoints(String answer, int evidenceCount) {
       }
     }
     final text = paragraph.replaceAll(queryCitation, '').trim();
-    if (text.isEmpty) {
-      if (points.isNotEmpty && sources.isNotEmpty) {
-        final last = points.removeLast();
-        points.add(
-          QueryAnswerPoint(
-            text: last.text,
-            sources: [
-              ...last.sources,
-              ...sources.where((n) => !last.sources.contains(n)),
-            ],
-          ),
-        );
-      }
-      continue;
+    // Citations alone, with no point before them, cite nothing said.
+    if (text.isNotEmpty) {
+      points.add(QueryAnswerPoint(text: text, sources: sources));
     }
-    points.add(QueryAnswerPoint(text: text, sources: sources));
   }
   return points;
 }

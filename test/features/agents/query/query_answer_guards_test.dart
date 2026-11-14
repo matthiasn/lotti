@@ -84,4 +84,20 @@ void main() {
       expect(withCitedParagraphs(roast), roast);
     });
   });
+
+  group('withCitedParagraphs, as written by any model', () {
+    test('paragraphs split at Windows line endings too', () {
+      expect(
+        withCitedParagraphs('Due in October [1].\r\n\r\nClassic you.'),
+        'Due in October [1].',
+      );
+    });
+
+    test('a citation on a line of its own keeps the point it cites', () {
+      expect(
+        withCitedParagraphs('Promised twice.\n\n[1]\n\nClassic you.'),
+        'Promised twice. [1]',
+      );
+    });
+  });
 }

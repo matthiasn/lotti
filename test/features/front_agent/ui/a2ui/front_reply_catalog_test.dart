@@ -399,8 +399,8 @@ void main() {
       double top(Finder finder) => tester.getTopLeft(finder).dy;
       final first = find.text('words: Promised twice.');
       final second = find.text('words: And no plan since.');
-      final noteRow = find.byKey(const ValueKey('front-cited-source-e-hinge'));
-      final memoRow = find.byKey(const ValueKey('front-cited-source-e-memo'));
+      final noteRow = find.byKey(const ValueKey('front-cited-source-0-0'));
+      final memoRow = find.byKey(const ValueKey('front-cited-source-0-1'));
       expect(top(first), lessThan(top(noteRow)));
       expect(top(noteRow), lessThan(top(memoRow)));
       expect(top(memoRow), lessThan(top(second)));
@@ -426,7 +426,7 @@ void main() {
         ]),
       }, taps: taps);
 
-      await tester.tap(find.byKey(const ValueKey('front-cited-source-e-memo')));
+      await tester.tap(find.byKey(const ValueKey('front-cited-source-0-1')));
 
       expect(taps.openedSources.map((s) => s.id), ['e-memo']);
     });
@@ -444,7 +444,7 @@ void main() {
         canOpenSources: false,
       );
 
-      final row = find.byKey(const ValueKey('front-cited-source-e-hinge'));
+      final row = find.byKey(const ValueKey('front-cited-source-0-0'));
       expect(row, findsOneWidget);
       expect(
         tester
@@ -454,6 +454,31 @@ void main() {
             .onTap,
         isNull,
       );
+    });
+
+    testWidgets('two passages of one entry under one point are both '
+        'drawn', (tester) async {
+      await pumpReplySurfaces(tester, {
+        'j1': answer([
+          FrontCitedPoint(
+            text: 'Promised twice.',
+            sources: [
+              note,
+              FrontCitedSource(
+                id: note.id,
+                kind: note.kind,
+                label: note.label,
+                date: note.date,
+                quote: 'Hinge, for real this time.',
+              ),
+            ],
+          ),
+        ]),
+      }, taps: FrontReplyTaps());
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(FrontCitedSourceRow), findsNWidgets(2));
+      expect(find.text('Hinge, for real this time.'), findsOneWidget);
     });
 
     testWidgets('no points draw nothing', (tester) async {

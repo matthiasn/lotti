@@ -134,3 +134,22 @@ const _shortlistSystem =
     'Prefer sources likely to contain the requested discussion or decision. '
     'Previews may be truncated; include plausible sources even when '
     'uncertain. Use only IDs supplied here. Return no quotes or answer.';
+
+/// The verified [evidence] as the answer reads it, numbered from 1 as it is
+/// cited, each with the facts of its tasks read from [access]
+/// ([queryTaskFacts]).
+List<Map<String, Object?>> _answerEvidence(
+  List<QueryEvidence> evidence,
+  QueryAccessSnapshot access,
+  Map<String, QueryAffiliation> affiliations,
+) => [
+  for (final (index, piece) in evidence.indexed)
+    {
+      'number': index + 1,
+      'label': piece.label,
+      'date': piece.sourceDate.toIso8601String(),
+      'quote': piece.quote,
+      'affiliations': piece.affiliations,
+      'tasks': queryTaskFacts(access, affiliations, piece.source),
+    },
+];
