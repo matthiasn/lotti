@@ -61,6 +61,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/test_get_it.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart' show testTextEntry;
 import '../../agents/test_data/entity_factories.dart';
 import '../../agents/workflow/task_agent_workflow_test_helpers.dart';
 import '../../ai/test_utils.dart' show AiTestDataFactory;
@@ -1479,10 +1480,13 @@ void main() {
       imageGenerationProvider: draws ? provider : null,
     );
 
+    late MockJournalDb journalDb;
+
     Future<bool> available(
       String? categoryId, {
       ResolvedProfile? ofCategory,
       ResolvedProfile? settingsDefault,
+      String? followsUpTaskId,
     }) {
       when(
         () => resolver.resolveForCategory(any()),
@@ -1493,19 +1497,108 @@ void main() {
       final wired = ProviderContainer(
         overrides: [
           profileAutomationResolverProvider.overrideWithValue(resolver),
+          journalDbProvider.overrideWithValue(journalDb),
         ],
       );
       addTearDown(wired.dispose);
-      // Held across the read, as the card's watch holds it.
+      final source = (categoryId: categoryId, followsUpTaskId: followsUpTaskId);
+      // Held across the read, as the pane's watch holds it.
       final subscription = wired.listen(
-        frontCoverArtAvailableProvider(categoryId),
+        frontCoverArtAvailableProvider(source),
         (_, _) {},
       );
       addTearDown(subscription.close);
-      return wired.read(frontCoverArtAvailableProvider(categoryId).future);
+      return wired.read(frontCoverArtAvailableProvider(source).future);
     }
 
-    setUp(() => resolver = MockProfileAutomationResolver());
+    setUp(() {
+      resolver = MockProfileAutomationResolver();
+      journalDb = MockJournalDb();
+      when(
+        () => journalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+    });
+
+    group('a follow-up that names no category', () {
+      Task followed({String? categoryId, DateTime? deletedAt}) {
+        final task = makeWorkflowTestTask('task-roses');
+        return task.copyWith(
+          meta: task.meta.copyWith(
+            categoryId: categoryId,
+            deletedAt: deletedAt,
+          ),
+        );
+      }
+
+      test("is asked about in its followed task's category", () async {
+        when(
+          () => journalDb.journalEntityById('task-roses'),
+        ).thenAnswer((_) async => followed(categoryId: 'cat-garden'));
+
+        expect(
+          await available(
+            null,
+            followsUpTaskId: 'task-roses',
+            ofCategory: profile(draws: true),
+          ),
+          isTrue,
+        );
+        verify(() => resolver.resolveForCategory('cat-garden')).called(1);
+      });
+
+      test('a category it names wins, the followed task never read', () async {
+        expect(
+          await available(
+            'cat-work',
+            followsUpTaskId: 'task-roses',
+            ofCategory: profile(draws: true),
+          ),
+          isTrue,
+        );
+        verify(() => resolver.resolveForCategory('cat-work')).called(1);
+        verifyNever(() => journalDb.journalEntityById(any()));
+      });
+
+      test('a followed task that is gone, deleted, or no task leaves it in '
+          'no category: only the Settings default is asked', () async {
+        for (final entity in <JournalEntity?>[
+          null,
+          followed(categoryId: 'cat-garden', deletedAt: DateTime(2026, 11)),
+          testTextEntry,
+        ]) {
+          when(
+            () => journalDb.journalEntityById('task-roses'),
+          ).thenAnswer((_) async => entity);
+
+          expect(
+            await available(
+              null,
+              followsUpTaskId: 'task-roses',
+              ofCategory: profile(draws: true),
+            ),
+            isFalse,
+            reason: '${entity?.runtimeType}',
+          );
+        }
+        verifyNever(() => resolver.resolveForCategory(any()));
+      });
+
+      test('a followed task in no category leaves it in none', () async {
+        when(
+          () => journalDb.journalEntityById('task-roses'),
+        ).thenAnswer((_) async => followed());
+
+        expect(
+          await available(
+            null,
+            followsUpTaskId: 'task-roses',
+            settingsDefault: profile(draws: true),
+          ),
+          isTrue,
+        );
+        verifyNever(() => resolver.resolveForCategory(any()));
+      });
+    });
 
     test(
       'a category whose profile draws can, the default never asked',

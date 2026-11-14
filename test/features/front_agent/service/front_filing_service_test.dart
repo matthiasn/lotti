@@ -54,6 +54,10 @@ void main() {
   /// categories it was asked for.
   late bool Function(String? categoryId) canDraw;
   late List<String?> coverAsked;
+
+  /// The task each of those drafts follows, which decides its category
+  /// when it names none.
+  late List<String?> coverAskedFollowing;
   late MockDomainLogger logger;
 
   /// What starting an extra does, beyond being recorded.
@@ -148,6 +152,7 @@ void main() {
     order = [];
     canDraw = (_) => true;
     coverAsked = [];
+    coverAskedFollowing = [];
     logger = MockDomainLogger();
     onStart = (_) {};
     deleteResult = true;
@@ -189,9 +194,10 @@ void main() {
         order.add('start ${extra.name}');
         onStart(extra);
       },
-      canDrawCover: (categoryId) async {
-        coverAsked.add(categoryId);
-        return canDraw(categoryId);
+      canDrawCover: (draft) async {
+        coverAsked.add(draft.categoryId);
+        coverAskedFollowing.add(draft.followsUpTaskId);
+        return canDraw(draft.categoryId);
       },
       domainLogger: logger,
     );
@@ -953,6 +959,21 @@ void main() {
       seedInbox();
       await service.makeTask(doorId, choices: withCover);
       expect(coverAsked, ['cat-9', null]);
+    });
+
+    test('a follow-up is asked about with the task it follows, whose '
+        'category it will be made in', () async {
+      seedInbox(
+        draft: const FrontTaskDraft(
+          title: 'Check again',
+          followsUpTaskId: 'task-roses',
+        ),
+      );
+
+      await service.makeTask(doorId, choices: withCover);
+
+      expect(coverAsked, [null]);
+      expect(coverAskedFollowing, ['task-roses']);
     });
 
     test('a start that throws is logged and never fails the task made: the '

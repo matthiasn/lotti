@@ -69,6 +69,7 @@ class FrontEntityPreviewList extends StatelessWidget {
     required this.references,
     required this.onOpen,
     this.showsGenerated = false,
+    this.codingPromptTaskIds = const {},
     super.key,
   });
 
@@ -77,6 +78,10 @@ class FrontEntityPreviewList extends StatelessWidget {
 
   /// Whether a task's card shows what is generated for it.
   final bool showsGenerated;
+
+  /// The tasks a coding prompt was asked for where they were made: only
+  /// their cards say one is being written, or could not be.
+  final Set<String> codingPromptTaskIds;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -90,6 +95,7 @@ class FrontEntityPreviewList extends StatelessWidget {
             key: FrontEntityPreviewKeys.card(reference.id),
             reference: reference,
             showsGenerated: showsGenerated,
+            codingPromptRequested: codingPromptTaskIds.contains(reference.id),
             onTap: () => onOpen(reference),
           ),
           FrontEntityKind.event => FrontEntityPreviewRichCard(
@@ -135,6 +141,7 @@ class FrontEntityPreviewCompactCard extends ConsumerWidget {
     required this.reference,
     required this.onTap,
     this.showsGenerated = false,
+    this.codingPromptRequested = false,
     super.key,
   });
 
@@ -143,6 +150,13 @@ class FrontEntityPreviewCompactCard extends ConsumerWidget {
 
   /// Whether the card shows what is generated for the task.
   final bool showsGenerated;
+
+  /// Whether a coding prompt was asked for with the task: only then does
+  /// the card say one is being written, or could not be. Every prompt skill
+  /// reports its run the same way, so without this a design or research
+  /// prompt started on the task's page would be announced as a coding one.
+  /// A coding prompt that exists is shown either way.
+  final bool codingPromptRequested;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -158,6 +172,7 @@ class FrontEntityPreviewCompactCard extends ConsumerWidget {
               ? _TaskWithGenerated(
                   task: task,
                   note: reference.note,
+                  codingPromptRequested: codingPromptRequested,
                   onTap: onTap,
                 )
               : _TaskPreviewContent(

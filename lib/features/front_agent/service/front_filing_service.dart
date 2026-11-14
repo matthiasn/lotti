@@ -40,9 +40,10 @@ typedef FrontTaskMaker =
 typedef FrontTaskExtraStarter =
     void Function(FrontTaskExtra extra, {required String taskId});
 
-/// Whether cover art can be drawn for a task made in the category
-/// [categoryId] (none for a task filed in no category).
-typedef FrontCoverArtCheck = Future<bool> Function(String? categoryId);
+/// Whether cover art can be drawn for the task a draft would become, in the
+/// category it will be made in: the one it names, else the one of the task
+/// it follows.
+typedef FrontCoverArtCheck = Future<bool> Function(FrontTaskDraft draft);
 
 /// Makes an event titled [title] under [id]. Returns it — the one created,
 /// or the one already there — or null when nothing is stored.
@@ -298,8 +299,9 @@ class FrontFilingService {
   /// once the record says the task is made: a retry after a record that did
   /// not follow starts each once, never a second paid run.
   ///
-  /// Cover art is asked for only where one can be drawn for the task's
-  /// category: this is the one place every way of making a task passes, so
+  /// Cover art is asked for only where one can be drawn for the category
+  /// the task will be made in — a follow-up's is its task's when the words
+  /// named none: this is the one place every way of making a task passes, so
   /// a cover the words asked for is dropped here whichever control made the
   /// task, and the outcome never says one was requested that could not
   /// arrive. A start that fails is logged, never an error of the task made:
@@ -313,7 +315,7 @@ class FrontFilingService {
     final inbox = record.outcome! as FrontDoorInbox;
     final words = record.text.trim();
     final draft = record.task ?? FrontTaskDraft(title: words);
-    final coverArt = choices.coverArt && await _canDrawCover(draft.categoryId);
+    final coverArt = choices.coverArt && await _canDrawCover(draft);
     final task = await _makeTask(
       draft.withChoices(choices.copyWith(coverArt: coverArt)),
       id: frontDoorTaskId(doorId, generation: inbox.generation),

@@ -94,7 +94,9 @@ companion's chat often is one), and cover art needs a profile naming an
 image-generation model. The Settings default is taken only when it can run the
 skill; when it cannot either, the task's profile stands and the run declines or
 fails as before. A model picked by hand (`overrideModelId`) needs no image
-slot, so that run keeps the task's profile and never asks the default. A run
+slot, so a task profile without one stands and the default is not asked; a
+task with no profile at all still takes the default, as the profile the
+picked model runs under — the picked model is the one used. A run
 declined for want of a profile reports its error under the entry and under its
 task, as a failed run does, so a surface that follows the task shows it. Skills whose
 `contextPolicy` is `fullTask` are hidden from the popup for entries without task
