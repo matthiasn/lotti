@@ -217,6 +217,9 @@ void main() {
     Set<String> flagsOn = const {},
     Future<FrontEntityPreview?> Function(FrontEntityKey key)? previews,
     bool reducedMotion = false,
+    // The categories a profile can draw a cover in: none on this bench
+    // unless a test says so.
+    Set<String?> coverArtCategories = const {},
     ValueListenable<double?>? listWidth,
     // Tall enough that every message of the longest thread is built.
     Size window = const Size(800, 2400),
@@ -267,9 +270,9 @@ void main() {
             disableAnimations: reducedMotion,
           ),
           overrides: [
-            // No profile draws covers on this bench: the setup has no chip.
             frontCoverArtAvailableProvider.overrideWith(
-              (ref, categoryId) async => false,
+              (ref, categoryId) async =>
+                  coverArtCategories.contains(categoryId),
             ),
             frontChatThreadProvider.overrideWith(
               (ref) => (thread ?? () async => FrontChatThread.empty)(),
@@ -3017,6 +3020,44 @@ void main() {
       verifyNever(() => filing.makeTask('d:door:0', choices: asRead));
       expect(closed, 0);
       expect(paths, isEmpty);
+    });
+
+    testWidgets('the setup offers cover art where a profile can draw one '
+        "for the task's category, and not where none can", (tester) async {
+      await pumpPane(
+        tester,
+        thread: () async => inbox(FrontNewKind.task),
+        // The item's task is in no category.
+        coverArtCategories: const {null},
+      );
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+      await tester.pump();
+      expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsOne);
+      expect(
+        tester
+            .widget<FrontDoorCard>(find.byType(FrontDoorCard))
+            .coverArtCategories,
+        {null},
+      );
+
+      await tester.pumpWidget(const SizedBox());
+      await pumpPane(
+        tester,
+        thread: () async => inbox(FrontNewKind.task),
+        // Only somewhere this task is not.
+        coverArtCategories: const {'cat-elsewhere'},
+      );
+      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+      await tester.pump();
+      await tester.pump();
+      expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsNothing);
+      expect(
+        tester
+            .widget<FrontDoorCard>(find.byType(FrontDoorCard))
+            .coverArtCategories,
+        isEmpty,
+      );
     });
 
     testWidgets('make it an event makes the event through the filing '

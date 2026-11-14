@@ -12,6 +12,7 @@ import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -48,6 +49,15 @@ void main() {
 
   /// The record rewrites and the starts, in the order they happened.
   late List<String> order;
+
+  /// Whether a cover can be drawn for a task in a category, and the
+  /// categories it was asked for.
+  late bool Function(String? categoryId) canDraw;
+  late List<String?> coverAsked;
+  late MockDomainLogger logger;
+
+  /// What starting an extra does, beyond being recorded.
+  late void Function(FrontTaskExtra extra) onStart;
   late bool deleteResult;
   late JournalEntity? Function(String text) entryFor;
   late Task? Function(String title) taskFor;
@@ -136,6 +146,10 @@ void main() {
     deleted = [];
     started = [];
     order = [];
+    canDraw = (_) => true;
+    coverAsked = [];
+    logger = MockDomainLogger();
+    onStart = (_) {};
     deleteResult = true;
     entryFor = (text) => textEntry('entry-1', text);
     taskFor = (title) => task('task-new', title);
@@ -173,7 +187,13 @@ void main() {
       startExtra: (extra, {required taskId}) {
         started.add((extra, taskId));
         order.add('start ${extra.name}');
+        onStart(extra);
       },
+      canDrawCover: (categoryId) async {
+        coverAsked.add(categoryId);
+        return canDraw(categoryId);
+      },
+      domainLogger: logger,
     );
   });
 
@@ -886,6 +906,77 @@ void main() {
         expect(order, ['record', 'start coverArt', 'start codingPrompt']);
       },
     );
+
+    group('where no profile can draw a cover', () {
+      setUp(() => canDraw = (_) => false);
+
+      test('a cover chosen is left out: not made with, not started, not '
+          'said to be requested', () async {
+        seedInbox();
+        await service.makeTask(doorId, choices: withCover);
+        expect(madeDrafts.single.$1.coverArt, isFalse);
+        expect(started, isEmpty);
+        expect(created().extras, isEmpty);
+      });
+
+      test('a coding prompt asked for with it still is, the cover the words '
+          'asked for dropped', () async {
+        const draft = FrontTaskDraft(
+          title: 'Check the weather',
+          categoryId: 'cat-1',
+          coverArt: true,
+        );
+        seedInbox(draft: draft);
+        await service.makeTask(
+          doorId,
+          choices: FrontTaskChoices.of(draft),
+          codingPrompt: true,
+        );
+        expect(started, [(FrontTaskExtra.codingPrompt, 'task-new')]);
+        expect(created().extras, {FrontTaskExtra.codingPrompt});
+        // Asked for the category she read the task into.
+        expect(coverAsked, ['cat-1']);
+      });
+    });
+
+    test("whether a cover can be drawn is asked for the draft's category, "
+        'none for bare words, and only when one was chosen', () async {
+      seedInbox(
+        draft: const FrontTaskDraft(title: 'Check', categoryId: 'cat-9'),
+      );
+      await service.makeTask(doorId, choices: asSaid);
+      expect(coverAsked, isEmpty);
+
+      await service.makeTask(doorId, choices: withCover);
+      expect(coverAsked, ['cat-9']);
+
+      seedInbox();
+      await service.makeTask(doorId, choices: withCover);
+      expect(coverAsked, ['cat-9', null]);
+    });
+
+    test('a start that throws is logged and never fails the task made: the '
+        'record stands and the other extra still starts', () async {
+      seedInbox();
+      final failure = StateError('container gone');
+      onStart = (extra) {
+        if (extra == FrontTaskExtra.coverArt) throw failure;
+      };
+
+      await service.makeTask(doorId, choices: withCover, codingPrompt: true);
+
+      expect(created().extras, FrontTaskExtra.values.toSet());
+      expect(started.map((start) => start.$1), FrontTaskExtra.values);
+      verify(
+        () => logger.error(
+          LogDomain.agentWorkflow,
+          failure,
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'makeTask.startExtra',
+          message: any(named: 'message', that: contains('coverArt')),
+        ),
+      ).called(1);
+    });
 
     test('a task that was not created starts nothing', () async {
       seedInbox();

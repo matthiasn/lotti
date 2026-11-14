@@ -9,6 +9,7 @@ import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Writes the user's words as a text entry under [id]: linked under
@@ -38,6 +39,10 @@ typedef FrontTaskMaker =
 /// reports on the task itself.
 typedef FrontTaskExtraStarter =
     void Function(FrontTaskExtra extra, {required String taskId});
+
+/// Whether cover art can be drawn for a task made in the category
+/// [categoryId] (none for a task filed in no category).
+typedef FrontCoverArtCheck = Future<bool> Function(String? categoryId);
 
 /// Makes an event titled [title] under [id]. Returns it — the one created,
 /// or the one already there — or null when nothing is stored.
@@ -82,6 +87,8 @@ class FrontFilingService {
     required FrontEventMaker makeEvent,
     required FrontEntryDeleter deleteEntry,
     required FrontTaskExtraStarter startExtra,
+    required FrontCoverArtCheck canDrawCover,
+    required DomainLogger domainLogger,
   }) : this._(
          repository,
          syncService,
@@ -92,6 +99,8 @@ class FrontFilingService {
          makeEvent,
          deleteEntry,
          startExtra,
+         canDrawCover,
+         domainLogger,
        );
 
   const FrontFilingService._(
@@ -104,6 +113,8 @@ class FrontFilingService {
     this._makeEvent,
     this._deleteEntry,
     this._startExtra,
+    this._canDrawCover,
+    this._domainLogger,
   );
 
   final AgentRepository _repository;
@@ -115,6 +126,8 @@ class FrontFilingService {
   final FrontEventMaker _makeEvent;
   final FrontEntryDeleter _deleteEntry;
   final FrontTaskExtraStarter _startExtra;
+  final FrontCoverArtCheck _canDrawCover;
+  final DomainLogger _domainLogger;
 
   /// Files the proposed segment under its owner — a task or a project: a
   /// text entry with the user's words, linked under the owner and in its
@@ -284,6 +297,13 @@ class FrontFilingService {
   /// prompt with [codingPrompt] — is kept on the outcome and started only
   /// once the record says the task is made: a retry after a record that did
   /// not follow starts each once, never a second paid run.
+  ///
+  /// Cover art is asked for only where one can be drawn for the task's
+  /// category: this is the one place every way of making a task passes, so
+  /// a cover the words asked for is dropped here whichever control made the
+  /// task, and the outcome never says one was requested that could not
+  /// arrive. A start that fails is logged, never an error of the task made:
+  /// the record already says it is.
   Future<void> makeTask(
     String doorId, {
     required FrontTaskChoices choices,
@@ -292,14 +312,16 @@ class FrontFilingService {
     final (record, payload) = await _waiting<FrontDoorInbox>(doorId);
     final inbox = record.outcome! as FrontDoorInbox;
     final words = record.text.trim();
+    final draft = record.task ?? FrontTaskDraft(title: words);
+    final coverArt = choices.coverArt && await _canDrawCover(draft.categoryId);
     final task = await _makeTask(
-      (record.task ?? FrontTaskDraft(title: words)).withChoices(choices),
+      draft.withChoices(choices.copyWith(coverArt: coverArt)),
       id: frontDoorTaskId(doorId, generation: inbox.generation),
       words: words,
     );
     if (task == null) throw StateError('The task was not created.');
     final extras = {
-      if (choices.coverArt) FrontTaskExtra.coverArt,
+      if (coverArt) FrontTaskExtra.coverArt,
       if (codingPrompt) FrontTaskExtra.codingPrompt,
     };
     await _rewrite(
@@ -315,7 +337,19 @@ class FrontFilingService {
       ),
     );
     for (final extra in extras) {
-      _startExtra(extra, taskId: task.meta.id);
+      try {
+        _startExtra(extra, taskId: task.meta.id);
+      } catch (error, stackTrace) {
+        _domainLogger.error(
+          LogDomain.agentWorkflow,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'makeTask.startExtra',
+          message:
+              'Could not start ${extra.name} for '
+              '${DomainLogger.sanitizeId(task.meta.id)}',
+        );
+      }
     }
   }
 

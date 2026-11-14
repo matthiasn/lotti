@@ -198,7 +198,11 @@ sources:
     last_modified: 2026-11-14
   - id: entity-preview-card
     resource: ../../lib/features/front_agent/ui/front_entity_preview_card.dart
-    title: FrontEntityPreviewList and its cards — her lists of tasks and what her turn made, as preview cards, a task card's quick actions, what is generated for a made task, and the label over a due list
+    title: FrontEntityPreviewList and its cards — her lists of tasks and what her turn made, as preview cards, a task card's quick actions, and the label over a due list
+    last_modified: 2026-11-14
+  - id: entity-preview-generated
+    resource: ../../lib/features/front_agent/ui/front_entity_preview_generated_part.dart
+    title: What is generated for a task her chat made, on its preview card — the cover while it is drawn, the coding prompt's summary
     last_modified: 2026-11-14
   - id: due-section
     resource: ../../lib/features/front_agent/model/front_due_section.dart
@@ -1097,7 +1101,7 @@ flowchart LR
 | estimate | agent, only when said | minutes (≤ `frontTaskMaxEstimateMinutes`) |
 | status | agent, only when said; then the user, on the card | `inProgress`: *in progress*, and nothing more — "make it in progress" is a status, never a start. The setup offers open, groomed and in progress (`FrontTaskStart`); blocked and on hold ask a reason, so they stay on the task page |
 | timer | agent, only when a timer is asked for or a start is said | `startedMinutesAgo` (0–`frontTaskMaxStartedMinutesAgo`): *in progress*, and a timer entry linked under the task from that instant, running |
-| cover art | agent, only when asked for; then the user, on the card | `coverArt`: true only for "with cover art", "a cover", "a picture for it". The setup's fourth chip starts there and the user's choice wins. Generated after the task is made ([what is generated with a task](#what-is-generated-with-a-task)) |
+| cover art | agent, only when asked for; then the user, on the card | `coverArt`: true only for "with cover art", "a cover", "a picture for it" (live eval scenarios `cover_art_asked` / `cover_art_not_asked`). The setup's fourth chip starts there and the user's choice wins. Generated after the task is made ([what is generated with a task](#what-is-generated-with-a-task)) |
 | coding prompt | user, from the card's overflow | *Task with a coding prompt*: the task as she read it, no setup, and the prompt generated after it is made. The router reads no field for it |
 | follows up on | agent, only for a follow-up | `followsUpTaskId`: a task in the index, a lookup this turn or `<conversation_tasks>`; anything else is dropped. Linked `followsUp` from the new task to it, and filed under its project |
 | task agent | category default | the category's `defaultTemplateId`; none without one |
@@ -1217,9 +1221,12 @@ Three properties are contract:
   second image. Started after, a crash in between costs a generation the user
   can ask for from the task page, never a duplicate.
 - **Never awaited, never fatal.** The trigger keeps itself alive, catches its
-  own failures and reports them on the words entry, where the task page shows
-  them; the starter drops whatever still escapes. A task whose cover could
-  not be drawn is still made.
+  own failures and reports them under the words entry and the task — a run
+  declined before it started as much as one that failed — where the task
+  page and the chat's card show them; the starter drops whatever still
+  escapes, and a start that throws is logged by the filing service rather
+  than failing a task its record already says is made. A task whose cover
+  could not be drawn is still made.
 - **What arrives is seen in the chat before the task is opened.** The made
   task's preview card under her reply (`FrontEntityPreviewList(showsGenerated:
   true)`, only for what a turn made — a task she merely lists reads nothing
@@ -1245,10 +1252,16 @@ Three properties are contract:
 `frontCoverArtAvailableProvider(categoryId)` answers for the category she read
 the task into: its default profile names an image-generation model, or the
 Settings default does — the two the run resolves from, since the task's own
-profile is only known once the task exists. `FrontDoorCard` watches it around
-the setup and hands `FrontTaskSetup.coverArtAvailable`; until it is known, and
-where no profile draws, the chip is not there and a cover the words asked for
-is left out of the task made, so nothing is requested that could not arrive.
+profile is only known once the task exists. The pane watches it for the
+categories of the items a card shows and hands the card
+`coverArtCategories`, plain data, from which the setup gets
+`FrontTaskSetup.coverArtAvailable`; until it is known, and where no profile
+draws, the chip is not there. **The same rule is enforced where the task is
+made**: `FrontFilingService.makeTask` asks `frontCoverArtAvailable` for the
+draft's category before it keeps a cover in the choices, so a cover the words
+asked for is dropped whichever control made the task — the setup or *Task
+with a coding prompt* — and nothing is requested, or said to be, that could
+not arrive.
 The provider reads no models outside those two profiles: a cover is never
 drawn on a provider the user did not choose for the task or as their default.
 

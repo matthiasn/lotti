@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
@@ -13,7 +11,6 @@ import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
-import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_setup.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
@@ -91,7 +88,8 @@ void main() {
     Set<String> busy = const {},
     Set<String> failed = const {},
     QueryAccessSnapshot? journalAccess,
-    bool Function(String? categoryId)? canDrawCover,
+    // Where a cover can be drawn: by default, for a task in no category.
+    Set<String?> coverArtCategories = const {null},
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -100,14 +98,9 @@ void main() {
           actions: withActions ? actions() : null,
           busyDoorIds: busy,
           failedDoorIds: failed,
+          coverArtCategories: coverArtCategories,
           journalAccess: journalAccess,
         ),
-        overrides: [
-          // Whether a profile can draw a cover for a task in the category.
-          frontCoverArtAvailableProvider.overrideWith(
-            (ref, categoryId) async => canDrawCover?.call(categoryId) ?? true,
-          ),
-        ],
       ),
     );
     await tester.pump();
@@ -659,7 +652,8 @@ void main() {
         await tester.pump();
       }
 
-      testWidgets('is offered where a profile can draw one', (tester) async {
+      testWidgets('is offered where a cover can be drawn for a task in no '
+          'category', (tester) async {
         await pump(tester, [inbox()]);
         await openSetup(tester);
 
@@ -668,7 +662,7 @@ void main() {
 
       testWidgets('is not offered where none can, and the task is made '
           'without one', (tester) async {
-        await pump(tester, [inbox()], canDrawCover: (_) => false);
+        await pump(tester, [inbox()], coverArtCategories: const {});
         await openSetup(tester);
 
         expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsNothing);
@@ -677,49 +671,39 @@ void main() {
         expect(madeWith.single.coverArt, isFalse);
       });
 
-      testWidgets('is asked for the category she read the task into', (
-        tester,
-      ) async {
-        final asked = <String?>[];
+      testWidgets('follows the category she read the task into, not '
+          'another one a cover can be drawn in', (tester) async {
         await pump(
           tester,
           [inbox(categoryId: 'cat-work')],
-          canDrawCover: (categoryId) {
-            asked.add(categoryId);
-            return categoryId == 'cat-work';
-          },
+          coverArtCategories: const {'cat-work'},
         );
         await openSetup(tester);
-
-        expect(asked, ['cat-work']);
         expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsOne);
+
+        await tester.pumpWidget(const SizedBox());
+        await pump(
+          tester,
+          [inbox(categoryId: 'cat-home')],
+          coverArtCategories: const {'cat-work', null},
+        );
+        await openSetup(tester);
+        expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsNothing);
       });
 
-      testWidgets('is not there until it is known one can be drawn', (
-        tester,
-      ) async {
-        final known = Completer<bool>();
-        await tester.pumpWidget(
-          makeTestableWidget(
-            FrontDoorCard(doors: [inbox()], actions: actions()),
-            overrides: [
-              frontCoverArtAvailableProvider.overrideWith(
-                (ref, categoryId) => known.future,
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
+      testWidgets('appears in a setup already open once it is known one can '
+          'be drawn', (tester) async {
+        await pump(tester, [inbox()], coverArtCategories: const {});
         await openSetup(tester);
         expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsNothing);
         // The setup is there and usable meanwhile.
         expect(find.byKey(FrontTaskSetupKeys.create(0)), findsOne);
 
-        known.complete(true);
-        await tester.pump();
-        await tester.pump();
+        await pump(tester, [inbox()]);
 
         expect(find.byKey(FrontTaskSetupKeys.cover(0)), findsOne);
+        // Still the setup that was open, not a card pumped afresh.
+        expect(find.byKey(FrontTaskSetupKeys.ask(0)), findsOne);
       });
     });
 

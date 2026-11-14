@@ -514,22 +514,27 @@ Future<void> _declineSkill(
   );
 
   final responseType = skill.skillType.toResponseType;
-  ref
-      .read(
-        inferenceErrorControllerProvider((
-          id: entityId,
-          aiResponseType: responseType,
-        )).notifier,
-      )
-      .setError(message);
-  ref
-      .read(
-        inferenceStatusControllerProvider((
-          id: entityId,
-          aiResponseType: responseType,
-        )).notifier,
-      )
-      .setStatus(InferenceStatus.error);
+  // Under the entry, and under its task as a failed run reports: a surface
+  // that follows the task — its page, its card in the companion's chat —
+  // sees a run that never started as it sees one that failed.
+  for (final id in {entityId, ?linkedTaskId}) {
+    ref
+        .read(
+          inferenceErrorControllerProvider((
+            id: id,
+            aiResponseType: responseType,
+          )).notifier,
+        )
+        .setError(message);
+    ref
+        .read(
+          inferenceStatusControllerProvider((
+            id: id,
+            aiResponseType: responseType,
+          )).notifier,
+        )
+        .setStatus(InferenceStatus.error);
+  }
 
   // Only transcription has a durable failed state to restore: it is the one
   // whose output carrier is the source entry itself, which is what

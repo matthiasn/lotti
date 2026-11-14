@@ -3202,7 +3202,7 @@
   "frontTaskSetupAsk": "Iată ce am înțeles. Doriți să schimbați ceva?",
   "frontTaskSetupAskPlain": "Doriți să setați ceva înainte să o creez?",
   "frontTaskSetupCover": "Copertă",
-  "frontTaskSetupCoverGenerate": "Generează copertă",
+  "frontTaskSetupCoverGenerate": "Generați coperta",
   "frontTaskSetupCreate": "Creați sarcina",
   "frontTaskSetupNoCover": "Fără copertă",
   "frontTaskSetupPickDate": "Alegeți o dată…",

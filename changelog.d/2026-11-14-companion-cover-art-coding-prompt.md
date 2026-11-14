@@ -26,7 +26,8 @@
   are easier to hit and further apart.
 
 ### Fixed
-- **Cover art and prompts could not be generated for a task in no
-  category.** Such a task has no AI profile of its own, and *Generate Cover
-  Art* and the prompt generators quietly did nothing for it. They now run on
-  your default AI profile, as the companion does.
+- **Cover art and prompts were not generated for a task in no category.**
+  Such a task has no AI profile of its own, and a cover or coding prompt
+  asked for it was declined without a word. They now run on your default AI
+  profile, as the companion does, and a run that cannot start says so where
+  the task is shown.

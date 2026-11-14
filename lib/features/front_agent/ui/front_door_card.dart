@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -10,7 +9,6 @@ import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
-import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/ui/front_task_setup.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -112,11 +110,17 @@ class FrontDoorCard extends StatefulWidget {
     this.actions,
     this.busyDoorIds = const {},
     this.failedDoorIds = const {},
+    this.coverArtCategories = const {},
     this.journalAccess,
     super.key,
   });
 
   final List<FrontDoorEntry> doors;
+
+  /// The categories a cover can be drawn in for a task made there — null
+  /// among them for a task filed in no category. An item's setup offers its
+  /// cover chip only when its task's category is one of them.
+  final Set<String?> coverArtCategories;
 
   /// The live visibility of the sources journal answers cite; null until it
   /// is known, and a journal answer stays hidden until then.
@@ -175,6 +179,7 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
       :journalAccess,
       :busyDoorIds,
       :failedDoorIds,
+      :coverArtCategories,
     ) = widget;
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -204,6 +209,7 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
                 journalAccess: journalAccess,
                 busy: busyDoorIds.contains(door.doorId),
                 failed: failedDoorIds.contains(door.doorId),
+                coverArtCategories: coverArtCategories,
                 settingUp: _settingUp == door.doorId,
                 quiet: _settingUp != null && _settingUp != door.doorId,
                 onSetUp: ({required on}) => _setUp(door.doorId, on: on),
@@ -228,11 +234,15 @@ class _DoorRow extends StatelessWidget {
     required this.settingUp,
     required this.quiet,
     required this.onSetUp,
+    required this.coverArtCategories,
     this.journalAccess,
     super.key,
   });
 
   final FrontDoorEntry door;
+
+  /// See [FrontDoorCard.coverArtCategories].
+  final Set<String?> coverArtCategories;
   final FrontDoorActions? actions;
   final QueryAccessSnapshot? journalAccess;
   final bool busy;
@@ -424,31 +434,23 @@ class _DoorRow extends StatelessWidget {
             : messages.frontDoorInboxInstead;
         glyph = _guessGlyph(newKind);
         if (acting != null && settingUp) {
-          setup = Consumer(
-            builder: (context, ref, _) => FrontTaskSetup(
-              index: index,
-              initial: FrontTaskChoices.of(record.task),
-              heard: record.task?.namesChoices ?? false,
-              // Offered once it is known a profile can draw one: until
-              // then, and where none can, the chip is not there to ask.
-              coverArtAvailable:
-                  ref
-                      .watch(
-                        frontCoverArtAvailableProvider(
-                          record.task?.categoryId,
-                        ),
-                      )
-                      .value ??
-                  false,
-              // The overflow's slot, which the setup takes over.
-              endInset:
-                  tokens.spacing.step1 +
-                  DesignSystemContextMenuButton.extent(tokens),
-              busy: busy,
-              failed: failed,
-              onCreate: (choices) => acting.onMakeTask(id, choices),
-              onBack: () => onSetUp(on: false),
+          setup = FrontTaskSetup(
+            index: index,
+            initial: FrontTaskChoices.of(record.task),
+            heard: record.task?.namesChoices ?? false,
+            // Offered where a profile can draw one for the task's category:
+            // elsewhere the chip is not there to ask.
+            coverArtAvailable: coverArtCategories.contains(
+              record.task?.categoryId,
             ),
+            // The overflow's slot, which the setup takes over.
+            endInset:
+                tokens.spacing.step1 +
+                DesignSystemContextMenuButton.extent(tokens),
+            busy: busy,
+            failed: failed,
+            onCreate: (choices) => acting.onMakeTask(id, choices),
+            onBack: () => onSetUp(on: false),
           );
         } else if (acting != null) {
           action = DesignSystemButton(

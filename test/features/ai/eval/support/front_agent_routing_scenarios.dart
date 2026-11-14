@@ -233,6 +233,28 @@ final List<FrontEvalScenario> frontEvalScenarios = [
         'no category guessed.',
   ),
   const FrontEvalScenario(
+    id: 'cover_art_asked',
+    input: 'Make a task to design the launch-day poster, with cover art.',
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [(kind: FrontDestinationKind.newThing, id: null)],
+    maxLookups: 1,
+    checkTask: _coverArtAskedTask,
+    note:
+        'The user asks for cover art with the task: its one segment says '
+        'so, and the request does not become a segment or a task of its own.',
+  ),
+  const FrontEvalScenario(
+    id: 'cover_art_not_asked',
+    input: 'Make a task to repaint the mural in the mess hall.',
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [(kind: FrontDestinationKind.newThing, id: null)],
+    maxLookups: 1,
+    checkTask: _coverArtNotAskedTask,
+    note:
+        'The work is about a picture, but no cover was asked for: none is '
+        'read, so no paid image is pre-selected.',
+  ),
+  const FrontEvalScenario(
     id: 'asked_task_duplicate',
     input: "Create a task to order next month's fish for the colony.",
     outcome: FrontEvalOutcome.ask,
@@ -390,6 +412,22 @@ List<String> _uncategorizedTask(FrontDispatchSegment? segment) {
   if (shape.isNotEmpty) return shape;
   return [
     if (segment!.task!.categoryId case final id?) 'guessed category $id',
+  ];
+}
+
+List<String> _coverArtAskedTask(FrontDispatchSegment? segment) {
+  final shape = _taskShape(segment);
+  if (shape.isNotEmpty) return shape;
+  return [
+    if (!segment!.task!.coverArt) 'the cover art asked for was not read',
+  ];
+}
+
+List<String> _coverArtNotAskedTask(FrontDispatchSegment? segment) {
+  final shape = _taskShape(segment);
+  if (shape.isNotEmpty) return shape;
+  return [
+    if (segment!.task!.coverArt) 'cover art nobody asked for',
   ];
 }
 

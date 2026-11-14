@@ -7800,7 +7800,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontTaskSetupCover => 'Copertă';
 
   @override
-  String get frontTaskSetupCoverGenerate => 'Generează copertă';
+  String get frontTaskSetupCoverGenerate => 'Generați coperta';
 
   @override
   String get frontTaskSetupCreate => 'Creați sarcina';
