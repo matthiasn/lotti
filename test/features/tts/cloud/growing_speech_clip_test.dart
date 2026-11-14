@@ -58,6 +58,7 @@ void main() {
     final clip = await GrowingSpeechClip.start(file, audio.stream);
     const half = (GrowingSpeechClip.playableBytes ~/ 2) + 1;
 
+    expect(clip.audioLength, Duration.zero);
     audio.add(Uint8List.fromList([..._header(), ..._samples(half - 44)]));
     expect(await settled(clip.playable), isFalse);
 
@@ -88,6 +89,8 @@ void main() {
     expect(bytes, hasLength(1044));
     expect(view.getUint32(4, Endian.little), 1044 - 8);
     expect(view.getUint32(40, Endian.little), 1000);
+    // 1000 bytes of 24 kHz 16-bit mono play for 1000 / 48000 s.
+    expect(clip.audioLength, const Duration(microseconds: 20833));
     // Only the two lengths were touched.
     expect(String.fromCharCodes(bytes.sublist(0, 4)), 'RIFF');
     expect(String.fromCharCodes(bytes.sublist(36, 40)), 'data');

@@ -448,7 +448,7 @@ stateDiagram-v2
   Synthesizing --> Error: the stream failed before there was anything to play
   Synthesizing --> Synthesizing: unreachable before there was anything to play — the installed on-device voice makes it
   Playing --> Playing: the file is whole — the state names it
-  Playing --> Playing: the player ran out before the voice finished — reopened where it stopped
+  Playing --> Playing: the player stopped short of the clip's end — reopened, once whole, where it got to
   Playing --> Stopped: the player reaches the end of a whole clip
   Playing --> Stopped: stop — a part of a clip is deleted, a whole one kept
   Playing --> Error: the stream failed, once the player has played what there was
@@ -463,13 +463,22 @@ stateDiagram-v2
   speaker falls back to the words alone, as for any clip it cannot read —
   and once it is whole the state names the file, and the mouth is shaped by
   its sound from there on.
-- **A stall is survived, not hidden.** What is written stays ahead of what
-  is played unless the network stalls for longer than the lead. A player
-  that reaches the end of what is written before the voice has finished has
-  not ended the utterance: when the rest is there the clip is opened again
-  at the position it reached (`TtsAudioPlayer.play(from:)`), and the stall
-  is logged. If the stream failed instead, the utterance ends as a failure
-  — after what was written was spoken.
+- **A player that stops short has not ended the utterance.** What is
+  written stays ahead of what is played unless the network stalls for
+  longer than the lead. And mpv follows a file that grows only when it sees
+  it grow: with media_kit's cache its reader runs to the end of the file at
+  once, and when that happens in a pause between two bursts of audio it
+  ends at what was there when it opened — about five seconds into a clip
+  ElevenLabs had long finished sending (reproduced against mpv 0.37 with
+  media_kit's options, 2026-11-15). So an end the player reports while the
+  clip is not whole, or before `GrowingSpeechClip.audioLength` was heard,
+  is not the utterance's: once the stream has ended the clip is opened
+  again (`TtsAudioPlayer.play(from:)`) where the player got to — the later
+  of its duration, which is where the audio it read ended, and its
+  position, which lags what it played by its output buffer — and that is
+  logged. Reopened whole, its next end is the utterance's. If the stream
+  failed instead, the utterance ends as a failure — after what was written
+  was spoken.
 - **Nothing partial is kept.** A stop while it is being written lets the
   stream go and deletes the part of a clip; only a whole clip is kept for a
   replay — and stays kept when a question about playing it, still pending
@@ -494,8 +503,7 @@ stateDiagram-v2
   `text-to-speech/…/stream-input` refuses them); measured, but not built —
   see the [evaluation](../../docs/evaluations/2026-11-14_elevenlabs_v4_turbo_tts.md#4-streaming-text-in).
 
-Not verified by ear on a device: how the player behaves at the very start
-of a file that is still growing.
+Not verified by ear on a device: the seam where a clip is reopened.
 
 Speech settings also expose **Prepare chat audio automatically**, off by default.
 `TtsSettingsController` persists this device-local opt-in under

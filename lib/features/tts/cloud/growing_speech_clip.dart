@@ -10,9 +10,13 @@ import 'dart:typed_data';
 /// Voxtral (2026-11-12), the first audio 0.3 s after the request and 12.8 s
 /// of it within 2 s. The player reads the file like any other. It starts
 /// once [playable], with [playableBytes] written, and from then on what is
-/// written stays ahead of what is played unless the network stalls; a
-/// player that reaches the end of what is written before [done] is opened
-/// again where it stopped (see `TtsPlaybackController`).
+/// written stays ahead of what is played unless the network stalls. A
+/// player can also stop short of the end once the clip is whole: mpv
+/// follows a file that grows only if it sees it grow, and one that reads
+/// all there is between two bursts of audio ends at what was there when it
+/// opened (checked against mpv 0.37 with media_kit's options, 2026-11-15).
+/// Either way it is opened again where it stopped, after [done] (see
+/// `TtsPlaybackController`), and [audioLength] tells how much it missed.
 ///
 /// Neither future throws: a stream that fails ends both, and says why in
 /// [failure].
@@ -34,9 +38,12 @@ class GrowingSpeechClip {
   /// A WAV header, as the voices write it.
   static const int headerBytes = 44;
 
+  /// One second of the audio both voices stream: 24 kHz 16-bit mono.
+  static const int bytesPerSecond = 24000 * 2;
+
   /// What has to be written before the file is played: the header and two
-  /// seconds of 24 kHz 16-bit mono, a lead a brief stall does not use up.
-  static const int playableBytes = headerBytes + 2 * 24000 * 2;
+  /// seconds of audio, a lead a brief stall does not use up.
+  static const int playableBytes = headerBytes + 2 * bytesPerSecond;
 
   final File file;
   final StreamIterator<Uint8List> _audio;
@@ -65,6 +72,15 @@ class GrowingSpeechClip {
 
   /// Whether the file holds all of the clip, its header saying how much.
   bool get isComplete => _complete;
+
+  /// How long the audio written so far plays — all of the clip once
+  /// [isComplete].
+  Duration get audioLength => Duration(
+    microseconds:
+        (_written - headerBytes).clamp(0, _written) *
+        Duration.microsecondsPerSecond ~/
+        bytesPerSecond,
+  );
 
   /// Stops writing. The file is left as it is, for the caller to delete.
   Future<void> cancel() async {
