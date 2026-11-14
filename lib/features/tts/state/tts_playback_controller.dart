@@ -424,6 +424,8 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         // Nothing waits for it, and it handles its own outcome.
         _followGrowing(growing, generation, text).ignore();
       }
+      // Opened while it is still being written, the player waits at the
+      // end of what is there for more rather than ending.
       await _playAtLatestSpeed(
         player,
         file,
@@ -501,27 +503,14 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
     state = state.copyWith(clip: (path: growing.file.path, text: text));
   }
 
-  /// How far short of a whole clip's end a player may stop and still have
-  /// played all of it: mpv's length of a streamed WAV is its estimate from
-  /// the file's size, a few milliseconds off.
-  static const _endSlack = Duration(milliseconds: 250);
-
-  /// Where a player that reached its end got to. Its position lags what it
-  /// played by its output buffer — 0.4 s on mpv — while its duration is
-  /// where the audio it read ended; the later of the two is where to go on.
-  Duration get _heardTo =>
-      state.duration > state.position ? state.duration : state.position;
-
-  /// The player reached the end of what it read of [growing] before all of
-  /// it was played — the network stalled for longer than the lead it
-  /// started with, or the player went by what was there when it opened.
-  /// Once the rest is there, the clip is opened again where the player got
-  /// to, whole, so its next end is the utterance's; if the stream failed
-  /// instead, so does the utterance.
+  /// The player reached the end of what was written of [growing] before
+  /// the voice had finished — the network stalled for longer than the lead
+  /// it started with. Once the rest is there, the clip is opened again
+  /// where it stopped; if the stream failed instead, so does the utterance.
   Future<void> _resumeGrowing(GrowingSpeechClip growing) async {
     final generation = _generation;
     final sourceId = state.sourceId;
-    final at = _heardTo;
+    final at = state.position;
     bool sameUtterance() => ref.mounted && generation == _generation;
     bool current() => sameUtterance() && identical(_growing, growing);
     try {
@@ -532,19 +521,16 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       }
       _logger.log(
         LogDomain.speech,
-        'The player stopped at ${at.inMilliseconds} ms of '
-        '${growing.audioLength.inMilliseconds} ms of speech; resumed there',
+        'Speech played faster than it arrived; resumed at '
+        '${at.inMilliseconds} ms',
         subDomain: 'ttsPlayback.speak',
       );
-      // Whole, and opened whole: from here on it is a clip like any other.
-      _growing = null;
       final player = _player;
       if (player != null) {
-        await _playAtLatestSpeed(player, growing.file, sameUtterance, from: at);
+        await _playAtLatestSpeed(player, growing.file, current, from: at);
       }
     } catch (error, stackTrace) {
-      // Asked of the utterance: a reopen that fails has let go of the clip.
-      if (!sameUtterance() || sourceId == null) return;
+      if (!current() || sourceId == null) return;
       if (error is! CloudTtsException) {
         _logger.error(
           LogDomain.speech,
@@ -727,16 +713,10 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   }
 
   /// The utterance played to its end: its clip is kept for a replay. A
-  /// clip still being written has not ended, only run out, and neither has
-  /// a whole one the player stopped short of — mpv ends a growing file at
-  /// what it saw of it unless it saw it grow — so both are opened again
-  /// where the player got to ([_resumeGrowing]).
+  /// clip still being written has not ended, only run out ([_resumeGrowing]).
   Future<void> _onPlaybackFinished() async {
     final growing = _growing;
-    if (growing != null &&
-        (!growing.isComplete || _heardTo < growing.audioLength - _endSlack)) {
-      return _resumeGrowing(growing);
-    }
+    if (growing != null && !growing.isComplete) return _resumeGrowing(growing);
     _growing = null;
     final played = _playing;
     _playing = null;

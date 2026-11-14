@@ -32,11 +32,6 @@ final AiConfigInferenceProvider _mistral = testInferenceProvider(
   id: 'mistral',
   inferenceProviderType: InferenceProviderType.mistral,
 );
-
-/// How far mpv's position lags what it played at the end of a file: its
-/// output buffer (measured on mpv 0.37 with media_kit's options).
-const Duration _outputBuffer = Duration(milliseconds: 400);
-
 void main() {
   setUp(() async {
     await setUpTestGetIt();
@@ -95,13 +90,6 @@ void main() {
     model: testAiModel(id: 'voice', providerModelId: 'voxtral-mini-tts-3-0'),
     languageCode: 'de',
   );
-
-  Future<MockDomainLogger> mockLogger() async {
-    final logger = MockDomainLogger();
-    await getIt.unregister<DomainLogger>();
-    getIt.registerSingleton<DomainLogger>(logger);
-    return logger;
-  }
 
   group('a cloud voice that sends its speech while it makes it', () {
     const text = 'Two are overdue. The seam has waited longest.';
@@ -185,12 +173,8 @@ void main() {
         expect(state().status, TtsPlaybackStatus.playing);
 
         // Played to its end, it is all of the utterance: said again, it is
-        // replayed, not made again. mpv's position lags its end by its
-        // output buffer; its duration is the whole clip.
-        player
-          ..emitDuration(growing.audioLength)
-          ..emitPosition(growing.audioLength - _outputBuffer)
-          ..complete();
+        // replayed, not made again.
+        player.complete();
         await pumpEventQueue();
         expect(state().status, TtsPlaybackStatus.stopped);
         expect(growing.file.existsSync(), isTrue);
@@ -292,56 +276,6 @@ void main() {
       player.complete();
       await pumpEventQueue();
       expect(state().status, TtsPlaybackStatus.stopped);
-    });
-
-    test('a whole clip the player stops short of — mpv ends a growing file '
-        'at what it saw when it opened — is opened again where the player '
-        'got to, and played to its end', () async {
-      final logger = await mockLogger();
-      build();
-      final speaking = speak();
-      final growing = await clip();
-      audio.add(Uint8List.fromList([...header, ...samples(lead)]));
-      await speaking;
-      final seen = growing.audioLength;
-      // The rest arrives long before the player is through the lead.
-      audio.add(samples(10 * GrowingSpeechClip.bytesPerSecond));
-      await audio.close();
-      await growing.done;
-      expect(growing.isComplete, isTrue);
-
-      // mpv read the lead only: its duration is where that ended, its
-      // position a buffer short of it.
-      player
-        ..emitDuration(seen)
-        ..emitPosition(seen - _outputBuffer)
-        ..complete();
-      await pumpEventQueue();
-
-      expect(state().status, TtsPlaybackStatus.playing);
-      expect(player.playCount, 2);
-      // Where the audio it read ended — nothing heard twice.
-      expect(player.startedFrom, [Duration.zero, seen]);
-      expect(player.openedGrowing, [true, false]);
-      verify(
-        () => logger.log(
-          LogDomain.speech,
-          any(that: contains('resumed there')),
-          subDomain: 'ttsPlayback.speak',
-        ),
-      ).called(1);
-
-      // Opened whole, its next end is the utterance's.
-      player
-        ..emitDuration(growing.audioLength)
-        ..emitPosition(growing.audioLength - _outputBuffer)
-        ..complete();
-      await pumpEventQueue();
-      expect(state().status, TtsPlaybackStatus.stopped);
-      expect(player.playCount, 2);
-      await speak();
-      expect(cloud.calls, hasLength(1));
-      expect(player.playCount, 3);
     });
 
     test('a speed changed while the player is opened again after a stall is '
@@ -643,6 +577,13 @@ void main() {
     expect(player.lastSpeed, 1);
     expect(player.rate, 1.75);
   });
+
+  Future<MockDomainLogger> mockLogger() async {
+    final logger = MockDomainLogger();
+    await getIt.unregister<DomainLogger>();
+    getIt.registerSingleton<DomainLogger>(logger);
+    return logger;
+  }
 
   List<String?> speakErrorMessages(MockDomainLogger logger) => verify(
     () => logger.error(
