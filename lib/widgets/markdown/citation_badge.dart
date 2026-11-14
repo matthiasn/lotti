@@ -40,6 +40,9 @@ class CitationBadge extends StatelessWidget {
     );
     return Semantics(
       link: onTap != null,
+      // The child's own tap action is excluded below; screen readers activate
+      // the link through this one.
+      onTap: onTap,
       label: context.messages.citationSource(number),
       excludeSemantics: true,
       child: onTap == null

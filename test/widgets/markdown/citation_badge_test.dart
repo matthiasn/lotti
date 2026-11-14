@@ -34,6 +34,10 @@ void main() {
     final node = tester.getSemantics(find.byType(CitationBadge));
     expect(node.label, 'Source 3');
     expect(node.flagsCollection.isLink, isTrue);
+
+    // A screen reader activates it, not only a pointer.
+    tester.semantics.tap(find.semantics.byLabel('Source 3'));
+    expect(taps, 2);
   });
 
   testWidgets('without one it only names its source', (tester) async {

@@ -717,7 +717,7 @@ class _SourceRow extends StatelessWidget {
         : evidence.label;
     final date = DateFormat.yMMMd(
       Localizations.localeOf(context).toString(),
-    ).add_Hm().format(evidence.sourceDate);
+    ).add_Hm().format(evidence.sourceDate.toLocal());
     // The card is drawn on a plain box; the ink needs a surface of its own.
     return Material(
       type: MaterialType.transparency,

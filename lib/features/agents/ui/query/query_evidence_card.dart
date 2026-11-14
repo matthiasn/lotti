@@ -192,7 +192,7 @@ class QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
                             children: [
                               TextSpan(
                                 text:
-                                    ' · ${DateFormat.yMMMd(Localizations.localeOf(context).toString()).add_Hm().format(evidence.sourceDate)}',
+                                    ' · ${DateFormat.yMMMd(Localizations.localeOf(context).toString()).add_Hm().format(evidence.sourceDate.toLocal())}',
                                 style: caption,
                               ),
                             ],
