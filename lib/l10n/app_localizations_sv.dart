@@ -1712,13 +1712,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Status';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Bekräfta var och en för sig. En klar uppgift försvinner från dina listor med öppna uppgifter.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Statusändringar';
-
-  @override
   String get aiCardProposalKindUpdate => 'Uppdatering';
 
   @override
@@ -1726,6 +1719,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Visa mindre';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Bekräfta var och en för sig. En klar uppgift försvinner från dina listor med öppna uppgifter.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Statusändringar';
 
   @override
   String get aiCardTitle => 'AI-sammanfattning';
@@ -3838,6 +3838,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get checklistsReorder => 'Omordning';
+
+  @override
+  String citationSource(String number) {
+    return 'Källa $number';
+  }
 
   @override
   String get clearButton => 'Klart';
@@ -7589,6 +7594,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontDoorSearchingJournal => 'Söker i din journal…';
+
+  @override
+  String get frontDoorSources => 'Källor';
 
   @override
   String get frontDoorStartGoal => 'Starta ett mål…';

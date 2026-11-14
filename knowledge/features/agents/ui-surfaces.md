@@ -61,7 +61,13 @@ Agent markdown renders through `AgentMarkdownView`, which wires
 `handleMarkdownLinkTap`, `markdownLinkStyleSheet` and
 `buildFocusableMarkdownLink` from `widgets/markdown_link_utils`. Links render as
 focusable widgets rather than text spans, so a citation can be reached with Tab
-and activated with Enter. The shared tap handler beams app-local routes such as `/tasks/<id>` or
+and activated with Enter. A bare `[n]` — the citation a journal answer writes —
+is drawn as a `CitationBadge` (`widgets/markdown/citation_badge.dart`): the
+number in the `aiCard` accent on its soft fill, read by a screen reader as
+"Source n". gpt_markdown's own chip for it, an unthemed circle whose digit
+could not be read, showed as a blank white or black dot. With
+`onCitationTap` the badge is a focusable link that hands its number to the
+surface; without, it only names the source. The shared tap handler beams app-local routes such as `/tasks/<id>` or
 `lotti://tasks/<id>` through `NavService`; only `https`, `http` and
 `mailto` links reach the platform launcher, and any other scheme is ignored.
 

@@ -4,7 +4,21 @@ part of 'query_answer_builder.dart';
 /// and each is found best by a search of its own.
 const _searchesField =
     '"searches":["1 to 3 short searches in natural language, one for each '
-    'separate thing the answer needs, in the language of the question"]';
+    'separate thing the answer needs, in the language of the question; for a '
+    'request about the user that names no topic (roast me, how am I doing), '
+    'search their recent habits, struggles, slipped plans and complaints"]';
+
+/// How the answer is written: in the register the user asked for, a roast
+/// included, in short paragraphs with each citation beside its claim. Without
+/// it a request to be roasted came back as one dense, report-like block.
+const _registerRule =
+    'Write in the register the question asks for. A request to be roasted, '
+    'teased or judged gets a playful roast, not a report: affectionate and '
+    'witty, aimed at habits and patterns the evidence shows, never at body, '
+    'health, grief, money worries or another person, and every jab rests on '
+    'a cited entry; it still says nothing the evidence does not show. Write '
+    'short paragraphs, one point each, separated by a blank line; put each '
+    'citation right after the claim it supports; quote at most a few words.';
 
 /// The categories a journal question names, which narrow its search.
 const _categoriesField =

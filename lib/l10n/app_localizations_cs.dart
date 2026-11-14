@@ -1714,13 +1714,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Stav';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Potvrď každou zvlášť. Hotový úkol zmizí z tvých seznamů otevřených úkolů.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Změny stavu';
-
-  @override
   String get aiCardProposalKindUpdate => 'Aktualizovat';
 
   @override
@@ -1728,6 +1721,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Skrýt podrobnosti';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Potvrď každou zvlášť. Hotový úkol zmizí z tvých seznamů otevřených úkolů.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Změny stavu';
 
   @override
   String get aiCardTitle => 'Souhrn AI';
@@ -3879,6 +3879,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checklistsReorder => 'Přeuspořádat';
+
+  @override
+  String citationSource(String number) {
+    return 'Zdroj $number';
+  }
 
   @override
   String get clearButton => 'Vymazat';
@@ -7680,6 +7685,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontDoorSearchingJournal => 'Prohledávám tvůj deník…';
+
+  @override
+  String get frontDoorSources => 'Zdroje';
 
   @override
   String get frontDoorStartGoal => 'Založit cíl…';

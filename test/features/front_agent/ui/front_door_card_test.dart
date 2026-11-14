@@ -14,6 +14,7 @@ import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_setup.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
+import 'package:lotti/widgets/markdown/citation_badge.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../test_data/test_data.dart';
@@ -294,11 +295,121 @@ void main() {
         contains(const FontFeature.tabularFigures()),
         reason: 'numbers of different widths would stagger the passages',
       );
-      expect(find.text('Feeder note'), findsOneWidget);
+      expect(
+        find.text('Feeder note · Oct 20, 2026 00:00', findRichText: true),
+        findsOneWidget,
+      );
       expect(find.text('The seam walk'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('front-door-source-0-0')));
       expect(acted, [('source', 'feeder-note')]);
+    });
+
+    testWidgets('sets its sources apart under a heading, and a citation in '
+        'the words opens the source it names', (tester) async {
+      await pump(tester, [answered()], journalAccess: access());
+
+      final heading = find.byKey(const ValueKey('front-door-sources-0'));
+      expect(tester.widget<Text>(heading).data, 'Sources');
+      expect(
+        tester.getTopLeft(heading).dy,
+        greaterThan(
+          tester
+              .getBottomLeft(find.byKey(const ValueKey('front-door-text-0')))
+              .dy,
+        ),
+      );
+      expect(
+        tester.getTopLeft(heading).dy,
+        lessThan(
+          tester
+              .getTopLeft(find.byKey(const ValueKey('front-door-source-0-0')))
+              .dy,
+        ),
+      );
+
+      // The badge in the words, not the one before the listed source.
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('front-door-text-0')),
+          matching: find.byType(CitationBadge),
+        ),
+      );
+      expect(acted, [('source', 'feeder-note')]);
+    });
+
+    testWidgets('a citation naming no listed source opens nothing', (
+      tester,
+    ) async {
+      await pump(tester, [
+        entry(
+          record(
+            index: 0,
+            text: 'How is the garden?',
+            kind: FrontDestinationKind.journal,
+            ownerTitle: null,
+            outcome: FrontDoorAnswer(
+              text: 'After the feeder repair [2].',
+              summaryBased: false,
+              incomplete: false,
+              fromJournal: true,
+              evidence: [evidence],
+              dependencies: [source],
+            ),
+          ),
+        ),
+      ], journalAccess: access());
+
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('front-door-text-0')),
+          matching: find.byType(CitationBadge),
+        ),
+      );
+      expect(acted, isEmpty);
+    });
+
+    testWidgets('names a recording by what it is and when, never by its file '
+        'name', (tester) async {
+      await pump(tester, [
+        entry(
+          record(
+            index: 0,
+            text: 'How is the garden?',
+            kind: FrontDestinationKind.journal,
+            ownerTitle: null,
+            outcome: FrontDoorAnswer(
+              text: 'After the feeder repair [1].',
+              summaryBased: false,
+              incomplete: false,
+              fromJournal: true,
+              evidence: [
+                evidence.copyWith(
+                  kind: QuerySourceKind.recording,
+                  label: '2026-10-20_07-15-02-311.m4a',
+                  textVersion: 'transcript:t1',
+                ),
+              ],
+              dependencies: [source],
+            ),
+          ),
+        ),
+      ], journalAccess: access());
+
+      final title = tester.widget<Text>(
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('front-door-source-0-0')),
+              matching: find.byType(Text),
+            )
+            .at(1),
+      );
+      expect(
+        title.textSpan!.toPlainText(),
+        'Recording transcript · '
+        'Oct 20, 2026 00:00',
+      );
+      expect(find.textContaining('.m4a'), findsNothing);
     });
 
     testWidgets('is hidden once a source it rests on is no longer visible, '

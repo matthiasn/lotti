@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/front_agent/ui/front_task_setup.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
+import 'package:lotti/widgets/markdown/citation_badge.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// What the user can do under a door. Every callback takes the door's id,
@@ -563,6 +565,15 @@ class _DoorRow extends StatelessWidget {
                       final open? => (url, _) => open(url),
                       null => null,
                     },
+                    // `[n]` opens the n-th source, as its row below does.
+                    onCitationTap: switch (acting?.onOpenEvidence) {
+                      final open? => (number) {
+                        if (number >= 1 && number <= sources.length) {
+                          open(sources[number - 1]);
+                        }
+                      },
+                      null => null,
+                    },
                   ),
                 )
               else
@@ -570,6 +581,22 @@ class _DoorRow extends StatelessWidget {
                   title,
                   key: ValueKey('front-door-text-$index'),
                   style: titleStyle,
+                ),
+              // The evidence is set apart from the answer under a heading
+              // of its own, so the words read first and the sources after.
+              if (sources.isNotEmpty)
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: tokens.spacing.step4,
+                    bottom: tokens.spacing.step1,
+                  ),
+                  child: Text(
+                    messages.frontDoorSources,
+                    key: ValueKey('front-door-sources-$index'),
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
                 ),
               for (final (number, source) in sources.indexed)
                 _SourceRow(
@@ -660,8 +687,9 @@ class _DoorRow extends StatelessWidget {
   }
 }
 
-/// One source a journal answer cites, numbered as the answer cites it:
-/// its label, and the passage it gave, opening the source on a tap.
+/// One source a journal answer cites, numbered as the answer cites it: the
+/// badge its citations wear, what it is and when, and the passage it gave,
+/// opening the source on a tap.
 class _SourceRow extends StatelessWidget {
   const _SourceRow({
     required this.number,
@@ -677,8 +705,19 @@ class _SourceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final messages = context.messages;
     final caption = tokens.typography.styles.others.caption;
     final quote = evidence.quote.trim();
+    // A recording's label is its file name, which says nothing a reader can
+    // use; what it is and when does.
+    final label =
+        evidence.kind == QuerySourceKind.recording &&
+            evidence.textVersion.startsWith('transcript:')
+        ? messages.queryRecordingTranscript
+        : evidence.label;
+    final date = DateFormat.yMMMd(
+      Localizations.localeOf(context).toString(),
+    ).add_Hm().format(evidence.sourceDate);
     // The card is drawn on a plain box; the ink needs a surface of its own.
     return Material(
       type: MaterialType.transparency,
@@ -690,21 +729,24 @@ class _SourceRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '$number',
-                // Every digit equally wide, so the passages line up.
-                style: caption.copyWith(
-                  color: tokens.colors.aiCard.accent,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step2),
+              CitationBadge('$number'),
+              SizedBox(width: tokens.spacing.step3),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      evidence.label,
+                    Text.rich(
+                      TextSpan(
+                        text: label,
+                        children: [
+                          TextSpan(
+                            text: ' · $date',
+                            style: caption.copyWith(
+                              color: tokens.colors.text.lowEmphasis,
+                            ),
+                          ),
+                        ],
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: caption.copyWith(
@@ -712,12 +754,27 @@ class _SourceRow extends StatelessWidget {
                       ),
                     ),
                     if (quote.isNotEmpty)
-                      Text(
-                        quote,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: caption.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
+                      // The passage as quoted, set off by a rule like a
+                      // blockquote.
+                      Container(
+                        margin: EdgeInsets.only(top: tokens.spacing.step1),
+                        padding: EdgeInsetsDirectional.only(
+                          start: tokens.spacing.step3,
+                        ),
+                        decoration: BoxDecoration(
+                          border: BorderDirectional(
+                            start: BorderSide(
+                              color: tokens.colors.decorative.level02,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          quote,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: caption.copyWith(
+                            color: tokens.colors.text.mediumEmphasis,
+                          ),
                         ),
                       ),
                   ],

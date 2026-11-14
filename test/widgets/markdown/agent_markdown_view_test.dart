@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
+import 'package:lotti/widgets/markdown/citation_badge.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../mocks/mocks.dart';
@@ -105,6 +106,109 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
       expect(visited, [('#query-evidence-1', '1'), ('#query-evidence-1', '1')]);
+    });
+    group('a bare [n] citation', () {
+      testWidgets('is a readable badge in the answer accent, never the '
+          "package's unthemed chip", (tester) async {
+        await _pumpView(tester, 'Fix the hinge "this week" [1][2].');
+
+        final badges = tester.widgetList<CitationBadge>(
+          find.byType(CitationBadge),
+        );
+        expect(badges.map((b) => b.number), ['1', '2']);
+        final tokens = tester
+            .element(find.byType(CitationBadge).first)
+            .designTokens;
+        final digit = tester.widget<Text>(
+          find.descendant(
+            of: find.byType(CitationBadge).first,
+            matching: find.text('1'),
+          ),
+        );
+        expect(digit.style!.color, tokens.colors.aiCard.accent);
+        final fill =
+            tester
+                    .widget<DecoratedBox>(
+                      find
+                          .descendant(
+                            of: find.byType(CitationBadge).first,
+                            matching: find.byType(DecoratedBox),
+                          )
+                          .first,
+                    )
+                    .decoration
+                as BoxDecoration;
+        expect(fill.color, tokens.colors.aiCard.accentSoft);
+      });
+
+      testWidgets('scales once with the surrounding text', (tester) async {
+        Future<double> badgeHeight(double scale) async {
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              MediaQuery(
+                data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+                child: const AgentMarkdownView('Approved [1].'),
+              ),
+            ),
+          );
+          await tester.pump();
+          final box = tester.renderObject<RenderBox>(
+            find.byType(CitationBadge),
+          );
+          return (box.localToGlobal(Offset(0, box.size.height)) -
+                  box.localToGlobal(Offset.zero))
+              .distance;
+        }
+
+        final regular = await badgeHeight(1);
+        final enlarged = await badgeHeight(1.5);
+        expect(enlarged / regular, closeTo(1.5, 0.05));
+      });
+
+      testWidgets('opens its source by number, by pointer and keyboard', (
+        tester,
+      ) async {
+        final opened = <int>[];
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            AgentMarkdownView(
+              'The feeder was approved [2].',
+              onCitationTap: opened.add,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byType(CitationBadge));
+        await tester.pump();
+        expect(opened, [2]);
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump();
+        expect(opened, [2, 2]);
+        // Read within its sentence as a link named for its source, not as
+        // a bare digit.
+        final node = tester.getSemantics(find.byType(CitationBadge));
+        expect(node.label, contains('Source 2'));
+        expect(node.flagsCollection.isLink, isTrue);
+      });
+
+      testWidgets('without a handler names its source and is no link', (
+        tester,
+      ) async {
+        await _pumpView(tester, 'Approved [1].');
+
+        expect(
+          find.descendant(
+            of: find.byType(CitationBadge),
+            matching: find.byType(InkWell),
+          ),
+          findsNothing,
+        );
+        final node = tester.getSemantics(find.byType(CitationBadge));
+        expect(node.label, contains('Source 1'));
+        expect(node.flagsCollection.isLink, isFalse);
+      });
     });
     testWidgets('an image in agent text is never fetched', (tester) async {
       // A prompt-injected image would leak whatever its URL encodes the

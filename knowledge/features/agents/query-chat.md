@@ -725,6 +725,18 @@ sometimes numbers a remembered conclusion as if it were evidence, and
 rejecting the whole answer for it failed the question for nothing. Every
 citation that is published still opens its evidence card.
 
+**An answer is written in the register it was asked in.** The synthesis
+prompt asks for short paragraphs, one point each, every citation right after
+the claim it supports and quotes of a few words at most; a plain fact gets a
+sentence or two. A request to be roasted, teased or judged gets a playful
+roast rather than a report: affectionate, aimed at habits and patterns the
+evidence shows, never at body, health, grief, money worries or another
+person, every jab resting on a cited entry and nothing the evidence does not
+show. A request about the user that names no topic — *roast me*, *how am I
+doing* — is planned as searches for their recent habits, struggles, slipped
+plans and complaints, since searching for the words themselves found nothing
+to say. This is model guidance; the citation guard above still applies.
+
 `QueryTextInference` uses the profile's optional Chat route, falling back to
 resolved Thinking only when Chat is unset. An unavailable selected Chat model
 produces the existing recoverable setup error. This applies to selection,
