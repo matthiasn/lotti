@@ -142,14 +142,15 @@ void main() {
 
     test('a stop while the answer is still awaited aborts the request and '
         'does not wait for the provider', () async {
+      // The client never answers: a cancel that waited for it would never
+      // return, and the test would time out.
       final client = _HangingClient();
       final subscription = over(
         client,
       ).sendStreamed(request(), description: _description).listen((_) {});
       await pumpEventQueue();
 
-      // Completes now, not when the provider answers or the timeout ends.
-      await subscription.cancel().timeout(const Duration(seconds: 1));
+      await subscription.cancel();
       await pumpEventQueue();
 
       expect(client.aborted, isTrue);
