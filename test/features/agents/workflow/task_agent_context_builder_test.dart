@@ -1153,11 +1153,41 @@ void main() {
         expect(text, contains(cue));
       });
 
-      test('a note without a duration is not tracked time', () async {
+      test('a note without a duration is not tracked time: the cue allows '
+          'IN PROGRESS only with a time entry proposed in this wake', () async {
         final note = entry(id: 'note-1', from: clockNow, to: clockNow);
         final text = await buildFor(taskEntity(status: open), linked: [note]);
 
+        expect(
+          text,
+          contains('## Status\n$taskOpenWithoutTrackedTimeNotice\n'),
+        );
         expect(text, isNot(contains(taskTimeTrackedWhileOpenNotice)));
+      });
+
+      test('reads the task when the caller passes none', () async {
+        when(
+          () => journalDb.journalEntityById('task-001'),
+        ).thenAnswer((_) async => taskEntity(status: open));
+        final result = await withClock(Clock.fixed(clockNow), () {
+          when(() => timeService.getCurrent()).thenReturn(null);
+          when(
+            () => journalDb.getLinkedEntities('task-001'),
+          ).thenAnswer((_) async => [session]);
+          return builder.buildUserMessage(
+            agentId: 'agent-self',
+            hasReport: true,
+            journalObservations: const [],
+            taskDetails: '{"title":"My Task"}',
+            projectContextJson: '{}',
+            linkedTasksJson: '{}',
+            triggerTokens: const {},
+            taskId: 'task-001',
+            timeService: timeService,
+          );
+        });
+
+        expect(result.text, contains(cue));
       });
 
       for (final (name, status) in [
@@ -1190,7 +1220,7 @@ void main() {
             linked: [session],
           );
 
-          expect(text, isNot(contains(taskTimeTrackedWhileOpenNotice)));
+          expect(text, isNot(contains('## Status\n')));
         });
       }
 
@@ -1211,7 +1241,8 @@ void main() {
           linked: [session],
         );
 
-        expect(text, isNot(contains(taskTimeTrackedWhileOpenNotice)));
+        // Not even the time-entry allowance: the user chose OPEN.
+        expect(text, isNot(contains('## Status\n')));
       });
 
       test('a failed read leaves the cue out and is logged', () async {
@@ -1220,7 +1251,7 @@ void main() {
           failLinkedRead: true,
         );
 
-        expect(text, isNot(contains(taskTimeTrackedWhileOpenNotice)));
+        expect(text, isNot(contains('## Status\n')));
         expect(
           loggedErrors.map((logged) => logged.message),
           contains('failed to read the time tracked on the task'),

@@ -933,21 +933,28 @@ user's confirm. REJECTED stays user-only (`TaskStatusHandler.userOnlyStatuses`).
 
 It also proposes IN PROGRESS for an OPEN task that time is tracked on, the one
 status it may propose without the user asking. `TaskAgentContextBuilder` adds a
-`## Status` section (`taskTimeTrackedWhileOpenNotice`) after the time-entry
-sections when the task is OPEN, its status history holds nothing but OPEN (a
-task the user moved back to OPEN keeps that status), and either a timer runs for
-it or its linked entries count towards its time spent
-(`TaskProgressRepository.sumTimeSpentFromEntities`, the task header's own sum).
+`## Status` section after the time-entry sections for a task that is OPEN and
+whose status history holds nothing but OPEN. A task the user moved back to OPEN
+keeps that status, so it gets no section at all. The section carries one of two
+notices:
+
+- `taskTimeTrackedWhileOpenNotice` when a timer runs for the task or its linked
+  entries count towards its time spent
+  (`TaskProgressRepository.sumTimeSpentFromEntities`, the task header's own sum);
+- `taskOpenWithoutTrackedTimeNotice` otherwise. A task dictated with its time
+  recording stays OPEN until that entry is confirmed, and a wake after the
+  confirm (one runs unless automatic updates are off or the cadence is "only
+  after recordings") would come too late.
+
 A failed read leaves the section out. `TaskAgentPromptBuilder.inProgressCueRule`,
 in the full scaffold and as the compact scaffold's one exception to its
-explicit-request-only status rule, tells the agent to propose IN PROGRESS then,
-and also in a wake that itself proposes `create_time_entry` on an OPEN task. A
-task dictated with its time recording stays OPEN until that entry is confirmed,
-and a wake after the confirm (one runs unless automatic updates are off or the
-cadence is "only after recordings") would come too late. The agent leaves the
-status alone when the task log says the work is blocked, waiting or on hold.
-Like every `set_task_status` proposal, it shows in the card's status band and
-never in Confirm all (see [UI surfaces](ui-surfaces.md)).
+explicit-request-only status rule, tells the agent to propose IN PROGRESS when
+the section says time is tracked, or when it says none is and the agent proposes
+`create_time_entry` in the same wake. It holds off when the task log says the
+work is blocked, waiting or on hold. Without the section, tracked time is no
+reason to change the status. Like every `set_task_status` proposal, this one
+shows in the card's status band and never in Confirm all (see
+[UI surfaces](ui-surfaces.md)).
 
 The one-call-per-wake rule stops a small model burning its turns on one tool.
 `AgentToolRegistry.repeatableDeferredTools` is its carve-out, and the strategy

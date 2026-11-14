@@ -490,16 +490,19 @@ to it.''';
       'Propose nothing when no project clearly fits.';
 
   /// When tracked time makes an OPEN task IN PROGRESS: the wake payload's
-  /// `## Status` section, or a time entry this wake proposes — a task created
-  /// with its time recording is OPEN until its entry is confirmed. Shared by
-  /// the full and the compact scaffold, whose otherwise explicit-request-only
-  /// status rule names it as its one exception.
+  /// `## Status` section, present only for a task that has never left OPEN,
+  /// says whether time is tracked on it. Without time tracked, a time entry
+  /// this wake proposes begins the work — a task dictated with its time
+  /// recording is OPEN until that entry is confirmed. Shared by the full and
+  /// the compact scaffold, whose otherwise explicit-request-only status rule
+  /// names it as its one exception.
   static const inProgressCueRule =
-      'When the wake payload has a `## Status` section, the task is still OPEN '
-      'although time is tracked on it; the same holds when you propose '
-      '`create_time_entry` for work the user did on an OPEN task in this wake. '
-      'Then propose `set_task_status` with IN PROGRESS, unless the task log '
-      'says the work is blocked, waiting or on hold.';
+      'When the wake payload has a `## Status` section, propose '
+      '`set_task_status` with IN PROGRESS if it says time has been tracked on '
+      'the task, or if it says none has and you propose `create_time_entry` '
+      'for work done on the task in this wake — unless the task log says the '
+      'work is blocked, waiting or on hold. Without that section, tracked '
+      'time is no reason to change the status.';
 
   /// What to do when the user names a project the category does not have.
   /// Shared by the full and the compact scaffold, after [projectCueRule]:

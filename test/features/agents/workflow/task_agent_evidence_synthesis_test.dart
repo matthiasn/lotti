@@ -107,9 +107,10 @@ void main() {
       expect(description, contains('explicitly requests'));
       expect(
         description,
-        contains('or for IN PROGRESS when time is tracked on an OPEN task'),
+        contains(
+          "or for IN PROGRESS as the wake payload's `## Status` section",
+        ),
       );
-      expect(description, contains('`## Status` section'));
     });
 
     test('aligns field guidance without changing or mutating schema shape', () {

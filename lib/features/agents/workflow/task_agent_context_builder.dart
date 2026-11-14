@@ -57,6 +57,13 @@ const taskTimeTrackedWhileOpenNotice =
     'This task is still OPEN, but time has been tracked on it, so work on it '
     'has begun.';
 
+/// The wake payload's `## Status` section, for an OPEN task with no time
+/// tracked on it yet: a time entry proposed in this wake — a task dictated
+/// with its time recording — begins the work.
+const taskOpenWithoutTrackedTimeNotice =
+    'This task is OPEN and has no time tracked on it yet. A time entry you '
+    'propose in this wake for work done on it would begin that work.';
+
 class TaskAgentContextBuilder {
   TaskAgentContextBuilder({
     required this.agentRepository,
@@ -431,12 +438,14 @@ class TaskAgentContextBuilder {
     }
   }
 
-  /// Whether [task] is OPEN — and has never been anything else — while time
-  /// is tracked on it: a timer running for it, or linked entries whose time
-  /// counts towards its time spent. A task the user moved back to OPEN keeps
-  /// that status, and one BLOCKED or ON HOLD is not OPEN. A failed read
-  /// answers false: the cue is optional, the wake is not.
-  Future<bool> _hasTimeTrackedWhileOpen(
+  /// The `## Status` notice for [task], or null when it gets none.
+  ///
+  /// Only an OPEN task that has never been anything else gets one: a task
+  /// the user moved back to OPEN keeps that status, and one BLOCKED or ON
+  /// HOLD is not OPEN. It says whether time is tracked on the task — a timer
+  /// running for it, or linked entries whose time counts towards its time
+  /// spent. A failed read answers null: the cue is optional, the wake is not.
+  Future<String?> _openStatusCue(
     Task? task,
     TimeService? timeService,
     String taskId,
@@ -444,23 +453,25 @@ class TaskAgentContextBuilder {
     if (task == null ||
         task.data.status is! TaskOpen ||
         task.data.statusHistory.any((status) => status is! TaskOpen)) {
-      return false;
+      return null;
     }
     if (timeService?.getCurrent() != null &&
         timeService?.linkedFrom?.id == taskId) {
-      return true;
+      return taskTimeTrackedWhileOpenNotice;
     }
     try {
       final linked = await journalDb.getLinkedEntities(taskId);
       return TaskProgressRepository.sumTimeSpentFromEntities(linked) >
-          Duration.zero;
+              Duration.zero
+          ? taskTimeTrackedWhileOpenNotice
+          : taskOpenWithoutTrackedTimeNotice;
     } catch (error, stackTrace) {
       logError(
         'failed to read the time tracked on the task',
         error: error,
         stackTrace: stackTrace,
       );
-      return false;
+      return null;
     }
   }
 
@@ -551,9 +562,12 @@ class TaskAgentContextBuilder {
 
     // Label context and correction examples, written into the tail below.
     final labelAndCorrectionContext = StringBuffer();
+    // The task as passed, or as read here; the status cue reads it too.
+    var resolvedTask = task;
     try {
       final taskEntity = task ?? await journalDb.journalEntityById(taskId);
       if (taskEntity is Task) {
+        resolvedTask = taskEntity;
         // Label context for the assign_task_labels tool.
         final labelContext = await TaskLabelHandler.buildLabelContext(
           task: taskEntity,
@@ -702,10 +716,11 @@ class TaskAgentContextBuilder {
       buffer.write(editableTimeEntriesSection);
     }
 
-    if (await _hasTimeTrackedWhileOpen(task, timeService, taskId)) {
+    final statusCue = await _openStatusCue(resolvedTask, timeService, taskId);
+    if (statusCue != null) {
       buffer
         ..writeln('## Status')
-        ..writeln(taskTimeTrackedWhileOpenNotice)
+        ..writeln(statusCue)
         ..writeln();
     }
 

@@ -427,10 +427,13 @@ Use the task language and omit empty sections.
         'task with tracked time — the compact one as its only exception', () {
       const rule = TaskAgentPromptBuilder.inProgressCueRule;
       expect(rule, contains('`## Status` section'));
-      // The creation wake: the time entry is still only a proposal.
-      expect(rule, contains('when you propose `create_time_entry`'));
       expect(rule, contains('`set_task_status` with IN PROGRESS'));
+      expect(rule, contains('if it says time has been tracked'));
+      // The creation wake: the time entry is still only a proposal.
+      expect(rule, contains('none has and you propose `create_time_entry`'));
       expect(rule, contains('blocked, waiting or on hold'));
+      // The section's gate (never left OPEN) is the only way in.
+      expect(rule, contains('Without that section, tracked time is no reason'));
 
       expect(
         TaskAgentPromptBuilder.taskAgentCompactScaffold,
