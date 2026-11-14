@@ -923,6 +923,26 @@ void main() {
         expect(message, isNot(contains('id: linked-task')));
       });
 
+      test('cues IN PROGRESS when time is tracked on the OPEN task', () async {
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => makeWorkflowTestTask(taskId));
+        when(() => mockJournalDb.getLinkedEntities(taskId)).thenAnswer(
+          (_) async => [
+            makeLinkedTimeEntry(
+              id: 'entry-1',
+              dateFrom: DateTime(2024, 6, 15, 9),
+              dateTo: DateTime(2024, 6, 15, 10),
+              text: 'Workshop notes',
+            ),
+          ],
+        );
+
+        final message = await executeAndCaptureMessage();
+
+        expect(message, contains('## Status\n$taskTimeTrackedWhileOpenNotice'));
+      });
+
       test(
         'lists every linked JournalEntry in Editable Time Entries',
         () async {

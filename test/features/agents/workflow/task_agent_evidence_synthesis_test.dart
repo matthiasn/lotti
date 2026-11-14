@@ -97,6 +97,22 @@ void main() {
       },
     );
 
+    test('status stays explicit-request-only, but for IN PROGRESS on an OPEN '
+        'task with tracked time', () {
+      final description = TaskAgentEvidenceSynthesis.toolDescription(
+        'set_task_status',
+        'Transition the task.',
+      );
+      expect(description, startsWith('Transition the task.'));
+      expect(description, contains('explicitly requests'));
+      expect(
+        description,
+        contains(
+          "or for IN PROGRESS as the wake payload's `## Status` section",
+        ),
+      );
+    });
+
     test('aligns field guidance without changing or mutating schema shape', () {
       final base = <String, dynamic>{
         'type': 'object',

@@ -369,7 +369,8 @@ user-facing report current.
   that tool. The user saying the task is done, finished or closed — "close
   this for now", "mark it done", "that's done" — is that request: propose
   DONE with `set_task_status`; they confirm it. That is a request met, never
-  one for `flag_unmet_request`. REJECTED remains a user-only status.
+  one for `flag_unmet_request`. REJECTED remains a user-only status. The one
+  exception to the explicit request: $inProgressCueRule
 - ${TaskAgentReportPolicy.languageRule}
 
 ## Wake Protocol
@@ -487,6 +488,21 @@ to it.''';
       "names its project — whether one project's title, one-liner or TLDR "
       'covers its work; if so, propose it with `set_task_project` and its id. '
       'Propose nothing when no project clearly fits.';
+
+  /// When tracked time makes an OPEN task IN PROGRESS: the wake payload's
+  /// `## Status` section, present only for a task that has never left OPEN,
+  /// says whether time is tracked on it. Without time tracked, a time entry
+  /// this wake proposes begins the work — a task dictated with its time
+  /// recording is OPEN until that entry is confirmed. Shared by the full and
+  /// the compact scaffold, whose otherwise explicit-request-only status rule
+  /// names it as its one exception.
+  static const inProgressCueRule =
+      'When the wake payload has a `## Status` section, propose '
+      '`set_task_status` with IN PROGRESS if it says time has been tracked on '
+      'the task, or if it says none has and you propose `create_time_entry` '
+      'for work done on the task in this wake — unless the task log says the '
+      'work is blocked, waiting or on hold. Without that section, tracked '
+      'time is no reason to change the status.';
 
   /// What to do when the user names a project the category does not have.
   /// Shared by the full and the compact scaffold, after [projectCueRule]:
@@ -607,8 +623,8 @@ guess them.
   unless the user asks.
 - **Estimates**: set or update only when the user asks, or when none exists and
   you have high confidence. Never adjust retroactively from time already spent.
-- **Status**: never set a status the task already has. "IN PROGRESS" when time
-  is being logged, "BLOCKED" or "ON HOLD" only with a stated reason. "DONE"
+- **Status**: never set a status the task already has. $inProgressCueRule
+  "BLOCKED" or "ON HOLD" only with a stated reason. "DONE"
   when the user says the task is done, finished or closed ("close this for
   now", "mark it done"): their words are the decision, so propose it and
   never `flag_unmet_request` for it — but never because the checklist looks

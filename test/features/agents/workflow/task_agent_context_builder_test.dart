@@ -61,6 +61,7 @@ void main() {
     String id = 'task-001',
     String title = 'My Task',
     TaskStatus? status,
+    List<TaskStatus> statusHistory = const [],
   }) {
     final now = DateTime(2024, 3, 15);
     return Task(
@@ -78,7 +79,7 @@ void main() {
             status ?? TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
         dateFrom: now,
         dateTo: now,
-        statusHistory: const [],
+        statusHistory: statusHistory,
       ),
     );
   }
@@ -1063,6 +1064,199 @@ void main() {
           expect(result.text, isNot(contains('has not cleared it')));
         },
       );
+    });
+
+    group('status cue for time tracked while OPEN', () {
+      final day = DateTime(2024, 3, 15);
+      final open = TaskStatus.open(id: 's0', createdAt: day, utcOffset: 0);
+
+      JournalEntry entry({
+        required String id,
+        required DateTime from,
+        required DateTime to,
+      }) => JournalEntry(
+        meta: Metadata(
+          id: id,
+          createdAt: from,
+          updatedAt: to,
+          dateFrom: from,
+          dateTo: to,
+        ),
+        entryText: const EntryText(plainText: 'Fixed the airlock seal'),
+      );
+
+      // 45 minutes of completed work, linked from the task.
+      final session = entry(
+        id: 'entry-1',
+        from: clockNow.subtract(const Duration(hours: 2)),
+        to: clockNow.subtract(const Duration(minutes: 75)),
+      );
+
+      /// Builds for [task] with [linked] linked from it and, when [timer] is
+      /// given, that timer running for it.
+      Future<String> buildFor(
+        Task task, {
+        List<JournalEntity> linked = const [],
+        JournalEntry? timer,
+        bool failLinkedRead = false,
+      }) async {
+        final result = await withClock(Clock.fixed(clockNow), () {
+          when(() => timeService.getCurrent()).thenReturn(timer);
+          when(() => timeService.linkedFrom).thenReturn(task);
+          if (timer != null) {
+            when(
+              () => journalDb.journalEntityById(timer.meta.id),
+            ).thenAnswer((_) async => timer);
+          }
+          when(() => journalDb.getLinkedEntities('task-001')).thenAnswer(
+            (_) async =>
+                failLinkedRead ? throw StateError('database closed') : linked,
+          );
+          return builder.buildUserMessage(
+            agentId: 'agent-self',
+            hasReport: true,
+            journalObservations: const [],
+            taskDetails: '{"title":"My Task"}',
+            projectContextJson: '{}',
+            linkedTasksJson: '{}',
+            triggerTokens: const {},
+            taskId: 'task-001',
+            task: task,
+            timeService: timeService,
+          );
+        });
+        return result.text;
+      }
+
+      const cue = '## Status\n$taskTimeTrackedWhileOpenNotice\n';
+
+      test('an OPEN task with a completed time entry gets the cue, after its '
+          'time entries', () async {
+        final text = await buildFor(
+          taskEntity(status: open, statusHistory: [open]),
+          linked: [session],
+        );
+
+        expect(text, contains(cue));
+        expect(
+          text.indexOf(cue),
+          greaterThan(text.indexOf('## Editable Time Entries')),
+        );
+      });
+
+      test('a timer running for the OPEN task is tracked time, even before '
+          'it has a duration', () async {
+        final timer = entry(id: 'timer-1', from: clockNow, to: clockNow);
+        final text = await buildFor(taskEntity(status: open), timer: timer);
+
+        expect(text, contains('## Active Running Timer'));
+        expect(text, contains(cue));
+      });
+
+      test('a note without a duration is not tracked time: the cue allows '
+          'IN PROGRESS only with a time entry proposed in this wake', () async {
+        final note = entry(id: 'note-1', from: clockNow, to: clockNow);
+        final text = await buildFor(taskEntity(status: open), linked: [note]);
+
+        expect(
+          text,
+          contains('## Status\n$taskOpenWithoutTrackedTimeNotice\n'),
+        );
+        expect(text, isNot(contains(taskTimeTrackedWhileOpenNotice)));
+      });
+
+      test('reads the task when the caller passes none', () async {
+        when(
+          () => journalDb.journalEntityById('task-001'),
+        ).thenAnswer((_) async => taskEntity(status: open));
+        final result = await withClock(Clock.fixed(clockNow), () {
+          when(() => timeService.getCurrent()).thenReturn(null);
+          when(
+            () => journalDb.getLinkedEntities('task-001'),
+          ).thenAnswer((_) async => [session]);
+          return builder.buildUserMessage(
+            agentId: 'agent-self',
+            hasReport: true,
+            journalObservations: const [],
+            taskDetails: '{"title":"My Task"}',
+            projectContextJson: '{}',
+            linkedTasksJson: '{}',
+            triggerTokens: const {},
+            taskId: 'task-001',
+            timeService: timeService,
+          );
+        });
+
+        expect(result.text, contains(cue));
+      });
+
+      for (final (name, status) in [
+        (
+          'BLOCKED',
+          TaskStatus.blocked(
+            id: 's1',
+            createdAt: day,
+            utcOffset: 0,
+            reason: 'Waiting for the spare part',
+          ),
+        ),
+        (
+          'ON HOLD',
+          TaskStatus.onHold(
+            id: 's1',
+            createdAt: day,
+            utcOffset: 0,
+            reason: 'Paused until spring',
+          ),
+        ),
+        (
+          'IN PROGRESS',
+          TaskStatus.inProgress(id: 's1', createdAt: day, utcOffset: 0),
+        ),
+      ]) {
+        test('a task $name with tracked time gets no cue', () async {
+          final text = await buildFor(
+            taskEntity(status: status, statusHistory: [open, status]),
+            linked: [session],
+          );
+
+          expect(text, isNot(contains('## Status\n')));
+        });
+      }
+
+      test('a task moved back to OPEN keeps that status: no cue', () async {
+        final held = TaskStatus.onHold(
+          id: 's1',
+          createdAt: day,
+          utcOffset: 0,
+          reason: 'Paused until spring',
+        );
+        final reopened = TaskStatus.open(
+          id: 's2',
+          createdAt: day,
+          utcOffset: 0,
+        );
+        final text = await buildFor(
+          taskEntity(status: reopened, statusHistory: [open, held, reopened]),
+          linked: [session],
+        );
+
+        // Not even the time-entry allowance: the user chose OPEN.
+        expect(text, isNot(contains('## Status\n')));
+      });
+
+      test('a failed read leaves the cue out and is logged', () async {
+        final text = await buildFor(
+          taskEntity(status: open),
+          failLinkedRead: true,
+        );
+
+        expect(text, isNot(contains('## Status\n')));
+        expect(
+          loggedErrors.map((logged) => logged.message),
+          contains('failed to read the time tracked on the task'),
+        );
+      });
     });
 
     group('active running timer for the same task', () {
