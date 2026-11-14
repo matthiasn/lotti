@@ -8,12 +8,16 @@ import 'package:material_ui/material_ui.dart';
 
 /// The profile seeded for the provider just connected, resolved: its
 /// read-aloud slot is the voice of her first words.
+///
+/// A failed lookup is final, not retried: she speaks once it has settled, and
+/// a retry landing a voice after she had begun would have her start over.
 final FutureProviderFamily<ResolvedProfile?, String>
 onboardingConnectedProfileProvider = FutureProvider.autoDispose
     .family<ResolvedProfile?, String>(
       (ref, profileId) =>
           ref.watch(profileResolverProvider).resolveByProfileId(profileId),
       name: 'onboardingConnectedProfileProvider',
+      retry: (_, _) => null,
     );
 
 /// What she says the moment the key works, and the voice she says it in.
@@ -45,8 +49,6 @@ onboardingConnectedProfileProvider = FutureProvider.autoDispose
         ? messages.onboardingFirstWordsQuiet
         : messages.onboardingFirstWordsVoiced,
     voice: voice,
-    // A failed lookup is retried, and reads as loading while it is: it has
-    // settled on the quiet line all the same.
-    settled: resolving == null || resolving.hasError || !resolving.isLoading,
+    settled: resolving == null || !resolving.isLoading,
   );
 }
