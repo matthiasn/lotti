@@ -1697,13 +1697,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Status';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Confirm each one on its own. A task set to done leaves your open task lists.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Status changes';
-
-  @override
   String get aiCardProposalKindUpdate => 'Update';
 
   @override
@@ -1711,6 +1704,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Show less';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Confirm each one on its own. A task set to done leaves your open task lists.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Status changes';
 
   @override
   String get aiCardTitle => 'AI summary';
@@ -3816,6 +3816,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checklistsReorder => 'Reorder';
+
+  @override
+  String citationSource(String number) {
+    return 'Source $number';
+  }
 
   @override
   String get clearButton => 'Clear';
@@ -7541,6 +7546,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontDoorSearchingJournal => 'Searching your journal…';
+
+  @override
+  String get frontDoorSources => 'Sources';
 
   @override
   String get frontDoorStartGoal => 'Start a goal…';

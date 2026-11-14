@@ -1713,13 +1713,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Status';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Bevestig ze één voor één. Een afgeronde taak verdwijnt uit je lijsten met open taken.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Statuswijzigingen';
-
-  @override
   String get aiCardProposalKindUpdate => 'Bijwerken';
 
   @override
@@ -1727,6 +1720,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Minder tonen';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Bevestig ze één voor één. Een afgeronde taak verdwijnt uit je lijsten met open taken.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Statuswijzigingen';
 
   @override
   String get aiCardTitle => 'Samenvatting van de AI';
@@ -3853,6 +3853,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get checklistsReorder => 'Herschikken';
+
+  @override
+  String citationSource(String number) {
+    return 'Bron $number';
+  }
 
   @override
   String get clearButton => 'Wissen';
@@ -7599,6 +7604,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontDoorSearchingJournal => 'Doorzoekt je dagboek…';
+
+  @override
+  String get frontDoorSources => 'Bronnen';
 
   @override
   String get frontDoorStartGoal => 'Doel starten…';

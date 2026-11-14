@@ -674,7 +674,8 @@ class QueryAnswerBuilder {
           'Cite evidence numbers as [1], [2]. Distinguish recorded decisions, suggestions and inference. '
           'When evidence conflicts show the disagreement. With no evidence say what could not be established; '
           'incomplete coverage never proves a discussion did not happen. '
-          'Return {"answer":"short answer with citations", "conclusion":"one useful durable conclusion, or empty"}. '
+          '$_registerRule '
+          'Return {"answer":"the answer with citations, a sentence or two for a plain fact", "conclusion":"one useful durable conclusion, or empty"}. '
           'A remembered conclusion is not a newly verified source.',
       input: {
         'question': asked.text,

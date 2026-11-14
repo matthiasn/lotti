@@ -2982,18 +2982,6 @@ abstract class AppLocalizations {
   /// **'Status'**
   String get aiCardProposalKindStatus;
 
-  /// No description provided for @aiCardStatusChangesHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm each one on its own. A task set to done leaves your open task lists.'**
-  String get aiCardStatusChangesHint;
-
-  /// No description provided for @aiCardStatusChangesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Status changes'**
-  String get aiCardStatusChangesTitle;
-
   /// No description provided for @aiCardProposalKindUpdate.
   ///
   /// In en, this message translates to:
@@ -3011,6 +2999,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show less'**
   String get aiCardShowLess;
+
+  /// No description provided for @aiCardStatusChangesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm each one on its own. A task set to done leaves your open task lists.'**
+  String get aiCardStatusChangesHint;
+
+  /// No description provided for @aiCardStatusChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status changes'**
+  String get aiCardStatusChangesTitle;
 
   /// No description provided for @aiCardTitle.
   ///
@@ -6461,6 +6461,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reorder'**
   String get checklistsReorder;
+
+  /// Screen-reader name of the numbered badge an answer shows for a source it cites, e.g. [1].
+  ///
+  /// In en, this message translates to:
+  /// **'Source {number}'**
+  String citationSource(String number);
 
   /// No description provided for @clearButton.
   ///
@@ -12892,6 +12898,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Searching your journal…'**
   String get frontDoorSearchingJournal;
+
+  /// Heading above the list of journal entries a companion journal answer cites.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get frontDoorSources;
 
   /// No description provided for @frontDoorStartGoal.
   ///

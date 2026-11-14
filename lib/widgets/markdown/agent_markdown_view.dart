@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' as legacy;
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/widgets/markdown/citation_badge.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -16,6 +17,7 @@ class AgentMarkdownView extends StatelessWidget {
     this.maxLines,
     this.overflow,
     this.onLinkTap,
+    this.onCitationTap,
     this.subordinateHeadings = false,
     this.imageBuilder,
     super.key,
@@ -37,6 +39,11 @@ class AgentMarkdownView extends StatelessWidget {
 
   /// Optional owner routing for links such as answer-local evidence citations.
   final void Function(String url, String title)? onLinkTap;
+
+  /// Opens the source a `[n]` citation names, given n. Every citation is
+  /// drawn as a [CitationBadge]; without this it names its source but does
+  /// not open it.
+  final void Function(int number)? onCitationTap;
 
   /// Keeps every heading at the body's size, set apart by weight alone: for
   /// Markdown shown under a surface's own section labels — a pull request's
@@ -123,6 +130,30 @@ class AgentMarkdownView extends StatelessWidget {
               onLinkTap: onLinkTap ?? handleMarkdownLinkTap,
               styleSheet: markdownLinkStyleSheet(theme.colorScheme.primary),
               inlineLinkBuilder: buildFocusableMarkdownLink,
+              inlineSourceTagBuilder: (tag) {
+                final number = int.tryParse(tag.id);
+                final open = onCitationTap;
+                return tag.asWidgetSpan(
+                  Padding(
+                    // Apart from the word before it and from a neighbour in
+                    // `[1][2]`.
+                    padding: EdgeInsetsDirectional.only(
+                      start: tokens.spacing.step1,
+                    ),
+                    // The placeholder already scales its child with the
+                    // surrounding text; scaling the badge too would enlarge
+                    // it twice.
+                    child: MediaQuery.withNoTextScaling(
+                      child: CitationBadge(
+                        tag.id,
+                        onTap: open == null || number == null
+                            ? null
+                            : () => open(number),
+                      ),
+                    ),
+                  ),
+                );
+              },
               imageBuilder: imageBuilder ?? buildBlockedMarkdownImage,
             ),
           ),

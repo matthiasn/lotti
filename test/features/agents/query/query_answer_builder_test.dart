@@ -1432,6 +1432,54 @@ void main() {
 
         expect(planSystem, contains('"searches"'));
       });
+
+      test('a request to be roasted is searched for the material of one and '
+          'answered as one, in short cited paragraphs', () async {
+        String? planSystem;
+        String? answerSystem;
+        await QueryAnswerBuilder(
+          maxBatchBytes: 1,
+          crawler: bench.crawler,
+          access: bench.crawler.access,
+          inference: QueryTextInference(
+            generate: (system, prompt) {
+              if (system.contains('Rephrase')) {
+                planSystem = system;
+                return Stream.value(
+                  jsonEncode({'question': 'Roast me', 'terms': <String>[]}),
+                );
+              }
+              if (system.contains('Shortlist sources')) {
+                return Stream.value(jsonEncode({'ids': <String>[]}));
+              }
+              answerSystem = system;
+              return Stream.value(
+                jsonEncode({'answer': 'Nothing found.', 'conclusion': ''}),
+              );
+            },
+          ),
+        ).build(
+          chat: chat,
+          question: question,
+          memories: [],
+          cancellation: cancellation,
+          onProgress: (_, {required expanded}) {},
+        );
+
+        // A topic-less "roast me" otherwise searched for the words "roast me".
+        expect(planSystem, contains('roast me'));
+        expect(planSystem, contains('slipped plans'));
+        expect(
+          answerSystem,
+          allOf(
+            contains('gets a playful roast, not a report'),
+            contains('never at body, health, grief, money worries'),
+            contains('every jab rests on a cited entry'),
+            contains('short paragraphs, one point each'),
+            isNot(contains('short answer with citations')),
+          ),
+        );
+      });
     });
 
     test(

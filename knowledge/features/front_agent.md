@@ -1053,7 +1053,12 @@ never widens. The door record keeps the answer's evidence and dependencies.
 category, a config flag or lockdown changes, and `FrontDoorCard` shows the
 answer — attributed "From your journal", with its numbered sources that open
 on a tap — only while every dependency is still visible, and hides it until
-that is known.
+that is known. The sources sit under a *Sources* heading of their own, each
+led by the same `CitationBadge` its `[n]` wears in the words, so the two read
+as a pair; a tap on a citation in the words opens the source it names, as its
+row does, and a number naming no listed source opens nothing. A row names its
+source by what it is and when — a recording as *Recording transcript*, never
+its file name — and sets the quoted passage off with a rule.
 
 The walker never awaits a specialist's wake: the goal and person chat
 services' `sendMessage` awaits its own completion and at concurrency 1 that

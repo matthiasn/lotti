@@ -2542,6 +2542,15 @@
   "checklistShare": "Share",
   "checklistShareHint": "Long press to share",
   "checklistsReorder": "Reorder",
+  "citationSource": "Source {number}",
+  "@citationSource": {
+    "description": "Screen-reader name of the numbered badge an answer shows for a source it cites, e.g. [1].",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "clearButton": "Clear",
   "colorCustomLabel": "Custom",
   "colorLabel": "Color",
@@ -4801,6 +4810,10 @@
   "frontDoorSearchingJournal": "Searching your journal…",
   "@frontDoorSearchingJournal": {
     "description": "Status while the front agent searches the journal for an answer."
+  },
+  "frontDoorSources": "Sources",
+  "@frontDoorSources": {
+    "description": "Heading above the list of journal entries a companion journal answer cites."
   },
   "frontDoorStartGoal": "Start a goal…",
   "frontDoorSummaryBased": "from summaries",

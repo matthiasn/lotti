@@ -1704,13 +1704,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Status';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Bekræft hver for sig. En færdig opgave forsvinder fra dine lister over åbne opgaver.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Statusændringer';
-
-  @override
   String get aiCardProposalKindUpdate => 'Opdatering';
 
   @override
@@ -1718,6 +1711,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Vis mindre';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Bekræft hver for sig. En færdig opgave forsvinder fra dine lister over åbne opgaver.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Statusændringer';
 
   @override
   String get aiCardTitle => 'AI-oversigt';
@@ -3831,6 +3831,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get checklistsReorder => 'Omorganisering';
+
+  @override
+  String citationSource(String number) {
+    return 'Kilde $number';
+  }
 
   @override
   String get clearButton => 'Klart';
@@ -7572,6 +7577,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontDoorSearchingJournal => 'Søger i din journal…';
+
+  @override
+  String get frontDoorSources => 'Kilder';
 
   @override
   String get frontDoorStartGoal => 'Start et mål…';
