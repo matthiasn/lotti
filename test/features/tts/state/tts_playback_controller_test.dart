@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
 import 'package:lotti/features/tts/cloud/cloud_tts_exception.dart';
+import 'package:lotti/features/tts/cloud/growing_speech_clip.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
@@ -88,6 +90,377 @@ void main() {
     model: testAiModel(id: 'voice', providerModelId: 'voxtral-mini-tts-3-0'),
     languageCode: 'de',
   );
+
+  group('a cloud voice that sends its speech while it makes it', () {
+    const text = 'Two are overdue. The seam has waited longest.';
+    late Directory temp;
+    late StreamController<Uint8List> audio;
+    late FakeCloudSpeechSynthesizer cloud;
+    late FakeTtsAudioPlayer player;
+    late ({ProviderContainer container, List<TtsPlaybackState> states}) h;
+
+    // A streamed WAV's header, then samples.
+    final header = Uint8List(GrowingSpeechClip.headerBytes);
+    Uint8List samples(int bytes) => Uint8List(bytes);
+    const lead = GrowingSpeechClip.playableBytes;
+
+    setUp(() {
+      temp = Directory.systemTemp.createTempSync('tts_stream_test');
+      addTearDown(() => temp.deleteSync(recursive: true));
+      audio = StreamController<Uint8List>();
+      player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+    });
+
+    void build({
+      File? whole,
+      Stream<Uint8List> Function(String text)? streamed,
+      Future<void>? handingOver,
+    }) {
+      cloud = FakeCloudSpeechSynthesizer(
+        streamed: streamed ?? (_) => audio.stream,
+        streamDirectory: temp,
+        output: whole,
+        handingOver: handingOver,
+      );
+      h = harness(player: player, cloud: cloud);
+    }
+
+    TtsPlaybackState state() => h.container.read(ttsPlaybackControllerProvider);
+    TtsPlaybackController controller() => controllerOf(h.container);
+
+    Future<void> speak({Future<bool> Function()? canPlay}) =>
+        controller().speak(
+          sourceId: 'her',
+          text: text,
+          cloudRoute: cloudRoute,
+          canPlay: canPlay,
+        );
+
+    /// The clip being written, once the request for it has been made.
+    Future<GrowingSpeechClip> clip() async {
+      while (cloud.growing.isEmpty) {
+        await pumpEventQueue();
+      }
+      return cloud.growing.last;
+    }
+
+    test(
+      'plays as soon as the lead is written — long before the voice has '
+      "finished — and the mouth gets the clip's sound once it is whole",
+      () async {
+        build();
+        final speaking = speak();
+        final growing = await clip();
+
+        audio.add(Uint8List.fromList([...header, ...samples(1000)]));
+        await pumpEventQueue();
+        expect(state().status, TtsPlaybackStatus.synthesizing);
+        expect(player.playCount, 0);
+
+        audio.add(samples(lead));
+        await speaking;
+        expect(state().status, TtsPlaybackStatus.playing);
+        expect(player.playCount, 1);
+        expect(growing.isComplete, isFalse);
+        // No file to read a mouth from yet: she goes by the words.
+        expect(state().clip, (path: '', text: text));
+
+        await audio.close();
+        await growing.done;
+        await pumpEventQueue();
+        expect(state().clip, (path: growing.file.path, text: text));
+        expect(state().status, TtsPlaybackStatus.playing);
+
+        // Played to its end, it is all of the utterance: said again, it is
+        // replayed, not made again.
+        player.complete();
+        await pumpEventQueue();
+        expect(state().status, TtsPlaybackStatus.stopped);
+        expect(growing.file.existsSync(), isTrue);
+        await speak();
+        expect(cloud.calls, hasLength(1));
+        expect(player.playCount, 2);
+        expect(player.startedFrom, [Duration.zero, Duration.zero]);
+      },
+    );
+
+    test('an answer shorter than the lead plays when the voice has '
+        'finished it', () async {
+      build();
+      final speaking = speak();
+      final growing = await clip();
+      audio.add(Uint8List.fromList([...header, ...samples(1000)]));
+      await pumpEventQueue();
+      expect(player.playCount, 0);
+
+      await audio.close();
+      await speaking;
+      await pumpEventQueue();
+
+      expect(player.playCount, 1);
+      expect(state().clip, (path: growing.file.path, text: text));
+    });
+
+    test(
+      'a word the voice makes no audio of that way is asked for whole',
+      () async {
+        final whole = File('${temp.path}/whole.wav')..writeAsBytesSync([1, 2]);
+        build(whole: whole, streamed: (_) => const Stream.empty());
+
+        await speak();
+
+        expect([for (final call in cloud.calls) call.sent], [true, true]);
+        expect(state().status, TtsPlaybackStatus.playing);
+        expect(state().clip, (path: whole.path, text: text));
+        expect(player.playCount, 1);
+        // What the empty stream left behind is gone.
+        expect(cloud.growing.single.file.existsSync(), isFalse);
+      },
+    );
+
+    test('a stream that fails before there is anything to play ends the '
+        'utterance as a failure, and nothing is left behind', () async {
+      build();
+      final speaking = speak();
+      final growing = await clip();
+      audio
+        ..add(Uint8List.fromList([...header, ...samples(100)]))
+        // A server failure: an unreachable voice would fall back to the
+        // on-device one instead (see 'an unreachable cloud voice').
+        ..addError(
+          const CloudTtsException(CloudTtsFailure.server, 'stream broke off'),
+        );
+      await speaking;
+
+      expect(state().status, TtsPlaybackStatus.error);
+      expect(state().errorMessage, contains('stream broke off'));
+      expect(player.playCount, 0);
+      expect(growing.file.existsSync(), isFalse);
+      // Not asked for again whole: it failed, it was not empty.
+      expect(cloud.calls, hasLength(1));
+    });
+
+    test('a player that reaches the end of what is written before the '
+        'voice has finished is opened again where it stopped, once the '
+        'rest is there', () async {
+      build();
+      final speaking = speak();
+      final growing = await clip();
+      audio.add(Uint8List.fromList([...header, ...samples(lead)]));
+      await speaking;
+      // The network stalls; the player plays out what it has.
+      player
+        ..emitPosition(const Duration(milliseconds: 1900))
+        ..complete();
+      await pumpEventQueue();
+
+      // Still her utterance, not ended.
+      expect(state().status, TtsPlaybackStatus.playing);
+      expect(state().isActiveFor('her'), isTrue);
+      expect(player.playCount, 1);
+
+      audio.add(samples(5000));
+      await audio.close();
+      await growing.done;
+      await pumpEventQueue();
+      expect(player.playCount, 2);
+      expect(player.startedFrom.last, const Duration(milliseconds: 1900));
+      expect(state().status, TtsPlaybackStatus.playing);
+
+      player.complete();
+      await pumpEventQueue();
+      expect(state().status, TtsPlaybackStatus.stopped);
+    });
+
+    test('a speed changed while the player is opened again after a stall is '
+        'not overwritten by the rate it reopens at', () async {
+      build();
+      final speaking = speak();
+      final growing = await clip();
+      audio.add(Uint8List.fromList([...header, ...samples(lead)]));
+      await speaking;
+      player
+        ..emitPosition(const Duration(milliseconds: 1900))
+        ..complete();
+      await pumpEventQueue();
+
+      player.opening = Completer<void>();
+      audio.add(samples(5000));
+      await audio.close();
+      await growing.done;
+      await pumpEventQueue();
+      expect(player.playCount, 2);
+      h.container.read(ttsSettingsControllerProvider.notifier).setSpeed(1.75);
+      player.opening!.complete();
+      await pumpEventQueue();
+
+      expect(player.lastSpeed, 1);
+      expect(player.rate, 1.75);
+    });
+
+    test('a stream that fails after she began ends the utterance as a '
+        'failure when the player has played what there was', () async {
+      build();
+      final speaking = speak();
+      final growing = await clip();
+      audio.add(Uint8List.fromList([...header, ...samples(lead)]));
+      await speaking;
+      audio.addError(StateError('connection reset'));
+      await growing.done;
+      await pumpEventQueue();
+      // What is written is still spoken.
+      expect(state().status, TtsPlaybackStatus.playing);
+
+      player.complete();
+      await pumpEventQueue();
+      expect(state().status, TtsPlaybackStatus.error);
+      expect(state().errorMessage, contains('connection reset'));
+      expect(growing.file.existsSync(), isFalse);
+      expect(player.playCount, 1);
+    });
+
+    test('stopped while the voice is still writing, the stream is let go '
+        'and the part of a clip is deleted, never kept for a replay', () async {
+      build();
+      final speaking = speak();
+      final growing = await clip();
+      audio.add(Uint8List.fromList([...header, ...samples(lead)]));
+      await speaking;
+
+      await controller().stop();
+
+      expect(state().status, TtsPlaybackStatus.stopped);
+      expect(audio.hasListener, isFalse);
+      expect(growing.file.existsSync(), isFalse);
+      // Said again, it is asked for again.
+      audio = StreamController<Uint8List>();
+      final again = speak();
+      await pumpEventQueue();
+      expect(cloud.calls, hasLength(2));
+      await controller().stop();
+      await again;
+    });
+
+    test('stopped before there was anything to play, nothing plays and '
+        'nothing is left behind', () async {
+      build();
+      final speaking = speak();
+      final growing = await clip();
+      audio.add(Uint8List.fromList([...header, ...samples(100)]));
+      await pumpEventQueue();
+
+      await controller().stop();
+      await speaking;
+
+      expect(player.playCount, 0);
+      expect(growing.file.existsSync(), isFalse);
+      expect(state().status, TtsPlaybackStatus.stopped);
+    });
+
+    test('stopped just as the request is made, the clip that comes back '
+        'belongs to nobody: it is let go and deleted', () async {
+      final handingOver = Completer<void>();
+      build(handingOver: handingOver.future);
+      final speaking = speak();
+      final growing = await clip();
+
+      await controller().stop();
+      handingOver.complete();
+      await speaking;
+
+      expect(audio.hasListener, isFalse);
+      expect(growing.file.existsSync(), isFalse);
+      expect(player.playCount, 0);
+    });
+
+    test(
+      'text that may not be sent is not sent that way or any other',
+      () async {
+        build(whole: File('${temp.path}/whole.wav'));
+
+        await speak(canPlay: () async => false);
+
+        expect([for (final call in cloud.calls) call.sent], [false]);
+        expect(cloud.growing, isEmpty);
+        expect(player.playCount, 0);
+        expect(state().status, TtsPlaybackStatus.stopped);
+      },
+    );
+
+    test('muted between the upload and the first sound, the clip is let go '
+        'and deleted', () async {
+      build();
+      var asked = 0;
+      // Allowed to be sent; not allowed to be played.
+      final speaking = speak(canPlay: () async => ++asked == 1);
+      final growing = await clip();
+      audio.add(Uint8List.fromList([...header, ...samples(lead)]));
+      await speaking;
+
+      expect(player.playCount, 0);
+      expect(growing.file.existsSync(), isFalse);
+      expect(audio.hasListener, isFalse);
+      expect(state().status, TtsPlaybackStatus.stopped);
+    });
+
+    test('a whole clip a stop kept for a replay, while the play was still '
+        'being allowed, is not deleted when that answer comes', () async {
+      build();
+      var hold = false;
+      final questions = <Completer<bool>>[];
+      Future<bool> canPlay() {
+        if (!hold) return Future.value(true);
+        final question = Completer<bool>();
+        questions.add(question);
+        return question.future;
+      }
+
+      final speaking = speak(canPlay: canPlay);
+      final growing = await clip();
+      hold = true;
+      audio.add(Uint8List.fromList([...header, ...samples(lead)]));
+      await audio.close();
+      await growing.done;
+      while (questions.isEmpty) {
+        await pumpEventQueue();
+      }
+
+      // Stopped while the play is asked about: the whole clip is kept.
+      final stopping = controller().stop();
+      while (questions.length < 2) {
+        await pumpEventQueue();
+      }
+      questions.first.complete(false); // the play: no
+      await speaking;
+      questions.last.complete(true); // the replay: yes
+      await stopping;
+      await pumpEventQueue();
+
+      expect(growing.isComplete, isTrue);
+      expect(growing.file.existsSync(), isTrue);
+      hold = false;
+      await speak(canPlay: canPlay);
+      expect(player.lastFile?.path, growing.file.path);
+      expect(cloud.growing, hasLength(1));
+    });
+
+    test('leaving while the voice is still writing lets the stream go and '
+        'deletes the part of a clip', () async {
+      build();
+      final speaking = speak();
+      final growing = await clip();
+      audio.add(Uint8List.fromList([...header, ...samples(lead)]));
+      await speaking;
+
+      h.container.dispose();
+      await growing.done;
+      await pumpEventQueue();
+
+      expect(audio.hasListener, isFalse);
+      expect(growing.file.existsSync(), isFalse);
+    });
+  });
 
   test('a cloud route speaks through the cloud voice on a device without '
       'the on-device engine, and never downloads the model', () async {
@@ -286,6 +659,96 @@ void main() {
         subDomain: 'ttsPlayback.speak',
       ),
     ).called(1);
+  });
+
+  group('an unreachable cloud voice', () {
+    for (final failure in [CloudTtsFailure.network, CloudTtsFailure.timeout]) {
+      test('(${failure.name}) falls back to the installed on-device voice, '
+          'and says why in the log', () async {
+        final logger = await mockLogger();
+        final engine = FakeTtsEngine();
+        final player = FakeTtsAudioPlayer();
+        addTearDown(player.dispose);
+        final h = harness(
+          engine: engine,
+          player: player,
+          cloud: FakeCloudSpeechSynthesizer(
+            error: CloudTtsException(failure, 'offline'),
+          ),
+        );
+
+        await controllerOf(
+          h.container,
+        ).speak(sourceId: 'task-1', text: 'Hallo', cloudRoute: cloudRoute);
+
+        expect(engine.calls.single.text, 'Hallo');
+        expect(player.playCount, 1);
+        expect(
+          h.container.read(ttsPlaybackControllerProvider).status,
+          TtsPlaybackStatus.playing,
+        );
+        verify(
+          () => logger.log(
+            LogDomain.speech,
+            'Cloud voice unreachable (${failure.name}); '
+            'the on-device voice speaks',
+            subDomain: 'ttsPlayback.speak',
+          ),
+        ).called(1);
+      });
+    }
+
+    test('is a failure when the on-device model is not installed: its '
+        'download is never offered offline', () async {
+      final engine = FakeTtsEngine();
+      final repo = FakeTtsModelRepository(installed: false);
+      var asked = false;
+      final h = harness(
+        engine: engine,
+        repo: repo,
+        cloud: FakeCloudSpeechSynthesizer(
+          error: const CloudTtsException(CloudTtsFailure.network, 'offline'),
+        ),
+      );
+
+      await controllerOf(h.container).speak(
+        sourceId: 'task-1',
+        text: 'Hallo',
+        cloudRoute: cloudRoute,
+        confirmModelDownload: (_) async => asked = true,
+      );
+
+      final state = h.container.read(ttsPlaybackControllerProvider);
+      expect(state.status, TtsPlaybackStatus.error);
+      expect(state.errorMessage, contains('network'));
+      expect(engine.calls, isEmpty);
+      expect(asked, isFalse);
+      expect(repo.ensureCount, 0);
+    });
+
+    test('a provider that answered with a refusal is not unreachable: no '
+        'fallback, even with the on-device voice installed', () async {
+      final engine = FakeTtsEngine();
+      final h = harness(
+        engine: engine,
+        cloud: FakeCloudSpeechSynthesizer(
+          error: const CloudTtsException(
+            CloudTtsFailure.unauthorized,
+            'missing the permission voices_read',
+          ),
+        ),
+      );
+
+      await controllerOf(
+        h.container,
+      ).speak(sourceId: 'task-1', text: 'Hallo', cloudRoute: cloudRoute);
+
+      expect(
+        h.container.read(ttsPlaybackControllerProvider).status,
+        TtsPlaybackStatus.error,
+      );
+      expect(engine.calls, isEmpty);
+    });
   });
 
   test('the on-device clip a missing cloud voice fell back to is not '

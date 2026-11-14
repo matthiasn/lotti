@@ -51,41 +51,114 @@ class CloudTtsHttp {
     http.Request request, {
     required String description,
   }) async {
-    request.followRedirects = false;
+    final abort = Completer<void>();
     final http.Response response;
     try {
       response = await http.Response.fromStream(
-        await _client.send(request).timeout(timeout),
+        await _client.send(_abortable(request, abort.future)).timeout(timeout),
       ).timeout(timeout);
-    } on TimeoutException {
-      throw logged(
-        CloudTtsException(
-          CloudTtsFailure.timeout,
-          'No response within ${timeout.inSeconds} s',
-        ),
-        description: description,
-      );
-    } on SocketException catch (error) {
-      throw logged(
-        CloudTtsException(CloudTtsFailure.network, error.message),
-        description: description,
-      );
-    } on http.ClientException catch (error) {
-      throw logged(
-        CloudTtsException(CloudTtsFailure.network, error.message),
-        description: description,
-      );
-    } on HandshakeException catch (error) {
-      throw logged(
-        CloudTtsException(CloudTtsFailure.network, error.message),
-        description: description,
-      );
+    } on Object catch (error) {
+      // A timeout does not end the request by itself: it is let go of here.
+      _complete(abort);
+      final failure = _transportFailure(error);
+      if (failure == null) rethrow;
+      throw logged(failure, description: description);
     }
     if (response.statusCode != 200) {
       throw logged(_httpFailure(response), description: description);
     }
     return response;
   }
+
+  /// Sends [request] and returns the body of its 200 response as it
+  /// arrives, for an answer that is read while it is still being sent.
+  /// [timeout] bounds the wait for the response and for each further piece
+  /// of it. Every failure — while waiting for the answer or along its body —
+  /// is a [CloudTtsException] logged with [description], as in [send].
+  ///
+  /// Cancelling the subscription aborts the request at once, also while it
+  /// still waits for the answer, so a stop never waits on the provider; the
+  /// request is aborted too when it times out or fails.
+  Stream<List<int>> sendStreamed(
+    http.Request request, {
+    required String description,
+  }) {
+    final abort = Completer<void>();
+    var cancelled = false;
+    late final StreamController<List<int>> controller;
+
+    Future<void> run() async {
+      try {
+        final response = await _client
+            .send(_abortable(request, abort.future))
+            .timeout(timeout);
+        if (response.statusCode != 200) {
+          throw _httpFailure(
+            await http.Response.fromStream(response).timeout(timeout),
+          );
+        }
+        await for (final chunk in response.stream.timeout(timeout)) {
+          if (cancelled) return;
+          controller.add(chunk);
+        }
+      } on Object catch (error, stackTrace) {
+        if (cancelled) return;
+        final failure = error is CloudTtsException
+            ? error
+            : _transportFailure(error);
+        controller.addError(
+          failure == null ? error : logged(failure, description: description),
+          stackTrace,
+        );
+      } finally {
+        _complete(abort);
+        if (!cancelled) await controller.close();
+      }
+    }
+
+    controller = StreamController<List<int>>(
+      onListen: () => run().ignore(),
+      onCancel: () {
+        cancelled = true;
+        _complete(abort);
+      },
+    );
+    return controller.stream;
+  }
+
+  /// [request] as one [abortTrigger] can end, redirects refused.
+  static http.AbortableRequest _abortable(
+    http.Request request,
+    Future<void> abortTrigger,
+  ) =>
+      http.AbortableRequest(
+          request.method,
+          request.url,
+          abortTrigger: abortTrigger,
+        )
+        ..headers.addAll(request.headers)
+        ..followRedirects = false
+        ..bodyBytes = request.bodyBytes;
+
+  static void _complete(Completer<void> completer) {
+    if (!completer.isCompleted) completer.complete();
+  }
+
+  /// [error] as the failure of a request that never got an answer, or null
+  /// when it is not one of those.
+  CloudTtsException? _transportFailure(Object error) => switch (error) {
+    TimeoutException() => CloudTtsException(
+      CloudTtsFailure.timeout,
+      'No response within ${timeout.inSeconds} s',
+    ),
+    SocketException(:final message) ||
+    http.ClientException(:final message) ||
+    HandshakeException(:final message) => CloudTtsException(
+      CloudTtsFailure.network,
+      message,
+    ),
+    _ => null,
+  };
 
   /// Sends [request] and decodes its body as JSON; a body that is not JSON
   /// is an [CloudTtsFailure.invalidResponse], reported without echoing it.

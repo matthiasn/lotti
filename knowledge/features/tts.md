@@ -11,7 +11,15 @@ sources:
   - id: src
     resource: ../../lib/features/tts
     title: Text-to-speech source
-    last_modified: 2026-11-07
+    last_modified: 2026-11-14
+  - id: elevenlabs-v4-turbo-eval
+    resource: ../../docs/evaluations/2026-11-14_elevenlabs_v4_turbo_tts.md
+    title: ElevenLabs v4 Turbo against v3, v4, v2 and Voxtral — first audio, streaming both ways, expressiveness
+    last_modified: 2026-11-14
+  - id: tts-latency-benchmark
+    resource: ../../tool/benchmarks/tts_latency.dart
+    title: The live time-to-first-audio benchmark of the cloud voices
+    last_modified: 2026-11-14
   - id: cloud-route
     resource: ../../lib/features/tts/cloud/tts_cloud_route.dart
     title: The cloud route a profile's read-aloud slot names
@@ -20,14 +28,18 @@ sources:
     resource: ../../lib/features/tts/cloud/cloud_tts_http.dart
     title: The HTTP transport and typed failures every speech client shares
     last_modified: 2026-11-04
+  - id: growing-clip
+    resource: ../../lib/features/tts/cloud/growing_speech_clip.dart
+    title: GrowingSpeechClip — a WAV written while its cloud voice still speaks, playable before it is whole
+    last_modified: 2026-11-12
   - id: voxtral-service
     resource: ../../lib/features/tts/cloud/voxtral_tts_service.dart
     title: Voxtral speech and voice-catalog client
     last_modified: 2026-11-04
   - id: elevenlabs-service
     resource: ../../lib/features/tts/cloud/elevenlabs_tts_service.dart
-    title: ElevenLabs speech and voice-catalog client
-    last_modified: 2026-11-04
+    title: ElevenLabs speech (whole and streamed) and voice-catalog client
+    last_modified: 2026-11-14
   - id: voice-catalog-repository
     resource: ../../lib/features/tts/cloud/cloud_voice_catalog_repository.dart
     title: The device cache of each provider's voice catalog
@@ -166,7 +178,13 @@ provider joins by adding its type there and its `CloudTtsClient` to
 `cloudTtsClientsProvider`. Every
 other outcome, including an empty slot or one that no longer resolves, is the
 on-device voice. The on-device voice is never replaced silently by a cloud one,
-and a cloud voice never falls back to sending the text somewhere else.
+and a cloud voice never falls back to sending the text somewhere else. It
+falls back the other way, to the on-device voice, in two cases only: the
+language has no cloud voice (nothing was sent), or the provider cannot be
+reached at all (`network` or `timeout`) and the on-device model is already
+installed — its 398 MB download needs the network that just failed, so it is
+never offered then. A provider that answered — a refusal, a used-up quota, a
+server error — is a failure the toast reports, not a fallback.
 
 ```mermaid
 flowchart TD
@@ -176,11 +194,14 @@ flowchart TD
   Client -->|no| Local
   Client -->|Mistral or ElevenLabs| Cloud["TtsCloudRoute: the provider's voice in the text's language"]
   Cloud --> Voice{"Voice for the language?"}
-  Voice -->|user's choice, else first female preset, else any| Speak["provider's speech endpoint → temporary WAV"]
+  Voice -->|user's choice, else an older woman, else a female preset, else any| Speak["provider's speech endpoint → temporary WAV"]
   Voice -->|none, on-device voice supported| Local
   Voice -->|none, no on-device voice| NoVoice["error: noVoice — nothing sent"]
-  Local --> Play["Shared playback, cancellation and cleanup"]
-  Speak --> Play
+  Speak --> Reached{"Provider reached?"}
+  Reached -->|yes| Play["Shared playback, cancellation and cleanup"]
+  Reached -->|network or timeout, on-device model installed| Local
+  Reached -->|network or timeout, no installed model| Failed["error toast"]
+  Local --> Play
 ```
 
 A cloud route needs neither the on-device model nor platform support for it,
@@ -202,7 +223,13 @@ API key come from its inference provider config on every call.
 - **`ElevenLabsTtsService`** authenticates with the `xi-api-key` header.
   `synthesize` posts `text` and `model_id` to
   `text-to-speech/{voice_id}?output_format=wav_24000` and checks the answer
-  is RIFF/WAVE audio — 24 kHz WAV is on every plan, 44.1 kHz needs Pro. No
+  is RIFF/WAVE audio — 24 kHz WAV is on every plan, 44.1 kHz needs Pro.
+  `synthesizeStream` posts the same body to `text-to-speech/{voice_id}/stream`
+  with `output_format=pcm_24000` — the API streams no WAV ("WAV is only
+  supported for non-streaming requests") — and puts a 44-byte WAV header of
+  unknown length (`wavHeader`, shared with the on-device engine's writer)
+  in front of the first audio, so the stream is the same growing WAV
+  Voxtral's is; a stream that fails or brings no audio emits nothing. No
   `language_code` is sent: `eleven_multilingual_v2` does not take it, and the
   multilingual models read the language from the text. `fetchVoices` reads
   `GET models` for the languages the model speaks, then `GET voices` (premade,
@@ -228,7 +255,12 @@ echoes the rejected value, and a body that is not JSON is not kept at all.
 Failures the client does not log itself — a missing voice, the on-device
 engine, the player — are logged by `TtsPlaybackController` before it turns to
 the error state the toast reports. It refuses redirects, which would carry the
-credential to another host, and plain HTTP anywhere but loopback.
+credential to another host, and plain HTTP anywhere but loopback. Every
+request is an `AbortableRequest`: one that times out is aborted rather than
+left running, and a stream let go of — a stop, a recording about to start —
+aborts its request at once, also while the answer is still awaited, so
+letting go never waits on the provider. A stream's failures along its body
+are typed and logged like those before it.
 
 `CloudSpeechSynthesizer` turns a route and a text into the same temporary WAV
 the on-device engine writes, so everything after synthesis — playback,
@@ -247,9 +279,15 @@ never answers from the old account's voices, fresh or offline; a cache
 written before accounts were recorded is refreshed at once and answers only
 when that refresh fails. `CloudVoiceCatalog.resolve` picks the voice for a
 language: the user's choice for that language while the catalog still has it
-(`TtsSettings.cloudVoiceByLanguage`, `TTS_CLOUD_VOICES`), else the language's
-first female preset, else its first voice. No provider names a voice per
-language, so this default is ours. Choices are kept per provider
+(`TtsSettings.cloudVoiceByLanguage`, `TTS_CLOUD_VOICES`), else the voice
+closest to Lotti, who speaks as a grandmother: the language's first older
+woman (`CloudVoice.age` is `old`; a Voice Library voice the account saved
+counts, and the account's own voices come in the same catalog as the
+presets), else its first middle-aged female preset, else its first female
+preset, else its first voice. No provider names a voice per language, so
+this default is ours. The age is the API's own label (ElevenLabs `young`,
+`middle_aged`, `old`), kept in the cached catalog; it also shows among the
+voice's tags in the picker. Choices are kept per provider
 (`cloudVoiceChoiceKey`): Mistral's under the bare language — the format from
 before a second provider type spoke, so earlier picks stay — every other
 provider's under `<providerId>/<language>`, so a voice of one account (a
@@ -293,12 +331,15 @@ row, `TtsVoiceRadioRow`.
 **Model and speed.** Mistral has one hosted TTS family and no quality or
 speed parameter to tune; the curated model is `voxtral-mini-tts-3-0` (Mistral
 documents no `-latest` alias for it). ElevenLabs' curated models are
-`eleven_multilingual_v2` (its default, the most natural) and
-`eleven_flash_v2_5` (low latency, half the price); an ElevenLabs provider is
-speech-only, so these fill the *Read aloud* slot and nothing else. The text
-goes in one request, unsplit, so `eleven_v3` — a few thousand characters per
-request against their 10k and 40k — is not curated; added by hand, a long
-report read with it is rejected. WAV keeps the uncompressed format's lower
+`eleven_v4_turbo` (expressive, 94 languages, first audio 130–200 ms when
+streamed — see the [evaluation](../../docs/evaluations/2026-11-14_elevenlabs_v4_turbo_tts.md)),
+`eleven_multilingual_v2` (the API's default) and `eleven_flash_v2_5` (low
+latency, half the price); an ElevenLabs provider is speech-only, so these
+fill the *Read aloud* slot and nothing else. Which one speaks is only the
+`model_id` of the request, so switching models — or comparing two — is
+switching the profile's slot. The text goes in one request, unsplit, so
+`eleven_v3` — 5,000 characters per request against their 10k, 10k and 40k —
+is not curated; added by hand, a long report read with it is rejected. WAV keeps the uncompressed format's lower
 time to first audio. Speed stays a playback rate, as for the on-device voice,
 so changing it never costs a new request.
 
@@ -374,6 +415,87 @@ once made, is kept as the prepared result (below) for a replay. Model weights re
 native shutdown failures and still attempts file deletion. It ignores only a
 confirmed missing-file error; other filesystem failures are reported through
 the speech logging domain without including the temporary file path or content.
+
+**A cloud voice that can stream is played while it is still speaking.**
+Asked for a whole clip, a cloud voice takes about as long as its text is
+long before any audio exists: on Voxtral, 2.3–2.5 s for three sentences.
+Asked for one synthesis as a stream (`stream: true`: server-sent
+`speech.audio.delta` events carrying base64 WAV bytes, then
+`speech.audio.done`), the same answer's first audio is there after 0.3 s
+and all 12.6 s of it within 1.7 s — it arrives about seven times faster
+than it plays (live, 2026-11-12). It is one synthesis: one voice and one
+intonation from the first word to the last. Making an answer sentence by
+sentence and playing the clips in turn was tried first and dropped: each
+clip starts with its own intonation, and the seams are heard.
+
+`CloudSpeechSynthesizer.synthesizeToGrowingFile` writes that stream into a
+temporary WAV as it arrives (`GrowingSpeechClip`), for a provider whose
+client is a `StreamingCloudTtsClient` (`canStream`; Voxtral and ElevenLabs
+both are). The player reads the file like any other. `speak` starts it once
+the clip is **playable** — its header and two seconds of audio written, or
+the stream ended — which the live runs reached 0.35–0.51 s after the request
+on Voxtral and 0.29–0.43 s on ElevenLabs `eleven_v4_turbo` (2026-11-14,
+`tool/benchmarks/tts_latency.dart`). Every streamed run there had its audio
+arrive ahead of playback from the first byte on, so the two-second lead is
+now the larger part of the wait on v4 Turbo, whose first byte comes at
+130–200 ms; it is kept until a growing file has been heard on a device.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Synthesizing: speak, a voice that can stream
+  Synthesizing --> Playing: the lead is written (or a short clip is whole)
+  Synthesizing --> Synthesizing: the stream ended without audio — asked for whole
+  Synthesizing --> Error: the stream failed before there was anything to play
+  Synthesizing --> Synthesizing: unreachable before there was anything to play — the installed on-device voice makes it
+  Playing --> Playing: the file is whole — the state names it
+  Playing --> Playing: the player ran out before the voice finished — reopened where it stopped
+  Playing --> Stopped: the player reaches the end of a whole clip
+  Playing --> Stopped: stop — a part of a clip is deleted, a whole one kept
+  Playing --> Error: the stream failed, once the player has played what there was
+  Synthesizing --> Stopped: stop
+```
+
+- **Its header is filled in at the end.** A streamed WAV's two length
+  fields say `0xFFFFFFFF`; once the stream has ended the real lengths are
+  written in, so the mouth track's reader and a replay see an ordinary WAV.
+- **The mouth goes by the words until the file is whole.** While it is
+  being written the state's `clip` has an empty path — the companion's
+  speaker falls back to the words alone, as for any clip it cannot read —
+  and once it is whole the state names the file, and the mouth is shaped by
+  its sound from there on.
+- **A stall is survived, not hidden.** What is written stays ahead of what
+  is played unless the network stalls for longer than the lead. A player
+  that reaches the end of what is written before the voice has finished has
+  not ended the utterance: when the rest is there the clip is opened again
+  at the position it reached (`TtsAudioPlayer.play(from:)`), and the stall
+  is logged. If the stream failed instead, the utterance ends as a failure
+  — after what was written was spoken.
+- **Nothing partial is kept.** A stop while it is being written lets the
+  stream go and deletes the part of a clip; only a whole clip is kept for a
+  replay — and stays kept when a question about playing it, still pending
+  at the stop, is answered later.
+- **Whole means the provider said so.** A Voxtral stream that ends before
+  `speech.audio.done` is a cut-off clip and fails as an invalid response;
+  ElevenLabs' stream is whole when its body ends, a broken connection being
+  a network failure.
+- **Sending is asked about last thing.** `synthesizeToGrowingFile` asks
+  `canSend` again the moment the clip starts reading — after its file is
+  prepared, right before the request — so a stop meanwhile sends nothing.
+- **A word may come back empty.** Voxtral ends the stream without audio
+  for a text of one short word ("Yes."); that is no failure, and the text
+  is then asked for as a whole clip.
+- **Unreachable before the first audio is the on-device voice.** A stream
+  that fails for `network` or `timeout` before it is playable falls back as
+  [above](#which-voice-speaks); once playing, a failure ends the utterance
+  after what was written was spoken.
+- **Text is not streamed in.** The whole text goes in one request. Feeding
+  it word by word as a model writes it needs ElevenLabs' socket
+  (`text-to-dialogue/stream-input` for v3 and v4; the older
+  `text-to-speech/…/stream-input` refuses them); measured, but not built —
+  see the [evaluation](../../docs/evaluations/2026-11-14_elevenlabs_v4_turbo_tts.md#4-streaming-text-in).
+
+Not verified by ear on a device: how the player behaves at the very start
+of a file that is still growing.
 
 Speech settings also expose **Prepare chat audio automatically**, off by default.
 `TtsSettingsController` persists this device-local opt-in under

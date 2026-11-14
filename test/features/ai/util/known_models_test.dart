@@ -715,6 +715,7 @@ void main() {
           'published by ElevenLabs', () {
         final models = knownModelsByProvider[InferenceProviderType.elevenLabs]!;
         expect(models.map((m) => m.providerModelId), [
+          elevenLabsV4TurboModelId,
           elevenLabsMultilingualV2ModelId,
           elevenLabsFlashV25ModelId,
         ]);

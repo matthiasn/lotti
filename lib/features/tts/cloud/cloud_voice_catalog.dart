@@ -22,6 +22,7 @@ class CloudVoice {
     required this.languages,
     this.slug,
     this.gender,
+    this.age,
     this.tags = const [],
     this.type = CloudVoiceType.unknown,
   });
@@ -43,6 +44,7 @@ class CloudVoice {
       name: name,
       slug: json['slug'] as String?,
       gender: json['gender'] as String?,
+      age: json['age'] as String?,
       languages: languages is List
           ? languages.whereType<String>().toList(growable: false)
           : const <String>[],
@@ -70,6 +72,12 @@ class CloudVoice {
   /// As reported by the API (`female`, `male`, …); used only for grouping in
   /// the picker, never for selection.
   final String? gender;
+
+  /// How old the voice sounds, as the API labels it (ElevenLabs: `young`,
+  /// `middle_aged`, `old`); `null` where the API says nothing. Lotti speaks
+  /// as a grandmother, so the default voice is an older woman where the
+  /// catalog has one ([CloudVoiceCatalog.resolve]).
+  final String? age;
 
   /// The languages the voice is advertised for, verbatim from the API.
   final List<String> languages;
@@ -105,6 +113,7 @@ class CloudVoice {
     'name': name,
     if (slug != null) 'slug': slug,
     if (gender != null) 'gender': gender,
+    if (age != null) 'age': age,
     'languages': languages,
     if (tags.isNotEmpty) 'tags': tags,
     'type': type.name,
@@ -117,6 +126,7 @@ class CloudVoice {
       other.name == name &&
       other.slug == slug &&
       other.gender == gender &&
+      other.age == age &&
       listEquals(other.languages, languages) &&
       listEquals(other.tags, tags) &&
       other.type == type;
@@ -127,6 +137,7 @@ class CloudVoice {
     name,
     slug,
     gender,
+    age,
     Object.hashAll(languages),
     Object.hashAll(tags),
     type,
@@ -226,10 +237,12 @@ class CloudVoiceCatalog {
   /// [preferredVoiceId] — the user's choice for this language — wins whenever
   /// the catalog still has it, even if the catalog does not list the language
   /// for it: the user picked it deliberately. Otherwise the language's
-  /// default: its first female preset, then its first voice of any kind. No
-  /// provider names a voice per language, so this default is ours.
-  /// `null` when the language has no voice, so nothing is read rather than
-  /// German text in an English voice.
+  /// default — Lotti speaks as a grandmother, so the voice closest to one:
+  /// its first older woman (a library voice the account saved counts), then
+  /// its first middle-aged female preset, then its first female preset, then
+  /// its first voice of any kind. No provider names a voice per language, so
+  /// this default is ours. `null` when the language has no voice, so nothing
+  /// is read rather than German text in an English voice.
   CloudVoice? resolve({
     required String languageCode,
     String? preferredVoiceId,
@@ -239,13 +252,25 @@ class CloudVoiceCatalog {
       if (preferred != null) return preferred;
     }
     final candidates = forLanguage(languageCode);
-    return candidates.firstWhereOrNull(_isFemalePreset) ??
+    return candidates.firstWhereOrNull(
+          (v) => _isFemale(v) && _ageOf(v) == 'old',
+        ) ??
+        candidates.firstWhereOrNull(
+          (v) => _isFemalePreset(v) && _ageOf(v) == 'middle_aged',
+        ) ??
+        candidates.firstWhereOrNull(_isFemalePreset) ??
         candidates.firstOrNull;
   }
 
-  static bool _isFemalePreset(CloudVoice voice) =>
-      voice.type == CloudVoiceType.preset &&
+  static bool _isFemale(CloudVoice voice) =>
       voice.gender?.trim().toLowerCase() == 'female';
+
+  static bool _isFemalePreset(CloudVoice voice) =>
+      voice.type == CloudVoiceType.preset && _isFemale(voice);
+
+  /// `Middle aged`, `middle-aged` and `middle_aged` alike.
+  static String? _ageOf(CloudVoice voice) =>
+      voice.age?.trim().toLowerCase().replaceAll(RegExp('[ -]'), '_');
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'fetchedAt': fetchedAt.toIso8601String(),

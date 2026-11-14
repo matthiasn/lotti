@@ -13,8 +13,14 @@ import 'package:media_kit/media_kit.dart';
 /// fake — the real `media_kit` player needs native bindings and can't run in
 /// unit tests.
 abstract interface class TtsAudioPlayer {
-  /// Opens [file] and starts playback at [speed]× (1.0 = natural).
-  Future<void> play(File file, {required double speed});
+  /// Opens [file] and starts playback at [speed]× (1.0 = natural), from
+  /// [from] into it — for a file that was still being written when the
+  /// player reached the end of what was there.
+  Future<void> play(
+    File file, {
+    required double speed,
+    Duration from = Duration.zero,
+  });
 
   /// Changes the rate of the clip that is playing, without restarting it.
   Future<void> setSpeed(double speed);
@@ -69,14 +75,21 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
   static const String outputSampleRate = '48000';
 
   @override
-  Future<void> play(File file, {required double speed}) async {
+  Future<void> play(
+    File file, {
+    required double speed,
+    Duration from = Duration.zero,
+  }) async {
     final generation = ++_generation;
     final native = _player.platform;
     if (native is NativePlayer) {
       await native.setProperty('audio-samplerate', outputSampleRate);
     }
     if (generation != _generation) return;
-    await _player.open(Media(file.path), play: false);
+    await _player.open(
+      Media(file.path, start: from == Duration.zero ? null : from),
+      play: false,
+    );
     if (generation != _generation) return;
     await _player.setRate(speed);
     if (generation != _generation) return;

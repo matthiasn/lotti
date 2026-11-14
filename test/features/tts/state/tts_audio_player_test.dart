@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tts/state/tts_audio_focus.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -45,6 +46,28 @@ void main() {
   });
 
   MediaKitTtsAudioPlayer build() => MediaKitTtsAudioPlayer(player);
+
+  test('a clip is opened from its start, or from where an earlier open '
+      'of it stopped', () async {
+    final opened = <Media>[];
+    when(() => player.open(any(), play: any(named: 'play'))).thenAnswer((
+      invocation,
+    ) async {
+      opened.add(invocation.positionalArguments.single as Media);
+    });
+    final audio = build();
+
+    await audio.play(File('/tmp/clip.wav'), speed: 1);
+    await audio.play(
+      File('/tmp/clip.wav'),
+      speed: 1,
+      from: const Duration(milliseconds: 1900),
+    );
+
+    expect(opened.first.start, isNull);
+    expect(opened.last.start, const Duration(milliseconds: 1900));
+    expect(opened.last.uri, endsWith('/tmp/clip.wav'));
+  });
 
   for (final pauseAt in ['open', 'rate']) {
     test('stop during $pauseAt prevents late native playback', () async {

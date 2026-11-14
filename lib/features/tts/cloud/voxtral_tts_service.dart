@@ -38,7 +38,7 @@ enum VoxtralAudioFormat { wav, mp3, flac, opus, pcm }
 /// - The request has no speaking-rate field (only inline pace tags in the
 ///   text). Speed stays a playback rate, as for the on-device engine, so
 ///   changing it never costs a new request.
-class VoxtralTtsService implements CloudTtsClient {
+class VoxtralTtsService implements StreamingCloudTtsClient {
   VoxtralTtsService({
     required DomainLogger domainLogger,
     http.Client? httpClient,
@@ -124,6 +124,100 @@ class VoxtralTtsService implements CloudTtsClient {
       '${stopwatch.elapsedMilliseconds} ms',
     );
     return bytes;
+  }
+
+  /// Speaks [text] with [voiceId] as one synthesis and emits its WAV bytes
+  /// as the API sends them: `POST audio/speech` with `stream: true` answers
+  /// with server-sent events, `speech.audio.delta` carrying base64 audio
+  /// and `speech.audio.done` ending it.
+  ///
+  /// Checked live 2026-11-12: the first delta 0.3 s after the request, 12.8 s
+  /// of audio within 2 s; the WAV header comes in the first delta with its
+  /// length fields at 0xFFFFFFFF; a text of one short word ("Yes.") gets
+  /// `done` and no audio.
+  ///
+  /// Throws as [synthesize] does, on the first listen or along the stream.
+  @override
+  Stream<Uint8List> synthesizeStream({
+    required String text,
+    required String voiceId,
+    required String baseUrl,
+    required String apiKey,
+    String model = defaultModel,
+  }) async* {
+    if (text.trim().isEmpty) throw ArgumentError('Text cannot be empty');
+    if (voiceId.isEmpty) throw ArgumentError('Voice id cannot be empty');
+    CloudTtsHttp.requireKey(apiKey);
+
+    final request =
+        http.Request('POST', CloudTtsHttp.endpoint(baseUrl, 'audio/speech'))
+          ..headers['Authorization'] = 'Bearer $apiKey'
+          ..headers['Accept'] = 'text/event-stream'
+          ..headers['Content-Type'] = 'application/json'
+          ..body = jsonEncode(<String, dynamic>{
+            'model': model,
+            'input': text,
+            'voice_id': voiceId,
+            'response_format': VoxtralAudioFormat.wav.name,
+            'stream': true,
+          });
+
+    // Lengths and ids only: the text is the user's content.
+    final description =
+        'Streamed speech request (${request.url.path}): ${text.length} '
+        'chars, voice $voiceId, model $model';
+    _http.log(description);
+    final stopwatch = Stopwatch()..start();
+    var bytes = 0;
+    var done = false;
+    final lines = _http
+        .sendStreamed(request, description: description)
+        .transform(utf8.decoder)
+        .transform(const LineSplitter());
+    await for (final line in lines) {
+      if (!line.startsWith('data:')) continue;
+      final Object? event;
+      try {
+        event = jsonDecode(line.substring(5));
+      } on FormatException {
+        throw _http.invalidResponse(
+          'Speech stream event is not JSON',
+          description: description,
+        );
+      }
+      if (event is! Map<String, dynamic>) continue;
+      if (event['type'] == 'speech.audio.done') {
+        done = true;
+        break;
+      }
+      final audio = event['audio_data'];
+      if (event['type'] != 'speech.audio.delta' || audio is! String) continue;
+      final Uint8List chunk;
+      try {
+        chunk = base64Decode(audio);
+      } on FormatException {
+        throw _http.invalidResponse(
+          'Speech stream audio_data is not base64',
+          description: description,
+        );
+      }
+      if (bytes == 0) {
+        _http.log('First audio after ${stopwatch.elapsedMilliseconds} ms');
+      }
+      bytes += chunk.length;
+      yield chunk;
+    }
+    // Only `done` says the speech is all there: an answer that just stops
+    // is a cut-off clip, which must not be taken for a whole one.
+    if (!done) {
+      throw _http.invalidResponse(
+        'Speech stream ended before speech.audio.done',
+        description: description,
+      );
+    }
+    _http.log(
+      'Speech stream: $bytes bytes in ${stopwatch.elapsedMilliseconds} ms',
+    );
   }
 
   /// Fetches every voice the account can use, following the API's pages.

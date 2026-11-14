@@ -5,6 +5,24 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/tts/engine/wav_writer.dart';
 
 void main() {
+  group('wavHeader', () {
+    test('a stream of unknown length says 0xFFFFFFFF for both lengths and '
+        'otherwise matches the header of a whole clip', () {
+      final streamed = wavHeader(24000);
+      final whole = wavHeader(24000, dataBytes: 480);
+      final bd = ByteData.sublistView(streamed);
+
+      expect(streamed.length, 44);
+      expect(bd.getUint32(4, Endian.little), 0xFFFFFFFF);
+      expect(bd.getUint32(40, Endian.little), 0xFFFFFFFF);
+      expect(ByteData.sublistView(whole).getUint32(4, Endian.little), 36 + 480);
+      expect(ByteData.sublistView(whole).getUint32(40, Endian.little), 480);
+      // Everything but the two length fields is the same header.
+      expect(streamed.sublist(8, 40), whole.sublist(8, 40));
+      expect(bd.getUint32(24, Endian.little), 24000);
+    });
+  });
+
   group('encodeWavBytes', () {
     test('writes a 44-byte header plus 2 bytes per sample', () {
       final bytes = encodeWavBytes([0, 0, 0], 44100);

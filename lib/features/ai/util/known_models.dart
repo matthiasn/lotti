@@ -186,11 +186,15 @@ const String mistralVoxtralMiniTranscribe3ModelId =
 /// alias for it, so the release id is pinned.
 const String mistralVoxtralTtsModelId = 'voxtral-mini-tts-3-0';
 
-/// ElevenLabs' read-aloud models: the API's default, the most natural of the
-/// stable ones, and the low-latency one at half the price. `eleven_v3` is not
-/// curated: it takes a few thousand characters per request, and a long report
-/// is sent whole, so it would fail where these two (10k and 40k) do not. It
-/// can still be added by hand.
+/// ElevenLabs' read-aloud models: v4 Turbo, the expressive v4 voice at
+/// real-time speed (its first audio 130–200 ms after the request when
+/// streamed, measured 2026-11-14 with `tool/benchmarks/tts_latency.dart`);
+/// the API's default, the most natural of the v2 voices; and the
+/// low-latency one at half the price. `eleven_v3` is not curated: it takes
+/// 5,000 characters per request, and a long report is sent whole, so it
+/// would fail where these (10k, 10k and 40k) do not; it also starts about
+/// three times later than v4 Turbo. It and `eleven_v4` can still be added by hand.
+const String elevenLabsV4TurboModelId = 'eleven_v4_turbo';
 const String elevenLabsMultilingualV2ModelId = 'eleven_multilingual_v2';
 const String elevenLabsFlashV25ModelId = 'eleven_flash_v2_5';
 
