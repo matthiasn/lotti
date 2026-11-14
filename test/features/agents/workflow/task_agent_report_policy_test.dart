@@ -381,6 +381,34 @@ void main() {
       );
     });
 
+    test('a links section without a link is dropped in any language', () {
+      for (final report in [
+        '## Erreicht\nAPI ausgeliefert.\n\n## 🔗 Links\nKeine Links gefunden.',
+        '## Erreicht\nAPI ausgeliefert.\n\n## Links\n- Keine',
+        '## Erreicht\nAPI ausgeliefert.\n\n### Liens\nAucun lien externe.',
+      ]) {
+        expect(
+          TaskAgentReportPolicy.withoutEmptySections(report),
+          '## Erreicht\nAPI ausgeliefert.',
+          reason: report,
+        );
+      }
+    });
+
+    test('a links section that carries a link is kept whole', () {
+      for (final report in [
+        '## 🔗 Links\n- [PR 12](https://example.com/pull/12)',
+        '## Verweise\nSiehe [Aufgabe](/tasks/abc).',
+        '## Links und Quellen\nKeine.\nDas Handbuch liegt im Büro.',
+      ]) {
+        expect(
+          TaskAgentReportPolicy.withoutEmptySections(report),
+          report,
+          reason: report,
+        );
+      }
+    });
+
     test('a section that carries content is kept whole', () {
       const kept = [
         '## Decision needed\nPick the candidate model before the eval runs.',

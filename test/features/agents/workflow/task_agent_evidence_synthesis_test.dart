@@ -230,6 +230,11 @@ void main() {
       expect(mistral, contains('include it and state what it is for'));
       expect(qwen, contains('Write free-form Markdown'));
       expect(qwen, contains('headings are optional'));
+      // The English heading names are meanings, not wording: a German task
+      // gets German headings, and an empty Links section is never written.
+      expect(mistral, contains('in\nthe task language rather than in English'));
+      expect(mistral, contains('including `## Links` when there is no URL'));
+      expect(qwen, contains("task's `languageCode`, headings included"));
     });
   });
 }

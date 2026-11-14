@@ -28,9 +28,9 @@ not use emojis.
 
 ### `content`
 
-Write free-form Markdown in the task's `languageCode`. Choose the structure that
-best fits the facts; headings are optional. Do not add a title because the task
-title is already visible.
+Write free-form Markdown in the task's `languageCode`, headings included.
+Choose the structure that best fits the facts; headings are optional. Do not add
+a title because the task title is already visible.
 
 Lead with the current real-world situation, decision, deadline, or risk, then
 surface the few actions that matter next. Include an outcome only when the
@@ -67,7 +67,8 @@ not use emojis.
 
 Write a compact current-state report in the task's `languageCode`. Do not add a
 title because the task title is already visible. Include only sections that
-contain useful, evidence-backed information:
+contain useful, evidence-backed information, and write each heading below in
+the task language rather than in English:
 
 - `## Progress`: meaningful completed outcomes, not analysis, transcription,
   checklist creation, metadata changes, or other agent activity.
@@ -75,8 +76,9 @@ contain useful, evidence-backed information:
 - `## Blockers`: only active blockers or delivery risks.
 - `## Links`: only real external URLs with descriptive link text.
 
-Omit empty sections. Use human-readable labels instead of internal IDs. Every
-claim must describe current active task state. If the task has a current due
+Omit empty sections, including `## Links` when there is no URL. Use
+human-readable labels instead of internal IDs. Every claim must describe current
+active task state. If the task has a current due
 date or deadline, include it and state what it is for.
 ''';
 
