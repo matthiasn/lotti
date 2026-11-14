@@ -1704,13 +1704,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Status';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Bekræft hver for sig. En færdig opgave forsvinder fra dine lister over åbne opgaver.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Statusændringer';
-
-  @override
   String get aiCardProposalKindUpdate => 'Opdatering';
 
   @override
@@ -1718,6 +1711,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Vis mindre';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Bekræft hver for sig. En færdig opgave forsvinder fra dine lister over åbne opgaver.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Statusændringer';
 
   @override
   String get aiCardTitle => 'AI-oversigt';
@@ -12057,19 +12057,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get onboardingFirstWordsVoiced => 'Sådan, nu kan du også høre mig!';
 
   @override
-  String get onboardingMakeHerYoursContinue => 'Det ser godt ud';
-
-  @override
-  String get onboardingMakeHerYoursLine =>
-      'Vælg, hvordan jeg ser ud. Du kan altid ændre det hele under Indstillinger › Følgesvend.';
-
-  @override
-  String get onboardingMakeHerYoursSkip => 'Spring over for nu';
-
-  @override
-  String get onboardingMakeHerYoursTitle => 'Vælg mit udseende';
-
-  @override
   String get onboardingMetricsActiveDays => 'Aktive dage';
 
   @override
@@ -12100,61 +12087,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get onboardingRecordingStyleTryVoice => 'Prøv med din stemme';
-
-  @override
-  String get onboardingSuccessContinue => 'Kom i gang';
-
-  @override
-  String get onboardingSuccessSubtitle =>
-      'Din AI-hjerne er forbundet og klar til at omsætte dine ord til opgaver.';
-
-  @override
-  String get onboardingSuccessTitle => 'Du er klar';
-
-  @override
-  String get onboardingVoiceElevenLabsDescription =>
-      'Valgfri, med sin egen ElevenLabs-nøgle.';
-
-  @override
-  String get onboardingVoiceElevenLabsName => 'ElevenLabs';
-
-  @override
-  String get onboardingVoiceOnDeviceDescription =>
-      'Gratis og privat. Virker offline efter én download.';
-
-  @override
-  String get onboardingVoiceOnDeviceName => 'På din enhed';
-
-  @override
-  String onboardingVoicePlay(String voice) {
-    return 'Afspil »$voice«';
-  }
-
-  @override
-  String get onboardingVoicesContinue => 'Næste: din nøgle';
-
-  @override
-  String get onboardingVoicesEnglishNote =>
-      'Eksemplerne er på engelsk. Hver stemme taler også mange andre sprog.';
-
-  @override
-  String get onboardingVoicesLine =>
-      'Jeg kan tale med forskellige stemmer. Tryk på en for at høre den. Du kan altid skifte under Indstillinger › Tale.';
-
-  @override
-  String get onboardingVoicesTitle => 'Hør, hvordan jeg kan lyde';
-
-  @override
-  String onboardingVoiceStop(String voice) {
-    return 'Stop »$voice«';
-  }
-
-  @override
-  String get onboardingVoiceVoxtralDescription =>
-      'Følger med din Mistral-nøgle.';
-
-  @override
-  String get onboardingVoiceVoxtralName => 'Mistral Voxtral';
 
   @override
   String get onboardingWelcomeConnectButton => 'Vælg din AI-hjerne';

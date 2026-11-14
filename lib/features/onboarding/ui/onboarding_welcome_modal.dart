@@ -20,9 +20,6 @@ import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.da
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_step.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_words.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
-import 'package:lotti/features/onboarding/ui/widgets/onboarding_make_her_yours_step.dart';
-import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
-import 'package:lotti/features/onboarding/ui/widgets/onboarding_voices_step.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -57,10 +54,11 @@ class OnboardingFirstCapture {
   final String? providerName;
 }
 
-/// The FTUE "connect your brain" front door: a full-screen cinematic route that
-/// crossfades through three steps — a welcome (animated `heroStyle` hero), a
-/// matching connect page (provider tiles), and a key step that creates the
-/// provider and runs the existing per-provider FTUE setup natively.
+/// The FTUE front door: a full-screen cinematic route that crossfades through
+/// five steps, each asking for one thing — the welcome, the one key to start
+/// with (the recommended provider, the others behind a disclosure), the key
+/// itself (which creates the provider and runs the existing per-provider FTUE
+/// setup natively), the areas it should work in, and the first task.
 ///
 /// A full-screen route (not a bottom sheet) keeps the in-panel back buttons
 /// reliably hittable and gives the keyboard step room. `onDismiss` fires only
@@ -297,11 +295,8 @@ class _OnboardingScaffold extends StatelessWidget {
 
 enum _FlowStep {
   welcome,
-  makeHerYours,
-  voices,
   connect,
   apiKey,
-  success,
   category,
   firstTask,
 }
@@ -393,18 +388,6 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
     );
   }
 
-  /// On to the voices, from the "make me yours" step.
-  void _toVoices() {
-    setState(() => _step = _FlowStep.voices);
-    widget.recordEvent(OnboardingEventName.voiceSamplesShown);
-  }
-
-  /// On to the one key, from the voices.
-  void _toConnect() {
-    setState(() => _step = _FlowStep.connect);
-    widget.recordEvent(OnboardingEventName.providerModalShown);
-  }
-
   Widget _buildStep() {
     switch (_step) {
       case _FlowStep.welcome:
@@ -419,37 +402,17 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
                 ? null
                 : onboardingCompanionWelcomeLine(context.messages),
           ),
+          // Straight to the one key: nothing optional stands between the
+          // welcome and the step the first task depends on.
           onConnect: () {
             setState(() {
               _greeted = true;
-              _step = _FlowStep.makeHerYours;
+              _step = _FlowStep.connect;
             });
-            widget.recordEvent(OnboardingEventName.companionCustomizeShown);
+            widget.recordEvent(OnboardingEventName.providerModalShown);
           },
           onSkip: widget.onSkip,
           onExploreDemo: widget.onExploreDemo,
-        );
-      case _FlowStep.makeHerYours:
-        return OnboardingMakeHerYoursStep(
-          key: const ValueKey('onboarding-make-her-yours'),
-          onBack: () => setState(() => _step = _FlowStep.welcome),
-          onCustomized: () =>
-              widget.recordEvent(OnboardingEventName.companionCustomized),
-          onContinue: _toVoices,
-          onSkip: () {
-            widget.recordEvent(OnboardingEventName.companionCustomizeSkipped);
-            _toVoices();
-          },
-        );
-      case _FlowStep.voices:
-        return OnboardingVoicesStep(
-          key: const ValueKey('onboarding-voices'),
-          onBack: () => setState(() => _step = _FlowStep.makeHerYours),
-          onPlayed: (sample) => widget.recordEvent(
-            OnboardingEventName.voiceSamplePlayed,
-            provider: sample.name,
-          ),
-          onContinue: _toConnect,
         );
       case _FlowStep.connect:
         return OnboardingConnectPanel(
@@ -460,7 +423,7 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
             line: context.messages.onboardingConnectGuide,
             framing: CompanionFraming.bust,
           ),
-          onBack: () => setState(() => _step = _FlowStep.voices),
+          onBack: () => setState(() => _step = _FlowStep.welcome),
           onSelect: (type) => setState(() {
             _type = type;
             _step = _FlowStep.apiKey;
@@ -478,25 +441,12 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           ),
           onBack: () => setState(() => _step = _FlowStep.connect),
           onConnected: () {
-            // Provider + models are created — record the win and reveal the
-            // success beat instead of dropping silently into the app.
+            // Provider + models are created — record the win and move on to
+            // the areas, where she says so: no screen stands between the key
+            // and the next thing to do just to be tapped away.
             widget.onConnected(_type);
-            setState(() => _step = _FlowStep.success);
+            setState(() => _step = _FlowStep.category);
           },
-        );
-      case _FlowStep.success:
-        return OnboardingSuccessView(
-          key: const ValueKey('onboarding-success'),
-          accent: context.designTokens.colors.interactive.enabled,
-          title: context.messages.onboardingSuccessTitle,
-          subtitle: context.messages.onboardingSuccessSubtitle,
-          continueLabel: context.messages.onboardingSuccessContinue,
-          // Her first words, in the connected provider's voice where it has
-          // one.
-          lead: OnboardingFirstWords(
-            profileId: onboardingSeededProfileId(_type),
-          ),
-          onContinue: () => setState(() => _step = _FlowStep.category),
         );
       case _FlowStep.category:
         return _OnboardingCategoryStep(
@@ -526,6 +476,10 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
 /// The category step: the user picks the life areas the just-connected provider
 /// should power; on continue each selected area becomes a real category bound
 /// to the provider's seeded inference profile (so it can actually run).
+///
+/// It is also where the connection is confirmed: she celebrates, and her
+/// bubble opens with her first words ([onboardingFirstWords]) before it
+/// explains the areas.
 class _OnboardingCategoryStep extends ConsumerStatefulWidget {
   const _OnboardingCategoryStep({
     required this.type,
@@ -746,15 +700,25 @@ class _OnboardingCategoryStepState
   Widget build(BuildContext context) {
     final messages = context.messages;
     final options = _options(messages);
+    final firstWords = onboardingFirstWords(
+      context,
+      ref,
+      profileId: onboardingSeededProfileId(widget.type),
+    );
+    // One bubble, said as one line: that the key worked, then what to do.
+    final line = '${firstWords.line} ${messages.onboardingCategoryExplanation}';
     return OnboardingCategoryView(
       accent: context.designTokens.colors.interactive.enabled,
       companion: OnboardingCompanion(
         beat: OnboardingCompanionBeat.areas,
-        line: messages.onboardingCategoryExplanation,
+        // Said once it is known which voice says it; the bubble shows it
+        // meanwhile.
+        line: firstWords.settled ? line : null,
         framing: CompanionFraming.bust,
+        cloudVoice: firstWords.voice,
       ),
       title: messages.onboardingCategoryTitle,
-      explanation: messages.onboardingCategoryExplanation,
+      explanation: line,
       whyLabel: messages.onboardingCategoryWhy,
       continueLabel: messages.onboardingCategoryContinue,
       addOwnLabel: messages.onboardingCategoryAddOwn,

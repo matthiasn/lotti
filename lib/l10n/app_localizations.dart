@@ -2982,18 +2982,6 @@ abstract class AppLocalizations {
   /// **'Status'**
   String get aiCardProposalKindStatus;
 
-  /// No description provided for @aiCardStatusChangesHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm each one on its own. A task set to done leaves your open task lists.'**
-  String get aiCardStatusChangesHint;
-
-  /// No description provided for @aiCardStatusChangesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Status changes'**
-  String get aiCardStatusChangesTitle;
-
   /// No description provided for @aiCardProposalKindUpdate.
   ///
   /// In en, this message translates to:
@@ -3011,6 +2999,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show less'**
   String get aiCardShowLess;
+
+  /// No description provided for @aiCardStatusChangesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm each one on its own. A task set to done leaves your open task lists.'**
+  String get aiCardStatusChangesHint;
+
+  /// No description provided for @aiCardStatusChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status changes'**
+  String get aiCardStatusChangesTitle;
 
   /// No description provided for @aiCardTitle.
   ///
@@ -20311,30 +20311,6 @@ abstract class AppLocalizations {
   /// **'There, now you can hear me too!'**
   String get onboardingFirstWordsVoiced;
 
-  /// No description provided for @onboardingMakeHerYoursContinue.
-  ///
-  /// In en, this message translates to:
-  /// **'Looks good'**
-  String get onboardingMakeHerYoursContinue;
-
-  /// No description provided for @onboardingMakeHerYoursLine.
-  ///
-  /// In en, this message translates to:
-  /// **'Pick how I look. You can change all of this any time in Settings › Companion.'**
-  String get onboardingMakeHerYoursLine;
-
-  /// No description provided for @onboardingMakeHerYoursSkip.
-  ///
-  /// In en, this message translates to:
-  /// **'Skip for now'**
-  String get onboardingMakeHerYoursSkip;
-
-  /// No description provided for @onboardingMakeHerYoursTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Make me yours'**
-  String get onboardingMakeHerYoursTitle;
-
   /// Label for the active-day count in the onboarding metrics debug view.
   ///
   /// In en, this message translates to:
@@ -20394,96 +20370,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try with your voice'**
   String get onboardingRecordingStyleTryVoice;
-
-  /// No description provided for @onboardingSuccessContinue.
-  ///
-  /// In en, this message translates to:
-  /// **'Get started'**
-  String get onboardingSuccessContinue;
-
-  /// No description provided for @onboardingSuccessSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Your AI brain is connected and ready to turn your words into tasks.'**
-  String get onboardingSuccessSubtitle;
-
-  /// No description provided for @onboardingSuccessTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'You\'re all set'**
-  String get onboardingSuccessTitle;
-
-  /// No description provided for @onboardingVoiceElevenLabsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Optional, with an ElevenLabs key of its own.'**
-  String get onboardingVoiceElevenLabsDescription;
-
-  /// No description provided for @onboardingVoiceElevenLabsName.
-  ///
-  /// In en, this message translates to:
-  /// **'ElevenLabs'**
-  String get onboardingVoiceElevenLabsName;
-
-  /// No description provided for @onboardingVoiceOnDeviceDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Free and private. Works offline after a one-time download.'**
-  String get onboardingVoiceOnDeviceDescription;
-
-  /// No description provided for @onboardingVoiceOnDeviceName.
-  ///
-  /// In en, this message translates to:
-  /// **'On your device'**
-  String get onboardingVoiceOnDeviceName;
-
-  /// Screen-reader label of a voice sample's play control in onboarding.
-  ///
-  /// In en, this message translates to:
-  /// **'Play “{voice}”'**
-  String onboardingVoicePlay(String voice);
-
-  /// No description provided for @onboardingVoicesContinue.
-  ///
-  /// In en, this message translates to:
-  /// **'Next: your key'**
-  String get onboardingVoicesContinue;
-
-  /// No description provided for @onboardingVoicesEnglishNote.
-  ///
-  /// In en, this message translates to:
-  /// **'The samples are in English. Each voice speaks many other languages too.'**
-  String get onboardingVoicesEnglishNote;
-
-  /// No description provided for @onboardingVoicesLine.
-  ///
-  /// In en, this message translates to:
-  /// **'I can speak in different voices. Tap one to hear it. You can switch any time in Settings › Speech.'**
-  String get onboardingVoicesLine;
-
-  /// No description provided for @onboardingVoicesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Hear how I can sound'**
-  String get onboardingVoicesTitle;
-
-  /// Screen-reader label of a voice sample's play control in onboarding.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop “{voice}”'**
-  String onboardingVoiceStop(String voice);
-
-  /// No description provided for @onboardingVoiceVoxtralDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Comes with your Mistral key.'**
-  String get onboardingVoiceVoxtralDescription;
-
-  /// No description provided for @onboardingVoiceVoxtralName.
-  ///
-  /// In en, this message translates to:
-  /// **'Mistral Voxtral'**
-  String get onboardingVoiceVoxtralName;
 
   /// No description provided for @onboardingWelcomeConnectButton.
   ///

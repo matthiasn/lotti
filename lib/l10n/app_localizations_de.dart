@@ -1719,13 +1719,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Status';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Bestätige jede einzeln. Eine erledigte Aufgabe verschwindet aus deinen offenen Aufgabenlisten.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Statusänderungen';
-
-  @override
   String get aiCardProposalKindUpdate => 'Aktualisieren';
 
   @override
@@ -1733,6 +1726,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Weniger anzeigen';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Bestätige jede einzeln. Eine erledigte Aufgabe verschwindet aus deinen offenen Aufgabenlisten.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Statusänderungen';
 
   @override
   String get aiCardTitle => 'KI-Zusammenfassung';
@@ -12142,19 +12142,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'So, jetzt kannst du mich auch hören!';
 
   @override
-  String get onboardingMakeHerYoursContinue => 'Passt so';
-
-  @override
-  String get onboardingMakeHerYoursLine =>
-      'Such aus, wie ich aussehe. Du kannst das alles jederzeit unter Einstellungen › Begleiterin ändern.';
-
-  @override
-  String get onboardingMakeHerYoursSkip => 'Erst mal überspringen';
-
-  @override
-  String get onboardingMakeHerYoursTitle => 'Gestalte mein Aussehen';
-
-  @override
   String get onboardingMetricsActiveDays => 'Aktive Tage';
 
   @override
@@ -12186,61 +12173,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get onboardingRecordingStyleTryVoice => 'Mit deiner Stimme testen';
-
-  @override
-  String get onboardingSuccessContinue => 'Los geht\'s';
-
-  @override
-  String get onboardingSuccessSubtitle =>
-      'Dein KI-Gehirn ist verbunden und verwandelt deine Worte in Aufgaben.';
-
-  @override
-  String get onboardingSuccessTitle => 'Alles bereit';
-
-  @override
-  String get onboardingVoiceElevenLabsDescription =>
-      'Optional, mit einem eigenen ElevenLabs-Schlüssel.';
-
-  @override
-  String get onboardingVoiceElevenLabsName => 'ElevenLabs';
-
-  @override
-  String get onboardingVoiceOnDeviceDescription =>
-      'Kostenlos und privat. Funktioniert nach einem einmaligen Download offline.';
-
-  @override
-  String get onboardingVoiceOnDeviceName => 'Auf deinem Gerät';
-
-  @override
-  String onboardingVoicePlay(String voice) {
-    return '„$voice“ abspielen';
-  }
-
-  @override
-  String get onboardingVoicesContinue => 'Weiter: dein Schlüssel';
-
-  @override
-  String get onboardingVoicesEnglishNote =>
-      'Die Beispiele sind auf Englisch. Jede Stimme spricht auch viele andere Sprachen.';
-
-  @override
-  String get onboardingVoicesLine =>
-      'Ich kann mit verschiedenen Stimmen sprechen. Tippe auf eine, um sie zu hören. Du kannst jederzeit unter Einstellungen › Sprache wechseln.';
-
-  @override
-  String get onboardingVoicesTitle => 'Hör, wie ich klingen kann';
-
-  @override
-  String onboardingVoiceStop(String voice) {
-    return '„$voice“ stoppen';
-  }
-
-  @override
-  String get onboardingVoiceVoxtralDescription =>
-      'Ist bei deinem Mistral-Schlüssel dabei.';
-
-  @override
-  String get onboardingVoiceVoxtralName => 'Mistral Voxtral';
 
   @override
   String get onboardingWelcomeConnectButton => 'KI-Gehirn wählen';

@@ -150,76 +150,6 @@ steps:
       sv: >-
         För att förstå dig behöver Lotti en AI-hjärna. Välj en.
 
-  - id: make_her_yours
-    min_duration: 3.0
-    narration:
-      en: >-
-        First, you can make Lotti your own — or keep the look and move
-        on.
-      de: >-
-        Zuerst kannst du Lotti nach deinem Geschmack gestalten — oder
-        einfach weitermachen.
-      fr: >-
-        D'abord, tu peux personnaliser Lotti — ou garder son look et
-        continuer.
-      it: >-
-        Prima puoi personalizzare Lotti — oppure tenerne l'aspetto e
-        andare avanti.
-      es: >-
-        Primero puedes personalizar a Lotti — o dejar su aspecto y
-        seguir.
-      cs: >-
-        Nejdřív si můžeš Lotti přizpůsobit — nebo nechat vzhled a
-        pokračovat.
-      nl: >-
-        Eerst kun je Lotti naar je eigen smaak aanpassen — of het
-        uiterlijk houden en doorgaan.
-      ro: >-
-        Mai întâi puteți personaliza aspectul lui Lotti — sau îl păstrați
-        și mergeți mai departe.
-      pt: >-
-        Primeiro, você pode deixar o Lotti do seu jeito — ou manter o
-        visual e seguir.
-      da: >-
-        Først kan du gøre Lotti til din egen — eller beholde udseendet og
-        gå videre.
-      sv: >-
-        Först kan du göra Lotti till din egen — eller behålla utseendet
-        och gå vidare.
-
-  - id: voices
-    min_duration: 3.0
-    narration:
-      en: >-
-        Here you can hear the voices Lotti can speak with. Then on to the
-        key.
-      de: >-
-        Hier hörst du die Stimmen, mit denen Lotti sprechen kann. Dann
-        geht's zum Schlüssel.
-      fr: >-
-        Ici, tu entends les voix que Lotti peut avoir. Ensuite, place à
-        la clé.
-      it: >-
-        Qui senti le voci con cui Lotti può parlare. Poi si passa alla
-        chiave.
-      es: >-
-        Aquí escuchas las voces con las que Lotti puede hablar. Después,
-        la clave.
-      cs: >-
-        Tady uslyšíš hlasy, kterými Lotti umí mluvit. Pak přijde klíč.
-      nl: >-
-        Hier hoor je de stemmen waarmee Lotti kan praten. Daarna de
-        sleutel.
-      ro: >-
-        Aici ascultați vocile cu care poate vorbi Lotti. Apoi urmează
-        cheia.
-      pt: >-
-        Aqui você ouve as vozes que o Lotti pode usar. Depois, a chave.
-      da: >-
-        Her kan du høre de stemmer, Lotti kan tale med. Så kommer nøglen.
-      sv: >-
-        Här hör du rösterna Lotti kan prata med. Sedan kommer nyckeln.
-
   - id: pick_melious
     min_duration: 3.0
     narration:
@@ -292,32 +222,6 @@ steps:
       sv: >-
         Klistra in din API-nyckel. Den förblir dold och stannar på din
         enhet — Lotti kontrollerar den direkt.
-
-  - id: connected
-    min_duration: 3.0
-    narration:
-      en: >-
-        You're connected. That's the hard part done.
-      de: >-
-        Du bist verbunden. Das Schwierigste ist geschafft.
-      fr: >-
-        La connexion est faite. Le plus dur est derrière toi.
-      it: >-
-        Connessione riuscita. La parte difficile è fatta.
-      es: >-
-        Conexión lista. Lo más difícil ya está hecho.
-      cs: >-
-        Spojení je hotové. To nejtěžší máš za sebou.
-      nl: >-
-        Je bent verbonden. Het moeilijkste is gedaan.
-      ro: >-
-        Conexiunea este gata. Partea grea s-a terminat.
-      pt: >-
-        Conexão feita. A parte difícil já passou.
-      da: >-
-        Du er forbundet. Det sværeste er klaret.
-      sv: >-
-        Du är ansluten. Det svåraste är avklarat.
 
   - id: choose_areas
     min_duration: 5.0

@@ -146,12 +146,9 @@ Widget _app({
 enum _OnboardingCase {
   settings,
   welcome,
-  makeHerYours,
-  voices,
   providers,
   otherProviders,
   apiKey,
-  success,
   categories,
   firstTask,
   taskCreated,
@@ -161,12 +158,9 @@ extension on _OnboardingCase {
   String get fileName => switch (this) {
     _OnboardingCase.settings => 'settings',
     _OnboardingCase.welcome => 'welcome',
-    _OnboardingCase.makeHerYours => 'make_her_yours',
-    _OnboardingCase.voices => 'voices',
     _OnboardingCase.providers => 'providers',
     _OnboardingCase.otherProviders => 'other_providers',
     _OnboardingCase.apiKey => 'api_key',
-    _OnboardingCase.success => 'success',
     _OnboardingCase.categories => 'categories',
     _OnboardingCase.firstTask => 'first_task',
     _OnboardingCase.taskCreated => 'task_created',
@@ -226,7 +220,7 @@ void main() {
     when(() => aiRepository.saveConfig(any())).thenAnswer((_) async {});
     // Connecting revives the provider's bundled profile before FTUE seeding;
     // an unstubbed call would throw into _connect's catch and strand the
-    // wizard on the API-key step instead of reaching "You're all set".
+    // wizard on the API-key step instead of reaching the areas.
     when(() => aiRepository.restoreConfig(any())).thenAnswer((_) async {});
 
     categoryRepository = MockCategoryRepository();
@@ -376,26 +370,8 @@ void main() {
     await settleFrames(tester, frames);
   }
 
-  Future<void> driveToMakeHerYours(WidgetTester tester) async {
-    await tapText(tester, _messages(tester).onboardingWelcomeOneKeyButton);
-    expect(
-      find.text(_messages(tester).onboardingMakeHerYoursTitle),
-      findsOneWidget,
-    );
-  }
-
-  Future<void> driveToVoices(WidgetTester tester) async {
-    await driveToMakeHerYours(tester);
-    await tapText(tester, _messages(tester).onboardingMakeHerYoursContinue);
-    expect(
-      find.text(_messages(tester).onboardingVoicesTitle),
-      findsOneWidget,
-    );
-  }
-
   Future<void> driveToProviders(WidgetTester tester) async {
-    await driveToVoices(tester);
-    await tapText(tester, _messages(tester).onboardingVoicesContinue);
+    await tapText(tester, _messages(tester).onboardingWelcomeOneKeyButton);
     expect(
       find.text(_messages(tester).onboardingConnectRecommended),
       findsOneWidget,
@@ -420,17 +396,10 @@ void main() {
     );
   }
 
-  Future<void> driveToSuccess(WidgetTester tester) async {
+  Future<void> driveToCategories(WidgetTester tester) async {
     await driveToApiKey(tester);
     final messages = _messages(tester);
     await tapText(tester, messages.onboardingApiKeyConnect);
-    expect(find.text(messages.onboardingSuccessTitle), findsOneWidget);
-  }
-
-  Future<void> driveToCategories(WidgetTester tester) async {
-    await driveToSuccess(tester);
-    final messages = _messages(tester);
-    await tapText(tester, messages.onboardingSuccessContinue);
     expect(
       find.text(messages.onboardingCategoryTitle),
       findsOneWidget,
@@ -555,18 +524,12 @@ void main() {
             find.text(_messages(tester).onboardingCompanionGreeting),
             findsOneWidget,
           );
-        case _OnboardingCase.makeHerYours:
-          await driveToMakeHerYours(tester);
-        case _OnboardingCase.voices:
-          await driveToVoices(tester);
         case _OnboardingCase.providers:
           await driveToProviders(tester);
         case _OnboardingCase.otherProviders:
           await driveToOtherProviders(tester);
         case _OnboardingCase.apiKey:
           await driveToApiKey(tester);
-        case _OnboardingCase.success:
-          await driveToSuccess(tester);
         case _OnboardingCase.categories:
           await driveToCategories(tester);
         case _OnboardingCase.firstTask:
@@ -594,13 +557,13 @@ void main() {
               brightness: brightness,
             );
 
-            // She leads the welcome, the one-key step and the first task.
+            // She leads the welcome, the one-key step, the areas and the
+            // first task.
             if (const {
               _OnboardingCase.welcome,
-              _OnboardingCase.makeHerYours,
-              _OnboardingCase.voices,
               _OnboardingCase.providers,
               _OnboardingCase.otherProviders,
+              _OnboardingCase.categories,
               _OnboardingCase.firstTask,
               _OnboardingCase.taskCreated,
             }.contains(scenario)) {

@@ -6347,14 +6347,6 @@ void main() {
         await step();
         await tester.tap(find.text('Get started with one key'));
         await step();
-        await tester.ensureVisible(find.text('Skip for now'));
-        await step();
-        await tester.tap(find.text('Skip for now'));
-        await step();
-        await tester.ensureVisible(find.text('Next: your key'));
-        await step();
-        await tester.tap(find.text('Next: your key'));
-        await step();
         await tester.tap(find.text('Other providers'));
         await step();
         await tester.ensureVisible(find.text('Ollama'));
@@ -6366,14 +6358,14 @@ void main() {
         await step();
         await tester.tap(find.text('Connect'));
         await step();
-        expect(find.text('Get started'), findsOneWidget);
-        expect(markCompletedCount, 0, reason: 'still open on the success beat');
+        expect(find.text('Where should your AI work?'), findsOneWidget);
+        expect(markCompletedCount, 0, reason: 'still open on the areas');
 
-        // Close the welcome from its success beat.
+        // Close the welcome from the areas, the step the key leads to.
         await tester.tapAt(const Offset(5, 5));
         await step();
 
-        expect(find.text('Get started'), findsNothing);
+        expect(find.text('Where should your AI work?'), findsNothing);
         expect(markCompletedCount, 1);
 
         await tester.pumpWidget(const SizedBox.shrink());
