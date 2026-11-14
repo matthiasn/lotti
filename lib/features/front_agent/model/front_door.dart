@@ -145,6 +145,7 @@ sealed class FrontDoorOutcome {
           taskId: taskId,
           newKind: FrontNewKind.fromName(map['newKind']),
           generation: generation is int ? generation : 0,
+          extras: FrontTaskExtra.fromNames(map['extras']),
           at: switch (map['at']) {
             final String iso => DateTime.tryParse(iso),
             _ => null,
@@ -264,18 +265,23 @@ class FrontDoorInbox extends FrontDoorOutcome {
 /// [newKind] and [generation] are the inbox item's, kept for a take-back.
 /// [at] is when the tap made it — later than the door record, which keeps
 /// the time it was walked; null on records written before it was kept.
+/// [extras] is what was asked to be generated with it — cover art, a coding
+/// prompt — so the card can say so; whether a generation finished is the
+/// task's to show.
 class FrontDoorTaskCreated extends FrontDoorOutcome {
   const FrontDoorTaskCreated({
     required this.taskId,
     this.newKind,
     this.generation = 0,
     this.at,
+    this.extras = const {},
   });
 
   final String taskId;
   final FrontNewKind? newKind;
   final int generation;
   final DateTime? at;
+  final Set<FrontTaskExtra> extras;
 
   @override
   Map<String, Object?> toJson() => {
@@ -284,6 +290,11 @@ class FrontDoorTaskCreated extends FrontDoorOutcome {
     if (newKind != null) 'newKind': newKind!.name,
     if (generation > 0) 'generation': generation,
     if (at != null) 'at': at!.toUtc().toIso8601String(),
+    if (extras.isNotEmpty)
+      'extras': [
+        for (final extra in FrontTaskExtra.values)
+          if (extras.contains(extra)) extra.name,
+      ],
   };
 }
 

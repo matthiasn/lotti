@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/helpers/generated_prompt_summary.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_card.dart';
@@ -33,10 +34,6 @@ class GeneratedPromptCard extends StatefulWidget {
 
   // Static regex patterns compiled once for performance.
   // Public so they can be reused by other widgets (e.g., UnifiedAiProgressView).
-  static final summarySectionRegex = RegExp(
-    r'##\s*Summary\s*\n+([\s\S]*?)(?=##\s*Prompt|$)',
-    caseSensitive: false,
-  );
   static final promptSectionRegex = RegExp(
     r'##\s*Prompt\s*\n+([\s\S]*)',
     caseSensitive: false,
@@ -129,9 +126,6 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
     // ## Prompt
     // <full prompt>
 
-    final summaryMatch = GeneratedPromptCard.summarySectionRegex.firstMatch(
-      response,
-    );
     final promptMatch = GeneratedPromptCard.promptSectionRegex.firstMatch(
       response,
     );
@@ -139,8 +133,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
     // Fallback: if no Summary section found, use first line as summary.
     // If no Prompt section found, use entire response as the prompt.
     // This handles malformed or non-standard AI responses gracefully.
-    _summary =
-        summaryMatch?.group(1)?.trim() ?? response.split('\n').first.trim();
+    _summary = generatedPromptSummary(response);
     _fullPrompt = promptMatch?.group(1)?.trim() ?? response;
   }
 

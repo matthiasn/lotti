@@ -316,8 +316,107 @@ void main() {
       FrontTaskDraft(title: 'Count', due: DateTime(2026, 11, 11)),
       const FrontTaskDraft(title: 'Count', inProgress: true),
       FrontTaskDraft(title: 'Count', startedAt: DateTime(2026, 11, 11, 9)),
+      const FrontTaskDraft(title: 'Count', coverArt: true),
     ]) {
       expect(draft.namesChoices, isTrue, reason: '${draft.toJson()}');
     }
+  });
+
+  group('cover art', () {
+    FrontTaskDraft? read(Object? coverArt) => FrontTaskDraft.fromModel(
+      {'title': 'Count the penguins', 'coverArt': coverArt},
+      categoryExists: (_) => true,
+      now: DateTime(2026, 11, 14, 9),
+    );
+
+    test('is only a true the model gave', () {
+      expect(read(true)!.coverArt, isTrue);
+      for (final other in [false, null, 'true', 1]) {
+        expect(read(other)!.coverArt, isFalse, reason: '$other');
+      }
+    });
+
+    test('is stored only when asked for, and reads back', () {
+      const asked = FrontTaskDraft(title: 'Count', coverArt: true);
+      expect(asked.toJson()['coverArt'], isTrue);
+      expect(FrontTaskDraft.fromJson(asked.toJson())!.coverArt, isTrue);
+
+      const plain = FrontTaskDraft(title: 'Count');
+      expect(plain.toJson().containsKey('coverArt'), isFalse);
+      expect(FrontTaskDraft.fromJson(plain.toJson())!.coverArt, isFalse);
+      // A record from before the field was kept reads as none asked for.
+      expect(FrontTaskDraft.fromJson({'title': 'Count'})!.coverArt, isFalse);
+    });
+
+    test('the choices start at what the words asked for', () {
+      expect(
+        FrontTaskChoices.of(
+          const FrontTaskDraft(title: 'Count', coverArt: true),
+        ).coverArt,
+        isTrue,
+      );
+      expect(
+        FrontTaskChoices.of(const FrontTaskDraft(title: 'Count')).coverArt,
+        isFalse,
+      );
+      expect(FrontTaskChoices.of(null).coverArt, isFalse);
+    });
+
+    test('copyWith sets it and leaves it alone when not given', () {
+      const none = FrontTaskChoices(
+        start: FrontTaskStart.open,
+        priority: TaskPriority.p2Medium,
+      );
+      final on = none.copyWith(coverArt: true);
+      expect(on.coverArt, isTrue);
+      expect(on.copyWith(priority: TaskPriority.p0Urgent).coverArt, isTrue);
+      expect(on.copyWith(coverArt: false).coverArt, isFalse);
+    });
+
+    test('two choices that differ only in it are not equal', () {
+      const none = FrontTaskChoices(
+        start: FrontTaskStart.open,
+        priority: TaskPriority.p2Medium,
+      );
+      final on = none.copyWith(coverArt: true);
+      expect(on, isNot(none));
+      expect(on.hashCode, isNot(none.hashCode));
+      expect(on, none.copyWith(coverArt: true));
+    });
+
+    test("withChoices takes the user's choice over the words, either way", () {
+      const none = FrontTaskChoices(
+        start: FrontTaskStart.open,
+        priority: TaskPriority.p2Medium,
+      );
+      const asked = FrontTaskDraft(title: 'Count', coverArt: true);
+      const plain = FrontTaskDraft(title: 'Count');
+      expect(asked.withChoices(none).coverArt, isFalse);
+      expect(
+        plain.withChoices(none.copyWith(coverArt: true)).coverArt,
+        isTrue,
+      );
+    });
+  });
+
+  group('FrontTaskExtra.fromNames', () {
+    test('reads the names it knows, in the order they are offered', () {
+      expect(FrontTaskExtra.fromNames(['codingPrompt', 'coverArt']).toList(), [
+        FrontTaskExtra.coverArt,
+        FrontTaskExtra.codingPrompt,
+      ]);
+      expect(FrontTaskExtra.fromNames(['codingPrompt']), {
+        FrontTaskExtra.codingPrompt,
+      });
+    });
+
+    test('leaves out a name it does not know, and reads no list as none', () {
+      expect(FrontTaskExtra.fromNames(['hologram', 'coverArt', 3]), {
+        FrontTaskExtra.coverArt,
+      });
+      for (final other in [null, 'coverArt', <String, Object?>{}]) {
+        expect(FrontTaskExtra.fromNames(other), isEmpty, reason: '$other');
+      }
+    });
   });
 }

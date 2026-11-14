@@ -1713,13 +1713,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Status';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Bevestig ze één voor één. Een afgeronde taak verdwijnt uit je lijsten met open taken.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Statuswijzigingen';
-
-  @override
   String get aiCardProposalKindUpdate => 'Bijwerken';
 
   @override
@@ -1727,6 +1720,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Minder tonen';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Bevestig ze één voor één. Een afgeronde taak verdwijnt uit je lijsten met open taken.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Statuswijzigingen';
 
   @override
   String get aiCardTitle => 'Samenvatting van de AI';
@@ -7494,6 +7494,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontDoorChangeDay => 'Vandaag aanpassen';
 
   @override
+  String get frontDoorCoverRequested => 'omslag aangevraagd';
+
+  @override
   String get frontDoorDayPlanned => 'Plan van vandaag aangepast';
 
   @override
@@ -7564,6 +7567,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontDoorMakeEvent => 'Maak er een gebeurtenis van';
 
   @override
+  String get frontDoorMakePrompt => 'Taak met een codeerprompt';
+
+  @override
   String get frontDoorMakeTask => 'Maak er een taak van';
 
   @override
@@ -7585,6 +7591,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontDoorProjectCreated => 'Omgezet in een project';
+
+  @override
+  String get frontDoorPromptRequested => 'codeerprompt aangevraagd';
 
   @override
   String frontDoorProposal(String owner) {
@@ -7643,6 +7652,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Grafiek vergroten';
 
   @override
+  String get frontPreviewCoverDrawing => 'Omslag wordt getekend…';
+
+  @override
+  String get frontPreviewCoverFailed => 'De omslag kon niet worden getekend';
+
+  @override
+  String get frontPreviewPromptFailed =>
+      'De codeerprompt kon niet worden geschreven';
+
+  @override
+  String get frontPreviewPromptWriting => 'Codeerprompt wordt geschreven…';
+
+  @override
   String get frontPullRequestsLinesAdded => 'Toegevoegde regels';
 
   @override
@@ -7672,7 +7694,16 @@ class AppLocalizationsNl extends AppLocalizations {
       'Wil je iets instellen voordat ik hem aanmaak?';
 
   @override
+  String get frontTaskSetupCover => 'Omslag';
+
+  @override
+  String get frontTaskSetupCoverGenerate => 'Omslag genereren';
+
+  @override
   String get frontTaskSetupCreate => 'Taak aanmaken';
+
+  @override
+  String get frontTaskSetupNoCover => 'Geen omslag';
 
   @override
   String get frontTaskSetupPickDate => 'Kies een datum…';

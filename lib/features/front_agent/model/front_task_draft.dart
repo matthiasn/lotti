@@ -27,24 +27,45 @@ enum FrontTaskStart {
   final String dbStatus;
 }
 
+/// What is generated for a task made from the user's words, once it is
+/// made: each a skill run on the words filed under it, in the background.
+enum FrontTaskExtra {
+  /// Cover art, drawn from the words and set as the task's cover.
+  coverArt,
+
+  /// A coding prompt, written from the words and filed under the task.
+  codingPrompt;
+
+  /// The extras a record stored, in the enum's order; a name this build
+  /// does not know is left out.
+  static Set<FrontTaskExtra> fromNames(Object? names) => {
+    if (names is List)
+      for (final extra in values)
+        if (names.contains(extra.name)) extra,
+  };
+}
+
 /// What the user set on an inbox item before making it a task: its status,
-/// its priority and its due day (none for no due day). Seeded from what the
-/// router read from their words ([FrontTaskChoices.of]), so a tap on create
-/// alone makes the task as she understood it.
+/// its priority, its due day (none for no due day) and whether cover art is
+/// generated for it. Seeded from what the router read from their words
+/// ([FrontTaskChoices.of]), so a tap on create alone makes the task as she
+/// understood it.
 @immutable
 class FrontTaskChoices {
   const FrontTaskChoices({
     required this.start,
     required this.priority,
     this.due,
+    this.coverArt = false,
   });
 
   /// What [draft] says, or the defaults for a task made of bare words:
-  /// open, medium priority, no due day.
+  /// open, medium priority, no due day, no cover art.
   factory FrontTaskChoices.of(FrontTaskDraft? draft) => FrontTaskChoices(
     start: draft?.status ?? FrontTaskStart.open,
     priority: draft?.priority ?? TaskPriority.p2Medium,
     due: draft?.due,
+    coverArt: draft?.coverArt ?? false,
   );
 
   final FrontTaskStart start;
@@ -53,14 +74,19 @@ class FrontTaskChoices {
   /// A local calendar day.
   final DateTime? due;
 
+  /// Whether cover art is generated for the task once it is made.
+  final bool coverArt;
+
   FrontTaskChoices copyWith({
     FrontTaskStart? start,
     TaskPriority? priority,
     DateTime? Function()? due,
+    bool? coverArt,
   }) => FrontTaskChoices(
     start: start ?? this.start,
     priority: priority ?? this.priority,
     due: due == null ? this.due : due(),
+    coverArt: coverArt ?? this.coverArt,
   );
 
   @override
@@ -68,10 +94,11 @@ class FrontTaskChoices {
       other is FrontTaskChoices &&
       other.start == start &&
       other.priority == priority &&
-      other.due == due;
+      other.due == due &&
+      other.coverArt == coverArt;
 
   @override
-  int get hashCode => Object.hash(start, priority, due);
+  int get hashCode => Object.hash(start, priority, due, coverArt);
 }
 
 /// The task a `new` segment would become, as the router read it from the
@@ -95,6 +122,7 @@ class FrontTaskDraft {
     this.startedAt,
     this.followsUpTaskId,
     this.start,
+    this.coverArt = false,
   });
 
   final String title;
@@ -125,6 +153,10 @@ class FrontTaskDraft {
   /// the draft handed straight to the maker — never one that is stored.
   final FrontTaskStart? start;
 
+  /// Whether the user asked for cover art with the task: generated from
+  /// their words once the task is made.
+  final bool coverArt;
+
   /// The status it is made in: the one chosen, else in progress when the
   /// words say so or a timer runs, else open.
   FrontTaskStart get status =>
@@ -133,17 +165,18 @@ class FrontTaskDraft {
           ? FrontTaskStart.inProgress
           : FrontTaskStart.open);
 
-  /// Whether the words set any of the status, priority or due day — what
-  /// she can say she heard, rather than defaults she filled in.
+  /// Whether the words set any of the status, priority, due day or cover
+  /// art — what she can say she heard, rather than defaults she filled in.
   bool get namesChoices =>
       start != null ||
       priority != null ||
       due != null ||
       inProgress ||
-      startedAt != null;
+      startedAt != null ||
+      coverArt;
 
-  /// This draft as the user set it up: their status, priority and due day
-  /// over what the words said. A timer runs only in a task made in
+  /// This draft as the user set it up: their status, priority, due day and
+  /// cover art over what the words said. A timer runs only in a task made in
   /// progress — one chosen open is not being worked on.
   FrontTaskDraft withChoices(FrontTaskChoices choices) => FrontTaskDraft(
     title: title,
@@ -156,6 +189,7 @@ class FrontTaskDraft {
     startedAt: choices.start == FrontTaskStart.inProgress ? startedAt : null,
     followsUpTaskId: followsUpTaskId,
     start: choices.start,
+    coverArt: choices.coverArt,
   );
 
   /// Reads the model's `task` object. Null without a title; any other field
@@ -200,6 +234,7 @@ class FrontTaskDraft {
           followsUp != null && (followUpExists?.call(followsUp) ?? false)
           ? followsUp
           : null,
+      coverArt: args['coverArt'] == true,
     );
   }
 
@@ -213,6 +248,7 @@ class FrontTaskDraft {
     if (inProgress) 'inProgress': true,
     if (startedAt != null) 'startedAt': startedAt!.toUtc().toIso8601String(),
     if (followsUpTaskId != null) 'followsUpTaskId': followsUpTaskId,
+    if (coverArt) 'coverArt': true,
   };
 
   /// Reads a stored draft; null when it is not one [toJson] wrote.
@@ -234,6 +270,7 @@ class FrontTaskDraft {
         _ => null,
       },
       followsUpTaskId: _string(json['followsUpTaskId']),
+      coverArt: json['coverArt'] == true,
     );
   }
 }

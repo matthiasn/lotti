@@ -354,6 +354,28 @@ void main() {
     );
   });
 
+  test('cover art is read only when the user asks for it, as a field of '
+      'the task they ask for', () {
+    expect(
+      frontAgentSystemPrompt,
+      contains(
+        '`coverArt` true only when they ask for cover art, a cover or a '
+        'picture for it',
+      ),
+    );
+    final task =
+        ((((frontAgentTools.first.parameters['properties'] as Map)['segments']
+                        as Map)['items']
+                    as Map)['properties']
+                as Map)['task']
+            as Map;
+    final coverArt = (task['properties'] as Map)['coverArt'] as Map;
+    expect(coverArt['type'], 'boolean');
+    expect(coverArt['description'], contains('True only when they ask'));
+    // Never demanded of the model: a task without one is the usual case.
+    expect(task['required'], ['title']);
+  });
+
   test('dates are written as the tools give them, and a misheard name '
       'as listed', () {
     expect(frontAgentSystemPrompt, contains('`YYYY-MM-DD`'));

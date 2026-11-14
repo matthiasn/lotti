@@ -1697,13 +1697,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Status';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Confirm each one on its own. A task set to done leaves your open task lists.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Status changes';
-
-  @override
   String get aiCardProposalKindUpdate => 'Update';
 
   @override
@@ -1711,6 +1704,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Show less';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Confirm each one on its own. A task set to done leaves your open task lists.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Status changes';
 
   @override
   String get aiCardTitle => 'AI summary';
@@ -7436,6 +7436,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontDoorChangeDay => 'Change today';
 
   @override
+  String get frontDoorCoverRequested => 'cover art requested';
+
+  @override
   String get frontDoorDayPlanned => 'Today\'s plan changed';
 
   @override
@@ -7506,6 +7509,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontDoorMakeEvent => 'Make it an event';
 
   @override
+  String get frontDoorMakePrompt => 'Task with a coding prompt';
+
+  @override
   String get frontDoorMakeTask => 'Make it a task';
 
   @override
@@ -7527,6 +7533,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontDoorProjectCreated => 'Made into a project';
+
+  @override
+  String get frontDoorPromptRequested => 'coding prompt requested';
 
   @override
   String frontDoorProposal(String owner) {
@@ -7584,6 +7593,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Expand chart';
 
   @override
+  String get frontPreviewCoverDrawing => 'Drawing the cover…';
+
+  @override
+  String get frontPreviewCoverFailed => 'The cover could not be drawn';
+
+  @override
+  String get frontPreviewPromptFailed =>
+      'The coding prompt could not be written';
+
+  @override
+  String get frontPreviewPromptWriting => 'Writing the coding prompt…';
+
+  @override
   String get frontPullRequestsLinesAdded => 'Lines added';
 
   @override
@@ -7611,7 +7633,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontTaskSetupAskPlain => 'Anything to set before I make it?';
 
   @override
+  String get frontTaskSetupCover => 'Cover art';
+
+  @override
+  String get frontTaskSetupCoverGenerate => 'Generate cover art';
+
+  @override
   String get frontTaskSetupCreate => 'Create task';
+
+  @override
+  String get frontTaskSetupNoCover => 'No cover art';
 
   @override
   String get frontTaskSetupPickDate => 'Pick a date…';

@@ -2982,18 +2982,6 @@ abstract class AppLocalizations {
   /// **'Status'**
   String get aiCardProposalKindStatus;
 
-  /// No description provided for @aiCardStatusChangesHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm each one on its own. A task set to done leaves your open task lists.'**
-  String get aiCardStatusChangesHint;
-
-  /// No description provided for @aiCardStatusChangesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Status changes'**
-  String get aiCardStatusChangesTitle;
-
   /// No description provided for @aiCardProposalKindUpdate.
   ///
   /// In en, this message translates to:
@@ -3011,6 +2999,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show less'**
   String get aiCardShowLess;
+
+  /// No description provided for @aiCardStatusChangesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm each one on its own. A task set to done leaves your open task lists.'**
+  String get aiCardStatusChangesHint;
+
+  /// No description provided for @aiCardStatusChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status changes'**
+  String get aiCardStatusChangesTitle;
 
   /// No description provided for @aiCardTitle.
   ///
@@ -12701,6 +12701,12 @@ abstract class AppLocalizations {
   /// **'Change today'**
   String get frontDoorChangeDay;
 
+  /// No description provided for @frontDoorCoverRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'cover art requested'**
+  String get frontDoorCoverRequested;
+
   /// No description provided for @frontDoorDayPlanned.
   ///
   /// In en, this message translates to:
@@ -12827,6 +12833,12 @@ abstract class AppLocalizations {
   /// **'Make it an event'**
   String get frontDoorMakeEvent;
 
+  /// No description provided for @frontDoorMakePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Task with a coding prompt'**
+  String get frontDoorMakePrompt;
+
   /// No description provided for @frontDoorMakeTask.
   ///
   /// In en, this message translates to:
@@ -12868,6 +12880,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Made into a project'**
   String get frontDoorProjectCreated;
+
+  /// No description provided for @frontDoorPromptRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'coding prompt requested'**
+  String get frontDoorPromptRequested;
 
   /// No description provided for @frontDoorProposal.
   ///
@@ -12959,6 +12977,30 @@ abstract class AppLocalizations {
   /// **'Expand chart'**
   String get frontLoggedTimeExpand;
 
+  /// No description provided for @frontPreviewCoverDrawing.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawing the cover…'**
+  String get frontPreviewCoverDrawing;
+
+  /// No description provided for @frontPreviewCoverFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The cover could not be drawn'**
+  String get frontPreviewCoverFailed;
+
+  /// No description provided for @frontPreviewPromptFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The coding prompt could not be written'**
+  String get frontPreviewPromptFailed;
+
+  /// No description provided for @frontPreviewPromptWriting.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing the coding prompt…'**
+  String get frontPreviewPromptWriting;
+
   /// Chart toggle and series name under the companion's answer about pull requests: lines the pull requests opened that day added.
   ///
   /// In en, this message translates to:
@@ -13013,11 +13055,29 @@ abstract class AppLocalizations {
   /// **'Anything to set before I make it?'**
   String get frontTaskSetupAskPlain;
 
+  /// No description provided for @frontTaskSetupCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover art'**
+  String get frontTaskSetupCover;
+
+  /// No description provided for @frontTaskSetupCoverGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate cover art'**
+  String get frontTaskSetupCoverGenerate;
+
   /// No description provided for @frontTaskSetupCreate.
   ///
   /// In en, this message translates to:
   /// **'Create task'**
   String get frontTaskSetupCreate;
+
+  /// No description provided for @frontTaskSetupNoCover.
+  ///
+  /// In en, this message translates to:
+  /// **'No cover art'**
+  String get frontTaskSetupNoCover;
 
   /// No description provided for @frontTaskSetupPickDate.
   ///

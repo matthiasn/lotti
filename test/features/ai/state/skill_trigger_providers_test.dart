@@ -3427,6 +3427,249 @@ void main() {
       );
     });
 
+    group('a task with no profile that can generate', () {
+      final provider =
+          AiConfig.inferenceProvider(
+                id: 'gemini-prov',
+                name: 'Gemini',
+                inferenceProviderType: InferenceProviderType.gemini,
+                apiKey: 'key',
+                baseUrl: 'https://generativelanguage.googleapis.com',
+                createdAt: DateTime(2024, 3, 15),
+              )
+              as AiConfigInferenceProvider;
+
+      /// A profile that writes; one that [draws] names an image model too.
+      ResolvedProfile profile(String thinking, {bool draws = false}) =>
+          ResolvedProfile(
+            thinkingModelId: thinking,
+            thinkingProvider: provider,
+            imageGenerationModelId: draws ? 'imagen' : null,
+            imageGenerationProvider: draws ? provider : null,
+          );
+
+      AiConfigSkill skillOf(SkillType type) =>
+          AiConfig.skill(
+                id: 'skill-${type.name}',
+                name: type.name,
+                createdAt: DateTime(2024, 3, 15),
+                skillType: type,
+                requiredInputModalities: [
+                  if (type == SkillType.imageAnalysis)
+                    Modality.image
+                  else
+                    Modality.text,
+                ],
+                contextPolicy: ContextPolicy.fullTask,
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
+
+      /// The profile each started run was handed.
+      late List<ResolvedProfile?> ranOn;
+
+      setUp(() {
+        ranOn = [];
+        when(
+          () => mockRunner.runImageGeneration(
+            entryId: any(named: 'entryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            referenceImages: any(named: 'referenceImages'),
+            overrideModelId: any(named: 'overrideModelId'),
+          ),
+        ).thenAnswer((invocation) async {
+          ranOn.add(
+            (invocation.namedArguments[#automationResult] as AutomationResult)
+                .resolvedProfile,
+          );
+        });
+        when(
+          () => mockRunner.runPromptGeneration(
+            entryId: any(named: 'entryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            referenceImages: any(named: 'referenceImages'),
+            overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          ),
+        ).thenAnswer((invocation) async {
+          ranOn.add(
+            (invocation.namedArguments[#automationResult] as AutomationResult)
+                .resolvedProfile,
+          );
+        });
+      });
+
+      Future<void> trigger(
+        SkillType type, {
+        required ResolvedProfile? ofTask,
+        required ResolvedProfile? settingsDefault,
+        String? overrideModelId,
+      }) async {
+        when(
+          () => mockResolver.resolveForSubject('task-1'),
+        ).thenAnswer((_) async => ofTask);
+        when(
+          () => mockResolver.resolveDefaultProfile(),
+        ).thenAnswer((_) async => settingsDefault);
+        final testContainer = ProviderContainer(
+          overrides: withServiceOverrides([
+            skillRegistryProvider.overrideWithValue([skillOf(type)]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+          ]),
+        );
+        containersToDispose.add(testContainer);
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'words-1',
+            skillId: 'skill-${type.name}',
+            linkedTaskId: 'task-1',
+            referenceImages: null,
+            overrideModelId: overrideModelId,
+            geminiThinkingMode: null,
+          )).future,
+        );
+      }
+
+      test('cover art for a task with no profile is drawn on the Settings '
+          'default', () async {
+        final settingsDefault = profile('default', draws: true);
+
+        await trigger(
+          SkillType.imageGeneration,
+          ofTask: null,
+          settingsDefault: settingsDefault,
+        );
+
+        expect(ranOn, [settingsDefault]);
+      });
+
+      test('cover art whose task profile names no image model is drawn on '
+          'the Settings default when that names one', () async {
+        final settingsDefault = profile('default', draws: true);
+
+        await trigger(
+          SkillType.imageGeneration,
+          ofTask: profile('task'),
+          settingsDefault: settingsDefault,
+        );
+
+        expect(ranOn, [settingsDefault]);
+      });
+
+      test(
+        'a task profile that can draw is used, the default never asked',
+        () async {
+          final ofTask = profile('task', draws: true);
+
+          await trigger(
+            SkillType.imageGeneration,
+            ofTask: ofTask,
+            settingsDefault: profile('default', draws: true),
+          );
+
+          expect(ranOn, [ofTask]);
+          verifyNever(() => mockResolver.resolveDefaultProfile());
+        },
+      );
+
+      test('when the default cannot draw either, the task profile stands as '
+          'before', () async {
+        final ofTask = profile('task');
+
+        await trigger(
+          SkillType.imageGeneration,
+          ofTask: ofTask,
+          settingsDefault: profile('default'),
+        );
+
+        expect(ranOn, [ofTask]);
+      });
+
+      test('with no task profile and a default that cannot draw, nothing '
+          'runs', () async {
+        await trigger(
+          SkillType.imageGeneration,
+          ofTask: null,
+          settingsDefault: profile('default'),
+        );
+
+        expect(ranOn, isEmpty);
+        verifyZeroInteractions(mockRunner);
+      });
+
+      test('with no profile anywhere, nothing runs', () async {
+        await trigger(
+          SkillType.imageGeneration,
+          ofTask: null,
+          settingsDefault: null,
+        );
+
+        verifyZeroInteractions(mockRunner);
+      });
+
+      test('a model picked by hand needs no image slot: the task profile '
+          'stands and the default is never asked', () async {
+        final ofTask = profile('task');
+
+        await trigger(
+          SkillType.imageGeneration,
+          ofTask: ofTask,
+          settingsDefault: profile('default', draws: true),
+          overrideModelId: 'picked',
+        );
+
+        expect(ranOn, [ofTask]);
+        verifyNever(() => mockResolver.resolveDefaultProfile());
+      });
+
+      for (final type in [
+        SkillType.promptGeneration,
+        SkillType.imagePromptGeneration,
+      ]) {
+        test('${type.name} for a task with no profile is written on the '
+            'Settings default, which needs no image model', () async {
+          final settingsDefault = profile('default');
+
+          await trigger(type, ofTask: null, settingsDefault: settingsDefault);
+
+          expect(ranOn, [settingsDefault]);
+        });
+
+        test('${type.name} on a task with a profile never asks the '
+            'default', () async {
+          final ofTask = profile('task');
+
+          await trigger(
+            type,
+            ofTask: ofTask,
+            settingsDefault: profile('default'),
+          );
+
+          expect(ranOn, [ofTask]);
+          verifyNever(() => mockResolver.resolveDefaultProfile());
+        });
+      }
+
+      test('a skill that generates nothing takes no default: an image '
+          'analysis on a task with no profile still declines', () async {
+        await trigger(
+          SkillType.imageAnalysis,
+          ofTask: null,
+          settingsDefault: profile('default', draws: true),
+        );
+
+        verifyNever(() => mockResolver.resolveDefaultProfile());
+        verifyZeroInteractions(mockRunner);
+      });
+    });
+
     test('successfully routes image generation skill to runner', () async {
       final skill =
           AiConfig.skill(

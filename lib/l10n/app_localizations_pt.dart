@@ -1719,13 +1719,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiCardProposalKindStatus => 'Estado';
 
   @override
-  String get aiCardStatusChangesHint =>
-      'Confirma cada uma em separado. Uma tarefa concluída sai das tuas listas de tarefas abertas.';
-
-  @override
-  String get aiCardStatusChangesTitle => 'Alterações de estado';
-
-  @override
   String get aiCardProposalKindUpdate => 'Atualizar';
 
   @override
@@ -1733,6 +1726,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get aiCardShowLess => 'Mostrar menos';
+
+  @override
+  String get aiCardStatusChangesHint =>
+      'Confirma cada uma em separado. Uma tarefa concluída sai das tuas listas de tarefas abertas.';
+
+  @override
+  String get aiCardStatusChangesTitle => 'Alterações de estado';
 
   @override
   String get aiCardTitle => 'Resumo de IA';
@@ -7564,6 +7564,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get frontDoorChangeDay => 'Mudar hoje';
 
   @override
+  String get frontDoorCoverRequested => 'capa pedida';
+
+  @override
   String get frontDoorDayPlanned => 'Plano de hoje alterado';
 
   @override
@@ -7634,6 +7637,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get frontDoorMakeEvent => 'Transformar em evento';
 
   @override
+  String get frontDoorMakePrompt => 'Tarefa com prompt de código';
+
+  @override
   String get frontDoorMakeTask => 'Transformar em tarefa';
 
   @override
@@ -7655,6 +7661,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get frontDoorProjectCreated => 'Transformado em projeto';
+
+  @override
+  String get frontDoorPromptRequested => 'prompt de código pedido';
 
   @override
   String frontDoorProposal(String owner) {
@@ -7712,6 +7721,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Ampliar gráfico';
 
   @override
+  String get frontPreviewCoverDrawing => 'A desenhar a capa…';
+
+  @override
+  String get frontPreviewCoverFailed => 'Não foi possível desenhar a capa';
+
+  @override
+  String get frontPreviewPromptFailed =>
+      'Não foi possível escrever o prompt de código';
+
+  @override
+  String get frontPreviewPromptWriting => 'A escrever o prompt de código…';
+
+  @override
   String get frontPullRequestsLinesAdded => 'Linhas adicionadas';
 
   @override
@@ -7741,7 +7763,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'Queres definir alguma coisa antes de eu a criar?';
 
   @override
+  String get frontTaskSetupCover => 'Capa';
+
+  @override
+  String get frontTaskSetupCoverGenerate => 'Gerar capa';
+
+  @override
   String get frontTaskSetupCreate => 'Criar tarefa';
+
+  @override
+  String get frontTaskSetupNoCover => 'Sem capa';
 
   @override
   String get frontTaskSetupPickDate => 'Escolher uma data…';

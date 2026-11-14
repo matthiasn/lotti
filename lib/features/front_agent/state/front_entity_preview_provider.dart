@@ -1,11 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/helpers/generated_prompt_summary.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
+
 import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/tasks/state/task_preview_provider.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -105,6 +110,37 @@ Future<FrontEntityPreview?> frontEntityPreview(
       );
   }
 }
+
+/// What her chat shows of the coding prompt written for a task, before the
+/// task is opened: the prompt's own summary, or null when the task has none.
+///
+/// The newest coding prompt linked under the task — the one the skill run
+/// from her chat or from the task page wrote — read through the task's
+/// linked AI responses, so it appears as the run lands it. A design or
+/// research prompt is another skill's and is not shown here. The summary is
+/// the prompt's `## Summary` section, else its first line, as the task page's
+/// own prompt card reads it.
+final FutureProviderFamily<String?, String> frontTaskCodingPromptProvider =
+    FutureProvider.autoDispose.family<String?, String>(
+      (ref, taskId) async {
+        final responses = await ref.watch(
+          linkedAiResponsesControllerProvider(taskId).future,
+        );
+        // Newest first, as the controller sorts them.
+        final prompt = responses
+            .where(
+              (response) =>
+                  response.data.type == AiResponseType.promptGeneration &&
+                  (response.data.skillId ?? skillPromptGenId) ==
+                      skillPromptGenId,
+            )
+            .firstOrNull;
+        if (prompt == null) return null;
+        final summary = generatedPromptSummary(prompt.data.response);
+        return summary.isEmpty ? null : summary;
+      },
+      name: 'frontTaskCodingPromptProvider',
+    );
 
 /// The glance-level fields of [preview], as a task's card draws them.
 FrontTaskPreview frontTaskPreviewOf(TaskPreview preview) {

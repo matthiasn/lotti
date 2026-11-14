@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
@@ -21,7 +22,10 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/front_agent/model/front_live_answer.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
@@ -226,8 +230,64 @@ final frontFilingServiceProvider = Provider<FrontFilingService>(
       if (deleted) await journal.deleteJournalEntity(frontTaskWordsId(entryId));
       return deleted;
     },
+    startExtra: ref.watch(frontTaskExtraStarterProvider),
   ),
   name: 'frontFilingServiceProvider',
+);
+
+/// Whether cover art can be drawn for a task made in a category, by its id
+/// (none for a task filed in no category): a profile the run
+/// can reach names an image-generation model — the category's default
+/// profile, or the device's Settings default, which the run falls back to.
+///
+/// What the setup's cover chip is offered on, so it never asks for a cover
+/// nothing could draw. The task's own profile is only known once the task
+/// exists; these two are what it resolves from.
+final FutureProviderFamily<bool, String?> frontCoverArtAvailableProvider =
+    FutureProvider.autoDispose.family<bool, String?>(
+      (ref, categoryId) async {
+        final resolver = ref.watch(profileAutomationResolverProvider);
+        if (categoryId != null) {
+          final ofCategory = await resolver.resolveForCategory(categoryId);
+          if (ofCategory?.imageGenerationProvider != null) return true;
+        }
+        final fallback = await resolver.resolveDefaultProfile();
+        return fallback?.imageGenerationProvider != null;
+      },
+      name: 'frontCoverArtAvailableProvider',
+    );
+
+/// The built-in skill that generates [extra].
+String frontTaskExtraSkillId(FrontTaskExtra extra) => switch (extra) {
+  FrontTaskExtra.coverArt => skillImageGenId,
+  FrontTaskExtra.codingPrompt => skillPromptGenId,
+};
+
+/// How cover art or a coding prompt is started for a task made from the
+/// user's words: the skill the AI popup runs, on the copy of the words filed
+/// under the task (`frontTaskWordsId`) — typed or dictated, it is a text
+/// entry, so no recording is needed — with the task as its context.
+///
+/// Not awaited: a generation outlives the tap by a minute or more, and the
+/// trigger keeps itself alive, catches its own failures and reports them on
+/// the entry, where the task page shows them. Whatever still escapes it is
+/// dropped here rather than failing a task that is already made.
+final frontTaskExtraStarterProvider = Provider<FrontTaskExtraStarter>(
+  (ref) => (extra, {required taskId}) {
+    ref
+        .read(
+          triggerSkillProvider((
+            entityId: frontTaskWordsId(taskId),
+            skillId: frontTaskExtraSkillId(extra),
+            linkedTaskId: taskId,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        )
+        .ignore();
+  },
+  name: 'frontTaskExtraStarterProvider',
 );
 
 /// An event titled [title] under [id], tentative and dated now, as the

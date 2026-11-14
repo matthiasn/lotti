@@ -6,15 +6,18 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_capture_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -130,6 +133,7 @@ void main() {
     Future<DraftPlan?> Function(DateTime day)? loadPlan,
     CategoryDefinition? category,
     List<Override> extra = const [],
+    bool showsGenerated = false,
   }) async {
     opened = [];
     final cache = MockEntitiesCacheService();
@@ -154,6 +158,7 @@ void main() {
           body: SingleChildScrollView(
             child: FrontEntityPreviewList(
               references: references,
+              showsGenerated: showsGenerated,
               onOpen: opened.add,
             ),
           ),
@@ -512,6 +517,301 @@ void main() {
       final border = decoration.border! as Border;
       expect(border.top.width, 0.5);
       expect(border.top.color, tokens.colors.decorative.level01);
+    });
+  });
+
+  group('what is generated for a task her chat made', () {
+    late List<String> promptReads;
+
+    /// Pumps the made task's card: [prompt] is the summary of the coding
+    /// prompt written for it, and each of [running] and [failed] a
+    /// generation in that state.
+    Future<ProviderContainer> pumpMade(
+      WidgetTester tester, {
+      FrontTaskPreview? task,
+      String? prompt,
+      Set<AiResponseType> running = const {},
+      Set<AiResponseType> failed = const {},
+      bool showsGenerated = true,
+    }) async {
+      promptReads = [];
+      await pump(
+        tester,
+        load: (_) async => task ?? ice(),
+        showsGenerated: showsGenerated,
+        extra: [
+          frontTaskCodingPromptProvider.overrideWith((ref, id) async {
+            promptReads.add(id);
+            return prompt;
+          }),
+        ],
+      );
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(FrontEntityPreviewList)),
+      );
+      void set(AiResponseType type, InferenceStatus status) => container
+          .read(
+            inferenceStatusControllerProvider((
+              id: 'ice-pad',
+              aiResponseType: type,
+            )).notifier,
+          )
+          .setStatus(status);
+      for (final type in running) {
+        set(type, InferenceStatus.running);
+      }
+      for (final type in failed) {
+        set(type, InferenceStatus.error);
+      }
+      await tester.pump();
+      await tester.pump();
+      return container;
+    }
+
+    Finder line(String name) =>
+        find.byKey(FrontEntityPreviewKeys.generated('ice-pad', name));
+    Text textIn(WidgetTester tester, Finder of, String text) =>
+        tester.widget<Text>(
+          find.descendant(of: of, matching: find.text(text)),
+        );
+    DsTokens tokensOf(WidgetTester tester) =>
+        tester.element(find.byType(FrontEntityPreviewList)).designTokens;
+
+    testWidgets('a task nothing was asked for is the card as it always was', (
+      tester,
+    ) async {
+      await pumpMade(tester);
+
+      expect(find.byType(DesignSystemDivider), findsNothing);
+      for (final name in [
+        'cover-drawing',
+        'cover-failed',
+        'prompt',
+        'prompt-writing',
+        'prompt-failed',
+      ]) {
+        expect(line(name), findsNothing, reason: name);
+      }
+      expect(find.byType(StatusGlyph), findsOneWidget);
+    });
+
+    group('cover art', () {
+      testWidgets('while it is drawn, its place holds a tile in the AI ink '
+          'and the card says so', (tester) async {
+        await pumpMade(tester, running: {AiResponseType.imageGeneration});
+
+        final tile = find.byKey(
+          FrontEntityPreviewKeys.coverDrawing('ice-pad'),
+        );
+        expect(tile, findsOneWidget);
+        expect(tester.getSize(tile), const Size.square(ControlSizes.iconChip));
+        expect(
+          tester
+              .widget<Icon>(
+                find.descendant(of: tile, matching: find.byType(Icon)),
+              )
+              .icon,
+          LottiIcons.image,
+        );
+        // In place of the status glyph, which the words still give.
+        expect(find.byType(StatusGlyph), findsNothing);
+        expect(subtitle(tester, 'ice-pad'), contains('In Progress'));
+        expect(
+          textIn(
+            tester,
+            line('cover-drawing'),
+            'Drawing the cover…',
+          ).style!.color,
+          tokensOf(tester).colors.aiCard.accent,
+        );
+      });
+
+      testWidgets('once it arrives, the thumbnail takes its place and the '
+          'card says no more about it', (tester) async {
+        await pumpMade(
+          tester,
+          task: ice(coverArtId: 'cover-1'),
+          // Still reported running for a moment after the cover is set.
+          running: {AiResponseType.imageGeneration},
+        );
+
+        expect(
+          find.byKey(FrontEntityPreviewKeys.cover('ice-pad')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(FrontEntityPreviewKeys.coverDrawing('ice-pad')),
+          findsNothing,
+        );
+        expect(line('cover-drawing'), findsNothing);
+        expect(find.byType(DesignSystemDivider), findsNothing);
+      });
+
+      testWidgets('one that could not be drawn says so in the error ink, '
+          'the status glyph back in its place', (tester) async {
+        await pumpMade(tester, failed: {AiResponseType.imageGeneration});
+
+        expect(
+          textIn(
+            tester,
+            line('cover-failed'),
+            'The cover could not be drawn',
+          ).style!.color,
+          tokensOf(tester).colors.alert.error.ink,
+        );
+        expect(
+          find.byKey(FrontEntityPreviewKeys.coverDrawing('ice-pad')),
+          findsNothing,
+        );
+        expect(find.byType(StatusGlyph), findsOneWidget);
+      });
+
+      testWidgets('follows the run as it goes: drawn, then done', (
+        tester,
+      ) async {
+        final container = await pumpMade(
+          tester,
+          running: {AiResponseType.imageGeneration},
+        );
+        expect(line('cover-drawing'), findsOneWidget);
+
+        container
+            .read(
+              inferenceStatusControllerProvider((
+                id: 'ice-pad',
+                aiResponseType: AiResponseType.imageGeneration,
+              )).notifier,
+            )
+            .setStatus(InferenceStatus.idle);
+        await tester.pump();
+
+        expect(line('cover-drawing'), findsNothing);
+        expect(find.byType(StatusGlyph), findsOneWidget);
+      });
+    });
+
+    group('a coding prompt', () {
+      testWidgets('while it is written, the card says so', (tester) async {
+        await pumpMade(tester, running: {AiResponseType.promptGeneration});
+
+        expect(
+          textIn(
+            tester,
+            line('prompt-writing'),
+            'Writing the coding prompt…',
+          ).style!.color,
+          tokensOf(tester).colors.aiCard.accent,
+        );
+        expect(line('prompt'), findsNothing);
+      });
+
+      testWidgets('once written, its summary is on the card under its '
+          'name, cut to three lines', (tester) async {
+        await pumpMade(
+          tester,
+          prompt: 'Confirm the crosswind stays under limits.',
+          // Still reported running for a moment after it is stored.
+          running: {AiResponseType.promptGeneration},
+        );
+
+        expect(promptReads, ['ice-pad']);
+        expect(
+          find.descendant(
+            of: line('prompt'),
+            matching: find.text('AI Coding Prompt'),
+          ),
+          findsOneWidget,
+        );
+        final summary = textIn(
+          tester,
+          line('prompt'),
+          'Confirm the crosswind stays under limits.',
+        );
+        expect(summary.maxLines, 3);
+        expect(summary.overflow, TextOverflow.ellipsis);
+        expect(line('prompt-writing'), findsNothing);
+        expect(
+          tester
+              .widget<Icon>(
+                find.descendant(
+                  of: line('prompt'),
+                  matching: find.byType(Icon),
+                ),
+              )
+              .icon,
+          LottiIcons.code,
+        );
+      });
+
+      testWidgets('one that could not be written says so in the error ink', (
+        tester,
+      ) async {
+        await pumpMade(tester, failed: {AiResponseType.promptGeneration});
+
+        expect(
+          textIn(
+            tester,
+            line('prompt-failed'),
+            'The coding prompt could not be written',
+          ).style!.color,
+          tokensOf(tester).colors.alert.error.ink,
+        );
+      });
+
+      testWidgets('a tap on its summary opens the task, where the full '
+          'prompt is', (tester) async {
+        await pumpMade(tester, prompt: 'Confirm the crosswind limits.');
+
+        await tester.tap(find.text('Confirm the crosswind limits.'));
+
+        expect(opened, [iceRef]);
+      });
+    });
+
+    testWidgets('a cover being drawn and a prompt written share the part '
+        'under the task, the cover first, under one rule', (tester) async {
+      await pumpMade(
+        tester,
+        prompt: 'Confirm the crosswind limits.',
+        running: {AiResponseType.imageGeneration},
+      );
+
+      expect(find.byType(DesignSystemDivider), findsOneWidget);
+      expect(
+        tester.getTopLeft(line('cover-drawing')).dy,
+        lessThan(tester.getTopLeft(line('prompt')).dy),
+      );
+      // Under the task's own row, inside the one card.
+      expect(
+        tester.getTopLeft(line('cover-drawing')).dy,
+        greaterThan(tester.getBottomLeft(find.text(ice().title)).dy),
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(FrontEntityPreviewKeys.card('ice-pad')),
+          matching: line('prompt'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a task she only lists shows none of it, and reads no '
+        'prompt for it', (tester) async {
+      await pumpMade(
+        tester,
+        prompt: 'Confirm the crosswind limits.',
+        running: {AiResponseType.imageGeneration},
+        showsGenerated: false,
+      );
+
+      expect(promptReads, isEmpty);
+      expect(line('prompt'), findsNothing);
+      expect(line('cover-drawing'), findsNothing);
+      expect(
+        find.byKey(FrontEntityPreviewKeys.coverDrawing('ice-pad')),
+        findsNothing,
+      );
+      expect(find.byType(StatusGlyph), findsOneWidget);
     });
   });
 

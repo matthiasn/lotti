@@ -267,6 +267,10 @@ void main() {
             disableAnimations: reducedMotion,
           ),
           overrides: [
+            // No profile draws covers on this bench: the setup has no chip.
+            frontCoverArtAvailableProvider.overrideWith(
+              (ref, categoryId) async => false,
+            ),
             frontChatThreadProvider.overrideWith(
               (ref) => (thread ?? () async => FrontChatThread.empty)(),
             ),
@@ -1849,6 +1853,11 @@ void main() {
         ]),
       );
       expect(herLists, findsOneWidget);
+      // A task she only lists shows nothing generated for it.
+      expect(
+        tester.widget<FrontEntityPreviewList>(herLists).showsGenerated,
+        isFalse,
+      );
       expect(find.byType(FrontDueSectionLabel), findsNothing);
     });
 
@@ -2035,6 +2044,8 @@ void main() {
         find.byKey(const ValueKey('front-entity-previews-a1')),
       );
       expect(list.references, [iceRef, coldRef]);
+      // What her turn made is where its cover and coding prompt arrive.
+      expect(list.showsGenerated, isTrue);
       final words = tester.getTopLeft(
         find.textContaining('Made them tasks.', findRichText: true),
       );
@@ -2962,6 +2973,50 @@ void main() {
       await tester.pump();
 
       verify(() => filing.makeTask('d:door:0', choices: urgent)).called(1);
+    });
+
+    testWidgets('task with a coding prompt makes the task as she read it, '
+        'with the prompt asked for, and leaves the sheet where it is', (
+      tester,
+    ) async {
+      const asRead = FrontTaskChoices(
+        start: FrontTaskStart.open,
+        priority: TaskPriority.p2Medium,
+      );
+      final paths = <String>[];
+      beamToNamedOverride = paths.add;
+      addTearDown(() => beamToNamedOverride = null);
+      var closed = 0;
+      when(
+        () => filing.makeTask(
+          'd:door:0',
+          choices: asRead,
+          codingPrompt: true,
+        ),
+      ).thenAnswer((_) async {});
+      await pumpPane(
+        tester,
+        thread: () async => inbox(FrontNewKind.task),
+        onClose: () => closed++,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('front-door-prompt-0')));
+      await tester.pump();
+      await tester.pump();
+
+      verify(
+        () => filing.makeTask(
+          'd:door:0',
+          choices: asRead,
+          codingPrompt: true,
+        ),
+      ).called(1);
+      // Made without the setup, and without the prompt left out.
+      verifyNever(() => filing.makeTask('d:door:0', choices: asRead));
+      expect(closed, 0);
+      expect(paths, isEmpty);
     });
 
     testWidgets('make it an event makes the event through the filing '

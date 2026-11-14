@@ -157,7 +157,8 @@ abstract final class FrontVoice {
   }
 
   /// Makes a task of the inbox item [doorId], set up as the user
-  /// [choices] — their tap on create, the approval — and once it is made
+  /// [choices] — their tap on create, the approval — with a coding prompt
+  /// written for it when [codingPrompt], and once it is made
   /// says so aloud in [conversationId] (`frontTaskCreatedSpoken`) through [speak], so her mute, her voice and
   /// the take-over hold as for any answer. A task not made says nothing; the
   /// door shows the failure.
@@ -167,10 +168,11 @@ abstract final class FrontVoice {
     String? conversationId,
     String doorId, {
     required FrontTaskChoices choices,
+    bool codingPrompt = false,
   }) async {
     final made = await ref
         .read(frontChatControllerProvider.notifier)
-        .makeTask(doorId, choices: choices);
+        .makeTask(doorId, choices: choices, codingPrompt: codingPrompt);
     if (!made || conversationId == null || !context.mounted) return;
     await speak(
       ref,

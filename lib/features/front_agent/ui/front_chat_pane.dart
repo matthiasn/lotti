@@ -623,6 +623,15 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
         doorId,
         choices: choices,
       ),
+      // The task as she read it, and a coding prompt written from the words.
+      onMakePrompt: (doorId, choices) => FrontVoice.makeTask(
+        ref,
+        context,
+        conversationId,
+        doorId,
+        choices: choices,
+        codingPrompt: true,
+      ),
       // Only where events are on: one made where they are off would be an
       // event the user has no page to find it on.
       onMakeEvent: eventsEnabled ? controller.makeEvent : null,
@@ -843,6 +852,9 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
                 FrontEntityPreviewList(
                   key: ValueKey('front-entity-previews-${message.id}'),
                   references: previews,
+                  // What her turn made is where its cover and its coding
+                  // prompt arrive, seen before the task is opened.
+                  showsGenerated: true,
                   onOpen: openMade,
                 ),
             ],
