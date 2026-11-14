@@ -5670,6 +5670,7 @@
   "promptGenerationCopyTooltip": "Prompt naar klembord kopiëren",
   "promptGenerationExpandTooltip": "Volledige prompt tonen",
   "promptGenerationFullPromptLabel": "Volledige vraag:",
+  "promptGenerationPlayTooltip": "Prompt voorlezen",
   "promptSelectionModalTitle": "Voorgeconfigureerde prompt selecteren",
   "provisionedSyncCopiedToClipboard": "Naar klembord gekopieerd",
   "provisionedSyncDisconnect": "Synchroniseren op dit apparaat stoppen",

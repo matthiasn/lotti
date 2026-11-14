@@ -48,12 +48,16 @@ class AiResponseSummary extends StatefulWidget {
     this.aiResponse, {
     required this.fadeOut,
     this.collapsible = false,
+    this.readAloud,
     super.key,
   });
 
   final AiResponseEntry aiResponse;
   final bool fadeOut;
   final bool collapsible;
+
+  /// Passed to a generated prompt's card; see [GeneratedPromptCard.readAloud].
+  final Widget Function(String fullPrompt)? readAloud;
 
   @override
   State<AiResponseSummary> createState() => _AiResponseSummaryState();
@@ -135,7 +139,11 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
 
     // Use specialized card for generated prompts (coding or image)
     if (aiResponse.data.type?.isPromptGenerationType ?? false) {
-      return GeneratedPromptCard(aiResponse, framed: !widget.fadeOut);
+      return GeneratedPromptCard(
+        aiResponse,
+        framed: !widget.fadeOut,
+        readAloud: widget.readAloud,
+      );
     }
 
     final bodyStyle = AiResponseCard.bodyStyle(context);

@@ -5671,6 +5671,7 @@
   "promptGenerationCopyTooltip": "Kopiera prompten till urklippstavlan",
   "promptGenerationExpandTooltip": "Visa fullständig prompt",
   "promptGenerationFullPromptLabel": "Fullständig prompt:",
+  "promptGenerationPlayTooltip": "Läs upp prompten",
   "promptSelectionModalTitle": "Välj förkonfigurerad prompt",
   "provisionedSyncCopiedToClipboard": "Kopierat till skrivplatta",
   "provisionedSyncDisconnect": "Sluta synka den här enheten",

@@ -5671,6 +5671,7 @@
   "promptGenerationCopyTooltip": "Kopier prompten til udklipsbrættet",
   "promptGenerationExpandTooltip": "Vis fuld prompt",
   "promptGenerationFullPromptLabel": "Fuld prompt:",
+  "promptGenerationPlayTooltip": "Læs prompten højt",
   "promptSelectionModalTitle": "Vælg forudkonfigureret prompt",
   "provisionedSyncCopiedToClipboard": "Kopieret til clipboard",
   "provisionedSyncDisconnect": "Stop synkronisering på denne enhed",

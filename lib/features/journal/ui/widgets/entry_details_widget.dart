@@ -6,6 +6,7 @@ import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
@@ -368,6 +369,11 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       AiResponseEntry() => AiResponseSummary(
         item,
         fadeOut: true,
+        readAloud: (text) => TaskPromptReadAloudButton(
+          taskId: linkedFrom is Task ? linkedFrom.id : null,
+          sourceId: item.meta.id,
+          text: text,
+        ),
       ),
       Checklist() =>
         slots.checklistBody?.call(

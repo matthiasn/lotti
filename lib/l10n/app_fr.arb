@@ -5110,6 +5110,7 @@
   "promptGenerationCopyTooltip": "Copier le prompt dans le presse-papiers",
   "promptGenerationExpandTooltip": "Afficher le prompt complet",
   "promptGenerationFullPromptLabel": "Prompt complet :",
+  "promptGenerationPlayTooltip": "Lire le prompt à voix haute",
   "promptSelectionModalTitle": "Sélectionner un prompt préconfiguré",
   "provisionedSyncCopiedToClipboard": "Copié dans le presse-papiers",
   "provisionedSyncDisconnect": "Arrêter la synchronisation sur cet appareil",

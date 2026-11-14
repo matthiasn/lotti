@@ -8529,6 +8529,7 @@
   "promptGenerationCopyTooltip": "Copy prompt to clipboard",
   "promptGenerationExpandTooltip": "Show full prompt",
   "promptGenerationFullPromptLabel": "Full Prompt:",
+  "promptGenerationPlayTooltip": "Read prompt aloud",
   "promptSelectionModalTitle": "Select Preconfigured Prompt",
   "provisionedSyncCopiedToClipboard": "Copied to clipboard",
   "provisionedSyncDisconnect": "Stop syncing this device",

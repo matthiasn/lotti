@@ -6,6 +6,7 @@ import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/ai/ui/ai_response_card.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
@@ -464,6 +465,20 @@ void main() {
 
         expect(find.byKey(const Key('prompt-for-a')), findsOneWidget);
         expect(find.byKey(const Key('prompt-for-b')), findsNothing);
+      });
+
+      testWidgets("Task A's prompt reads aloud with Task A's voice, under "
+          "the prompt's own source", (tester) async {
+        await pumpIn(tester, taskId: 'task-a');
+
+        final summary = tester.widget<AiResponseSummary>(
+          find.byType(AiResponseSummary),
+        );
+        final button =
+            summary.readAloud!('The prompt.') as TaskPromptReadAloudButton;
+        expect(button.taskId, 'task-a');
+        expect(button.sourceId, 'prompt-for-a');
+        expect(button.text, 'The prompt.');
       });
 
       testWidgets('shows both prompts, asking about no owners, on its own', (

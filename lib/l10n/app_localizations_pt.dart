@@ -13336,6 +13336,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get promptGenerationCopyButton => 'Copiar prompt';
 
   @override
+  String get promptGenerationPlayTooltip => 'Ler o prompt em voz alta';
+
+  @override
   String get promptGenerationCopyTooltip =>
       'Copiar prompt para a área de transferência';
 

@@ -5110,6 +5110,7 @@
   "promptGenerationCopyTooltip": "Prompt in Zwischenablage kopieren",
   "promptGenerationExpandTooltip": "Vollständigen Prompt anzeigen",
   "promptGenerationFullPromptLabel": "Vollständiger Prompt:",
+  "promptGenerationPlayTooltip": "Prompt vorlesen",
   "promptSelectionModalTitle": "Vorkonfigurierten Prompt auswählen",
   "provisionedSyncCopiedToClipboard": "In die Zwischenablage kopiert",
   "provisionedSyncDisconnect": "Sync auf diesem Gerät beenden",

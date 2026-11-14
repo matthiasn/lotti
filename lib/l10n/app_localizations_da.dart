@@ -13195,6 +13195,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get promptGenerationCopyButton => 'Kopier prompt';
 
   @override
+  String get promptGenerationPlayTooltip => 'Læs prompten højt';
+
+  @override
   String get promptGenerationCopyTooltip =>
       'Kopier prompten til udklipsbrættet';
 

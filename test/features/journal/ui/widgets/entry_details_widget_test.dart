@@ -21,6 +21,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
@@ -1002,6 +1003,43 @@ void main() {
           },
         );
       }
+
+      testWidgets(
+        "a coding prompt in a task reads aloud with that task's voice, "
+        "under the prompt's own source",
+        (tester) async {
+          final aiEntry = _aiResponseEntry(
+            id: 'ai-gate-id',
+            type: AiResponseType.promptGeneration,
+          );
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              ProviderScope(
+                overrides: withServiceOverrides([
+                  entryControllerProvider('ai-gate-id').overrideWith(
+                    () => _FakeEntryController(aiEntry),
+                  ),
+                ]),
+                child: EntryDetailsWidget(
+                  itemId: 'ai-gate-id',
+                  showAiEntry: false,
+                  linkedFrom: testTask,
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final summary = tester.widget<AiResponseSummary>(
+            find.byType(AiResponseSummary),
+          );
+          final button =
+              summary.readAloud!('The prompt.') as TaskPromptReadAloudButton;
+          expect(button.taskId, testTask.meta.id);
+          expect(button.sourceId, 'ai-gate-id');
+          expect(button.text, 'The prompt.');
+        },
+      );
 
       // A null type (legacy/unset) is not a coding prompt, so it stays gated.
       testWidgets(

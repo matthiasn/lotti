@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Text-to-speech
-description: Speech for task summaries, goal reports and query answers — the on-device Supertonic voice, or the cloud voice a profile's read-aloud slot names — with cancellable preparation and temporary audio cleanup.
+description: Speech for task summaries, generated coding prompts, goal reports and query answers — the on-device Supertonic voice, or the cloud voice a profile's read-aloud slot names — with cancellable preparation and temporary audio cleanup.
 resource: ../../lib/features/tts
 tags: [tts, onnx, on-device, cloud, voxtral, elevenlabs, ios, macos]
 status: stable
@@ -166,6 +166,7 @@ together with the text's language:
 | Surface | Profile | Language |
 |---|---|---|
 | Task summary card and its companion stage | the task agent's resolved setup | the task's `languageCode`, else the app's |
+| Generated coding prompt, expanded (`TaskPromptReadAloudButton`, under the prompt's own id) | the owning task's agent, as for its summary; on-device without a task | the task's `languageCode`, else the app's |
 | Goal report | the goal agent's resolved setup | the app's |
 | Query answer | `queryProfileProvider` for the chat | the scope task's `languageCode`, else the app's |
 | Day briefing | the Daily OS planner's resolved setup | the app's |

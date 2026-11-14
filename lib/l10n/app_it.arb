@@ -5671,6 +5671,7 @@
   "promptGenerationCopyTooltip": "Copia il prompt per il clipboard",
   "promptGenerationExpandTooltip": "Mostra il prompt completo",
   "promptGenerationFullPromptLabel": "Prompt completo:",
+  "promptGenerationPlayTooltip": "Leggi il prompt ad alta voce",
   "promptSelectionModalTitle": "Selezionare Prompt preconfigurato",
   "provisionedSyncCopiedToClipboard": "Copiato negli appunti",
   "provisionedSyncDisconnect": "Interrompi la sincronizzazione su questo dispositivo",
