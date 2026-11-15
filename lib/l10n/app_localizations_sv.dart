@@ -12089,19 +12089,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get onboardingFirstWordsVoiced => 'Så, nu kan du höra mig också!';
 
   @override
-  String get onboardingMakeHerYoursContinue => 'Ser bra ut';
-
-  @override
-  String get onboardingMakeHerYoursLine =>
-      'Välj hur jag ser ut. Du kan ändra allt när som helst under Inställningar › Följeslagare.';
-
-  @override
-  String get onboardingMakeHerYoursSkip => 'Hoppa över tills vidare';
-
-  @override
-  String get onboardingMakeHerYoursTitle => 'Välj min stil';
-
-  @override
   String get onboardingMetricsActiveDays => 'Aktiva dagar';
 
   @override
@@ -12132,60 +12119,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get onboardingRecordingStyleTryVoice => 'Prova med din röst';
-
-  @override
-  String get onboardingSuccessContinue => 'Sätt igång';
-
-  @override
-  String get onboardingSuccessSubtitle =>
-      'Din AI-hjärna är uppkopplad och redo att omvandla dina ord till uppgifter.';
-
-  @override
-  String get onboardingSuccessTitle => 'Du är redo';
-
-  @override
-  String get onboardingVoiceElevenLabsDescription =>
-      'Valfri, med en egen ElevenLabs-nyckel.';
-
-  @override
-  String get onboardingVoiceElevenLabsName => 'ElevenLabs';
-
-  @override
-  String get onboardingVoiceOnDeviceDescription =>
-      'Gratis och privat. Fungerar offline efter en engångsnedladdning.';
-
-  @override
-  String get onboardingVoiceOnDeviceName => 'På din enhet';
-
-  @override
-  String onboardingVoicePlay(String voice) {
-    return 'Spela ”$voice”';
-  }
-
-  @override
-  String get onboardingVoicesContinue => 'Nästa: din nyckel';
-
-  @override
-  String get onboardingVoicesEnglishNote =>
-      'Exemplen är på engelska. Varje röst talar också många andra språk.';
-
-  @override
-  String get onboardingVoicesLine =>
-      'Jag kan prata med olika röster. Tryck på en för att höra den. Du kan byta när som helst under Inställningar › Tal.';
-
-  @override
-  String get onboardingVoicesTitle => 'Hör hur jag kan låta';
-
-  @override
-  String onboardingVoiceStop(String voice) {
-    return 'Stoppa ”$voice”';
-  }
-
-  @override
-  String get onboardingVoiceVoxtralDescription => 'Ingår i din Mistral-nyckel.';
-
-  @override
-  String get onboardingVoiceVoxtralName => 'Mistral Voxtral';
 
   @override
   String get onboardingWelcomeConnectButton => 'Välj din AI-hjärna';

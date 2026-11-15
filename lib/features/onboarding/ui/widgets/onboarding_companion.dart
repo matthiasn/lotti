@@ -19,12 +19,6 @@ enum OnboardingCompanionBeat {
   /// The welcome: she waves.
   welcome(surface: 'welcome', cue: GestureName.wave),
 
-  /// The "make me yours" step: she opens her arms to be dressed.
-  dressUp(surface: 'make-her-yours', cue: GestureName.openBoth),
-
-  /// The "hear the voices" step: she speaks each sample the user plays.
-  voices(surface: 'voices', cue: GestureName.openSmall),
-
   /// The one-key step: she presents the recommended provider.
   recommend(surface: 'connect', cue: GestureName.presentRight),
 
@@ -40,11 +34,9 @@ enum OnboardingCompanionBeat {
   /// The key was turned down: she shrugs, and the user tries again.
   keyRejected(surface: _key, cue: GestureName.shrug),
 
-  /// Connected: she celebrates, saying her first words in the cloud voice.
-  firstWords(surface: 'first-words', cue: GestureName.celebrate),
-
-  /// The areas: she presents the choice.
-  areas(surface: 'areas', cue: GestureName.openBoth),
+  /// The areas, reached the moment the key works: she celebrates, saying
+  /// her first words in the cloud voice where the provider has one.
+  areas(surface: 'areas', cue: GestureName.celebrate),
 
   /// The first-task prompt: she waves the user on.
   prompt(surface: _firstTask, cue: GestureName.wave),
@@ -117,8 +109,8 @@ enum OnboardingCompanionBeat {
 ///
 /// With a [cloudVoice] she speaks [line] in that voice instead, whether or
 /// not read-aloud is on: onboarding passes the read-aloud voice of the
-/// provider the user has just connected, for one fixed line, so a new user
-/// hears her for the first time the moment the key works.
+/// provider the user has just connected, for the fixed line of the areas
+/// step, so a new user hears her for the first time the moment the key works.
 class OnboardingCompanion extends ConsumerStatefulWidget {
   const OnboardingCompanion({
     required this.beat,

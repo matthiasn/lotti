@@ -24,13 +24,6 @@ on:
       - "tool/pr_screenshot_publish_test.py"
       - "tool/play_promote.py"
       - "tool/play_promote_test.py"
-      - "tool/onboarding_voice_samples.py"
-      - "tool/onboarding_voice_samples_test.py"
-      # The generator checks its sentence against the Dart one, and its
-      # on-device revision and voice against the app's.
-      - "lib/features/onboarding/ui/widgets/onboarding_voices_step.dart"
-      - "lib/features/tts/model/tts_model_option.dart"
-      - "lib/features/tts/model/tts_voice.dart"
       - ".github/workflows/python-tools-ci.yml"
   pull_request:
     branches: [main]
@@ -52,13 +45,6 @@ on:
       - "tool/pr_screenshot_publish_test.py"
       - "tool/play_promote.py"
       - "tool/play_promote_test.py"
-      - "tool/onboarding_voice_samples.py"
-      - "tool/onboarding_voice_samples_test.py"
-      # The generator checks its sentence against the Dart one, and its
-      # on-device revision and voice against the app's.
-      - "lib/features/onboarding/ui/widgets/onboarding_voices_step.dart"
-      - "lib/features/tts/model/tts_model_option.dart"
-      - "lib/features/tts/model/tts_voice.dart"
       - ".github/workflows/python-tools-ci.yml"
 
 concurrency:
@@ -177,28 +163,4 @@ jobs:
         working-directory: tool
         run: |
           python -m coverage run --include=play_promote.py -m unittest play_promote_test.py
-          python -m coverage report --show-missing --fail-under=100
-
-  onboarding-voice-samples:
-    name: Onboarding Voice Samples (test + coverage)
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          persist-credentials: false
-
-      - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-        with:
-          python-version: "3.13"
-
-      - name: Install coverage
-        run: pip install coverage
-
-      # Runs without the model, the network or any key: every path is
-      # exercised against fakes, and the report fails below 100%.
-      - name: Test with coverage
-        run: |
-          python -m coverage run --include=tool/onboarding_voice_samples.py -m unittest tool.onboarding_voice_samples_test
           python -m coverage report --show-missing --fail-under=100

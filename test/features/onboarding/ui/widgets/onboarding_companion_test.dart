@@ -62,24 +62,6 @@ void main() {
     expect(OnboardingCompanionBeat.created.cue, GestureName.celebrate);
   });
 
-  test('she opens her arms to be dressed on "make me yours"', () {
-    expect(OnboardingCompanionBeat.dressUp.cue, GestureName.openBoth);
-    expect(OnboardingCompanionBeat.dressUp.holding, isNull);
-    expect(
-      OnboardingCompanionBeat.dressUp.sourceId,
-      'onboarding-companion-make-her-yours',
-    );
-  });
-
-  test('she offers the voices she can have', () {
-    expect(OnboardingCompanionBeat.voices.cue, GestureName.openSmall);
-    expect(OnboardingCompanionBeat.voices.holding, isNull);
-    expect(
-      OnboardingCompanionBeat.voices.sourceId,
-      'onboarding-companion-voices',
-    );
-  });
-
   test('on the key step she waits, thinks while it is checked, and takes '
       'the verdict well or badly', () {
     expect(
@@ -128,13 +110,9 @@ void main() {
     );
   });
 
-  test('she celebrates her first words, and presents the areas', () {
-    expect(OnboardingCompanionBeat.firstWords.cue, GestureName.celebrate);
-    expect(
-      OnboardingCompanionBeat.firstWords.sourceId,
-      'onboarding-companion-first-words',
-    );
-    expect(OnboardingCompanionBeat.areas.cue, GestureName.openBoth);
+  test('on the areas, reached as the key works, she celebrates', () {
+    expect(OnboardingCompanionBeat.areas.cue, GestureName.celebrate);
+    expect(OnboardingCompanionBeat.areas.holding, isNull);
     expect(
       OnboardingCompanionBeat.areas.sourceId,
       'onboarding-companion-areas',
@@ -477,7 +455,7 @@ void main() {
         await show(
           tester,
           OnboardingCompanion(
-            beat: OnboardingCompanionBeat.firstWords,
+            beat: OnboardingCompanionBeat.areas,
             line: 'Jetzt hörst du mich.',
             cloudVoice: voice,
           ),
@@ -499,7 +477,7 @@ void main() {
         await show(
           tester,
           OnboardingCompanion(
-            beat: OnboardingCompanionBeat.firstWords,
+            beat: OnboardingCompanionBeat.areas,
             line: 'Hallo.',
             cloudVoice: voice,
           ),
@@ -520,7 +498,7 @@ void main() {
         await show(
           tester,
           OnboardingCompanion(
-            beat: OnboardingCompanionBeat.firstWords,
+            beat: OnboardingCompanionBeat.areas,
             line: 'Eins.',
             cloudVoice: voice,
           ),
@@ -528,7 +506,7 @@ void main() {
         await swap(
           tester,
           OnboardingCompanion(
-            beat: OnboardingCompanionBeat.firstWords,
+            beat: OnboardingCompanionBeat.areas,
             line: 'Zwei.',
             cloudVoice: voice,
           ),
