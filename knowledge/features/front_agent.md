@@ -851,7 +851,9 @@ biggest sync PRs*), the filter runs with `every`: under
 because a relevance cut of five would drop a larger match; what it keeps
 comes back in the finder's size order. Either way at most `count` come
 back — how many the user asked for, `frontPullRequestsFoundMax` (5) when
-not given — each line with its size, drawn as cards like any find. The cut
+not given — each line with the size it was counted and ranked by (not a
+later read of its snapshot, which a refresh may have moved), drawn as cards
+like any find. The cut
 is made in the lookup, not left to her placement, because `readFrontReply`
 appends every found pull request she does not place.
 
