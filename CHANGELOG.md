@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.103]
+
+### Added
+
+- **Coding prompts can be read aloud.** Expand a generated coding prompt and a
+  play button now sits beside its Copy button. It reads the full prompt in the
+  same voice the task's summary uses, streamed as it speaks. Tap it again
+  while it plays to stop, and once more to hear it from the start.
+
+### Fixed
+
+- **A cloud voice no longer stops after about five seconds the first time it
+  reads something.** Speech that plays while it is still arriving could end at
+  however much had arrived when playback began, even though the rest was
+  already there; only pressing play again read it all. The player now keeps
+  reading as the rest arrives, so the whole text is read the first time,
+  without a pause.
+- **Task reports write their headings in the task's language.** A German task
+  now gets a fully German report, headings included, not just German sentences
+  under English headings. A Links section with no links in it is no longer
+  shown, in any language.
+
 ## [1.1.102]
 
 ### Added
