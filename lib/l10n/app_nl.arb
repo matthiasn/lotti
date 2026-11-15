@@ -3480,6 +3480,7 @@
   "frontDoorMakePrompt": "Taak met een codeerprompt",
   "frontDoorMakePromptHint": "Een taak en een prompt uit je woorden",
   "frontDoorMakeTask": "Maak er een taak van",
+  "frontDoorMakeTaskHint": "Een taak uit je woorden, na een paar keuzes",
   "frontDoorNewProject": "Nieuw project…",
   "frontDoorNewProjectHint": "Opent een nieuw project met je woorden",
   "frontDoorNoAgent": "{owner} heeft nog geen agent om het aan te vragen.",

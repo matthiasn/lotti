@@ -8,7 +8,6 @@ import 'package:lotti/features/design_system/components/context_menus/design_sys
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
@@ -17,6 +16,7 @@ import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_surfaces.dart';
 import 'package:lotti/features/front_agent/ui/front_cited_source_row.dart';
+import 'package:lotti/features/front_agent/ui/front_door_ways.dart';
 import 'package:lotti/features/front_agent/ui/front_task_setup.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -154,6 +154,10 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
   /// ever make the one just opened.
   String? _settingUp;
 
+  /// The door whose other ways are open, listed in its card. One thing is
+  /// open at a time: a setup closes the list, and the list a setup.
+  String? _choosing;
+
   @override
   void didUpdateWidget(FrontDoorCard oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -172,11 +176,27 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
         )) {
       _settingUp = null;
     }
+    // Nor is one that went a way, or was left, still being chosen for.
+    final choosing = _choosing;
+    if (choosing != null &&
+        !widget.doors.any(
+          (door) =>
+              door.doorId == choosing &&
+              door.record.outcome.runtimeType == before[choosing],
+        )) {
+      _choosing = null;
+    }
   }
 
-  void _setUp(String doorId, {required bool on}) => setState(
-    () => _settingUp = on ? doorId : (_settingUp == doorId ? null : _settingUp),
-  );
+  void _setUp(String doorId, {required bool on}) => setState(() {
+    _settingUp = on ? doorId : (_settingUp == doorId ? null : _settingUp);
+    if (on) _choosing = null;
+  });
+
+  void _choose(String doorId, {required bool on}) => setState(() {
+    _choosing = on ? doorId : null;
+    if (on) _settingUp = null;
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -221,6 +241,8 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
                 settingUp: _settingUp == door.doorId,
                 quiet: _settingUp != null && _settingUp != door.doorId,
                 onSetUp: ({required on}) => _setUp(door.doorId, on: on),
+                choosing: _choosing == door.doorId,
+                onChoose: ({required on}) => _choose(door.doorId, on: on),
               ),
             ],
           ],
@@ -242,6 +264,8 @@ class _DoorRow extends StatelessWidget {
     required this.settingUp,
     required this.quiet,
     required this.onSetUp,
+    required this.choosing,
+    required this.onChoose,
     required this.coverArtAvailable,
     this.journalAccess,
     super.key,
@@ -265,6 +289,12 @@ class _DoorRow extends StatelessWidget {
 
   /// Starts (`on`) or leaves the setup.
   final void Function({required bool on}) onSetUp;
+
+  /// Whether the item's other ways are open, listed under it.
+  final bool choosing;
+
+  /// Opens (`on`) or closes the other ways.
+  final void Function({required bool on}) onChoose;
 
   @override
   Widget build(BuildContext context) {
@@ -293,24 +323,20 @@ class _DoorRow extends StatelessWidget {
     SurfaceModel<ComponentImplementation>? answerSurface;
     final menu = <DesignSystemContextMenuItem>[];
 
-    // The heading over the overflow's rows, where they need one.
-    String? menuHeader;
+    // The other ways an inbox item can go, and the way that leaves it:
+    // listed in the card itself, behind a toggle in the overflow's slot.
+    var ways = const <FrontDoorWay>[];
+    FrontDoorWay? leave;
 
     DesignSystemContextMenuItem item(
       String name,
       String label,
       IconData icon,
-      VoidCallback onTap, {
-      String? description,
-      bool quiet = false,
-      bool startsGroup = false,
-    }) => DesignSystemContextMenuItem(
+      VoidCallback onTap,
+    ) => DesignSystemContextMenuItem(
       key: ValueKey('front-door-$name-$index'),
       label: label,
       icon: icon,
-      description: description,
-      isQuiet: quiet,
-      startsGroup: startsGroup,
       onTap: guarded(onTap),
     );
     Widget open() => DesignSystemButton(
@@ -490,25 +516,43 @@ class _DoorRow extends StatelessWidget {
               onPressed: guarded(() => onSetUp(on: true)),
             );
           }
-          // The router's guess leads the other ways; leaving it comes last.
           // Each way says what choosing it does: the names alone leave
           // "a goal" and "a note" a guess.
-          final ways = [
+          // A way closes the list as it is taken: what it does shows in
+          // the card's own line next.
+          FrontDoorWay way(
+            String name,
+            String label,
+            String hint,
+            IconData icon,
+            VoidCallback go,
+          ) => FrontDoorWay(
+            name: name,
+            label: label,
+            hint: hint,
+            icon: icon,
+            onTap: guarded(() {
+              onChoose(on: false);
+              go();
+            }),
+          );
+          final offered = [
             if (draft == null)
-              (
+              way(
                 'task',
                 messages.frontDoorMakeTask,
+                messages.frontDoorMakeTaskHint,
                 LottiIcons.checkboxChecked,
                 () => onSetUp(on: true),
               ),
-            (
+            way(
               'prompt',
               messages.frontDoorMakePrompt,
               messages.frontDoorMakePromptHint,
               LottiIcons.code,
               () => acting.onMakePrompt(id, FrontTaskChoices.of(record.task)),
             ),
-            (
+            way(
               'goal',
               messages.frontDoorStartGoal,
               messages.frontDoorStartGoalHint,
@@ -516,7 +560,7 @@ class _DoorRow extends StatelessWidget {
               () => acting.onStartGoal(door),
             ),
             if (newKind == FrontNewKind.project)
-              (
+              way(
                 'project',
                 messages.frontDoorNewProject,
                 messages.frontDoorNewProjectHint,
@@ -524,14 +568,14 @@ class _DoorRow extends StatelessWidget {
                 () => acting.onNewProject(door),
               ),
             if (acting.onMakeEvent case final makeEvent?)
-              (
+              way(
                 'event',
                 messages.frontDoorMakeEvent,
                 messages.frontDoorMakeEventHint,
                 LottiIcons.calendar,
                 () => makeEvent(id),
               ),
-            (
+            way(
               'note',
               messages.frontDoorSaveNote,
               messages.frontDoorSaveNoteHint,
@@ -544,26 +588,20 @@ class _DoorRow extends StatelessWidget {
             FrontNewKind.project => 'project',
             FrontNewKind.task || null => null,
           };
-          ways.sort((a, b) {
-            if (a.$1 == guess) return -1;
-            if (b.$1 == guess) return 1;
-            return 0;
-          });
-          menuHeader = messages.frontDoorOtherWays;
-          menu.addAll([
-            for (final (name, label, hint, icon, go) in ways)
-              item(name, label, icon, go, description: hint),
-            // The way out, set apart and quiet: it makes nothing.
-            item(
-              'decline',
-              messages.frontDoorLeaveIt,
-              LottiIcons.close,
-              () => acting.onDecline(id),
-              description: messages.frontDoorLeaveItHint,
-              quiet: true,
-              startsGroup: true,
-            ),
-          ]);
+          // The router's guess leads the other ways.
+          ways = [
+            ...offered.where((way) => way.name == guess),
+            ...offered.where((way) => way.name != guess),
+          ];
+          // The way out makes nothing: the item stays, left, in the inbox
+          // — its glyph, not a cross, which would read as closing the list.
+          leave = way(
+            'decline',
+            messages.frontDoorLeaveIt,
+            messages.frontDoorLeaveItHint,
+            LottiIcons.inbox,
+            () => acting.onDecline(id),
+          );
         }
       case FrontDoorFiled(:final ownerId):
         title = words;
@@ -627,7 +665,12 @@ class _DoorRow extends StatelessWidget {
           : tokens.colors.text.mediumEmphasis,
     );
 
-    return Row(
+    final statusText = Text(
+      failed ? messages.frontDoorActionFailed : status,
+      key: ValueKey('front-door-status-$index'),
+      style: statusStyle,
+    );
+    final row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _Tile(
@@ -742,16 +785,35 @@ class _DoorRow extends StatelessWidget {
               ),
               if (setup != null)
                 setup
+              else if (leave != null)
+                // One line where the question and its controls fit. Where
+                // they do not — a large text size, a long translation — the
+                // controls go under the question, still at the card's end,
+                // and the question keeps a line of its own rather than
+                // breaking word by word beside them.
+                FrontBand(
+                  gap: tokens.spacing.step2,
+                  runGap: tokens.spacing.step3,
+                  children: [
+                    statusText,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ?action,
+                        SizedBox(width: tokens.spacing.step1),
+                        FrontDoorWaysToggle(
+                          key: ValueKey('front-door-menu-$index'),
+                          open: choosing,
+                          onPressed: guarded(() => onChoose(on: !choosing)),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
               else
                 Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        failed ? messages.frontDoorActionFailed : status,
-                        key: ValueKey('front-door-status-$index'),
-                        style: statusStyle,
-                      ),
-                    ),
+                    Expanded(child: statusText),
                     if (action case final button?) ...[
                       SizedBox(width: tokens.spacing.step2),
                       button,
@@ -761,26 +823,36 @@ class _DoorRow extends StatelessWidget {
                       DesignSystemContextMenuButton(
                         key: ValueKey('front-door-menu-$index'),
                         items: menu,
-                        header: menuHeader,
-                        // As wide as its rows, on the card's own surface
-                        // with a hairline: a layer over the card it opens
-                        // on, not a hole in the page behind it.
-                        // The destination picker's rows are two lines
-                        // tall, so the compact size keeps them a full
-                        // target; a plain row — Undo — keeps the standard
-                        // one.
-                        size: menuHeader == null
-                            ? DesignSystemContextMenuSize.medium
-                            : DesignSystemContextMenuSize.small,
-                        fitContent: true,
-                        surfaceColor: dsCardSurface(context),
-                        outlined: true,
                       ),
                     ],
                   ],
                 ),
             ],
           ),
+        ),
+      ],
+    );
+    if (leave == null) return row;
+    // The other ways open under the item, in its card: the card grows by
+    // them rather than a menu opening over it.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        row,
+        AnimatedSize(
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : MotionDurations.short4,
+          curve: MotionCurves.standard,
+          alignment: Alignment.topCenter,
+          child: choosing
+              ? FrontDoorWays(
+                  index: index,
+                  ways: ways,
+                  leave: leave,
+                  onClose: () => onChoose(on: false),
+                )
+              : const SizedBox(width: double.infinity),
         ),
       ],
     );

@@ -7578,6 +7578,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontDoorMakeTask => 'Gör till en uppgift';
 
   @override
+  String get frontDoorMakeTaskHint => 'En uppgift av dina ord, efter några val';
+
+  @override
   String get frontDoorNewProject => 'Nytt projekt…';
 
   @override

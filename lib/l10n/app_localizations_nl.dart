@@ -7588,6 +7588,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontDoorMakeTask => 'Maak er een taak van';
 
   @override
+  String get frontDoorMakeTaskHint =>
+      'Een taak uit je woorden, na een paar keuzes';
+
+  @override
   String get frontDoorNewProject => 'Nieuw project…';
 
   @override

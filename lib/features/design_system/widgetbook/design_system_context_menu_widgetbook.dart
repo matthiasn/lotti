@@ -137,41 +137,6 @@ class _ContextMenuVariants extends StatelessWidget {
             ],
           ),
         ),
-        // Rows that say what choosing them does, with a quiet way out set
-        // apart, under a heading, on a raised and outlined surface: a menu
-        // of destinations rather than of commands.
-        SizedBox(
-          width: DesignSystemContextMenu.defaultWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Described', style: descriptionStyle),
-              SizedBox(height: tokens.spacing.step3),
-              DesignSystemContextMenu(
-                size: DesignSystemContextMenuSize.small,
-                header: 'Header',
-                outlined: true,
-                items: [
-                  for (final i in [1, 2])
-                    DesignSystemContextMenuItem(
-                      label: 'Item $i',
-                      description: 'What choosing item $i does',
-                      icon: LottiIcons.copy,
-                      onTap: () {},
-                    ),
-                  DesignSystemContextMenuItem(
-                    label: 'Quiet item',
-                    description: 'Changes nothing',
-                    icon: LottiIcons.close,
-                    isQuiet: true,
-                    startsGroup: true,
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }

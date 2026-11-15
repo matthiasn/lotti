@@ -12869,6 +12869,12 @@ abstract class AppLocalizations {
   /// **'Make it a task'**
   String get frontDoorMakeTask;
 
+  /// No description provided for @frontDoorMakeTaskHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A task from your words, after a few choices'**
+  String get frontDoorMakeTaskHint;
+
   /// No description provided for @frontDoorNewProject.
   ///
   /// In en, this message translates to:

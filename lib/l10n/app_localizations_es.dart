@@ -7662,6 +7662,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontDoorMakeTask => 'Convertir en tarea';
 
   @override
+  String get frontDoorMakeTaskHint =>
+      'Una tarea con tus palabras, tras unas opciones';
+
+  @override
   String get frontDoorNewProject => 'Nuevo proyecto…';
 
   @override

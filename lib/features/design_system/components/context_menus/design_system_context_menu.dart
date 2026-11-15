@@ -23,23 +23,9 @@ class DesignSystemContextMenuItem {
     this.isSelected = false,
     this.checked,
     this.startsGroup = false,
-    this.description,
-    this.isQuiet = false,
   });
 
   final String label;
-
-  /// One line under the [label] saying what choosing the row does, in the
-  /// quiet ink — for a menu of destinations or outcomes whose names alone
-  /// leave the user guessing. A row with one is taller, its icon stepping
-  /// back to the quiet ink so the label leads. Menus of plain commands
-  /// leave it out.
-  final String? description;
-
-  /// Draws the row in the quiet ink — for the way out of a menu ("Leave
-  /// it") that changes nothing, set apart from the rows that do something
-  /// without wearing the danger tone a destructive row has.
-  final bool isQuiet;
   final Key? key;
   final IconData? icon;
   final Color? iconColor;
@@ -79,7 +65,6 @@ class DesignSystemContextMenu extends StatelessWidget {
     this.headerKey,
     this.fitContent = false,
     this.surfaceColor,
-    this.outlined = false,
     super.key,
   });
 
@@ -108,10 +93,6 @@ class DesignSystemContextMenu extends StatelessWidget {
   /// The menu's surface, for a host that opens it over a dimmed page and
   /// needs it raised off that page; the base level otherwise.
   final Color? surfaceColor;
-
-  /// Draws a hairline around the surface — for a menu that opens over a
-  /// card of its own colour, where the shadow alone does not set it off.
-  final bool outlined;
 
   @override
   Widget build(BuildContext context) {
@@ -164,12 +145,6 @@ class DesignSystemContextMenu extends StatelessWidget {
           decoration: BoxDecoration(
             color: surfaceColor ?? tokens.colors.background.level01,
             borderRadius: BorderRadius.circular(spec.borderRadius),
-            border: outlined
-                ? Border.all(
-                    color: tokens.colors.decorative.level01,
-                    width: spec.dividerWidth,
-                  )
-                : null,
             boxShadow: DsShadows.floatingSurface,
           ),
           child: ClipRRect(
@@ -240,62 +215,7 @@ class DesignSystemContextMenu extends StatelessWidget {
     // measures 4.25:1.
     final textColor = item.isDestructive
         ? tokens.colors.alert.error.ink
-        : item.isQuiet
-        ? tokens.colors.text.mediumEmphasis
         : tokens.colors.text.highEmphasis;
-    final description = item.description;
-    // Beside a description the label leads: the icon steps back.
-    final iconColor =
-        item.iconColor ??
-        (description == null ? textColor : tokens.colors.text.mediumEmphasis);
-
-    final content = Row(
-      children: [
-        if (item.icon != null || item.checked != null) ...[
-          Icon(
-            switch (item.checked) {
-              true => LottiIcons.checkboxChecked,
-              false => LottiIcons.checkboxUnchecked,
-              null => item.icon,
-            },
-            size: spec.iconSize,
-            color: iconColor,
-          ),
-          SizedBox(width: spec.iconGap),
-        ],
-        Expanded(
-          child: description == null
-              ? Text(
-                  item.label,
-                  style: spec.textStyle.copyWith(color: textColor),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.label,
-                      style: spec.textStyle.copyWith(
-                        color: textColor,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      description,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-        ),
-      ],
-    );
 
     return Semantics(
       key: item.key,
@@ -319,28 +239,38 @@ class DesignSystemContextMenu extends StatelessWidget {
             color: item.isSelected
                 ? tokens.colors.surface.selected
                 : Colors.transparent,
-            // A plain row is exactly the row height; one with a description
-            // grows from it by its second line.
-            child: description == null
-                ? SizedBox(
-                    height: spec.itemHeight,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: spec.horizontalPadding,
+            child: SizedBox(
+              height: spec.itemHeight,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: spec.horizontalPadding,
+                ),
+                child: Row(
+                  children: [
+                    if (item.icon != null || item.checked != null) ...[
+                      Icon(
+                        switch (item.checked) {
+                          true => LottiIcons.checkboxChecked,
+                          false => LottiIcons.checkboxUnchecked,
+                          null => item.icon,
+                        },
+                        size: spec.iconSize,
+                        color: item.iconColor ?? textColor,
                       ),
-                      child: content,
-                    ),
-                  )
-                : ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: spec.itemHeight),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: spec.horizontalPadding,
-                        vertical: spec.describedPadding,
+                      SizedBox(width: spec.iconGap),
+                    ],
+                    Expanded(
+                      child: Text(
+                        item.label,
+                        style: spec.textStyle.copyWith(color: textColor),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      child: content,
                     ),
-                  ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -353,7 +283,6 @@ class _ContextMenuSpec {
     required this.borderRadius,
     required this.horizontalPadding,
     required this.headerHeight,
-    required this.describedPadding,
     required this.dividerWidth,
     required this.itemHeight,
     required this.iconSize,
@@ -371,7 +300,6 @@ class _ContextMenuSpec {
       borderRadius: tokens.radii.s,
       horizontalPadding: tokens.spacing.step5,
       headerHeight: tokens.spacing.step8,
-      describedPadding: tokens.spacing.step3,
       dividerWidth: BorderWidths.hairline,
       itemHeight: isSmall ? kSmallItemHeight : tokens.spacing.step9,
       iconSize: isSmall
@@ -387,7 +315,6 @@ class _ContextMenuSpec {
   final double borderRadius;
   final double horizontalPadding;
   final double headerHeight;
-  final double describedPadding;
   final double dividerWidth;
   final double itemHeight;
   final double iconSize;

@@ -3481,6 +3481,7 @@
   "frontDoorMakePrompt": "Uppgift med kodningsprompt",
   "frontDoorMakePromptHint": "En uppgift och en prompt av dina ord",
   "frontDoorMakeTask": "Gör till en uppgift",
+  "frontDoorMakeTaskHint": "En uppgift av dina ord, efter några val",
   "frontDoorNewProject": "Nytt projekt…",
   "frontDoorNewProjectHint": "Öppnar ett nytt projekt med dina ord",
   "frontDoorNoAgent": "{owner} har ännu ingen agent att fråga.",

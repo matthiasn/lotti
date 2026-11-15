@@ -61,8 +61,9 @@ she read, each a short menu right there, under the title she read — and
 *Create task* (or Enter) makes it as set up —
 started only when they said so — with the words linked under it and the
 category's agent assigned. Cover art chosen there is generated from those
-words once the task exists, and *Task with a coding prompt* in the item's
-menu makes the task as she read it and has a coding prompt written from
+words once the task exists, and *Task with a coding prompt* — one of the
+other ways the card lists in place, each with a line saying what it does —
+makes the task as she read it and has a coding prompt written from
 them — neither needs a recording. Both arrive on the task's preview card
 in the chat: the cover as its thumbnail, the prompt as a short summary
 under the task, each announced while it is being made. A follow-up ("a follow-up to that one") names

@@ -4,7 +4,7 @@
   the task page. Now *Make it a task* asks one more thing beside status,
   priority and due day — a **Cover art** chip, off unless you asked for one
   ("…with cover art") — and the cover is drawn from your words once the task
-  is made. The item's menu gains **Task with a coding prompt**, which makes
+  is made. The item's other choices gain **Task with a coding prompt**, which makes
   the task as she read it and has a coding prompt written from the same
   words. Typed or dictated makes no difference: both work from the text you
   gave her, no recording needed. The card says what was requested, and the
@@ -25,11 +25,12 @@
   back, so what she heard or you chose stands out, and Cancel and Create task
   are easier to hit and further apart.
 
-- **The "where should this go?" menu says what each choice does.** The
-  other ways to file something in the companion chat floated over the page
-  as bare names. They now open as a proper menu under *Or make it something
-  else*, each with a line saying what it makes — a goal, an event, a note, a
-  task with a coding prompt — and *Leave it* set apart at the end.
+- **"Where should this go?" lists its other choices in the card.** The
+  other ways to file something in the companion chat sat in a menu that
+  floated over the page as bare names. They now open inside the card itself
+  under *Or make it something else*, each with a line saying what it makes —
+  a goal, an event, a note, a task with a coding prompt — and *Leave it* set
+  apart at the end. The arrow beside *Make it a task* opens and closes them.
 
 ### Fixed
 - **Cover art and prompts were not generated for a task in no category.**

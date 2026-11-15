@@ -7668,6 +7668,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorMakeTask => 'Udělat z toho úkol';
 
   @override
+  String get frontDoorMakeTaskHint => 'Úkol z tvých slov, po pár volbách';
+
+  @override
   String get frontDoorNewProject => 'Nový projekt…';
 
   @override

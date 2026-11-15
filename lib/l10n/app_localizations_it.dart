@@ -7659,6 +7659,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontDoorMakeTask => 'Fanne un’attività';
 
   @override
+  String get frontDoorMakeTaskHint =>
+      'Un\'attività dalle tue parole, dopo qualche scelta';
+
+  @override
   String get frontDoorNewProject => 'Nuovo progetto…';
 
   @override

@@ -7613,6 +7613,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontDoorMakeTask => 'Zur Aufgabe machen';
 
   @override
+  String get frontDoorMakeTaskHint =>
+      'Eine Aufgabe aus deinen Worten, nach ein paar Angaben';
+
+  @override
   String get frontDoorNewProject => 'Neues Projekt…';
 
   @override

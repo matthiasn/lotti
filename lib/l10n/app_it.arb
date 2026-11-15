@@ -3481,6 +3481,7 @@
   "frontDoorMakePrompt": "Attività con prompt di codice",
   "frontDoorMakePromptHint": "Un'attività e un prompt dalle tue parole",
   "frontDoorMakeTask": "Fanne un’attività",
+  "frontDoorMakeTaskHint": "Un'attività dalle tue parole, dopo qualche scelta",
   "frontDoorNewProject": "Nuovo progetto…",
   "frontDoorNewProjectHint": "Apre un nuovo progetto con le tue parole",
   "frontDoorNoAgent": "{owner} non ha ancora un agente a cui chiedere.",

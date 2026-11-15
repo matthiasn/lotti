@@ -96,6 +96,10 @@ sources:
     resource: ../../lib/features/front_agent/ui/front_task_setup.dart
     title: FrontTaskSetup — status, priority, due day and cover art asked on the card before a task is made
     last_modified: 2026-11-14
+  - id: door-ways
+    resource: ../../lib/features/front_agent/ui/front_door_ways.dart
+    title: FrontDoorWays — an inbox item's other ways, listed in its card, and the toggle that opens them
+    last_modified: 2026-11-15
   - id: conversation-tasks
     resource: ../../lib/features/front_agent/workflow/front_conversation_tasks.dart
     title: frontConversationTaskIds — the tasks a conversation named, newest first
@@ -1211,7 +1215,7 @@ flowchart LR
 | status | agent, only when said; then the user, on the card | `inProgress`: *in progress*, and nothing more — "make it in progress" is a status, never a start. The setup offers open, groomed and in progress (`FrontTaskStart`); blocked and on hold ask a reason, so they stay on the task page |
 | timer | agent, only when a timer is asked for or a start is said | `startedMinutesAgo` (0–`frontTaskMaxStartedMinutesAgo`): *in progress*, and a timer entry linked under the task from that instant, running |
 | cover art | agent, only when asked for; then the user, on the card | `coverArt`: true only for "with cover art", "a cover", "a picture for it" (live eval scenarios `cover_art_asked` / `cover_art_not_asked`). The setup's fourth chip starts there and the user's choice wins. Generated after the task is made ([what is generated with a task](#what-is-generated-with-a-task)) |
-| coding prompt | user, from the card's overflow | *Task with a coding prompt*: the task as she read it, no setup, and the prompt generated after it is made. The router reads no field for it |
+| coding prompt | user, from the card's other ways | *Task with a coding prompt*: the task as she read it, no setup, and the prompt generated after it is made. The router reads no field for it |
 | follows up on | agent, only for a follow-up | `followsUpTaskId`: a task in the index, a lookup this turn or `<conversation_tasks>`; anything else is dropped. Linked `followsUp` from the new task to it, and filed under its project |
 | task agent | category default | the category's `defaultTemplateId`; none without one |
 | provenance | always | the segment's verbatim words, a text entry linked under the task (`frontTaskWordsId`) |
@@ -1227,7 +1231,7 @@ runs from now. **Nothing is drafted unasked, and nothing is made without
 the tap**: a task only mentioned is offered in her words first
 ([talking back](#talking-back-and-offering-a-task)); one asked for waits in
 the inbox with its draft, and *Make it a task* asks how before anything is
-made. Its status line, action and overflow give
+made. Its status line, action and toggle give
 way to `FrontTaskSetup`: one line in her voice and four chips — status,
 priority, due day, cover art — each opening a short menu where it sits (today,
 tomorrow, a day on the calendar, or none for the due day; generate one or
@@ -1251,10 +1255,13 @@ open, medium, no due day, no cover — wears a medium-emphasis label
 (`mutedLabel`), so what was heard or chosen is what stands out; an open chip
 takes the quiet neutral selection, and the cover glyph neutral ink, leaving
 *Create task* the card's one accent. *Cancel* and *Create task* share the chips' line where it fits and
-drop below it, at the end, where it does not; either way *Create task* keeps
-the overflow's slot, so it ends where *Make it a task* does — a line that fits
+drop below it, at the end, where it does not (`FrontBand`); either way *Create task* keeps
+the toggle's slot, so it ends where *Make it a task* does — a line that fits
 only without that room is stacked, so a value changed never moves it
-sideways. The two buttons have a chip's target height (`tapTargetSize:
+sideways. The waiting item's own line is laid the same way: its question and
+its controls share a line where they fit, and at a large text size or in a
+long translation the controls drop under the question, still at the end, so
+the question never breaks word by word beside them. The two buttons have a chip's target height (`tapTargetSize:
 padded`) and stand a `step4` apart, and they sit further from the chips than
 the chips' rows do from each other: they act on the group, they are not its
 third row. The step takes focus
@@ -1294,7 +1301,7 @@ AI popup's own skills run on text instead of a recording:
 | Asked for | Where | Skill | Lands as |
 |-----------|-------|-------|----------|
 | cover art | the setup's fourth chip (*No cover art* / *Cover art*), on when the words asked for one, offered where a profile can draw | `skillImageGenId` | a generated image linked under the task and set as its `coverArtId` |
-| a coding prompt | *Task with a coding prompt* in the inbox item's overflow | `skillPromptGenId` | an AI response linked under the task, and from the words entry |
+| a coding prompt | *Task with a coding prompt* among the inbox item's other ways | `skillPromptGenId` | an AI response linked under the task, and from the words entry |
 
 Neither needs audio. The skills take a `JournalEntry` as readily as a
 `JournalAudio`, and every task made here already has one: the copy of the
@@ -1739,26 +1746,35 @@ status caption (the proposal's question naming the
 task, *Where should this go?* or *… go instead?* after a proposal was sent
 there, *Filed under …*, *Made into a task*, an answer's attribution and
 caveats, a door still being walked, a reason it went nowhere), at most one
-filled action, and an overflow menu (`DesignSystemContextMenuButton`)
-holding every other way out. The filled action is always a tap that
-writes — *File it*, *Make it a task* — or, on a settled card, a secondary
-*Open*. *Make it a task* is the filled tap only on an item she drafted — a
-task the user asked for; an inbox item nobody asked to be a task has no
-filled tap, and offers *Make it a task* in the overflow among the other
-ways. The overflow holds *Somewhere else* on a proposal, *Start a goal…*
-/ *New project…* (the ellipsis says a wizard opens), *Make it an event*
+filled action, and one trailing control holding every other way out. The
+filled action is always a tap that writes — *File it*, *Make it a task* —
+or, on a settled card, a secondary *Open*. *Make it a task* is the filled
+tap only on an item she drafted — a task the user asked for; an inbox item
+nobody asked to be a task has no filled tap, and offers *Make it a task*
+first among its other ways. On a proposal the trailing
+control is an overflow menu (`DesignSystemContextMenuButton`) holding
+*Somewhere else*, and on anything settled one holding *Undo*: single
+commands. **An inbox item's other ways are destinations, not commands, and
+they open in the card itself** (`FrontDoorWays`, `front_door_ways.dart`),
+behind a chevron in the overflow's slot (`FrontDoorWaysToggle`): the card
+grows by them on its own surface — no menu over it, no frame, no rule.
+Under the heading *Or make it something else* each way is a row of its
+name and one line saying what choosing it does (*Save as a note — Keeps
+your words as they are*): *Task with a coding prompt*, *Start a goal…* /
+*New project…* (the ellipsis says a wizard opens), *Make it an event*
 (only while `enable_events` is on — an event made where it is off would
-have no page to be found on), *Save as a note* and *Leave it* on an inbox item with the router's guess
-first, and *Undo* on
-anything settled. **An inbox item's overflow is a picker of destinations, not
-a list of commands**: under the heading *Or make it something else*, each way
-is a row of its name and one line saying what choosing it does (*Save as a
-note — Keeps your words as they are*), in compact rows as wide as the longest;
-*Leave it — Nothing is made* comes last, set apart by a rule and quiet, since
-it makes nothing and is no danger. Every menu the card opens sits on the
-card's own surface with a hairline (`surfaceColor: dsCardSurface`, `outlined`),
-so it reads as a layer over the card; a settled card's *Undo* keeps the
-standard row height a thumb can hit. A busy card's action shows it loading; a failed one's
+have no page to be found on) and *Save as a note*, with the router's guess
+first. The rows sit on the card's two columns, each glyph on a neutral tile
+under the item's tile and its text on the edge of the words, in three
+levels: a way's name is the row's one strong, heavier line; what it does
+and the heading over the list are quiet; the way out is quieter still. *Leave it — Nothing is made*
+comes last, set apart by space, without a tile and in the quiet ink, under
+the inbox glyph: it makes nothing, is no danger, and is not the way to
+close the list — the chevron
+and Escape are. One thing is open at a time: taking a way closes the list,
+*Make it a task* closes it for the setup, and another item's list closes
+both; an item that went somewhere and waits again starts closed. Opened at
+the foot of the conversation, the list scrolls itself into view. A busy card's action shows it loading; a failed one's
 status says so in the error ink and the tap reads *Try again*
 (`FrontChatComposerState.busyDoorIds` / `failedDoorIds`). *Open* leaves
 the sheet for the entry's, the task's or the event's page. The inbox filter keeps a

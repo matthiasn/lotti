@@ -7530,6 +7530,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontDoorMakeTask => 'Make it a task';
 
   @override
+  String get frontDoorMakeTaskHint =>
+      'A task from your words, after a few choices';
+
+  @override
   String get frontDoorNewProject => 'New project…';
 
   @override

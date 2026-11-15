@@ -7562,6 +7562,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontDoorMakeTask => 'Lav det til en opgave';
 
   @override
+  String get frontDoorMakeTaskHint =>
+      'En opgave ud fra dine ord, efter et par valg';
+
+  @override
   String get frontDoorNewProject => 'Nyt projekt…';
 
   @override

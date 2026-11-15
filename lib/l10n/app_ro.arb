@@ -3156,6 +3156,7 @@
   "frontDoorMakePrompt": "Sarcină cu prompt de codare",
   "frontDoorMakePromptHint": "O sarcină și un prompt din cuvintele dvs.",
   "frontDoorMakeTask": "Transformați în sarcină",
+  "frontDoorMakeTaskHint": "O sarcină din cuvintele dvs., după câteva opțiuni",
   "frontDoorNewProject": "Proiect nou…",
   "frontDoorNewProjectHint": "Deschide un proiect nou cu cuvintele dvs.",
   "frontDoorNoAgent": "{owner} nu are încă un agent care să poată fi întrebat.",

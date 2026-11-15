@@ -41,7 +41,7 @@ abstract final class FrontTaskSetupKeys {
 /// opening a short menu right where it sits — the conversation
 /// is never left for a form — and create. The chips and the two buttons
 /// share one line where it fits, the buttons at its end; where it does not,
-/// the buttons drop below, still at the end ([_Band]).
+/// the buttons drop below, still at the end ([FrontBand]).
 ///
 /// Status and priority wear the glyphs the task wears everywhere else, so
 /// an urgent task reads urgent before it is made. Enter creates and Escape
@@ -442,7 +442,7 @@ class _FrontTaskSetupState extends State<FrontTaskSetup> {
           ),
           // No gap: the chips' touch boxes already pad them from the
           // question they answer.
-          _Band(
+          FrontBand(
             // On a shared line the buttons stand clearly further from the
             // chips than the chips do from each other.
             gap: tokens.spacing.step6,
@@ -491,25 +491,27 @@ class _StatusGlyph extends StatelessWidget {
   );
 }
 
-/// Lays its two children — the chips, then the buttons — on one line when
-/// they fit, the buttons at the end and both centred on it; otherwise the
-/// buttons go [runGap] below the chips, still at the end. The buttons keep
-/// [endInset] clear after them either way: a line that fits only without it
-/// is stacked.
-class _Band extends MultiChildRenderObjectWidget {
-  const _Band({
+/// Lays its two children — what is asked, then its controls: the setup's
+/// chips and buttons, a waiting item's question and its action — on one
+/// line when they fit, the controls at the end and both centred on it;
+/// otherwise the controls go [runGap] below, still at the end. The controls
+/// keep [endInset] clear after them either way: a line that fits only
+/// without it is stacked.
+class FrontBand extends MultiChildRenderObjectWidget {
+  const FrontBand({
     required this.gap,
     required this.runGap,
-    required this.endInset,
     required super.children,
-  }) : assert(children.length == 2, 'The chips, then the buttons.');
+    this.endInset = 0,
+    super.key,
+  }) : assert(children.length == 2, 'What is asked, then its controls.');
 
   final double gap;
   final double runGap;
   final double endInset;
 
   @override
-  _RenderBand createRenderObject(BuildContext context) => _RenderBand(
+  RenderBox createRenderObject(BuildContext context) => _RenderBand(
     gap: gap,
     runGap: runGap,
     endInset: endInset,
@@ -517,8 +519,8 @@ class _Band extends MultiChildRenderObjectWidget {
   );
 
   @override
-  void updateRenderObject(BuildContext context, _RenderBand renderObject) {
-    renderObject
+  void updateRenderObject(BuildContext context, RenderBox renderObject) {
+    (renderObject as _RenderBand)
       ..gap = gap
       ..runGap = runGap
       ..endInset = endInset

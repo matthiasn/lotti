@@ -3163,6 +3163,7 @@
   "frontDoorMakePrompt": "Úkol s kódovacím promptem",
   "frontDoorMakePromptHint": "Úkol a prompt z tvých slov",
   "frontDoorMakeTask": "Udělat z toho úkol",
+  "frontDoorMakeTaskHint": "Úkol z tvých slov, po pár volbách",
   "frontDoorNewProject": "Nový projekt…",
   "frontDoorNewProjectHint": "Otevře nový projekt s tvými slovy",
   "frontDoorNoAgent": "{owner} zatím nemá agenta, kterého by se dalo zeptat.",

@@ -39,8 +39,6 @@ class DesignSystemContextMenuAnchor extends StatefulWidget {
     this.size = DesignSystemContextMenuSize.medium,
     this.fitContent = false,
     this.consumeOutsideTap = false,
-    this.surfaceColor,
-    this.outlined = false,
     super.key,
   });
 
@@ -72,12 +70,6 @@ class DesignSystemContextMenuAnchor extends StatefulWidget {
   /// rather than also reaching what lies under it — for a menu that opens
   /// over the very buttons that would act on it.
   final bool consumeOutsideTap;
-
-  /// The menu's surface ([DesignSystemContextMenu.surfaceColor]).
-  final Color? surfaceColor;
-
-  /// A hairline around the menu ([DesignSystemContextMenu.outlined]).
-  final bool outlined;
 
   @override
   State<DesignSystemContextMenuAnchor> createState() =>
@@ -124,8 +116,6 @@ class _DesignSystemContextMenuAnchorState
             header: widget.header,
             size: widget.size,
             fitContent: widget.fitContent,
-            surfaceColor: widget.surfaceColor,
-            outlined: widget.outlined,
             items: [
               for (final item in widget.items)
                 DesignSystemContextMenuItem(
@@ -137,8 +127,6 @@ class _DesignSystemContextMenuAnchorState
                   isSelected: item.isSelected,
                   checked: item.checked,
                   startsGroup: item.startsGroup,
-                  description: item.description,
-                  isQuiet: item.isQuiet,
                   // A null callback is a disabled row and must stay one; only
                   // a real callback gets the close-then-fire wrapper.
                   onTap: item.onTap == null

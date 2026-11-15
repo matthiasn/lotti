@@ -7693,6 +7693,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorMakeTask => 'Transformați în sarcină';
 
   @override
+  String get frontDoorMakeTaskHint =>
+      'O sarcină din cuvintele dvs., după câteva opțiuni';
+
+  @override
   String get frontDoorNewProject => 'Proiect nou…';
 
   @override

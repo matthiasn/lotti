@@ -3156,6 +3156,7 @@
   "frontDoorMakePrompt": "Aufgabe mit Coding-Prompt",
   "frontDoorMakePromptHint": "Eine Aufgabe und ein Prompt aus deinen Worten",
   "frontDoorMakeTask": "Zur Aufgabe machen",
+  "frontDoorMakeTaskHint": "Eine Aufgabe aus deinen Worten, nach ein paar Angaben",
   "frontDoorNewProject": "Neues Projekt…",
   "frontDoorNewProjectHint": "Öffnet ein neues Projekt mit deinen Worten",
   "frontDoorNoAgent": "{owner} hat noch keinen Agenten, den man fragen könnte.",

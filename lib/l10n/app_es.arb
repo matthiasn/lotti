@@ -3156,6 +3156,7 @@
   "frontDoorMakePrompt": "Tarea con prompt de programación",
   "frontDoorMakePromptHint": "Una tarea y un prompt con tus palabras",
   "frontDoorMakeTask": "Convertir en tarea",
+  "frontDoorMakeTaskHint": "Una tarea con tus palabras, tras unas opciones",
   "frontDoorNewProject": "Nuevo proyecto…",
   "frontDoorNewProjectHint": "Abre un proyecto nuevo con tus palabras",
   "frontDoorNoAgent": "{owner} aún no tiene un agente al que preguntar.",

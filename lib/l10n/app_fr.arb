@@ -3156,6 +3156,7 @@
   "frontDoorMakePrompt": "Tâche avec un prompt de code",
   "frontDoorMakePromptHint": "Une tâche et un prompt tirés de tes mots",
   "frontDoorMakeTask": "En faire une tâche",
+  "frontDoorMakeTaskHint": "Une tâche tirée de tes mots, après quelques choix",
   "frontDoorNewProject": "Nouveau projet…",
   "frontDoorNewProjectHint": "Ouvre un nouveau projet avec tes mots",
   "frontDoorNoAgent": "{owner} n’a pas encore d’agent à interroger.",

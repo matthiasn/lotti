@@ -4789,6 +4789,7 @@
   "frontDoorMakePrompt": "Task with a coding prompt",
   "frontDoorMakePromptHint": "A task, and a prompt from your words",
   "frontDoorMakeTask": "Make it a task",
+  "frontDoorMakeTaskHint": "A task from your words, after a few choices",
   "frontDoorNewProject": "New project…",
   "frontDoorNewProjectHint": "Opens a new project with your words",
   "frontDoorNoAgent": "{owner} has no agent to ask yet.",
