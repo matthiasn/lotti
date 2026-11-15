@@ -79,6 +79,15 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
   /// however far up they were.
   static const _catchUpSeconds = 0.6;
 
+  /// How far beyond the viewport, each way, the thread keeps its items
+  /// built: about three phone screens instead of the 250 px default.
+  ///
+  /// An item rebuilt after eviction lays out before its async content (a
+  /// task card, a chart, a measured reply) lands, so it re-enters at a
+  /// different height and the offset is corrected under the reader's
+  /// finger. Messages are cheap to keep; a jumping thread is not.
+  static const _scrollCacheExtent = ScrollCacheExtent.pixels(2000);
+
   /// Laid-out reply heights, keyed by message id, owned by the LIST rather
   /// than by the item.
   ///
@@ -428,6 +437,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                             ? null
                             : PageStorageKey(widget.conversationId),
                         controller: _scrollController,
+                        scrollCacheExtent: _scrollCacheExtent,
                         padding: EdgeInsets.fromLTRB(
                           gutter,
                           tokens.spacing.step5,

@@ -1552,7 +1552,11 @@ handler would retract it; that wiring is a follow-up.
   reply's clamp is height-measured, `ListView.builder` disposes an item's State
   once it leaves the cache extent, and an item that came back without its
   measurement rendered full-height for one frame — which grew the content above
-  the viewport and made the list jump on every re-entry.
+  the viewport and made the list jump on every re-entry. The list also keeps
+  2,000 px beyond the viewport built each way
+  (`_AgentChatViewState._scrollCacheExtent`, against the 250 px default), so
+  a message scrolled a few screens away and back is the element it was, not
+  one rebuilt before its async content lands.
   `agentChatProjectionProvider`
   filters and sorts the log first, retains the latest fifty durable visible
   candidates, and only then reads their payloads (no automatic `runKey`);

@@ -2301,7 +2301,7 @@ void main() {
         ),
         // Enough trailing traffic to push the long reply well past the
         // cache extent once the view settles at the newest message.
-        for (var i = 0; i < 40; i++)
+        for (var i = 0; i < 120; i++)
           AgentChatMessage(
             id: 'filler-$i',
             role: i.isEven ? AgentChatRole.user : AgentChatRole.agent,
@@ -2373,6 +2373,66 @@ void main() {
         reason:
             'a full-height first frame forces a scroll correction, '
             'which is what makes the list jump',
+      );
+    },
+  );
+  testWidgets(
+    'messages scrolled well past the viewport stay built, so they come back '
+    'at the height they left with',
+    (tester) async {
+      // A message rebuilt after eviction lays out before its async content
+      // lands and re-enters at another height, correcting the offset under
+      // the reader's finger. The 250 px default evicted a message barely
+      // out of view; the thread keeps a few screens' worth.
+      tester.view.physicalSize = const Size(400, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final history = <AgentChatMessage>[
+        for (var i = 0; i < 80; i++)
+          AgentChatMessage(
+            id: 'm$i',
+            role: i.isEven ? AgentChatRole.user : AgentChatRole.agent,
+            text: 'Message $i.',
+            createdAt: DateTime(2026, 8, 11, 9, i),
+          ),
+      ];
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+              history: AsyncData(history),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final viewportTop = tester.getTopLeft(find.byType(ListView)).dy;
+      Finder message(int i) => find.byKey(
+        ValueKey('goal-chat-message-m$i'),
+        skipOffstage: false,
+      );
+      final firstBuilt = Iterable<int>.generate(
+        history.length,
+      ).firstWhere((i) => message(i).evaluate().isNotEmpty);
+
+      expect(
+        firstBuilt,
+        greaterThan(0),
+        reason: 'the oldest messages must be out of the cache for this test',
+      );
+      expect(
+        viewportTop - tester.getBottomLeft(message(firstBuilt)).dy,
+        greaterThan(1500),
+        reason: 'what is kept above the viewport is a few screens, not 250 px',
       );
     },
   );

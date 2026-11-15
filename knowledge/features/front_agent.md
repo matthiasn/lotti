@@ -1888,7 +1888,14 @@ any of its tasks is named; a person's the person and their newest check-in,
 re-read when they are named (a check-in names them); a day's its plan from
 `currentDraftPlanProvider` — through
 `.value`, so a change after the turn shows on the card and
-a reload keeps the card as it was until the new preview lands.
+a reload keeps the card as it was until the new preview lands. The provider
+holds each preview for `entryCacheDuration` after every read (`cacheFor`):
+a card scrolled out past the chat's cache extent and back within that time
+is drawn on its first frame, instead of as its shorter title-only stand-in
+while a fresh read runs, which moved the thread under the reader. Past the
+hold the stand-in frame returns; reading the previews with the thread
+([stay-while-reload](../conventions/stay-while-reload.md#letting-a-row-fetch-what-decides-its-height))
+would close that too.
 `FrontEntityPreviewList` stacks the cards between her words and her door
 cards, a task as `FrontEntityPreviewCompactCard`, an event as
 `FrontEntityPreviewRichCard`, a project as `FrontEntityPreviewProjectCard`,

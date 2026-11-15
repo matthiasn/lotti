@@ -10,6 +10,7 @@ import 'package:lotti/features/tasks/state/task_preview_provider.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/utils/cache_extension.dart';
 
 /// Which entity a preview is of: its kind and its id.
 typedef FrontEntityKey = (FrontEntityKind kind, String id);
@@ -23,6 +24,11 @@ typedef FrontEntityKey = (FrontEntityKind kind, String id);
 /// it or any of its tasks changes, since a task finishing changes its
 /// counts; a person's when they or a check-in about them does; a day's is
 /// its plan as the Daily OS keeps it ([currentDraftPlanProvider]).
+///
+/// Held for [entryCacheDuration] after each read, cards or not: a card
+/// scrolled out of the chat and back meanwhile comes back drawn, not as its
+/// shorter title-only placeholder for the frames a fresh read takes — which
+/// made the thread jump.
 final FutureProviderFamily<FrontEntityPreview?, FrontEntityKey>
 frontEntityPreviewProvider = FutureProvider.autoDispose
     .family<FrontEntityPreview?, FrontEntityKey>(
@@ -34,6 +40,7 @@ Future<FrontEntityPreview?> frontEntityPreview(
   Ref ref,
   FrontEntityKey key,
 ) async {
+  ref.cacheFor(entryCacheDuration);
   final (kind, id) = key;
   switch (kind) {
     case FrontEntityKind.task:
