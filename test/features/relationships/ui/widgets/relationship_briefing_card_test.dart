@@ -1151,6 +1151,12 @@ void main() {
         find.byKey(const ValueKey('taskAgentStatusCluster')),
         findsNothing,
       );
+      // One line, as on the task card: the model row on the leading edge,
+      // the trigger on the trailing one.
+      final identity = tester.getRect(find.byType(TaskAgentIdentityRegion));
+      final trigger = tester.getRect(updateNow);
+      expect(identity.center.dy, closeTo(trigger.center.dy, 1));
+      expect(identity.right, lessThan(trigger.left));
     });
 
     testWidgets('the "as of" line moves on its own once the displayed bucket '

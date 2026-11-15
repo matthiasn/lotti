@@ -65,7 +65,8 @@ class AgentAutomationRow extends StatefulWidget {
     this.isRefreshingReport,
     super.key,
   }) : showsFreshConfirmation = true,
-       reportUpdatedAt = null;
+       reportUpdatedAt = null,
+       leading = null;
 
   /// The freshness word and the manual trigger alone, for a surface that
   /// keeps no settings of its own — the task and project summary cards, whose
@@ -96,6 +97,7 @@ class AgentAutomationRow extends StatefulWidget {
     this.isRefreshingReport,
     this.showsFreshConfirmation = true,
     this.onSkipScheduledUpdate,
+    this.leading,
     super.key,
   }) : compact = true,
        automaticUpdatesEnabled = false,
@@ -115,6 +117,12 @@ class AgentAutomationRow extends StatefulWidget {
   /// is a settings surface, where a state that vanishes is worse than a state
   /// that reads "Up to date".
   final bool showsFreshConfirmation;
+
+  /// Takes the freshness word's place on the leading edge, for a card whose
+  /// header already dates its report — the person briefing puts its model
+  /// row here, so the trigger and the provider it sends to share one line.
+  /// Only [AgentAutomationRow.compact] takes it.
+  final Widget? leading;
 
   /// Renders only the first question — the freshness word and the manual
   /// trigger on one line — for surfaces whose hero card cannot afford the

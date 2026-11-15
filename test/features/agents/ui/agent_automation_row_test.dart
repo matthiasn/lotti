@@ -291,6 +291,32 @@ void main() {
       });
     });
 
+    testWidgets('a leading widget takes the word its place, on the trigger '
+        'line: leading edge left, trigger right', (tester) async {
+      await pumpRow(
+        tester,
+        AgentAutomationRow.compact(
+          leading: const Text('Model row'),
+          inferenceAvailable: true,
+          isRunning: false,
+          hasReportContent: false,
+          isStale: false,
+          onRunNow: () {},
+        ),
+      );
+      final lead = tester.getRect(find.text('Model row'));
+      final trigger = tester.getRect(
+        find.byKey(const ValueKey('taskAgentWakeButton')),
+      );
+      expect(
+        find.byKey(const ValueKey('taskAgentStatusCluster')),
+        findsNothing,
+      );
+      expect(lead.left, 0);
+      expect(trigger.right, 730);
+      expect(lead.center.dy, closeTo(trigger.center.dy, 1));
+    });
+
     testWidgets('Out of date outranks the age, and no summary shows neither', (
       tester,
     ) async {

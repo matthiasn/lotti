@@ -505,28 +505,25 @@ class _AgentCard extends StatelessWidget {
             identity: identity,
           )
         else
-          // The task card's footer: *Update now* always in reach, reading
-          // *Thinking…* while a briefing is written. No freshness word — the
-          // header's status line already says how old the briefing is.
+          // The task card's footer line: *Update now* always in reach,
+          // reading *Thinking…* while a briefing is written. The model row
+          // takes the freshness word's place — the header's status line
+          // already dates the briefing — so the provider it sends to sits
+          // beside the trigger (ADR 0061).
           Padding(
             padding: EdgeInsets.only(
               left: tokens.spacing.cardPadding,
               right: tokens.spacing.cardPadding,
               bottom: tokens.spacing.step4,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AgentAutomationRow.compact(
-                  key: const ValueKey('relationship-update-strip'),
-                  inferenceAvailable: !modelMissing,
-                  isRunning: state == RelationshipAgentCardState.running,
-                  hasReportContent: false,
-                  isStale: false,
-                  onRunNow: onBrief,
-                ),
-                identity,
-              ],
+            child: AgentAutomationRow.compact(
+              key: const ValueKey('relationship-update-strip'),
+              leading: identity,
+              inferenceAvailable: !modelMissing,
+              isRunning: state == RelationshipAgentCardState.running,
+              hasReportContent: false,
+              isStale: false,
+              onRunNow: onBrief,
             ),
           ),
         if (showsSources)

@@ -54,7 +54,9 @@ class TaskAgentIdentityRegion extends StatelessWidget {
     final meta = trailingMeta;
     final currentTiers = routeTiers == null || meta == null
         ? routeTiers
-        : [for (final tier in routeTiers) '$tier · $meta'];
+        // When even the shortest wording cannot carry the cost, the cost
+        // goes rather than being cut: a number cut short reads as another.
+        : [for (final tier in routeTiers) '$tier · $meta', ...routeTiers];
     final currentIdentity = currentTiers?.first;
     final combined =
         data.presentation == TaskAgentIdentityPresentation.combined;

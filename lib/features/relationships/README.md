@@ -68,7 +68,7 @@ current and out of date — the last not reached today, since nothing yet
 marks a relationship briefing stale. One status line under the title says which, in
 that state's colour. A current briefing, and one being written, close the
 way the task agent's card does: *Update now* always in reach (*Thinking…*
-while a briefing is written), and under it the model row naming the model,
+while a briefing is written), on one line with the model row naming the model,
 the provider and the cost so far; tapping the header opens the agent's
 activity. The other states offer one quiet action, seeing the agent's
 activity, and one primary: brief now, choose a model, retry or update. Without reminders the card is an offer:
