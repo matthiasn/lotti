@@ -612,8 +612,8 @@ void main() {
           expect(builder.summaryReader?.repository, same(bench.repository));
           await container.pump();
           expect(
-            container.exists(
-              queryProfileProvider((agentId: 'agent', scope: scope)),
+            container.read(
+              queryProfileProvider((agentId: 'agent', scope: scope)).exists,
             ),
             isFalse,
             reason: 'Completed profile reads must not retain unused providers',
@@ -692,7 +692,7 @@ void main() {
         }
         await expectation;
         await container.pump();
-        expect(container.exists(provider), isFalse);
+        expect(container.read(provider.exists), isFalse);
       },
     );
   }

@@ -13381,9 +13381,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get promptGenerationCopyButton => 'Zkopírovat prompt';
 
   @override
-  String get promptGenerationPlayTooltip => 'Přečíst prompt nahlas';
-
-  @override
   String get promptGenerationCopyTooltip => 'Zkopírovat prompt do schránky';
 
   @override
@@ -13391,6 +13388,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get promptGenerationFullPromptLabel => 'Celý prompt:';
+
+  @override
+  String get promptGenerationPlayTooltip => 'Přečíst prompt nahlas';
 
   @override
   String get promptSelectionModalTitle => 'Vyberte přednastavenou výzvu';

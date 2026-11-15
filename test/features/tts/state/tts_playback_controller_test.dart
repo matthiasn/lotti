@@ -1919,7 +1919,7 @@ void main() {
     test('does not build a voice that was never used', () async {
       final container = await run(null);
 
-      expect(container.exists(ttsPlaybackControllerProvider), isFalse);
+      expect(container.read(ttsPlaybackControllerProvider.exists), isFalse);
     });
 
     // The regression: a clip that just ended could still be releasing the
@@ -1960,7 +1960,7 @@ void main() {
           const TtsPlaybackState(status: TtsPlaybackStatus.stopped),
         ),
       );
-      expect(container.exists(ttsAudioPlayerProvider), isFalse);
+      expect(container.read(ttsAudioPlayerProvider.exists), isFalse);
     });
 
     test('logs and swallows a failure to stop', () async {

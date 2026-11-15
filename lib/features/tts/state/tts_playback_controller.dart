@@ -74,12 +74,12 @@ final ttsPlaybackControllerProvider =
 /// under it. A failure to stop is logged and swallowed: the recording must
 /// start regardless.
 Future<void> stopReadAloudForRecording(Ref ref) async {
-  if (!ref.exists(ttsPlaybackControllerProvider)) return;
+  if (!ref.read(ttsPlaybackControllerProvider.exists)) return;
   try {
     if (ref.read(ttsPlaybackControllerProvider).isBusy) {
       await ref.read(ttsPlaybackControllerProvider.notifier).stop();
     }
-    if (ref.exists(ttsAudioPlayerProvider)) {
+    if (ref.read(ttsAudioPlayerProvider.exists)) {
       await ref.read(ttsAudioPlayerProvider).settled;
     }
   } catch (error) {

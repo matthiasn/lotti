@@ -13222,9 +13222,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get promptGenerationCopyButton => 'Kopiera prompt';
 
   @override
-  String get promptGenerationPlayTooltip => 'Läs upp prompten';
-
-  @override
   String get promptGenerationCopyTooltip =>
       'Kopiera prompten till urklippstavlan';
 
@@ -13233,6 +13230,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get promptGenerationFullPromptLabel => 'Fullständig prompt:';
+
+  @override
+  String get promptGenerationPlayTooltip => 'Läs upp prompten';
 
   @override
   String get promptSelectionModalTitle => 'Välj förkonfigurerad prompt';

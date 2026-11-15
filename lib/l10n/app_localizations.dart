@@ -22099,12 +22099,6 @@ abstract class AppLocalizations {
   /// **'Copy Prompt'**
   String get promptGenerationCopyButton;
 
-  /// No description provided for @promptGenerationPlayTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Read prompt aloud'**
-  String get promptGenerationPlayTooltip;
-
   /// No description provided for @promptGenerationCopyTooltip.
   ///
   /// In en, this message translates to:
@@ -22122,6 +22116,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Full Prompt:'**
   String get promptGenerationFullPromptLabel;
+
+  /// No description provided for @promptGenerationPlayTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Read prompt aloud'**
+  String get promptGenerationPlayTooltip;
 
   /// No description provided for @promptSelectionModalTitle.
   ///

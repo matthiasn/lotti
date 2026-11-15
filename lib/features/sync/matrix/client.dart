@@ -60,6 +60,9 @@ Future<Client> createMatrixClient({
     // only confidentiality backstop. With exclusion, an unverified device
     // simply receives ciphertext it can never read while every trusted
     // device keeps syncing. See ADR 0045.
+    // The suggested `verifiedOnly` also trusts cross-signed devices, which
+    // ADR 0045 deliberately excludes; keep direct verification only.
+    // ignore: deprecated_member_use
     shareKeysWith: ShareKeysWith.directlyVerifiedOnly,
     sendTimelineEventTimeout: const Duration(minutes: 2),
     database: database,

@@ -72,8 +72,8 @@ void main() {
     late Directory tempDir;
     late File sourceFile;
     late List<MethodCall> invocations;
-    late bool hasAccessResult;
-    late bool requestAccessResult;
+    late bool hasPermissionResult;
+    late bool requestPermissionResult;
     PlatformException? putImageError;
 
     setUp(() {
@@ -81,8 +81,8 @@ void main() {
       sourceFile = File('${tempDir.path}/photo.png')
         ..writeAsBytesSync([1, 2, 3, 4]);
       invocations = [];
-      hasAccessResult = true;
-      requestAccessResult = true;
+      hasPermissionResult = true;
+      requestPermissionResult = true;
       putImageError = null;
 
       binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
@@ -90,10 +90,10 @@ void main() {
       ) async {
         invocations.add(call);
         switch (call.method) {
-          case 'hasAccess':
-            return hasAccessResult;
-          case 'requestAccess':
-            return requestAccessResult;
+          case 'hasPermission':
+            return hasPermissionResult;
+          case 'requestPermission':
+            return requestPermissionResult;
           case 'putImage':
             final error = putImageError;
             if (error != null) {
@@ -124,18 +124,18 @@ void main() {
     });
 
     test('requests access first when not yet granted, then saves', () async {
-      hasAccessResult = false;
+      hasPermissionResult = false;
 
       final result = await saveImageToGallery(sourceFile);
 
       expect(result.status, ImageExportStatus.savedToGallery);
-      expect(invocations.map((c) => c.method), contains('requestAccess'));
+      expect(invocations.map((c) => c.method), contains('requestPermission'));
       expect(invocations.map((c) => c.method), contains('putImage'));
     });
 
     test('returns permissionDenied when access is refused', () async {
-      hasAccessResult = false;
-      requestAccessResult = false;
+      hasPermissionResult = false;
+      requestPermissionResult = false;
 
       final result = await saveImageToGallery(sourceFile);
 
@@ -144,8 +144,8 @@ void main() {
       expect(invocations.map((c) => c.method), isNot(contains('putImage')));
     });
 
-    test('maps a gal accessDenied error to permissionDenied', () async {
-      putImageError = PlatformException(code: 'ACCESS_DENIED');
+    test('maps a gal permissionDenied error to permissionDenied', () async {
+      putImageError = PlatformException(code: 'PERMISSION_DENIED');
 
       final result = await saveImageToGallery(sourceFile);
 

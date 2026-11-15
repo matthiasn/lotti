@@ -63,8 +63,8 @@ typedef ImageExporter = Future<ImageExportResult> Function(File file);
 /// Saves to the OS photo library via `gal` (iOS camera roll / Android gallery).
 Future<ImageExportResult> saveImageToGallery(File file) async {
   try {
-    if (!await Gal.hasAccess()) {
-      final granted = await Gal.requestAccess();
+    if (!await Gal.hasPermission()) {
+      final granted = await Gal.requestPermission();
       if (!granted) {
         return const ImageExportResult.permissionDenied();
       }
@@ -72,7 +72,7 @@ Future<ImageExportResult> saveImageToGallery(File file) async {
     await Gal.putImage(file.path);
     return const ImageExportResult.savedToGallery();
   } on GalException catch (e) {
-    if (e.type == GalExceptionType.accessDenied) {
+    if (e.type == GalExceptionType.permissionDenied) {
       return const ImageExportResult.permissionDenied();
     }
     rethrow;

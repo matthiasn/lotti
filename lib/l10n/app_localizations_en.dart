@@ -13134,9 +13134,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promptGenerationCopyButton => 'Copy Prompt';
 
   @override
-  String get promptGenerationPlayTooltip => 'Read prompt aloud';
-
-  @override
   String get promptGenerationCopyTooltip => 'Copy prompt to clipboard';
 
   @override
@@ -13144,6 +13141,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get promptGenerationFullPromptLabel => 'Full Prompt:';
+
+  @override
+  String get promptGenerationPlayTooltip => 'Read prompt aloud';
 
   @override
   String get promptSelectionModalTitle => 'Select Preconfigured Prompt';

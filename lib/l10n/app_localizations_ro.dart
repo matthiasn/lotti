@@ -13437,9 +13437,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get promptGenerationCopyButton => 'Copiați promptul';
 
   @override
-  String get promptGenerationPlayTooltip => 'Citiți promptul cu voce tare';
-
-  @override
   String get promptGenerationCopyTooltip => 'Copiați promptul în clipboard';
 
   @override
@@ -13447,6 +13444,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get promptGenerationFullPromptLabel => 'Prompt complet:';
+
+  @override
+  String get promptGenerationPlayTooltip => 'Citiți promptul cu voce tare';
 
   @override
   String get promptSelectionModalTitle => 'Selectați un prompt preconfigurat';
