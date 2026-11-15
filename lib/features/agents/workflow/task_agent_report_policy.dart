@@ -29,7 +29,9 @@ A report already exists. Before publishing, identify a new or corrected task fac
 
   /// Routine initialization is deferred on a quiet wake; explicit intent wins.
   static const languageRule =
-      'Write public report fields in the task language. Detect and set language '
+      'Write public report fields in the task language, headings included: '
+      'translate the section headings a directive names instead of leaving '
+      'them in English. Detect and set language '
       'only when it is currently absent and a report is required. On a no-change '
       'wake, skip routine language initialization. Honor an explicit language '
       'request.';
@@ -44,7 +46,8 @@ A report already exists. Before publishing, identify a new or corrected task fac
       'three sections when a URL is present. Build this heading outline before '
       'writing the prose, then fill each section. Before calling update_report, '
       'check the content against that outline: every required and activated '
-      'conditional heading must be present with its exact spelling. '
+      'conditional heading must be present with its exact spelling, '
+      'translated into the task language. '
       'Evidence activating a section must appear under its requested heading; '
       'an inline link elsewhere does not replace a requested evidence section. '
       'Omit the entire conditional section when its condition is false. Never '
@@ -242,6 +245,29 @@ A report already exists. Before publishing, identify a new or corrected task fac
     return bare.isEmpty;
   }
 
+  /// A heading that names a links section, in each language the app ships.
+  static final _linksHeading = RegExp(
+    '^(?:links?|verweise|liens|enlaces|collegamenti|ligações|linkuri|'
+    r'legături|länkar|odkazy)$',
+    caseSensitive: false,
+    unicode: true,
+  );
+
+  /// An inline link, a link reference definition, or a bare URL. Reference
+  /// links count only through a defined label, see `withoutEmptySections`.
+  static final _link = RegExp(
+    r'\]\(|^\s{0,3}\[[^\]]+\]:\s*\S|https?://|www\.',
+  );
+
+  /// The label of each link reference definition in a report, lowercased.
+  static final _definitionLabel = RegExp(
+    r'^\s{0,3}\[([^\]]+)\]:\s*\S',
+    multiLine: true,
+  );
+
+  /// A bracketed label that a shortcut reference link would resolve.
+  static final _bracketedLabel = RegExp(r'\[([^\]]+)\]');
+
   /// [report] cleaned of notes and empty sections, or unchanged when that
   /// would leave nothing.
   ///
@@ -262,9 +288,27 @@ A report already exists. Before publishing, identify a new or corrected task fac
   /// of the glm-5.3 control's decision-memo failures on 2026-09-15..18 were
   /// exactly this. A section with anything else — a bullet list, a second
   /// paragraph — is kept whole.
+  ///
+  /// A links section is dropped whenever its body holds no link, whatever it
+  /// says instead: "Keine Links gefunden" or "- None" would otherwise survive
+  /// the English-only "none" check and leave an empty Links section visible.
   static String withoutEmptySections(String report) {
     final lines = report.split('\n');
     final kept = <String>[];
+    // A reference link — `[Task][task]`, `[Task][]` or `[Task]` — is a link
+    // only when a bracketed label in it is defined somewhere in the report,
+    // often below the section that uses it; undefined, it renders as text.
+    final definedLabels = {
+      for (final match in _definitionLabel.allMatches(report))
+        match.group(1)!.trim().toLowerCase(),
+    };
+    bool hasLink(String line) =>
+        _link.hasMatch(line) ||
+        _bracketedLabel
+            .allMatches(line)
+            .any(
+              (m) => definedLabels.contains(m.group(1)!.trim().toLowerCase()),
+            );
     for (var index = 0; index < lines.length; index++) {
       final heading = RegExp(r'^(#{2,6})\s+\S').firstMatch(lines[index]);
       if (heading == null) {
@@ -282,7 +326,12 @@ A report already exists. Before publishing, identify a new or corrected task fac
           .where((line) => line.trim().isNotEmpty)
           .toList();
       final isEmptyClaim = body.length == 1 && _saysNothing(body.single.trim());
-      if (body.isEmpty || isEmptyClaim) {
+      final headingText = lines[index]
+          .replaceAll(RegExp(r'[^\p{L}\s]', unicode: true), '')
+          .trim();
+      final isLinklessLinks =
+          _linksHeading.hasMatch(headingText) && !body.any(hasLink);
+      if (body.isEmpty || isEmptyClaim || isLinklessLinks) {
         index = end - 1;
         continue;
       }
