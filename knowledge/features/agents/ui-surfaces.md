@@ -195,7 +195,9 @@ Contents:
   unconditionally rather than stranding it behind a control that never renders.
 - **The freshness strip** — `AgentAutomationRow.compact`, always present: the
   summary's age or *Out of date*, with *Update now* beside it. See *What the
-  card says about freshness* below.
+  card says about freshness* below. Its optional `leading` widget takes the
+  freshness word's place: the person briefing card, whose header already
+  dates its report, puts its model row there.
 
 `AgentAutomationRow` is also the goal detail report control, and the body of
 the maintenance band in the internals panel. Task, project and goal agents

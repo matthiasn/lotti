@@ -427,6 +427,12 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
                 // the page at any time.
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 160),
+                  // An unkeyed fade, so the switcher numbers each entry: the
+                  // default one is keyed by its child's key, and a name folded
+                  // in and out faster than the fade left two outgoing titles
+                  // under one key.
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(opacity: animation, child: child),
                   child: collapsed
                       ? Text(
                           title,

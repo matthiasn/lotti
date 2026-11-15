@@ -66,11 +66,12 @@ overdue person's warning pill opens the same meeting sheet.
 The agent card has six states: not enrolled, no briefing, running, failed,
 current and out of date — the last not reached today, since nothing yet
 marks a relationship briefing stale. One status line under the title says which, in
-that state's colour. A current briefing, and one being written, keep their
-upkeep — update now, the agent's activity, the model — in a menu whose
-heading names the model, the provider and the cost so far; the other states
-offer one quiet action, seeing the agent's activity, and one primary: brief
-now, choose a model, retry or update. Without reminders the card is an offer:
+that state's colour. A current briefing, and one being written, close the
+way the task agent's card does: *Update now* always in reach (*Thinking…*
+while a briefing is written), on one line with the model row naming the model,
+the provider and the cost so far; tapping the header opens the agent's
+activity. The other states offer one quiet action, seeing the agent's
+activity, and one primary: brief now, choose a model, retry or update. Without reminders the card is an offer:
 how often, and *Turn on reminders*. An out-of-date briefing shows
 its age in the header; open task proposals are counted by their own band
 under the body. A current briefing names its sources, and why its band says

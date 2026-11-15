@@ -315,13 +315,9 @@ void main() {
     find.byKey(const ValueKey('relationship-agent-status')),
   );
   final briefMe = find.byKey(const ValueKey('relationship-brief-me'));
-  final briefingMenu = find.byKey(const ValueKey('relationship-briefing-menu'));
-
-  /// Opens the header's menu, where a calm card keeps its upkeep.
-  Future<void> openMenu(WidgetTester tester) async {
-    await tester.tap(briefingMenu);
-    await tester.pumpAndSettle();
-  }
+  // A calm face's trigger: the task card's own Update now.
+  final updateNow = find.byKey(const ValueKey('taskAgentWakeButton'));
+  final updateStrip = find.byKey(const ValueKey('relationship-update-strip'));
 
   group('relationshipAgentCardStateOf', () {
     final at = DateTime(2026, 8, 13, 13, 41);
@@ -901,23 +897,20 @@ void main() {
         find.byKey(const ValueKey('relationship-agent-body')),
         findsNothing,
       );
-      // A calm face: no footer, no button on the card — the activity log
-      // waits in the header's menu, and there is nothing to update yet.
-      expect(find.byType(DesignSystemButton), findsNothing);
+      // A calm face: no footer band. The task card's trigger stays in its
+      // slot, reading Thinking… and disabled while the agent writes, with
+      // the model row naming where the briefing goes (ADR 0061).
       expect(
         find.byKey(const ValueKey('relationship-agent-footer')),
         findsNothing,
       );
-      // The spinner turns for as long as the agent writes: frames, not a
-      // settle.
-      await tester.tap(briefingMenu);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      expect(briefMe, findsNothing);
       expect(
-        find.byKey(const ValueKey('relationship-agent-see-activity')),
+        find.descendant(of: updateStrip, matching: find.text('Thinking…')),
         findsOneWidget,
       );
-      expect(briefMe, findsNothing);
+      expect(tester.widget<DesignSystemButton>(updateNow).onPressed, isNull);
+      expect(find.textContaining('Gemini'), findsOneWidget);
     });
 
     // An update must not blank the card: the briefing being replaced stays
@@ -1114,13 +1107,15 @@ void main() {
 
       expect(statusText(tester), 'Thriving · as of 1 h ago');
       expect(find.byType(DsPill), findsNothing);
-      // No footer: the model and the cost head the menu that holds Update
-      // now, so the update never goes anywhere unshown (ADR 0061).
+      // No footer band: Update now and the model row close the card the
+      // way the task card's strip does, so the update never goes anywhere
+      // unshown (ADR 0061), and the cost rides the model row.
       expect(
         find.byKey(const ValueKey('relationship-agent-footer')),
         findsNothing,
       );
-      expect(find.textContaining('38.2K tokens'), findsNothing);
+      expect(find.textContaining('Gemini'), findsOneWidget);
+      expect(find.textContaining('38.2K tokens'), findsOneWidget);
       // Provenance waits behind Read more: collapsed, the summary outweighs
       // its sources. Under the fixed clock: a rebuild on the real one would
       // find the fixture overdue and swap the footer to Call.
@@ -1144,15 +1139,24 @@ void main() {
         find.byKey(const ValueKey('relationship-agent-log-check-in')),
         findsNothing,
       );
-      expect(find.byType(DesignSystemButton), findsNothing);
-
-      // The upkeep waits behind the menu, under a heading that names the
-      // model, the provider and what the agent has used.
-      await openMenu(tester);
-      expect(find.textContaining('Gemini'), findsOneWidget);
-      expect(find.textContaining('38.2K tokens'), findsOneWidget);
-      expect(find.text('Update now'), findsOneWidget);
-      expect(find.text('See activity'), findsOneWidget);
+      // One button: the refresh, as quiet as the task card's.
+      expect(find.byType(DesignSystemButton), findsOneWidget);
+      final update = tester.widget<DesignSystemButton>(updateNow);
+      expect(update.label, 'Update now');
+      expect(update.leadingIcon, LottiIcons.refresh);
+      expect(update.variant, DesignSystemButtonVariant.tertiary);
+      // No freshness word beside it: the status line already dates the
+      // briefing.
+      expect(
+        find.byKey(const ValueKey('taskAgentStatusCluster')),
+        findsNothing,
+      );
+      // One line, as on the task card: the model row on the leading edge,
+      // the trigger on the trailing one.
+      final identity = tester.getRect(find.byType(TaskAgentIdentityRegion));
+      final trigger = tester.getRect(updateNow);
+      expect(identity.center.dy, closeTo(trigger.center.dy, 1));
+      expect(identity.right, lessThan(trigger.left));
     });
 
     testWidgets('the "as of" line moves on its own once the displayed bucket '
@@ -1557,11 +1561,10 @@ void main() {
       expect(find.textContaining('tokens'), findsNothing);
     });
 
-    testWidgets("the menu's Update now requests a briefing", (tester) async {
+    testWidgets('Update now requests a briefing', (tester) async {
       await pump(tester, checkIns: onTrackCheckIns, current: report());
 
-      await openMenu(tester);
-      await tester.tap(briefMe);
+      await tester.tap(updateNow);
       await tester.pumpAndSettle();
 
       verify(() => agentService.requestBriefing(any())).called(1);
@@ -1755,8 +1758,9 @@ void main() {
 
   group('due', () {
     testWidgets('being overdue does not change who owns the doing verbs: '
-        'the card offers no call or check-in, its menu See activity · '
-        'Update now', (tester) async {
+        'the card offers no call or check-in, only Update now', (
+      tester,
+    ) async {
       await pump(
         tester,
         entry: relationship(channels: const [mobile]),
@@ -1782,13 +1786,8 @@ void main() {
         findsNothing,
       );
 
-      expect(find.byType(DesignSystemButton), findsNothing);
-      await openMenu(tester);
-      expect(
-        find.byKey(const ValueKey('relationship-agent-see-activity')),
-        findsOneWidget,
-      );
-      expect(briefMe, findsOneWidget);
+      expect(find.byType(DesignSystemButton), findsOneWidget);
+      expect(updateNow, findsOneWidget);
       expect(
         statusText(tester),
         'Thriving · as of 1 h ago',
@@ -1809,7 +1808,7 @@ void main() {
 
       expect(statusText(tester), 'Thriving · as of 1 h ago');
       expect(find.byType(AgentMarkdownView), findsNothing);
-      expect(briefingMenu, findsNothing);
+      expect(updateNow, findsNothing);
 
       await withClock(Clock.fixed(now), () async {
         await tester.tap(
@@ -1820,7 +1819,7 @@ void main() {
 
       expect(find.byType(AgentMarkdownView), findsOneWidget);
       expect(find.text('Pip is in good spirits.'), findsOneWidget);
-      expect(briefingMenu, findsOneWidget);
+      expect(updateNow, findsOneWidget);
     });
 
     testWidgets('a face that asks something of the reader is never folded', (

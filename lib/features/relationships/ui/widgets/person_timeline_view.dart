@@ -223,12 +223,9 @@ class PersonTimelineSliver extends ConsumerWidget {
             ),
           ),
         ),
-      for (final section in timeline.sections) ...[
+      for (final (section, key) in _sectionKeys(timeline.sections)) ...[
         _TimelineSlot(
-          ValueKey(
-            'person-timeline-section-${section.kind.name}'
-            '${section.month?.toIso8601String() ?? ''}',
-          ),
+          key,
           (context, key) => DesignSystemTimelineSectionHeader(
             key: key,
             label: personTimelineSectionLabel(context, section, now: now),
@@ -242,12 +239,10 @@ class PersonTimelineSliver extends ConsumerWidget {
               item: item,
               summary: switch (item) {
                 TimelineVoiceNote(:final audio) => summaries[audio.meta.id],
+                // The recording the row plays, not whichever the read
+                // returned first: the order is not stable across reloads.
                 TimelineCheckIn(:final entries) =>
-                  summaries[entries
-                      .whereType<JournalAudio>()
-                      .firstOrNull
-                      ?.meta
-                      .id],
+                  summaries[newestRecordingOf(entries)?.meta.id],
                 _ => null,
               },
               last: index == section.items.length - 1,
@@ -278,6 +273,29 @@ class PersonTimelineSliver extends ConsumerWidget {
       findChildIndexCallback: (key) => indexOfKey[key],
     );
   }
+}
+
+/// Each section with its heading's key, unique within the list: a row dated
+/// after today takes its month's section above *Today*, so that month can
+/// head two sections, and the list's key lookup must never find one heading
+/// for both.
+List<(PersonTimelineSection, Key)> _sectionKeys(
+  List<PersonTimelineSection> sections,
+) {
+  final seen = <String, int>{};
+  return [
+    for (final section in sections)
+      (
+        section,
+        () {
+          final base =
+              'person-timeline-section-${section.kind.name}'
+              '${section.month?.toIso8601String() ?? ''}';
+          final repeat = seen.update(base, (n) => n + 1, ifAbsent: () => 0);
+          return ValueKey(repeat == 0 ? base : '$base-$repeat');
+        }(),
+      ),
+  ];
 }
 
 /// One child of [PersonTimelineSliver]'s list, built lazily, with the [key]

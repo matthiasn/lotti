@@ -265,19 +265,21 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
               onSkip: () => _skipScheduledUpdate(onSkip),
             )
           : null;
+      final lead =
+          widget.leading ?? (freshnessLabel == null ? null : freshness);
       Widget line(List<Widget> trailing) => Row(
         key: const ValueKey('agentAutomationRowCompact'),
-        mainAxisAlignment: freshnessLabel == null
+        mainAxisAlignment: lead == null
             ? MainAxisAlignment.end
             : MainAxisAlignment.spaceBetween,
         children: [
-          if (freshnessLabel != null)
+          if (lead != null)
             Flexible(
               child: Padding(
                 padding: EdgeInsetsDirectional.only(
                   end: tokens.spacing.cardItemSpacing,
                 ),
-                child: freshness,
+                child: lead,
               ),
             ),
           ...trailing,

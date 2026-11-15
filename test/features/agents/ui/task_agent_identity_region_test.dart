@@ -107,7 +107,7 @@ void main() {
       .didExceedMaxLines;
 
   testWidgets('trailing meta rides the setup row after the route, on every '
-      'wording tier', (tester) async {
+      'wording tier that can carry it', (tester) async {
     await pumpRegion(
       tester,
       data: const TaskAgentModelIdentityViewData(
@@ -134,6 +134,22 @@ void main() {
     );
     expect(find.text('$routeLabel · 18.4K tokens'), findsNothing);
     expect(find.textContaining('· 18.4K tokens'), findsOneWidget);
+  });
+
+  testWidgets('where no wording can carry the meta, the meta goes rather '
+      'than being cut short, and the model stays', (tester) async {
+    await pumpRegion(
+      tester,
+      data: const TaskAgentModelIdentityViewData(
+        presentation: TaskAgentIdentityPresentation.combined,
+        currentRoute: route,
+        reportRoute: route,
+      ),
+      trailingMeta: '18.4K tokens',
+      width: 200,
+    );
+    expect(find.textContaining('18.4K'), findsNothing);
+    expect(find.text('Qwen 3.5 Plus'), findsOneWidget);
   });
 
   testWidgets('combined row is tappable, accessible, and at least step6 high', (

@@ -1469,7 +1469,8 @@ rather than from any relationship-specific code:
 
 The footer includes the shared model identity row — with the agent's token
 cost riding it as `trailingMeta`, so `model · via provider · 18.4K tokens`
-is one line — and a link to `AgentModelSheet`, alongside the
+is one line; where no wording fits with the cost, the cost is dropped rather
+than cut mid-number — and a link to `AgentModelSheet`, alongside the
 relationship-specific check-in and briefing controls. Report freshness
 describes the stored report; model availability describes the current
 configuration and is a separate signal.
@@ -1578,9 +1579,9 @@ surface described the state the reader was one tap from leaving and said
 nothing about the one they were entering. What the agent sends belongs
 somewhere it can be explained, not in a caption that expires on tap.
 | No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · *See activity* · **Brief now** |
-| Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · the briefing being replaced, still readable (TL;DR + Read more), or no body before the first — never a duration estimate · *See activity* · no primary |
+| Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · the briefing being replaced, still readable (TL;DR + Read more), or no body before the first — never a duration estimate · one footer line, the task card's strip (`AgentAutomationRow.compact`) with the model row in its `leading` slot and the trigger reading *Thinking…*, disabled |
 | Failed | `lastWakeFailed` — the state row's failed watermark is newer than its completed one — and newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · the briefing it failed to replace, if there is one, kept readable under that with its age · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
-| Current | report, not stale | `{band} · as of {ago}` · TL;DR + Read more · *See activity* · **Update now** (tertiary) · sources line with the full briefing: behind *Read more*, or at once when the TL;DR is the whole of it |
+| Current | report, not stale | `{band} · as of {ago}` · TL;DR + Read more · one footer line, the task card's strip: the model row naming model, provider and cost (ADR 0061) in its `leading` slot, where the task card has its freshness word — the status line already dates the briefing — and **Update now** (tertiary, refresh glyph) on the trailing edge · sources line with the full briefing: behind *Read more*, or at once when the TL;DR is the whole of it |
 | Out of date | `AgentStateEntity.isReportStale` | `Out of date · new check-in {day}` in warning ink, `{n} days old` pill once a day old · body · *See activity* · **Update now** (primary) — no sources line, since the count would include the check-in it missed |
 
 Open task proposals are counted once, by the proposals band beneath the
@@ -1590,8 +1591,10 @@ sources line (`Sources: 6 check-ins · contact details never sent`) is part
 of the full reading — it appears with the whole briefing, behind *Read more*
 or at once when the TL;DR is all there is — so the folded card stays status ·
 TL;DR · one next step. Logging a check-in and calling are the page's verbs,
-held by its sticky action bar, not the card's: every enrolled face's quiet
-action is *See activity*.
+held by its sticky action bar, not the card's: the waiting faces' quiet
+action is *See activity*; the calm faces (current, running) have no footer
+band and no menu — their header opens the agent's activity, as on the task
+card, and their model row opens *Choose a model*.
 
 ```mermaid
 stateDiagram-v2
