@@ -361,6 +361,25 @@ void main() {
       expect(find.byKey(const ValueKey('person-hero-title')), findsNothing);
     });
 
+    testWidgets('unfolding fades the name out rather than dropping it', (
+      tester,
+    ) async {
+      await pump(tester, tall: true);
+      final position =
+          tester.state<ScrollableState>(find.byType(Scrollable)).position
+            ..jumpTo(600);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('person-hero-title')), findsOneWidget);
+
+      position.jumpTo(0);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.byKey(const ValueKey('person-hero-title')), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('person-hero-title')), findsNothing);
+    });
+
     testWidgets('the avatar hangs half its diameter below the hero, on the '
         'content inset', (tester) async {
       await pump(tester);

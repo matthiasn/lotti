@@ -427,18 +427,19 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
                 // the page at any time.
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 160),
-                  // Unkeyed wrapper: the switcher keys each entry by its
-                  // child's key, so a name folded in and out faster than the
-                  // fade left two outgoing titles under one key.
+                  // An unkeyed fade, so the switcher numbers each entry: the
+                  // default one is keyed by its child's key, and a name folded
+                  // in and out faster than the fade left two outgoing titles
+                  // under one key.
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(opacity: animation, child: child),
                   child: collapsed
-                      ? KeyedSubtree(
-                          child: Text(
-                            title,
-                            key: const ValueKey('person-hero-title'),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: titleStyle,
-                          ),
+                      ? Text(
+                          title,
+                          key: const ValueKey('person-hero-title'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: titleStyle,
                         )
                       : const SizedBox.shrink(),
                 ),
