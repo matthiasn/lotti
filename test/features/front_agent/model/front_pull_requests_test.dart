@@ -247,8 +247,10 @@ void main() {
       expect(
         summary.render(),
         'Pull requests 2026-10-26 through 2026-11-08:\n'
-        '- opened: 2, +1450 -320 lines\n'
-        '- merged: 3, +1242 -305 lines\n'
+        '- opened: 2, +1450 -320 lines; on average +725 -160, 885 changed '
+        'per pull request\n'
+        '- merged: 3, +1242 -305 lines; on average +414 -102, 516 changed '
+        'per pull request\n'
         'Each, newest opened first:\n'
         '- penguin/colony#12 | Title of penguin/colony#12 | opened '
         '2026-11-07 | merged 2026-11-08 | +1200 -300\n'
@@ -358,6 +360,11 @@ void main() {
         'Adds the ledger the colony counts fish in.',
       );
       expect(pr.card, (key: 'penguin/colony#7', taskId: 'ledger'));
+      expect(
+        foundPullRequest(7, additions: 1200, deletions: 0).render(),
+        'penguin/colony#7 | Pull request 7 | opened unknown | +1200 -0 | '
+        'task:ledger (Task ledger)',
+      );
     });
 
     test(
@@ -388,7 +395,7 @@ void main() {
       expect(
         text,
         'Pull requests about "fish ledger", 2026-11-02 through 2026-11-08 '
-        '(40 searched), each as id | title | opened | merged | task | '
+        '(40 searched), each as id | title | opened | merged | size | task | '
         'summary:\n'
         '- penguin/colony#7 | Pull request 7 | opened unknown | '
         'task:ledger (Task ledger)\n'
@@ -410,6 +417,59 @@ void main() {
         ),
         'None of the 3 pull requests opened or merged 2026-11-02 is about '
         '"igloo".',
+      );
+    });
+
+    test('without a topic, the largest by lines changed; with one and '
+        'largest, those kept, largest first', () {
+      final found = [foundPullRequest(7, additions: 900, deletions: 40)];
+      expect(
+        renderFrontFoundPullRequests(
+          topic: null,
+          range: range,
+          searched: 218,
+          found: found,
+          largest: true,
+        ),
+        'The 1 largest of the 218 pull requests opened 2026-11-02 through '
+        '2026-11-08, by lines changed, largest first, each as id | title | '
+        'opened | merged | size | task | summary:\n'
+        '- penguin/colony#7 | Pull request 7 | opened unknown | +900 -40 | '
+        'task:ledger (Task ledger)',
+      );
+      expect(
+        renderFrontFoundPullRequests(
+          topic: 'sync',
+          range: range,
+          searched: 40,
+          found: found,
+          largest: true,
+        ),
+        startsWith(
+          'Pull requests about "sync", 2026-11-02 through 2026-11-08 '
+          '(40 searched), largest first by lines changed, each as',
+        ),
+      );
+      expect(
+        renderFrontFoundPullRequests(
+          topic: null,
+          range: range,
+          searched: 0,
+          found: const [],
+          largest: true,
+        ),
+        'No pull request was opened 2026-11-02 through 2026-11-08.',
+      );
+      expect(
+        renderFrontFoundPullRequests(
+          topic: 'sync',
+          range: range,
+          searched: 4,
+          found: const [],
+          largest: true,
+        ),
+        'None of the 4 pull requests opened 2026-11-02 through 2026-11-08 '
+        'is about "sync".',
       );
     });
   });

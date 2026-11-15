@@ -33,7 +33,7 @@ String frontPullRequestFilterPrompt(
 ) => [
   'Topic: $topic',
   '',
-  'Pull requests, each as id | title | opened | merged | task | summary:',
+  'Pull requests, each as id | title | opened | merged | size | task | summary:',
   for (final pr in candidates) '- ${pr.render()}',
 ].join('\n');
 

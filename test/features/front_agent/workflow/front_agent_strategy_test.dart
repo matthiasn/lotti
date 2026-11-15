@@ -1300,7 +1300,7 @@ hologram:x: not listed''');
     );
     FrontPullRequestLookups lookups() => FrontPullRequestLookups(
       now: turnNow,
-      finder: (query) async => (
+      finder: (query, {largest = false}) async => (
         range: query.range!,
         pullRequests: [
           ledger,

@@ -19,6 +19,8 @@ FrontFoundPullRequest foundPullRequest(
   String? oneLiner,
   DateTime? createdAt,
   DateTime? mergedAt,
+  int? additions,
+  int? deletions,
 }) => FrontFoundPullRequest(
   key: 'penguin/colony#$number',
   title: title ?? 'Pull request $number',
@@ -26,4 +28,6 @@ FrontFoundPullRequest foundPullRequest(
   oneLiner: oneLiner,
   createdAt: createdAt,
   mergedAt: mergedAt,
+  additions: additions,
+  deletions: deletions,
 );

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/service/front_pull_request_finder.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
@@ -159,6 +160,76 @@ void main() {
         'matthiasn/lotti#7',
       ]);
       expect(candidates.pullRequests.single.task.id, 'ledger');
+    });
+
+    test('largest ranks those opened in the window by lines changed, the '
+        'newer first on a tie, each with its stored size', () async {
+      final now = DateTime(2026, 3, 20, 12);
+      final opened = DateTime.utc(2026, 3, 18, 10);
+      PullRequestStatRowRecord row(
+        int number,
+        int additions, {
+        DateTime? createdAt,
+        DateTime? merged,
+      }) => (
+        entryId: 'e-$number',
+        key: 'matthiasn/lotti#$number',
+        taskId: 'ledger',
+        taskCategoryId: 'colony',
+        title: 'PR $number',
+        authorLogin: 'pingu',
+        createdAt: createdAt ?? opened,
+        mergedAt: merged,
+        additions: additions,
+        deletions: 10,
+      );
+      when(() => journalDb.pullRequestStatRows()).thenAnswer(
+        (_) async => [
+          row(6, 20, createdAt: opened.add(const Duration(hours: 1))),
+          row(7, 20),
+          row(8, 500),
+          // Opened before the window, merged inside it: not ranked.
+          row(9, 900, createdAt: DateTime.utc(2026), merged: opened),
+        ],
+      );
+      when(() => repository.forTask('ledger')).thenAnswer(
+        (_) async => [
+          for (final (number, additions) in [(6, 20), (7, 20), (8, 500)])
+            entry(
+              'e-$number',
+              number,
+              snap: prSnapshot(
+                title: 'PR $number',
+              ).copyWith(additions: additions, deletions: 10),
+            ),
+          entry('e-9', 9, snap: prSnapshot(title: 'PR 9')),
+        ],
+      );
+
+      final finder = builder().pullRequestFinder(
+        const FrontRoutingScope(),
+        now: now,
+      )!;
+      final ranked = await finder((
+        period: null,
+        range: _week(now),
+      ), largest: true);
+      final newest = await finder((period: null, range: _week(now)));
+
+      expect(ranked.pullRequests.map((pr) => pr.key), [
+        'matthiasn/lotti#8',
+        'matthiasn/lotti#6',
+        'matthiasn/lotti#7',
+      ]);
+      expect(ranked.pullRequests.first.additions, 500);
+      expect(ranked.pullRequests.first.deletions, 10);
+      // Without largest, every one of the window, newest opened first.
+      expect(newest.pullRequests.map((pr) => pr.key), [
+        'matthiasn/lotti#6',
+        'matthiasn/lotti#7',
+        'matthiasn/lotti#8',
+        'matthiasn/lotti#9',
+      ]);
     });
 
     test('is unavailable without a repository', () {

@@ -6,9 +6,13 @@ import 'package:lotti/features/front_agent/workflow/front_pull_request_filter.da
 
 /// Every pull request opened or merged in one window of days through the
 /// tasks inside the turn's scope, each with its task and summary: what
-/// `find_pull_requests` filters.
+/// `find_pull_requests` filters. With `largest`, those opened in it,
+/// largest first by lines changed.
 typedef FrontPullRequestFinder =
-    Future<FrontPullRequestCandidates> Function(FrontPullRequestQuery query);
+    Future<FrontPullRequestCandidates> Function(
+      FrontPullRequestQuery query, {
+      bool largest,
+    });
 
 /// Pull requests as the device last stored them, in full, for
 /// `read_pull_requests`.
@@ -80,7 +84,10 @@ class FrontPullRequestLookups {
 
   /// Answers `find_pull_requests`: the candidates of its window go to the
   /// filter, a call apart from her conversation, and only those it keeps
-  /// come back to her, with their tasks.
+  /// come back to her, with their tasks. With `largest` they are those
+  /// opened in the window, largest first: without a topic the first
+  /// [frontPullRequestsFoundMax] come back and no filter is called, with
+  /// one those it keeps come back in that order.
   Future<FrontPullRequestAnswer> find(Map<String, dynamic> args) async {
     if (_finds >= frontPullRequestFindsPerTurn) {
       return _refused(frontPullRequestFindExhaustedAnswer);
@@ -88,10 +95,12 @@ class FrontPullRequestLookups {
     final topic = args['topic'] is String
         ? (args['topic'] as String).trim()
         : '';
+    final largest = args['largest'] == true;
     final query = frontPullRequestQuery(args, now);
-    if (topic.isEmpty || query == null) {
+    if ((topic.isEmpty && !largest) || query == null) {
       return _refused(
-        'Error: find_pull_requests needs a topic and exactly one of: period '
+        'Error: find_pull_requests needs a topic, largest: true, or both, '
+        'and exactly one of: period '
         '(one of ${FrontTimePeriod.values.map((p) => p.wireName).join(', ')}'
         '), pastDays (1 to $frontPullRequestMaxDays), or from and through '
         '(YYYY-MM-DD, at most $frontPullRequestMaxDays days).',
@@ -99,30 +108,43 @@ class FrontPullRequestLookups {
     }
     final finder = this.finder;
     final filter = this.filter;
-    if (finder == null || filter == null) {
+    if (finder == null || (topic.isNotEmpty && filter == null)) {
       return _refused(
         'Pull requests cannot be searched this turn; say so in your answer.',
       );
     }
     _finds++;
-    final (:range, pullRequests: candidates) = await finder(query);
-    final List<String> keys;
-    try {
-      keys = candidates.isEmpty ? const [] : await filter(topic, candidates);
-    } catch (error) {
-      onFilterFailed?.call(error);
-      return _refused(
-        'The pull request search failed this turn; say so in your answer.',
-      );
+    final (:range, pullRequests: candidates) = await finder(
+      query,
+      largest: largest,
+    );
+    if (topic.isEmpty) {
+      _found = candidates.take(frontPullRequestsFoundMax).toList();
+    } else {
+      final List<String> keys;
+      try {
+        keys = candidates.isEmpty ? const [] : await filter!(topic, candidates);
+      } catch (error) {
+        onFilterFailed?.call(error);
+        return _refused(
+          'The pull request search failed this turn; say so in your answer.',
+        );
+      }
+      final byKey = frontPullRequestsByKey(candidates);
+      _found = largest
+          ? [
+              for (final pr in candidates)
+                if (keys.contains(pr.key)) pr,
+            ]
+          : [for (final key in keys) ?byKey[key]];
     }
-    final byKey = frontPullRequestsByKey(candidates);
-    _found = [for (final key in keys) ?byKey[key]];
     return (
       response: renderFrontFoundPullRequests(
-        topic: topic,
+        topic: topic.isEmpty ? null : topic,
         range: range,
         searched: candidates.length,
         found: _found,
+        largest: largest,
       ),
       accepted: true,
       rows: frontPullRequestTasks(_found),

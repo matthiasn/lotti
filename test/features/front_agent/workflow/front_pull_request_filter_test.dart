@@ -48,7 +48,7 @@ void main() {
       frontPullRequestFilterPrompt('the fish ledger', candidates),
       'Topic: the fish ledger\n'
       '\n'
-      'Pull requests, each as id | title | opened | merged | task | summary:\n'
+      'Pull requests, each as id | title | opened | merged | size | task | summary:\n'
       '- ${candidates[0].render()}\n'
       '- ${candidates[1].render()}\n'
       '- ${candidates[2].render()}',

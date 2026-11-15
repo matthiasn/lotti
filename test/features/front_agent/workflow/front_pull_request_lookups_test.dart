@@ -20,22 +20,26 @@ void main() {
   ];
 
   late List<FrontPullRequestQuery> queries;
+  late List<bool> largestAsked;
   late List<(String, List<FrontFoundPullRequest>)> filtered;
 
   FrontPullRequestLookups lookups({
     Future<List<String>> Function(String topic)? keep,
     List<FrontFoundPullRequest> conversation = const [],
     void Function(Object error)? onFilterFailed,
+    List<FrontFoundPullRequest>? pool,
     bool wired = true,
+    bool withFilter = true,
   }) => FrontPullRequestLookups(
     now: now,
     finder: wired
-        ? (query) async {
+        ? (query, {largest = false}) async {
             queries.add(query);
-            return (range: range, pullRequests: candidates);
+            largestAsked.add(largest);
+            return (range: range, pullRequests: pool ?? candidates);
           }
         : null,
-    filter: wired
+    filter: wired && withFilter
         ? (topic, pullRequests) async {
             filtered.add((topic, pullRequests));
             return (keep ?? (_) async => ['penguin/colony#3'])(topic);
@@ -51,6 +55,7 @@ void main() {
 
   setUp(() {
     queries = [];
+    largestAsked = [];
     filtered = [];
   });
 
@@ -76,11 +81,73 @@ void main() {
       expect(answer.response, isNot(contains('Warm the igloo')));
       expect(pullRequests.calls, 1);
       expect(pullRequests.shown.keys, ['penguin/colony#3']);
+      expect(largestAsked, [false]);
     });
 
-    test('a topic and one window are required', () async {
+    test('largest without a topic hands back the first '
+        '$frontPullRequestsFoundMax the finder ranked, calling no filter — '
+        'even when none is wired', () async {
+      final pool = [
+        for (var n = 1; n <= frontPullRequestsFoundMax + 2; n++)
+          foundPullRequest(n, additions: 100 - n, deletions: 1),
+      ];
+      final pullRequests = lookups(pool: pool, withFilter: false);
+
+      final answer = await pullRequests.find({
+        'largest': true,
+        'period': 'last_month',
+      });
+
+      expect(answer.accepted, isTrue);
+      expect(largestAsked, [true]);
+      expect(filtered, isEmpty);
+      expect(pullRequests.found, pool.take(frontPullRequestsFoundMax));
+      expect(
+        answer.response,
+        startsWith(
+          'The $frontPullRequestsFoundMax largest of the '
+          '${pool.length} pull requests opened',
+        ),
+      );
+      expect(answer.response, contains('| +99 -1 |'));
+      expect(answer.rows.map((row) => row.id), ['ledger']);
+    });
+
+    test('largest with a topic keeps what the filter kept, in the '
+        "finder's size order", () async {
+      final pullRequests = lookups(
+        keep: (_) async => ['penguin/colony#3', 'penguin/colony#1'],
+      );
+
+      final answer = await pullRequests.find({
+        'topic': 'fish',
+        'largest': true,
+        'pastDays': 14,
+      });
+
+      expect(largestAsked, [true]);
+      expect(filtered.single.$1, 'fish');
+      expect(pullRequests.found.map((pr) => pr.key), [
+        'penguin/colony#1',
+        'penguin/colony#3',
+      ]);
+      expect(answer.response, contains('largest first by lines changed'));
+    });
+
+    test('largest says plainly when nothing was opened', () async {
+      final answer = await lookups(
+        pool: const [],
+      ).find({'largest': true, 'pastDays': 7});
+      expect(answer.accepted, isTrue);
+      expect(answer.response, startsWith('No pull request was opened '));
+    });
+
+    test('a topic or largest, and one window, are required', () async {
       for (final args in [
         {'pastDays': 14},
+        {'largest': false, 'pastDays': 14},
+        {'largest': 'yes', 'pastDays': 14},
+        {'largest': true},
         {'topic': '  ', 'pastDays': 14},
         {'topic': 'fish'},
         {'topic': 'fish', 'pastDays': 99},
@@ -99,6 +166,12 @@ void main() {
       });
       expect(answer.accepted, isFalse);
       expect(answer.response, contains('cannot be searched'));
+      // A topic needs the filter, which a size ranking alone does not.
+      final unfiltered = await lookups(
+        withFilter: false,
+      ).find({'topic': 'fish', 'pastDays': 7});
+      expect(unfiltered.response, contains('cannot be searched'));
+      expect(queries, isEmpty);
     });
 
     test('a failed filter call is reported, never an answer', () async {
