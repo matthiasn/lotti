@@ -1300,14 +1300,14 @@ hologram:x: not listed''');
     );
     FrontPullRequestLookups lookups() => FrontPullRequestLookups(
       now: turnNow,
-      finder: (query) async => (
+      finder: (query, {largest = false}) async => (
         range: query.range!,
         pullRequests: [
           ledger,
           foundPullRequest(8, taskId: 'shed'),
         ],
       ),
-      filter: (topic, candidates) async => [ledger.key],
+      filter: (topic, candidates, {every = false}) async => [ledger.key],
       reader: (pullRequests) async => 'stored details',
       conversationPullRequests: [foundPullRequest(2, taskId: 'shed')],
     );

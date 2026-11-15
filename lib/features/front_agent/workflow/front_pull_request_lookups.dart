@@ -6,9 +6,13 @@ import 'package:lotti/features/front_agent/workflow/front_pull_request_filter.da
 
 /// Every pull request opened or merged in one window of days through the
 /// tasks inside the turn's scope, each with its task and summary: what
-/// `find_pull_requests` filters.
+/// `find_pull_requests` filters. With `largest`, those opened in it,
+/// largest first by lines changed.
 typedef FrontPullRequestFinder =
-    Future<FrontPullRequestCandidates> Function(FrontPullRequestQuery query);
+    Future<FrontPullRequestCandidates> Function(
+      FrontPullRequestQuery query, {
+      bool largest,
+    });
 
 /// Pull requests as the device last stored them, in full, for
 /// `read_pull_requests`.
@@ -80,7 +84,12 @@ class FrontPullRequestLookups {
 
   /// Answers `find_pull_requests`: the candidates of its window go to the
   /// filter, a call apart from her conversation, and only those it keeps
-  /// come back to her, with their tasks.
+  /// come back to her, with their tasks. With `largest` they are those
+  /// opened in the window, largest first: without a topic no filter is
+  /// called, with one the filter keeps every match — relevance cuts none —
+  /// and those come back in that order. At most `count` come back
+  /// ([frontPullRequestsFoundMax] when not given): what she found is drawn
+  /// whether she places it or not, so it is cut here, never in her reply.
   Future<FrontPullRequestAnswer> find(Map<String, dynamic> args) async {
     if (_finds >= frontPullRequestFindsPerTurn) {
       return _refused(frontPullRequestFindExhaustedAnswer);
@@ -88,10 +97,23 @@ class FrontPullRequestLookups {
     final topic = args['topic'] is String
         ? (args['topic'] as String).trim()
         : '';
+    final largest = args['largest'] == true;
     final query = frontPullRequestQuery(args, now);
-    if (topic.isEmpty || query == null) {
+    final rawCount = args['count'];
+    // A model may send 3.0 for 3.
+    final count = rawCount == null
+        ? frontPullRequestsFoundMax
+        : rawCount is num && rawCount == rawCount.roundToDouble()
+        ? rawCount.toInt()
+        : 0;
+    if ((topic.isEmpty && !largest) ||
+        query == null ||
+        count < 1 ||
+        count > frontPullRequestsFoundMax) {
       return _refused(
-        'Error: find_pull_requests needs a topic and exactly one of: period '
+        'Error: find_pull_requests needs a topic, largest: true, or both, '
+        'count left out or 1 to $frontPullRequestsFoundMax, '
+        'and exactly one of: period '
         '(one of ${FrontTimePeriod.values.map((p) => p.wireName).join(', ')}'
         '), pastDays (1 to $frontPullRequestMaxDays), or from and through '
         '(YYYY-MM-DD, at most $frontPullRequestMaxDays days).',
@@ -99,30 +121,50 @@ class FrontPullRequestLookups {
     }
     final finder = this.finder;
     final filter = this.filter;
-    if (finder == null || filter == null) {
+    if (finder == null || (topic.isNotEmpty && filter == null)) {
       return _refused(
         'Pull requests cannot be searched this turn; say so in your answer.',
       );
     }
     _finds++;
-    final (:range, pullRequests: candidates) = await finder(query);
-    final List<String> keys;
-    try {
-      keys = candidates.isEmpty ? const [] : await filter(topic, candidates);
-    } catch (error) {
-      onFilterFailed?.call(error);
-      return _refused(
-        'The pull request search failed this turn; say so in your answer.',
-      );
+    final (:range, pullRequests: candidates) = await finder(
+      query,
+      largest: largest,
+    );
+    final List<FrontFoundPullRequest> found;
+    if (topic.isEmpty) {
+      found = candidates;
+    } else {
+      final List<String> keys;
+      try {
+        keys = candidates.isEmpty
+            ? const []
+            : await filter!(topic, candidates, every: largest);
+      } catch (error) {
+        onFilterFailed?.call(error);
+        return _refused(
+          'The pull request search failed this turn; say so in your answer.',
+        );
+      }
+      if (largest) {
+        final kept = keys.toSet();
+        found = [
+          for (final pr in candidates)
+            if (kept.contains(pr.key)) pr,
+        ];
+      } else {
+        final byKey = frontPullRequestsByKey(candidates);
+        found = [for (final key in keys) ?byKey[key]];
+      }
     }
-    final byKey = frontPullRequestsByKey(candidates);
-    _found = [for (final key in keys) ?byKey[key]];
+    _found = found.take(count).toList();
     return (
       response: renderFrontFoundPullRequests(
-        topic: topic,
+        topic: topic.isEmpty ? null : topic,
         range: range,
         searched: candidates.length,
         found: _found,
+        largest: largest,
       ),
       accepted: true,
       rows: frontPullRequestTasks(_found),

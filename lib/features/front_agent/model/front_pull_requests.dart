@@ -299,20 +299,10 @@ class FrontPullRequests {
     if (opened.isEmpty && merged.isEmpty) {
       buffer.write('None: no pull request opened or merged $what.');
     } else {
-      int sum(List<FrontPullRequest> prs, int Function(FrontPullRequest) f) =>
-          prs.fold(0, (total, pr) => total + f(pr));
       buffer
         ..writeln('Pull requests $what:')
-        ..writeln(
-          '- opened: ${opened.length}, '
-          '+${sum(opened, (pr) => pr.additions)} '
-          '-${sum(opened, (pr) => pr.deletions)} lines',
-        )
-        ..writeln(
-          '- merged: ${merged.length}, '
-          '+${sum(merged, (pr) => pr.additions)} '
-          '-${sum(merged, (pr) => pr.deletions)} lines',
-        );
+        ..writeln('- opened: ${_totals(opened)}')
+        ..writeln('- merged: ${_totals(merged)}');
       final listed = pullRequests.take(frontPullRequestListLimit).toList();
       final more = pullRequests.length - listed.length;
       buffer.writeln(
@@ -339,6 +329,18 @@ class FrontPullRequests {
       );
     }
     return buffer.toString().trimRight();
+  }
+
+  /// How many [prs] there are, the lines they added and deleted, and —
+  /// when there are any — the average size of one.
+  static String _totals(List<FrontPullRequest> prs) {
+    final added = prs.fold(0, (total, pr) => total + pr.additions);
+    final deleted = prs.fold(0, (total, pr) => total + pr.deletions);
+    final totals = '${prs.length}, +$added -$deleted lines';
+    if (prs.isEmpty) return totals;
+    int mean(int sum) => (sum / prs.length).round();
+    return '$totals; on average +${mean(added)} -${mean(deleted)}, '
+        '${mean(added + deleted)} changed per pull request';
   }
 
   static String _oneLine(String text) =>
@@ -390,6 +392,8 @@ class FrontFoundPullRequest {
     this.oneLiner,
     this.createdAt,
     this.mergedAt,
+    this.additions,
+    this.deletions,
   });
 
   /// `owner/repo#number`: the id she names it by.
@@ -400,10 +404,16 @@ class FrontFoundPullRequest {
   final DateTime? createdAt;
   final DateTime? mergedAt;
 
+  /// The lines it added and deleted as last stored; null before its first
+  /// refresh.
+  final int? additions;
+  final int? deletions;
+
   FrontPullRequestCard get card => (key: key, taskId: task.id);
 
   /// One line, as a tool answer and the prompt list it: `key | title |
-  /// opened | merged | task:id (title) | one-liner`.
+  /// opened | merged | +added -deleted | task:id (title) | one-liner`, the
+  /// size left out while it is not known.
   String render() {
     final opened = createdAt == null
         ? 'unknown'
@@ -414,6 +424,8 @@ class FrontFoundPullRequest {
       'opened $opened',
       if (mergedAt case final merged?)
         'merged ${FrontPullRequests._isoDay(merged.toLocal())}',
+      if ((additions, deletions) case (final added?, final deleted?))
+        '+$added -$deleted',
       'task:${task.id} (${FrontPullRequests._oneLine(task.title)})',
       if (oneLiner case final line? when line.trim().isNotEmpty)
         FrontPullRequests._oneLine(line),
@@ -421,14 +433,16 @@ class FrontFoundPullRequest {
   }
 }
 
-/// The answer of a `find_pull_requests` over [range] for [topic]: those of
-/// the [searched] pull requests the filter kept, one per line, or that none
-/// was about it.
+/// The answer of a `find_pull_requests` over [range]: those of the
+/// [searched] pull requests the filter kept as about [topic], one per line,
+/// or that none was. Without a topic, the largest it ranked by lines
+/// changed; with one and [largest], those kept, largest first.
 String renderFrontFoundPullRequests({
-  required String topic,
+  required String? topic,
   required InsightsRange range,
   required int searched,
   required List<FrontFoundPullRequest> found,
+  bool largest = false,
 }) {
   final from = FrontPullRequests._isoDay(dayStart(range.startDay));
   final through = FrontPullRequests._isoDay(
@@ -436,12 +450,20 @@ String renderFrontFoundPullRequests({
   );
   final days = from == through ? from : '$from through $through';
   if (found.isEmpty) {
-    return 'None of the $searched pull requests opened or merged $days is '
-        'about "$topic".';
+    return topic == null
+        ? 'No pull request was opened $days.'
+        : 'None of the $searched pull requests '
+              '${largest ? 'opened' : 'opened or merged'} $days is about '
+              '"$topic".';
   }
-  const shape = 'id | title | opened | merged | task | summary';
+  const shape = 'id | title | opened | merged | size | task | summary';
+  final heading = topic == null
+      ? 'The ${found.length} largest of the $searched pull requests opened '
+            '$days, by lines changed, largest first'
+      : 'Pull requests about "$topic", $days ($searched searched)'
+            '${largest ? ', largest first by lines changed' : ''}';
   return [
-    'Pull requests about "$topic", $days ($searched searched), each as $shape:',
+    '$heading, each as $shape:',
     for (final pr in found) '- ${pr.render()}',
   ].join('\n');
 }

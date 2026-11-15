@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
@@ -23,28 +24,70 @@ extension FrontPullRequestFinding on FrontRoutingIndexBuilder {
   /// The candidates of a `find_pull_requests` in one window of [now]'s
   /// days: those [readFrontPullRequests] counts in [scope] — the user's own
   /// when their login is known — each with its task and the one-liner of
-  /// its summary, at most [frontPullRequestFilterMaxCandidates]. Null when
-  /// no pull request repository is wired.
-  Future<FrontPullRequestCandidates> Function(FrontPullRequestQuery query)?
+  /// its summary, at most [frontPullRequestFilterMaxCandidates]. With
+  /// `largest`, only those opened in the window, largest first by lines
+  /// changed — added and deleted — the newer first on a tie. Null when no
+  /// pull request repository is wired.
+  Future<FrontPullRequestCandidates> Function(
+    FrontPullRequestQuery query, {
+    bool largest,
+  })?
   pullRequestFinder(FrontRoutingScope scope, {required DateTime now}) {
     if (pullRequestRepository == null) return null;
-    return (query) async {
+    return (query, {largest = false}) async {
       final range = await rangeOf(query, now);
+      final chart = FrontPullRequestChart(
+        range: range,
+        categoryIds: scope.categoryIds,
+        authorLogin: await githubLogin?.call(),
+      );
       final (:pullRequests, undated: _) = await readFrontPullRequests(
         journalDb,
-        FrontPullRequestChart(
-          range: range,
-          categoryIds: scope.categoryIds,
-          authorLogin: await githubLogin?.call(),
-        ),
+        chart,
       );
+      var candidates = pullRequests;
+      if (largest) {
+        candidates = FrontPullRequests(
+          chart: chart,
+          pullRequests: pullRequests,
+        ).opened;
+        // Stable, so a tie keeps the newest opened first.
+        mergeSort(
+          candidates,
+          compare: (a, b) =>
+              (b.additions + b.deletions).compareTo(a.additions + a.deletions),
+        );
+      }
       final found = await pullRequestsOf([
-        for (final pr in pullRequests.take(
+        for (final pr in candidates.take(
           frontPullRequestFilterMaxCandidates,
         ))
           if (pr.taskId case final taskId?) (key: pr.key, taskId: taskId),
       ], scope);
-      return (range: range, pullRequests: found);
+      // The size each was counted and ranked by, not a later read of its
+      // snapshot — a refresh in between, or another device's entry of the
+      // same pull request, would list sizes out of their order.
+      final counted = {for (final pr in candidates) pr.key: pr};
+      return (
+        range: range,
+        pullRequests: [
+          for (final pr in found)
+            // A size never stored stays unknown, never a counted zero.
+            if ((pr.additions, counted[pr.key]) case (_?, final size?))
+              FrontFoundPullRequest(
+                key: pr.key,
+                title: pr.title,
+                task: pr.task,
+                oneLiner: pr.oneLiner,
+                createdAt: pr.createdAt,
+                mergedAt: pr.mergedAt,
+                additions: size.additions,
+                deletions: size.deletions,
+              )
+            else
+              pr,
+        ],
+      );
     };
   }
 
@@ -77,6 +120,8 @@ extension FrontPullRequestFinding on FrontRoutingIndexBuilder {
             oneLiner: (await _summaryOf(entry))?.oneLiner,
             createdAt: entry.data.snapshot?.createdAt,
             mergedAt: entry.data.snapshot?.mergedAt,
+            additions: entry.data.snapshot?.additions,
+            deletions: entry.data.snapshot?.deletions,
           ),
     ];
   }

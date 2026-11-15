@@ -48,7 +48,7 @@ void main() {
       frontPullRequestFilterPrompt('the fish ledger', candidates),
       'Topic: the fish ledger\n'
       '\n'
-      'Pull requests, each as id | title | opened | merged | task | summary:\n'
+      'Pull requests, each as id | title | opened | merged | size | task | summary:\n'
       '- ${candidates[0].render()}\n'
       '- ${candidates[1].render()}\n'
       '- ${candidates[2].render()}',
@@ -78,6 +78,31 @@ void main() {
     expect(
       frontPullRequestFilterSystemMessage,
       contains('at most $frontPullRequestsFoundMax'),
+    );
+  });
+
+  test('with every, it asks for every match and keeps them all, uncapped, '
+      'so a size ranking can pick the largest', () async {
+    final many = [
+      for (var n = 1; n <= frontPullRequestsFoundMax + 2; n++)
+        foundPullRequest(n),
+    ];
+    final systemMessages = <String>[];
+    final filter = frontPullRequestFilter(({
+      required systemMessage,
+      required prompt,
+    }) async {
+      systemMessages.add(systemMessage);
+      return many.map((pr) => pr.key).join('\n');
+    });
+
+    final kept = await filter('fish', many, every: true);
+
+    expect(kept, many.map((pr) => pr.key));
+    expect(systemMessages, [frontPullRequestFilterEverySystemMessage]);
+    expect(
+      frontPullRequestFilterEverySystemMessage,
+      isNot(contains('at most')),
     );
   });
 

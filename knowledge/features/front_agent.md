@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, how many pull requests the user opened and shipped, with charts under her words, and which task some work was in — pull requests filtered by a call of their own, shown as the task page's pull request cards, with follow-ups about them — and names tasks as links, how a reply is composed of catalog components in her order, checked, stored as an A2UI surface and drawn by `a2ui_flutter`, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, how many pull requests the user opened and shipped, how big they were on average and which were the biggest, with charts under her words, and which task some work was in — pull requests filtered by a call of their own, shown as the task page's pull request cards, with follow-ups about them — and names tasks as links, how a reply is composed of catalog components in her order, checked, stored as an A2UI surface and drawn by `a2ui_flutter`, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -31,7 +31,7 @@ sources:
   - id: contract
     resource: ../../lib/features/front_agent/workflow/front_agent_contract.dart
     title: The tool contract, caps and system prompt
-    last_modified: 2026-11-09
+    last_modified: 2026-11-15
   - id: validator
     resource: ../../lib/features/front_agent/workflow/front_dispatch_validator.dart
     title: validateFrontDispatch — the dispatch rules in code
@@ -219,7 +219,7 @@ sources:
   - id: pull-request-stats
     resource: ../../lib/features/front_agent/model/front_pull_requests.dart
     title: FrontPullRequests — the window, the per-day sums and what the model reads of the user's pull requests
-    last_modified: 2026-11-08
+    last_modified: 2026-11-15
   - id: pull-request-reader
     resource: ../../lib/features/front_agent/service/front_pull_request_reader.dart
     title: readFrontPullRequests — stored pull requests through the tasks her scope sees, the user's own only
@@ -227,15 +227,15 @@ sources:
   - id: pull-request-finder
     resource: ../../lib/features/front_agent/service/front_pull_request_finder.dart
     title: FrontPullRequestFinding — the candidates of a window, the pull requests a conversation showed, and their stored details
-    last_modified: 2026-11-12
+    last_modified: 2026-11-15
   - id: pull-request-filter
     resource: ../../lib/features/front_agent/workflow/front_pull_request_filter.dart
     title: frontPullRequestFilter — the call apart from her conversation that keeps the pull requests about a topic
-    last_modified: 2026-11-12
+    last_modified: 2026-11-15
   - id: pull-request-lookups
     resource: ../../lib/features/front_agent/workflow/front_pull_request_lookups.dart
     title: FrontPullRequestLookups — find_pull_requests and read_pull_requests for one turn
-    last_modified: 2026-11-12
+    last_modified: 2026-11-15
   - id: pull-request-cards
     resource: ../../lib/features/front_agent/ui/front_pull_request_cards.dart
     title: FrontPullRequestCards — the task page's pull request card under her reply, per holding task
@@ -477,7 +477,7 @@ Ten tools, never fewer (a single tool makes DeepSeek rewrite
 | `summarize_logged_time(period \| pastDays \| from+through, categoryIds?, tasks?, projectId?, taskId?)` | no | 1 per turn | `frontTimeSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `list_closed_tasks(period \| pastDays \| from+through, categoryIds?)` | no | 1 per turn | `frontClosedListExhaustedAnswer`; unavailable when no lister is wired |
 | `summarize_pull_requests(period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
-| `find_pull_requests(topic, period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestFindExhaustedAnswer`; unavailable without a pull request repository |
+| `find_pull_requests(topic? and/or largest?, count? 1–5, period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestFindExhaustedAnswer`; unavailable without a pull request repository, or without a filter when a `topic` is given |
 | `read_pull_requests(ids ≤ 3)` | no | 1 per turn | `frontPullRequestReadExhaustedAnswer`; only keys `<conversation_pull_requests>` lists or this turn found |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
 
@@ -792,8 +792,11 @@ as *undated*, not guessed.
 *Opened* is by `createdAt`, its lines with it on that day; *shipped* is
 merged inside the window by `mergedAt`, whenever opened. `FrontPullRequests.render`
 is what the model reads: the window, the opened and merged counts with their
-lines, then each pull request (`owner/repo#n | title | opened | merged |
-+a -d`), newest opened first, at most `frontPullRequestListLimit`.
+lines and the average size of one (lines added, deleted and changed, rounded),
+then each pull request (`owner/repo#n | title | opened | merged |
++a -d`), newest opened first, at most `frontPullRequestListLimit`. Rule 14
+answers *what was my average PR size?* from those averages; the list is never
+a ranking — the biggest ones go to `find_pull_requests` (below).
 
 When some were opened, the strategy keeps the `FrontPullRequestChart` — the
 days, the scope and the login, never the figures — and the workflow stores
@@ -835,6 +838,25 @@ line with its task, and their tasks become rows her words may link. A
 failed filter call refuses the lookup and is logged by error type; the
 turn goes on and she says the search failed.
 
+**The biggest pull requests** — *which were my biggest PRs last month, the
+top five?* — are a size, not a topic: the filter would keep none of them as
+being about "biggest". Rule 15 sends them to `find_pull_requests` with
+`largest` true and no `topic`. `pullRequestFinder` then keeps only those
+opened in the window and ranks them by lines changed (`additions +
+deletions`), stably so a tie stays newest first, before the
+`frontPullRequestFilterMaxCandidates` cap, so the ranking covers the whole
+window. Without a topic no filter call is made. With a topic too (*my
+biggest sync PRs*), the filter runs with `every`: under
+`frontPullRequestFilterEverySystemMessage` it names every match, uncapped,
+because a relevance cut of five would drop a larger match; what it keeps
+comes back in the finder's size order. Either way at most `count` come
+back — how many the user asked for, `frontPullRequestsFoundMax` (5) when
+not given — each line with the size it was counted and ranked by (not a
+later read of its snapshot, which a refresh may have moved), drawn as cards
+like any find. The cut
+is made in the lookup, not left to her placement, because `readFrontReply`
+appends every found pull request she does not place.
+
 The pull requests it kept are drawn as `PullRequestCards` — where she
 places them, or after her words when she does not (`readFrontReply`), each
 once. A card stores the key and the holding task (`FrontPullRequestCard`),
@@ -853,11 +875,15 @@ sequenceDiagram
   participant Finder as pullRequestFinder
   participant Filter as filter conversation
   participant Reply as readFrontReply
-  Her->>Lookups: find_pull_requests(topic, window)
-  Lookups->>Finder: the window
-  Finder-->>Lookups: candidates with task and one-liner
-  Lookups->>Filter: topic and every candidate
-  Filter-->>Lookups: keys, at most five
+  Her->>Lookups: find_pull_requests(topic and/or largest, window)
+  Lookups->>Finder: the window, largest or not
+  Finder-->>Lookups: candidates with task, one-liner and size
+  alt a topic
+    Lookups->>Filter: topic and every candidate
+    Filter-->>Lookups: keys, at most five
+  else largest alone
+    Note over Lookups: the first five, no filter call
+  end
   Lookups-->>Her: only the kept ones, with their tasks
   Her->>Reply: prose and PullRequestCards(ids)
   Reply-->>Her: cards of known keys, found ones appended

@@ -113,7 +113,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   pull requests the device stores and whose read her reply's charts of
   them share, and the finder behind `find_pull_requests` and
   `read_pull_requests` — `front_pull_request_finder.dart` — which reads the
-  stored pull requests with their tasks and summaries), the
+  stored pull requests with their tasks and summaries, by topic or largest
+  first by lines changed), the
   singleton's lazy
   creation, the chat service that makes a user turn durable with a recovery
   record and runs the wake, the door walker, the owner titles, the thread

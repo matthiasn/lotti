@@ -447,12 +447,36 @@ void main() {
       final find = frontAgentTools.singleWhere(
         (t) => t.name == FrontAgentToolNames.findPullRequests,
       );
-      expect(find.parameters['required'], ['topic']);
+      // A size ranking needs no topic.
+      expect(find.parameters['required'], isNull);
       expect(properties(FrontAgentToolNames.findPullRequests).keys, [
         'topic',
+        'largest',
+        'count',
         ...properties(FrontAgentToolNames.summarizePullRequests).keys,
       ]);
+      expect(
+        (properties(FrontAgentToolNames.findPullRequests)['largest']!
+            as Map)['type'],
+        'boolean',
+      );
       expect(find.description, contains('at most $frontPullRequestsFoundMax'));
+    });
+
+    test('the prompt routes biggest and top-N questions to a size ranking, '
+        'never a topic, and average size to the summary', () {
+      expect(
+        frontAgentSystemPrompt,
+        contains('call `find_pull_requests` with `largest` true'),
+      );
+      expect(
+        frontAgentSystemPrompt,
+        contains('"biggest", "largest", "top five" are a size, never a topic'),
+      );
+      expect(
+        frontAgentSystemPrompt,
+        contains("the summary's averages per pull request opened"),
+      );
     });
 
     test('read_pull_requests names a few by key', () {
