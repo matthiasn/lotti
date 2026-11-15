@@ -55,17 +55,32 @@ void main() {
             .element(find.byType(DesignSystemTextInput))
             .designTokens;
         final style = tester.widget<IconButton>(find.byType(IconButton)).style!;
-        final seated = tokens.spacing.step9 - tokens.spacing.step2 * 2;
+        final inset = tokens.spacing.step2;
 
-        expect(style.fixedSize!.resolve({}), Size.square(seated));
         expect(
           (style.shape!.resolve({})! as RoundedRectangleBorder).borderRadius,
-          BorderRadius.circular(tokens.radii.l - tokens.spacing.step2),
+          BorderRadius.circular(tokens.radii.l - inset),
         );
+        // The painted fill, not the style that asks for it: the decorator's
+        // minimum suffix size stretched it over the border while the style
+        // still read as a seated square.
+        final field = tester.getRect(find.byType(TextField));
+        final fill = tester.getRect(
+          find.descendant(
+            of: find.byType(IconButton),
+            matching: find.byType(Material),
+          ),
+        );
+        expect(field.height, tokens.spacing.step9);
         expect(
-          tester.getRect(find.byType(IconButton)).right,
-          lessThan(tester.getRect(find.byType(TextField)).right),
-          reason: 'inset from the field edge, not flush against its border',
+          fill,
+          Rect.fromLTRB(
+            field.right - field.height + inset,
+            field.top + inset,
+            field.right - inset,
+            field.bottom - inset,
+          ),
+          reason: 'inset from the border by the same step on every side',
         );
       },
     );
@@ -106,7 +121,12 @@ void main() {
         );
 
         expect(find.byType(IconButton), findsNothing);
-        expect(find.byType(DesignSystemSpinner), findsOneWidget);
+        // On the centre the action held, so nothing shifts when it starts.
+        final field = tester.getRect(find.byType(TextField));
+        expect(
+          tester.getCenter(find.byType(DesignSystemSpinner)),
+          Offset(field.right - field.height / 2, field.center.dy),
+        );
         expect(
           tester.getSemantics(find.bySemanticsLabel('Linking pull request')),
           matchesSemantics(

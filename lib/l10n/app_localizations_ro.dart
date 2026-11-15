@@ -8036,13 +8036,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get githubLinkPullRequestTitle => 'Legați un pull request';
 
   @override
-  String get githubLinkUrlHelper => 'Sau scrieți proprietar/repo#123.';
-
-  @override
   String get githubLinkUrlHint => 'https://github.com/proprietar/repo/pull/123';
 
   @override
-  String get githubLinkUrlLabel => 'URL-ul pull request-ului';
+  String get githubLinkUrlLabel => 'URL sau proprietar/repo#123';
 
   @override
   String get githubMergeBehind => 'În urma ramurii de bază';

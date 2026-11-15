@@ -180,11 +180,6 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
           controller: _controller,
           label: messages.githubLinkUrlLabel,
           hintText: messages.githubLinkUrlHint,
-          helperText: _error != null
-              ? null
-              : pastedLinking
-              ? messages.githubPickerLinking
-              : messages.githubLinkUrlHelper,
           errorText: _error,
           keyboardType: TextInputType.url,
           // Link sits in the field it submits, appearing in place once there
@@ -213,7 +208,13 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
             onKeep: () => setState(() => _elsewhere = null),
           ),
         ],
-        SizedBox(height: tokens.spacing.step5),
+        // The one hint sits with the field it is about; the picker is a
+        // section of its own.
+        SizedBox(
+          height: repository == null
+              ? tokens.spacing.step3
+              : tokens.spacing.step5,
+        ),
         if (repository == null)
           _Note(text: messages.githubPickerNoRepository)
         else

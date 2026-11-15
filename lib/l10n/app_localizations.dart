@@ -13397,12 +13397,6 @@ abstract class AppLocalizations {
   /// **'Link a pull request'**
   String get githubLinkPullRequestTitle;
 
-  /// No description provided for @githubLinkUrlHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Or write owner/repo#123.'**
-  String get githubLinkUrlHelper;
-
   /// No description provided for @githubLinkUrlHint.
   ///
   /// In en, this message translates to:
@@ -13412,7 +13406,7 @@ abstract class AppLocalizations {
   /// No description provided for @githubLinkUrlLabel.
   ///
   /// In en, this message translates to:
-  /// **'Pull request URL'**
+  /// **'URL or owner/repo#123'**
   String get githubLinkUrlLabel;
 
   /// No description provided for @githubMergeBehind.

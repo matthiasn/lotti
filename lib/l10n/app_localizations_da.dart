@@ -7898,13 +7898,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get githubLinkPullRequestTitle => 'Knyt en pull request';
 
   @override
-  String get githubLinkUrlHelper => 'Eller skriv ejer/repo#123.';
-
-  @override
   String get githubLinkUrlHint => 'https://github.com/ejer/repo/pull/123';
 
   @override
-  String get githubLinkUrlLabel => 'URL til pull request';
+  String get githubLinkUrlLabel => 'URL eller ejer/repo#123';
 
   @override
   String get githubMergeBehind => 'Bagud i forhold til basisgrenen';

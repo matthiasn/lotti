@@ -7928,13 +7928,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get githubLinkPullRequestTitle => 'Pull request koppelen';
 
   @override
-  String get githubLinkUrlHelper => 'Of schrijf eigenaar/repo#123.';
-
-  @override
   String get githubLinkUrlHint => 'https://github.com/eigenaar/repo/pull/123';
 
   @override
-  String get githubLinkUrlLabel => 'URL van de pull request';
+  String get githubLinkUrlLabel => 'URL of eigenaar/repo#123';
 
   @override
   String get githubMergeBehind => 'Achter op de basisbranch';

@@ -8008,13 +8008,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get githubLinkPullRequestTitle => 'Propojit pull request';
 
   @override
-  String get githubLinkUrlHelper => 'Nebo napiš vlastnik/repo#123.';
-
-  @override
   String get githubLinkUrlHint => 'https://github.com/vlastnik/repo/pull/123';
 
   @override
-  String get githubLinkUrlLabel => 'URL pull requestu';
+  String get githubLinkUrlLabel => 'URL nebo vlastnik/repo#123';
 
   @override
   String get githubMergeBehind => 'Za základní větví';

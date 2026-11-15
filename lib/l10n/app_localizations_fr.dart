@@ -8028,14 +8028,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get githubLinkPullRequestTitle => 'Lier une pull request';
 
   @override
-  String get githubLinkUrlHelper => 'Ou écris proprietaire/depot#123.';
-
-  @override
   String get githubLinkUrlHint =>
       'https://github.com/proprietaire/depot/pull/123';
 
   @override
-  String get githubLinkUrlLabel => 'URL de la pull request';
+  String get githubLinkUrlLabel => 'URL ou proprietaire/depot#123';
 
   @override
   String get githubMergeBehind => 'En retard sur la branche de base';
