@@ -5110,6 +5110,7 @@
   "promptGenerationCopyTooltip": "Copiar prompt al portapapeles",
   "promptGenerationExpandTooltip": "Mostrar prompt completo",
   "promptGenerationFullPromptLabel": "Prompt completo:",
+  "promptGenerationPlayTooltip": "Leer el prompt en voz alta",
   "promptSelectionModalTitle": "Seleccionar prompt preconfigurado",
   "provisionedSyncCopiedToClipboard": "Copiado al portapapeles",
   "provisionedSyncDisconnect": "Dejar de sincronizar este dispositivo",

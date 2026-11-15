@@ -5670,6 +5670,7 @@
   "promptGenerationCopyTooltip": "Copiar prompt para a área de transferência",
   "promptGenerationExpandTooltip": "Mostrar prompt completo",
   "promptGenerationFullPromptLabel": "Alerta completo:",
+  "promptGenerationPlayTooltip": "Ler o prompt em voz alta",
   "promptSelectionModalTitle": "Selecione o prompt pré-configurado",
   "provisionedSyncCopiedToClipboard": "Copiado para a área de transferência",
   "provisionedSyncDisconnect": "Parar de sincronizar este dispositivo",

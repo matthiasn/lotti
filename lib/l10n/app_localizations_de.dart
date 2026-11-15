@@ -13281,6 +13281,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get promptGenerationCopyButton => 'Prompt kopieren';
 
   @override
+  String get promptGenerationPlayTooltip => 'Prompt vorlesen';
+
+  @override
   String get promptGenerationCopyTooltip => 'Prompt in Zwischenablage kopieren';
 
   @override

@@ -22,14 +22,26 @@ import 'package:material_ui/material_ui.dart';
 /// - Prominent copy button
 /// - Expandable full prompt view
 /// - Read-only (no editing)
+/// - Read-aloud control beside the expanded copy button, when the host
+///   supplies one ([readAloud])
 /// - Supports both promptGeneration and imagePromptGeneration types
 class GeneratedPromptCard extends StatefulWidget {
-  const GeneratedPromptCard(this.aiResponse, {this.framed = true, super.key});
+  const GeneratedPromptCard(
+    this.aiResponse, {
+    this.framed = true,
+    this.readAloud,
+    super.key,
+  });
 
   final AiResponseEntry aiResponse;
 
   /// Whether to draw the AI card surface; see [AiResponseCard.framed].
   final bool framed;
+
+  /// Builds the control that reads the full prompt aloud, shown beside the
+  /// expanded view's copy button; none when null. The host supplies it
+  /// because the voice lives in features ranked above this one.
+  final Widget Function(String fullPrompt)? readAloud;
 
   // Static regex patterns compiled once for performance.
   // Public so they can be reused by other widgets (e.g., UnifiedAiProgressView).
@@ -269,6 +281,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
                 Divider(color: ai.rowBorder),
                 SizedBox(height: tokens.spacing.step2),
                 Row(
+                  spacing: tokens.spacing.step2,
                   children: [
                     Expanded(
                       child: Text(
@@ -282,6 +295,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
                         ),
                       ),
                     ),
+                    ?widget.readAloud?.call(_fullPrompt),
                     DesignSystemButton(
                       onPressed: _copyToClipboard,
                       leadingIcon: LottiIcons.copy,

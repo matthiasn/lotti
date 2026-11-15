@@ -5110,6 +5110,7 @@
   "promptGenerationCopyTooltip": "Copiați promptul în clipboard",
   "promptGenerationExpandTooltip": "Afișați promptul complet",
   "promptGenerationFullPromptLabel": "Prompt complet:",
+  "promptGenerationPlayTooltip": "Citiți promptul cu voce tare",
   "promptSelectionModalTitle": "Selectați un prompt preconfigurat",
   "provisionedSyncCopiedToClipboard": "Copiat în clipboard",
   "provisionedSyncDisconnect": "Opriți sincronizarea pe acest dispozitiv",

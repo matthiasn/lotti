@@ -245,6 +245,37 @@ Please provide step-by-step guidance.
       expect(find.byType(GptMarkdown), findsNWidgets(2));
     });
 
+    testWidgets('the read-aloud slot speaks the full prompt and sits just '
+        'before the expanded copy button', (tester) async {
+      final spoken = <String>[];
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: GeneratedPromptCard(
+            testAiResponseEntry,
+            readAloud: (text) {
+              spoken.add(text);
+              return const SizedBox(key: Key('readAloud'), width: 24);
+            },
+          ),
+        ),
+      );
+      // Collapsed, the full prompt is not on screen and nothing reads it.
+      expect(find.byKey(const Key('readAloud')), findsNothing);
+
+      await tester.tap(find.byIcon(LottiIcons.expand));
+      await tester.pumpAndSettle();
+
+      expect(
+        spoken.last,
+        startsWith('I need help implementing OAuth 2.0 authentication'),
+      );
+      expect(spoken.last, isNot(contains('## Summary')));
+      final slot = tester.getRect(find.byKey(const Key('readAloud')));
+      final copy = tester.getRect(find.text('Copy Prompt'));
+      expect(slot.right, lessThan(copy.left));
+      expect(slot.center.dy, closeTo(copy.center.dy, 1));
+    });
+
     testWidgets('expanded full prompt uses AgentMarkdownView typography', (
       tester,
     ) async {

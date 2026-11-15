@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -366,6 +367,11 @@ class _NestedAiResponsesWidgetState
           // Long analyses (e.g. a full OCR extraction) start collapsed to a
           // faded preview so one card cannot dominate the nested thread.
           collapsible: true,
+          readAloud: (text) => TaskPromptReadAloudButton(
+            taskId: widget.contextTaskId,
+            sourceId: response.meta.id,
+            text: text,
+          ),
         ),
       ),
     );

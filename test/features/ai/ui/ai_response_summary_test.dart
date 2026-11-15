@@ -726,6 +726,32 @@ Style: isometric digital art. --ar 16:9
         },
       );
 
+      testWidgets("a generated prompt's card gets the host's read-aloud", (
+        tester,
+      ) async {
+        Widget readAloud(String text) => const SizedBox.shrink();
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: AiResponseSummary(
+              testAiResponseEntry.copyWith(
+                data: testAiResponseEntry.data.copyWith(
+                  response: '## Summary\nDock at Bay 7.\n## Prompt\nGo.',
+                  type: AiResponseType.promptGeneration,
+                ),
+              ),
+              fadeOut: false,
+              readAloud: readAloud,
+            ),
+          ),
+        );
+        expect(
+          tester
+              .widget<GeneratedPromptCard>(find.byType(GeneratedPromptCard))
+              .readAloud,
+          same(readAloud),
+        );
+      });
+
       testWidgets(
         'a generated prompt shown as its own entry drops the frame too',
         (tester) async {

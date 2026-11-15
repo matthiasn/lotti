@@ -5117,6 +5117,7 @@
   "promptGenerationCopyTooltip": "Zkopírovat prompt do schránky",
   "promptGenerationExpandTooltip": "Zobrazit celý prompt",
   "promptGenerationFullPromptLabel": "Celý prompt:",
+  "promptGenerationPlayTooltip": "Přečíst prompt nahlas",
   "promptSelectionModalTitle": "Vyberte přednastavenou výzvu",
   "provisionedSyncCopiedToClipboard": "Zkopírováno do schránky",
   "provisionedSyncDisconnect": "Ukončit synchronizaci na tomto zařízení",
