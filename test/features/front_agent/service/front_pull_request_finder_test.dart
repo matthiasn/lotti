@@ -194,14 +194,16 @@ void main() {
       );
       when(() => repository.forTask('ledger')).thenAnswer(
         (_) async => [
-          for (final (number, additions) in [(6, 20), (7, 20), (8, 500)])
+          for (final number in [6, 7, 8])
             entry(
               'e-$number',
               number,
+              // Refreshed since the sizes were counted: smaller now.
               snap: prSnapshot(
                 title: 'PR $number',
-              ).copyWith(additions: additions, deletions: 10),
+              ).copyWith(additions: 1, deletions: 1),
             ),
+          // Stored before snapshots carried a size.
           entry('e-9', 9, snap: prSnapshot(title: 'PR 9')),
         ],
       );
@@ -221,8 +223,13 @@ void main() {
         'matthiasn/lotti#6',
         'matthiasn/lotti#7',
       ]);
-      expect(ranked.pullRequests.first.additions, 500);
-      expect(ranked.pullRequests.first.deletions, 10);
+      // Each lists the size it was ranked by, never the later read.
+      expect(
+        ranked.pullRequests.map((pr) => (pr.additions, pr.deletions)),
+        [(500, 10), (20, 10), (20, 10)],
+      );
+      // A size never stored stays unknown, never a counted zero.
+      expect(newest.pullRequests.last.additions, isNull);
       // Without largest, every one of the window, newest opened first.
       expect(newest.pullRequests.map((pr) => pr.key), [
         'matthiasn/lotti#6',

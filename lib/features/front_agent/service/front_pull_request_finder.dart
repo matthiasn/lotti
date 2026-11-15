@@ -64,7 +64,30 @@ extension FrontPullRequestFinding on FrontRoutingIndexBuilder {
         ))
           if (pr.taskId case final taskId?) (key: pr.key, taskId: taskId),
       ], scope);
-      return (range: range, pullRequests: found);
+      // The size each was counted and ranked by, not a later read of its
+      // snapshot — a refresh in between, or another device's entry of the
+      // same pull request, would list sizes out of their order.
+      final counted = {for (final pr in candidates) pr.key: pr};
+      return (
+        range: range,
+        pullRequests: [
+          for (final pr in found)
+            // A size never stored stays unknown, never a counted zero.
+            if ((pr.additions, counted[pr.key]) case (_?, final size?))
+              FrontFoundPullRequest(
+                key: pr.key,
+                title: pr.title,
+                task: pr.task,
+                oneLiner: pr.oneLiner,
+                createdAt: pr.createdAt,
+                mergedAt: pr.mergedAt,
+                additions: size.additions,
+                deletions: size.deletions,
+              )
+            else
+              pr,
+        ],
+      );
     };
   }
 
