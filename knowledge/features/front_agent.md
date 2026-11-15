@@ -477,7 +477,7 @@ Ten tools, never fewer (a single tool makes DeepSeek rewrite
 | `summarize_logged_time(period \| pastDays \| from+through, categoryIds?, tasks?, projectId?, taskId?)` | no | 1 per turn | `frontTimeSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `list_closed_tasks(period \| pastDays \| from+through, categoryIds?)` | no | 1 per turn | `frontClosedListExhaustedAnswer`; unavailable when no lister is wired |
 | `summarize_pull_requests(period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
-| `find_pull_requests(topic? and/or largest?, period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestFindExhaustedAnswer`; unavailable without a pull request repository, or without a filter when a `topic` is given |
+| `find_pull_requests(topic? and/or largest?, count? 1–5, period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestFindExhaustedAnswer`; unavailable without a pull request repository, or without a filter when a `topic` is given |
 | `read_pull_requests(ids ≤ 3)` | no | 1 per turn | `frontPullRequestReadExhaustedAnswer`; only keys `<conversation_pull_requests>` lists or this turn found |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
 
@@ -845,11 +845,15 @@ being about "biggest". Rule 15 sends them to `find_pull_requests` with
 opened in the window and ranks them by lines changed (`additions +
 deletions`), stably so a tie stays newest first, before the
 `frontPullRequestFilterMaxCandidates` cap, so the ranking covers the whole
-window. Without a topic no filter call is made: the first
-`frontPullRequestsFoundMax` come back, largest first, each line with its
-size, and are drawn as cards like any find. With a topic too (*my biggest
-sync PRs*), the filter runs as above and what it keeps comes back in the
-finder's size order.
+window. Without a topic no filter call is made. With a topic too (*my
+biggest sync PRs*), the filter runs with `every`: under
+`frontPullRequestFilterEverySystemMessage` it names every match, uncapped,
+because a relevance cut of five would drop a larger match; what it keeps
+comes back in the finder's size order. Either way at most `count` come
+back — how many the user asked for, `frontPullRequestsFoundMax` (5) when
+not given — each line with its size, drawn as cards like any find. The cut
+is made in the lookup, not left to her placement, because `readFrontReply`
+appends every found pull request she does not place.
 
 The pull requests it kept are drawn as `PullRequestCards` — where she
 places them, or after her words when she does not (`readFrontReply`), each
