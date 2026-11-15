@@ -802,8 +802,9 @@ void main() {
   });
 
   group('making an inbox item a task', () {
+    // A task the user asked for: she drafted it.
     FrontDoorEntry waiting({
-      FrontTaskDraft? task,
+      FrontTaskDraft? task = const FrontTaskDraft(title: 'Count the chicks'),
       FrontDoorOutcome outcome = const FrontDoorInbox(
         newKind: FrontNewKind.task,
       ),
@@ -901,12 +902,12 @@ void main() {
       expect(find.byKey(const ValueKey('front-door-task-0')), findsOne);
     });
 
-    testWidgets('while it is set up, the headline is the title she read, '
-        'and the words come back when it is left', (tester) async {
-      await pump(tester, [
-        waiting(task: const FrontTaskDraft(title: 'Count the chicks')),
-      ]);
-      expect(titleOf(tester, 0), 'Count the chicks, urgent.');
+    testWidgets('a drafted task is headed by the title she read, set up or '
+        'not, so a "yes, make it a task" is never the headline', (
+      tester,
+    ) async {
+      await pump(tester, [waiting()]);
+      expect(titleOf(tester, 0), 'Count the chicks');
 
       await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
       await tester.pump();
@@ -914,15 +915,16 @@ void main() {
 
       await tester.tap(find.byKey(FrontTaskSetupKeys.back(0)));
       await tester.pump();
-      expect(titleOf(tester, 0), 'Count the chicks, urgent.');
+      expect(titleOf(tester, 0), 'Count the chicks');
     });
 
-    testWidgets('with no title read, the setup keeps the words as they were', (
-      tester,
-    ) async {
-      await pump(tester, [waiting()]);
-      await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
-      await tester.pump();
+    testWidgets('with no title read, the setup — opened from the overflow — '
+        'keeps the words as they were', (tester) async {
+      await pump(tester, [waiting(task: null)]);
+      expect(titleOf(tester, 0), 'Count the chicks, urgent.');
+      await openMenu(tester, 0);
+      await tapItem(tester, 'task', 0);
+      expect(find.byType(FrontTaskSetup), findsOne);
       expect(titleOf(tester, 0), 'Count the chicks, urgent.');
     });
 
@@ -930,8 +932,13 @@ void main() {
         'heard something', (tester) async {
       for (final task in [null, const FrontTaskDraft(title: 'Count')]) {
         await pump(tester, [waiting(task: task)]);
-        await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
-        await tester.pump();
+        if (task == null) {
+          await openMenu(tester, 0);
+          await tapItem(tester, 'task', 0);
+        } else {
+          await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
+          await tester.pump();
+        }
         expect(
           tester.widget<FrontTaskSetup>(find.byType(FrontTaskSetup)).heard,
           isFalse,
@@ -1212,9 +1219,38 @@ void main() {
   });
 
   group('an inbox item', () {
-    testWidgets('asks where it should go, makes a task on the one filled '
-        'tap, and keeps the other ways in the overflow with the guess '
-        'first and leaving it last', (tester) async {
+    testWidgets('a task she drafted — one the user asked for — leads with '
+        'make it a task, which the overflow then does not repeat', (
+      tester,
+    ) async {
+      await pump(tester, [
+        entry(
+          record(
+            index: 0,
+            text: 'Yes, make it a task.',
+            kind: FrontDestinationKind.newThing,
+            ownerTitle: null,
+            outcome: const FrontDoorInbox(newKind: FrontNewKind.task),
+            task: const FrontTaskDraft(title: 'Check the snow fences'),
+          ),
+        ),
+      ]);
+
+      expect(titleOf(tester, 0), 'Check the snow fences');
+      final task = button(tester, 'task', 0);
+      expect(task.variant, DesignSystemButtonVariant.primary);
+      expect(task.label, 'Make it a task');
+      expect(await openMenu(tester, 0), [
+        'Start a goal…',
+        'Make it an event',
+        'Save as a note',
+        'Leave it',
+      ]);
+    });
+
+    testWidgets('nobody asked to be a task asks where it should go with no '
+        'filled tap: every way, make it a task among them, in the overflow '
+        'with the guess first and leaving it last', (tester) async {
       await pump(tester, [
         entry(
           record(
@@ -1230,17 +1266,22 @@ void main() {
       expect(titleOf(tester, 0), 'Swim every morning.');
       expect(statusOf(tester, 0), 'Where should this go?');
       expect(glyph(tester, 0).icon, LottiIcons.focus);
-      final task = button(tester, 'task', 0);
-      expect(task.variant, DesignSystemButtonVariant.primary);
-      expect(task.label, 'Make it a task');
-      expect(find.byType(DesignSystemButton), findsOneWidget);
+      expect(find.byType(DesignSystemButton), findsNothing);
 
       expect(await openMenu(tester, 0), [
         'Start a goal…',
+        'Make it a task',
         'Make it an event',
         'Save as a note',
         'Leave it',
       ]);
+      await tapItem(tester, 'task', 0);
+      // The setup opens as from the filled tap, and nothing is made yet.
+      expect(find.byKey(FrontTaskSetupKeys.ask(0)), findsOne);
+      expect(acted, isEmpty);
+      await tester.tap(find.byKey(FrontTaskSetupKeys.back(0)));
+      await tester.pump();
+      await openMenu(tester, 0);
       await tapItem(tester, 'goal', 0);
       await openMenu(tester, 0);
       await tapItem(tester, 'event', 0);
@@ -1290,6 +1331,7 @@ void main() {
       await tester.pump();
 
       expect(await openMenu(tester, 0), [
+        'Make it a task',
         'Start a goal…',
         'Save as a note',
         'Leave it',
@@ -1332,6 +1374,7 @@ void main() {
       expect(statusOf(tester, 2), 'Where should this go instead?');
       expect(await openMenu(tester, 0), [
         'New project…',
+        'Make it a task',
         'Start a goal…',
         'Make it an event',
         'Save as a note',
@@ -1339,6 +1382,7 @@ void main() {
       ]);
       await tapItem(tester, 'project', 0);
       expect(await openMenu(tester, 1), [
+        'Make it a task',
         'Start a goal…',
         'Make it an event',
         'Save as a note',

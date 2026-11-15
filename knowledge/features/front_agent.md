@@ -35,7 +35,7 @@ sources:
   - id: validator
     resource: ../../lib/features/front_agent/workflow/front_dispatch_validator.dart
     title: validateFrontDispatch — the dispatch rules in code
-    last_modified: 2026-11-08
+    last_modified: 2026-11-15
   - id: index
     resource: ../../lib/features/front_agent/model/front_routing_index.dart
     title: FrontRoutingIndex — the bounded, byte-stable catalogue
@@ -503,6 +503,42 @@ routing that never happened. The stored row keeps the record name
 `reply_to_user`, which is what the thread, the inbox and `<recent_turns>`
 read.
 
+## Talking back, and offering a task
+
+Not everything the user says is for routing. Rule 0 of the prompt has her
+answer words meant for her — a reply to what she just said, a clarification
+or correction of it, a reaction, a remark, small talk, thanks — with her
+answer alone: nothing is dispatched, so no inbox card asks where they should
+go. Before it, any part that matched nothing became `new`, `journal` or
+`unrouted`, and every one of those is a `FrontDoorInbox` card: a user
+correcting her got a card asking where their correction should go.
+
+A task is drafted only when the user asks for one (rule 10: "create a task
+to…", "make it a task", "remind me to…", a timer for new work, or a yes to her
+offer). Work only mentioned — "I need to…", "I should…", "I'm starting
+on…" — is not dispatched (rule 5): she answers and asks whether they want it
+as a task, with a `QuickReplies` *Yes, make it a task*. The yes is its own
+turn, read with `<recent_turns>`, and the task it drafts takes its title and
+instructions from the turn she offered it for; its span is the yes, so the
+words kept under the task are the yes, and the card's headline is the
+draft's title. The validator backs the prompt: a `new` task without a `task`
+object is sent back (below), and the card leads with *Make it a task* only on
+a drafted item ([the tap](#the-tap-filing-and-the-inbox)). Live eval
+scenarios `mentioned_task`, `mentioned_task_confirmed`,
+`clarification_after_reply` and `remark_after_answer`.
+
+```mermaid
+flowchart TD
+  M[pending user message] --> Q{meant for her?<br/>reply · correction · remark}
+  Q -->|yes, rule 0| A[her answer alone<br/>no dispatch, no card]
+  Q -->|no| T{asked for a task?<br/>rule 10}
+  T -->|yes, or a yes to her offer| D[dispatch: new / task<br/>with its task object]
+  D --> C[inbox card led by<br/>Make it a task]
+  T -->|only mentioned, rule 5| O[her answer asks:<br/>want it as a task?<br/>QuickReplies: Yes, make it a task]
+  O -->|the user's yes, next turn| D
+  T -->|neither| R[routing as before:<br/>owner · day · journal · new goal or project]
+```
+
 ## What `validateFrontDispatch` enforces
 
 In code, not prompt: at most `frontMaxSegments` (8) segments; spans by offset,
@@ -515,7 +551,10 @@ counts characters — Mistral Large 4 put a 63-character message at
 `[0, 54)`, then at `[0, 64)`, and every turn failed). Offsets that agree with
 the words are kept, so a phrase said twice is the one the model meant; a `task` / `project` / `goal` / `person` destination needs an id
 the index or a lookup listed, at confidence ≥ `frontLowConfidence` (0.5);
-`new` needs a `newKind`, and a `new` task may carry a `task` object, read
+`new` needs a `newKind`, and a `new` task needs a `task` object with a
+title — a task the user asked for — else the dispatch is sent back with a
+repair telling her to answer and ask whether they want one
+([talking back](#talking-back-and-offering-a-task)); the object is read
 leniently ([a task from her words](#a-task-from-her-words)); `day`,
 `journal` and `unrouted` need neither. The
 spans and the gaps between them partition the input and the gaps are never
@@ -1159,9 +1198,11 @@ never loses the task. The start is an instant resolved when the dispatch is
 validated, against the clock the turn's `<current_local_time>` showed — the
 workflow's `now`, handed to the strategy — so neither a slow inference nor a
 tap hours later moves when the user said the work began; a start after now
-runs from now. **Nothing is made without the tap**, asked for or only
-mentioned: the item waits in the inbox with its draft, and *Make it a task*
-asks how before anything is made. Its status line, action and overflow give
+runs from now. **Nothing is drafted unasked, and nothing is made without
+the tap**: a task only mentioned is offered in her words first
+([talking back](#talking-back-and-offering-a-task)); one asked for waits in
+the inbox with its draft, and *Make it a task* asks how before anything is
+made. Its status line, action and overflow give
 way to `FrontTaskSetup`: one line in her voice and three chips — status,
 priority, due day — each opening a short menu where it sits (today,
 tomorrow, a day on the calendar, or none for the due day), so the setup is
@@ -1169,8 +1210,9 @@ the conversation asking, never a form to leave it for. The chips start at
 `FrontTaskChoices.of(draft)`, so *Create task* alone makes the task as she
 read it; *Cancel* gives the card back as it was. Her line says what she heard
 only when the words set something (`FrontTaskDraft.namesChoices`), else it
-just asks; the headline turns to the draft's title — the one the task is made
-with — until the setup is left. Status and priority wear the task list's own
+just asks; a drafted item's headline is the draft's title — the one the
+task is made with — set up or not, so a "yes, make it a task" never heads
+it. Status and priority wear the task list's own
 glyphs, and the due chip warns for today and turns late for a past day, as the
 task will. *Cancel* and *Create task* share the chips' line where it fits and
 drop below it, at the end, where it does not; there *Create task* keeps the
@@ -1562,7 +1604,10 @@ caveats, a door still being walked, a reason it went nowhere), at most one
 filled action, and an overflow menu (`DesignSystemContextMenuButton`)
 holding every other way out. The filled action is always a tap that
 writes — *File it*, *Make it a task* — or, on a settled card, a secondary
-*Open*; the overflow holds *Somewhere else* on a proposal, *Start a goal…*
+*Open*. *Make it a task* is the filled tap only on an item she drafted — a
+task the user asked for; an inbox item nobody asked to be a task has no
+filled tap, and offers *Make it a task* in the overflow among the other
+ways. The overflow holds *Somewhere else* on a proposal, *Start a goal…*
 / *New project…* (the ellipsis says a wizard opens), *Make it an event*
 (only while `enable_events` is on — an event made where it is off would
 have no page to be found on), *Save as a note* and *Leave it* on an inbox item with the router's guess

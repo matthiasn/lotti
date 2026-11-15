@@ -66,7 +66,7 @@ void main() {
           );
         case FrontEvalOutcome.dispatch:
           expect(scenario.expectedSegments, isNotEmpty, reason: scenario.id);
-        case FrontEvalOutcome.reply:
+        case FrontEvalOutcome.reply || FrontEvalOutcome.talk:
           expect(scenario.expectedSegments, isEmpty, reason: scenario.id);
       }
     }

@@ -87,6 +87,28 @@ void main() {
       expect(unchecked.title, 'Buy the hose');
     });
 
+    test('a new task nobody drafted is sent back to be asked about', () {
+      for (final task in <Object?>[
+        null,
+        {'priority': 'P1'},
+        {'title': '  '},
+      ]) {
+        final result = validate([
+          {...newTask('task')..remove('task'), 'task': ?task},
+          segment(span: pipSpan, intent: 'question', kind: 'person', id: 'pip'),
+        ]);
+        expect(result.dispatch, isNull, reason: '$task');
+        expect(
+          result.error,
+          allOf(
+            contains('segment 0 is a new task without a `task`'),
+            contains('asking whether they want it as a task'),
+          ),
+          reason: '$task',
+        );
+      }
+    });
+
     test('reads a task object only for a new task', () {
       final segments = validate([
         newTask('goal'),
@@ -310,12 +332,12 @@ void main() {
           span: gardenSpan,
           kind: 'new',
           id: null,
-          newKind: 'task',
+          newKind: 'goal',
           confidence: 0.2,
         ),
       ]);
       expect(ok.error, isNull);
-      expect(ok.dispatch!.segments.first.newKind, FrontNewKind.task);
+      expect(ok.dispatch!.segments.first.newKind, FrontNewKind.goal);
       expect(ok.dispatch!.segments.first.destinationId, isNull);
     });
 
