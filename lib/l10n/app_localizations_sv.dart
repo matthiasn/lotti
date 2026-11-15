@@ -7968,7 +7968,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String githubPickerOpenIn(String repository) {
-    return 'Öppna pull requests i $repository';
+    return 'Eller välj en från $repository';
   }
 
   @override

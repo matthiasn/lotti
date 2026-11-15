@@ -3318,7 +3318,7 @@
   "githubPickerLinking": "Se leagă pull request-ul",
   "githubPickerLoading": "Se încarcă pull request-urile deschise",
   "githubPickerNoRepository": "Atribuiți un depozit GitHub categoriei acestei sarcini pentru a alege dintre pull request-urile sale deschise.",
-  "githubPickerOpenIn": "Pull request-uri deschise în {repository}",
+  "githubPickerOpenIn": "Sau alegeți unul din {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {

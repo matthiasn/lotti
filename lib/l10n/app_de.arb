@@ -3318,7 +3318,7 @@
   "githubPickerLinking": "Pull-Request wird verknüpft",
   "githubPickerLoading": "Offene Pull-Requests werden geladen",
   "githubPickerNoRepository": "Weise der Kategorie dieser Aufgabe ein GitHub-Repository zu, um aus seinen offenen Pull-Requests zu wählen.",
-  "githubPickerOpenIn": "Offene Pull-Requests in {repository}",
+  "githubPickerOpenIn": "Oder wähl einen aus {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {

@@ -3318,7 +3318,7 @@
   "githubPickerLinking": "Vinculando pull request",
   "githubPickerLoading": "Cargando pull requests abiertas",
   "githubPickerNoRepository": "Asigna un repositorio de GitHub a la categoría de esta tarea para elegir entre sus pull requests abiertas.",
-  "githubPickerOpenIn": "Pull requests abiertas en {repository}",
+  "githubPickerOpenIn": "O elige una de {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {

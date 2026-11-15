@@ -8086,7 +8086,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String githubPickerOpenIn(String repository) {
-    return 'Pull request-uri deschise în $repository';
+    return 'Sau alegeți unul din $repository';
   }
 
   @override

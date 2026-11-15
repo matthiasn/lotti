@@ -3643,7 +3643,7 @@
   "githubPickerLinking": "Kopplar pull request",
   "githubPickerLoading": "Läser in öppna pull requests",
   "githubPickerNoRepository": "Tilldela kategorin för den här uppgiften ett GitHub-repo för att välja bland dess öppna pull requests.",
-  "githubPickerOpenIn": "Öppna pull requests i {repository}",
+  "githubPickerOpenIn": "Eller välj en från {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {

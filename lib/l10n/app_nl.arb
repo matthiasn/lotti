@@ -3642,7 +3642,7 @@
   "githubPickerLinking": "Pull request wordt gekoppeld",
   "githubPickerLoading": "Open pull requests worden geladen",
   "githubPickerNoRepository": "Wijs de categorie van deze taak een GitHub-repository toe om uit de open pull requests te kiezen.",
-  "githubPickerOpenIn": "Open pull requests in {repository}",
+  "githubPickerOpenIn": "Of kies er een uit {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {

@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/gestures.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/github/github_repository.dart';
 import 'package:lotti/classes/github/pull_request_ref.dart';
@@ -13,6 +13,7 @@ import 'package:lotti/features/github/domain/open_pull_request.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/link_pull_request_modal.dart';
+import 'package:lotti/features/github/ui/pull_request_glyph.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -40,6 +41,7 @@ void main() {
   Future<void> open(
     WidgetTester tester, {
     GitHubRepository? repo,
+    Stream<GitHubRepository?>? repositories,
     Future<OpenPullRequestsResult> Function()? listing,
     Map<String, String> visibleTitles = const {},
     Map<int, PullRequestSize> sizes = const {},
@@ -56,7 +58,7 @@ void main() {
           pullRequestServiceProvider.overrideWithValue(service),
           taskGitHubRepositoryProvider(
             taskId,
-          ).overrideWith((ref) => Stream.value(repo)),
+          ).overrideWith((ref) => repositories ?? Stream.value(repo)),
           openPullRequestsProvider(repository).overrideWith(
             (ref) =>
                 listing?.call() ??
@@ -227,11 +229,16 @@ void main() {
           ]),
         );
 
-        expect(
-          find.text('Open pull requests in penguin/colony'),
-          findsOneWidget,
-        );
+        // The heading is the instruction: the rows are the other way in.
+        expect(find.text('Or pick one from penguin/colony'), findsOneWidget);
         expect(find.text('#12 Waddle 12'), findsOneWidget);
+        // As a linked row's title: room to tell two pull requests apart.
+        expect(
+          tester
+              .widgetList<PullRequestTitle>(find.byType(PullRequestTitle))
+              .map((title) => title.maxLines),
+          [3, 3],
+        );
         // A draft says so first, as a linked pull request's state does.
         expect(
           find.textContaining('Draft ·\u00A0@pingu', findRichText: true),
@@ -263,22 +270,48 @@ void main() {
         await open(
           tester,
           repo: repository,
-          listing: () async => OpenPullRequestsListed([openPr(12)]),
+          listing: () async => OpenPullRequestsListed([
+            openPr(12),
+            openPr(15),
+          ]),
         );
+        bool tinted(int number) => tester
+            .widget<DesignSystemListItem>(
+              find.byKey(LinkPullRequestKeys.openPullRequest(number)),
+            )
+            .activated;
 
         await tester.tap(find.byKey(LinkPullRequestKeys.openPullRequest(12)));
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
 
+        // The question names no pull request: the row it is about says
+        // which, and only that row.
+        expect(tinted(12), isTrue);
+        expect(tinted(15), isFalse);
         // The other task is private and hidden: it is counted, not named.
-        expect(
-          find.text(
-            'This pull request is already linked to another task. Link it '
-            'to this task as well?',
-          ),
-          findsOneWidget,
+        final question = find.text(
+          'This pull request is already linked to another task. Link it '
+          'to this task as well?',
         );
+        expect(question, findsOneWidget);
         expect(find.byKey(LinkPullRequestKeys.urlField), findsOneWidget);
+        // Asked at the row it is about, not up at the field.
+        expect(
+          tester.getTopLeft(question).dy,
+          inExclusiveRange(
+            tester
+                .getBottomLeft(
+                  find.byKey(LinkPullRequestKeys.openPullRequest(12)),
+                )
+                .dy,
+            tester
+                .getTopLeft(
+                  find.byKey(LinkPullRequestKeys.openPullRequest(15)),
+                )
+                .dy,
+          ),
+        );
 
         await tester.tap(find.byKey(LinkPullRequestKeys.linkHereToo));
         await tester.pump();
@@ -306,9 +339,20 @@ void main() {
           (_) async => const PullRequestLinkedElsewhere({'chicks'}, pr),
         );
         await open(tester, visibleTitles: {'chicks': 'Teach the chicks'});
+        bool fieldActionLeads() => tester
+            .widget<DesignSystemTextInput>(
+              find.byKey(LinkPullRequestKeys.urlField),
+            )
+            .emphasizeTrailingIcon;
+
+        await tester.enterText(find.byKey(LinkPullRequestKeys.urlField), url);
+        await tester.pump();
+        expect(fieldActionLeads(), isTrue);
 
         await submit(tester, url);
 
+        // One primary at a time: the answer leads, the field's action waits.
+        expect(fieldActionLeads(), isFalse);
         expect(
           find.text(
             'This pull request is already linked to “Teach the chicks”. '
@@ -322,6 +366,7 @@ void main() {
 
         expect(find.byKey(LinkPullRequestKeys.linkHereToo), findsNothing);
         expect(find.byKey(LinkPullRequestKeys.urlField), findsOneWidget);
+        expect(fieldActionLeads(), isTrue);
         verifyNever(
           () => service.link(taskId: taskId, ref: pr, alsoElsewhere: true),
         );
@@ -383,9 +428,29 @@ void main() {
         await tester.tap(row);
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
+        final reason = find.text('The link could not be saved. Try again.');
+        expect(reason, findsOneWidget);
+        // Said under the row that was picked, which stays marked — not as
+        // an error on a field nobody typed in.
         expect(
-          find.text('The link could not be saved. Try again.'),
-          findsOneWidget,
+          tester.getTopLeft(reason).dy,
+          greaterThan(tester.getBottomLeft(row).dy),
+        );
+        expect(tester.widget<DesignSystemListItem>(row).activated, isTrue);
+        expect(
+          tester
+              .widget<DesignSystemTextInput>(
+                find.byKey(LinkPullRequestKeys.urlField),
+              )
+              .errorText,
+          isNull,
+        );
+        expect(
+          tester.getSemantics(reason),
+          matchesSemantics(
+            label: 'The link could not be saved. Try again.',
+            isLiveRegion: true,
+          ),
         );
 
         await tester.tap(row);
@@ -396,6 +461,165 @@ void main() {
       },
     );
 
+    testWidgets(
+      'answering the question a paste raised links with progress in the '
+      'field, where it was asked',
+      (tester) async {
+        const pr = PullRequestRef(
+          owner: 'matthiasn',
+          repo: 'lotti',
+          number: 42,
+        );
+        final pending = Completer<PullRequestLinkResult>();
+        when(
+          () => service.linkPasted(taskId: taskId, input: url),
+        ).thenAnswer(
+          (_) async => const PullRequestLinkedElsewhere({'other'}, pr),
+        );
+        when(
+          () => service.link(taskId: taskId, ref: pr, alsoElsewhere: true),
+        ).thenAnswer((_) => pending.future);
+        await open(tester);
+
+        await submit(tester, url);
+        await tester.tap(find.byKey(LinkPullRequestKeys.linkHereToo));
+        await tester.pump();
+
+        expect(
+          find.descendant(
+            of: find.byKey(LinkPullRequestKeys.urlField),
+            matching: find.byType(DesignSystemSpinner),
+          ),
+          findsOneWidget,
+        );
+
+        pending.complete(PullRequestLinked(prEntry(clock: {'a': 1})));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.byKey(LinkPullRequestKeys.urlField), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a question about a row the list no longer shows is still asked, '
+      'above the list',
+      (tester) async {
+        final pr = openPr(12).ref;
+        when(
+          () => service.link(taskId: taskId, ref: pr),
+        ).thenAnswer((_) async => PullRequestLinkedElsewhere({'other'}, pr));
+        var listings = 0;
+        await open(
+          tester,
+          repo: repository,
+          listing: () async => OpenPullRequestsListed([
+            if (listings++ == 0) openPr(12) else openPr(15),
+          ]),
+        );
+
+        await tester.tap(find.byKey(LinkPullRequestKeys.openPullRequest(12)));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        ProviderScope.containerOf(
+          tester.element(find.byKey(LinkPullRequestKeys.urlField)),
+        ).invalidate(openPullRequestsProvider(repository));
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          find.byKey(LinkPullRequestKeys.openPullRequest(12)),
+          findsNothing,
+        );
+        expect(
+          tester.getTopLeft(find.byKey(LinkPullRequestKeys.linkHereToo)).dy,
+          lessThan(
+            tester.getTopLeft(find.text('Or pick one from penguin/colony')).dy,
+          ),
+        );
+        // No row left to say which one: the question names it, so it is
+        // not read as being about the row now under it.
+        expect(find.text('penguin/colony#12'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      "a question about a pick outlives the category's repository: asked "
+      'under the field, named, and still answerable',
+      (tester) async {
+        final pr = openPr(12).ref;
+        when(
+          () => service.link(taskId: taskId, ref: pr),
+        ).thenAnswer((_) async => PullRequestLinkedElsewhere({'other'}, pr));
+        when(
+          () => service.link(taskId: taskId, ref: pr, alsoElsewhere: true),
+        ).thenAnswer((_) async => PullRequestLinked(prEntry(clock: {'a': 1})));
+        final repositories = StreamController<GitHubRepository?>();
+        addTearDown(repositories.close);
+        repositories.add(repository);
+        await open(
+          tester,
+          repositories: repositories.stream,
+          listing: () async => OpenPullRequestsListed([openPr(12)]),
+        );
+        await tester.tap(find.byKey(LinkPullRequestKeys.openPullRequest(12)));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        // A sync removes the repository from the category: the picker goes.
+        repositories.add(null);
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          find.byKey(LinkPullRequestKeys.openPullRequest(12)),
+          findsNothing,
+        );
+        expect(find.text('penguin/colony#12'), findsOneWidget);
+
+        await tester.tap(find.byKey(LinkPullRequestKeys.linkHereToo));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        verify(
+          () => service.link(taskId: taskId, ref: pr, alsoElsewhere: true),
+        ).called(1);
+        expect(find.byKey(LinkPullRequestKeys.urlField), findsNothing);
+      },
+    );
+
+    testWidgets(
+      "a failed pick outlives the category's repository too: its reason "
+      'is said under the field, named',
+      (tester) async {
+        final pr = openPr(12).ref;
+        when(
+          () => service.link(taskId: taskId, ref: pr),
+        ).thenAnswer((_) async => const PullRequestLinkNotStored());
+        final repositories = StreamController<GitHubRepository?>();
+        addTearDown(repositories.close);
+        repositories.add(repository);
+        await open(
+          tester,
+          repositories: repositories.stream,
+          listing: () async => OpenPullRequestsListed([openPr(12)]),
+        );
+        await tester.tap(find.byKey(LinkPullRequestKeys.openPullRequest(12)));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        repositories.add(null);
+        await tester.pump();
+        await tester.pump();
+
+        final reason = find.text('The link could not be saved. Try again.');
+        expect(reason, findsOneWidget);
+        expect(
+          tester.getTopLeft(reason).dy,
+          greaterThan(tester.getBottomLeft(find.text('penguin/colony#12')).dy),
+        );
+      },
+    );
+
     testWidgets('says when nothing is left to link', (tester) async {
       await open(tester, repo: repository);
 
@@ -403,6 +627,8 @@ void main() {
         find.text('No open pull request in penguin/colony is left to link.'),
         findsOneWidget,
       );
+      // No heading inviting a pick from a list that is not there.
+      expect(find.text('Or pick one from penguin/colony'), findsNothing);
     });
 
     testWidgets('says why GitHub could not list them', (tester) async {
@@ -533,34 +759,37 @@ void main() {
       },
     );
 
-    testWidgets('hovering a row lights the link glyph that says a tap links', (
-      tester,
-    ) async {
-      await open(
-        tester,
-        repo: repository,
-        listing: () async => OpenPullRequestsListed([openPr(12), openPr(15)]),
-      );
-      Color? glyph(int number) => tester
-          .widget<Icon>(
-            find.descendant(
-              of: find.byKey(LinkPullRequestKeys.openPullRequest(number)),
-              matching: find.byIcon(LottiIcons.link),
-            ),
-          )
-          .color;
-      final resting = glyph(12);
+    testWidgets(
+      'a row says a tap links in the action ink, and steps back with the '
+      'rows while something else links',
+      (tester) async {
+        final pending = Completer<PullRequestLinkResult>();
+        when(
+          () => service.linkPasted(taskId: taskId, input: url),
+        ).thenAnswer((_) => pending.future);
+        await open(
+          tester,
+          repo: repository,
+          listing: () async => OpenPullRequestsListed([openPr(12)]),
+        );
+        final row = find.byKey(LinkPullRequestKeys.openPullRequest(12));
+        final colors = tester.element(row).designTokens.colors;
+        Color? glyph() => tester
+            .widget<Icon>(
+              find.descendant(of: row, matching: find.byIcon(LottiIcons.link)),
+            )
+            .color;
 
-      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
-      await mouse.addPointer(location: Offset.zero);
-      addTearDown(mouse.removePointer);
-      await mouse.moveTo(
-        tester.getCenter(find.byKey(LinkPullRequestKeys.openPullRequest(12))),
-      );
-      await tester.pump();
+        // At rest, not on hover: a phone has no pointer to light it.
+        expect(glyph(), colors.interactive.enabled);
 
-      expect(glyph(12), isNot(resting));
-      expect(glyph(15), resting);
-    });
+        await submit(tester, url);
+        expect(glyph(), colors.text.lowEmphasis);
+
+        pending.complete(const PullRequestLinkNotStored());
+        await tester.pump();
+        expect(glyph(), colors.interactive.enabled);
+      },
+    );
   });
 }

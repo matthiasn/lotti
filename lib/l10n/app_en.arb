@@ -5072,7 +5072,7 @@
   "githubPickerLinking": "Linking pull request",
   "githubPickerLoading": "Loading open pull requests",
   "githubPickerNoRepository": "Assign a GitHub repository to this task's category to pick from its open pull requests.",
-  "githubPickerOpenIn": "Open pull requests in {repository}",
+  "githubPickerOpenIn": "Or pick one from {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {

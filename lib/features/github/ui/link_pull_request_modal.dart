@@ -70,6 +70,16 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
   /// The open question: other tasks hold the pull request the user chose.
   PullRequestLinkedElsewhere? _elsewhere;
 
+  /// The row [_error] or [_elsewhere] is about, when a pick led to it: said
+  /// there, not at a field nobody typed in. Null after a paste.
+  PullRequestRef? _picked;
+
+  void _clearOutcome() {
+    _error = null;
+    _elsewhere = null;
+    _picked = null;
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -101,7 +111,8 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
     final ref_ = _elsewhere?.ref;
     if (_linking != null || ref_ == null) return;
     await _run(
-      ref_,
+      // Where the question came from, so progress and a failure land there.
+      _picked ?? _controller.text,
       () => ref
           .read(pullRequestServiceProvider)
           .link(taskId: widget.taskId, ref: ref_, alsoElsewhere: true),
@@ -114,8 +125,7 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
   ) async {
     setState(() {
       _linking = what;
-      _error = null;
-      _elsewhere = null;
+      _clearOutcome();
     });
     PullRequestLinkResult result;
     try {
@@ -132,6 +142,7 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
     }
     setState(() {
       _linking = null;
+      _picked = what is PullRequestRef ? what : null;
       if (result is PullRequestLinkedElsewhere) {
         _elsewhere = result;
       } else {
@@ -171,6 +182,28 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
         .value;
     final pasted = _controller.text.trim().isNotEmpty;
     final pastedLinking = _linking is String;
+    final error = _error;
+    final question = switch (_elsewhere) {
+      final elsewhere? => _ElsewhereQuestion(
+        taskIds: elsewhere.taskIds,
+        linking: _linking != null,
+        onLinkHereToo: _linkHereToo,
+        onKeep: () => setState(_clearOutcome),
+      ),
+      null => null,
+    };
+    // What a pick came to goes under its row. With no picker to hold it —
+    // the category lost its repository meanwhile — it is said under the
+    // field instead, named, never dropped.
+    final picked = _picked;
+    final pickOutcome = picked == null
+        ? null
+        : question ?? (error == null ? null : _Note(text: error, error: true));
+    final underField = picked == null
+        ? question
+        : repository == null && pickOutcome != null
+        ? _AboutPullRequest(ref: picked, child: pickOutcome)
+        : null;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -179,34 +212,32 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
           key: LinkPullRequestKeys.urlField,
           controller: _controller,
           label: messages.githubLinkUrlLabel,
+          // The sheet's own surface shows through: field and picker are
+          // framed alike, neither a darker well.
+          filled: false,
           hintText: messages.githubLinkUrlHint,
-          errorText: _error,
+          errorText: picked == null ? error : null,
           keyboardType: TextInputType.url,
           // Link sits in the field it submits, appearing in place once there
           // is something to link: a picked row links on its own tap, so a
           // button waiting under the list read as "pick, then confirm", and
           // one that appeared there reflowed the sheet under the typing.
           trailingIcon: pasted ? LottiIcons.link : null,
-          emphasizeTrailingIcon: pasted && _linking == null,
+          // One primary at a time: while the question below is open, its
+          // answer leads.
+          emphasizeTrailingIcon:
+              pasted && _linking == null && _elsewhere == null,
           trailingIconBusy: pastedLinking,
           trailingIconBusyLabel: messages.githubPickerLinking,
           onTrailingIconTap: pasted && _linking == null ? _linkPasted : null,
           trailingIconTooltip: messages.githubLinkButton,
           trailingIconKey: LinkPullRequestKeys.linkButton,
-          onChanged: (_) => setState(() {
-            _error = null;
-            _elsewhere = null;
-          }),
+          onChanged: (_) => setState(_clearOutcome),
           onSubmitted: (_) => _linkPasted(),
         ),
-        if (_elsewhere case final elsewhere?) ...[
-          SizedBox(height: tokens.spacing.step4),
-          _ElsewhereQuestion(
-            taskIds: elsewhere.taskIds,
-            linking: _linking != null,
-            onLinkHereToo: _linkHereToo,
-            onKeep: () => setState(() => _elsewhere = null),
-          ),
+        if (underField != null) ...[
+          SizedBox(height: tokens.spacing.step3),
+          underField,
         ],
         // The one hint sits with the field it is about; the picker is a
         // section of its own.
@@ -223,6 +254,8 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
             linking: _linking is PullRequestRef
                 ? _linking! as PullRequestRef
                 : null,
+            picked: picked,
+            outcome: pickOutcome,
             busy: _linking != null,
             onPick: _linkPicked,
           ),
@@ -231,13 +264,15 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
   }
 }
 
-/// The repository's open pull requests no task holds, to pick from: rows on
-/// a raised panel of their own, so the list reads as one thing to choose
-/// from rather than more of the form.
+/// The repository's open pull requests no task holds, to pick from: rows in
+/// a frame of their own, so the list reads as one thing to choose from
+/// rather than more of the form.
 class _OpenPullRequests extends ConsumerWidget {
   const _OpenPullRequests({
     required this.repository,
     required this.linking,
+    required this.picked,
+    required this.outcome,
     required this.busy,
     required this.onPick,
   });
@@ -246,6 +281,12 @@ class _OpenPullRequests extends ConsumerWidget {
 
   /// The pull request being linked, if one was picked.
   final PullRequestRef? linking;
+
+  /// The pull request a pick did not link, and what came of it — the
+  /// reason, or the question to answer — shown under its row, which stays
+  /// tinted to say which one is meant.
+  final PullRequestRef? picked;
+  final Widget? outcome;
 
   /// Something is being linked — a picked row, or what was pasted: every
   /// other row steps back, rather than looking live and swallowing a tap.
@@ -258,41 +299,43 @@ class _OpenPullRequests extends ConsumerWidget {
     final messages = context.messages;
     final listing = ref.watch(openPullRequestsProvider(repository));
     final heading = Padding(
-      padding: EdgeInsets.only(bottom: tokens.spacing.step3),
-      // The field's own label style: two sections of one form.
+      // The field label's gap, in a quieter ink than it: this line says
+      // the rows are the other way to link, and the titles under it lead.
+      padding: EdgeInsets.only(bottom: tokens.spacing.step2),
       child: Text(
         messages.githubPickerOpenIn(repository.toString()),
         style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-          color: tokens.colors.text.highEmphasis,
+          color: tokens.colors.text.mediumEmphasis,
         ),
       ),
     );
 
-    return switch (listing) {
+    final picked = this.picked;
+    final outcome = this.outcome;
+    final listed = switch (listing) {
+      AsyncData(value: OpenPullRequestsListed(:final available)) =>
+        available.any((pr) => pr.ref == picked),
+      _ => false,
+    };
+    final body = switch (listing) {
       AsyncData(value: OpenPullRequestsListed(:final available)) =>
         available.isEmpty
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  heading,
-                  _Note(
-                    text: messages.githubPickerEmpty(repository.toString()),
-                  ),
-                ],
-              )
+            // Alone: a heading inviting a pick would contradict it.
+            ? _Note(text: messages.githubPickerEmpty(repository.toString()))
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   heading,
                   _Panel(
                     children: [
-                      for (final pr in available)
+                      for (final pr in available) ...[
                         _OpenPullRequestRow(
                           pr: pr,
                           size: ref
                               .watch(openPullRequestSizesProvider(repository))
                               .value?[pr.ref.number],
                           linking: linking == pr.ref,
+                          asked: picked == pr.ref,
                           // The row being linked stays live, so it keeps
                           // full strength while the others step back; a
                           // second tap on it is ignored by the form.
@@ -300,6 +343,19 @@ class _OpenPullRequests extends ConsumerWidget {
                               ? () => onPick(pr.ref)
                               : null,
                         ),
+                        if (outcome != null && picked == pr.ref)
+                          Padding(
+                            // On the row's own text inset, and closed off
+                            // below as one block with it.
+                            padding: EdgeInsets.fromLTRB(
+                              tokens.spacing.step5 + tokens.spacing.step1,
+                              tokens.spacing.step2,
+                              tokens.spacing.step5 + tokens.spacing.step1,
+                              tokens.spacing.step4,
+                            ),
+                            child: outcome,
+                          ),
+                      ],
                     ],
                   ),
                 ],
@@ -328,11 +384,23 @@ class _OpenPullRequests extends ConsumerWidget {
         ],
       ),
     };
+    if (picked == null || outcome == null || listed) return body;
+    // Its row is gone — listed anew meanwhile: said above the list instead,
+    // named, never dropped.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _AboutPullRequest(ref: picked, child: outcome),
+        SizedBox(height: tokens.spacing.step5),
+        body,
+      ],
+    );
   }
 }
 
-/// The raised panel the picker's rows sit on, inset so each row's rounded
-/// hover fill floats inside its edge.
+/// The frame around the picker's rows — a hairline on the sheet's own
+/// surface, as the field's is — inset so each row's rounded hover fill
+/// floats inside its edge.
 class _Panel extends StatelessWidget {
   const _Panel({required this.children});
 
@@ -343,7 +411,6 @@ class _Panel extends StatelessWidget {
     final tokens = context.designTokens;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.surface.enabled,
         borderRadius: BorderRadius.circular(tokens.radii.l),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
@@ -365,49 +432,47 @@ class _Panel extends StatelessWidget {
 
 /// One open pull request: its state glyph, number and title, and the line
 /// of who opened it, when, and how large it is. Tapping it links it at once,
-/// which its trailing link glyph says — lit while the pointer is on the row.
-class _OpenPullRequestRow extends StatefulWidget {
+/// which its trailing link glyph says in the action ink — the one mark on
+/// the row in it, a phone having no pointer to light it.
+class _OpenPullRequestRow extends StatelessWidget {
   const _OpenPullRequestRow({
     required this.pr,
     required this.size,
     required this.linking,
+    required this.asked,
     required this.onTap,
   });
 
   final OpenPullRequest pr;
   final PullRequestSize? size;
   final bool linking;
+
+  /// What a pick of this pull request came to is shown under it.
+  final bool asked;
   final VoidCallback? onTap;
-
-  @override
-  State<_OpenPullRequestRow> createState() => _OpenPullRequestRowState();
-}
-
-class _OpenPullRequestRowState extends State<_OpenPullRequestRow> {
-  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final pr = widget.pr;
     final parts = openPullRequestParts(
       messages,
       pr: pr,
       now: clock.now(),
-      size: widget.size,
+      size: size,
     );
     return DesignSystemListItem(
       key: LinkPullRequestKeys.openPullRequest(pr.ref.number),
-      onTap: widget.onTap,
-      onHoverChanged: (hovered) => setState(() => _hovered = hovered),
-      activated: widget.linking,
+      onTap: onTap,
+      activated: linking || asked,
       activatedBackgroundColor: tokens.colors.surface.selected,
       borderRadius: BorderRadius.circular(tokens.radii.m),
       titleContent: PullRequestTitle(
         number: pr.ref.number,
         title: pr.title,
         style: pullRequestTitleStyle(context),
+        // As a linked row's: a title is what tells two pull requests apart.
+        maxLines: 3,
       ),
       subtitleSpans: pullRequestStatusSpans(context, parts),
       subtitleMaxLines: 2,
@@ -431,7 +496,7 @@ class _OpenPullRequestRowState extends State<_OpenPullRequestRow> {
           child: Center(
             // The glyph's size, as every busy state on these surfaces:
             // progress in place, not a larger mark than what it replaces.
-            child: widget.linking
+            child: linking
                 ? DesignSystemSpinner(
                     size: IconSizes.m,
                     semanticsLabel: messages.githubPickerLinking,
@@ -439,7 +504,7 @@ class _OpenPullRequestRowState extends State<_OpenPullRequestRow> {
                 : Icon(
                     LottiIcons.link,
                     size: IconSizes.m,
-                    color: _hovered && widget.onTap != null
+                    color: onTap != null
                         ? tokens.colors.interactive.enabled
                         : tokens.colors.text.lowEmphasis,
                   ),
@@ -575,18 +640,55 @@ class _ElsewhereQuestion extends ConsumerWidget {
   }
 }
 
-class _Note extends StatelessWidget {
-  const _Note({required this.text});
+/// What a pick came to, led by which pull request it is about — for when
+/// its row is not there to say so.
+class _AboutPullRequest extends StatelessWidget {
+  const _AboutPullRequest({required this.ref, required this.child});
 
-  final String text;
+  final PullRequestRef ref;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Text(
-      text,
-      style: tokens.typography.styles.body.bodySmall.copyWith(
-        color: tokens.colors.text.mediumEmphasis,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          '$ref',
+          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step1),
+        child,
+      ],
+    );
+  }
+}
+
+/// A line of the sheet's own prose: a hint, or — as an [error] — why a
+/// pick did not link, announced when it appears as a field's error is.
+class _Note extends StatelessWidget {
+  const _Note({required this.text, this.error = false});
+
+  final String text;
+  final bool error;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Semantics(
+      container: error,
+      liveRegion: error,
+      child: Text(
+        text,
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: error
+              ? tokens.colors.alert.error.ink
+              : tokens.colors.text.mediumEmphasis,
+        ),
       ),
     );
   }
