@@ -4,6 +4,93 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.104]
+
+### Added
+
+- **Lotti can now say which of your pull requests were the biggest.** Asking
+  "which were my biggest pull requests last month, the top five?" used to come
+  back empty, because the search looked for what a pull request was about, not
+  how big it was. Now the largest pull requests of the period, by lines added
+  and deleted, appear as cards with their tasks. Asking "what was my average
+  pull request size?" gets the average lines added, deleted and changed per
+  pull request. Everything is read from what the app already stores on your
+  device.
+
+### Changed
+
+- **Setting Lotti up for the first time is shorter: five steps, each asking
+  for one thing.** The welcome now leads straight to the one key, then to
+  pasting it, picking your areas and your first task. The two optional steps
+  that stood before the key are gone from the first run: you choose how Lotti
+  looks in Settings › Companion and how she sounds in Settings › Speech,
+  whenever you like. The "You're all set" screen, which only asked to be
+  tapped away, is gone too: once your key works, the areas open at once and
+  Lotti tells you there that you are connected, aloud where your provider
+  gives her a voice.
+- **The companion talks back instead of offering a task for everything you
+  say.** A correction, a remark or a follow-up about her last answer now gets
+  a reply, not a card asking "Where should this go?". When you only mention
+  something you need to do, she asks whether you want it as a task first, and
+  the **Make it a task** card appears once you say yes. Asking for a task
+  directly ("make a task to…") works as before. Items in the inbox that nobody
+  asked to be a task keep **Make it a task** in their menu instead of leading
+  with it.
+- **"Link a pull request" says things once.** The field's label now names both
+  forms it takes — a URL or `owner/repo#123` — instead of a label, a helper
+  line and a paragraph each saying part of it. When the task's category has no
+  repository, the one hint about picking from open pull requests sits directly
+  under the field.
+- **A person's briefing card offers Update now where you can see it.** A
+  current briefing kept its refresh behind the card's ⋯ menu; it now sits
+  under the briefing the way it does on a task's card, reading *Thinking…*
+  while a new briefing is written, with the model and provider it will use
+  named right beneath it. Tapping the card's header still opens the agent's
+  activity.
+- **The list of open pull requests reads as the other way to link.** Its
+  heading now says "Or pick one from" the repository, each row shows its link
+  mark in the accent colour without needing a pointer over it, titles get a
+  third line before they are cut, and the field and the list share one surface
+  instead of a darker well and a lighter panel.
+
+### Fixed
+
+- **A task report could keep saying "due today" days after the due date had
+  passed.** The task agent avoids rewriting a report when nothing changed, and
+  a date passing did not count as a change, so the report stayed wrong until
+  something else woke the agent. Reports now record the due date and estimate
+  they were written against. When the due date passes, moves or is cleared,
+  when the estimate changes, or when the status has changed since, the agent
+  writes a new report even if nothing else happened. With automatic updates
+  on, it also wakes by itself at the midnight a due date turns into
+  "tomorrow", "today" or "overdue".
+- **Two of the three voice samples in the first-run setup could not play.**
+  Only the on-device sample shipped with the app, so the Mistral Voxtral and
+  ElevenLabs buttons ended in an error. The samples step is no longer part of
+  setup; you pick and try her voices in Settings › Speech.
+- **Scrolling back through a chat no longer makes it jump.** A message that
+  had scrolled a little way out of view was dropped and rebuilt when it came
+  back. For a moment it was a different height, often a task card that was
+  still loading, so the conversation moved under your finger. Chats now keep a
+  few screens of messages ready on either side, and cards come back already
+  drawn.
+- **The Link button in "Link a pull request" no longer breaks out of its
+  field.** Once you had typed something, the button stretched over the field's
+  highlighted border and left a mismatched corner beside it. It now sits
+  inside the field with the border running unbroken around it, and the
+  progress that replaces it while linking stays on the same spot.
+- **A person's timeline no longer confuses two headings for the same month.**
+  A meeting called off later this month put that month's heading above *Today*
+  as well as below *This week*, and the list could take one for the other
+  while it scrolled. A check-in with more than one recording also now always
+  leads with the summary of the recording it plays, rather than whichever one
+  loaded first.
+- **Picking a pull request that cannot be linked right away answers at that
+  pull request.** A failure, or the question whether to link one another task
+  already holds, used to appear at the URL field — framed in red although you
+  had typed nothing. It now appears under the row you picked, which stays
+  highlighted so you can see which one is meant.
+
 ## [1.1.103]
 
 ### Added
