@@ -21,8 +21,9 @@ typedef FrontDispatchValidation = ({FrontDispatch? dispatch, String? error});
 /// miscount, the `text` found verbatim after the previous segment places
 /// the span instead; a destination id only where
 /// [destinationExists] says so; a `new` segment names what it would become;
-/// a routed destination at or above [frontLowConfidence]. A `new` task's
-/// `task` object is read leniently ([FrontTaskDraft.fromModel]): a field the
+/// a routed destination at or above [frontLowConfidence]; a `new` task
+/// carries a `task` object with a title — one the user asked for — else it is
+/// sent back. That object is read leniently ([FrontTaskDraft.fromModel]): a field the
 /// model got wrong, or a category [categoryExists] does not know, is left
 /// out, never fatal, and so is a `followsUpTaskId` [followUpExists] does not
 /// know; its start counts back from [now], the routing turn's
@@ -176,6 +177,26 @@ FrontDispatchValidation validateFrontDispatch({
     }
     final note = segment['note'];
     final task = segment['task'];
+    final draft = newKind == FrontNewKind.task && task is Map
+        ? FrontTaskDraft.fromModel(
+            Map<String, dynamic>.from(task),
+            categoryExists: categoryExists ?? (_) => false,
+            followUpExists: followUpExists,
+            now: now ?? clock.now(),
+          )
+        : null;
+    // A task nobody asked for is a guess, not a draft: only a task the user
+    // asked for carries one, so a draftless one is sent back to be asked.
+    if (newKind == FrontNewKind.task && draft == null) {
+      return (
+        dispatch: null,
+        error:
+            'Error: segment $i is a new task without a `task` and its '
+            'title. Dispatch a new task only when the user asked for one, '
+            'with the task read from their words; otherwise end the turn '
+            'with your answer alone, asking whether they want it as a task.',
+      );
+    }
     segments.add(
       FrontDispatchSegment(
         start: start,
@@ -187,14 +208,7 @@ FrontDispatchValidation validateFrontDispatch({
         destinationId: id,
         newKind: newKind,
         note: note is String && note.trim().isNotEmpty ? note.trim() : null,
-        task: newKind == FrontNewKind.task && task is Map
-            ? FrontTaskDraft.fromModel(
-                Map<String, dynamic>.from(task),
-                categoryExists: categoryExists ?? (_) => false,
-                followUpExists: followUpExists,
-                now: now ?? clock.now(),
-              )
-            : null,
+        task: draft,
       ),
     );
     cursor = end;

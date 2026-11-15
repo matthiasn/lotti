@@ -254,6 +254,10 @@ List<String> _judge(FrontEvalScenario scenario, FrontAgentStrategy strategy) {
       if (dispatch?.routed.isNotEmpty ?? false) {
         failed.add('dispatched to an existing owner');
       }
+    case FrontEvalOutcome.talk:
+      if (strategy.replyToUser == null) failed.add('expected an answer');
+      if (dispatch != null) failed.add('dispatched instead of answering');
+      if (ask != null) failed.add('asked where instead of answering');
   }
   if (scenario.checkTask case final check?) {
     failed.addAll(

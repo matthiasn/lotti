@@ -406,11 +406,11 @@ class _DoorRow extends StatelessWidget {
         ink = tokens.colors.alert.success.ink;
         if (acting != null) action = open();
       case FrontDoorInbox(:final newKind, :final ownerId):
-        // While it is set up, the headline is the title she read — the one
-        // the task will be made with — so "here's what I heard" shows it.
-        title = acting != null && settingUp
-            ? record.task?.title ?? words
-            : words;
+        // A drafted task's headline is the title she read — the one the task
+        // will be made with — so "here's what I heard" shows it, and a
+        // "yes, make it a task" is never the headline.
+        final draft = record.task;
+        title = acting != null ? draft?.title ?? words : words;
         status = ownerId == null
             ? messages.frontDoorInbox
             : messages.frontDoorInboxInstead;
@@ -430,16 +430,28 @@ class _DoorRow extends StatelessWidget {
             onBack: () => onSetUp(on: false),
           );
         } else if (acting != null) {
-          action = DesignSystemButton(
-            key: ValueKey('front-door-task-$index'),
-            label: messages.frontDoorMakeTask,
-            variant: quiet
-                ? DesignSystemButtonVariant.secondary
-                : DesignSystemButtonVariant.primary,
-            onPressed: guarded(() => onSetUp(on: true)),
-          );
+          // Only a task the user asked for — one she drafted — leads with
+          // *Make it a task*; words nobody asked to be a task offer it among
+          // the other ways, never as the card's one filled tap.
+          if (draft != null) {
+            action = DesignSystemButton(
+              key: ValueKey('front-door-task-$index'),
+              label: messages.frontDoorMakeTask,
+              variant: quiet
+                  ? DesignSystemButtonVariant.secondary
+                  : DesignSystemButtonVariant.primary,
+              onPressed: guarded(() => onSetUp(on: true)),
+            );
+          }
           // The router's guess leads the other ways; leaving it comes last.
           final ways = [
+            if (draft == null)
+              (
+                'task',
+                messages.frontDoorMakeTask,
+                LottiIcons.checkboxChecked,
+                () => onSetUp(on: true),
+              ),
             (
               'goal',
               messages.frontDoorStartGoal,
@@ -707,8 +719,10 @@ class _DoorRow extends StatelessWidget {
     // A journal question is searched; a journal statement lands in the
     // inbox, whose glyph replaces this one.
     FrontDestinationKind.journal => LottiIcons.search,
+    // Words meant for her are never drawn (the thread builder drops them).
     FrontDestinationKind.newThing ||
-    FrontDestinationKind.unrouted => LottiIcons.inbox,
+    FrontDestinationKind.unrouted ||
+    FrontDestinationKind.you => LottiIcons.inbox,
   };
 
   /// The glyph for what the router thought an inbox item would become.
@@ -732,7 +746,8 @@ class _DoorRow extends StatelessWidget {
       FrontDestinationKind.day ||
       FrontDestinationKind.newThing ||
       FrontDestinationKind.journal ||
-      FrontDestinationKind.unrouted => messages.frontDoorKindOther,
+      FrontDestinationKind.unrouted ||
+      FrontDestinationKind.you => messages.frontDoorKindOther,
     };
   }
 }

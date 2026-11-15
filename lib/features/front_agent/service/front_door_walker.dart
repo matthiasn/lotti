@@ -299,6 +299,9 @@ class FrontDoorWalker {
         return const FrontDoorInbox();
       case FrontDestinationKind.unrouted:
         return const FrontDoorInbox();
+      case FrontDestinationKind.you:
+        // Her line answers words meant for her: nothing takes them.
+        return const FrontDoorSkipped(FrontDoorSkipReason.noDoor);
       case FrontDestinationKind.day:
         // A change to today waits for the user's tap, which opens the
         // Daily OS planning with the words (decision 1). A question about

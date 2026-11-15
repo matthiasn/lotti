@@ -60,7 +60,13 @@ enum FrontDestinationKind {
   journal('journal'),
 
   /// The agent could not place it; it waits in the inbox.
-  unrouted('unrouted');
+  unrouted('unrouted'),
+
+  /// Words meant for the front agent herself — a correction, a remark — in
+  /// a message that also routes something: her line answers them, and their
+  /// door settles at once and is never shown, so they never reach the inbox
+  /// the way a gap the model left out would.
+  you('you');
 
   const FrontDestinationKind(this.wireName, {this.needsId = false});
 

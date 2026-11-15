@@ -165,12 +165,14 @@ void main() {
   );
 
   test('kinds without an owner title nothing and read nothing', () async {
-    for (final kind in [
-      FrontDestinationKind.day,
-      FrontDestinationKind.newThing,
-      FrontDestinationKind.journal,
-      FrontDestinationKind.unrouted,
-    ]) {
+    // Every kind that names no row — `you` among them — however many more
+    // are added.
+    final ownerless = [
+      for (final kind in FrontDestinationKind.values)
+        if (!kind.needsId) kind,
+    ];
+    expect(ownerless, contains(FrontDestinationKind.you));
+    for (final kind in ownerless) {
       expect(await titles.titleFor(kind, 'x'), isNull, reason: kind.name);
     }
     verifyNever(() => journalDb.journalEntityById(any()));

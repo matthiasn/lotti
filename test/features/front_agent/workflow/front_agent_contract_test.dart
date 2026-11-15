@@ -281,6 +281,64 @@ void main() {
     );
   });
 
+  test('words meant for her — a clarification, a correction, a remark — are '
+      'answered, never dispatched to the inbox', () {
+    expect(
+      frontAgentSystemPrompt,
+      contains('Words meant for you are answered, never dispatched'),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      contains('route nothing, not as `new`, `journal` or `unrouted` either'),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      contains('Route or answer this, and only this.'),
+    );
+    // Beside a dispatch, they are a `you` segment rather than a gap the
+    // validator would make an unrouted inbox item.
+    expect(
+      frontAgentSystemPrompt,
+      contains('a segment of their own with destination `you`'),
+    );
+    // News about something listed still routes, and she never claims a
+    // filing she did not make (live eval `single_strong`).
+    expect(
+      frontAgentSystemPrompt,
+      contains('is for the record, never only for you'),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      contains(
+        'Never say you noted, filed or saved anything you did not '
+        'dispatch.',
+      ),
+    );
+  });
+
+  test('a task is drafted only when asked for; one only mentioned is '
+      'offered first, and drafted on the yes', () {
+    expect(frontAgentSystemPrompt, contains('A `new` task only as in 10.'));
+    expect(
+      frontAgentSystemPrompt,
+      contains('asks whether they want it as a task'),
+    );
+    expect(frontAgentSystemPrompt, contains('"Yes, make it a task"'));
+    expect(
+      frontAgentSystemPrompt,
+      contains('a yes to your offer of one in <recent_turns>'),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      contains('title and instructions come from the words of <recent_turns>'),
+    );
+    // A mention alone no longer drafts a task.
+    expect(
+      frontAgentSystemPrompt,
+      isNot(contains('mentions one to do')),
+    );
+  });
+
   test('her own words name tasks and projects as links, never bare ids', () {
     expect(frontAgentSystemPrompt, contains('[title](lotti://task/<id>)'));
     expect(frontAgentSystemPrompt, contains('[title](lotti://project/<id>)'));

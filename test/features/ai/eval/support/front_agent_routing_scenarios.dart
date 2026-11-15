@@ -85,6 +85,11 @@ enum FrontEvalOutcome {
 
   /// Ends with `reply_to_user` and no dispatch to an existing owner.
   reply,
+
+  /// Ends with her answer alone: nothing dispatched, nothing asked with
+  /// `ask_user` — words meant for her, or a task only mentioned, which she
+  /// offers instead of drafting.
+  talk,
 }
 
 /// One expected segment of a dispatch: the kind and, for an owner, the id.
@@ -176,13 +181,92 @@ final List<FrontEvalScenario> frontEvalScenarios = [
   const FrontEvalScenario(
     id: 'mentioned_task',
     input: 'I need to check the snow fences before the storm on Friday.',
+    outcome: FrontEvalOutcome.talk,
+    maxLookups: 1,
+    note:
+        'A task only mentioned is not drafted: she asks whether to make it '
+        'one, and no card appears until the user says yes.',
+  ),
+  const FrontEvalScenario(
+    id: 'mentioned_task_confirmed',
+    input: 'Yes, make it a task.',
     outcome: FrontEvalOutcome.dispatch,
     expectedSegments: [(kind: FrontDestinationKind.newThing, id: null)],
     maxLookups: 1,
-    checkTask: _mentionedTask,
+    recent: [
+      (
+        role: 'user',
+        text: 'I need to check the snow fences before the storm on Friday.',
+      ),
+      (
+        role: 'assistant',
+        text:
+            'Good thinking, the storm will test them. Want me to turn that '
+            'into a task?',
+      ),
+    ],
+    checkTask: _confirmedFencesTask,
     note:
-        'A task only mentioned is drafted too, with no timer nobody asked '
-        'for.',
+        'The yes to her offer drafts the task, read from the turn she '
+        'offered it for, with no timer nobody asked for.',
+  ),
+  const FrontEvalScenario(
+    id: 'clarification_after_reply',
+    input: 'Who said I was recalibrating them? I only said they drift.',
+    outcome: FrontEvalOutcome.talk,
+    maxLookups: 0,
+    recent: [
+      (role: 'user', text: 'The hatchery heaters are drifting again.'),
+      (
+        role: 'assistant',
+        text:
+            'Sounds like you are recalibrating them today. Want a task for '
+            'it, with a timer?',
+      ),
+    ],
+    note:
+        'A correction of what she said is answered, never routed: no '
+        'inbox card asking where it should go.',
+  ),
+  const FrontEvalScenario(
+    id: 'clarification_with_task',
+    input:
+        'Who said I was recalibrating them? I only said they drift. But do '
+        "make a task to replace the north heater's thermostat.",
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [
+      (kind: FrontDestinationKind.newThing, id: null),
+      (kind: FrontDestinationKind.you, id: null),
+    ],
+    maxLookups: 1,
+    recent: [
+      (role: 'user', text: 'The hatchery heaters are drifting again.'),
+      (
+        role: 'assistant',
+        text:
+            'Sounds like you are recalibrating them today. Want a task for '
+            'it, with a timer?',
+      ),
+    ],
+    checkTask: _thermostatTask,
+    note:
+        'A correction beside a task request: the task is drafted, the '
+        'correction is hers to answer — a `you` segment, never an unrouted '
+        'gap waiting in the inbox.',
+  ),
+  const FrontEvalScenario(
+    id: 'remark_after_answer',
+    input: 'Ha, that is a lot of fish for one colony.',
+    outcome: FrontEvalOutcome.talk,
+    maxLookups: 0,
+    recent: [
+      (role: 'user', text: 'How much fish are we ordering next month?'),
+      (
+        role: 'assistant',
+        text: 'The supplier quoted 400 kg, 12% up on last month.',
+      ),
+    ],
+    note: 'A remark on her answer is small talk: she talks back.',
   ),
   const FrontEvalScenario(
     id: 'category_from_conversation',
@@ -289,8 +373,7 @@ final List<FrontEvalScenario> frontEvalScenarios = [
   const FrontEvalScenario(
     id: 'nothing_matches',
     input: 'Thinking about learning the accordion this winter.',
-    outcome: FrontEvalOutcome.dispatch,
-    expectedSegments: [(kind: FrontDestinationKind.newThing, id: null)],
+    outcome: FrontEvalOutcome.talk,
     forbiddenDestinationIds: {
       'task-bay-c-seam',
       'task-bay-c-lighting',
@@ -301,7 +384,9 @@ final List<FrontEvalScenario> frontEvalScenarios = [
       'person-pip',
     },
     maxLookups: 1,
-    note: 'Nothing owns this; it is new or a note, never a forced match.',
+    note:
+        'A musing nothing owns is talked about, never forced onto a row or '
+        'filed as new: she may offer to make something of it.',
   ),
   const FrontEvalScenario(
     id: 'move_today',
@@ -393,10 +478,26 @@ List<String> _uncategorizedTask(FrontDispatchSegment? segment) {
   ];
 }
 
-List<String> _mentionedTask(FrontDispatchSegment? segment) {
+List<String> _thermostatTask(FrontDispatchSegment? segment) {
   final shape = _taskShape(segment);
   if (shape.isNotEmpty) return shape;
   return [
-    if (segment!.task!.startedAt != null) 'a timer nobody asked for',
+    if (!segment!.task!.title.toLowerCase().contains('thermostat'))
+      'title ${segment.task!.title}',
+    if (segment.text.toLowerCase().contains('who said'))
+      'the span took in the correction',
+  ];
+}
+
+List<String> _confirmedFencesTask(FrontDispatchSegment? segment) {
+  final shape = _taskShape(segment);
+  if (shape.isNotEmpty) return shape;
+  final task = segment!.task!;
+  return [
+    // The title alone: instructions naming the fences must not let a
+    // "Yes, make it a task" title through.
+    if (!task.title.toLowerCase().contains('fence'))
+      'the task lost what it was offered for: ${task.title}',
+    if (task.startedAt != null) 'a timer nobody asked for',
   ];
 }

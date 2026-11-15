@@ -851,8 +851,22 @@ void main() {
     },
   );
 
-  test('a new task, asked for or only mentioned, waits in the inbox for '
-      'the tap, its draft kept on the record for it', () async {
+  test('words meant for her settle at once with no door, never in the '
+      'inbox', () async {
+    seedDispatch([
+      segment(start: 0, end: 18, kind: FrontDestinationKind.you),
+    ]);
+    await walker.walk(messageId);
+    final door = doors()[0]!;
+    expect(door.status, FrontDoorStatus.done);
+    expect(
+      (door.outcome! as FrontDoorSkipped).reason,
+      FrontDoorSkipReason.noDoor,
+    );
+  });
+
+  test('a new task the user asked for waits in the inbox for the tap, its '
+      'draft kept on the record for it', () async {
     final draft = FrontTaskDraft(
       title: 'Buy a hose',
       priority: TaskPriority.p1High,

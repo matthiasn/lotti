@@ -3040,6 +3040,10 @@ void main() {
               status: FrontDoorStatus.done,
               claimedAt: now.toUtc(),
               outcome: FrontDoorInbox(newKind: kind),
+              // A new task is always drafted: it leads with its filled tap.
+              task: kind == FrontNewKind.task
+                  ? const FrontTaskDraft(title: 'Relocate the colony')
+                  : null,
             ),
           ),
         ],

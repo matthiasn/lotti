@@ -62,7 +62,14 @@ task* (or Enter) makes it as set up —
 started only when they said so — with the words linked under it and the
 category's agent assigned. A follow-up ("a follow-up to that one") names
 the task it follows — any task the conversation named, finished ones too —
-and the tap links the two as *follows up on*. The user keeps many **conversations** with her, as in a ChatGPT
+and the tap links the two as *follows up on*. Work only mentioned ("I need
+to check the fences") is not drafted: she asks whether they want it as a
+task, and the yes drafts it: its title and instructions come from the
+earlier turn, reworded by her, while the words linked under the task are
+the confirming message itself ("yes, make it a task") — the original mention
+stays in the conversation, not under the task. Words meant for her — a
+correction of what she said, a remark — she simply answers, with no card,
+even inside a message that also routes something. The user keeps many **conversations** with her, as in a ChatGPT
 or Claude window: each a subject of its own, titled by its first question,
 listed newest first by recency in her **drawer** — slid over the thread
 from the header's toggle on a phone, beside it on a desktop window — with
