@@ -44,6 +44,7 @@ void main() {
         );
         // ADR 0045: megolm keys go only to directly verified devices — an
         // unverified device is excluded instead of halting all sends.
+        // ignore: deprecated_member_use
         expect(client.shareKeysWith, ShareKeysWith.directlyVerifiedOnly);
         // Attachment decryption must not run on the UI isolate, which the
         // SDK's default `NativeImplementations.dummy` does.

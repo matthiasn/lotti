@@ -13360,9 +13360,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get promptGenerationCopyButton => 'Copia Prompt';
 
   @override
-  String get promptGenerationPlayTooltip => 'Leggi il prompt ad alta voce';
-
-  @override
   String get promptGenerationCopyTooltip => 'Copia il prompt per il clipboard';
 
   @override
@@ -13370,6 +13367,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get promptGenerationFullPromptLabel => 'Prompt completo:';
+
+  @override
+  String get promptGenerationPlayTooltip => 'Leggi il prompt ad alta voce';
 
   @override
   String get promptSelectionModalTitle => 'Selezionare Prompt preconfigurato';

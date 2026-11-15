@@ -393,7 +393,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// subsequent hot restart crash on macOS, since mpv's core thread outlives
   /// the Dart isolate teardown.
   Future<void> _pauseAudioPlayer() async {
-    if (!ref.exists(audioPlayerControllerProvider)) {
+    if (!ref.read(audioPlayerControllerProvider.exists)) {
       return;
     }
     try {

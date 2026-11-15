@@ -13225,9 +13225,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get promptGenerationCopyButton => 'Prompt kopiëren';
 
   @override
-  String get promptGenerationPlayTooltip => 'Prompt voorlezen';
-
-  @override
   String get promptGenerationCopyTooltip => 'Prompt naar klembord kopiëren';
 
   @override
@@ -13235,6 +13232,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get promptGenerationFullPromptLabel => 'Volledige vraag:';
+
+  @override
+  String get promptGenerationPlayTooltip => 'Prompt voorlezen';
 
   @override
   String get promptSelectionModalTitle =>

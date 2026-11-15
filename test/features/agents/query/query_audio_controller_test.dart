@@ -462,7 +462,7 @@ void main() {
           stackTrace: any(named: 'stackTrace'),
         ),
       ).called(1);
-      expect(local.exists(provider), isFalse);
+      expect(local.read(provider.exists), isFalse);
     },
   );
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderDisposedException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -364,10 +365,10 @@ void main() {
         final first = container.read(
           reconcileCaptureUpdateProvider('cap-no-notifs').future,
         );
-        // The empty stream completes without emitting, so awaiting `first`
-        // throws a StateError. That confirms there is no UpdateNotifications
-        // subscription behind it.
-        await expectLater(first, throwsA(isA<StateError>()));
+        // The empty stream completes without emitting, so Riverpod (3.5+)
+        // fails `first` with a ProviderDisposedException. That confirms
+        // there is no UpdateNotifications subscription behind it.
+        await expectLater(first, throwsA(isA<ProviderDisposedException>()));
       },
     );
 
