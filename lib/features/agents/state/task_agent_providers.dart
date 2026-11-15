@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
+import 'package:lotti/features/agents/service/task_due_date_wake.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -23,6 +24,12 @@ TaskAgentService taskAgentService(Ref ref) {
     armProjectUpdate: armProjectUpdate(ref),
     cancelProjectUpdates: (agentId) =>
         ref.read(projectUpdateCadenceProvider).consumeAll(agentId),
+    armDueDateWake: (agentId) => armTaskDueDateWake(
+      agentId,
+      repository: ref.read(agentRepositoryProvider),
+      journalDb: ref.read(journalDbProvider),
+      domainLogger: ref.read(domainLoggerProvider),
+    ),
   );
 }
 

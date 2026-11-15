@@ -5,7 +5,7 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-06T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-15T12:00:00Z }
 stale_after: 2027-02-01
 sources:
   - id: adr-0159
@@ -35,7 +35,7 @@ sources:
   - id: report-policy
     resource: ../../../lib/features/agents/workflow/task_agent_report_policy.dart
     title: Shared publication policy for prompts and execution
-    last_modified: 2026-09-18
+    last_modified: 2026-11-15
   - id: planning-tools
     resource: ../../../lib/features/agents/tools/task_planning_tool_definitions.dart
     title: Evidence-backed requests for planner attention
@@ -531,14 +531,10 @@ These context details are load-bearing:
   and housekeeping alone are not material progress. Trigger ids identify what
   to inspect, not proof that the situation changed. The prior report's prose is
   deliberately omitted so stale conclusions cannot feed back as evidence.
-  That omission also hides the report's baseline: the model sees `Status: DONE`
-  with nothing saying the report still calls the task IN PROGRESS, so it used
-  to conclude "no material change" after the user closed a task. The executor
-  therefore computes the transition itself —
-  `TaskAgentReportPolicy.statusTransitionSinceReport` reads the status in
-  effect at the report's `createdAt` from the task's timestamped
-  `statusHistory` — and, when it differs from the current status, the context
-  gains a `## Material Change Since Last Report` section naming both statuses.
+  That omission also hides the report's baseline, so the executor computes
+  which facts the report states wrongly itself and names them in a
+  `## Material Change Since Last Report` section — see
+  [wrong facts override restraint](#wrong-facts-override-restraint).
   No-change wakes skip optional label/language tidying while honoring explicit
   requests. Both scaffolds initialize a missing language when a report is
   required; they do not require that write on an otherwise unchanged wake.
@@ -547,7 +543,7 @@ These context details are load-bearing:
   descriptions and context use `TaskAgentReportPolicy` for publication,
   language and decision-section wording. The executor uses the same policy
   to exclude label/language-only housekeeping from forced publication, and to
-  force publication after a status change since the last report.
+  force publication when a fact the last report states is no longer true.
 - **Label lists and correction examples sit in the volatile tail**, after the
   task state. Both are rewritten rather than appended to: `## Available Labels`
   drops a label once it is assigned (`TaskLabelHandler.buildLabelContext`), and
@@ -745,8 +741,8 @@ Common changes across the path:
   alone stay on the task without timing urgency or a reservation request; the
   model must not invent a deadline or time window to justify planner attention.
 - A first report, a report omitted after a successful material mutation, or
-  one omitted after the task's status changed since the last report gets a
-  forced report call. An existing report with only label/language housekeeping
+  one omitted while a fact the last report states is no longer true (status,
+  due date, estimate) gets a forced report call. An existing report with only label/language housekeeping
   is preserved, as is a true no-op. The same gate controls retry, report-editor
   audit and missing-report diagnostics.
 
@@ -759,6 +755,58 @@ outcome, and absent metadata and excluded scope stay out of the report.
 Custom report directives remain verbatim. Other model IDs keep the common
 scaffold and `0.3` until evaluated explicitly. This profile selection does not
 override reasoning effort.
+
+## Wrong facts override restraint
+
+The context leans against republishing: different wording, another wake or
+housekeeping is no reason for a new report. That restraint stops at a wrong
+fact. Because the report's prose is withheld, the model cannot see that the
+report it would leave standing says "due today" three days later, or still
+calls a closed task IN PROGRESS. `TaskAgentReportPolicy.factDriftsSinceReport`
+compares what the report was written against with the task now and returns one
+`ReportFactDrift` per fact that no longer holds:
+
+| Fact | Baseline | Wrong when |
+|------|----------|------------|
+| Status | the status in effect at the report's `createdAt`, from the task's timestamped `statusHistory` | it differs from the current status |
+| Due date | the snapshot's `due`, or for a report older than the snapshot the current due date | the date changed, or — for an open task — its relation to the day moved: later → tomorrow → today → overdue |
+| Estimate | the snapshot's `estimateMinutes`; none without a snapshot, since estimates keep no history | it differs from the current estimate |
+
+The snapshot is `TaskAgentReportPolicy.taskFactsSnapshot`, written by
+`WakeOutputWriter` into every new report's `provenance` under `taskFacts`, as
+the task stood when the wake started. A non-empty result does two things: the
+context lists each fact as it was and as it is now, and `requiresReport` turns
+true (`reportFactsDrifted`), so a model that still answers "no material change"
+gets the forced `update_report` retry. Nothing reads the report's prose; a
+relative phrase within one relation ("due in five days" two days on) is not
+caught.
+
+Nothing else wakes the agent when only the date moves, so a wake whose agent
+has automatic updates on arms the next relation change as the device-local
+`scheduledWakeAt` (`TaskAgentReportPolicy.nextDueBoundary`, local midnight).
+Switching automatic updates on arms it too (`armTaskDueDateWake`), since a
+report written with automation off armed nothing and a fresh report owes no
+catch-up wake.
+`ScheduledWakeManager` fires it as an automation wake and clears it as it fires,
+so a wake that fails or is refused — automation turned off since — does not
+repeat; the wake's own commit arms the next boundary, or none. An open task
+with a due date costs at most three such wakes, and an overdue, closed or
+undated task none.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Later: due in 2+ days
+  [*] --> Tomorrow
+  [*] --> Today
+  [*] --> Overdue
+  Later --> Tomorrow: midnight before the due day
+  Tomorrow --> Today: midnight of the due day
+  Today --> Overdue: midnight after the due day
+  Overdue --> [*]: no boundary left to arm
+```
+
+Every arrow is a scheduled wake and a forced report. A new due date re-enters
+the diagram on the next wake's commit; closing the task leaves it.
 
 ## Publication filter
 

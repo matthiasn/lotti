@@ -1,8 +1,13 @@
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 /// A task status change that happened after the current report was written.
 typedef TaskStatusTransition = ({String from, String to});
+
+/// A task fact the current report states as `reported` that is now
+/// `current`.
+typedef ReportFactDrift = ({String fact, String reported, String current});
 
 /// Publication requirements shared by task-agent prompts and execution.
 abstract final class TaskAgentReportPolicy {
@@ -103,14 +108,166 @@ A report already exists. Before publishing, identify a new or corrected task fac
     return from == to ? null : (from: from, to: to);
   }
 
-  /// States a status change as the material fact it is, so the model does
+  /// The report provenance key holding the task facts the report was written
+  /// against ([taskFactsSnapshot]).
+  static const taskFactsProvenanceKey = 'taskFacts';
+
+  /// The facts a report is written against, kept in its provenance so a later
+  /// wake can tell which of them the report no longer states correctly. A
+  /// null value records that the fact was absent; a missing key means the
+  /// report predates the snapshot.
+  static Map<String, Object?> taskFactsSnapshot(TaskData task) => {
+    'due': task.due == null ? null : _isoDay(task.due!),
+    'estimateMinutes': task.estimate?.inMinutes,
+  };
+
+  /// Every fact the current [report] states that [task] no longer matches at
+  /// [now]: its status, its due date and that date's relation to today, and
+  /// its estimate.
+  ///
+  /// The report's prose is withheld from the model, so it cannot see that a
+  /// report saying "due today" is wrong three days later; this tells it. A
+  /// wrong fact overrides every "do not republish" default: [requiresReport]
+  /// and [factDriftContext] both act on a non-empty result.
+  static List<ReportFactDrift> factDriftsSinceReport({
+    required TaskData? task,
+    required AgentReportEntity? report,
+    required DateTime now,
+  }) {
+    if (task == null || report == null) return const [];
+    final stored = report.provenance[taskFactsProvenanceKey];
+    final snapshot = stored is Map ? stored : null;
+    final status = statusTransitionSinceReport(
+      task: task,
+      reportCreatedAt: report.createdAt,
+    );
+    return [
+      if (status != null)
+        (fact: 'status', reported: status.from, current: status.to),
+      ?_dueDrift(task, snapshot, reportedAt: report.createdAt, now: now),
+      ?_estimateDrift(task, snapshot),
+    ];
+  }
+
+  static ReportFactDrift? _dueDrift(
+    TaskData task,
+    Map<dynamic, dynamic>? snapshot, {
+    required DateTime reportedAt,
+    required DateTime now,
+  }) {
+    final current = task.due;
+    // A report from before the snapshot is assumed to have seen today's date.
+    final reported = snapshot != null && snapshot.containsKey('due')
+        ? DateTime.tryParse('${snapshot['due']}')
+        : current;
+    if (reported == null && current == null) return null;
+    final dateChanged =
+        (reported == null ? null : _isoDay(reported)) !=
+        (current == null ? null : _isoDay(current));
+    final relationChanged =
+        reported != null &&
+        current != null &&
+        _dueBucket(reported, reportedAt) != _dueBucket(current, now);
+    // A closed task's deadline has stopped mattering; only an edit counts.
+    final closed = task.status is TaskDone || task.status is TaskRejected;
+    if (!dateChanged && (closed || !relationChanged)) return null;
+    return (
+      fact: 'due date',
+      reported: _describeDue(reported, reportedAt),
+      current: _describeDue(current, now),
+    );
+  }
+
+  static ReportFactDrift? _estimateDrift(
+    TaskData task,
+    Map<dynamic, dynamic>? snapshot,
+  ) {
+    // Estimates keep no history, so only a snapshot can show a change.
+    if (snapshot == null || !snapshot.containsKey('estimateMinutes')) {
+      return null;
+    }
+    final reported = snapshot['estimateMinutes'] as int?;
+    final current = task.estimate?.inMinutes;
+    if (reported == current) return null;
+    String describe(int? minutes) =>
+        minutes == null ? 'no estimate' : '$minutes minutes';
+    return (
+      fact: 'estimate',
+      reported: describe(reported),
+      current: describe(current),
+    );
+  }
+
+  /// When [task]'s due date next changes its relation to the calendar day —
+  /// later → tomorrow → today → overdue — as local midnight, or `null` for a
+  /// closed task, no due date, or one already overdue.
+  ///
+  /// The task agent schedules a one-shot wake here, since nothing else wakes
+  /// it when only the date moves: a report that said "due today" would
+  /// otherwise keep saying it after the day has passed.
+  static DateTime? nextDueBoundary(TaskData? task, DateTime now) {
+    final due = task?.due;
+    if (due == null ||
+        task!.status is TaskDone ||
+        task.status is TaskRejected) {
+      return null;
+    }
+    final offset = switch (_dueBucket(due, now)) {
+      < 0 => null,
+      0 => 1,
+      1 => 0,
+      _ => -1,
+    };
+    return offset == null
+        ? null
+        : DateTime(due.year, due.month, due.day + offset);
+  }
+
+  /// Whole calendar days from [on] to [due], compared by date components the
+  /// way the task list's due markers compare them.
+  static int _daysUntil(DateTime due, DateTime on) => DateTime.utc(
+    due.year,
+    due.month,
+    due.day,
+  ).difference(DateTime.utc(on.year, on.month, on.day)).inDays;
+
+  /// Overdue (-1), today (0), tomorrow (1) or later (2): the relations a
+  /// report states in words, so a change between them falsifies it.
+  static int _dueBucket(DateTime due, DateTime on) =>
+      _daysUntil(due, on).clamp(-1, 2);
+
+  static String _describeDue(DateTime? due, DateTime on) {
+    if (due == null) return 'no due date';
+    final day = _isoDay(due);
+    final days = _daysUntil(due, on);
+    return switch (days) {
+      < -1 => 'overdue: due $day, ${-days} days ago',
+      -1 => 'overdue: due $day, yesterday',
+      0 => 'due today ($day)',
+      1 => 'due tomorrow ($day)',
+      _ => 'due $day, in $days days',
+    };
+  }
+
+  static String _isoDay(DateTime date) =>
+      date.toIso8601String().substring(0, 10);
+
+  /// States each wrong fact as the material change it is, so the model does
   /// not have to infer it from a report it cannot see.
-  static String statusTransitionContext(TaskStatusTransition transition) =>
-      '## Material Change Since Last Report\n'
-      'The task status changed from ${transition.from} to ${transition.to} '
-      'after the current report was written. That report still describes the '
-      'task as ${transition.from}, so it is stale: publish an updated report '
-      'that reflects the current status.\n\n';
+  static String factDriftContext(List<ReportFactDrift> drifts) {
+    final lines = drifts
+        .map(
+          (drift) =>
+              '- ${drift.fact}: ${drift.reported} when the report was '
+              'written; now ${drift.current}.',
+        )
+        .join('\n');
+    return '## Material Change Since Last Report\n'
+        'The current report states task facts that are no longer true:\n'
+        '$lines\n'
+        'A wrong fact makes the report stale whatever else changed: publish '
+        'an updated report that states the current facts.\n\n';
+  }
 
   /// Rendered by production and synthetic eval contexts from the same source.
   static String changedEntitiesContext({
@@ -373,15 +530,16 @@ A report already exists. Before publishing, identify a new or corrected task fac
 
   /// Housekeeping alone does not stale an existing task report. The model may
   /// still publish when independent evidence changes the task's material state.
-  /// A status change since the report was written ([taskStatusChanged]) always
-  /// stales it, whoever made the change.
+  /// A fact the report states that the task no longer matches
+  /// ([reportFactsDrifted], see [factDriftsSinceReport]) always stales it,
+  /// whoever or whatever changed it — the calendar included.
   static bool requiresReport({
     required bool hasExistingReport,
     required Iterable<String> successfulToolNames,
-    bool taskStatusChanged = false,
+    bool reportFactsDrifted = false,
   }) =>
       !hasExistingReport ||
-      taskStatusChanged ||
+      reportFactsDrifted ||
       successfulToolNames.any(
         (name) => !const {
           TaskAgentToolNames.assignTaskLabel,

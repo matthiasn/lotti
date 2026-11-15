@@ -266,17 +266,19 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     // compaction, which consumes its resolved entries as decision events).
     final pendingSets = ledger.pendingSets;
 
-    // The report's prose is withheld from the model, so a status change the
-    // user made since it was written (IN PROGRESS → DONE) is computed here
-    // rather than left for the model to notice.
-    final statusTransition = TaskAgentReportPolicy.statusTransitionSinceReport(
+    // The report's prose is withheld from the model, so a fact it states
+    // that is no longer true — a status the user changed, a "due today" the
+    // calendar has since passed — is computed here rather than left for the
+    // model to notice.
+    final reportFactDrifts = TaskAgentReportPolicy.factDriftsSinceReport(
       task: taskAttentionContext.task?.data,
-      reportCreatedAt: lastReport?.createdAt,
+      report: lastReport,
+      now: now,
     );
-    if (statusTransition != null) {
+    if (reportFactDrifts.isNotEmpty) {
       logInfo(
-        'status changed since last report: '
-        '${statusTransition.from} → ${statusTransition.to}',
+        'report facts no longer true: '
+        '${reportFactDrifts.map((drift) => drift.fact).join(', ')}',
         subDomain: 'execute',
       );
     }
@@ -306,7 +308,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // Only attach the compacted log when we're actually using it (the inline
       // log was dropped); otherwise the full inline log already carries it.
       compactedTaskLog: useCompactedLog ? compactedTaskLog : null,
-      statusTransition: statusTransition,
+      reportFactDrifts: reportFactDrifts,
       projectCandidates: categoryHasProjects
           ? await _projectCandidates(taskAttentionContext.task)
           : const [],
@@ -475,12 +477,12 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       );
 
       // 7b. First reports and material mutations require publication. Label
-      // and language housekeeping alone preserve an existing report; a status
-      // change since the last report never does.
+      // and language housekeeping alone preserve an existing report; a fact
+      // the last report states that is no longer true never does.
       final reportMissing = strategy.extractReportContent().isEmpty;
       final reportWasRequired = TaskAgentReportPolicy.requiresReport(
         hasExistingReport: lastReport != null,
-        taskStatusChanged: statusTransition != null,
+        reportFactsDrifted: reportFactDrifts.isNotEmpty,
         successfulToolNames: strategy.extractSuccessfulMutations().map(
           (mutation) => mutation.toolName,
         ),
@@ -605,6 +607,22 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               runSnapshot,
               reportFinalizerOutcome,
             ),
+            reportTaskFacts: taskAttentionContext.task == null
+                ? null
+                : TaskAgentReportPolicy.taskFactsSnapshot(
+                    taskAttentionContext.task!.data,
+                  ),
+            // Nothing else wakes the agent when only the date moves, so the
+            // report's "due today" is re-checked when it stops being true.
+            // From the wake's `now`, like the report: a wake that crossed
+            // midnight arms a boundary already past, which fires next pass.
+            nextScheduledWakeAt:
+                agentIdentity.config.automaticUpdatesEnabledEffective
+                ? TaskAgentReportPolicy.nextDueBoundary(
+                    taskAttentionContext.task?.data,
+                    now,
+                  )
+                : null,
           );
 
       // 9b. Embed the report for vector search (fire-and-forget).

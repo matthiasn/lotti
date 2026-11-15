@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -90,6 +91,40 @@ void main() {
         verify(() => cadence.consumeAll('project-agent')).called(1);
       },
     );
+
+    test('switching automation on reads the task from the journal to arm '
+        'its due-date wake', () async {
+      final repository = MockAgentRepository();
+      final journalDb = MockJournalDb();
+      when(() => repository.getAgentState('task-agent')).thenAnswer(
+        (_) async => makeTestState(
+          agentId: 'task-agent',
+          slots: const AgentSlots(activeTaskId: 'task-1'),
+        ),
+      );
+      when(
+        () => journalDb.journalEntityById('task-1'),
+      ).thenAnswer((_) async => null);
+      final container = ProviderContainer(
+        overrides: withServiceOverrides([
+          agentServiceProvider.overrideWithValue(MockAgentService()),
+          agentRepositoryProvider.overrideWithValue(repository),
+          wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
+          agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+          journalDbProvider.overrideWithValue(journalDb),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+        ]),
+      );
+      addTearDown(container.dispose);
+
+      await container.read(taskAgentServiceProvider).armDueDateWake!(
+        'task-agent',
+      );
+
+      // Not a task, so nothing to arm — but the agent's own task was read.
+      verify(() => journalDb.journalEntityById('task-1')).called(1);
+      verifyNever(() => repository.upsertEntity(any()));
+    });
   });
 
   group('taskAgentProvider', () {
