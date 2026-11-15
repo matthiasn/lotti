@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/features/tasks/state/task_preview_provider.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/utils/cache_extension.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -176,6 +178,39 @@ void main() {
       await read(FrontEntityKind.task, 'ice-pad');
 
       verifyNever(() => journalDb.journalEntityById(any()));
+    });
+
+    test('outlives its last card for a while, so a card scrolled out of the '
+        'chat and back is drawn at once, not re-read behind a placeholder', () {
+      fakeAsync((async) {
+        final eventId = testRehearsalEvent.meta.id;
+        stubEntity(eventId, testRehearsalEvent);
+        final provider = frontEntityPreviewProvider((
+          FrontEntityKind.event,
+          eventId,
+        ));
+
+        container.listen(provider, (_, _) {}).close();
+        // Riverpod disposes an unwatched provider on a zero-delay timer.
+        async.elapse(Duration.zero);
+
+        // The card comes back within the hold: the preview is there on its
+        // first frame, and nothing is read again.
+        final back = container.listen(provider, (_, _) {});
+        expect(back.read().value, FrontEventPreview(testRehearsalEvent));
+        back.close();
+        verify(() => journalDb.journalEntityById(eventId)).called(1);
+
+        // Past the hold, with no card left, it lets go.
+        async
+          ..elapse(entryCacheDuration)
+          ..elapse(Duration.zero);
+        final later = container.listen(provider, (_, _) {});
+        expect(later.read().hasValue, isFalse);
+        later.close();
+        async.elapse(Duration.zero);
+        verify(() => journalDb.journalEntityById(eventId)).called(1);
+      });
     });
 
     group('a project', () {
