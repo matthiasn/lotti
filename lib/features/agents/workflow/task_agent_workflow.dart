@@ -438,7 +438,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     String? compactedTaskLog,
     String? categoryKnowledge,
     String? pullRequestsContext,
-    TaskStatusTransition? statusTransition,
+    List<ReportFactDrift> reportFactDrifts = const [],
     List<TaskProjectOption> projectCandidates = const [],
     AgentStateEntity? agentState,
   }) => _contextBuilder.buildUserMessage(
@@ -457,7 +457,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     compactedTaskLog: compactedTaskLog,
     categoryKnowledge: categoryKnowledge,
     pullRequestsContext: pullRequestsContext,
-    statusTransition: statusTransition,
+    reportFactDrifts: reportFactDrifts,
     projectCandidates: projectCandidates,
     agentState: agentState,
   );

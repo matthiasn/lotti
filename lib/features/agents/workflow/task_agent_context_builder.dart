@@ -512,8 +512,9 @@ class TaskAgentContextBuilder {
   /// markdown task state when the read-flip succeeds, or the full JSON header
   /// (inline log included) for fallback prompts. [hasReport] makes report
   /// existence explicit and selects first-publication or material-change
-  /// guidance; the prior report's prose is never injected. [statusTransition]
-  /// is a status change since that report, stated as a material change.
+  /// guidance; the prior report's prose is never injected. [reportFactDrifts]
+  /// are the facts that report states that are no longer true, stated as a
+  /// material change.
   ///
   /// [categoryKnowledge] is the user-written brief of the task's category
   /// (see `AiInputRepository.buildCategoryKnowledge`); it opens the stable
@@ -541,7 +542,7 @@ class TaskAgentContextBuilder {
     String? compactedTaskLog,
     String? categoryKnowledge,
     String? pullRequestsContext,
-    TaskStatusTransition? statusTransition,
+    List<ReportFactDrift> reportFactDrifts = const [],
     List<TaskProjectOption> projectCandidates = const [],
     AgentStateEntity? agentState,
   }) async {
@@ -788,8 +789,8 @@ class TaskAgentContextBuilder {
             : TaskAgentReportPolicy.firstReportContext,
       )
       ..write(
-        hasReport && statusTransition != null
-            ? TaskAgentReportPolicy.statusTransitionContext(statusTransition)
+        hasReport && reportFactDrifts.isNotEmpty
+            ? TaskAgentReportPolicy.factDriftContext(reportFactDrifts)
             : '',
       )
       ..write(

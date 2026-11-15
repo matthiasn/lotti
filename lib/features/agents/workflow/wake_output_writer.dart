@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/get_it.dart';
@@ -66,6 +67,11 @@ class WakeOutputWriter {
   /// revision is only bumped if every output (thought, report, observations,
   /// retractions, deferred change set, milestone) is written successfully.
   ///
+  /// [reportTaskFacts] is the task-fact snapshot the report was written
+  /// against ([TaskAgentReportPolicy.taskFactsSnapshot]), stored in its
+  /// provenance. [nextScheduledWakeAt] replaces the agent's device-local
+  /// `scheduledWakeAt` — the next due-date boundary, or `null` for none.
+  ///
   /// Returns the report details to embed post-commit, or `null` if no report
   /// was written this wake (an empty [reportContent]).
   Future<WakeReportToEmbed?> persist({
@@ -85,6 +91,8 @@ class WakeOutputWriter {
     required String runKey,
     required DateTime now,
     ReportInferenceProvenance? reportProvenance,
+    Map<String, Object?>? reportTaskFacts,
+    DateTime? nextScheduledWakeAt,
   }) async {
     // Collects report details inside the transaction for post-commit
     // embedding. Declared outside so it survives the transaction scope.
@@ -161,6 +169,7 @@ class WakeOutputWriter {
             oneLiner: sanitizedOneLiner,
             provenance: <String, Object?>{
               ...?reportProvenance?.toReportMap(),
+              TaskAgentReportPolicy.taskFactsProvenanceKey: ?reportTaskFacts,
               if (attributionEnvelope != null)
                 aiAttributionProvenanceKey: attributionEnvelope.toJson(),
             },
@@ -268,6 +277,7 @@ class WakeOutputWriter {
           updatedAt: now,
           consecutiveFailureCount: 0,
           wakeCounter: current.wakeCounter.increment(hostId),
+          scheduledWakeAt: nextScheduledWakeAt,
           slots: unmetRequestReason == null
               ? current.slots
               : current.slots.copyWith(

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
@@ -53,12 +54,12 @@ void main() {
     },
   );
 
-  test('a status change since the report always requires a new one', () {
+  test('a fact the report states wrongly always requires a new one', () {
     expect(
       TaskAgentReportPolicy.requiresReport(
         hasExistingReport: true,
         successfulToolNames: const [],
-        taskStatusChanged: true,
+        reportFactsDrifted: true,
       ),
       isTrue,
     );
@@ -156,14 +157,295 @@ void main() {
         isNull,
       );
     });
+  });
 
-    test('the context names both statuses and demands a new report', () {
-      final context = TaskAgentReportPolicy.statusTransitionContext(
-        (from: 'IN PROGRESS', to: 'DONE'),
+  group('factDriftsSinceReport', () {
+    // The report was written on 2024-06-15, the day the task was due.
+    final reportAt = DateTime(2024, 6, 15, 10);
+    final dueDay = DateTime(2024, 6, 15);
+
+    TaskData task({
+      DateTime? due,
+      Duration? estimate,
+      TaskStatus? status,
+      List<TaskStatus> history = const [],
+    }) => TaskData(
+      status:
+          status ??
+          TaskStatus.open(
+            id: 'open',
+            createdAt: reportAt.subtract(_day),
+            utcOffset: 0,
+          ),
+      statusHistory: history,
+      dateFrom: reportAt,
+      dateTo: reportAt,
+      title: 'Ship it',
+      due: due,
+      estimate: estimate,
+    );
+    AgentReportEntity report([Map<String, Object?>? facts]) =>
+        AgentDomainEntity.agentReport(
+              id: 'report',
+              agentId: 'agent',
+              scope: 'current',
+              createdAt: reportAt,
+              vectorClock: null,
+              provenance: {
+                TaskAgentReportPolicy.taskFactsProvenanceKey: ?facts,
+              },
+            )
+            as AgentReportEntity;
+    List<ReportFactDrift> drifts(
+      TaskData data,
+      AgentReportEntity? prior, {
+      required DateTime now,
+    }) => TaskAgentReportPolicy.factDriftsSinceReport(
+      task: data,
+      report: prior,
+      now: now,
+    );
+
+    test('"due today" is wrong once the due date has passed', () {
+      final data = task(due: dueDay);
+      expect(
+        drifts(
+          data,
+          report(TaskAgentReportPolicy.taskFactsSnapshot(data)),
+          now: DateTime(2024, 6, 18, 9),
+        ),
+        [
+          (
+            fact: 'due date',
+            reported: 'due today (2024-06-15)',
+            current: 'overdue: due 2024-06-15, 3 days ago',
+          ),
+        ],
       );
+    });
+
+    test('a report from before the snapshot is checked by its date', () {
+      expect(
+        drifts(task(due: dueDay), report(), now: DateTime(2024, 6, 16, 9)),
+        [
+          (
+            fact: 'due date',
+            reported: 'due today (2024-06-15)',
+            current: 'overdue: due 2024-06-15, yesterday',
+          ),
+        ],
+      );
+    });
+
+    test('later, tomorrow, today and overdue are each a stated fact', () {
+      final inFiveDays = task(due: DateTime(2024, 6, 20));
+      final prior = report(TaskAgentReportPolicy.taskFactsSnapshot(inFiveDays));
+      // "In five days" and "in three days" are both "later".
+      expect(drifts(inFiveDays, prior, now: DateTime(2024, 6, 17)), isEmpty);
+      expect(
+        drifts(inFiveDays, prior, now: DateTime(2024, 6, 19)).single.current,
+        'due tomorrow (2024-06-20)',
+      );
+      expect(
+        drifts(inFiveDays, prior, now: DateTime(2024, 6, 15, 12)),
+        isEmpty,
+      );
+    });
+
+    test('a moved due date is wrong even on the same day', () {
+      final moved = task(due: DateTime(2024, 6, 22));
+      expect(
+        drifts(
+          moved,
+          report(TaskAgentReportPolicy.taskFactsSnapshot(task(due: dueDay))),
+          now: DateTime(2024, 6, 15, 12),
+        ),
+        [
+          (
+            fact: 'due date',
+            reported: 'due today (2024-06-15)',
+            current: 'due 2024-06-22, in 7 days',
+          ),
+        ],
+      );
+    });
+
+    test('a cleared due date and a new one both count', () {
+      final withDue = report(
+        TaskAgentReportPolicy.taskFactsSnapshot(task(due: dueDay)),
+      );
+      expect(
+        drifts(task(), withDue, now: reportAt).single.current,
+        'no due date',
+      );
+      final withoutDue = report(
+        TaskAgentReportPolicy.taskFactsSnapshot(task()),
+      );
+      expect(
+        drifts(task(due: dueDay), withoutDue, now: reportAt).single.reported,
+        'no due date',
+      );
+    });
+
+    test('a closed task is not re-reported as the calendar moves', () {
+      final closed = task(
+        due: dueDay,
+        status: TaskStatus.done(id: 'done', createdAt: reportAt, utcOffset: 0),
+      );
+      expect(
+        drifts(
+          closed,
+          report(TaskAgentReportPolicy.taskFactsSnapshot(closed)),
+          now: DateTime(2024, 6, 18),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('a changed estimate is wrong; one without a snapshot is unknown', () {
+      final twoHours = task(estimate: const Duration(hours: 2));
+      expect(
+        drifts(
+          task(estimate: const Duration(hours: 3)),
+          report(TaskAgentReportPolicy.taskFactsSnapshot(twoHours)),
+          now: reportAt,
+        ),
+        [(fact: 'estimate', reported: '120 minutes', current: '180 minutes')],
+      );
+      expect(
+        drifts(
+          task(),
+          report(TaskAgentReportPolicy.taskFactsSnapshot(twoHours)),
+          now: reportAt,
+        ).single.current,
+        'no estimate',
+      );
+      expect(
+        drifts(
+          task(estimate: const Duration(hours: 3)),
+          report(),
+          now: reportAt,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('a status change is reported beside the other facts', () {
+      final data = task(
+        due: dueDay,
+        status: TaskStatus.done(
+          id: 'done',
+          createdAt: reportAt.add(const Duration(hours: 1)),
+          utcOffset: 0,
+        ),
+        history: [
+          TaskStatus.inProgress(
+            id: 'ip',
+            createdAt: reportAt.subtract(_day),
+            utcOffset: 0,
+          ),
+        ],
+      );
+      expect(
+        drifts(data, report(), now: reportAt.add(const Duration(hours: 2))),
+        [(fact: 'status', reported: 'IN PROGRESS', current: 'DONE')],
+      );
+    });
+
+    test('nothing without a report or a task', () {
+      expect(drifts(task(due: dueDay), null, now: DateTime(2024, 7)), isEmpty);
+      expect(
+        TaskAgentReportPolicy.factDriftsSinceReport(
+          task: null,
+          report: report(),
+          now: DateTime(2024, 7),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('the context lists every wrong fact and demands a new report', () {
+      final context = TaskAgentReportPolicy.factDriftContext(const [
+        (fact: 'status', reported: 'IN PROGRESS', current: 'DONE'),
+        (
+          fact: 'due date',
+          reported: 'due today (2024-06-15)',
+          current: 'overdue: due 2024-06-15, 3 days ago',
+        ),
+      ]);
       expect(context, startsWith('## Material Change Since Last Report\n'));
-      expect(context, contains('from IN PROGRESS to DONE'));
+      expect(
+        context,
+        contains(
+          '- status: IN PROGRESS when the report was written; now DONE.\n'
+          '- due date: due today (2024-06-15) when the report was written; '
+          'now overdue: due 2024-06-15, 3 days ago.\n',
+        ),
+      );
       expect(context, contains('publish an updated report'));
+    });
+  });
+
+  group('nextDueBoundary', () {
+    TaskData task(DateTime? due, {TaskStatus? status}) => TaskData(
+      status:
+          status ??
+          TaskStatus.open(id: 'open', createdAt: DateTime(2024), utcOffset: 0),
+      statusHistory: const [],
+      dateFrom: DateTime(2024),
+      dateTo: DateTime(2024),
+      title: 'Ship it',
+      due: due,
+    );
+    final now = DateTime(2024, 6, 15, 10);
+
+    test('is the next midnight at which the due relation changes', () {
+      // later → tomorrow, tomorrow → today, today → overdue.
+      expect(
+        TaskAgentReportPolicy.nextDueBoundary(task(DateTime(2024, 6, 20)), now),
+        DateTime(2024, 6, 19),
+      );
+      expect(
+        TaskAgentReportPolicy.nextDueBoundary(task(DateTime(2024, 6, 16)), now),
+        DateTime(2024, 6, 16),
+      );
+      expect(
+        TaskAgentReportPolicy.nextDueBoundary(task(DateTime(2024, 6, 15)), now),
+        DateTime(2024, 6, 16),
+      );
+    });
+
+    test('crosses a month end by the calendar', () {
+      expect(
+        TaskAgentReportPolicy.nextDueBoundary(
+          task(DateTime(2024, 6, 30)),
+          DateTime(2024, 6, 30, 23),
+        ),
+        DateTime(2024, 7),
+      );
+    });
+
+    test('is null when overdue, undated, closed or absent', () {
+      expect(
+        TaskAgentReportPolicy.nextDueBoundary(task(DateTime(2024, 6, 14)), now),
+        isNull,
+      );
+      expect(TaskAgentReportPolicy.nextDueBoundary(task(null), now), isNull);
+      expect(
+        TaskAgentReportPolicy.nextDueBoundary(
+          task(
+            DateTime(2024, 6, 20),
+            status: TaskStatus.rejected(
+              id: 'rejected',
+              createdAt: now,
+              utcOffset: 0,
+            ),
+          ),
+          now,
+        ),
+        isNull,
+      );
+      expect(TaskAgentReportPolicy.nextDueBoundary(null, now), isNull);
     });
   });
 

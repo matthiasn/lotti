@@ -35,7 +35,8 @@ class _HandledCheckSequence {
 /// `scheduledWakeAt` and enqueues them — except project agents, whose state
 /// schedules are legacy fallbacks and are retired unfired: project updates
 /// are synced, leased slot records (`ProjectUpdateCadence`), fired by the
-/// record path below like every other [ScheduledWakeEntity].
+/// record path below like every other [ScheduledWakeEntity]. A task agent's
+/// state schedule is a one-shot due-date check, cleared as it fires.
 class ScheduledWakeManager with AgentErrorLogging {
   ScheduledWakeManager({
     required this._repository,
@@ -417,6 +418,15 @@ class ScheduledWakeManager with AgentErrorLogging {
             reason: WakeReason.scheduled.name,
           );
           enqueued++;
+          // A task agent's schedule is a one-shot due-date check its wake
+          // re-arms on commit: a wake that fails, or is refused because
+          // automation is off, must not leave it due for every later pass.
+          if (enqueueState!.slots.activeTaskId != null) {
+            // Durable first: an exit between the clear and the intent write
+            // would lose both the deadline and the wake.
+            await _orchestrator.flushWakeIntents();
+            await _clearFiredTaskSchedule(state.agentId, enqueueSchedule);
+          }
         } catch (e, s) {
           logError(
             'failed to process ${DomainLogger.sanitizeId(state.agentId)}',
@@ -925,6 +935,25 @@ class ScheduledWakeManager with AgentErrorLogging {
       '${DomainLogger.sanitizeId(retired.agentId)}',
     );
     return true;
+  }
+
+  /// Clears a task agent's `scheduledWakeAt` once it has fired, unless the
+  /// row now holds another one — the next boundary its wake already armed.
+  Future<void> _clearFiredTaskSchedule(String agentId, DateTime fired) async {
+    var cleared = false;
+    await _repository.runInTransaction(() async {
+      final currentState = await _repository.getAgentState(agentId);
+      if (currentState == null || currentState.scheduledWakeAt != fired) {
+        return;
+      }
+      // Device-local scheduling: written without a new version, like the
+      // legacy retirement above, so it cannot win a merge.
+      await _repository.upsertEntity(
+        currentState.copyWith(scheduledWakeAt: null),
+      );
+      cleared = true;
+    });
+    if (cleared) onPersistedStateChanged?.call(agentId);
   }
 
   void _log(String message) {

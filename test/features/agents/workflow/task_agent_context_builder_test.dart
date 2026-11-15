@@ -579,7 +579,7 @@ void main() {
       String? compactedTaskLog,
       String? categoryKnowledge,
       String? pullRequestsContext,
-      TaskStatusTransition? statusTransition,
+      List<ReportFactDrift> reportFactDrifts = const [],
       List<TaskProjectOption> projectCandidates = const [],
       AgentStateEntity? agentState,
     }) {
@@ -604,7 +604,7 @@ void main() {
           compactedTaskLog: compactedTaskLog,
           categoryKnowledge: categoryKnowledge,
           pullRequestsContext: pullRequestsContext,
-          statusTransition: statusTransition,
+          reportFactDrifts: reportFactDrifts,
           projectCandidates: projectCandidates,
           agentState: agentState,
         );
@@ -854,14 +854,18 @@ void main() {
     }
 
     test(
-      'states a status change after the existing-report guidance, and only '
-      'when a report exists',
+      'states wrong report facts after the existing-report guidance, and '
+      'only when a report exists',
       () async {
-        const transition = (from: 'IN PROGRESS', to: 'DONE');
-        final followUp = (await build(statusTransition: transition)).text;
-        final section = TaskAgentReportPolicy.statusTransitionContext(
-          transition,
-        );
+        const drifts = [
+          (
+            fact: 'due date',
+            reported: 'due today (2024-06-15)',
+            current: 'overdue: due 2024-06-15, 3 days ago',
+          ),
+        ];
+        final followUp = (await build(reportFactDrifts: drifts)).text;
+        final section = TaskAgentReportPolicy.factDriftContext(drifts);
 
         expect(followUp, contains(section));
         expect(
@@ -871,7 +875,7 @@ void main() {
 
         final firstWake = (await build(
           hasReport: false,
-          statusTransition: transition,
+          reportFactDrifts: drifts,
         )).text;
         expect(firstWake, isNot(contains('## Material Change')));
         expect(

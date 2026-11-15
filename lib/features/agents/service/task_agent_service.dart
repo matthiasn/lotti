@@ -38,6 +38,7 @@ class TaskAgentService {
     this.updateNotifications,
     this.armProjectUpdate,
     this.cancelProjectUpdates,
+    this.armDueDateWake,
   });
 
   final AgentService agentService;
@@ -50,6 +51,9 @@ class TaskAgentService {
   /// Consumes a project agent's pending update slots when its automatic
   /// updates are switched off (`ProjectUpdateCadence.consumeAll`).
   final Future<void> Function(String agentId)? cancelProjectUpdates;
+
+  /// Arms a task agent's next due-date wake when automation is switched on.
+  final Future<void> Function(String agentId)? armDueDateWake;
   final AgentRepository repository;
   final WakeOrchestrator orchestrator;
 
@@ -591,6 +595,7 @@ class TaskAgentService {
       if (activating) {
         orchestrator.enableAutomaticUpdatesRuntime(agentId);
         await restoreSubscriptionsForAgent(agentId, restoreCountdown: false);
+        await armDueDateWake?.call(agentId);
       } else {
         orchestrator.disableAutomaticUpdatesRuntime(agentId);
       }

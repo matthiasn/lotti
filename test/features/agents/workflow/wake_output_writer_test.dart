@@ -176,6 +176,8 @@ void main() {
     Uuid? uuid,
     ReportInferenceProvenance? reportProvenance,
     AgentStateEntity? persistedState,
+    Map<String, Object?>? reportTaskFacts,
+    DateTime? nextScheduledWakeAt,
   }) {
     final wakeState = state ?? _state();
     // The row as it is when the wake ends: the wake-start state unless a
@@ -200,6 +202,8 @@ void main() {
       runKey: _runKey,
       now: _now,
       reportProvenance: reportProvenance,
+      reportTaskFacts: reportTaskFacts,
+      nextScheduledWakeAt: nextScheduledWakeAt,
     );
   }
 
@@ -325,6 +329,41 @@ void main() {
       expect(decoded!.finalAuthorRoute.modelName, 'Qwen 3.5 Plus');
       expect(decoded.finalAuthorRoute.publisherName, 'Alibaba');
       expect(decoded.finalAuthorRoute.servingProviderName, 'Alibaba Cloud');
+    });
+
+    test('records the task facts in the report and replaces the schedule '
+        'with the next due-date boundary', () async {
+      when(
+        () => repo.getReportHead(_agentId, AgentReportScopes.current),
+      ).thenAnswer((_) async => null);
+      final boundary = _now.add(const Duration(days: 1));
+
+      await run(
+        reportContent: 'Due today.',
+        reportTaskFacts: const {'due': '2024-06-15', 'estimateMinutes': 90},
+        // An earlier boundary, already fired, is not carried forward.
+        persistedState: _state().copyWith(scheduledWakeAt: _now),
+        nextScheduledWakeAt: boundary,
+      );
+
+      final upserts = capturedUpserts();
+      expect(
+        upserts.whereType<AgentReportEntity>().single.provenance['taskFacts'],
+        {'due': '2024-06-15', 'estimateMinutes': 90},
+      );
+      expect(
+        upserts.whereType<AgentStateEntity>().single.scheduledWakeAt,
+        boundary,
+      );
+    });
+
+    test('without a next boundary the schedule is cleared', () async {
+      await run(persistedState: _state().copyWith(scheduledWakeAt: _now));
+
+      expect(
+        capturedUpserts().whereType<AgentStateEntity>().single.scheduledWakeAt,
+        isNull,
+      );
     });
 
     test('the head move carries the head it replaces, so the local write '

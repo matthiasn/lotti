@@ -219,6 +219,9 @@ void main() {
   final armedAgentIds = <String>[];
   final consumedAgentIds = <String>[];
 
+  /// Task agents the service asked to arm a due-date wake for.
+  final dueDateArmedAgentIds = <String>[];
+
   Future<void> recordArm(String agentId) async => armedAgentIds.add(agentId);
   Future<void> recordConsume(String agentId) async =>
       consumedAgentIds.add(agentId);
@@ -257,6 +260,7 @@ void main() {
   setUp(() {
     armedAgentIds.clear();
     consumedAgentIds.clear();
+    dueDateArmedAgentIds.clear();
     mockAgentService = MockAgentService();
     mockRepository = MockAgentRepository();
     mockOrchestrator = MockWakeOrchestrator();
@@ -321,6 +325,7 @@ void main() {
         ..enabledDomains.add(LogDomain.agentRuntime),
       armProjectUpdate: recordArm,
       cancelProjectUpdates: recordConsume,
+      armDueDateWake: (agentId) async => dueDateArmedAgentIds.add(agentId),
     );
   });
 
@@ -3114,6 +3119,29 @@ void main() {
         expectCatchUpWakes(0);
       });
 
+      // A report written while automation was off armed no due-date wake,
+      // and a fresh report owes no catch-up: switching on arms it directly.
+      test('turning on arms the due-date wake without waking', () async {
+        final now = DateTime(2026, 7, 20, 12);
+        stubEnablePath(
+          state: makeState().copyWith(
+            reportFreshAt: now,
+            reportStaleAt: now.subtract(const Duration(minutes: 5)),
+          ),
+        );
+
+        await service.updateAutomaticUpdates(agentId: 'agent-1', enabled: true);
+
+        expect(dueDateArmedAgentIds, ['agent-1']);
+        expectCatchUpWakes(0);
+
+        await service.updateAutomaticUpdates(
+          agentId: 'agent-1',
+          enabled: false,
+        );
+        expect(dueDateArmedAgentIds, ['agent-1']);
+      });
+
       test('turning on an inactive agent neither enables runtime nor '
           'wakes', () async {
         stubEnablePath(state: null, lifecycle: AgentLifecycle.dormant);
@@ -3121,6 +3149,7 @@ void main() {
         await service.updateAutomaticUpdates(agentId: 'agent-1', enabled: true);
 
         expectCatchUpWakes(0);
+        expect(dueDateArmedAgentIds, isEmpty);
         verifyNever(
           () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
         );

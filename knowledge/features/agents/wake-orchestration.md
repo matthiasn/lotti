@@ -5,7 +5,7 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-28T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-15T12:00:00Z }
 stale_after: 2027-01-02
 sources:
   - id: wake
@@ -19,7 +19,7 @@ sources:
   - id: scheduled-wakes
     resource: ../../../lib/features/agents/wake/scheduled_wake_manager.dart
     title: ScheduledWakeManager — leases, the sync gate and exclusive slot groups
-    last_modified: 2026-10-03
+    last_modified: 2026-11-15
   - id: governor-spec
     resource: ../../../specs/tla/ProjectWakeGovernor.tla
     title: TLA+ model of how much work a project agent does
@@ -756,6 +756,10 @@ removes queued automatic work for that batch while preserving explicit user
 wakes. A project agent honours none of these fields any more: its schedule is
 the synced update slot, and a deadline left by an older build is retired
 wherever it is met ([legacy deadlines](project-and-event-agents.md#legacy-deadlines)).
+A task agent's `scheduledWakeAt` is one-shot: the next due-date boundary its
+last wake armed, cleared by `ScheduledWakeManager` as it fires and re-armed by
+the wake it starts
+([wrong facts override restraint](task-agents.md#wrong-facts-override-restraint)).
 Retirement writes directly through the repository without changing
 `updatedAt` or the vector clock: local scheduling maintenance must never become
 a newer synced version of otherwise stale state.

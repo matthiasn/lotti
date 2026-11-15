@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
@@ -1742,37 +1743,55 @@ not describe task configuration or tool activity as progress.
         );
       }
 
-      group('status change since the prior report', () {
+      group('facts the prior report states that are no longer true', () {
         final inProgress = TaskStatus.inProgress(
           id: 'status-in-progress',
           createdAt: testDate.subtract(const Duration(days: 1)),
           utcOffset: 0,
         );
+        Task doneAt(DateTime at) => makeWorkflowTestTask(
+          taskId,
+          languageCode: 'en',
+          statusHistory: [inProgress],
+          status: TaskStatus.done(
+            id: 'status-done',
+            createdAt: at,
+            utcOffset: 0,
+          ),
+        );
+        // Due on the day the prior report was written, so it said "due today".
+        final dueOnReportDay = DateTime(
+          testDate.year,
+          testDate.month,
+          testDate.day,
+        );
+        const dueTodaySnapshot = <String, Object?>{
+          'taskFacts': {'due': '2024-06-15', 'estimateMinutes': null},
+        };
 
-        /// Runs a wake whose model reports only when forced to, against a
-        /// report written at `testDate` and a task that moved from IN
-        /// PROGRESS to DONE at [doneAt]. Returns the wake prompt, the tool
-        /// choices of every call, and the reports persisted.
+        /// Runs a wake at [at] whose model reports only when forced to,
+        /// against [task] and a report written at `testDate` with
+        /// [provenance]. Returns the wake prompt, the tool choices of every
+        /// call, and the reports and agent states persisted.
         Future<
           ({
             String prompt,
             List<ChatCompletionToolChoiceOption?> calls,
             List<AgentReportEntity> reports,
+            List<AgentStateEntity> states,
           })
         >
-        runWake({required DateTime doneAt}) async {
-          when(() => mockJournalDb.journalEntityById(taskId)).thenAnswer(
-            (_) async => makeWorkflowTestTask(
-              taskId,
-              languageCode: 'en',
-              statusHistory: [inProgress],
-              status: TaskStatus.done(
-                id: 'status-done',
-                createdAt: doneAt,
-                utcOffset: 0,
-              ),
-            ),
-          );
+        runWake({
+          required Task task,
+          DateTime? at,
+          Map<String, Object?> provenance = const {},
+          AgentIdentityEntity? identity,
+          DateTime? modelAnsweredAt,
+        }) async {
+          var current = at ?? testDate.add(const Duration(hours: 2));
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => task);
           when(
             () => mockAgentRepository.getLatestReport(agentId, 'current'),
           ).thenAnswer(
@@ -1786,6 +1805,7 @@ not describe task configuration or tool activity as progress.
                       content: '## Status\nIn progress.',
                       tldr: 'Work is in progress.',
                       oneLiner: 'In progress',
+                      provenance: provenance,
                     )
                     as AgentReportEntity,
           );
@@ -1808,6 +1828,7 @@ not describe task configuration or tool activity as progress.
                 }) async {
                   messages.add(message);
                   calls.add(toolChoice);
+                  if (modelAnsweredAt != null) current = modelAnsweredAt;
                   // The model under test concludes "no material change" on
                   // its own, as it did in the bug; only a forced retry makes
                   // it publish.
@@ -1830,25 +1851,28 @@ not describe task configuration or tool activity as progress.
                   return null;
                 };
 
-          final result =
-              await createTestWorkflow(
-                agentRepository: mockAgentRepository,
-                conversationRepository: mockConversationRepository,
-                aiInputRepository: mockAiInputRepository,
-                aiConfigRepository: mockAiConfigRepository,
-                journalDb: mockJournalDb,
-                cloudInferenceRepository: mockCloudInferenceRepository,
-                journalRepository: mockJournalRepository,
-                checklistRepository: mockChecklistRepository,
-                labelsRepository: mockLabelsRepository,
-                syncService: mockSyncService,
-                templateService: mockTemplateService,
-              ).execute(
-                agentIdentity: testAgentIdentity,
-                runKey: runKey,
-                triggerTokens: {taskId},
-                threadId: threadId,
-              );
+          final result = await withClock(
+            Clock(() => current),
+            () =>
+                createTestWorkflow(
+                  agentRepository: mockAgentRepository,
+                  conversationRepository: mockConversationRepository,
+                  aiInputRepository: mockAiInputRepository,
+                  aiConfigRepository: mockAiConfigRepository,
+                  journalDb: mockJournalDb,
+                  cloudInferenceRepository: mockCloudInferenceRepository,
+                  journalRepository: mockJournalRepository,
+                  checklistRepository: mockChecklistRepository,
+                  labelsRepository: mockLabelsRepository,
+                  syncService: mockSyncService,
+                  templateService: mockTemplateService,
+                ).execute(
+                  agentIdentity: identity ?? testAgentIdentity,
+                  runKey: runKey,
+                  triggerTokens: {taskId},
+                  threadId: threadId,
+                ),
+          );
           expect(result.success, isTrue);
 
           final captured = verify(
@@ -1860,19 +1884,21 @@ not describe task configuration or tool activity as progress.
             reports: capturedEntitiesOfType<AgentReportEntity>(
               captured,
             ).toList(),
+            states: capturedEntitiesOfType<AgentStateEntity>(
+              captured,
+            ).toList(),
           );
         }
 
         test('moving the task to DONE forces a report that says so', () async {
           final wake = await runWake(
-            doneAt: testDate.add(const Duration(hours: 1)),
+            task: doneAt(testDate.add(const Duration(hours: 1))),
           );
 
           expect(
             wake.prompt,
             contains(
-              'The task status changed from IN PROGRESS to DONE after the '
-              'current report was written.',
+              '- status: IN PROGRESS when the report was written; now DONE.',
             ),
           );
           expect(wake.calls, hasLength(2));
@@ -1886,7 +1912,7 @@ not describe task configuration or tool activity as progress.
           'a DONE the prior report already saw neither prompts nor forces one',
           () async {
             final wake = await runWake(
-              doneAt: testDate.subtract(const Duration(hours: 1)),
+              task: doneAt(testDate.subtract(const Duration(hours: 1))),
             );
 
             expect(
@@ -1897,6 +1923,104 @@ not describe task configuration or tool activity as progress.
             expect(wake.reports, isEmpty);
           },
         );
+
+        test(
+          'a "due today" report is republished once the due date has passed',
+          () async {
+            final wake = await runWake(
+              task: makeWorkflowTestTask(
+                taskId,
+                languageCode: 'en',
+                due: dueOnReportDay,
+              ),
+              at: testDate.add(const Duration(days: 3)),
+              provenance: dueTodaySnapshot,
+              identity: testAgentIdentity.copyWith(
+                config: const AgentConfig(automaticUpdatesEnabled: true),
+              ),
+            );
+
+            expect(
+              wake.prompt,
+              contains(
+                '- due date: due today (2024-06-15) when the report was '
+                'written; now overdue: due 2024-06-15, 3 days ago.',
+              ),
+            );
+            expect(wake.calls, hasLength(2));
+            expect(wake.calls.first, isNull);
+            expect(wake.calls.last, isNotNull);
+            // The new report records what it was written against, and an
+            // overdue date has no later boundary to wake for.
+            expect(
+              wake.reports.single.provenance['taskFacts'],
+              {'due': '2024-06-15', 'estimateMinutes': null},
+            );
+            expect(wake.states.last.scheduledWakeAt, isNull);
+          },
+        );
+
+        test(
+          'on the due day itself nothing is forced, and the wake arms the '
+          'midnight that makes the task overdue',
+          () async {
+            final wake = await runWake(
+              task: makeWorkflowTestTask(
+                taskId,
+                languageCode: 'en',
+                due: dueOnReportDay,
+              ),
+              at: testDate.add(const Duration(hours: 2)),
+              provenance: dueTodaySnapshot,
+              identity: testAgentIdentity.copyWith(
+                config: const AgentConfig(automaticUpdatesEnabled: true),
+              ),
+            );
+
+            expect(
+              wake.prompt,
+              isNot(contains('## Material Change Since Last Report')),
+            );
+            expect(wake.calls, [isNull]);
+            expect(wake.reports, isEmpty);
+            expect(wake.states.last.scheduledWakeAt, DateTime(2024, 6, 16));
+          },
+        );
+
+        test(
+          'a wake that crosses midnight arms the boundary from its start, '
+          'so the passed one fires next pass',
+          () async {
+            final wake = await runWake(
+              task: makeWorkflowTestTask(
+                taskId,
+                languageCode: 'en',
+                due: dueOnReportDay,
+              ),
+              at: DateTime(2024, 6, 15, 23, 59),
+              modelAnsweredAt: DateTime(2024, 6, 16, 0, 1),
+              provenance: dueTodaySnapshot,
+              identity: testAgentIdentity.copyWith(
+                config: const AgentConfig(automaticUpdatesEnabled: true),
+              ),
+            );
+
+            expect(wake.states.last.scheduledWakeAt, DateTime(2024, 6, 16));
+          },
+        );
+
+        test('automation off arms no due-date wake', () async {
+          final wake = await runWake(
+            task: makeWorkflowTestTask(
+              taskId,
+              languageCode: 'en',
+              due: dueOnReportDay,
+            ),
+            provenance: dueTodaySnapshot,
+          );
+
+          expect(wake.states.last.scheduledWakeAt, isNull);
+        });
       });
 
       test('swallows retry failures so the main-pass observations and metadata '

@@ -5,7 +5,7 @@ description: The append-only input event log, LLM-distilled summary checkpoints,
 resource: ../../../lib/features/agents/projection
 tags: [agents, memory, compaction, event-log, prefix-cache]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-15T12:00:00Z }
 stale_after: 2026-12-24
 sources:
   - id: projection
@@ -302,12 +302,14 @@ stale conclusions creates a feedback loop. `update_report` is conditional: the
 agent publishes only when the report would materially change. The first report is
 forced via a retry. A wake that successfully mutates task state also forces a
 report retry when the executor omits one, preventing an older projection from
-remaining visible after the change. So does a task status change since the
-report was written — the user moving the task to DONE — which the executor
-detects from the task's status history, because without the prose the model has
-no baseline to compare the current status against. A wake with no successful
-mutation, no status change and nothing report-worthy keeps the existing report
-and ends with a plain-text note.
+remaining visible after the change. So does any fact the report states that
+is no longer true — the user moving the task to DONE, a "due today" the calendar
+has passed, a changed estimate — which the executor detects from the task's
+status history and the fact snapshot in the report's provenance, because
+without the prose the model has no baseline to compare against
+([wrong facts override restraint](task-agents.md#wrong-facts-override-restraint)).
+A wake with no successful mutation, no wrong fact and nothing report-worthy
+keeps the existing report and ends with a plain-text note.
 
 ## Prompt persistence stores only what is not derivable
 

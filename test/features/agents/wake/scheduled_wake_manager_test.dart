@@ -2068,6 +2068,74 @@ void main() {
       });
     });
 
+    group("a task agent's due-date schedule is one-shot", () {
+      final now = DateTime(2024, 3, 15, 0, 5);
+      final boundary = DateTime(2024, 3, 15);
+      final events = <String>[];
+
+      /// Fires a task agent's schedule due at `boundary`, with the row
+      /// holding [scheduleAtClear] by the time it is cleared, and returns
+      /// what was written to the repository.
+      List<AgentStateEntity> fire({required DateTime? scheduleAtClear}) {
+        final due = makeTestState(
+          scheduledWakeAt: boundary,
+          slots: const AgentSlots(activeTaskId: 'task-1'),
+        );
+        final reads = [
+          due,
+          due,
+          due.copyWith(scheduledWakeAt: scheduleAtClear),
+        ];
+        var read = 0;
+        final written = <AgentStateEntity>[];
+        events.clear();
+        orchestrator.onFlushWakeIntents = () => events.add('flush');
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => [due]);
+            // The pass reads twice before enqueueing, the clear once after.
+            when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
+              (_) async => reads[read < reads.length - 1 ? read++ : read],
+            );
+            when(() => repository.upsertEntity(any())).thenAnswer((
+              invocation,
+            ) async {
+              events.add('clear');
+              written.add(
+                invocation.positionalArguments.single as AgentStateEntity,
+              );
+            });
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: WakeReason.scheduled.name,
+              ),
+            ).called(1);
+            manager.stop();
+          });
+        });
+        return written;
+      }
+
+      test('it is cleared as it fires, so a refused wake does not repeat', () {
+        final written = fire(scheduleAtClear: boundary).single;
+        expect(written.scheduledWakeAt, isNull);
+        expect(written.slots.activeTaskId, 'task-1');
+        verifyNever(() => syncService.upsertEntity(any()));
+        // The wake's intent is durable before its deadline is gone.
+        expect(events, ['flush', 'clear']);
+      });
+
+      test('the next boundary its wake already armed is kept', () {
+        expect(fire(scheduleAtClear: DateTime(2024, 3, 16)), isEmpty);
+      });
+    });
+
     test('retires a project schedule without enqueuing a wake', () {
       final now = DateTime(2024, 3, 15, 10, 30);
       final pastSchedule = DateTime(2024, 3, 13, 6);
@@ -2347,8 +2415,9 @@ void main() {
             ),
           );
 
-          // Project schedule retired as device-local state only.
-          verify(() => repository.upsertEntity(any())).called(1);
+          // Project schedule retired, and the task agent's fired one-shot
+          // schedule cleared, both as device-local state only.
+          verify(() => repository.upsertEntity(any())).called(2);
           verifyNever(() => syncService.upsertEntity(any()));
 
           manager.stop();
