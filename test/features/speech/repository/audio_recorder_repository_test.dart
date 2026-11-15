@@ -566,6 +566,8 @@ void main() {
             invocation.positionalArguments.single as String,
           ));
         });
+        // record 7.2 asks whether it is still recording before disposing.
+        when(() => platform.isRecording(any())).thenAnswer((_) async => false);
         when(() => platform.dispose(any())).thenAnswer((invocation) async {
           calls.add((
             'dispose',
