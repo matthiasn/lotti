@@ -7539,19 +7539,33 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontDoorLeaveIt => 'Lad det være';
 
   @override
+  String get frontDoorLeaveItHint => 'Der oprettes ingenting';
+
+  @override
   String get frontDoorLeft => 'Efterladt her i tråden';
 
   @override
   String get frontDoorMakeEvent => 'Lav det til en begivenhed';
 
   @override
+  String get frontDoorMakeEventHint =>
+      'En foreløbig begivenhed med dine ord som titel';
+
+  @override
   String get frontDoorMakePrompt => 'Opgave med kodningsprompt';
+
+  @override
+  String get frontDoorMakePromptHint =>
+      'En opgave og en prompt ud fra dine ord';
 
   @override
   String get frontDoorMakeTask => 'Lav det til en opgave';
 
   @override
   String get frontDoorNewProject => 'Nyt projekt…';
+
+  @override
+  String get frontDoorNewProjectHint => 'Åbner et nyt projekt med dine ord';
 
   @override
   String frontDoorNoAgent(String owner) {
@@ -7566,6 +7580,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontDoorOpen => 'Åbn';
+
+  @override
+  String get frontDoorOtherWays => 'Eller lav det til noget andet';
 
   @override
   String get frontDoorProjectCreated => 'Lavet til et projekt';
@@ -7585,6 +7602,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontDoorSaveNote => 'Gem som note';
 
   @override
+  String get frontDoorSaveNoteHint => 'Gemmer dine ord, som de er';
+
+  @override
   String get frontDoorSearchingJournal => 'Søger i din journal…';
 
   @override
@@ -7592,6 +7612,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontDoorStartGoal => 'Start et mål…';
+
+  @override
+  String get frontDoorStartGoalHint => 'Åbner målguiden med dine ord';
 
   @override
   String get frontDoorSummaryBased => 'fra resuméer';

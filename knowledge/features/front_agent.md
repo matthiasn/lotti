@@ -1750,7 +1750,15 @@ ways. The overflow holds *Somewhere else* on a proposal, *Start a goal…*
 (only while `enable_events` is on — an event made where it is off would
 have no page to be found on), *Save as a note* and *Leave it* on an inbox item with the router's guess
 first, and *Undo* on
-anything settled. A busy card's action shows it loading; a failed one's
+anything settled. **An inbox item's overflow is a picker of destinations, not
+a list of commands**: under the heading *Or make it something else*, each way
+is a row of its name and one line saying what choosing it does (*Save as a
+note — Keeps your words as they are*), in compact rows as wide as the longest;
+*Leave it — Nothing is made* comes last, set apart by a rule and quiet, since
+it makes nothing and is no danger. Every menu the card opens sits on the
+card's own surface with a hairline (`surfaceColor: dsCardSurface`, `outlined`),
+so it reads as a layer over the card; a settled card's *Undo* keeps the
+standard row height a thumb can hit. A busy card's action shows it loading; a failed one's
 status says so in the error ink and the tap reads *Try again*
 (`FrontChatComposerState.busyDoorIds` / `failedDoorIds`). *Open* leaves
 the sheet for the entry's, the task's or the event's page. The inbox filter keeps a

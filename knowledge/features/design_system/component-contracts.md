@@ -294,6 +294,24 @@ last rows reach the rounded top and bottom edges instead of leaving an
 unhighlighted strip inside the border. There is no padded variant to opt into —
 a padded menu is exactly the defect a pull request row's menu once shipped.
 
+**A menu of destinations says what each row does.** A row may carry a
+`description`: one line under its label, in the caption type and the
+medium-emphasis ink, cut at two lines. Such a row grows from the row height by
+that line — a plain row stays exactly the row height — and its icon steps back
+to the same quiet ink, so the label leads. It is for rows that are outcomes
+rather than commands, where the name alone leaves the user guessing what a tap
+makes ("Save as a note — keeps your words as they are"); a menu of commands
+leaves it out. `isQuiet` draws a row's label and icon in the medium-emphasis
+ink: the way out that changes nothing ("Leave it"), set apart with
+`startsGroup`, without the danger tone `isDestructive` reserves for what
+deletes. `outlined` draws a hairline (`decorative.level01`) around the
+surface, for a menu that opens over a card of its own colour, where the shared
+shadow alone does not set it off — with `surfaceColor: dsCardSurface(context)`
+it is a layer over the card rather than a hole in the page behind it.
+`DesignSystemContextMenuButton` forwards `size`, `fitContent`, `surfaceColor`
+and `outlined` to the anchor. The companion chat's inbox card is the first
+user.
+
 Every ⋯/⋮ menu and every dropdown picker is this surface, under one of two
 hosts. A page's or a row's overflow menu opens through `AgentSurfaceMenuButton`
 (`lib/features/agents/ui/agent_surface_menu.dart`), raised over the shared

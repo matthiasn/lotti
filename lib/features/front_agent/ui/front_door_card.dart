@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/components/context_menus/design_sys
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
@@ -292,15 +293,24 @@ class _DoorRow extends StatelessWidget {
     SurfaceModel<ComponentImplementation>? answerSurface;
     final menu = <DesignSystemContextMenuItem>[];
 
+    // The heading over the overflow's rows, where they need one.
+    String? menuHeader;
+
     DesignSystemContextMenuItem item(
       String name,
       String label,
       IconData icon,
-      VoidCallback onTap,
-    ) => DesignSystemContextMenuItem(
+      VoidCallback onTap, {
+      String? description,
+      bool quiet = false,
+      bool startsGroup = false,
+    }) => DesignSystemContextMenuItem(
       key: ValueKey('front-door-$name-$index'),
       label: label,
       icon: icon,
+      description: description,
+      isQuiet: quiet,
+      startsGroup: startsGroup,
       onTap: guarded(onTap),
     );
     Widget open() => DesignSystemButton(
@@ -481,6 +491,8 @@ class _DoorRow extends StatelessWidget {
             );
           }
           // The router's guess leads the other ways; leaving it comes last.
+          // Each way says what choosing it does: the names alone leave
+          // "a goal" and "a note" a guess.
           final ways = [
             if (draft == null)
               (
@@ -492,12 +504,14 @@ class _DoorRow extends StatelessWidget {
             (
               'prompt',
               messages.frontDoorMakePrompt,
+              messages.frontDoorMakePromptHint,
               LottiIcons.code,
               () => acting.onMakePrompt(id, FrontTaskChoices.of(record.task)),
             ),
             (
               'goal',
               messages.frontDoorStartGoal,
+              messages.frontDoorStartGoalHint,
               LottiIcons.focus,
               () => acting.onStartGoal(door),
             ),
@@ -505,6 +519,7 @@ class _DoorRow extends StatelessWidget {
               (
                 'project',
                 messages.frontDoorNewProject,
+                messages.frontDoorNewProjectHint,
                 LottiIcons.folder,
                 () => acting.onNewProject(door),
               ),
@@ -512,12 +527,14 @@ class _DoorRow extends StatelessWidget {
               (
                 'event',
                 messages.frontDoorMakeEvent,
+                messages.frontDoorMakeEventHint,
                 LottiIcons.calendar,
                 () => makeEvent(id),
               ),
             (
               'note',
               messages.frontDoorSaveNote,
+              messages.frontDoorSaveNoteHint,
               LottiIcons.note,
               () => acting.onSaveNote(id),
             ),
@@ -532,14 +549,19 @@ class _DoorRow extends StatelessWidget {
             if (b.$1 == guess) return 1;
             return 0;
           });
+          menuHeader = messages.frontDoorOtherWays;
           menu.addAll([
-            for (final (name, label, icon, go) in ways)
-              item(name, label, icon, go),
+            for (final (name, label, hint, icon, go) in ways)
+              item(name, label, icon, go, description: hint),
+            // The way out, set apart and quiet: it makes nothing.
             item(
               'decline',
               messages.frontDoorLeaveIt,
               LottiIcons.close,
               () => acting.onDecline(id),
+              description: messages.frontDoorLeaveItHint,
+              quiet: true,
+              startsGroup: true,
             ),
           ]);
         }
@@ -739,6 +761,20 @@ class _DoorRow extends StatelessWidget {
                       DesignSystemContextMenuButton(
                         key: ValueKey('front-door-menu-$index'),
                         items: menu,
+                        header: menuHeader,
+                        // As wide as its rows, on the card's own surface
+                        // with a hairline: a layer over the card it opens
+                        // on, not a hole in the page behind it.
+                        // The destination picker's rows are two lines
+                        // tall, so the compact size keeps them a full
+                        // target; a plain row — Undo — keeps the standard
+                        // one.
+                        size: menuHeader == null
+                            ? DesignSystemContextMenuSize.medium
+                            : DesignSystemContextMenuSize.small,
+                        fitContent: true,
+                        surfaceColor: dsCardSurface(context),
+                        outlined: true,
                       ),
                     ],
                   ],

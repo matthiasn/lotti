@@ -156,6 +156,66 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('forwards the surface, the outline, the size, fitting to '
+        "content, and each row's description and quiet tone to the menu", (
+      tester,
+    ) async {
+      const raised = Color(0xFF222222);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemContextMenuButton(
+            size: DesignSystemContextMenuSize.small,
+            fitContent: true,
+            surfaceColor: raised,
+            outlined: true,
+            items: [
+              DesignSystemContextMenuItem(
+                label: 'Save as a note',
+                description: 'Keeps your words as they are',
+              ),
+              DesignSystemContextMenuItem(label: 'Leave it', isQuiet: true),
+            ],
+          ),
+        ),
+      );
+      await tester.tap(find.byIcon(LottiIcons.more));
+      await tester.pumpAndSettle();
+
+      final menu = tester.widget<DesignSystemContextMenu>(
+        find.byType(DesignSystemContextMenu),
+      );
+      expect(menu.size, DesignSystemContextMenuSize.small);
+      expect(menu.fitContent, isTrue);
+      expect(menu.surfaceColor, raised);
+      expect(menu.outlined, isTrue);
+      expect(menu.items.first.description, 'Keeps your words as they are');
+      expect(menu.items.first.isQuiet, isFalse);
+      expect(menu.items.last.isQuiet, isTrue);
+      expect(menu.items.last.description, isNull);
+      expect(find.text('Keeps your words as they are'), findsOneWidget);
+    });
+
+    testWidgets('by default the menu is the standard size and width, on the '
+        'base surface with no outline', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemContextMenuButton(
+            items: [DesignSystemContextMenuItem(label: 'Edit')],
+          ),
+        ),
+      );
+      await tester.tap(find.byIcon(LottiIcons.more));
+      await tester.pumpAndSettle();
+
+      final menu = tester.widget<DesignSystemContextMenu>(
+        find.byType(DesignSystemContextMenu),
+      );
+      expect(menu.size, DesignSystemContextMenuSize.medium);
+      expect(menu.fitContent, isFalse);
+      expect(menu.surfaceColor, isNull);
+      expect(menu.outlined, isFalse);
+    });
+
     testWidgets('preserves disabled menu items without invoking them', (
       tester,
     ) async {

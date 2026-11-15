@@ -7647,19 +7647,31 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorLeaveIt => 'Nechat být';
 
   @override
+  String get frontDoorLeaveItHint => 'Nic se nevytvoří';
+
+  @override
   String get frontDoorLeft => 'Ponecháno tady ve vlákně';
 
   @override
   String get frontDoorMakeEvent => 'Udělat z toho událost';
 
   @override
+  String get frontDoorMakeEventHint => 'Předběžná událost nazvaná tvými slovy';
+
+  @override
   String get frontDoorMakePrompt => 'Úkol s kódovacím promptem';
+
+  @override
+  String get frontDoorMakePromptHint => 'Úkol a prompt z tvých slov';
 
   @override
   String get frontDoorMakeTask => 'Udělat z toho úkol';
 
   @override
   String get frontDoorNewProject => 'Nový projekt…';
+
+  @override
+  String get frontDoorNewProjectHint => 'Otevře nový projekt s tvými slovy';
 
   @override
   String frontDoorNoAgent(String owner) {
@@ -7674,6 +7686,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontDoorOpen => 'Otevřít';
+
+  @override
+  String get frontDoorOtherWays => 'Nebo z toho udělej něco jiného';
 
   @override
   String get frontDoorProjectCreated => 'Vytvořen projekt';
@@ -7693,6 +7708,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorSaveNote => 'Uložit jako poznámku';
 
   @override
+  String get frontDoorSaveNoteHint => 'Ponechá tvá slova tak, jak jsou';
+
+  @override
   String get frontDoorSearchingJournal => 'Prohledávám tvůj deník…';
 
   @override
@@ -7700,6 +7718,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontDoorStartGoal => 'Založit cíl…';
+
+  @override
+  String get frontDoorStartGoalHint => 'Otevře průvodce cílem s tvými slovy';
 
   @override
   String get frontDoorSummaryBased => 'ze souhrnů';

@@ -7556,19 +7556,32 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontDoorLeaveIt => 'Låt det vara';
 
   @override
+  String get frontDoorLeaveItHint => 'Inget skapas';
+
+  @override
   String get frontDoorLeft => 'Lämnat här i tråden';
 
   @override
   String get frontDoorMakeEvent => 'Gör till ett evenemang';
 
   @override
+  String get frontDoorMakeEventHint =>
+      'Ett preliminärt evenemang med dina ord som titel';
+
+  @override
   String get frontDoorMakePrompt => 'Uppgift med kodningsprompt';
+
+  @override
+  String get frontDoorMakePromptHint => 'En uppgift och en prompt av dina ord';
 
   @override
   String get frontDoorMakeTask => 'Gör till en uppgift';
 
   @override
   String get frontDoorNewProject => 'Nytt projekt…';
+
+  @override
+  String get frontDoorNewProjectHint => 'Öppnar ett nytt projekt med dina ord';
 
   @override
   String frontDoorNoAgent(String owner) {
@@ -7583,6 +7596,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontDoorOpen => 'Öppna';
+
+  @override
+  String get frontDoorOtherWays => 'Eller gör något annat av det';
 
   @override
   String get frontDoorProjectCreated => 'Gjort till ett projekt';
@@ -7602,6 +7618,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontDoorSaveNote => 'Spara som anteckning';
 
   @override
+  String get frontDoorSaveNoteHint => 'Behåller dina ord som de är';
+
+  @override
   String get frontDoorSearchingJournal => 'Söker i din journal…';
 
   @override
@@ -7609,6 +7628,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontDoorStartGoal => 'Starta ett mål…';
+
+  @override
+  String get frontDoorStartGoalHint => 'Öppnar målguiden med dina ord';
 
   @override
   String get frontDoorSummaryBased => 'från sammanfattningar';

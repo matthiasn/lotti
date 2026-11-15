@@ -20,6 +20,10 @@ class DesignSystemContextMenuButton extends StatelessWidget {
     this.iconColor,
     this.semanticsLabel,
     this.header,
+    this.size = DesignSystemContextMenuSize.medium,
+    this.fitContent = false,
+    this.surfaceColor,
+    this.outlined = false,
     super.key,
   });
 
@@ -42,6 +46,19 @@ class DesignSystemContextMenuButton extends StatelessWidget {
   /// the model a briefing would be written with.
   final String? header;
 
+  /// Row height variant of the menu surface.
+  final DesignSystemContextMenuSize size;
+
+  /// Sizes the menu to its widest row
+  /// ([DesignSystemContextMenuAnchor.fitContent]).
+  final bool fitContent;
+
+  /// The menu's surface ([DesignSystemContextMenu.surfaceColor]).
+  final Color? surfaceColor;
+
+  /// A hairline around the menu ([DesignSystemContextMenu.outlined]).
+  final bool outlined;
+
   /// The square the trigger occupies, so a row can reserve its slot.
   static double extent(DsTokens tokens) => tokens.spacing.step9;
 
@@ -54,6 +71,10 @@ class DesignSystemContextMenuButton extends StatelessWidget {
       items: items,
       semanticsLabel: semanticsLabel,
       header: header,
+      size: size,
+      fitContent: fitContent,
+      surfaceColor: surfaceColor,
+      outlined: outlined,
       builder: (context, {required toggle, required isOpen}) {
         return SizedBox(
           width: extent(tokens),

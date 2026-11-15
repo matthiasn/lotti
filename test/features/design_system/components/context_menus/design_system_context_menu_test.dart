@@ -175,6 +175,186 @@ void main() {
       },
     );
 
+    group('a row with a description', () {
+      const described = DesignSystemContextMenuItem(
+        key: Key('row-note'),
+        label: 'Save as a note',
+        icon: LottiIcons.note,
+        description: 'Keeps your words as they are',
+      );
+      const plain = DesignSystemContextMenuItem(
+        key: Key('row-copy'),
+        label: 'Copy',
+        icon: LottiIcons.copy,
+      );
+
+      Future<void> pump(
+        WidgetTester tester,
+        List<DesignSystemContextMenuItem> items,
+      ) => _pumpContextMenu(
+        tester,
+        DesignSystemContextMenu(key: const Key('menu'), items: items),
+      );
+
+      testWidgets('says what the row does under its label, in the quiet '
+          'ink, on at most two lines', (tester) async {
+        await pump(tester, const [described]);
+
+        final label = tester.widget<Text>(find.text('Save as a note'));
+        final description = tester.widget<Text>(
+          find.text('Keeps your words as they are'),
+        );
+        expect(label.style!.color, dsTokensLight.colors.text.highEmphasis);
+        expect(
+          description.style!.color,
+          dsTokensLight.colors.text.mediumEmphasis,
+        );
+        expect(
+          description.style!.fontSize,
+          dsTokensLight.typography.styles.others.caption.fontSize,
+        );
+        expect(description.maxLines, 2);
+        expect(description.overflow, TextOverflow.ellipsis);
+        // Under the label, starting where it starts.
+        final labelAt = tester.getRect(find.text('Save as a note'));
+        final descriptionAt = tester.getRect(
+          find.text('Keeps your words as they are'),
+        );
+        expect(descriptionAt.top, greaterThanOrEqualTo(labelAt.bottom));
+        expect(descriptionAt.left, labelAt.left);
+      });
+
+      testWidgets('its icon steps back to the quiet ink so the label '
+          'leads, unless the row names an ink', (tester) async {
+        await pump(tester, const [described]);
+        expect(
+          tester.widget<Icon>(find.byIcon(LottiIcons.note)).color,
+          dsTokensLight.colors.text.mediumEmphasis,
+        );
+
+        await pump(tester, const [
+          DesignSystemContextMenuItem(
+            label: 'Save as a note',
+            icon: LottiIcons.note,
+            iconColor: Color(0xFF123456),
+            description: 'Keeps your words as they are',
+          ),
+        ]);
+        expect(
+          tester.widget<Icon>(find.byIcon(LottiIcons.note)).color,
+          const Color(0xFF123456),
+        );
+      });
+
+      testWidgets('is taller than a plain row by its second line; a plain '
+          'row beside it keeps the row height exactly', (tester) async {
+        await pump(tester, const [described, plain]);
+
+        final plainHeight = tester.getSize(find.byKey(const Key('row-copy')));
+        final describedHeight = tester.getSize(
+          find.byKey(const Key('row-note')),
+        );
+        expect(plainHeight.height, dsTokensLight.spacing.step9);
+        expect(describedHeight.height, greaterThan(plainHeight.height));
+        // A plain row's icon keeps the label's ink.
+        expect(
+          tester.widget<Icon>(find.byIcon(LottiIcons.copy)).color,
+          dsTokensLight.colors.text.highEmphasis,
+        );
+      });
+
+      testWidgets('announces as its label alone and still fires on a tap', (
+        tester,
+      ) async {
+        var taps = 0;
+        await pump(tester, [
+          DesignSystemContextMenuItem(
+            label: 'Save as a note',
+            description: 'Keeps your words as they are',
+            onTap: () => taps++,
+          ),
+        ]);
+
+        await tester.tap(find.text('Keeps your words as they are'));
+
+        expect(taps, 1);
+        expect(find.bySemanticsLabel('Save as a note'), findsOneWidget);
+      });
+    });
+
+    testWidgets('a quiet row wears the medium-emphasis ink, label and icon: '
+        'the way out that changes nothing, not a danger', (tester) async {
+      await _pumpContextMenu(
+        tester,
+        const DesignSystemContextMenu(
+          items: [
+            DesignSystemContextMenuItem(
+              label: 'Leave it',
+              icon: LottiIcons.close,
+              isQuiet: true,
+            ),
+            DesignSystemContextMenuItem(
+              label: 'Delete',
+              icon: LottiIcons.delete,
+              isDestructive: true,
+            ),
+          ],
+        ),
+      );
+
+      expect(
+        tester.widget<Text>(find.text('Leave it')).style!.color,
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIcons.close)).color,
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
+      // Destructive stays the danger ink, and wins where both are set.
+      expect(
+        tester.widget<Text>(find.text('Delete')).style!.color,
+        dsTokensLight.colors.alert.error.ink,
+      );
+    });
+
+    testWidgets('outlined draws a hairline around the surface; without it '
+        'there is none', (tester) async {
+      BoxDecoration surface() =>
+          tester
+                  .widget<Container>(
+                    find
+                        .descendant(
+                          of: find.byKey(const Key('menu')),
+                          matching: find.byType(Container),
+                        )
+                        .first,
+                  )
+                  .decoration!
+              as BoxDecoration;
+
+      await _pumpContextMenu(
+        tester,
+        const DesignSystemContextMenu(
+          key: Key('menu'),
+          outlined: true,
+          items: [DesignSystemContextMenuItem(label: 'Edit')],
+        ),
+      );
+      final border = surface().border! as Border;
+      expect(border.top.color, dsTokensLight.colors.decorative.level01);
+      expect(border.top.width, BorderWidths.hairline);
+      expect(border.isUniform, isTrue);
+
+      await _pumpContextMenu(
+        tester,
+        const DesignSystemContextMenu(
+          key: Key('menu'),
+          items: [DesignSystemContextMenuItem(label: 'Edit')],
+        ),
+      );
+      expect(surface().border, isNull);
+    });
+
     testWidgets('a host can raise the surface off a dimmed page', (
       tester,
     ) async {

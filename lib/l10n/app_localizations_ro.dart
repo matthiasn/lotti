@@ -7670,19 +7670,34 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorLeaveIt => 'Lăsați-l';
 
   @override
+  String get frontDoorLeaveItHint => 'Nu se creează nimic';
+
+  @override
   String get frontDoorLeft => 'Lăsat aici, în conversație';
 
   @override
   String get frontDoorMakeEvent => 'Transformați în eveniment';
 
   @override
+  String get frontDoorMakeEventHint =>
+      'Un eveniment provizoriu, intitulat cu cuvintele dvs.';
+
+  @override
   String get frontDoorMakePrompt => 'Sarcină cu prompt de codare';
+
+  @override
+  String get frontDoorMakePromptHint =>
+      'O sarcină și un prompt din cuvintele dvs.';
 
   @override
   String get frontDoorMakeTask => 'Transformați în sarcină';
 
   @override
   String get frontDoorNewProject => 'Proiect nou…';
+
+  @override
+  String get frontDoorNewProjectHint =>
+      'Deschide un proiect nou cu cuvintele dvs.';
 
   @override
   String frontDoorNoAgent(String owner) {
@@ -7697,6 +7712,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontDoorOpen => 'Deschideți';
+
+  @override
+  String get frontDoorOtherWays => 'Sau transformați-l în altceva';
 
   @override
   String get frontDoorProjectCreated => 'Transformat în proiect';
@@ -7716,6 +7734,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorSaveNote => 'Salvați ca notiță';
 
   @override
+  String get frontDoorSaveNoteHint => 'Păstrează cuvintele dvs. așa cum sunt';
+
+  @override
   String get frontDoorSearchingJournal => 'Se caută în jurnalul dumneavoastră…';
 
   @override
@@ -7723,6 +7744,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontDoorStartGoal => 'Începeți un obiectiv…';
+
+  @override
+  String get frontDoorStartGoalHint =>
+      'Deschide asistentul de obiective cu cuvintele dvs.';
 
   @override
   String get frontDoorSummaryBased => 'din rezumate';

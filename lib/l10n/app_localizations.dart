@@ -12827,6 +12827,12 @@ abstract class AppLocalizations {
   /// **'Leave it'**
   String get frontDoorLeaveIt;
 
+  /// No description provided for @frontDoorLeaveItHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is made'**
+  String get frontDoorLeaveItHint;
+
   /// No description provided for @frontDoorLeft.
   ///
   /// In en, this message translates to:
@@ -12839,11 +12845,23 @@ abstract class AppLocalizations {
   /// **'Make it an event'**
   String get frontDoorMakeEvent;
 
+  /// No description provided for @frontDoorMakeEventHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A tentative event titled with your words'**
+  String get frontDoorMakeEventHint;
+
   /// No description provided for @frontDoorMakePrompt.
   ///
   /// In en, this message translates to:
   /// **'Task with a coding prompt'**
   String get frontDoorMakePrompt;
+
+  /// No description provided for @frontDoorMakePromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A task, and a prompt from your words'**
+  String get frontDoorMakePromptHint;
 
   /// No description provided for @frontDoorMakeTask.
   ///
@@ -12856,6 +12874,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New project…'**
   String get frontDoorNewProject;
+
+  /// No description provided for @frontDoorNewProjectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens a new project with your words'**
+  String get frontDoorNewProjectHint;
 
   /// No description provided for @frontDoorNoAgent.
   ///
@@ -12880,6 +12904,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open'**
   String get frontDoorOpen;
+
+  /// No description provided for @frontDoorOtherWays.
+  ///
+  /// In en, this message translates to:
+  /// **'Or make it something else'**
+  String get frontDoorOtherWays;
 
   /// No description provided for @frontDoorProjectCreated.
   ///
@@ -12911,6 +12941,12 @@ abstract class AppLocalizations {
   /// **'Save as a note'**
   String get frontDoorSaveNote;
 
+  /// No description provided for @frontDoorSaveNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps your words as they are'**
+  String get frontDoorSaveNoteHint;
+
   /// Status while the front agent searches the journal for an answer.
   ///
   /// In en, this message translates to:
@@ -12928,6 +12964,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start a goal…'**
   String get frontDoorStartGoal;
+
+  /// No description provided for @frontDoorStartGoalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens the goal wizard with your words'**
+  String get frontDoorStartGoalHint;
 
   /// No description provided for @frontDoorSummaryBased.
   ///

@@ -4782,11 +4782,15 @@
   "frontDoorKindProject": "the project",
   "frontDoorKindTask": "the task",
   "frontDoorLeaveIt": "Leave it",
+  "frontDoorLeaveItHint": "Nothing is made",
   "frontDoorLeft": "Left here in the thread",
   "frontDoorMakeEvent": "Make it an event",
+  "frontDoorMakeEventHint": "A tentative event titled with your words",
   "frontDoorMakePrompt": "Task with a coding prompt",
+  "frontDoorMakePromptHint": "A task, and a prompt from your words",
   "frontDoorMakeTask": "Make it a task",
   "frontDoorNewProject": "New project…",
+  "frontDoorNewProjectHint": "Opens a new project with your words",
   "frontDoorNoAgent": "{owner} has no agent to ask yet.",
   "@frontDoorNoAgent": {
     "placeholders": {
@@ -4798,6 +4802,7 @@
   "frontDoorNoDoor": "Nowhere to take this yet.",
   "frontDoorNotThis": "Somewhere else",
   "frontDoorOpen": "Open",
+  "frontDoorOtherWays": "Or make it something else",
   "frontDoorProjectCreated": "Made into a project",
   "frontDoorPromptRequested": "coding prompt requested",
   "frontDoorProposal": "File this under {owner}?",
@@ -4810,6 +4815,7 @@
   },
   "frontDoorSavedAsNote": "Saved as a note",
   "frontDoorSaveNote": "Save as a note",
+  "frontDoorSaveNoteHint": "Keeps your words as they are",
   "frontDoorSearchingJournal": "Searching your journal…",
   "@frontDoorSearchingJournal": {
     "description": "Status while the front agent searches the journal for an answer."
@@ -4819,6 +4825,7 @@
     "description": "Heading above the list of journal entries a companion journal answer cites."
   },
   "frontDoorStartGoal": "Start a goal…",
+  "frontDoorStartGoalHint": "Opens the goal wizard with your words",
   "frontDoorSummaryBased": "from summaries",
   "frontDoorTaskCreated": "Made into a task",
   "frontDoorTryAgain": "Try again",

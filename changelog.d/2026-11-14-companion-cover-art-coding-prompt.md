@@ -25,6 +25,12 @@
   back, so what she heard or you chose stands out, and Cancel and Create task
   are easier to hit and further apart.
 
+- **The "where should this go?" menu says what each choice does.** The
+  other ways to file something in the companion chat floated over the page
+  as bare names. They now open as a proper menu under *Or make it something
+  else*, each with a line saying what it makes — a goal, an event, a note, a
+  task with a coding prompt — and *Leave it* set apart at the end.
+
 ### Fixed
 - **Cover art and prompts were not generated for a task in no category.**
   Such a task has no AI profile of its own, and a cover or coding prompt

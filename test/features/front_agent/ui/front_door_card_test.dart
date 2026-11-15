@@ -5,9 +5,11 @@ import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
@@ -1585,6 +1587,99 @@ void main() {
       await tester.tapAt(Offset.zero);
       await tester.pumpAndSettle();
       expect(acted, [('project', 'd:door:0')]);
+    });
+
+    group('its other ways, as a picker', () {
+      FrontDoorEntry inbox({FrontNewKind? newKind = FrontNewKind.task}) =>
+          entry(
+            record(
+              index: 0,
+              text: 'Check the ice-pad weather window.',
+              kind: FrontDestinationKind.newThing,
+              ownerTitle: null,
+              outcome: FrontDoorInbox(newKind: newKind),
+            ),
+          );
+      DesignSystemContextMenuButton overflow(WidgetTester tester) =>
+          tester.widget<DesignSystemContextMenuButton>(menu(0));
+
+      testWidgets('each way says what choosing it does', (tester) async {
+        await pump(tester, [inbox(newKind: FrontNewKind.project)]);
+
+        expect(
+          {
+            for (final item in overflow(tester).items)
+              item.label: item.description,
+          },
+          {
+            'New project…': 'Opens a new project with your words',
+            'Task with a coding prompt': 'A task, and a prompt from your words',
+            'Start a goal…': 'Opens the goal wizard with your words',
+            'Make it an event': 'A tentative event titled with your words',
+            'Save as a note': 'Keeps your words as they are',
+            'Leave it': 'Nothing is made',
+          },
+        );
+      });
+
+      testWidgets('leaving it is the last row, set apart and quiet: it '
+          'makes nothing, and is no danger', (tester) async {
+        await pump(tester, [inbox()]);
+
+        final items = overflow(tester).items;
+        final leave = items.last;
+        expect(leave.label, 'Leave it');
+        expect(leave.startsGroup, isTrue);
+        expect(leave.isQuiet, isTrue);
+        expect(leave.isDestructive, isFalse);
+        // No other row is set apart or quiet.
+        for (final item in items.take(items.length - 1)) {
+          expect(item.startsGroup, isFalse, reason: item.label);
+          expect(item.isQuiet, isFalse, reason: item.label);
+        }
+      });
+
+      testWidgets('opens under a heading, as wide as its rows, on the '
+          "card's surface with a hairline, in compact rows", (tester) async {
+        await pump(tester, [inbox()]);
+
+        final button = overflow(tester);
+        expect(button.header, 'Or make it something else');
+        expect(button.fitContent, isTrue);
+        expect(button.outlined, isTrue);
+        expect(
+          button.surfaceColor,
+          dsCardSurface(tester.element(find.byType(FrontDoorCard))),
+        );
+        expect(button.size, DesignSystemContextMenuSize.small);
+
+        await openMenu(tester, 0);
+        expect(find.text('Or make it something else'), findsOneWidget);
+        expect(find.text('Keeps your words as they are'), findsOneWidget);
+      });
+
+      testWidgets("a settled card's overflow is a plain menu: no heading, "
+          'no descriptions, the standard row a thumb can hit', (tester) async {
+        await pump(tester, [
+          entry(
+            record(
+              index: 0,
+              text: 'Buy a hose.',
+              kind: FrontDestinationKind.unrouted,
+              ownerTitle: null,
+              outcome: const FrontDoorTaskCreated(taskId: 't-1'),
+            ),
+          ),
+        ]);
+
+        final button = overflow(tester);
+        expect(button.header, isNull);
+        expect(button.size, DesignSystemContextMenuSize.medium);
+        expect(button.items.single.description, isNull);
+        // The same surface treatment as every menu the card opens.
+        expect(button.outlined, isTrue);
+        expect(button.fitContent, isTrue);
+      });
     });
 
     group('with a coding prompt', () {

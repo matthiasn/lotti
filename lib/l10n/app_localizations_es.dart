@@ -7639,19 +7639,34 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontDoorLeaveIt => 'Dejarlo';
 
   @override
+  String get frontDoorLeaveItHint => 'No se crea nada';
+
+  @override
   String get frontDoorLeft => 'Se queda aquí en el hilo';
 
   @override
   String get frontDoorMakeEvent => 'Convertir en evento';
 
   @override
+  String get frontDoorMakeEventHint =>
+      'Un evento provisional titulado con tus palabras';
+
+  @override
   String get frontDoorMakePrompt => 'Tarea con prompt de programación';
+
+  @override
+  String get frontDoorMakePromptHint =>
+      'Una tarea y un prompt con tus palabras';
 
   @override
   String get frontDoorMakeTask => 'Convertir en tarea';
 
   @override
   String get frontDoorNewProject => 'Nuevo proyecto…';
+
+  @override
+  String get frontDoorNewProjectHint =>
+      'Abre un proyecto nuevo con tus palabras';
 
   @override
   String frontDoorNoAgent(String owner) {
@@ -7666,6 +7681,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get frontDoorOpen => 'Abrir';
+
+  @override
+  String get frontDoorOtherWays => 'O conviértelo en otra cosa';
 
   @override
   String get frontDoorProjectCreated => 'Convertido en proyecto';
@@ -7685,6 +7703,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontDoorSaveNote => 'Guardar como nota';
 
   @override
+  String get frontDoorSaveNoteHint => 'Guarda tus palabras tal como están';
+
+  @override
   String get frontDoorSearchingJournal => 'Buscando en tu diario…';
 
   @override
@@ -7692,6 +7713,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get frontDoorStartGoal => 'Empezar un objetivo…';
+
+  @override
+  String get frontDoorStartGoalHint =>
+      'Abre el asistente de objetivos con tus palabras';
 
   @override
   String get frontDoorSummaryBased => 'de resúmenes';
