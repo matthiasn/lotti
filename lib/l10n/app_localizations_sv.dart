@@ -7917,13 +7917,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get githubLinkPullRequestTitle => 'Koppla en pull request';
 
   @override
-  String get githubLinkUrlHelper => 'Eller skriv agare/repo#123.';
-
-  @override
   String get githubLinkUrlHint => 'https://github.com/agare/repo/pull/123';
 
   @override
-  String get githubLinkUrlLabel => 'URL till pull request';
+  String get githubLinkUrlLabel => 'URL eller agare/repo#123';
 
   @override
   String get githubMergeBehind => 'Efter basgrenen';

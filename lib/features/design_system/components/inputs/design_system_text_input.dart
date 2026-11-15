@@ -359,22 +359,19 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
     if (iconData == null) return null;
 
     if (widget.trailingIconBusy) {
-      // In the seated action's own box, so progress lands on the centre
-      // the action held.
-      return Padding(
-        padding: EdgeInsetsDirectional.only(end: tokens.spacing.step2),
-        child: SizedBox.square(
-          dimension: spec.fieldHeight - tokens.spacing.step2 * 2,
-          child: Center(
-            // One node carries both the label and the live region, so the
-            // label is what gets announced.
-            child: Semantics(
-              container: true,
-              liveRegion: true,
-              label: widget.trailingIconBusyLabel,
-              child: ExcludeSemantics(
-                child: DesignSystemSpinner(size: spec.iconSize),
-              ),
+      // In the action's own slot — a square at the field's end — so
+      // progress lands on the centre the action held.
+      return SizedBox.square(
+        dimension: spec.fieldHeight,
+        child: Center(
+          // One node carries both the label and the live region, so the
+          // label is what gets announced.
+          child: Semantics(
+            container: true,
+            liveRegion: true,
+            label: widget.trailingIconBusyLabel,
+            child: ExcludeSemantics(
+              child: DesignSystemSpinner(size: spec.iconSize),
             ),
           ),
         ),
@@ -410,9 +407,12 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
             // A rounded field seats its action: inset by step2 all round,
             // its corners the field's less that inset, so the border runs
             // unbroken around it instead of the fill jamming into the focus
-            // ring.
-            (true, DesignSystemTextInputShape.rounded) => Padding(
-              padding: EdgeInsetsDirectional.only(end: tokens.spacing.step2),
+            // ring. Centred in its slot, because the decorator hands its
+            // suffix a minimum square that would otherwise stretch the fill
+            // over that border.
+            (true, DesignSystemTextInputShape.rounded) => Center(
+              widthFactor: 1,
+              heightFactor: 1,
               child: IconButton(
                 style: IconButton.styleFrom(
                   backgroundColor: tokens.colors.interactive.enabled,

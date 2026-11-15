@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/github/github_repository.dart';
 import 'package:lotti/classes/github/pull_request_ref.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -111,8 +112,9 @@ void main() {
 
       await submit(tester, url);
       // The action gives way to progress in its own slot: nothing to tap a
-      // second time.
-      expect(find.text('Linking pull request'), findsOneWidget);
+      // second time, and no line of text arriving to reflow the sheet.
+      expect(find.bySemanticsLabel('Linking pull request'), findsOneWidget);
+      expect(find.text('Linking pull request'), findsNothing);
       expect(find.byKey(LinkPullRequestKeys.linkButton), findsNothing);
       expect(
         find.descendant(
@@ -184,16 +186,26 @@ void main() {
 
   group('picker', () {
     testWidgets(
-      "without a repository on the task's category, says how to get one",
+      "without a repository on the task's category, the field's one hint "
+      'says how to get one',
       (tester) async {
         await open(tester);
 
+        final field = find.byKey(LinkPullRequestKeys.urlField);
+        final hint = find.text(
+          "Assign a GitHub repository to this task's category to pick from "
+          'its open pull requests.',
+        );
+        // The label says what the field takes, so no helper repeats it.
+        expect(find.text('URL or owner/repo#123'), findsOneWidget);
         expect(
-          find.text(
-            "Assign a GitHub repository to this task's category to pick from "
-            'its open pull requests.',
-          ),
-          findsOneWidget,
+          tester.widget<DesignSystemTextInput>(field).helperText,
+          isNull,
+        );
+        expect(
+          tester.getTopLeft(hint).dy - tester.getBottomLeft(field).dy,
+          tester.element(field).designTokens.spacing.step3,
+          reason: 'with the field it is about, not a section of its own',
         );
       },
     );

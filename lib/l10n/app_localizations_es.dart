@@ -7999,14 +7999,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get githubLinkPullRequestTitle => 'Vincular una pull request';
 
   @override
-  String get githubLinkUrlHelper => 'O escribe propietario/repo#123.';
-
-  @override
   String get githubLinkUrlHint =>
       'https://github.com/propietario/repo/pull/123';
 
   @override
-  String get githubLinkUrlLabel => 'URL de la pull request';
+  String get githubLinkUrlLabel => 'URL o propietario/repo#123';
 
   @override
   String get githubMergeBehind => 'Por detrás de la rama base';

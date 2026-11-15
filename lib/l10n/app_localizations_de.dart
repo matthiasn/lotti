@@ -7953,13 +7953,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get githubLinkPullRequestTitle => 'Pull-Request verknüpfen';
 
   @override
-  String get githubLinkUrlHelper => 'Oder schreib besitzer/repo#123.';
-
-  @override
   String get githubLinkUrlHint => 'https://github.com/besitzer/repo/pull/123';
 
   @override
-  String get githubLinkUrlLabel => 'URL des Pull-Requests';
+  String get githubLinkUrlLabel => 'URL oder besitzer/repo#123';
 
   @override
   String get githubMergeBehind => 'Hinter dem Basis-Branch';
