@@ -192,6 +192,18 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
       ),
       null => null,
     };
+    // What a pick came to goes under its row. With no picker to hold it —
+    // the category lost its repository meanwhile — it is said under the
+    // field instead, named, never dropped.
+    final picked = _picked;
+    final pickOutcome = picked == null
+        ? null
+        : question ?? (error == null ? null : _Note(text: error, error: true));
+    final underField = picked == null
+        ? question
+        : repository == null && pickOutcome != null
+        ? _AboutPullRequest(ref: picked, child: pickOutcome)
+        : null;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -204,7 +216,7 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
           // framed alike, neither a darker well.
           filled: false,
           hintText: messages.githubLinkUrlHint,
-          errorText: _picked == null ? _error : null,
+          errorText: picked == null ? error : null,
           keyboardType: TextInputType.url,
           // Link sits in the field it submits, appearing in place once there
           // is something to link: a picked row links on its own tap, so a
@@ -223,9 +235,9 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
           onChanged: (_) => setState(_clearOutcome),
           onSubmitted: (_) => _linkPasted(),
         ),
-        if (_picked == null && question != null) ...[
+        if (underField != null) ...[
           SizedBox(height: tokens.spacing.step3),
-          question,
+          underField,
         ],
         // The one hint sits with the field it is about; the picker is a
         // section of its own.
@@ -242,11 +254,8 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
             linking: _linking is PullRequestRef
                 ? _linking! as PullRequestRef
                 : null,
-            picked: _picked,
-            outcome: _picked == null
-                ? null
-                : question ??
-                      (error == null ? null : _Note(text: error, error: true)),
+            picked: picked,
+            outcome: pickOutcome,
             busy: _linking != null,
             onPick: _linkPicked,
           ),
@@ -301,6 +310,7 @@ class _OpenPullRequests extends ConsumerWidget {
       ),
     );
 
+    final picked = this.picked;
     final outcome = this.outcome;
     final listed = switch (listing) {
       AsyncData(value: OpenPullRequestsListed(:final available)) =>
@@ -374,13 +384,13 @@ class _OpenPullRequests extends ConsumerWidget {
         ],
       ),
     };
-    if (outcome == null || listed) return body;
+    if (picked == null || outcome == null || listed) return body;
     // Its row is gone — listed anew meanwhile: said above the list instead,
-    // never dropped.
+    // named, never dropped.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        outcome,
+        _AboutPullRequest(ref: picked, child: outcome),
         SizedBox(height: tokens.spacing.step5),
         body,
       ],
@@ -625,6 +635,34 @@ class _ElsewhereQuestion extends ConsumerWidget {
             ),
           ],
         ),
+      ],
+    );
+  }
+}
+
+/// What a pick came to, led by which pull request it is about — for when
+/// its row is not there to say so.
+class _AboutPullRequest extends StatelessWidget {
+  const _AboutPullRequest({required this.ref, required this.child});
+
+  final PullRequestRef ref;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          '$ref',
+          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step1),
+        child,
       ],
     );
   }

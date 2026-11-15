@@ -584,8 +584,10 @@ succeeded — a typo, a repository the token cannot see, or a pull request
 this task holds stays in the modal with the reason, and one another task
 holds is asked about first. The reason or the question is said where the
 link was asked for: under the field after a paste, and under the picked row
-— which stays tinted — after a pick, or above the list should that row have
-gone from it meanwhile. While the question is open its answer is the one
+— which stays tinted — after a pick. Should that row have gone from the list
+meanwhile, it is said above the list, and should the category have lost its
+repository, under the field; either way led by the pull request's
+`owner/repo#number`, no row being there to say which is meant. While the question is open its answer is the one
 filled action; the field's own steps back. Without a repository on the
 task's category the modal says how to assign one, as the field's one hint.
 

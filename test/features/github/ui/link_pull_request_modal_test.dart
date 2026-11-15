@@ -41,6 +41,7 @@ void main() {
   Future<void> open(
     WidgetTester tester, {
     GitHubRepository? repo,
+    Stream<GitHubRepository?>? repositories,
     Future<OpenPullRequestsResult> Function()? listing,
     Map<String, String> visibleTitles = const {},
     Map<int, PullRequestSize> sizes = const {},
@@ -57,7 +58,7 @@ void main() {
           pullRequestServiceProvider.overrideWithValue(service),
           taskGitHubRepositoryProvider(
             taskId,
-          ).overrideWith((ref) => Stream.value(repo)),
+          ).overrideWith((ref) => repositories ?? Stream.value(repo)),
           openPullRequestsProvider(repository).overrideWith(
             (ref) =>
                 listing?.call() ??
@@ -534,6 +535,87 @@ void main() {
           lessThan(
             tester.getTopLeft(find.text('Or pick one from penguin/colony')).dy,
           ),
+        );
+        // No row left to say which one: the question names it, so it is
+        // not read as being about the row now under it.
+        expect(find.text('penguin/colony#12'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      "a question about a pick outlives the category's repository: asked "
+      'under the field, named, and still answerable',
+      (tester) async {
+        final pr = openPr(12).ref;
+        when(
+          () => service.link(taskId: taskId, ref: pr),
+        ).thenAnswer((_) async => PullRequestLinkedElsewhere({'other'}, pr));
+        when(
+          () => service.link(taskId: taskId, ref: pr, alsoElsewhere: true),
+        ).thenAnswer((_) async => PullRequestLinked(prEntry(clock: {'a': 1})));
+        final repositories = StreamController<GitHubRepository?>();
+        addTearDown(repositories.close);
+        repositories.add(repository);
+        await open(
+          tester,
+          repositories: repositories.stream,
+          listing: () async => OpenPullRequestsListed([openPr(12)]),
+        );
+        await tester.tap(find.byKey(LinkPullRequestKeys.openPullRequest(12)));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        // A sync removes the repository from the category: the picker goes.
+        repositories.add(null);
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          find.byKey(LinkPullRequestKeys.openPullRequest(12)),
+          findsNothing,
+        );
+        expect(find.text('penguin/colony#12'), findsOneWidget);
+
+        await tester.tap(find.byKey(LinkPullRequestKeys.linkHereToo));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        verify(
+          () => service.link(taskId: taskId, ref: pr, alsoElsewhere: true),
+        ).called(1);
+        expect(find.byKey(LinkPullRequestKeys.urlField), findsNothing);
+      },
+    );
+
+    testWidgets(
+      "a failed pick outlives the category's repository too: its reason "
+      'is said under the field, named',
+      (tester) async {
+        final pr = openPr(12).ref;
+        when(
+          () => service.link(taskId: taskId, ref: pr),
+        ).thenAnswer((_) async => const PullRequestLinkNotStored());
+        final repositories = StreamController<GitHubRepository?>();
+        addTearDown(repositories.close);
+        repositories.add(repository);
+        await open(
+          tester,
+          repositories: repositories.stream,
+          listing: () async => OpenPullRequestsListed([openPr(12)]),
+        );
+        await tester.tap(find.byKey(LinkPullRequestKeys.openPullRequest(12)));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        repositories.add(null);
+        await tester.pump();
+        await tester.pump();
+
+        final reason = find.text('The link could not be saved. Try again.');
+        expect(reason, findsOneWidget);
+        expect(
+          tester.getTopLeft(reason).dy,
+          greaterThan(tester.getBottomLeft(find.text('penguin/colony#12')).dy),
         );
       },
     );
