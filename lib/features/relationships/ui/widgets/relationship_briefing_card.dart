@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
+import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
@@ -21,8 +22,6 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
-import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
-import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -102,61 +101,12 @@ class _AgentCard extends StatelessWidget {
   final VoidCallback onChooseModel;
 
   /// The faces that ask nothing of the reader: a current briefing, and one
-  /// being written. Their upkeep — update, activity, model — waits behind
-  /// the header's menu instead of a footer, so the card reads as what to
-  /// bring up rather than as the agent's control panel.
+  /// being written. They close the way the task card does — *Update now*
+  /// under the reading, and the model row naming the provider it would send
+  /// to (ADR 0061) — rather than with the waiting faces' footer band.
   bool get _calm =>
       state == RelationshipAgentCardState.current ||
       state == RelationshipAgentCardState.running;
-
-  /// The header's menu on the calm faces. Its heading names the model and
-  /// the provider that would write an update, and what this agent has used
-  /// so far, so *Update now* never sends anything the reader has not been
-  /// shown (ADR 0061) — the disclosure the footer's model row made before.
-  Widget _menu(BuildContext context, AppLocalizations messages) {
-    final route = identityData.currentRoute;
-    final tokens = totalTokens > 0
-        ? messages.agentConversationTokenCount(
-            NumberFormat.compact(
-              locale: Localizations.localeOf(context).toString(),
-            ).format(totalTokens),
-          )
-        : null;
-    final heading = [
-      if (route != null)
-        formatInferenceRouteIdentity(
-          route,
-          viaLabel: messages.taskAgentRouteVia,
-        ),
-      ?tokens,
-    ].join(' · ');
-    return DesignSystemContextMenuButton(
-      key: const ValueKey('relationship-briefing-menu'),
-      tooltip: messages.relationshipBriefingOptions,
-      header: heading.isEmpty ? null : heading,
-      items: [
-        if (state == RelationshipAgentCardState.current)
-          DesignSystemContextMenuItem(
-            key: const ValueKey('relationship-brief-me'),
-            label: messages.taskAgentUpdateNow,
-            icon: LottiIcons.refresh,
-            onTap: onBrief,
-          ),
-        DesignSystemContextMenuItem(
-          key: const ValueKey('relationship-agent-see-activity'),
-          label: messages.relationshipAgentSeeActivity,
-          icon: LottiIcons.list,
-          onTap: onOpenInternals,
-        ),
-        DesignSystemContextMenuItem(
-          key: const ValueKey('relationship-agent-choose-model'),
-          label: messages.inferenceProfileChooseModelTitle,
-          icon: LottiIcons.aiSpark,
-          onTap: onChooseModel,
-        ),
-      ],
-    );
-  }
 
   /// The header's status line: what the agent is doing, or when the
   /// briefing was written and the band it read, in that state's colour.
@@ -500,12 +450,27 @@ class _AgentCard extends StatelessWidget {
       );
     }
 
+    final identity = TaskAgentIdentityRegion(
+      data: identityData,
+      onSetupTap: onChooseModel,
+      // This row is the disclosure a briefing starts on (ADR 0061): no width
+      // or text size may shed the provider from it.
+      alwaysNameProvider: true,
+      trailingMeta: totalTokens > 0
+          ? messages.agentConversationTokenCount(
+              NumberFormat.compact(
+                locale: Localizations.localeOf(context).toString(),
+              ).format(totalTokens),
+            )
+          : null,
+    );
+
     return AgentSummaryCardSurface(
       key: const ValueKey('relationship-briefing-card'),
       children: [
         _BriefingHeader(
           status: _status(context, messages),
-          trailing: _calm ? _menu(context, messages) : _pill(context, messages),
+          trailing: _pill(context, messages),
           onTap: onOpenInternals,
         ),
         if (body != null)
@@ -537,23 +502,33 @@ class _AgentCard extends StatelessWidget {
           _AgentCardFooter(
             leading: footer.leading,
             action: footer.action,
-            identity: TaskAgentIdentityRegion(
-              data: identityData,
-              onSetupTap: onChooseModel,
-              // This row is the disclosure a briefing starts on (ADR 0061):
-              // no width or text size may shed the provider from it.
-              alwaysNameProvider: true,
-              trailingMeta: totalTokens > 0
-                  ? messages.agentConversationTokenCount(
-                      NumberFormat.compact(
-                        locale: Localizations.localeOf(context).toString(),
-                      ).format(totalTokens),
-                    )
-                  : null,
-            ),
+            identity: identity,
           )
         else
-          SizedBox(height: tokens.spacing.step3),
+          // The task card's footer: *Update now* always in reach, reading
+          // *Thinking…* while a briefing is written. No freshness word — the
+          // header's status line already says how old the briefing is.
+          Padding(
+            padding: EdgeInsets.only(
+              left: tokens.spacing.cardPadding,
+              right: tokens.spacing.cardPadding,
+              bottom: tokens.spacing.step4,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AgentAutomationRow.compact(
+                  key: const ValueKey('relationship-update-strip'),
+                  inferenceAvailable: !modelMissing,
+                  isRunning: state == RelationshipAgentCardState.running,
+                  hasReportContent: false,
+                  isStale: false,
+                  onRunNow: onBrief,
+                ),
+                identity,
+              ],
+            ),
+          ),
         if (showsSources)
           Padding(
             padding: EdgeInsets.only(

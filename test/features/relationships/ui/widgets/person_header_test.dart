@@ -343,6 +343,24 @@ void main() {
       expect(avatar().opacity, 0);
     });
 
+    testWidgets('a name folded in and out faster than its fade never leaves '
+        'two titles under one key', (tester) async {
+      await pump(tester, tall: true);
+      final position = tester
+          .state<ScrollableState>(find.byType(Scrollable))
+          .position;
+
+      // In, out, in, out — each well inside the 160 ms fade, so the
+      // switcher holds two outgoing titles at once.
+      for (final offset in [600.0, 0.0, 600.0, 0.0]) {
+        position.jumpTo(offset);
+        await tester.pump(const Duration(milliseconds: 30));
+        expect(tester.takeException(), isNull);
+      }
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('person-hero-title')), findsNothing);
+    });
+
     testWidgets('the avatar hangs half its diameter below the hero, on the '
         'content inset', (tester) async {
       await pump(tester);

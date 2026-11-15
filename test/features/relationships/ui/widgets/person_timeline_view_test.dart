@@ -233,6 +233,34 @@ void main() {
     expect(chosen, PersonTimelineFilter.notes);
   });
 
+  testWidgets('a month heading twice — a meeting called off later this month '
+      'above Today, the month again below This week — is two keys, so the '
+      "list's key lookup finds each heading where it is", (tester) async {
+    final calledOff = JournalEntity.event(
+      meta: meta('called-off', DateTime(2026, 8, 20, 10)),
+      data: const EventData(
+        title: 'Sled race',
+        stars: 0,
+        status: EventStatus.cancelled,
+      ),
+    );
+    await pump(
+      tester,
+      timeline(entries: [calledOff, note], tasks: [], checkIns: [call]),
+    );
+
+    final headers = tester
+        .widgetList<DesignSystemTimelineSectionHeader>(
+          find.byType(DesignSystemTimelineSectionHeader),
+        )
+        .map((h) => h.label)
+        .toList();
+    expect(headers, ['August', 'This week', 'August']);
+    const august = 'person-timeline-section-month2026-08-01T00:00:00.000Z';
+    expect(find.byKey(const ValueKey(august)), findsOneWidget);
+    expect(find.byKey(const ValueKey('$august-1')), findsOneWidget);
+  });
+
   testWidgets('a task just confirmed from a suggestion is marked', (
     tester,
   ) async {
@@ -669,6 +697,44 @@ void main() {
       await tester.tap(find.text('Show more'));
       await tester.pumpAndSettle();
       expect(words().data, longWords);
+    });
+
+    testWidgets('a check-in leads with the summary of the recording it plays '
+        '— the newest — whatever order the read returned them in', (
+      tester,
+    ) async {
+      final spoken = call.copyWith(
+        entryText: EntryText(plainText: longWords),
+      );
+      await pump(
+        tester,
+        buildPersonTimeline(
+          now: now,
+          checkIns: [spoken],
+          entries: const [],
+          tasks: const [],
+          checkInEntries: {
+            spoken.meta.id: [
+              audio('first-take', DateTime(2026, 8, 1, 12, 44)),
+              audio('second-take', DateTime(2026, 8, 1, 12, 50)),
+            ],
+          },
+        ),
+        summaries: {
+          'first-take': 'The first take.',
+          'second-take': 'The second take.',
+        },
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(ValueKey('folded-words-${spoken.meta.id}')),
+            )
+            .data,
+        'The second take.',
+      );
     });
 
     testWidgets('a check-in without a recording folds its long words to '
