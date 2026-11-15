@@ -721,6 +721,29 @@ void main() {
     expect(find.byType(DesignSystemContextMenuButton), findsNothing);
   });
 
+  testWidgets('words meant for her, should their door reach the card past '
+      'the thread builder, settle quietly: no task, no tap, no overflow', (
+    tester,
+  ) async {
+    await pump(tester, [
+      entry(
+        record(
+          index: 0,
+          text: 'Who said I was recalibrating them?',
+          kind: FrontDestinationKind.you,
+          ownerTitle: null,
+          outcome: const FrontDoorSkipped(FrontDoorSkipReason.noDoor),
+        ),
+      ),
+    ]);
+
+    expect(statusOf(tester, 0), 'Nowhere to take this yet.');
+    expect(glyph(tester, 0).icon, LottiIcons.inbox);
+    expect(find.text('Make it a task'), findsNothing);
+    expect(find.byType(DesignSystemButton), findsNothing);
+    expect(find.byType(DesignSystemContextMenuButton), findsNothing);
+  });
+
   group('a proposal', () {
     testWidgets('shows the words, names the task, files on the one filled '
         'tap, and keeps the way out in the overflow', (tester) async {
