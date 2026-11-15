@@ -295,6 +295,19 @@ void main() {
       frontAgentSystemPrompt,
       contains('Route or answer this, and only this.'),
     );
+    // News about something listed still routes, and she never claims a
+    // filing she did not make (live eval `single_strong`).
+    expect(
+      frontAgentSystemPrompt,
+      contains('is for the record, never only for you'),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      contains(
+        'Never say you noted, filed or saved anything you did not '
+        'dispatch.',
+      ),
+    );
   });
 
   test('a task is drafted only when asked for; one only mentioned is '

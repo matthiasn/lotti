@@ -509,7 +509,10 @@ Not everything the user says is for routing. Rule 0 of the prompt has her
 answer words meant for her — a reply to what she just said, a clarification
 or correction of it, a reaction, a remark, small talk, thanks — with her
 answer alone: nothing is dispatched, so no inbox card asks where they should
-go. Before it, any part that matched nothing became `new`, `journal` or
+go. News about a listed task, project, goal or person still routes, even
+right after her answer, and she never claims a filing she did not dispatch
+(live eval `single_strong` replied "I've noted the quote" without the
+exception). Before it, any part that matched nothing became `new`, `journal` or
 `unrouted`, and every one of those is a `FrontDoorInbox` card: a user
 correcting her got a card asking where their correction should go.
 

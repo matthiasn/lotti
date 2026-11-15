@@ -347,8 +347,7 @@ final List<FrontEvalScenario> frontEvalScenarios = [
   const FrontEvalScenario(
     id: 'nothing_matches',
     input: 'Thinking about learning the accordion this winter.',
-    outcome: FrontEvalOutcome.dispatch,
-    expectedSegments: [(kind: FrontDestinationKind.newThing, id: null)],
+    outcome: FrontEvalOutcome.talk,
     forbiddenDestinationIds: {
       'task-bay-c-seam',
       'task-bay-c-lighting',
@@ -359,7 +358,9 @@ final List<FrontEvalScenario> frontEvalScenarios = [
       'person-pip',
     },
     maxLookups: 1,
-    note: 'Nothing owns this; it is new or a note, never a forced match.',
+    note:
+        'A musing nothing owns is talked about, never forced onto a row or '
+        'filed as new: she may offer to make something of it.',
   ),
   const FrontEvalScenario(
     id: 'move_today',
