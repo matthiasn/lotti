@@ -81,6 +81,31 @@ void main() {
     );
   });
 
+  test('with every, it asks for every match and keeps them all, uncapped, '
+      'so a size ranking can pick the largest', () async {
+    final many = [
+      for (var n = 1; n <= frontPullRequestsFoundMax + 2; n++)
+        foundPullRequest(n),
+    ];
+    final systemMessages = <String>[];
+    final filter = frontPullRequestFilter(({
+      required systemMessage,
+      required prompt,
+    }) async {
+      systemMessages.add(systemMessage);
+      return many.map((pr) => pr.key).join('\n');
+    });
+
+    final kept = await filter('fish', many, every: true);
+
+    expect(kept, many.map((pr) => pr.key));
+    expect(systemMessages, [frontPullRequestFilterEverySystemMessage]);
+    expect(
+      frontPullRequestFilterEverySystemMessage,
+      isNot(contains('at most')),
+    );
+  });
+
   test('no answer keeps none', () async {
     final filter = frontPullRequestFilter(
       ({required systemMessage, required prompt}) async => null,

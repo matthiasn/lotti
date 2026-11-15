@@ -452,6 +452,7 @@ void main() {
       expect(properties(FrontAgentToolNames.findPullRequests).keys, [
         'topic',
         'largest',
+        'count',
         ...properties(FrontAgentToolNames.summarizePullRequests).keys,
       ]);
       expect(

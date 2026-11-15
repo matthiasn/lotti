@@ -21,6 +21,7 @@ void main() {
 
   late List<FrontPullRequestQuery> queries;
   late List<bool> largestAsked;
+  late List<bool> everyAsked;
   late List<(String, List<FrontFoundPullRequest>)> filtered;
 
   FrontPullRequestLookups lookups({
@@ -40,7 +41,8 @@ void main() {
           }
         : null,
     filter: wired && withFilter
-        ? (topic, pullRequests) async {
+        ? (topic, pullRequests, {every = false}) async {
+            everyAsked.add(every);
             filtered.add((topic, pullRequests));
             return (keep ?? (_) async => ['penguin/colony#3'])(topic);
           }
@@ -56,6 +58,7 @@ void main() {
   setUp(() {
     queries = [];
     largestAsked = [];
+    everyAsked = [];
     filtered = [];
   });
 
@@ -82,6 +85,7 @@ void main() {
       expect(pullRequests.calls, 1);
       expect(pullRequests.shown.keys, ['penguin/colony#3']);
       expect(largestAsked, [false]);
+      expect(everyAsked, [false]);
     });
 
     test('largest without a topic hands back the first '
@@ -113,10 +117,18 @@ void main() {
       expect(answer.rows.map((row) => row.id), ['ledger']);
     });
 
-    test('largest with a topic keeps what the filter kept, in the '
-        "finder's size order", () async {
+    test('largest with a topic asks the filter for every match, then keeps '
+        "the largest of them in the finder's size order", () async {
+      // Ranked by size; the filter's relevance order is the reverse.
+      final pool = [
+        for (var n = 1; n <= frontPullRequestsFoundMax + 2; n++)
+          foundPullRequest(n),
+      ];
       final pullRequests = lookups(
-        keep: (_) async => ['penguin/colony#3', 'penguin/colony#1'],
+        pool: pool,
+        keep: (_) async => [
+          for (final pr in pool.reversed) pr.key,
+        ],
       );
 
       final answer = await pullRequests.find({
@@ -126,12 +138,34 @@ void main() {
       });
 
       expect(largestAsked, [true]);
+      expect(everyAsked, [true]);
       expect(filtered.single.$1, 'fish');
-      expect(pullRequests.found.map((pr) => pr.key), [
-        'penguin/colony#1',
-        'penguin/colony#3',
-      ]);
+      // The largest match survives though relevance put it last.
+      expect(pullRequests.found, pool.take(frontPullRequestsFoundMax));
       expect(answer.response, contains('largest first by lines changed'));
+    });
+
+    test('count cuts what is found, so her reply cannot draw more than was '
+        'asked for', () async {
+      final pool = [
+        for (var n = 1; n <= frontPullRequestsFoundMax; n++)
+          foundPullRequest(n),
+      ];
+      for (final (args, keys) in [
+        (
+          {'largest': true, 'count': 1, 'pastDays': 7},
+          ['penguin/colony#1'],
+        ),
+        (
+          {'largest': true, 'count': 2.0, 'pastDays': 7},
+          ['penguin/colony#1', 'penguin/colony#2'],
+        ),
+      ]) {
+        final pullRequests = lookups(pool: pool);
+        final answer = await pullRequests.find(args);
+        expect(pullRequests.found.map((pr) => pr.key), keys, reason: '$args');
+        expect(answer.response, startsWith('The ${keys.length} largest'));
+      }
     });
 
     test('largest says plainly when nothing was opened', () async {
@@ -151,6 +185,14 @@ void main() {
         {'topic': '  ', 'pastDays': 14},
         {'topic': 'fish'},
         {'topic': 'fish', 'pastDays': 99},
+        {'largest': true, 'pastDays': 7, 'count': 0},
+        {
+          'largest': true,
+          'pastDays': 7,
+          'count': frontPullRequestsFoundMax + 1,
+        },
+        {'largest': true, 'pastDays': 7, 'count': 2.5},
+        {'largest': true, 'pastDays': 7, 'count': '3'},
       ]) {
         final answer = await lookups().find(args);
         expect(answer.accepted, isFalse, reason: '$args');

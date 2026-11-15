@@ -85,9 +85,11 @@ class FrontPullRequestLookups {
   /// Answers `find_pull_requests`: the candidates of its window go to the
   /// filter, a call apart from her conversation, and only those it keeps
   /// come back to her, with their tasks. With `largest` they are those
-  /// opened in the window, largest first: without a topic the first
-  /// [frontPullRequestsFoundMax] come back and no filter is called, with
-  /// one those it keeps come back in that order.
+  /// opened in the window, largest first: without a topic no filter is
+  /// called, with one the filter keeps every match — relevance cuts none —
+  /// and those come back in that order. At most `count` come back
+  /// ([frontPullRequestsFoundMax] when not given): what she found is drawn
+  /// whether she places it or not, so it is cut here, never in her reply.
   Future<FrontPullRequestAnswer> find(Map<String, dynamic> args) async {
     if (_finds >= frontPullRequestFindsPerTurn) {
       return _refused(frontPullRequestFindExhaustedAnswer);
@@ -97,9 +99,20 @@ class FrontPullRequestLookups {
         : '';
     final largest = args['largest'] == true;
     final query = frontPullRequestQuery(args, now);
-    if ((topic.isEmpty && !largest) || query == null) {
+    final rawCount = args['count'];
+    // A model may send 3.0 for 3.
+    final count = rawCount == null
+        ? frontPullRequestsFoundMax
+        : rawCount is num && rawCount == rawCount.roundToDouble()
+        ? rawCount.toInt()
+        : 0;
+    if ((topic.isEmpty && !largest) ||
+        query == null ||
+        count < 1 ||
+        count > frontPullRequestsFoundMax) {
       return _refused(
         'Error: find_pull_requests needs a topic, largest: true, or both, '
+        'count left out or 1 to $frontPullRequestsFoundMax, '
         'and exactly one of: period '
         '(one of ${FrontTimePeriod.values.map((p) => p.wireName).join(', ')}'
         '), pastDays (1 to $frontPullRequestMaxDays), or from and through '
@@ -118,26 +131,33 @@ class FrontPullRequestLookups {
       query,
       largest: largest,
     );
+    final List<FrontFoundPullRequest> found;
     if (topic.isEmpty) {
-      _found = candidates.take(frontPullRequestsFoundMax).toList();
+      found = candidates;
     } else {
       final List<String> keys;
       try {
-        keys = candidates.isEmpty ? const [] : await filter!(topic, candidates);
+        keys = candidates.isEmpty
+            ? const []
+            : await filter!(topic, candidates, every: largest);
       } catch (error) {
         onFilterFailed?.call(error);
         return _refused(
           'The pull request search failed this turn; say so in your answer.',
         );
       }
-      final byKey = frontPullRequestsByKey(candidates);
-      _found = largest
-          ? [
-              for (final pr in candidates)
-                if (keys.contains(pr.key)) pr,
-            ]
-          : [for (final key in keys) ?byKey[key]];
+      if (largest) {
+        final kept = keys.toSet();
+        found = [
+          for (final pr in candidates)
+            if (kept.contains(pr.key)) pr,
+        ];
+      } else {
+        final byKey = frontPullRequestsByKey(candidates);
+        found = [for (final key in keys) ?byKey[key]];
+      }
     }
+    _found = found.take(count).toList();
     return (
       response: renderFrontFoundPullRequests(
         topic: topic.isEmpty ? null : topic,

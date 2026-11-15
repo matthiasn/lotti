@@ -1307,7 +1307,7 @@ hologram:x: not listed''');
           foundPullRequest(8, taskId: 'shed'),
         ],
       ),
-      filter: (topic, candidates) async => [ledger.key],
+      filter: (topic, candidates, {every = false}) async => [ledger.key],
       reader: (pullRequests) async => 'stored details',
       conversationPullRequests: [foundPullRequest(2, taskId: 'shed')],
     );
