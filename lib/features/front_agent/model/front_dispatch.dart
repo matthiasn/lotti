@@ -10,6 +10,7 @@
 /// proposes it.
 library;
 
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 
 /// A match this confident is routed without asking (the day agent's rule,
@@ -103,6 +104,7 @@ class FrontDispatchSegment {
     this.newKind,
     this.note,
     this.task,
+    this.ways,
   });
 
   /// Offsets into the input; `text` is exactly `input.substring(start, end)`.
@@ -128,6 +130,27 @@ class FrontDispatchSegment {
   /// For a `new` task: the fields read from the user's words.
   final FrontTaskDraft? task;
 
+  /// The ways she offers should this segment wait in the inbox, picked for
+  /// its words (`InboxWays` in her answer); null when she named none, and
+  /// every way is offered.
+  final List<FrontInboxWay>? ways;
+
+  /// This segment offering [ways].
+  FrontDispatchSegment withWays(List<FrontInboxWay> ways) =>
+      FrontDispatchSegment(
+        start: start,
+        end: end,
+        text: text,
+        intent: intent,
+        kind: kind,
+        confidence: confidence,
+        destinationId: destinationId,
+        newKind: newKind,
+        note: note,
+        task: task,
+        ways: ways,
+      );
+
   /// Whether this segment is routed to one existing thing.
   bool get hasDestination => kind.needsId && destinationId != null;
 
@@ -144,6 +167,7 @@ class FrontDispatchSegment {
     'confidence': confidence,
     if (note != null) 'note': note,
     if (task != null) 'task': task!.toJson(),
+    if (ways != null) 'ways': [for (final way in ways!) way.name],
   };
 
   /// Reads a segment the record stored; null when the shape is not one
@@ -185,6 +209,7 @@ class FrontDispatchSegment {
         _ => null,
       },
       task: FrontTaskDraft.fromJson(json['task']),
+      ways: FrontInboxWay.listFromJson(json['ways']),
     );
   }
 }
@@ -207,6 +232,20 @@ class FrontDispatch {
   }
 
   final List<FrontDispatchSegment> segments;
+
+  /// This dispatch with the ways she offers for each segment, by its
+  /// position ([ways]); a position past the last segment names nothing.
+  FrontDispatch withWays(Map<int, List<FrontInboxWay>> ways) => ways.isEmpty
+      ? this
+      : FrontDispatch(
+          segments: [
+            for (final (index, segment) in segments.indexed)
+              switch (ways[index]) {
+                final offered? => segment.withWays(offered),
+                null => segment,
+              },
+          ],
+        );
 
   /// The segments routed to an existing thing.
   Iterable<FrontDispatchSegment> get routed =>

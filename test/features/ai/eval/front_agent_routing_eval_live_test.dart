@@ -215,7 +215,8 @@ void main() {
 /// The checks a scenario's outcome fails, by name; empty when it passed.
 List<String> _judge(FrontEvalScenario scenario, FrontAgentStrategy strategy) {
   final failed = <String>[];
-  final dispatch = strategy.dispatch;
+  // As the workflow stores it: with the ways she wrote beside it.
+  final dispatch = strategy.dispatch?.withWays(strategy.inboxWays);
   final ask = strategy.askUser;
   final destinationIds = {
     for (final segment in dispatch?.segments ?? const <FrontDispatchSegment>[])

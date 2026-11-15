@@ -28,6 +28,42 @@ class FrontDoorWay {
   final VoidCallback? onTap;
 }
 
+/// The ways an inbox item's card lists for the ways she [picked] for its
+/// words, by name; null when she picked none, and every way is offered.
+typedef FrontDoorWaysFor = List<FrontDoorWay> Function(List<String>? picked);
+
+/// What an inbox item's card gives the `InboxWays` of its surface to draw
+/// its list from: which ways go with the ones she picked ([waysFor]), the
+/// way out, and how the list closes. The catalog stays static; what a way
+/// does comes from here.
+class FrontDoorWaysScope extends InheritedWidget {
+  const FrontDoorWaysScope({
+    required this.index,
+    required this.waysFor,
+    required this.leave,
+    required this.onClose,
+    required super.child,
+    super.key,
+  });
+
+  final int index;
+  final FrontDoorWaysFor waysFor;
+  final FrontDoorWay leave;
+  final VoidCallback onClose;
+
+  static FrontDoorWaysScope of(BuildContext context) {
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<FrontDoorWaysScope>();
+    assert(scope != null, 'An InboxWays is drawn in a FrontDoorWaysScope');
+    return scope!;
+  }
+
+  /// The ways are built anew with every card: a row's tap, and whether it
+  /// takes one, are never yesterday's.
+  @override
+  bool updateShouldNotify(FrontDoorWaysScope oldWidget) => true;
+}
+
 /// The other ways an inbox item can go, listed in its card: the card grows
 /// by them, on its own surface and its own two columns — each way's glyph
 /// on a tile under the item's tile, its name and what it does under the

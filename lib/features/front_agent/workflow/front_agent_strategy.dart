@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/util/think_blocks.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_due_section.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reference_links.dart';
@@ -160,6 +161,7 @@ class FrontAgentStrategy extends ConversationStrategy
   FrontDueSection? _dueSection;
   List<FrontIndexRow> _dueRows = const [];
   List<Map<String, Object?>> _replyComponents = const [];
+  Map<int, List<FrontInboxWay>> _inboxWays = const {};
 
   FrontDispatch? get dispatch => _dispatch;
   FrontAskUser? get askUser => _askUser;
@@ -187,6 +189,12 @@ class FrontAgentStrategy extends ConversationStrategy
   /// whatever a lookup found that she did not place after them (see
   /// [readFrontReply]). Empty until her answer was taken ([acceptAnswer]).
   List<Map<String, Object?>> get replyComponents => _replyComponents;
+
+  /// The ways she offers for the parts of her dispatch, by position: what
+  /// the `InboxWays` of the message that carried it name
+  /// ([readFrontInboxWays]). Empty until that message was read
+  /// ([acceptAnswer]).
+  Map<int, List<FrontInboxWay>> get inboxWays => _inboxWays;
 
   /// Whether the turn has ended: on a dispatch, a question, or her answer.
   bool get hasTerminalOutput =>
@@ -800,11 +808,21 @@ class FrontAgentStrategy extends ConversationStrategy
   bool acceptAnswer(String content) {
     if (_askUser != null || _replyToUser != null) return false;
     final streamed = parseFrontReplyStream(content);
+    // Taken with or without prose: they belong to the dispatch, which
+    // stands whatever she said beside it.
+    if (_dispatch != null) {
+      _inboxWays = readFrontInboxWays(streamed.components);
+    }
     final FrontReply reply;
     try {
       reply = _read(streamed);
     } on FrontReplyException {
-      if (streamed.components.isNotEmpty || streamed.errors.isNotEmpty) {
+      // The ways of a dispatch may stand without prose: they are not a
+      // reply.
+      if (streamed.errors.isNotEmpty ||
+          streamed.components.any(
+            (c) => c['component'] != FrontReplyComponents.inboxWays,
+          )) {
         _logFormatFailure('her answer had UI but no prose');
       }
       return false;

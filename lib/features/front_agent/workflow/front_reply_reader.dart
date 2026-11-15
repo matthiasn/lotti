@@ -1,5 +1,6 @@
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
@@ -51,6 +52,9 @@ const int frontQuickRepliesMax = 3;
 /// answer. Only a reply without prose throws a [FrontReplyException] —
 /// unless [proseRequired] is false, for an answer still being written,
 /// whose UI comes before its prose.
+///
+/// An `InboxWays` is not part of what her reply draws: it is read on its
+/// own ([readFrontInboxWays]) and passed over here.
 ///
 /// **Cards never hinge on her remembering the component.** A list in her
 /// prose whose lines each link one task or project of [visible] is drawn as
@@ -192,6 +196,9 @@ FrontReply readFrontReply({
             'caption': ?_caption(lookup['caption']),
           });
         }
+      case Map<Object?, Object?>() when type == FrontReplyComponents.inboxWays:
+        // Read on its own: it belongs to the dispatch, not to the reply.
+        break;
       default:
         dropped.add('$component, not a component of the reply catalog');
     }
@@ -213,6 +220,33 @@ FrontReply readFrontReply({
     ],
     dropped: dropped,
   );
+}
+
+/// The ways she offers for the parts of her dispatch, by a part's position
+/// in its segments: what the `InboxWays` among [components] name.
+///
+/// An `InboxWays` without a `part` speaks of the first; one whose `part`
+/// is no position, or whose `ways` is no list, says nothing; a way this
+/// build does not know is left out; of two for one part, the first stands.
+/// A part she wrote no `InboxWays` for is absent — every way is offered —
+/// which is not a part she wrote an empty one for.
+Map<int, List<FrontInboxWay>> readFrontInboxWays(List<Object?> components) {
+  final ways = <int, List<FrontInboxWay>>{};
+  for (final component in components) {
+    if (component is! Map ||
+        component['component'] != FrontReplyComponents.inboxWays) {
+      continue;
+    }
+    final part = switch (component['part']) {
+      null => 0,
+      final num position when position >= 0 && position == position.toInt() =>
+        position.toInt(),
+      _ => null,
+    };
+    final offered = FrontInboxWay.listFromJson(component['ways']);
+    if (part != null && offered != null) ways.putIfAbsent(part, () => offered);
+  }
+  return ways;
 }
 
 /// A component's accessibility label, when she gave one.

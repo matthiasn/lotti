@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 
 void main() {
@@ -222,6 +223,27 @@ void main() {
       expect(back.ownerTitle, isNull);
     },
   );
+
+  test('the ways she picked for the segment round-trip with the record and '
+      'stay when it is done; an older record reads as none picked', () {
+    final claim = FrontDoorRecord(
+      segmentIndex: 0,
+      text: 'Fix the login crash.',
+      kind: FrontDestinationKind.newThing,
+      status: FrontDoorStatus.claimed,
+      claimedAt: claimedAt,
+      ways: const [FrontInboxWay.prompt],
+    );
+    final done = claim.done(const FrontDoorInbox(newKind: FrontNewKind.task));
+
+    expect(done.toJson()['ways'], ['prompt']);
+    expect(FrontDoorRecord.fromJson(done.toJson())!.ways, [
+      FrontInboxWay.prompt,
+    ]);
+    // Before she picked ways: nothing stored, nothing read.
+    expect(record().toJson().containsKey('ways'), isFalse);
+    expect(FrontDoorRecord.fromJson(record().toJson())!.ways, isNull);
+  });
 
   test('a stored shape this build does not know reads as nothing, not a '
       'crash', () {

@@ -335,6 +335,54 @@ void main() {
     });
   });
 
+  group('FrontDoorWaysScope', () {
+    FrontDoorWaysScope scope({required String label, required Widget child}) =>
+        FrontDoorWaysScope(
+          index: 3,
+          waysFor: (picked) => [
+            for (final name in picked ?? ['every'])
+              FrontDoorWay(
+                name: name,
+                label: label,
+                hint: 'hint',
+                icon: LottiIcons.code,
+                onTap: null,
+              ),
+          ],
+          leave: way('decline'),
+          onClose: () => acted.add('close'),
+          child: child,
+        );
+
+    testWidgets('gives what the card offers for the ways picked, and what '
+        'it offers now after the card rebuilt', (tester) async {
+      var builds = 0;
+      final reader = Builder(
+        builder: (context) {
+          builds++;
+          final scope = FrontDoorWaysScope.of(context);
+          scope.onClose();
+          final said = [
+            for (final way in scope.waysFor(const ['goal'])) way.label,
+            for (final way in scope.waysFor(null)) way.name,
+            scope.leave.name,
+            '${scope.index}',
+          ];
+          return Text(said.join(' '), textDirection: TextDirection.ltr);
+        },
+      );
+
+      await tester.pumpWidget(scope(label: 'then', child: reader));
+      expect(find.text('then every decline 3'), findsOne);
+
+      // The same reader under a card built anew: it reads the new ways.
+      await tester.pumpWidget(scope(label: 'now', child: reader));
+      expect(find.text('now every decline 3'), findsOne);
+      expect(builds, 2);
+      expect(acted, ['close', 'close']);
+    });
+  });
+
   group('FrontDoorWaysToggle', () {
     final toggleNode = find
         .descendant(

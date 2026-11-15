@@ -13,6 +13,7 @@ import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_surfaces.dart';
@@ -38,6 +39,7 @@ void main() {
     String? ownerTitle = 'Garden',
     FrontDoorOutcome? outcome,
     FrontTaskDraft? task,
+    List<FrontInboxWay>? ways,
   }) => FrontDoorRecord(
     segmentIndex: index,
     text: text,
@@ -48,6 +50,7 @@ void main() {
     claimedAt: claimedAt,
     outcome: outcome,
     task: task,
+    ways: ways,
   );
 
   FrontDoorEntry entry(FrontDoorRecord record, {String? specialistReply}) =>
@@ -1872,6 +1875,192 @@ void main() {
         expect(button.header, isNull);
         expect(button.items.single.label, 'Undo');
         expect(find.byType(FrontDoorWaysToggle), findsNothing);
+      });
+    });
+
+    group('the ways she picked for its words', () {
+      FrontDoorEntry inbox({
+        required List<FrontInboxWay>? ways,
+        FrontNewKind? newKind = FrontNewKind.task,
+        FrontTaskDraft? task,
+      }) => entry(
+        record(
+          index: 0,
+          text: 'Fix the crash on the login screen.',
+          kind: FrontDestinationKind.newThing,
+          ownerTitle: null,
+          outcome: FrontDoorInbox(newKind: newKind),
+          task: task,
+          ways: ways,
+        ),
+      );
+
+      /// The card as the chat draws it: inside the thread's surfaces, which
+      /// hold the one composed from the ways the item's record keeps.
+      Future<void> pumpInThread(
+        WidgetTester tester,
+        FrontDoorEntry door, {
+        Set<String> busy = const {},
+      }) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            FrontReplySurfaces(
+              surfaces: FrontChatThread(
+                messages: const [],
+                doorsByMessageId: {
+                  'u1': [door],
+                },
+              ).surfaces,
+              logger: MockDomainLogger(),
+              onQuickReply: (_) {},
+              child: FrontDoorCard(
+                doors: [door],
+                actions: actions(),
+                busyDoorIds: busy,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      testWidgets('are the ones listed, with making it a task and keeping '
+          'it as a note, which are never hers to leave out — drawn through '
+          'the reply catalog', (tester) async {
+        await pumpInThread(tester, inbox(ways: const [FrontInboxWay.prompt]));
+
+        expect(await openMenu(tester, 0), [
+          'Make it a task',
+          'Task with a coding prompt',
+          'Save as a note',
+          'Leave it',
+        ]);
+        expect(
+          find.descendant(
+            of: find.byType(A2uiSurface),
+            matching: find.byType(FrontDoorWays),
+          ),
+          findsOne,
+        );
+      });
+
+      testWidgets('none picked leaves what the card always offers; on a '
+          'task she drafted, only the note', (tester) async {
+        await pumpInThread(tester, inbox(ways: const []));
+        expect(await openMenu(tester, 0), [
+          'Make it a task',
+          'Save as a note',
+          'Leave it',
+        ]);
+
+        await pumpInThread(
+          tester,
+          inbox(
+            ways: const [],
+            task: const FrontTaskDraft(title: 'Buy milk'),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          [
+            for (final way in waysOf(tester).ways) way.label,
+            waysOf(tester).leave.label,
+          ],
+          ['Save as a note', 'Leave it'],
+        );
+      });
+
+      testWidgets("the router's guess is offered and leads, picked or not; "
+          "the rest keep the card's order, not hers", (tester) async {
+        await pumpInThread(
+          tester,
+          inbox(
+            newKind: FrontNewKind.goal,
+            ways: const [FrontInboxWay.event, FrontInboxWay.prompt],
+          ),
+        );
+
+        expect(await openMenu(tester, 0), [
+          'Start a goal…',
+          'Make it a task',
+          'Task with a coding prompt',
+          'Make it an event',
+          'Save as a note',
+          'Leave it',
+        ]);
+      });
+
+      testWidgets('a project is offered when she picks it, guessed or not, '
+          'and not when she picks other ways', (tester) async {
+        await pumpInThread(tester, inbox(ways: const [FrontInboxWay.project]));
+        expect(await openMenu(tester, 0), [
+          'Make it a task',
+          'New project…',
+          'Save as a note',
+          'Leave it',
+        ]);
+        await tapItem(tester, 'project', 0);
+        expect(acted, [('project', 'd:door:0')]);
+
+        await pumpInThread(tester, inbox(ways: const [FrontInboxWay.goal]));
+        expect(await openMenu(tester, 0), isNot(contains('New project…')));
+      });
+
+      testWidgets('a picked way is taken as any other: it runs, and the '
+          'list closes', (tester) async {
+        await pumpInThread(tester, inbox(ways: const [FrontInboxWay.prompt]));
+        await openMenu(tester, 0);
+
+        await tapItem(tester, 'prompt', 0);
+
+        expect(acted, [('prompt', 'd:door:0')]);
+        expect(find.byType(FrontDoorWays), findsNothing);
+      });
+
+      testWidgets('Escape closes the list she picked, as any other', (
+        tester,
+      ) async {
+        await pumpInThread(tester, inbox(ways: const [FrontInboxWay.prompt]));
+        await openMenu(tester, 0);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(FrontDoorWays), findsNothing);
+        expect(acted, isEmpty);
+      });
+
+      testWidgets('an open list follows the card: once the item is busy, '
+          'its rows take no tap', (tester) async {
+        final door = inbox(ways: const [FrontInboxWay.prompt]);
+        await pumpInThread(tester, door);
+        await openMenu(tester, 0);
+        expect(waysOf(tester).ways.first.onTap, isNotNull);
+
+        await pumpInThread(tester, door, busy: {'d:door:0'});
+
+        expect(
+          waysOf(tester).ways.map((way) => way.onTap),
+          everyElement(isNull),
+        );
+        expect(waysOf(tester).leave.onTap, isNull);
+      });
+
+      testWidgets('outside a thread there is no surface to draw them on: '
+          'every way is offered, as for an item she picked none for', (
+        tester,
+      ) async {
+        await pump(tester, [inbox(ways: const [])]);
+
+        expect(await openMenu(tester, 0), [
+          'Make it a task',
+          'Task with a coding prompt',
+          'Start a goal…',
+          'Make it an event',
+          'Save as a note',
+          'Leave it',
+        ]);
+        expect(find.byType(A2uiSurface), findsNothing);
       });
     });
 

@@ -1,6 +1,7 @@
 import 'package:a2ui_agent/a2ui_agent.dart';
 import 'package:a2ui_core/a2ui_core.dart';
 import 'package:json_schema_builder/json_schema_builder.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/workflow/front_reply_reader.dart';
 
@@ -37,96 +38,123 @@ ComponentApi _fromLookup(String name, String what) => ComponentApi(
 /// What she composes a reply's UI from: a small catalog of whole things,
 /// each a flat list of required fields. She passes ids and placements,
 /// never titles or numbers.
-final Catalog<ComponentApi, FunctionImplementation> frontReplyAuthoringCatalog =
-    Catalog(
-      id: frontReplyAuthoringCatalogId,
-      protocolVersion: A2uiProtocolVersion.v1_0,
-      components: [
-        ComponentApi(
-          name: FrontReplyComponents.reply,
-          schema: S.object(
-            description:
-                'The root when there are several parts, top to bottom.',
-            properties: {
-              'children': Schema.fromMap({
-                r'$ref': r'common_types.json#/$defs/ChildList',
-              }),
-            },
-            required: ['children'],
+final Catalog<ComponentApi, FunctionImplementation>
+frontReplyAuthoringCatalog = Catalog(
+  id: frontReplyAuthoringCatalogId,
+  protocolVersion: A2uiProtocolVersion.v1_0,
+  components: [
+    ComponentApi(
+      name: FrontReplyComponents.reply,
+      schema: S.object(
+        description: 'The root when there are several parts, top to bottom.',
+        properties: {
+          'children': Schema.fromMap({
+            r'$ref': r'common_types.json#/$defs/ChildList',
+          }),
+        },
+        required: ['children'],
+      ),
+    ),
+    ComponentApi(
+      name: FrontReplyComponents.text,
+      schema: S.object(
+        description:
+            'A short label between other parts, such as a heading over '
+            'a list. Not your answer: the answer is the prose.',
+        properties: {'text': S.string()},
+        required: ['text'],
+      ),
+    ),
+    ComponentApi(
+      name: FrontReplyComponents.taskCards,
+      schema: S.object(
+        description:
+            'Tasks or projects as cards. The app shows each one live; '
+            'pass only ids, as listed.',
+        properties: {
+          'caption': _caption(),
+          'ids': S.list(
+            items: S.string(),
+            description: 'Each as listed: task:<id> or project:<id>.',
           ),
-        ),
-        ComponentApi(
-          name: FrontReplyComponents.text,
-          schema: S.object(
+          'notes': S.list(
+            items: S.string(),
             description:
-                'A short label between other parts, such as a heading over '
-                'a list. Not your answer: the answer is the prose.',
-            properties: {'text': S.string()},
-            required: ['text'],
+                'Optional: a few words per id, in the same order, shown '
+                'on its card — such as its logged time.',
           ),
-        ),
-        ComponentApi(
-          name: FrontReplyComponents.taskCards,
-          schema: S.object(
+        },
+        required: ['caption', 'ids'],
+      ),
+    ),
+    ComponentApi(
+      name: FrontReplyComponents.pullRequestCards,
+      schema: S.object(
+        description:
+            'Pull requests as cards, each with its task. The app shows '
+            'each one live; pass only ids, as returned.',
+        properties: {
+          'caption': _caption(),
+          'ids': S.list(
+            items: S.string(),
+            description: 'Each as returned: owner/repo#number.',
+          ),
+        },
+        required: ['caption', 'ids'],
+      ),
+    ),
+    _fromLookup(
+      FrontReplyComponents.closedTasks,
+      'The cards of every task list_closed_tasks found this turn.',
+    ),
+    _fromLookup(
+      FrontReplyComponents.loggedTimeChart,
+      'The chart of the time summarize_logged_time summed this turn.',
+    ),
+    _fromLookup(
+      FrontReplyComponents.pullRequestChart,
+      'The charts of what summarize_pull_requests counted this turn.',
+    ),
+    ComponentApi(
+      name: FrontReplyComponents.quickReplies,
+      schema: S.object(
+        description:
+            'Up to $frontQuickRepliesMax short replies the user can tap '
+            'to answer an offer you make, in their own words.',
+        properties: {'options': S.list(items: S.string())},
+        required: ['options'],
+      ),
+    ),
+    ComponentApi(
+      name: FrontReplyComponents.inboxWays,
+      schema: S.object(
+        description:
+            'Beside a dispatch: what else one of its parts could become '
+            'while it waits for the user. Not drawn in your reply; the '
+            'app offers them on that part.',
+        properties: {
+          'part': S.integer(
             description:
-                'Tasks or projects as cards. The app shows each one live; '
-                'pass only ids, as listed.',
-            properties: {
-              'caption': _caption(),
-              'ids': S.list(
-                items: S.string(),
-                description: 'Each as listed: task:<id> or project:<id>.',
-              ),
-              'notes': S.list(
-                items: S.string(),
-                description:
-                    'Optional: a few words per id, in the same order, shown '
-                    'on its card — such as its logged time.',
-              ),
-            },
-            required: ['caption', 'ids'],
+                "The part's position in the dispatch's segments; the "
+                'first is 0.',
           ),
-        ),
-        ComponentApi(
-          name: FrontReplyComponents.pullRequestCards,
-          schema: S.object(
+          'ways': S.list(
+            items: S.string(
+              enumValues: [
+                for (final way in FrontInboxWay.values) way.name,
+              ],
+            ),
+            // The notation's signatures do not list an enum's values.
             description:
-                'Pull requests as cards, each with its task. The app shows '
-                'each one live; pass only ids, as returned.',
-            properties: {
-              'caption': _caption(),
-              'ids': S.list(
-                items: S.string(),
-                description: 'Each as returned: owner/repo#number.',
-              ),
-            },
-            required: ['caption', 'ids'],
+                'Any of ${FrontInboxWay.values.map((w) => w.name).join(', ')} '
+                '— only those that fit its words; empty when none does.',
           ),
-        ),
-        _fromLookup(
-          FrontReplyComponents.closedTasks,
-          'The cards of every task list_closed_tasks found this turn.',
-        ),
-        _fromLookup(
-          FrontReplyComponents.loggedTimeChart,
-          'The chart of the time summarize_logged_time summed this turn.',
-        ),
-        _fromLookup(
-          FrontReplyComponents.pullRequestChart,
-          'The charts of what summarize_pull_requests counted this turn.',
-        ),
-        ComponentApi(
-          name: FrontReplyComponents.quickReplies,
-          schema: S.object(
-            description:
-                'Up to $frontQuickRepliesMax short replies the user can tap '
-                'to answer an offer you make, in their own words.',
-            properties: {'options': S.list(items: S.string())},
-            required: ['options'],
-          ),
-        ),
-      ],
-    );
+        },
+        required: ['part', 'ways'],
+      ),
+    ),
+  ],
+);
 
 AgentToRendererMessage _example(List<Map<String, Object?>> components) =>
     AgentToRendererMessage.fromJson({
@@ -138,7 +166,7 @@ AgentToRendererMessage _example(List<Map<String, Object?>> components) =>
       },
     });
 
-/// Reads and writes her reply's UI in [frontReplyFormat]. The two examples
+/// Reads and writes her reply's UI in [frontReplyFormat]. The examples
 /// matter: without them a model gets the block's tags wrong.
 final A2uiRequestProcessor _processor =
     A2uiGenerator(
@@ -171,6 +199,16 @@ final A2uiRequestProcessor _processor =
               'id': 'chart',
               'component': FrontReplyComponents.loggedTimeChart,
               'caption': 'Logged time this week',
+            },
+          ]),
+        ],
+        [
+          _example([
+            {
+              'id': 'root',
+              'component': FrontReplyComponents.inboxWays,
+              'part': 0,
+              'ways': [FrontInboxWay.prompt.name],
             },
           ]),
         ],

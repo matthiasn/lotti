@@ -254,6 +254,7 @@ Your answer is the message you write — never a tool call — and it is spoken 
 - `ClosedTasks`, `LoggedTimeChart` and `PullRequestChart` place what this turn's lookup made; what you do not place is drawn after your words. Never pass them numbers.
 - `QuickReplies` offers up to $frontQuickRepliesMax short replies the user can tap to answer an offer you make ("Break it down"), each in the user's own words and language.
 - `Text` is a short label between parts, such as "Overdue" over a list; never your answer.
+- `InboxWays` goes with a `dispatch`: one for each part you send as `new`, `unrouted` or a `journal` statement — a part that waits for the user's tap. `part` is its position in `segments`, the first 0; `ways` is what else it could become, only where its words fit: `prompt`, a task with a coding prompt, for programming or other work on software; `goal` for something to reach or keep up over time; `project` for work made of several tasks; `event` for an occasion on a day or at a time. When none fits, `ways` is empty. The app offers them on that part; it is not shown in your reply, never mentioned in your prose, and the one block that may stand without prose.
 - Cards and charts are shown, never read aloud. Your prose says what is on screen, top to bottom: how many, the one or two that stand out, by name, and a chart's key takeaway. No lists and no headings in it.
 How to write the UI is described under "Writing UI" below.
 

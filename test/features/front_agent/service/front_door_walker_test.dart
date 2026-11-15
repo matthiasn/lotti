@@ -14,6 +14,7 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/service/front_door_walker.dart';
 import 'package:lotti/features/front_agent/service/front_owner_titles.dart';
@@ -88,8 +89,10 @@ void main() {
     FrontSegmentIntent intent = FrontSegmentIntent.question,
     FrontNewKind? newKind,
     FrontTaskDraft? task,
+    List<FrontInboxWay>? ways,
   }) => FrontDispatchSegment(
     task: task,
+    ways: ways,
     start: start,
     end: end,
     text: input.substring(start, end),
@@ -899,6 +902,32 @@ void main() {
       expect(door.task?.title, 'Buy a hose');
       expect(door.task?.startedAt, DateTime(2026, 10, 24, 8, 50));
     }
+  });
+
+  test('the ways she picked for a segment are kept on its record for the '
+      'card; a segment she picked none for keeps none', () async {
+    seedDispatch([
+      segment(
+        start: 0,
+        end: 29,
+        kind: FrontDestinationKind.unrouted,
+        intent: FrontSegmentIntent.statement,
+        ways: const [FrontInboxWay.event],
+      ),
+      segment(
+        start: 30,
+        end: 39,
+        kind: FrontDestinationKind.newThing,
+        intent: FrontSegmentIntent.instruction,
+        newKind: FrontNewKind.task,
+      ),
+    ]);
+
+    await walker.walk(messageId);
+
+    expect(doors()[0]!.outcome, isA<FrontDoorInbox>());
+    expect(doors()[0]!.ways, [FrontInboxWay.event]);
+    expect(doors()[1]!.ways, isNull);
   });
 
   test('a question about today, or a change to it while the Daily OS is '

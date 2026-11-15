@@ -3,16 +3,20 @@ import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
+import 'package:lotti/features/front_agent/ui/a2ui/front_reply_surfaces.dart';
 import 'package:lotti/features/front_agent/ui/front_cited_source_row.dart';
+import 'package:lotti/features/front_agent/ui/front_door_ways.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_cards.dart';
@@ -21,6 +25,8 @@ import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
 import 'front_reply_test_harness.dart';
 
 void main() {
@@ -488,6 +494,78 @@ void main() {
 
       expect(find.byType(FrontCitedSourceRow), findsNothing);
       expect(find.textContaining('words:'), findsNothing);
+    });
+  });
+
+  group('InboxWays', () {
+    testWidgets("draws the card's list for the ways the surface names — "
+        'handing the card each name as stored, known to it or not — with '
+        "the card's way out and its close", (tester) async {
+      const id = 'ways:d:door:0';
+      final asked = <List<String>?>[];
+      final acted = <String>[];
+      FrontDoorWay way(String name) => FrontDoorWay(
+        name: name,
+        label: 'Label $name',
+        hint: 'Hint $name',
+        icon: LottiIcons.note,
+        onTap: () => acted.add(name),
+      );
+      final surface = FrontReplySurface.inboxWays(
+        surfaceId: id,
+        ways: const [FrontInboxWay.event, FrontInboxWay.prompt],
+      );
+      // As a later build may have stored it: a way this one does not know.
+      ((surface.message['createSurface']! as Map)['components']! as List)
+          .cast<Map<String, Object?>>()
+          .single['ways'] = [
+        'event',
+        'hologram',
+        'prompt',
+      ];
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          FrontReplySurfaces(
+            surfaces: {id: surface},
+            logger: MockDomainLogger(),
+            onQuickReply: (_) {},
+            child: Builder(
+              builder: (context) => FrontDoorWaysScope(
+                index: 4,
+                waysFor: (picked) {
+                  asked.add(picked);
+                  return [for (final name in picked!) way(name)];
+                },
+                leave: way('decline'),
+                onClose: () => acted.add('close'),
+                child: A2uiSurface(
+                  surface: FrontReplySurfaces.surfaceOf(context, id)!,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final list = tester.widget<FrontDoorWays>(find.byType(FrontDoorWays));
+      expect(asked.last, ['event', 'hologram', 'prompt']);
+      expect(list.index, 4);
+      expect(
+        [for (final way in list.ways) way.name],
+        [
+          'event',
+          'hologram',
+          'prompt',
+        ],
+      );
+      expect(list.leave.name, 'decline');
+
+      await tester.tap(find.byKey(const ValueKey('front-door-prompt-4')));
+      await tester.tap(find.byKey(const ValueKey('front-door-decline-4')));
+      list.onClose();
+      expect(acted, ['prompt', 'decline', 'close']);
     });
   });
 }

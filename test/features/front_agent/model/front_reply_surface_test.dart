@@ -4,6 +4,7 @@ import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
@@ -295,6 +296,42 @@ void main() {
     expect(
       FrontReplyComponents.composable,
       isNot(contains(FrontReplyComponents.citedPoints)),
+    );
+  });
+
+  test("an inbox item's ways surface is one InboxWays naming what she "
+      'picked, in her order — none picked included', () {
+    for (final ways in [
+      [FrontInboxWay.event, FrontInboxWay.prompt],
+      <FrontInboxWay>[],
+    ]) {
+      final surface = FrontReplySurface.inboxWays(
+        surfaceId: 'ways:d:door:0',
+        ways: ways,
+      );
+
+      expect(surface.surfaceId, 'ways:d:door:0');
+      final create = surface.message['createSurface']! as Map;
+      expect(create['catalogId'], frontReplyCatalogId);
+      expect(create['components'], [
+        {
+          'id': 'root',
+          'component': FrontReplyComponents.inboxWays,
+          'ways': [for (final way in ways) way.name],
+        },
+      ]);
+      // Drawn by the processor even when she picked none: the list then
+      // holds what the card always offers.
+      expect(surface.wordsOnly, isFalse);
+      expect(
+        FrontReplySurface.fromJson(surface.message)!.surfaceId,
+        'ways:d:door:0',
+      );
+    }
+    // Hers to write, beside a dispatch.
+    expect(
+      FrontReplyComponents.composable,
+      contains(FrontReplyComponents.inboxWays),
     );
   });
 }

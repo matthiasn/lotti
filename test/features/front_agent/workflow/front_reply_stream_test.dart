@@ -181,6 +181,48 @@ root = TaskCards("Due", ["task:t-ice"''');
     expect(reply.errors, isNotEmpty);
   });
 
+  test('the ways of a dispatch are written by part and name, alone or '
+      'several under a Reply, and the prompt teaches them', () {
+    final one = parseFrontReplyStream('''
+<a2ui>
+surface("reply")
+root = InboxWays(0, ["prompt"])
+</a2ui>
+Ready for you to confirm.''');
+
+    expect(one.components, [
+      {
+        'component': 'InboxWays',
+        'part': 0,
+        'ways': ['prompt'],
+      },
+    ]);
+    expect(one.errors, isEmpty);
+
+    final several = parseFrontReplyStream('''
+<a2ui>
+surface("reply")
+root = Reply([
+  InboxWays(0, []),
+  InboxWays(1, ["event", "goal"])
+])
+</a2ui>''');
+
+    expect(several.components, [
+      {'component': 'InboxWays', 'part': 0, 'ways': <Object?>[]},
+      {
+        'component': 'InboxWays',
+        'part': 1,
+        'ways': ['event', 'goal'],
+      },
+    ]);
+    expect(several.errors, isEmpty);
+    expect(frontReplyPromptSnippet, contains('InboxWays'));
+    for (final way in ['prompt', 'goal', 'project', 'event']) {
+      expect(frontReplyPromptSnippet, contains(way), reason: way);
+    }
+  });
+
   test('the prompt snippet teaches the notation, the catalog and both '
       'examples', () {
     expect(frontReplyPromptSnippet, contains('<a2ui>'));

@@ -2,6 +2,7 @@ import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:meta/meta.dart';
@@ -46,6 +47,13 @@ abstract final class FrontReplyComponents {
   /// ([FrontReplySurface.citedAnswer]).
   static const citedPoints = 'CitedPoints';
 
+  /// The ways one part of the dispatch may go while it waits in the inbox
+  /// (`ways`), picked for its words. Hers to write beside a dispatch, with
+  /// the part's position (`part`); never drawn in her reply — the app
+  /// stores it with the part and draws it in that item's card
+  /// ([FrontReplySurface.inboxWays]).
+  static const inboxWays = 'InboxWays';
+
   /// What she may compose a reply from, in the order the tool lists them.
   static const List<String> composable = [
     text,
@@ -55,6 +63,7 @@ abstract final class FrontReplyComponents {
     loggedTimeChart,
     pullRequestChart,
     quickReplies,
+    inboxWays,
   ];
 
   /// The components drawn from what a lookup of the turn made: the app
@@ -177,6 +186,28 @@ class FrontReplySurface {
           'id': 'c0',
           'component': FrontReplyComponents.citedPoints,
           'data': {'@path': '/${FrontReplyData.answer}'},
+        },
+      ],
+    },
+  });
+
+  /// The surface an inbox item's other ways are drawn on, in its card:
+  /// one `InboxWays` naming the [ways] she picked for its words. The app
+  /// composes it from what the item's record keeps; the card adds the ways
+  /// that are never hers to leave out and runs each.
+  factory FrontReplySurface.inboxWays({
+    required String surfaceId,
+    required List<FrontInboxWay> ways,
+  }) => FrontReplySurface({
+    'version': frontReplyProtocolVersion,
+    'createSurface': {
+      'surfaceId': surfaceId,
+      'catalogId': frontReplyCatalogId,
+      'components': [
+        {
+          'id': 'root',
+          'component': FrontReplyComponents.inboxWays,
+          'ways': [for (final way in ways) way.name],
         },
       ],
     },

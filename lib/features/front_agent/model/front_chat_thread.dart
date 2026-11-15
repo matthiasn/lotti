@@ -63,6 +63,9 @@ class FrontDoorEntry {
 /// The id of the surface the journal answer of door [doorId] is drawn on.
 String frontDoorAnswerSurfaceId(String doorId) => 'answer:$doorId';
 
+/// The id of the surface the other ways of inbox item [doorId] are drawn on.
+String frontDoorWaysSurfaceId(String doorId) => 'ways:$doorId';
+
 @immutable
 class FrontChatThread {
   const FrontChatThread({
@@ -141,15 +144,26 @@ class FrontChatThread {
       },
   };
 
-  /// Every surface the thread draws: [surfacesByMessageId], and the one a
+  /// Every surface the thread draws: [surfacesByMessageId], the one a
   /// journal answer's door draws its points on, by
-  /// [frontDoorAnswerSurfaceId]. The app composes the latter from the
-  /// answer's verified evidence; the door card decides whether it shows.
+  /// [frontDoorAnswerSurfaceId], and the one an inbox item's door lists its
+  /// other ways on, by [frontDoorWaysSurfaceId], when she picked them for
+  /// its words. The app composes the last two — from the answer's verified
+  /// evidence, from the ways the item's record keeps; the door card decides
+  /// whether each shows.
   Map<String, FrontReplySurface> get surfaces => {
     ...surfacesByMessageId,
     for (final doors in doorsByMessageId.values)
       for (final door in doors)
-        if (door.record.outcome case final FrontDoorAnswer answer
+        if (door.record case FrontDoorRecord(
+          outcome: FrontDoorInbox(),
+          :final ways?,
+        ))
+          frontDoorWaysSurfaceId(door.doorId): FrontReplySurface.inboxWays(
+            surfaceId: frontDoorWaysSurfaceId(door.doorId),
+            ways: ways,
+          )
+        else if (door.record.outcome case final FrontDoorAnswer answer
             when answer.fromJournal)
           if (FrontCitedPoint.fromAnswer(answer.text, answer.evidence)
               case final points when points.isNotEmpty)

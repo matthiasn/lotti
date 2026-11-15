@@ -12,6 +12,7 @@ import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/ui/front_cited_source_row.dart';
+import 'package:lotti/features/front_agent/ui/front_door_ways.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_cards.dart';
@@ -343,6 +344,31 @@ final _quickReplies = ComponentImplementation(
   },
 );
 
+/// The other ways of an inbox item, in its card: the ways she picked for
+/// its words (`ways`, by name), with those the card always offers and the
+/// way out, each run by the card ([FrontDoorWaysScope]).
+final _inboxWays = ComponentImplementation(
+  name: FrontReplyComponents.inboxWays,
+  schema: S.object(
+    properties: {
+      'ways': S.list(
+        description: 'The ways picked for the item, by name',
+        items: S.string(),
+      ),
+    },
+    required: ['ways'],
+  ),
+  builder: (context, node, props, _) {
+    final scope = FrontDoorWaysScope.of(context);
+    return FrontDoorWays(
+      index: scope.index,
+      ways: scope.waysFor(props.list('ways').whereType<String>().toList()),
+      leave: scope.leave,
+      onClose: scope.onClose,
+    );
+  },
+);
+
 /// Her reply's A2UI catalog (v1.0): the components a reply is drawn from,
 /// each built on the chat's own widgets. Their data comes from the surface
 /// as stored — the lookups' through its data model — never from the model.
@@ -359,5 +385,6 @@ final CatalogImplementation frontReplyCatalog = CatalogImplementation(
     _pullRequestChart,
     _quickReplies,
     _citedPoints,
+    _inboxWays,
   ],
 );

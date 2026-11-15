@@ -325,7 +325,10 @@ class _DoorRow extends StatelessWidget {
 
     // The other ways an inbox item can go, and the way that leaves it:
     // listed in the card itself, behind a toggle in the overflow's slot.
-    var ways = const <FrontDoorWay>[];
+    // Which of them are listed is hers to say, on the surface the thread
+    // drew from what she picked for the item's words.
+    FrontDoorWaysFor? waysFor;
+    SurfaceModel<ComponentImplementation>? waysSurface;
     FrontDoorWay? leave;
 
     DesignSystemContextMenuItem item(
@@ -559,14 +562,13 @@ class _DoorRow extends StatelessWidget {
               LottiIcons.focus,
               () => acting.onStartGoal(door),
             ),
-            if (newKind == FrontNewKind.project)
-              way(
-                'project',
-                messages.frontDoorNewProject,
-                messages.frontDoorNewProjectHint,
-                LottiIcons.folder,
-                () => acting.onNewProject(door),
-              ),
+            way(
+              'project',
+              messages.frontDoorNewProject,
+              messages.frontDoorNewProjectHint,
+              LottiIcons.folder,
+              () => acting.onNewProject(door),
+            ),
             if (acting.onMakeEvent case final makeEvent?)
               way(
                 'event',
@@ -588,11 +590,29 @@ class _DoorRow extends StatelessWidget {
             FrontNewKind.project => 'project',
             FrontNewKind.task || null => null,
           };
-          // The router's guess leads the other ways.
-          ways = [
-            ...offered.where((way) => way.name == guess),
-            ...offered.where((way) => way.name != guess),
-          ];
+          // Making a task of it and keeping it as a note are always
+          // offered, and so is the router's guess, which leads. The rest
+          // are those she picked for the words; where she picked none —
+          // an item from before she did, a block she left out — every way
+          // is offered, a project only as the guess.
+          waysFor = (picked) {
+            final shown = offered.where(
+              (way) => switch (way.name) {
+                'task' || 'note' => true,
+                final name when name == guess => true,
+                'project' => picked?.contains('project') ?? false,
+                final name => picked?.contains(name) ?? true,
+              },
+            );
+            return [
+              ...shown.where((way) => way.name == guess),
+              ...shown.where((way) => way.name != guess),
+            ];
+          };
+          waysSurface = FrontReplySurfaces.surfaceOf(
+            context,
+            frontDoorWaysSurfaceId(id),
+          );
           // The way out makes nothing: the item stays, left, in the inbox
           // — its glyph, not a cross, which would read as closing the list.
           leave = way(
@@ -832,7 +852,7 @@ class _DoorRow extends StatelessWidget {
         ),
       ],
     );
-    if (leave == null) return row;
+    if (leave == null || waysFor == null) return row;
     // The other ways open under the item, in its card: the card grows by
     // them rather than a menu opening over it.
     return Column(
@@ -845,14 +865,25 @@ class _DoorRow extends StatelessWidget {
               : MotionDurations.short4,
           curve: MotionCurves.standard,
           alignment: Alignment.topCenter,
-          child: choosing
-              ? FrontDoorWays(
-                  index: index,
-                  ways: ways,
-                  leave: leave,
-                  onClose: () => onChoose(on: false),
-                )
-              : const SizedBox(width: double.infinity),
+          child: switch ((choosing, waysSurface)) {
+            (false, _) => const SizedBox(width: double.infinity),
+            // The ways she picked for the words: an A2UI surface of the
+            // reply catalog, whose `InboxWays` draws the list from what
+            // this card offers.
+            (true, final surface?) => FrontDoorWaysScope(
+              index: index,
+              waysFor: waysFor,
+              leave: leave,
+              onClose: () => onChoose(on: false),
+              child: A2uiSurface(key: ObjectKey(surface), surface: surface),
+            ),
+            (true, null) => FrontDoorWays(
+              index: index,
+              ways: waysFor(null),
+              leave: leave,
+              onClose: () => onChoose(on: false),
+            ),
+          },
         ),
       ],
     );

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 
 /// The tool name under which a walked door is recorded in the front
@@ -496,6 +497,7 @@ class FrontDoorRecord {
     this.ownerTitle,
     this.outcome,
     this.task,
+    this.ways,
   });
 
   final int segmentIndex;
@@ -516,6 +518,10 @@ class FrontDoorRecord {
   /// The segment's task draft: what a task made of it is filled with.
   final FrontTaskDraft? task;
 
+  /// The ways she offers while the segment waits in the inbox, picked for
+  /// its words; null when she named none, and every way is offered.
+  final List<FrontInboxWay>? ways;
+
   /// Whether another walker may take this segment: never when done, and
   /// only after [frontDoorClaimGrace] when claimed.
   bool isStaleClaimAt(DateTime now) =>
@@ -532,6 +538,7 @@ class FrontDoorRecord {
     claimedAt: claimedAt,
     outcome: outcome,
     task: task,
+    ways: ways,
   );
 
   Map<String, Object?> toJson() => {
@@ -544,6 +551,7 @@ class FrontDoorRecord {
     'claimedAt': claimedAt.toUtc().toIso8601String(),
     if (outcome != null) 'outcome': outcome!.toJson(),
     if (task != null) 'task': task!.toJson(),
+    if (ways != null) 'ways': [for (final way in ways!) way.name],
   };
 
   /// Reads a stored record; null when it is not one this build wrote.
@@ -579,6 +587,7 @@ class FrontDoorRecord {
       claimedAt: claimedAt,
       outcome: FrontDoorOutcome.fromJson(json['outcome']),
       task: FrontTaskDraft.fromJson(json['task']),
+      ways: FrontInboxWay.listFromJson(json['ways']),
     );
   }
 }

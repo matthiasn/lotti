@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -35,6 +36,7 @@ import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_live_answer.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
@@ -58,6 +60,7 @@ import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_companion_figure.dart';
 import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
+import 'package:lotti/features/front_agent/ui/front_door_ways.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
@@ -3283,6 +3286,48 @@ void main() {
       verify(() => filing.makeEvent('d:door:0')).called(1);
       expect(closed, 0);
       expect(paths, isEmpty);
+    });
+
+    testWidgets('an item lists the ways she picked for its words, drawn '
+        "from the thread's surfaces — and an event she picked is still not "
+        'offered where events are off', (tester) async {
+      await pumpPane(
+        tester,
+        thread: () async => FrontChatThread(
+          messages: [
+            message('u1', AgentChatRole.user, 'Swim every morning.', now),
+          ],
+          doorsByMessageId: {
+            'u1': [
+              FrontDoorEntry(
+                doorId: 'd:door:0',
+                record: FrontDoorRecord(
+                  segmentIndex: 0,
+                  text: 'Swim every morning.',
+                  kind: FrontDestinationKind.newThing,
+                  status: FrontDoorStatus.done,
+                  claimedAt: now.toUtc(),
+                  outcome: const FrontDoorInbox(newKind: FrontNewKind.task),
+                  ways: const [FrontInboxWay.goal, FrontInboxWay.event],
+                ),
+              ),
+            ],
+          },
+        ),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
+      await tester.pumpAndSettle();
+
+      final list = tester.widget<FrontDoorWays>(find.byType(FrontDoorWays));
+      expect([for (final way in list.ways) way.name], ['task', 'goal', 'note']);
+      expect(
+        find.ancestor(
+          of: find.byType(FrontDoorWays),
+          matching: find.byType(A2uiSurface),
+        ),
+        findsOne,
+      );
     });
 
     testWidgets('where events are off, an item offers no event to make', (

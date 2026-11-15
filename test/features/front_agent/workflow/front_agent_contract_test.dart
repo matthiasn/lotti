@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
@@ -432,6 +433,35 @@ void main() {
     expect(coverArt['description'], contains('True only when they ask'));
     // Never demanded of the model: a task without one is the usual case.
     expect(task['required'], ['title']);
+  });
+
+  test('the ways of a part that waits are hers to pick for its words, '
+      'beside the dispatch, each named with when it fits — and may stand '
+      'without prose', () {
+    expect(
+      frontAgentSystemPrompt,
+      contains(
+        '`InboxWays` goes with a `dispatch`: one for each part you send as '
+        '`new`, `unrouted` or a `journal` statement',
+      ),
+    );
+    for (final way in FrontInboxWay.values) {
+      expect(
+        frontAgentSystemPrompt,
+        contains('`${way.name}`'),
+        reason: way.name,
+      );
+    }
+    expect(frontAgentSystemPrompt, contains('When none fits, `ways` is empty'));
+    expect(
+      frontAgentSystemPrompt,
+      contains('the one block that may stand without prose'),
+    );
+    // The notation's own part of the prompt names the same ways.
+    expect(
+      frontAgentSystemMessage(CompanionSass.values.first),
+      contains('Any of prompt, goal, project, event'),
+    );
   });
 
   test('dates are written as the tools give them, and a misheard name '

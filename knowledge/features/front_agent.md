@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, with cover art or a coding prompt generated from those words when asked for, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, how many pull requests the user opened and shipped, how big they were on average and which were the biggest, with charts under her words, and which task some work was in — pull requests filtered by a call of their own, shown as the task page's pull request cards, with follow-ups about them — and names tasks as links, how a reply is composed of catalog components in her order, checked, stored as an A2UI surface and drawn by `a2ui_flutter`, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, with cover art or a coding prompt generated from those words when asked for, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, how many pull requests the user opened and shipped, how big they were on average and which were the biggest, with charts under her words, and which task some work was in — pull requests filtered by a call of their own, shown as the task page's pull request cards, with follow-ups about them — and names tasks as links, how she picks the ways an inbox item offers for its words, how a reply is composed of catalog components in her order, checked, stored as an A2UI surface and drawn by `a2ui_flutter`, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -11,7 +11,7 @@ sources:
   - id: workflow
     resource: ../../lib/features/front_agent/workflow/front_agent_workflow.dart
     title: FrontAgentWorkflow — one routing turn per wake
-    last_modified: 2026-11-09
+    last_modified: 2026-11-15
   - id: stall-guard
     resource: ../../lib/features/front_agent/workflow/front_inference_stall_guard.dart
     title: FrontInferenceStallGuard — a silent provider call is sent once more
@@ -27,7 +27,7 @@ sources:
   - id: strategy
     resource: ../../lib/features/front_agent/workflow/front_agent_strategy.dart
     title: FrontAgentStrategy — accumulating, count-capped tool handling, her words linked
-    last_modified: 2026-11-08
+    last_modified: 2026-11-15
   - id: contract
     resource: ../../lib/features/front_agent/workflow/front_agent_contract.dart
     title: The tool contract, caps and system prompt
@@ -71,7 +71,7 @@ sources:
   - id: door
     resource: ../../lib/features/front_agent/model/front_door.dart
     title: FrontDoorRecord — the claim, the outcome, the deterministic id
-    last_modified: 2026-11-01
+    last_modified: 2026-11-15
   - id: reference-links
     resource: ../../lib/features/front_agent/model/front_reference_links.dart
     title: linkFrontReferences — a recited task or project id becomes a link
@@ -98,7 +98,11 @@ sources:
     last_modified: 2026-11-14
   - id: door-ways
     resource: ../../lib/features/front_agent/ui/front_door_ways.dart
-    title: FrontDoorWays — an inbox item's other ways, listed in its card, and the toggle that opens them
+    title: FrontDoorWays — an inbox item's other ways, listed in its card, the toggle that opens them, and the scope its InboxWays draws from
+    last_modified: 2026-11-15
+  - id: inbox-way
+    resource: ../../lib/features/front_agent/model/front_inbox_way.dart
+    title: FrontInboxWay — the ways an inbox item may go that she picks for its words
     last_modified: 2026-11-15
   - id: conversation-tasks
     resource: ../../lib/features/front_agent/workflow/front_conversation_tasks.dart
@@ -167,15 +171,15 @@ sources:
   - id: reply-surface
     resource: ../../lib/features/front_agent/model/front_reply_surface.dart
     title: FrontReplySurface — a reply as its stored A2UI v1.0 createSurface message, its components and the data the app bound
-    last_modified: 2026-11-11
+    last_modified: 2026-11-15
   - id: reply-reader
     resource: ../../lib/features/front_agent/workflow/front_reply_reader.dart
     title: readFrontReply — her prose and the components she wrote checked against what the turn saw, task lists in her prose made cards, nothing a lookup found lost
-    last_modified: 2026-11-12
+    last_modified: 2026-11-15
   - id: reply-stream
     resource: ../../lib/features/front_agent/workflow/front_reply_stream.dart
     title: parseFrontReplyStream — her message split into Express UI blocks and prose, the authoring catalog and the prompt snippet that teaches it
-    last_modified: 2026-11-12
+    last_modified: 2026-11-15
   - id: live-answer
     resource: ../../lib/features/front_agent/model/front_live_answer.dart
     title: FrontLiveAnswer — her answer while a turn is still writing it, and the thread it is shown in
@@ -183,7 +187,7 @@ sources:
   - id: reply-catalog
     resource: ../../lib/features/front_agent/ui/a2ui/front_reply_catalog.dart
     title: frontReplyCatalog and FrontReplyScope — her reply's A2UI catalog on the chat's own widgets
-    last_modified: 2026-11-11
+    last_modified: 2026-11-15
   - id: reply-surfaces
     resource: ../../lib/features/front_agent/ui/a2ui/front_reply_surfaces.dart
     title: FrontReplySurfaces — one A2UI message processor per conversation, fed each reply's stored surface
@@ -1764,7 +1768,8 @@ your words as they are*): *Task with a coding prompt*, *Start a goal…* /
 *New project…* (the ellipsis says a wizard opens), *Make it an event*
 (only while `enable_events` is on — an event made where it is off would
 have no page to be found on) and *Save as a note*, with the router's guess
-first. The rows sit on the card's two columns, each glyph on a neutral tile
+first. **Which of them are listed is hers to say**, for the item's words
+(see *The ways of an inbox item are hers to pick*, below). The rows sit on the card's two columns, each glyph on a neutral tile
 under the item's tile and its text on the edge of the words, in three
 levels: a way's name is the row's one strong, heavier line; what it does
 and the heading over the list are quiet; the way out is quieter still. *Leave it — Nothing is made*
@@ -1916,17 +1921,60 @@ Two things are due today, and the ice survey is the one that cannot wait.
 what she may write — `Reply` (children, top to bottom), `Text` (a short
 label between parts), `TaskCards(caption, ids, notes?)`,
 `PullRequestCards(caption, ids)`, `ClosedTasks(caption)`, `LoggedTimeChart(caption)`,
-`PullRequestChart(caption)` and `QuickReplies(options)` — flat, with no
+`PullRequestChart(caption)`, `QuickReplies(options)` and
+`InboxWays(part, ways)`, which goes with a dispatch and is never drawn in
+her reply — flat, with no
 data in it: **she never passes data to a component**. The catalog has one
 component she cannot write: `CitedPoints`, which only the app composes, for a
 journal answer's points (see *Her journal answer is drawn as its points*). A card names a task
 or project by id and reads it live; a lookup's component only places what
 the app wrote from that lookup. `frontReplyPromptSnippet` is the library's
-description of that catalog and two examples in the exact format, which
+description of that catalog and three examples in the exact format, which
 `frontAgentSystemMessage` appends under *Writing UI*. `frontReplyFormat`
 allows `createSurface` alone. `parseFrontReplyStream` runs her message
 through the library's processor and returns her prose, the components in
 the order she laid them out, and an error per block it could not read.
+
+**The ways of an inbox item are hers to pick.** A part that waits for the
+user's tap — `new`, `unrouted`, a `journal` statement — could become
+several things, and most do not fit most words: "buy milk" is no coding
+prompt. Beside her `dispatch`, in the same message, she writes one
+`InboxWays(part, ways)` per such part: `part` is its position in
+`segments`, `ways` any of `FrontInboxWay` — `prompt`, `goal`, `project`,
+`event` — and empty when none fits. It is the one block that may stand
+without prose. `readFrontInboxWays` reads them by part (a part past the
+last segment names nothing, an unknown way is left out, the first for a
+part stands), `FrontAgentStrategy.inboxWays` keeps them once the message
+that carried an accepted dispatch is read, and the workflow stores them
+with the dispatch (`FrontDispatch.withWays`), so the walker copies them to
+the door's record (`FrontDoorRecord.ways`). `readFrontReply` passes an
+`InboxWays` over: it is no part of what her reply draws or stores.
+
+```mermaid
+flowchart LR
+  M["her message:<br/>InboxWays(0, [prompt]) + dispatch"] --> R[readFrontInboxWays]
+  R --> S["dispatch record:<br/>segments[0].ways"]
+  S --> W["walker:<br/>FrontDoorRecord.ways"]
+  W --> T["FrontChatThread.surfaces:<br/>ways:&lt;doorId&gt;"]
+  T --> C["door card:<br/>A2uiSurface in FrontDoorWaysScope"]
+  C --> L["InboxWays → FrontDoorWays"]
+```
+
+A waiting inbox item whose record keeps ways gets a surface of its own in
+`FrontChatThread.surfaces`, under `frontDoorWaysSurfaceId(doorId)`:
+`FrontReplySurface.inboxWays`, one `InboxWays` naming them. Its card draws
+that surface in a `FrontDoorWaysScope`, and the catalog's `InboxWays`
+builds the card's `FrontDoorWays` from what the scope offers for the names
+— so the catalog stays static and every way is still run by the card.
+**The app keeps a floor she cannot remove**: *Make it a task* (the filled
+tap on a drafted item, the first row otherwise), *Save as a note* and
+*Leave it* are always there, the router's guess is always offered and
+leads, and an event is still offered only while `enable_events` is on. The
+rest are the ways she picked, in the card's order, not hers. `ways` empty
+means none fits; `ways` absent — a record from before she picked, a block
+she left out or one that could not be read, a card drawn outside a thread
+— means nothing was said, and every way is offered as before, a project
+only as the guess.
 
 **Speech and display are separate channels.** Her prose is the only thing
 spoken and the only thing kept in `<recent_turns>`; it leads what is drawn.

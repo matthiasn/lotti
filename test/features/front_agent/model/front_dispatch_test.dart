@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 
 void main() {
@@ -126,6 +127,69 @@ void main() {
     });
     expect(back.segments.map((s) => s.destinationId), ['task-1']);
     expect(FrontDispatch.fromJson(const {}).segments, isEmpty);
+  });
+
+  group('the ways she picked for a segment', () {
+    test('round-trip with it, an empty pick kept apart from none', () {
+      for (final ways in [
+        [FrontInboxWay.event, FrontInboxWay.prompt],
+        <FrontInboxWay>[],
+      ]) {
+        final json = newThing.withWays(ways).toJson();
+        expect(json['ways'], [for (final way in ways) way.name]);
+        expect(FrontDispatchSegment.fromJson(json)!.ways, ways);
+      }
+      // None picked is not stored, and reads back as none.
+      expect(newThing.toJson().containsKey('ways'), isFalse);
+      expect(FrontDispatchSegment.fromJson(newThing.toJson())!.ways, isNull);
+    });
+
+    test('withWays changes nothing else of the segment', () {
+      final draft = FrontTaskDraft(
+        title: 'Buy the hose',
+        due: DateTime(2026, 11, 20),
+      );
+      final segment = FrontDispatchSegment(
+        start: 0,
+        end: 12,
+        text: 'buy the hose',
+        intent: FrontSegmentIntent.instruction,
+        kind: FrontDestinationKind.newThing,
+        newKind: FrontNewKind.task,
+        destinationId: 'x',
+        confidence: 0.6,
+        note: 'Ready to confirm.',
+        task: draft,
+      );
+      expect(
+        segment.withWays(const [FrontInboxWay.goal]).toJson(),
+        {
+          ...segment.toJson(),
+          'ways': ['goal'],
+        },
+      );
+    });
+
+    test('a dispatch takes them by position; one past the last segment '
+        'names nothing, and none leaves the dispatch as it was', () {
+      const dispatch = FrontDispatch(segments: [routed, newThing, unrouted]);
+
+      final withWays = dispatch.withWays(const {
+        1: [FrontInboxWay.goal],
+        2: [],
+        7: [FrontInboxWay.prompt],
+      });
+
+      expect(
+        [for (final segment in withWays.segments) segment.ways],
+        [
+          null,
+          [FrontInboxWay.goal],
+          <FrontInboxWay>[],
+        ],
+      );
+      expect(dispatch.withWays(const {}), same(dispatch));
+    });
   });
 
   test('an integer confidence reads back as a double', () {

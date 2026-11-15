@@ -31,6 +31,9 @@
   under *Or make it something else*, each with a line saying what it makes —
   a goal, an event, a note, a task with a coding prompt — and *Leave it* set
   apart at the end. The arrow beside *Make it a task* opens and closes them.
+  She offers only the ones that fit what you said — a coding prompt for work
+  on software, an event when you name a day — while making it a task,
+  keeping it as a note and leaving it are always there.
 
 ### Fixed
 - **Cover art and prompts were not generated for a task in no category.**
