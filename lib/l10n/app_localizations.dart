@@ -13490,7 +13490,7 @@ abstract class AppLocalizations {
   /// Heading over the open pull requests of a repository.
   ///
   /// In en, this message translates to:
-  /// **'Open pull requests in {repository}'**
+  /// **'Or pick one from {repository}'**
   String githubPickerOpenIn(String repository);
 
   /// No description provided for @githubPullRequestActions.

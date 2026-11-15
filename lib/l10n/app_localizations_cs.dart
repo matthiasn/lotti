@@ -8058,7 +8058,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String githubPickerOpenIn(String repository) {
-    return 'Otevřené pull requesty v $repository';
+    return 'Nebo vyber jeden z $repository';
   }
 
   @override

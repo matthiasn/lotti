@@ -566,22 +566,28 @@ yet — never refreshed, or stored before the field — comes after them,
 highest number first.
 
 With nothing linked the card is one worded action; otherwise its header
-carries "+". Both open the link modal: a field for a pasted URL, and below it
-the open pull requests of the task's repository that no task holds, newest
+carries "+". Both open the link modal: a field for a pasted URL or
+`owner/repo#123`, and below it — framed as the field is, on the sheet's own
+surface — the open pull requests of the task's repository that no task holds, newest
 first — GitHub is asked for them by creation, and the list is sorted again
 after the held ones are left out, by opening time and then number — each
 with whether it is a draft, its author, how long ago it was opened and,
 once known, its size (`openPullRequestSizesProvider`, read apart from the
 list, so the list never waits for it). Tapping one links it at once — its
-trailing link glyph says so — the row tinted, with progress in that glyph's
+trailing link glyph says so, in the action ink at rest, a phone having no
+pointer to light it — the row tinted, with progress in that glyph's
 slot, while every other row steps back; a pasted URL links from the action
 the field shows once it holds something, or Enter, the action giving way to
 progress in place. Either
 way the pull request is read from GitHub and linked only if that read
 succeeded — a typo, a repository the token cannot see, or a pull request
 this task holds stays in the modal with the reason, and one another task
-holds is asked about first. Without a repository on the
-task's category the modal says how to assign one.
+holds is asked about first. The reason or the question is said where the
+link was asked for: under the field after a paste, and under the picked row
+— which stays tinted — after a pick, or above the list should that row have
+gone from it meanwhile. While the question is open its answer is the one
+filled action; the field's own steps back. Without a repository on the
+task's category the modal says how to assign one, as the field's one hint.
 
 Tapping a row opens its details (`showPullRequestDetailsModal`): the title,
 the same status line, the one-liner and the TL;DR, with the action to

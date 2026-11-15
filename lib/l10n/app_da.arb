@@ -3643,7 +3643,7 @@
   "githubPickerLinking": "Knytter pull request",
   "githubPickerLoading": "Indlæser åbne pull requests",
   "githubPickerNoRepository": "Tildel kategorien for denne opgave et GitHub-repository for at vælge blandt dets åbne pull requests.",
-  "githubPickerOpenIn": "Åbne pull requests i {repository}",
+  "githubPickerOpenIn": "Eller vælg en fra {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {

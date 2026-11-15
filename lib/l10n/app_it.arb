@@ -3643,7 +3643,7 @@
   "githubPickerLinking": "Collegamento della pull request",
   "githubPickerLoading": "Caricamento delle pull request aperte",
   "githubPickerNoRepository": "Assegna un repository GitHub alla categoria di questa attività per scegliere tra le sue pull request aperte.",
-  "githubPickerOpenIn": "Pull request aperte in {repository}",
+  "githubPickerOpenIn": "Oppure scegline una da {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {

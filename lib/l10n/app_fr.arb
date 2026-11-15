@@ -3318,7 +3318,7 @@
   "githubPickerLinking": "Liaison de la pull request",
   "githubPickerLoading": "Chargement des pull requests ouvertes",
   "githubPickerNoRepository": "Attribue un dépôt GitHub à la catégorie de cette tâche pour choisir parmi ses pull requests ouvertes.",
-  "githubPickerOpenIn": "Pull requests ouvertes dans {repository}",
+  "githubPickerOpenIn": "Ou choisis-en une dans {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {

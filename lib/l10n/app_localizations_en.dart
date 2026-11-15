@@ -7914,7 +7914,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String githubPickerOpenIn(String repository) {
-    return 'Open pull requests in $repository';
+    return 'Or pick one from $repository';
   }
 
   @override

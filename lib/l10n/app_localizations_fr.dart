@@ -8080,7 +8080,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String githubPickerOpenIn(String repository) {
-    return 'Pull requests ouvertes dans $repository';
+    return 'Ou choisis-en une dans $repository';
   }
 
   @override

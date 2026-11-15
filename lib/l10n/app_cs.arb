@@ -3325,7 +3325,7 @@
   "githubPickerLinking": "Propojuje se pull request",
   "githubPickerLoading": "Načítají se otevřené pull requesty",
   "githubPickerNoRepository": "Přiřaď kategorii tohoto úkolu repozitář GitHubu a vybírej z jeho otevřených pull requestů.",
-  "githubPickerOpenIn": "Otevřené pull requesty v {repository}",
+  "githubPickerOpenIn": "Nebo vyber jeden z {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {
