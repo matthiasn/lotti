@@ -295,6 +295,12 @@ void main() {
       frontAgentSystemPrompt,
       contains('Route or answer this, and only this.'),
     );
+    // Beside a dispatch, they are a `you` segment rather than a gap the
+    // validator would make an unrouted inbox item.
+    expect(
+      frontAgentSystemPrompt,
+      contains('a segment of their own with destination `you`'),
+    );
     // News about something listed still routes, and she never claims a
     // filing she did not make (live eval `single_strong`).
     expect(

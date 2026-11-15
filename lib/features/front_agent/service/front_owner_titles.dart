@@ -47,6 +47,7 @@ class FrontOwnerTitles {
       case FrontDestinationKind.newThing:
       case FrontDestinationKind.journal:
       case FrontDestinationKind.unrouted:
+      case FrontDestinationKind.you:
         return null;
     }
   }

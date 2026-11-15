@@ -719,8 +719,10 @@ class _DoorRow extends StatelessWidget {
     // A journal question is searched; a journal statement lands in the
     // inbox, whose glyph replaces this one.
     FrontDestinationKind.journal => LottiIcons.search,
+    // Words meant for her are never drawn (the thread builder drops them).
     FrontDestinationKind.newThing ||
-    FrontDestinationKind.unrouted => LottiIcons.inbox,
+    FrontDestinationKind.unrouted ||
+    FrontDestinationKind.you => LottiIcons.inbox,
   };
 
   /// The glyph for what the router thought an inbox item would become.
@@ -744,7 +746,8 @@ class _DoorRow extends StatelessWidget {
       FrontDestinationKind.day ||
       FrontDestinationKind.newThing ||
       FrontDestinationKind.journal ||
-      FrontDestinationKind.unrouted => messages.frontDoorKindOther,
+      FrontDestinationKind.unrouted ||
+      FrontDestinationKind.you => messages.frontDoorKindOther,
     };
   }
 }

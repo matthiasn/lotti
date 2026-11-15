@@ -606,6 +606,42 @@ void main() {
       expect(thread.doorsByMessageId.keys, ['u1']);
     });
 
+    test('words meant for her are never drawn: beside other doors they are '
+        'left out, and alone the turn has no doors at all', () async {
+      const settled = FrontDoorSkipped(FrontDoorSkipReason.noDoor);
+      userTurn('u1', 'No, I meant the seam. Make a task to patch it.');
+      doorRow(
+        'd:door:0',
+        'u1',
+        door(
+          0,
+          settled,
+          kind: FrontDestinationKind.you,
+          destinationId: null,
+        ),
+      );
+      doorRow('d:door:1', 'u1', door(1, const FrontDoorInbox()));
+      userTurn('u2', 'Ha, thanks.');
+      doorRow(
+        'd:door:2',
+        'u2',
+        door(
+          0,
+          settled,
+          kind: FrontDestinationKind.you,
+          destinationId: null,
+        ),
+      );
+
+      final thread = await builder.build();
+
+      expect(
+        [for (final d in thread.doorsByMessageId['u1']!) d.doorId],
+        ['d:door:1'],
+      );
+      expect(thread.doorsByMessageId.containsKey('u2'), isFalse);
+    });
+
     test(
       'a door record this build cannot read is skipped, not fatal',
       () async {

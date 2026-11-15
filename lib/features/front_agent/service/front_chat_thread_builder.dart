@@ -173,14 +173,17 @@ class FrontChatThreadBuilder {
       if (!visibleIds.contains(entry.key)) continue;
       final records = entry.value
         ..sort((a, b) => a.$2.segmentIndex.compareTo(b.$2.segmentIndex));
-      doors[entry.key] = [
+      final shown = [
         for (final (doorId, record) in records)
-          FrontDoorEntry(
-            doorId: doorId,
-            record: record,
-            specialistReply: await _specialistReply(record, specialists),
-          ),
+          // Words meant for her are answered in her line, never a card.
+          if (record.kind != FrontDestinationKind.you)
+            FrontDoorEntry(
+              doorId: doorId,
+              record: record,
+              specialistReply: await _specialistReply(record, specialists),
+            ),
       ];
+      if (shown.isNotEmpty) doors[entry.key] = shown;
     }
 
     return FrontChatThread(

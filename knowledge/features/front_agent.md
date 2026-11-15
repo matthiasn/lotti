@@ -83,7 +83,7 @@ sources:
   - id: walker
     resource: ../../lib/features/front_agent/service/front_door_walker.dart
     title: FrontDoorWalker — one door per segment, claimed, never awaited
-    last_modified: 2026-11-01
+    last_modified: 2026-11-15
   - id: filing
     resource: ../../lib/features/front_agent/service/front_filing_service.dart
     title: FrontFilingService — what the tap under a door writes
@@ -139,7 +139,7 @@ sources:
   - id: thread
     resource: ../../lib/features/front_agent/service/front_chat_thread_builder.dart
     title: FrontChatThreadBuilder — the thread with doors, options, mirrored replies and the preview cards a reply carries
-    last_modified: 2026-11-11
+    last_modified: 2026-11-15
   - id: controller
     resource: ../../lib/features/front_agent/state/front_chat_controller.dart
     title: FrontChatController — the composer, and the category a send carries
@@ -526,9 +526,20 @@ instructions from the turn she offered it for; its span is the yes, so the
 words kept under the task are the yes, and the card's headline is the
 draft's title. The validator backs the prompt: a `new` task without a `task`
 object is sent back (below), and the card leads with *Make it a task* only on
-a drafted item ([the tap](#the-tap-filing-and-the-inbox)). Live eval
-scenarios `mentioned_task`, `mentioned_task_confirmed`,
-`clarification_after_reply` and `remark_after_answer`.
+a drafted item ([the tap](#the-tap-filing-and-the-inbox)).
+
+In a message that both talks to her and asks for something ("who said I was
+recalibrating them? But do make a task for the thermostat"), the words for
+her are a segment of their own with destination `you`, answered in her line
+beside the dispatch. Left uncovered, they would be a gap the validator keeps
+as an `unrouted` inbox item, since it cannot tell a correction from words the
+model skipped. A `you` door settles at once as `FrontDoorSkipped(noDoor)`, so
+the turn counts as walked, and `FrontChatThreadBuilder` never draws it: a turn
+whose only doors are `you` has none in `doorsByMessageId`. A build without
+the kind drops the segment and its record alike (`fromJson` → null), so its
+done count still matches. Live eval scenarios `mentioned_task`,
+`mentioned_task_confirmed`, `clarification_after_reply`,
+`clarification_with_task` and `remark_after_answer`.
 
 ```mermaid
 flowchart TD
@@ -559,7 +570,7 @@ title — a task the user asked for — else the dispatch is sent back with a
 repair telling her to answer and ask whether they want one
 ([talking back](#talking-back-and-offering-a-task)); the object is read
 leniently ([a task from her words](#a-task-from-her-words)); `day`,
-`journal` and `unrouted` need neither. The
+`journal`, `unrouted` and `you` need neither. The
 spans and the gaps between them partition the input and the gaps are never
 dropped: a gap holding ≥20 % of the input's non-whitespace characters
 becomes an `unrouted` segment, and when the gaps together hold ≥20 % every
@@ -1105,6 +1116,7 @@ walker died. Outcomes:
 | `new`, `journal` statement, `unrouted` | none | `FrontDoorInbox(newKind?)` — what the router thought it would become leads the chips; a `new` task's draft rides the record for the tap ([a task from her words](#a-task-from-her-words)) |
 | `day` statement or instruction, while `enable_daily_os_page` is on | none — the walker writes nothing | `FrontDoorDay()`: waits for the user's tap |
 | `day` question, or anything about the day while the Daily OS is off | — | `FrontDoorSkipped(noDoor)` |
+| `you` — words meant for her beside a dispatch | — | `FrontDoorSkipped(noDoor)`, never drawn ([talking back](#talking-back-and-offering-a-task)) |
 | no agent, or a retired one | — | `FrontDoorSkipped(noAgent)` |
 | owner without a usable inference setup | — | `FrontDoorSkipped(inferenceUnavailable)` |
 | a door that throws | — | `FrontDoorFailed(errorType)` — the type, never the text |

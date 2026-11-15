@@ -229,6 +229,32 @@ final List<FrontEvalScenario> frontEvalScenarios = [
         'inbox card asking where it should go.',
   ),
   const FrontEvalScenario(
+    id: 'clarification_with_task',
+    input:
+        'Who said I was recalibrating them? I only said they drift. But do '
+        "make a task to replace the north heater's thermostat.",
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [
+      (kind: FrontDestinationKind.newThing, id: null),
+      (kind: FrontDestinationKind.you, id: null),
+    ],
+    maxLookups: 1,
+    recent: [
+      (role: 'user', text: 'The hatchery heaters are drifting again.'),
+      (
+        role: 'assistant',
+        text:
+            'Sounds like you are recalibrating them today. Want a task for '
+            'it, with a timer?',
+      ),
+    ],
+    checkTask: _thermostatTask,
+    note:
+        'A correction beside a task request: the task is drafted, the '
+        'correction is hers to answer — a `you` segment, never an unrouted '
+        'gap waiting in the inbox.',
+  ),
+  const FrontEvalScenario(
     id: 'remark_after_answer',
     input: 'Ha, that is a lot of fish for one colony.',
     outcome: FrontEvalOutcome.talk,
@@ -452,14 +478,25 @@ List<String> _uncategorizedTask(FrontDispatchSegment? segment) {
   ];
 }
 
+List<String> _thermostatTask(FrontDispatchSegment? segment) {
+  final shape = _taskShape(segment);
+  if (shape.isNotEmpty) return shape;
+  return [
+    if (!segment!.task!.title.toLowerCase().contains('thermostat'))
+      'title ${segment.task!.title}',
+    if (segment.text.toLowerCase().contains('who said'))
+      'the span took in the correction',
+  ];
+}
+
 List<String> _confirmedFencesTask(FrontDispatchSegment? segment) {
   final shape = _taskShape(segment);
   if (shape.isNotEmpty) return shape;
   final task = segment!.task!;
   return [
-    if (!'${task.title} ${task.instructions ?? ''}'.toLowerCase().contains(
-      'fence',
-    ))
+    // The title alone: instructions naming the fences must not let a
+    // "Yes, make it a task" title through.
+    if (!task.title.toLowerCase().contains('fence'))
       'the task lost what it was offered for: ${task.title}',
     if (task.startedAt != null) 'a timer nobody asked for',
   ];

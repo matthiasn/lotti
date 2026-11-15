@@ -341,8 +341,8 @@ void main() {
       expect(ok.dispatch!.segments.first.destinationId, isNull);
     });
 
-    test('day, journal and unrouted need no id and no floor', () {
-      for (final kind in ['day', 'journal', 'unrouted']) {
+    test('day, journal, unrouted and you need no id and no floor', () {
+      for (final kind in ['day', 'journal', 'unrouted', 'you']) {
         final ok = validate([
           segment(span: gardenSpan, kind: kind, id: null, confidence: 0),
         ]);
