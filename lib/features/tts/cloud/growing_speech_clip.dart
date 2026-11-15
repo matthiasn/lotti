@@ -8,8 +8,10 @@ import 'dart:typed_data';
 /// The voice sends one synthesis as a stream — one voice, one intonation
 /// from the first word to the last — much faster than it plays: measured on
 /// Voxtral (2026-11-12), the first audio 0.3 s after the request and 12.8 s
-/// of it within 2 s. The player reads the file like any other. It starts
-/// once [playable], with [playableBytes] written, and from then on what is
+/// of it within 2 s. The player starts
+/// once [playable], with [playableBytes] written, opened as a file that is
+/// still being written (`TtsAudioPlayer.play(growing:)`), so it waits at the
+/// end of what is there for more rather than ending. From then on what is
 /// written stays ahead of what is played unless the network stalls; a
 /// player that reaches the end of what is written before [done] is opened
 /// again where it stopped (see `TtsPlaybackController`).

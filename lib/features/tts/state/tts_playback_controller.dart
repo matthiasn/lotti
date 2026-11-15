@@ -424,7 +424,14 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         // Nothing waits for it, and it handles its own outcome.
         _followGrowing(growing, generation, text).ignore();
       }
-      await _playAtLatestSpeed(player, file, current);
+      // Opened while it is still being written, the player waits at the
+      // end of what is there for more rather than ending.
+      await _playAtLatestSpeed(
+        player,
+        file,
+        current,
+        growing: growing != null && !growing.isComplete,
+      );
     } catch (error, stackTrace) {
       if (!current()) return;
       // The cloud clients log their own request failures with their detail;
@@ -680,9 +687,10 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
     File file,
     bool Function() current, {
     Duration from = Duration.zero,
+    bool growing = false,
   }) async {
     final speed = ref.read(ttsSettingsControllerProvider).speed;
-    await player.play(file, speed: speed, from: from);
+    await player.play(file, speed: speed, from: from, growing: growing);
     final latest = ref.read(ttsSettingsControllerProvider).speed;
     if (current() && latest != speed) await player.setSpeed(latest);
   }

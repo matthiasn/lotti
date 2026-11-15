@@ -463,6 +463,17 @@ stateDiagram-v2
   speaker falls back to the words alone, as for any clip it cannot read —
   and once it is whole the state names the file, and the mouth is shaped by
   its sound from there on.
+- **The player is told the file is still growing.** A clip still being
+  written is opened with `TtsAudioPlayer.play(growing: true)`, which the
+  media_kit player opens as mpv's `appending://<path>`: at the end of what
+  is there mpv waits up to 2 s for more instead of ending. Without it mpv
+  follows a file only if it sees it grow, and with media_kit's cache its
+  reader runs to the end at once — in a pause between two bursts of
+  ElevenLabs audio it ended at what was there when it opened, about five
+  seconds into a clip long since sent, and only a replay read it all
+  (reproduced against mpv 0.37 with media_kit's options, 2026-11-15). The
+  wait costs time only when the voice finishes within the last 2 s of
+  playback; a clip already whole when it opens is opened plainly.
 - **A stall is survived, not hidden.** What is written stays ahead of what
   is played unless the network stalls for longer than the lead. A player
   that reaches the end of what is written before the voice has finished has
@@ -494,8 +505,9 @@ stateDiagram-v2
   `text-to-speech/…/stream-input` refuses them); measured, but not built —
   see the [evaluation](../../docs/evaluations/2026-11-14_elevenlabs_v4_turbo_tts.md#4-streaming-text-in).
 
-Not verified by ear on a device: how the player behaves at the very start
-of a file that is still growing.
+Not verified: that reopening a growing clip after a stall resumes on a
+device. The first version of the fix above relied on that reopen, and on a
+desktop it went silent instead.
 
 Speech settings also expose **Prepare chat audio automatically**, off by default.
 `TtsSettingsController` persists this device-local opt-in under

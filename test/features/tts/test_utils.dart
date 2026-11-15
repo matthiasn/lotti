@@ -93,6 +93,9 @@ class FakeTtsAudioPlayer implements TtsAudioPlayer {
   /// Where each [play] was asked to start, in order.
   final List<Duration> startedFrom = <Duration>[];
 
+  /// Whether each [play] was told its file is still being written, in order.
+  final List<bool> openedGrowing = <bool>[];
+
   /// Held open, the player is still letting go of the audio session.
   Completer<void>? settling;
 
@@ -111,9 +114,11 @@ class FakeTtsAudioPlayer implements TtsAudioPlayer {
     File file, {
     required double speed,
     Duration from = Duration.zero,
+    bool growing = false,
   }) async {
     playCount++;
     startedFrom.add(from);
+    openedGrowing.add(growing);
     lastSpeed = speed;
     lastFile = file;
     if (playError != null) throw playError!;
