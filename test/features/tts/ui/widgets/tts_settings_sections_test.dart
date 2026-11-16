@@ -62,7 +62,10 @@ void main() {
         'F2',
       );
       verify(
-        () => mocks.settingsDb.saveSettingsItem(ttsVoiceIdKey, 'F2'),
+        () => mocks.settingsDb.saveSettingsItems({
+          ttsVoiceIdKey: 'F2',
+          ttsVoicePickedKey: 'true',
+        }),
       ).called(1);
     });
   });

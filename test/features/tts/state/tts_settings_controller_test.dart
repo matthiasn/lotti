@@ -226,19 +226,19 @@ void main() {
     expect(calls, 2);
   });
 
-  test("setVoice updates state and persists, as the user's own pick", () async {
+  test("setVoice updates state and persists, as the user's own pick", () {
     final container = makeContainer();
     container.read(ttsSettingsControllerProvider.notifier).setVoice('F4');
-    await pumpEventQueue();
 
     final settings = container.read(ttsSettingsControllerProvider);
     expect(settings.voiceId, 'F4');
     expect(settings.voicePicked, isTrue);
+    // Both in one write: the voice is never stored without its pick.
     verify(
-      () => mocks.settingsDb.saveSettingsItem(ttsVoiceIdKey, 'F4'),
-    ).called(1);
-    verify(
-      () => mocks.settingsDb.saveSettingsItem(ttsVoicePickedKey, 'true'),
+      () => mocks.settingsDb.saveSettingsItems({
+        ttsVoiceIdKey: 'F4',
+        ttsVoicePickedKey: 'true',
+      }),
     ).called(1);
   });
 
@@ -255,10 +255,10 @@ void main() {
         isFalse,
       );
       verify(
-        () => mocks.settingsDb.saveSettingsItem(ttsVoiceIdKey, 'M1'),
-      ).called(1);
-      verify(
-        () => mocks.settingsDb.saveSettingsItem(ttsVoicePickedKey, 'false'),
+        () => mocks.settingsDb.saveSettingsItems({
+          ttsVoiceIdKey: 'M1',
+          ttsVoicePickedKey: 'false',
+        }),
       ).called(1);
 
       await controller.matchVoice(TtsVoiceGender.female);
@@ -272,9 +272,7 @@ void main() {
           .matchVoice(TtsVoiceGender.female);
 
       expect(container.read(ttsSettingsControllerProvider).voiceId, 'F1');
-      verifyNever(
-        () => mocks.settingsDb.saveSettingsItem(ttsVoiceIdKey, any()),
-      );
+      verifyNever(() => mocks.settingsDb.saveSettingsItems(any()));
     });
 
     test("never moves the user's own pick", () async {
@@ -305,9 +303,7 @@ void main() {
       expect(settings.voiceId, 'F3');
       expect(settings.voicePicked, isTrue);
       expect(settings.speed, 1.5);
-      verifyNever(
-        () => mocks.settingsDb.saveSettingsItem(ttsVoiceIdKey, any()),
-      );
+      verifyNever(() => mocks.settingsDb.saveSettingsItems(any()));
     });
 
     test('asked before storage loaded, an unpicked stored voice is matched '
@@ -334,9 +330,7 @@ void main() {
           .matchVoice(TtsVoiceGender.male);
 
       expect(container.read(ttsSettingsControllerProvider).voiceId, 'F1');
-      verifyNever(
-        () => mocks.settingsDb.saveSettingsItem(ttsVoiceIdKey, any()),
-      );
+      verifyNever(() => mocks.settingsDb.saveSettingsItems(any()));
     });
 
     test(
@@ -360,21 +354,19 @@ void main() {
         expect(settings.speed, 1.5);
         expect(settings.voiceId, 'F3');
         expect(settings.voicePicked, isTrue);
-        verifyNever(
-          () => mocks.settingsDb.saveSettingsItem(ttsVoiceIdKey, any()),
-        );
+        verifyNever(() => mocks.settingsDb.saveSettingsItems(any()));
       },
     );
 
     test('a matched voice goes on following after a restart: what the match '
         'stored loads as not picked', () async {
       final stored = <String, String>{};
-      when(() => mocks.settingsDb.saveSettingsItem(any(), any())).thenAnswer((
+      when(() => mocks.settingsDb.saveSettingsItems(any())).thenAnswer((
         invocation,
       ) async {
-        stored[invocation.positionalArguments[0] as String] =
-            invocation.positionalArguments[1] as String;
-        return 1;
+        stored.addAll(
+          invocation.positionalArguments[0] as Map<String, String>,
+        );
       });
       when(
         () => mocks.settingsDb.itemsByKeys(any()),

@@ -114,12 +114,13 @@ class TtsSettingsController extends Notifier<TtsSettings> {
     unawaited(_saveVoice(voiceId, picked: true));
   }
 
-  /// Stores the voice, then whether it is the user's own pick.
-  Future<void> _saveVoice(String voiceId, {required bool picked}) async {
-    final settingsDb = ref.read(settingsDbProvider);
-    await settingsDb.saveSettingsItem(ttsVoiceIdKey, voiceId);
-    await settingsDb.saveSettingsItem(ttsVoicePickedKey, picked.toString());
-  }
+  /// Stores the voice and whether it is the user's own pick as one: a
+  /// voice is never stored under another voice's pick.
+  Future<void> _saveVoice(String voiceId, {required bool picked}) =>
+      ref.read(settingsDbProvider).saveSettingsItems({
+        ttsVoiceIdKey: voiceId,
+        ttsVoicePickedKey: picked.toString(),
+      });
 
   /// Has the voice follow a companion of [gender] — the grandpa speaks with
   /// a male voice, Lotti with a female one — keeping the voice's number.
