@@ -1742,12 +1742,14 @@ void main() {
         expect(tester.getRect(menu(0)).center.dy, status().center.dy);
         expect(status().height, lessThan(lineHeight() * 1.5));
 
+        // Where the controls end on a shared line, in the same column.
+        await pumpScaled(1, width: 600);
+        expect(tester.getRect(menu(0)).center.dy, status().center.dy);
+        final end = tester.getRect(menu(0)).right;
+
         await pumpScaled(1.3, width: 600);
         // Still at the card's end, where they sit on a shared line.
-        expect(
-          tester.getRect(menu(0)).right,
-          tester.getRect(find.byKey(const ValueKey('front-door-text-0'))).right,
-        );
+        expect(tester.getRect(menu(0)).right, end);
         expect(
           tester.getRect(menu(0)).top,
           greaterThanOrEqualTo(status().bottom),
