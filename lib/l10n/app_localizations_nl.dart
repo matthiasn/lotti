@@ -3943,6 +3943,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionCardUsualSize => 'Normale grootte';
 
   @override
+  String get companionSettingsAdvancedLabel => 'Geavanceerd';
+
+  @override
   String get companionSettingsCharacterAunt => 'Tante';
 
   @override
@@ -3986,6 +3989,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsEyeColourLabel => 'Oogkleur';
 
   @override
+  String get companionSettingsFaceGroup => 'Huid en ogen';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Koperrood';
 
   @override
@@ -4014,6 +4020,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get companionSettingsHairColourWhite => 'Wit';
+
+  @override
+  String get companionSettingsHairGroup => 'Haar';
 
   @override
   String get companionSettingsHairStyleAfro => 'Afro';
@@ -4047,6 +4056,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get companionSettingsHairStyleWaves => 'Golven';
+
+  @override
+  String get companionSettingsHearMe => 'Hoor mij';
 
   @override
   String get companionSettingsOutfitDescription =>
@@ -4130,6 +4142,12 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get companionSettingsSpeakRepliesTitle =>
       'Gesproken vragen hardop beantwoorden';
+
+  @override
+  String get companionSettingsTabLook => 'Uiterlijk';
+
+  @override
+  String get companionSettingsTabPersonality => 'Persoonlijkheid';
 
   @override
   String get companionSettingsVoiceDescription =>
@@ -15408,7 +15426,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Vonken';
 
   @override
-  String get settingsCompanionSubtitle => 'Personage, huid, haar en outfit';
+  String get settingsCompanionSubtitle => 'Uiterlijk, stem en persoonlijkheid';
 
   @override
   String get settingsCompanionTitle => 'Metgezel';

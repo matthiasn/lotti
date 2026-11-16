@@ -73,6 +73,7 @@ Future<TestGetItMocks> setUpTestGetIt({
   when(
     () => mockSettingsDb.saveSettingsItem(any(), any()),
   ).thenAnswer((_) async => 1);
+  when(() => mockSettingsDb.saveSettingsItems(any())).thenAnswer((_) async {});
   when(() => mockSettingsDb.removeSettingsItem(any())).thenAnswer((_) async {});
   when(
     () => mockSettingsDb.itemsWithKeyPrefix(any()),
@@ -160,6 +161,9 @@ void ensureThemingServicesRegistered() {
     when(
       () => mockSettingsDb.saveSettingsItem(any(), any()),
     ).thenAnswer((_) async => 1);
+    when(
+      () => mockSettingsDb.saveSettingsItems(any()),
+    ).thenAnswer((_) async {});
     when(
       () => mockSettingsDb.removeSettingsItem(any()),
     ).thenAnswer((_) async {});

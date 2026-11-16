@@ -111,6 +111,21 @@ void main() {
     });
   });
 
+  group("whether the voice is the user's own pick", () {
+    test('is not by default, survives unrelated changes, and tells two '
+        'settings apart', () {
+      const followed = TtsSettings(voiceId: 'M1');
+      expect(const TtsSettings().voicePicked, isFalse);
+      final picked = followed.copyWith(voicePicked: true);
+      expect(picked.voicePicked, isTrue);
+      expect(picked.copyWith(speed: 1.5).voicePicked, isTrue);
+      expect(picked, isNot(followed));
+      expect(picked.hashCode, isNot(followed.hashCode));
+      expect(picked.toString(), contains('voicePicked: true'));
+      expect(ttsVoicePickedKey, 'TTS_VOICE_PICKED');
+    });
+  });
+
   group('value semantics', () {
     test('equal settings are equal and share a hashCode', () {
       const a = TtsSettings(voiceId: 'F2', modelId: 'm1', speed: 1.5);

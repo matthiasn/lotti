@@ -54,6 +54,41 @@ void main() {
     );
   });
 
+  group('ttsVoiceOfGender', () {
+    test("keeps the voice's number across genders, both ways", () {
+      for (final number in ['1', '2', '3', '4', '5']) {
+        expect(
+          ttsVoiceOfGender('F$number', TtsVoiceGender.male).id,
+          'M$number',
+        );
+        expect(
+          ttsVoiceOfGender('M$number', TtsVoiceGender.female).id,
+          'F$number',
+        );
+      }
+    });
+
+    test('every voice has its counterpart: the catalog pairs each number', () {
+      for (final voice in kSupertonicVoices) {
+        for (final gender in TtsVoiceGender.values) {
+          final matched = ttsVoiceOfGender(voice.id, gender);
+          expect(matched.gender, gender, reason: voice.id);
+          expect(matched.id.substring(1), voice.id.substring(1));
+        }
+      }
+    });
+
+    test('a voice of the gender already is itself', () {
+      expect(ttsVoiceOfGender('F4', TtsVoiceGender.female).id, 'F4');
+      expect(ttsVoiceOfGender('M2', TtsVoiceGender.male).id, 'M2');
+    });
+
+    test('an unknown or missing voice counts as the default one', () {
+      expect(ttsVoiceOfGender('nope', TtsVoiceGender.male).id, 'M1');
+      expect(ttsVoiceOfGender(null, TtsVoiceGender.female).id, 'F1');
+    });
+  });
+
   group('ttsVoiceByIdOrDefault', () {
     test('resolves a known id to its voice', () {
       expect(ttsVoiceByIdOrDefault('M4').id, 'M4');

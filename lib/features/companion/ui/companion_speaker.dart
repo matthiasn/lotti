@@ -45,6 +45,8 @@ class CompanionSpeaker extends ConsumerStatefulWidget {
     this.stage = false,
     this.controller,
     this.holding,
+    this.autoGestures = true,
+    this.seed,
     String? dressedFor,
     super.key,
   }) : dressedFor = dressedFor ?? sourceId;
@@ -64,6 +66,16 @@ class CompanionSpeaker extends ConsumerStatefulWidget {
 
   /// Passed through to [CompanionView]: a gesture she keeps up.
   final GestureName? holding;
+
+  /// Passed through to [CompanionView]: whether she picks talking gestures
+  /// on her own while she speaks. Off where a gesture is a cue of its own,
+  /// as in her settings.
+  final bool autoGestures;
+
+  /// Passed through to [CompanionView]: what her blinks and glances are
+  /// drawn from, so two of her side by side do not move as one. The view's
+  /// own ([CompanionView.defaultSeed]) when null.
+  final int? seed;
 
   /// The subject her outfit is drawn for ([CompanionLookRoll.draw]):
   /// [sourceId] unless the host names another — the front agent, one figure
@@ -171,6 +183,8 @@ class _CompanionSpeakerState extends ConsumerState<CompanionSpeaker> {
     stage: widget.stage,
     controller: widget.controller,
     holding: widget.holding,
+    autoGestures: widget.autoGestures,
+    seed: widget.seed ?? CompanionView.defaultSeed,
     track: _track,
     tone: _tone,
     sass: ref.watch(

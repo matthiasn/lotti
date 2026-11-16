@@ -1,11 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_cloud_voices_section.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_model_selector.dart';
-import 'package:lotti/features/tts/ui/widgets/tts_speed_selector.dart';
-import 'package:lotti/features/tts/ui/widgets/tts_voice_selector.dart';
+import 'package:lotti/features/tts/ui/widgets/tts_settings_sections.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/settings/settings_page_layout.dart';
@@ -15,13 +13,17 @@ import 'package:material_ui/material_ui.dart';
 /// desktop Settings-v2 detail panel (mirrors how ThemingBody / category bodies
 /// are reused). Reuses the entity-definition `SettingsFormSection` design
 /// language: Chat audio, Cloud voices, the on-device Voice and Model, and
-/// Reading speed, each wired to the persisted [TtsSettingsController].
+/// Reading speed, each wired to the persisted [TtsSettingsController]. The
+/// sections shared with the companion's Voice tab are the widgets of
+/// `tts_settings_sections.dart`.
 class SpeechSettingsBody extends ConsumerWidget {
   const SpeechSettingsBody({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(ttsSettingsControllerProvider);
+    final modelId = ref.watch(
+      ttsSettingsControllerProvider.select((settings) => settings.modelId),
+    );
     final controller = ref.read(ttsSettingsControllerProvider.notifier);
     final messages = context.messages;
     final spacing = context.designTokens.spacing;
@@ -39,54 +41,23 @@ class SpeechSettingsBody extends ConsumerWidget {
             SettingsFormSection(
               title: messages.speechSettingsChatAudioLabel,
               description: messages.speechSettingsChatAudioDescription,
-              children: [
-                DesignSystemSelectionRow(
-                  title: messages.speechSettingsAutoPrepareChatAudio,
-                  titleMaxLines: 2,
-                  type: DesignSystemSelectionRowType.multiSelect,
-                  selected: settings.autoPrepareChatAudio,
-                  showSelectedBackground: false,
-                  onTap: () => controller.setAutoPrepareChatAudio(
-                    enabled: !settings.autoPrepareChatAudio,
-                  ),
-                ),
+              children: const [
+                TtsAutoPrepareRow(),
               ],
             ),
             const TtsCloudVoicesSection(),
-            // Heading only: the voice list is a grouped list of its own, so
-            // its rows are not inset twice by a form card.
-            SettingsFormSection(
-              title: messages.speechSettingsVoiceLabel,
-              description: messages.speechSettingsVoiceDescription,
-              children: const [],
-            ),
-            Padding(
-              padding: EdgeInsets.only(bottom: spacing.sectionGap),
-              child: TtsVoiceSelector(
-                voiceId: settings.voiceId,
-                onChanged: controller.setVoice,
-              ),
-            ),
+            const TtsVoiceSection(),
             SettingsFormSection(
               title: messages.speechSettingsModelLabel,
               description: messages.speechSettingsModelDescription,
               children: [
                 TtsModelSelector(
-                  modelId: settings.modelId,
+                  modelId: modelId,
                   onChanged: controller.setModel,
                 ),
               ],
             ),
-            SettingsFormSection(
-              title: messages.speechSettingsSpeedLabel,
-              description: messages.speechSettingsSpeedDescription,
-              children: [
-                TtsSpeedSelector(
-                  value: settings.speed,
-                  onChanged: controller.setSpeed,
-                ),
-              ],
-            ),
+            const TtsSpeedSection(),
           ],
         ),
       ),

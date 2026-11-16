@@ -2628,6 +2628,7 @@
   "@companionCardUsualSize": {
     "description": "Button on the demo-sized companion card returning it to its saved size"
   },
+  "companionSettingsAdvancedLabel": "Advanced",
   "companionSettingsCharacterAunt": "Aunt",
   "@companionSettingsCharacterAunt": {
     "description": "Name of the aunt character, a woman of about forty, shown on her chip."
@@ -2684,6 +2685,7 @@
   "@companionSettingsEyeColourLabel": {
     "description": "Section title in the companion settings: the colour of the character's eyes."
   },
+  "companionSettingsFaceGroup": "Skin and eyes",
   "companionSettingsHairColourAuburn": "Auburn",
   "@companionSettingsHairColourAuburn": {
     "description": "Name of one hair colour the companion can have."
@@ -2724,6 +2726,7 @@
   "@companionSettingsHairColourWhite": {
     "description": "Name of one hair colour the companion can have."
   },
+  "companionSettingsHairGroup": "Hair",
   "companionSettingsHairStyleAfro": "Afro",
   "@companionSettingsHairStyleAfro": {
     "description": "Name of one hairstyle the companion can wear."
@@ -2768,6 +2771,7 @@
   "@companionSettingsHairStyleWaves": {
     "description": "Name of one hairstyle the companion can wear."
   },
+  "companionSettingsHearMe": "Hear me",
   "companionSettingsOutfitDescription": "Choose an outfit to keep, or get a fresh one each time you open the app.",
   "@companionSettingsOutfitDescription": {
     "description": "Explains the outfit choice on the companion settings page: a fixed outfit, or a random one per app launch."
@@ -2874,6 +2878,8 @@
     "description": "Section title on the companion settings page for choosing her skin tone."
   },
   "companionSettingsSpeakRepliesTitle": "Answer spoken questions aloud",
+  "companionSettingsTabLook": "Look",
+  "companionSettingsTabPersonality": "Personality",
   "companionSettingsVoiceDescription": "Ask something by voice and your companion answers out loud. A typed question always gets a written answer.",
   "companionSettingsVoiceLabel": "Voice",
   "completeHabitFailButton": "Missed",
@@ -10067,7 +10073,7 @@
   "settingsCelebrationsVariantRandom": "Random",
   "settingsCelebrationsVariantRandomDescription": "A fresh style on every completion",
   "settingsCelebrationsVariantSparks": "Sparks",
-  "settingsCompanionSubtitle": "Character, skin, hair and outfit",
+  "settingsCompanionSubtitle": "Look, voice and personality",
   "@settingsCompanionSubtitle": {
     "description": "Subtitle of the companion settings entry in the settings tree."
   },

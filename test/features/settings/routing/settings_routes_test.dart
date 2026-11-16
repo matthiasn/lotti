@@ -134,17 +134,21 @@ List<String> _idToPathModel(String id) {
   ];
 }
 
-/// Every node of the tree with every flag on — the superset any platform
-/// or flag combination draws from — plus the demo world's Sync stand-in.
+/// Every node any platform or flag combination draws: the tree with every
+/// flag on, the demo world's Sync stand-in, and the Speech leaf, which is
+/// drawn only while the companion — whose page holds the voice — is off.
 List<SettingsNode> _allNodes() {
-  List<SettingsNode> build({required bool syncAvailable}) => buildSettingsTree(
+  List<SettingsNode> build({
+    required bool syncAvailable,
+    bool companion = true,
+  }) => buildSettingsTree(
     labels: (id) => (title: id, desc: id),
     enableHabits: true,
     enableDashboards: true,
     enableMatrix: true,
     enableWhatsNew: true,
     enableSpeechTts: true,
-    enableCompanion: true,
+    enableCompanion: companion,
     enableHealthImport: true,
     syncFeatureAvailable: syncAvailable,
   );
@@ -158,6 +162,7 @@ List<SettingsNode> _allNodes() {
 
   walk(build(syncAvailable: true));
   walk(build(syncAvailable: false));
+  walk(build(syncAvailable: true, companion: false));
   return nodes.values.toList();
 }
 

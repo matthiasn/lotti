@@ -6624,6 +6624,12 @@ abstract class AppLocalizations {
   /// **'Usual size'**
   String get companionCardUsualSize;
 
+  /// No description provided for @companionSettingsAdvancedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get companionSettingsAdvancedLabel;
+
   /// Name of the aunt character, a woman of about forty, shown on her chip.
   ///
   /// In en, this message translates to:
@@ -6708,6 +6714,12 @@ abstract class AppLocalizations {
   /// **'Eye color'**
   String get companionSettingsEyeColourLabel;
 
+  /// No description provided for @companionSettingsFaceGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Skin and eyes'**
+  String get companionSettingsFaceGroup;
+
   /// Name of one hair colour the companion can have.
   ///
   /// In en, this message translates to:
@@ -6767,6 +6779,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'White'**
   String get companionSettingsHairColourWhite;
+
+  /// No description provided for @companionSettingsHairGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Hair'**
+  String get companionSettingsHairGroup;
 
   /// Name of one hairstyle the companion can wear.
   ///
@@ -6833,6 +6851,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waves'**
   String get companionSettingsHairStyleWaves;
+
+  /// No description provided for @companionSettingsHearMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Hear me'**
+  String get companionSettingsHearMe;
 
   /// Explains the outfit choice on the companion settings page: a fixed outfit, or a random one per app launch.
   ///
@@ -6989,6 +7013,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Answer spoken questions aloud'**
   String get companionSettingsSpeakRepliesTitle;
+
+  /// No description provided for @companionSettingsTabLook.
+  ///
+  /// In en, this message translates to:
+  /// **'Look'**
+  String get companionSettingsTabLook;
+
+  /// No description provided for @companionSettingsTabPersonality.
+  ///
+  /// In en, this message translates to:
+  /// **'Personality'**
+  String get companionSettingsTabPersonality;
 
   /// No description provided for @companionSettingsVoiceDescription.
   ///
@@ -25508,7 +25544,7 @@ abstract class AppLocalizations {
   /// Subtitle of the companion settings entry in the settings tree.
   ///
   /// In en, this message translates to:
-  /// **'Character, skin, hair and outfit'**
+  /// **'Look, voice and personality'**
   String get settingsCompanionSubtitle;
 
   /// Title of the settings page where the companion character is customized.

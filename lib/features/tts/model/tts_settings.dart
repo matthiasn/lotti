@@ -5,6 +5,7 @@ import 'package:lotti/features/tts/model/tts_voice.dart';
 
 /// SettingsDb keys for persisted TTS preferences.
 const String ttsVoiceIdKey = 'TTS_VOICE_ID';
+const String ttsVoicePickedKey = 'TTS_VOICE_PICKED';
 const String ttsModelIdKey = 'TTS_MODEL_ID';
 const String ttsSpeedKey = 'TTS_SPEED';
 const String ttsAutoPrepareChatAudioKey = 'TTS_AUTO_PREPARE_CHAT_AUDIO';
@@ -46,6 +47,7 @@ const List<double> kTtsSpeedSequence = <double>[
 class TtsSettings {
   const TtsSettings({
     this.voiceId = kDefaultTtsVoiceId,
+    this.voicePicked = false,
     this.modelId = kDefaultTtsModelId,
     this.speed = kDefaultTtsSpeed,
     this.autoPrepareChatAudio = false,
@@ -54,6 +56,11 @@ class TtsSettings {
 
   /// Selected Supertonic voice id (e.g. `F1`).
   final String voiceId;
+
+  /// Whether the user chose [voiceId] themselves. Until they have, the
+  /// voice follows the companion's character
+  /// (`TtsSettingsController.matchVoice`); after, it stays their pick.
+  final bool voicePicked;
 
   /// Selected model id (e.g. `supertonic-3`).
   final String modelId;
@@ -81,6 +88,7 @@ class TtsSettings {
 
   TtsSettings copyWith({
     String? voiceId,
+    bool? voicePicked,
     String? modelId,
     double? speed,
     bool? autoPrepareChatAudio,
@@ -90,6 +98,7 @@ class TtsSettings {
       autoPrepareChatAudio: autoPrepareChatAudio ?? this.autoPrepareChatAudio,
       cloudVoiceByLanguage: cloudVoiceByLanguage ?? this.cloudVoiceByLanguage,
       voiceId: voiceId ?? this.voiceId,
+      voicePicked: voicePicked ?? this.voicePicked,
       modelId: modelId ?? this.modelId,
       speed: speed == null ? this.speed : clampSpeed(speed),
     );
@@ -99,6 +108,7 @@ class TtsSettings {
   bool operator ==(Object other) =>
       other is TtsSettings &&
       other.voiceId == voiceId &&
+      other.voicePicked == voicePicked &&
       other.modelId == modelId &&
       other.speed == speed &&
       other.autoPrepareChatAudio == autoPrepareChatAudio &&
@@ -107,6 +117,7 @@ class TtsSettings {
   @override
   int get hashCode => Object.hash(
     voiceId,
+    voicePicked,
     modelId,
     speed,
     autoPrepareChatAudio,
@@ -117,7 +128,8 @@ class TtsSettings {
 
   @override
   String toString() =>
-      'TtsSettings(voiceId: $voiceId, modelId: $modelId, speed: $speed, '
+      'TtsSettings(voiceId: $voiceId, voicePicked: $voicePicked, '
+      'modelId: $modelId, speed: $speed, '
       'autoPrepareChatAudio: $autoPrepareChatAudio, '
       'cloudVoiceByLanguage: $cloudVoiceByLanguage)';
 }

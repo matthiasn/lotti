@@ -3969,6 +3969,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get companionCardUsualSize => 'Tamaño habitual';
 
   @override
+  String get companionSettingsAdvancedLabel => 'Avanzado';
+
+  @override
   String get companionSettingsCharacterAunt => 'Tía';
 
   @override
@@ -4012,6 +4015,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get companionSettingsEyeColourLabel => 'Color de ojos';
 
   @override
+  String get companionSettingsFaceGroup => 'Piel y ojos';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Caoba';
 
   @override
@@ -4040,6 +4046,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get companionSettingsHairColourWhite => 'Blanco';
+
+  @override
+  String get companionSettingsHairGroup => 'Pelo';
 
   @override
   String get companionSettingsHairStyleAfro => 'Afro';
@@ -4073,6 +4082,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get companionSettingsHairStyleWaves => 'Ondas';
+
+  @override
+  String get companionSettingsHearMe => 'Escúchame';
 
   @override
   String get companionSettingsOutfitDescription =>
@@ -4156,6 +4168,12 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get companionSettingsSpeakRepliesTitle =>
       'Responder en voz alta cuando preguntes por voz';
+
+  @override
+  String get companionSettingsTabLook => 'Aspecto';
+
+  @override
+  String get companionSettingsTabPersonality => 'Personalidad';
 
   @override
   String get companionSettingsVoiceDescription =>
@@ -15564,7 +15582,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Chispas';
 
   @override
-  String get settingsCompanionSubtitle => 'Personaje, piel, pelo y ropa';
+  String get settingsCompanionSubtitle => 'Aspecto, voz y personalidad';
 
   @override
   String get settingsCompanionTitle => 'Acompañante';

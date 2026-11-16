@@ -3968,6 +3968,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionCardUsualSize => 'Obvyklá velikost';
 
   @override
+  String get companionSettingsAdvancedLabel => 'Pokročilé';
+
+  @override
   String get companionSettingsCharacterAunt => 'Teta';
 
   @override
@@ -4011,6 +4014,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsEyeColourLabel => 'Barva očí';
 
   @override
+  String get companionSettingsFaceGroup => 'Pleť a oči';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Kaštanová';
 
   @override
@@ -4039,6 +4045,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get companionSettingsHairColourWhite => 'Bílá';
+
+  @override
+  String get companionSettingsHairGroup => 'Vlasy';
 
   @override
   String get companionSettingsHairStyleAfro => 'Afro';
@@ -4072,6 +4081,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get companionSettingsHairStyleWaves => 'Vlny';
+
+  @override
+  String get companionSettingsHearMe => 'Poslechni si mě';
 
   @override
   String get companionSettingsOutfitDescription =>
@@ -4155,6 +4167,12 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get companionSettingsSpeakRepliesTitle =>
       'Odpovídat nahlas na mluvené otázky';
+
+  @override
+  String get companionSettingsTabLook => 'Vzhled';
+
+  @override
+  String get companionSettingsTabPersonality => 'Povaha';
 
   @override
   String get companionSettingsVoiceDescription =>
@@ -15583,7 +15601,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Jiskry';
 
   @override
-  String get settingsCompanionSubtitle => 'Postava, pleť, vlasy a oblečení';
+  String get settingsCompanionSubtitle => 'Vzhled, hlas a povaha';
 
   @override
   String get settingsCompanionTitle => 'Společník';

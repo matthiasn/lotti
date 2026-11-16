@@ -3920,6 +3920,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionCardUsualSize => 'Normal størrelse';
 
   @override
+  String get companionSettingsAdvancedLabel => 'Avanceret';
+
+  @override
   String get companionSettingsCharacterAunt => 'Tante';
 
   @override
@@ -3963,6 +3966,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionSettingsEyeColourLabel => 'Øjenfarve';
 
   @override
+  String get companionSettingsFaceGroup => 'Hud og øjne';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Kobberrød';
 
   @override
@@ -3991,6 +3997,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get companionSettingsHairColourWhite => 'Hvid';
+
+  @override
+  String get companionSettingsHairGroup => 'Hår';
 
   @override
   String get companionSettingsHairStyleAfro => 'Afro';
@@ -4024,6 +4033,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get companionSettingsHairStyleWaves => 'Bølger';
+
+  @override
+  String get companionSettingsHearMe => 'Hør mig';
 
   @override
   String get companionSettingsOutfitDescription =>
@@ -4107,6 +4119,12 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get companionSettingsSpeakRepliesTitle =>
       'Svar højt på talte spørgsmål';
+
+  @override
+  String get companionSettingsTabLook => 'Udseende';
+
+  @override
+  String get companionSettingsTabPersonality => 'Personlighed';
 
   @override
   String get companionSettingsVoiceDescription =>
@@ -15367,7 +15385,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Sparks';
 
   @override
-  String get settingsCompanionSubtitle => 'Karakter, hud, hår og tøj';
+  String get settingsCompanionSubtitle => 'Udseende, stemme og personlighed';
 
   @override
   String get settingsCompanionTitle => 'Følgesvend';
