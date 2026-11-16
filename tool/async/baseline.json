@@ -198,7 +198,7 @@
     "lib/features/tts/state/tts_audio_player.dart": 1,
     "lib/features/tts/state/tts_engine_provider.dart": 1,
     "lib/features/tts/state/tts_playback_controller.dart": 3,
-    "lib/features/tts/state/tts_settings_controller.dart": 5,
+    "lib/features/tts/state/tts_settings_controller.dart": 4,
     "lib/features/whats_new/ui/whats_new_modal.dart": 2,
     "lib/get_it.dart": 4,
     "lib/get_it_helpers.dart": 1,

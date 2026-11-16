@@ -90,8 +90,11 @@ the gender of the companion's character, which her settings call when the
 character changes. `matchVoice` waits for storage to load, so a pick is never
 judged by the defaults, and stores its match as not picked
 (`TTS_VOICE_PICKED` = `false`), so the voice goes on following after a
-restart. A voice stored before picks were noted counts as picked unless it is
-the default, so an earlier choice is never matched away.
+restart. A voice stored before picks were noted counts as picked, the default
+included — only a pick ever stored one — so an earlier choice is never
+matched away. Where storage could not be read nothing is matched, and a
+setting changed before it loaded keeps its change beside the stored voice and
+its pick.
 
 **Where it is set.** Settings → Speech, and — while the companion is on,
 when Speech has no entry of its own — the Voice tab of Settings → Companion,

@@ -10056,7 +10056,7 @@
   "settingsCelebrationsVariantRandom": "Random",
   "settingsCelebrationsVariantRandomDescription": "A fresh style on every completion",
   "settingsCelebrationsVariantSparks": "Sparks",
-  "settingsCompanionSubtitle": "Character, skin, hair and outfit",
+  "settingsCompanionSubtitle": "Look, voice and personality",
   "@settingsCompanionSubtitle": {
     "description": "Subtitle of the companion settings entry in the settings tree."
   },

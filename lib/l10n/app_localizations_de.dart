@@ -15435,7 +15435,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Funken';
 
   @override
-  String get settingsCompanionSubtitle => 'Figur, Haut, Haare und Kleidung';
+  String get settingsCompanionSubtitle => 'Aussehen, Stimme und Persönlichkeit';
 
   @override
   String get settingsCompanionTitle => 'Begleitung';

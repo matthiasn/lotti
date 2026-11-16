@@ -15588,7 +15588,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Étincelles';
 
   @override
-  String get settingsCompanionSubtitle => 'Personnage, peau, cheveux et tenue';
+  String get settingsCompanionSubtitle => 'Apparence, voix et personnalité';
 
   @override
   String get settingsCompanionTitle => 'Compagnon';

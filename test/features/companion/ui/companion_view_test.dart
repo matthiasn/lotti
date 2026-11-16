@@ -670,6 +670,27 @@ void main() {
     expect(second.isAttached, isTrue);
   });
 
+  testWidgets('a view that replaces another under the same controller keeps '
+      'it: the old one, torn down after, does not let go of it', (
+    tester,
+  ) async {
+    final controller = CompanionController();
+    await tester.pumpWidget(_host(CompanionView(controller: controller)));
+    // Elsewhere in the tree, so it is a new view and not the old one moved.
+    await tester.pumpWidget(
+      _host(
+        Padding(
+          padding: EdgeInsets.zero,
+          child: CompanionView(controller: controller),
+        ),
+      ),
+    );
+    expect(controller.isAttached, isTrue);
+    controller.play(GestureName.wave);
+    await _frames(tester, 0.2);
+    expect(controller.gesture, GestureName.wave);
+  });
+
   testWidgets('a long stall moves her one short step, not a jump', (
     tester,
   ) async {

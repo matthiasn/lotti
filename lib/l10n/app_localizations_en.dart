@@ -15253,7 +15253,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Sparks';
 
   @override
-  String get settingsCompanionSubtitle => 'Character, skin, hair and outfit';
+  String get settingsCompanionSubtitle => 'Look, voice and personality';
 
   @override
   String get settingsCompanionTitle => 'Companion';

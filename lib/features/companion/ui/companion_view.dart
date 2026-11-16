@@ -200,7 +200,12 @@ class _CompanionViewState extends State<CompanionView>
 
   @override
   void dispose() {
-    widget.controller?._animator = null;
+    // Only where it still drives this view: one that replaced this view
+    // has attached the controller to itself already.
+    final controller = widget.controller;
+    if (identical(controller?._animator, _animator)) {
+      controller?._animator = null;
+    }
     _ticker.dispose();
     super.dispose();
   }

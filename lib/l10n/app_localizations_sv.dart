@@ -15357,7 +15357,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Gnistor';
 
   @override
-  String get settingsCompanionSubtitle => 'Karaktär, hud, hår och kläder';
+  String get settingsCompanionSubtitle => 'Utseende, röst och personlighet';
 
   @override
   String get settingsCompanionTitle => 'Följeslagare';

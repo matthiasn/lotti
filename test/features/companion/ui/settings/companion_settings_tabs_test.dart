@@ -230,7 +230,6 @@ void main() {
     await pumpBody(tester);
     await tester.tap(find.text('Locs').last);
     await pumpCompanionFrames(tester);
-    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     final stored = await tester.runAsync(
       () => db.itemByKey(companionCustomizationKey),
     );

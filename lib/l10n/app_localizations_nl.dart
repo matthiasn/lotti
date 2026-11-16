@@ -15371,7 +15371,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Vonken';
 
   @override
-  String get settingsCompanionSubtitle => 'Personage, huid, haar en outfit';
+  String get settingsCompanionSubtitle => 'Uiterlijk, stem en persoonlijkheid';
 
   @override
   String get settingsCompanionTitle => 'Metgezel';

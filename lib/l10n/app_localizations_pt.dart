@@ -15486,7 +15486,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Faíscas';
 
   @override
-  String get settingsCompanionSubtitle => 'Personagem, pele, cabelo e roupa';
+  String get settingsCompanionSubtitle => 'Aparência, voz e personalidade';
 
   @override
   String get settingsCompanionTitle => 'Acompanhante';

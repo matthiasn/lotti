@@ -25442,7 +25442,7 @@ abstract class AppLocalizations {
   /// Subtitle of the companion settings entry in the settings tree.
   ///
   /// In en, this message translates to:
-  /// **'Character, skin, hair and outfit'**
+  /// **'Look, voice and personality'**
   String get settingsCompanionSubtitle;
 
   /// Title of the settings page where the companion character is customized.

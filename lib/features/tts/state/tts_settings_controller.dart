@@ -25,6 +25,15 @@ class TtsSettingsController extends Notifier<TtsSettings> {
   /// clobbers an interaction made before storage finished loading.
   bool _userChanged = false;
 
+  /// Whether the voice itself was picked before storage finished loading:
+  /// only then does the stored voice give way to the state's.
+  bool _voiceChanged = false;
+
+  /// Whether storage was read, so the voice in the state is the stored one
+  /// and not a default standing in for it. [matchVoice] moves no voice it
+  /// does not know.
+  bool _voiceKnown = false;
+
   /// Settles once storage was read, or could not be: what [matchVoice]
   /// waits for, so it never judges a voice by the defaults.
   Future<void> _loaded = Future<void>.value();
@@ -46,21 +55,31 @@ class TtsSettingsController extends Notifier<TtsSettings> {
         ttsAutoPrepareChatAudioKey,
         ttsCloudVoicesKey,
       });
-      if (_userChanged) return;
       const defaults = TtsSettings();
+      final storedVoice = stored[ttsVoiceIdKey];
+      final voiceId = storedVoice ?? defaults.voiceId;
+      // A voice stored before picks were noted was chosen by hand — nothing
+      // else wrote one then, the default included — and is never matched
+      // away. One that followed her character is stored as not picked
+      // ([matchVoice]).
+      final voicePicked =
+          stored[ttsVoicePickedKey] == 'true' ||
+          (stored[ttsVoicePickedKey] == null && storedVoice != null);
+      _voiceKnown = true;
+      if (_userChanged) {
+        // What was changed meanwhile stands; a voice left alone is still
+        // the stored one, with its pick.
+        if (!_voiceChanged) {
+          state = state.copyWith(voiceId: voiceId, voicePicked: voicePicked);
+        }
+        return;
+      }
       final storedSpeed = double.tryParse(stored[ttsSpeedKey] ?? '');
       state = TtsSettings(
         autoPrepareChatAudio: stored[ttsAutoPrepareChatAudioKey] == 'true',
         cloudVoiceByLanguage: _decodeVoices(stored[ttsCloudVoicesKey]),
-        voiceId: stored[ttsVoiceIdKey] ?? defaults.voiceId,
-        // A voice stored before picks were noted, and not the default, was
-        // chosen by hand: it is never matched away. One that followed her
-        // character is stored as not picked ([matchVoice]).
-        voicePicked:
-            stored[ttsVoicePickedKey] == 'true' ||
-            (stored[ttsVoicePickedKey] == null &&
-                stored[ttsVoiceIdKey] != null &&
-                stored[ttsVoiceIdKey] != defaults.voiceId),
+        voiceId: voiceId,
+        voicePicked: voicePicked,
         modelId: stored[ttsModelIdKey] ?? defaults.modelId,
         speed: storedSpeed == null
             ? defaults.speed
@@ -90,10 +109,16 @@ class TtsSettingsController extends Notifier<TtsSettings> {
   /// the voice no longer follows the companion's character ([matchVoice]).
   void setVoice(String voiceId) {
     _userChanged = true;
+    _voiceChanged = true;
     state = state.copyWith(voiceId: voiceId, voicePicked: true);
+    unawaited(_saveVoice(voiceId, picked: true));
+  }
+
+  /// Stores the voice, then whether it is the user's own pick.
+  Future<void> _saveVoice(String voiceId, {required bool picked}) async {
     final settingsDb = ref.read(settingsDbProvider);
-    unawaited(settingsDb.saveSettingsItem(ttsVoiceIdKey, voiceId));
-    unawaited(settingsDb.saveSettingsItem(ttsVoicePickedKey, 'true'));
+    await settingsDb.saveSettingsItem(ttsVoiceIdKey, voiceId);
+    await settingsDb.saveSettingsItem(ttsVoicePickedKey, picked.toString());
   }
 
   /// Has the voice follow a companion of [gender] — the grandpa speaks with
@@ -102,18 +127,17 @@ class TtsSettingsController extends Notifier<TtsSettings> {
   /// voice is of [gender] already.
   ///
   /// Waits for storage first: a pick is only known once it was read, and a
-  /// match made on the defaults would overwrite it. The match is stored as
-  /// not picked, so after a restart the voice goes on following.
+  /// match made on the defaults would overwrite it — so where storage could
+  /// not be read, nothing is matched. The match is stored as not picked, so
+  /// after a restart the voice goes on following.
   Future<void> matchVoice(TtsVoiceGender gender) async {
     await _loaded;
-    if (!ref.mounted || state.voicePicked) return;
+    if (!ref.mounted || !_voiceKnown || state.voicePicked) return;
     final matched = ttsVoiceOfGender(state.voiceId, gender).id;
     if (matched == state.voiceId) return;
     _userChanged = true;
     state = state.copyWith(voiceId: matched);
-    final settingsDb = ref.read(settingsDbProvider);
-    unawaited(settingsDb.saveSettingsItem(ttsVoiceIdKey, matched));
-    unawaited(settingsDb.saveSettingsItem(ttsVoicePickedKey, 'false'));
+    await _saveVoice(matched, picked: false);
   }
 
   /// Selects [modelId] and persists it.

@@ -15618,7 +15618,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Scântei';
 
   @override
-  String get settingsCompanionSubtitle => 'Personaj, piele, păr și ținută';
+  String get settingsCompanionSubtitle => 'Aspect, voce și personalitate';
 
   @override
   String get settingsCompanionTitle => 'Însoțitor';

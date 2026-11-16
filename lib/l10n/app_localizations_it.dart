@@ -15520,8 +15520,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Scintille';
 
   @override
-  String get settingsCompanionSubtitle =>
-      'Personaggio, pelle, capelli e vestiti';
+  String get settingsCompanionSubtitle => 'Aspetto, voce e personalità';
 
   @override
   String get settingsCompanionTitle => 'Compagno';

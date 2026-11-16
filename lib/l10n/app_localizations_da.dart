@@ -15331,7 +15331,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Sparks';
 
   @override
-  String get settingsCompanionSubtitle => 'Karakter, hud, hår og tøj';
+  String get settingsCompanionSubtitle => 'Udseende, stemme og personlighed';
 
   @override
   String get settingsCompanionTitle => 'Følgesvend';

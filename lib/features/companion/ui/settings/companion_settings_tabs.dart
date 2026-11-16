@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
@@ -48,19 +46,16 @@ class CompanionLookTab extends ConsumerWidget {
           children: [
             _ChipChoice<CompanionSpecies>(
               selected: custom.character,
-              onSelected: (species) {
+              onSelected: (species) async {
                 controller.set(custom.asCharacter(species));
-                // Nothing waits for the voice to follow: it is matched once
-                // the stored pick is known.
-                unawaited(
-                  ref
-                      .read(ttsSettingsControllerProvider.notifier)
-                      .matchVoice(
-                        species.masculine
-                            ? TtsVoiceGender.male
-                            : TtsVoiceGender.female,
-                      ),
-                );
+                // The voice follows once the stored pick is known.
+                await ref
+                    .read(ttsSettingsControllerProvider.notifier)
+                    .matchVoice(
+                      species.masculine
+                          ? TtsVoiceGender.male
+                          : TtsVoiceGender.female,
+                    );
               },
               choices: [
                 for (final species in CompanionSpecies.choosable)

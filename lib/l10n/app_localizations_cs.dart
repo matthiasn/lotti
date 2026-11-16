@@ -15550,7 +15550,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Jiskry';
 
   @override
-  String get settingsCompanionSubtitle => 'Postava, pleť, vlasy a oblečení';
+  String get settingsCompanionSubtitle => 'Vzhled, hlas a povaha';
 
   @override
   String get settingsCompanionTitle => 'Společník';
