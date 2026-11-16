@@ -175,17 +175,29 @@ void main() {
         'where they do not they keep their labels whole and scroll', (
       tester,
     ) async {
-      // In the test font, whose glyphs are an em wide, the labels do not
-      // fit a phone: nothing overflows, and the last tab scrolls in.
-      await pump(tester);
+      // At a text size no font fits three labels into a phone's width
+      // with: nothing overflows, and the last tab scrolls in.
+      await pumpCompanionSettings(
+        tester,
+        db: db,
+        outbox: outbox,
+        size: phone,
+        child: const MediaQuery(
+          data: MediaQueryData(size: phone, textScaler: TextScaler.linear(4)),
+          child: Scaffold(body: CompanionSettingsBody()),
+        ),
+      );
       expect(tester.takeException(), isNull);
       final last = find.byKey(
         CompanionSettingsKeys.tab(CompanionSettingsTab.personality),
       );
-      expect(tester.getRect(last).right, greaterThan(phone.width));
+      final before = tester.getRect(last);
+      expect(before.right, greaterThan(phone.width));
       await tester.ensureVisible(last);
       await pumpCompanionFrames(tester);
-      expect(tester.getRect(last).right, lessThanOrEqualTo(phone.width));
+      // Whole, as wide as it was, and moved into the row's view.
+      expect(tester.getRect(last).width, before.width);
+      expect(tester.getRect(last).left, lessThan(before.left));
 
       // On a pane with room they are equal thirds of their row.
       await pump(tester, size: const Size(1600, 800));
