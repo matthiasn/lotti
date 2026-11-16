@@ -259,8 +259,13 @@ done
 # --- Shared libraries ----------------------------------------------------------
 
 log "Collecting shared libraries"
+# An ELF file among the Flutter assets is data: a plugin copies it out and
+# runs it on the host's libraries (quill_native_bridge_linux's xclip goes to
+# the temp directory, and AppRun leaves LD_LIBRARY_PATH alone), so its
+# dependencies are neither bundled nor checked.
 mapfile -t ROOTS < <(
-  find "$APP_BUNDLE_DIR" "$APP_BIN_DIR" "$APP_GST_DIR" -type f ! -name libapp.so
+  find "$APP_BUNDLE_DIR" "$APP_BIN_DIR" "$APP_GST_DIR" -type f ! -name libapp.so \
+    ! -path '*/data/flutter_assets/*'
   echo "$APP_LIB_DIR/$LIBMPV_SONAME"
 )
 ELF_ROOTS=()
@@ -303,6 +308,7 @@ problems=0
 while IFS= read -r -d '' file; do
   is_elf "$file" || continue
   [[ "$(basename "$file")" == "libapp.so" ]] && continue
+  [[ "$file" == */data/flutter_assets/* ]] && continue
   declare -A resolved=()
   while read -r name path; do
     resolved[$name]="$path"
