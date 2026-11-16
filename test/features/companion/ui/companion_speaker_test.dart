@@ -107,6 +107,8 @@ void main() {
     bool stage = false,
     String? dressedFor,
     bool surprise = false,
+    bool autoGestures = true,
+    int? seed,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -120,6 +122,8 @@ void main() {
             holding: holding,
             stage: stage,
             dressedFor: dressedFor,
+            autoGestures: autoGestures,
+            seed: seed,
           ),
         ),
         overrides: [
@@ -171,6 +175,23 @@ void main() {
     expect(shown.mood, CompanionMood.bright);
     expect(shown.framing, CompanionFraming.full);
     expect(shown.stage, isFalse);
+  });
+
+  testWidgets('talks and blinks as the view does unless the host says '
+      'otherwise', (tester) async {
+    await pumpSpeaker(tester);
+
+    expect(view(tester).autoGestures, isTrue);
+    expect(view(tester).seed, CompanionView.defaultSeed);
+  });
+
+  testWidgets('may stand still while she speaks, on a seed of its own', (
+    tester,
+  ) async {
+    await pumpSpeaker(tester, autoGestures: false, seed: 23);
+
+    expect(view(tester).autoGestures, isFalse);
+    expect(view(tester).seed, 23);
   });
 
   testWidgets('wears the session outfit, and changes when it does', (

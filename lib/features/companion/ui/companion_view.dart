@@ -76,7 +76,7 @@ class CompanionView extends StatefulWidget {
     this.autoGestures = true,
     this.controller,
     this.holding,
-    this.seed = 11,
+    this.seed = defaultSeed,
     super.key,
   });
 
@@ -135,6 +135,9 @@ class CompanionView extends StatefulWidget {
 
   /// Seeds her blinks, glances and gesture picks.
   final int seed;
+
+  /// The [seed] of a view given none.
+  static const int defaultSeed = 11;
 
   @override
   State<CompanionView> createState() => _CompanionViewState();

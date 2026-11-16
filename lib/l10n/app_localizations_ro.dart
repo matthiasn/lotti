@@ -3987,6 +3987,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionCardUsualSize => 'Dimensiunea obișnuită';
 
   @override
+  String get companionSettingsAdvancedLabel => 'Avansat';
+
+  @override
   String get companionSettingsCharacterAunt => 'Mătușa';
 
   @override
@@ -4030,6 +4033,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsEyeColourLabel => 'Culoarea ochilor';
 
   @override
+  String get companionSettingsFaceGroup => 'Piele și ochi';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Arămiu';
 
   @override
@@ -4058,6 +4064,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get companionSettingsHairColourWhite => 'Alb';
+
+  @override
+  String get companionSettingsHairGroup => 'Păr';
 
   @override
   String get companionSettingsHairStyleAfro => 'Afro';
@@ -4091,6 +4100,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get companionSettingsHairStyleWaves => 'Ondulat';
+
+  @override
+  String get companionSettingsHearMe => 'Ascultați-mă';
 
   @override
   String get companionSettingsOutfitDescription =>
@@ -4174,6 +4186,12 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get companionSettingsSpeakRepliesTitle =>
       'Răspundeți cu voce tare la întrebările rostite';
+
+  @override
+  String get companionSettingsTabLook => 'Aspect';
+
+  @override
+  String get companionSettingsTabPersonality => 'Personalitate';
 
   @override
   String get companionSettingsVoiceDescription =>

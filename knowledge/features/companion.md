@@ -118,8 +118,16 @@ sources:
     last_modified: 2026-11-03
   - id: settings-page
     resource: ../../lib/features/companion/ui/settings/companion_settings_page.dart
-    title: The page that customizes her
-    last_modified: 2026-10-19
+    title: The page that customizes her — she pinned, her choices in three tabs, Hear me
+    last_modified: 2026-11-16
+  - id: settings-tabs
+    resource: ../../lib/features/companion/ui/settings/companion_settings_tabs.dart
+    title: Her settings' tabs — look, voice, personality
+    last_modified: 2026-11-16
+  - id: settings-swatches
+    resource: ../../lib/features/companion/ui/settings/companion_swatch_row.dart
+    title: CompanionSwatchRow — colour swatches shared out evenly across rows
+    last_modified: 2026-11-16
   - id: trousers
     resource: ../../lib/features/companion/rig/trousers_painter.dart
     title: Trouser legs, brogues, the seat and waistband
@@ -544,6 +552,39 @@ flowchart LR
   over the stored JSON (`CompanionCustomization.toJsonOver`), so a part it
   leaves alone keeps what the newer version wrote, and sync never carries an
   older build's defaults over a newer device's choice.
+- **Her settings are one page, and she never leaves it**
+  (`CompanionSettingsBody`). She stands pinned, head to toe and as a
+  portrait — two `CompanionSpeaker`s on one source, dressed for
+  `companionSettingsDressedFor`, still unless cued, on seeds of their own so
+  they do not blink as one — over her choices on a phone, capped at
+  `ControlSizes.companionCard`, and beside them, larger, from two thirds of
+  the desktop breakpoint up. Only the choices scroll, so the body needs a
+  bounded height: the mobile page hosts it with `fillRemaining`, the
+  desktop panel unscrolled. The choices are three tabs
+  (`CompanionSettingsTab`): **Look** — who she is and what she wears, her
+  hair, her skin and eyes, three groups rather than a box per control;
+  **Voice** — whether she answers aloud and, with read-aloud on, everything
+  Settings › Speech holds (the on-device voice, the cloud voices, the speed,
+  and under *Advanced* the model and preparing audio ahead), the same
+  widgets on the same `TtsSettingsController`; **Personality** — her sass,
+  which she acts out when it is picked. The tabs share the width where
+  their labels fit and scroll where a long translation does not; a tab
+  opens at its top. *Hear me* speaks a sample under
+  `companionSettingsVoiceSource` in the on-device voice chosen, which both
+  figures lip-sync; it is offered only with read-aloud on and an on-device
+  voice on this platform, asks before the model is downloaded, turns to
+  *Stop* while she speaks, and leaving the page ends it. With the companion
+  on, the settings tree drops the Speech leaf (`buildSettingsTree`): the
+  voice and the figure it speaks from are set in one place. The route
+  stays, so a link to `/settings/speech` still opens.
+- **Her voice follows her character until the user picks one.** Choosing a
+  character calls `TtsSettingsController.matchVoice` with the gender of
+  `CompanionSpecies.masculine`: the grandpa and the uncle take the male
+  on-device voice of the same number (`ttsVoiceOfGender`, `F2` → `M2`),
+  Lotti and the aunt the female one. A voice the user picked
+  (`TtsSettings.voicePicked`, set by `setVoice`) is never moved.
+- **Swatches are shared out evenly** (`companionSwatchRowWidth`): nine
+  colours that do not fit one row break five and four, never eight and one.
 - **It syncs** as the Daily OS greeting name does, last write wins:
 
   ```mermaid

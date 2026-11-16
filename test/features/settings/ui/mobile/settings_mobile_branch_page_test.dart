@@ -115,7 +115,7 @@ void main() {
         'preferences/animations',
         'preferences/notifications',
         'preferences/recording-style',
-        'preferences/speech',
+        // No Speech: with the companion on, her page holds the voice.
         'preferences/keyboard-shortcuts',
       ]);
       final shell = tester.widget<SettingsMobileShell>(
@@ -146,6 +146,20 @@ void main() {
     },
   );
 
+  testWidgets('with the companion off, Speech has its own row again and '
+      'beams to its URL', (tester) async {
+    await _pump(
+      tester,
+      branchId: 'preferences',
+      overrides: _flags(speechTts: true),
+    );
+
+    expect(find.byKey(const ValueKey('preferences/companion')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('preferences/speech')));
+    await tester.pump();
+    expect(beamed, '/settings/speech');
+  });
+
   testWidgets(
     'every preference child beams to the URL it had before the regrouping',
     (tester) async {
@@ -161,7 +175,6 @@ void main() {
         'preferences/animations': '/settings/advanced/animations',
         'preferences/notifications': '/settings/notifications',
         'preferences/recording-style': '/settings/recording-style',
-        'preferences/speech': '/settings/speech',
         'preferences/keyboard-shortcuts': '/settings/keyboard-shortcuts',
       };
       for (final entry in expected.entries) {

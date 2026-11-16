@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
+import 'package:lotti/features/tts/model/tts_voice.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -225,14 +226,168 @@ void main() {
     expect(calls, 2);
   });
 
-  test('setVoice updates state and persists', () {
+  test("setVoice updates state and persists, as the user's own pick", () {
     final container = makeContainer();
     container.read(ttsSettingsControllerProvider.notifier).setVoice('F4');
 
-    expect(container.read(ttsSettingsControllerProvider).voiceId, 'F4');
+    final settings = container.read(ttsSettingsControllerProvider);
+    expect(settings.voiceId, 'F4');
+    expect(settings.voicePicked, isTrue);
     verify(
       () => mocks.settingsDb.saveSettingsItem(ttsVoiceIdKey, 'F4'),
     ).called(1);
+    verify(
+      () => mocks.settingsDb.saveSettingsItem(ttsVoicePickedKey, 'true'),
+    ).called(1);
+  });
+
+  group('matchVoice', () {
+    test('moves an unpicked voice to the gender asked, keeping its number, '
+        'and stores it as not picked', () async {
+      final container = makeContainer();
+      final controller = container.read(ttsSettingsControllerProvider.notifier);
+      await controller.matchVoice(TtsVoiceGender.male);
+
+      expect(container.read(ttsSettingsControllerProvider).voiceId, 'M1');
+      expect(
+        container.read(ttsSettingsControllerProvider).voicePicked,
+        isFalse,
+      );
+      verify(
+        () => mocks.settingsDb.saveSettingsItem(ttsVoiceIdKey, 'M1'),
+      ).called(1);
+      verify(
+        () => mocks.settingsDb.saveSettingsItem(ttsVoicePickedKey, 'false'),
+      ).called(1);
+
+      await controller.matchVoice(TtsVoiceGender.female);
+      expect(container.read(ttsSettingsControllerProvider).voiceId, 'F1');
+    });
+
+    test('a voice of that gender already is left as it is, unsaved', () async {
+      final container = makeContainer();
+      await container
+          .read(ttsSettingsControllerProvider.notifier)
+          .matchVoice(TtsVoiceGender.female);
+
+      expect(container.read(ttsSettingsControllerProvider).voiceId, 'F1');
+      verifyNever(
+        () => mocks.settingsDb.saveSettingsItem(ttsVoiceIdKey, any()),
+      );
+    });
+
+    test("never moves the user's own pick", () async {
+      final container = makeContainer();
+      final controller = container.read(ttsSettingsControllerProvider.notifier)
+        ..setVoice('F3');
+      await controller.matchVoice(TtsVoiceGender.male);
+
+      expect(container.read(ttsSettingsControllerProvider).voiceId, 'F3');
+    });
+
+    test('asked before storage loaded, it waits: a stored pick is never '
+        'matched away, and what else was stored still loads', () async {
+      when(() => mocks.settingsDb.itemsByKeys(any())).thenAnswer(
+        (_) async => {
+          ttsVoiceIdKey: 'F3',
+          ttsVoicePickedKey: 'true',
+          ttsSpeedKey: '1.5',
+        },
+      );
+      final container = makeContainer();
+      // The provider's first touch: storage has not been read yet.
+      await container
+          .read(ttsSettingsControllerProvider.notifier)
+          .matchVoice(TtsVoiceGender.male);
+
+      final settings = container.read(ttsSettingsControllerProvider);
+      expect(settings.voiceId, 'F3');
+      expect(settings.voicePicked, isTrue);
+      expect(settings.speed, 1.5);
+      verifyNever(
+        () => mocks.settingsDb.saveSettingsItem(ttsVoiceIdKey, any()),
+      );
+    });
+
+    test('asked before storage loaded, an unpicked stored voice is matched '
+        'from where it stands, not from the default', () async {
+      when(() => mocks.settingsDb.itemsByKeys(any())).thenAnswer(
+        (_) async => {ttsVoiceIdKey: 'M4', ttsVoicePickedKey: 'false'},
+      );
+      final container = makeContainer();
+      await container
+          .read(ttsSettingsControllerProvider.notifier)
+          .matchVoice(TtsVoiceGender.female);
+
+      expect(container.read(ttsSettingsControllerProvider).voiceId, 'F4');
+    });
+
+    test('a matched voice goes on following after a restart: what the match '
+        'stored loads as not picked', () async {
+      final stored = <String, String>{};
+      when(() => mocks.settingsDb.saveSettingsItem(any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        stored[invocation.positionalArguments[0] as String] =
+            invocation.positionalArguments[1] as String;
+        return 1;
+      });
+      when(
+        () => mocks.settingsDb.itemsByKeys(any()),
+      ).thenAnswer((_) async => Map.of(stored));
+
+      await makeContainer()
+          .read(ttsSettingsControllerProvider.notifier)
+          .matchVoice(TtsVoiceGender.male);
+      expect(stored[ttsVoiceIdKey], 'M1');
+
+      // The next launch: a new container over the same storage.
+      final restarted = makeContainer();
+      final controller = restarted.read(ttsSettingsControllerProvider.notifier);
+      await pumpEventQueue();
+      expect(restarted.read(ttsSettingsControllerProvider).voiceId, 'M1');
+      expect(
+        restarted.read(ttsSettingsControllerProvider).voicePicked,
+        isFalse,
+      );
+
+      await controller.matchVoice(TtsVoiceGender.female);
+      expect(restarted.read(ttsSettingsControllerProvider).voiceId, 'F1');
+    });
+  });
+
+  group("whether a stored voice is the user's own pick", () {
+    Future<TtsSettings> load(Map<String, String> stored) async {
+      when(
+        () => mocks.settingsDb.itemsByKeys(any()),
+      ).thenAnswer((_) async => stored);
+      final container = makeContainer()..read(ttsSettingsControllerProvider);
+      await pumpEventQueue();
+      return container.read(ttsSettingsControllerProvider);
+    }
+
+    test('it is when stored as one', () async {
+      final settings = await load({
+        ttsVoiceIdKey: 'F1',
+        ttsVoicePickedKey: 'true',
+      });
+      expect(settings.voicePicked, isTrue);
+    });
+
+    test('a voice stored before picks were noted counts as picked unless it '
+        'is the default, so it is never matched away', () async {
+      expect((await load({ttsVoiceIdKey: 'M3'})).voicePicked, isTrue);
+      expect((await load({ttsVoiceIdKey: 'F1'})).voicePicked, isFalse);
+      expect((await load({})).voicePicked, isFalse);
+    });
+
+    test('a voice stored as not picked goes on following', () async {
+      final settings = await load({
+        ttsVoiceIdKey: 'M1',
+        ttsVoicePickedKey: 'false',
+      });
+      expect(settings.voicePicked, isFalse);
+    });
   });
 
   test('setModel updates state and persists', () {

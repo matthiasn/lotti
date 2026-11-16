@@ -3962,6 +3962,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get companionCardUsualSize => 'Tamanho habitual';
 
   @override
+  String get companionSettingsAdvancedLabel => 'Avançado';
+
+  @override
   String get companionSettingsCharacterAunt => 'Tia';
 
   @override
@@ -4005,6 +4008,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get companionSettingsEyeColourLabel => 'Cor dos olhos';
 
   @override
+  String get companionSettingsFaceGroup => 'Pele e olhos';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Ruivo';
 
   @override
@@ -4033,6 +4039,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get companionSettingsHairColourWhite => 'Branco';
+
+  @override
+  String get companionSettingsHairGroup => 'Cabelo';
 
   @override
   String get companionSettingsHairStyleAfro => 'Afro';
@@ -4066,6 +4075,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get companionSettingsHairStyleWaves => 'Ondulado';
+
+  @override
+  String get companionSettingsHearMe => 'Ouve-me';
 
   @override
   String get companionSettingsOutfitDescription =>
@@ -4149,6 +4161,12 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get companionSettingsSpeakRepliesTitle =>
       'Responder em voz alta a perguntas faladas';
+
+  @override
+  String get companionSettingsTabLook => 'Aspeto';
+
+  @override
+  String get companionSettingsTabPersonality => 'Personalidade';
 
   @override
   String get companionSettingsVoiceDescription =>

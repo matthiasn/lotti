@@ -65,3 +65,15 @@ TtsVoice ttsVoiceByIdOrDefault(String? voiceId) {
   }
   return kSupertonicVoices.firstWhere((v) => v.id == kDefaultTtsVoiceId);
 }
+
+/// The voice of [gender] that stands where [voiceId] does among its own —
+/// `M2` for `F2` — so a change of gender keeps the listener's number; the
+/// voice itself when it is of [gender] already. The catalog has each
+/// number once per gender.
+TtsVoice ttsVoiceOfGender(String? voiceId, TtsVoiceGender gender) {
+  final voice = ttsVoiceByIdOrDefault(voiceId);
+  if (voice.gender == gender) return voice;
+  return kSupertonicVoices.firstWhere(
+    (v) => v.gender == gender && v.id.substring(1) == voice.id.substring(1),
+  );
+}

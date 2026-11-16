@@ -64,6 +64,13 @@ void main() {
       expect(_find(enabled, 'preferences/speech')?.hasChildren, isFalse);
     });
 
+    test('with the companion on, the speech leaf gives way to her page, '
+        'which holds the voice too', () {
+      final both = _tree(enableSpeechTts: true, enableCompanion: true);
+      expect(_ids(both), isNot(contains('preferences/speech')));
+      expect(_ids(both), contains('preferences/companion'));
+    });
+
     test('the speech leaf hangs off the preferences branch, not the root', () {
       // Gating must not promote it back to a root entry: the whole point
       // of the branch is that the root stays five menus wide whether or

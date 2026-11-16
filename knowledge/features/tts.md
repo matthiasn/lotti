@@ -82,8 +82,24 @@ fast and an octave high on a 48 kHz device. `MediaKitTtsAudioPlayer` sets
 mpv's `audio-samplerate` to `48000` before it opens each clip, so mpv
 resamples and the output always gets the rate devices run at.
 
+**The on-device voice is the user's pick, or follows the companion.**
+`TtsSettings.voiceId` (`TTS_VOICE_ID`) is one of the ten Supertonic voices.
+`setVoice` marks it the user's own (`voicePicked`, `TTS_VOICE_PICKED`);
+until then `matchVoice(gender)` moves it to the voice of the same number in
+the gender of the companion's character, which her settings call when the
+character changes. `matchVoice` waits for storage to load, so a pick is never
+judged by the defaults, and stores its match as not picked
+(`TTS_VOICE_PICKED` = `false`), so the voice goes on following after a
+restart. A voice stored before picks were noted counts as picked unless it is
+the default, so an earlier choice is never matched away.
+
+**Where it is set.** Settings → Speech, and — while the companion is on,
+when Speech has no entry of its own — the Voice tab of Settings → Companion,
+which composes the same sections (`TtsVoiceSection`, `TtsSpeedSection`,
+`TtsAutoPrepareRow`, `TtsCloudVoicesSection`, `TtsModelSelector`).
+
 **Speed is one setting, and live.** `TtsSettings.speed` (persisted as
-`TTS_SPEED`) is set in Settings → Speech and from the companion chat's drawer
+`TTS_SPEED`) is set there and from the companion chat's drawer
 (*Reading speed*). The playback controller listens to it and changes the rate
 of the clip that is playing (`TtsAudioPlayer.setSpeed`), so a change is heard
 at once.

@@ -3927,6 +3927,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionCardUsualSize => 'Vanlig storlek';
 
   @override
+  String get companionSettingsAdvancedLabel => 'Avancerat';
+
+  @override
   String get companionSettingsCharacterAunt => 'Moster';
 
   @override
@@ -3970,6 +3973,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionSettingsEyeColourLabel => 'Ögonfärg';
 
   @override
+  String get companionSettingsFaceGroup => 'Hud och ögon';
+
+  @override
   String get companionSettingsHairColourAuburn => 'Kopparröd';
 
   @override
@@ -3998,6 +4004,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get companionSettingsHairColourWhite => 'Vit';
+
+  @override
+  String get companionSettingsHairGroup => 'Hår';
 
   @override
   String get companionSettingsHairStyleAfro => 'Afro';
@@ -4031,6 +4040,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get companionSettingsHairStyleWaves => 'Vågor';
+
+  @override
+  String get companionSettingsHearMe => 'Hör mig';
 
   @override
   String get companionSettingsOutfitDescription =>
@@ -4114,6 +4126,12 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get companionSettingsSpeakRepliesTitle =>
       'Svara högt på talade frågor';
+
+  @override
+  String get companionSettingsTabLook => 'Utseende';
+
+  @override
+  String get companionSettingsTabPersonality => 'Personlighet';
 
   @override
   String get companionSettingsVoiceDescription =>

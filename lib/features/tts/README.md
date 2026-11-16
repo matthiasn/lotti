@@ -19,7 +19,8 @@ read-aloud model, and only when the user presses play.
   name Voxtral TTS on Mistral or a model on ElevenLabs (added under
   Settings → AI with its API key); summaries, answers, the Day briefing and the
   companion's spoken replies then speak in the text's language with that
-  language's voice — the user's pick in Speech settings,
+  language's voice — the user's pick in Speech settings (the Voice tab of
+  the companion's settings while she is on),
   else its first female voice. Speech settings list the user's own languages
   first, and every voice can be heard before it is picked. The voice list is
   cached, so it still works offline once fetched; speech itself needs the

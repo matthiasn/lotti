@@ -110,7 +110,12 @@ back, nudges), is
   skate park (cherry red over grey) and snow day (plum, with a rust
   beanie).
 - **A person makes the companion their own.** In Settings › Preferences ›
-  Companion (shown with the flag) they choose the character (Lotti, the
+  Companion (shown with the flag) she stays in sight while her choices are
+  made, sorted into three tabs: her look, her voice — everything the Speech
+  page holds, with *Hear me* to hear the on-device voice chosen from her own
+  mouth — and her personality. Her voice follows her character, a male one for the
+  grandpa and the uncle, until a voice is picked by hand. On the Look tab
+  they choose the character (Lotti, the
   grandpa, the aunt or the uncle), the skin tone (seven, numbered light to
   deep, never named after a people), the hairstyle (bun, curls, afro, locs,
   bob, short, balding, long, waves, ponytail), the hair

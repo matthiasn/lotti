@@ -472,8 +472,8 @@ final SettingsRouteTable settingsRoutes = SettingsRouteTable(
     'preferences/companion': SettingsRoute(
       url: '/settings/companion',
       page: (_, _) => const CompanionSettingsPage(),
+      // Unscrolled: she stays in sight while only her choices scroll.
       panel: (_, _) => const CompanionSettingsBody(),
-      scrollable: true,
     ),
     'preferences/animations': SettingsRoute(
       url: '/settings/advanced/animations',

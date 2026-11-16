@@ -273,7 +273,10 @@ List<SettingsNode> buildSettingsTree({
           'preferences/recording-style',
           LottiIcons.waveform,
         ),
-        if (enableSpeechTts) leaf('preferences/speech', LottiIcons.voice),
+        // With the companion on, her page holds the voice too: the voice
+        // and the figure it speaks from are set in one place.
+        if (enableSpeechTts && !enableCompanion)
+          leaf('preferences/speech', LottiIcons.voice),
         leaf(
           'preferences/keyboard-shortcuts',
           LottiIcons.keyboard,
