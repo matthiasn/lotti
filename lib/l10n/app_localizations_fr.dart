@@ -7597,6 +7597,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontDoorChangeDay => 'Modifier aujourd\'hui';
 
   @override
+  String get frontDoorCoverRequested => 'couverture demandée';
+
+  @override
   String get frontDoorDayPlanned => 'Plan du jour modifié';
 
   @override
@@ -7658,7 +7661,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontDoorKindTask => 'la tâche';
 
   @override
-  String get frontDoorLeaveIt => 'Laisser';
+  String get frontDoorLeaveIt => 'Laisser, rien n\'est créé';
 
   @override
   String get frontDoorLeft => 'Laissé ici dans le fil';
@@ -7667,10 +7670,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontDoorMakeEvent => 'En faire un événement';
 
   @override
+  String get frontDoorMakeEventHint =>
+      'Un événement provisoire intitulé avec tes mots';
+
+  @override
+  String get frontDoorMakePrompt => 'Tâche avec un prompt de code';
+
+  @override
+  String get frontDoorMakePromptHint =>
+      'Une tâche et un prompt tirés de tes mots';
+
+  @override
   String get frontDoorMakeTask => 'En faire une tâche';
 
   @override
+  String get frontDoorMakeTaskHint =>
+      'Une tâche tirée de tes mots, après quelques choix';
+
+  @override
   String get frontDoorNewProject => 'Nouveau projet…';
+
+  @override
+  String get frontDoorNewProjectHint => 'Ouvre un nouveau projet avec tes mots';
 
   @override
   String frontDoorNoAgent(String owner) {
@@ -7690,6 +7711,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontDoorProjectCreated => 'Transformé en projet';
 
   @override
+  String get frontDoorPromptRequested => 'prompt de code demandé';
+
+  @override
   String frontDoorProposal(String owner) {
     return 'Classer sous $owner ?';
   }
@@ -7701,6 +7725,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontDoorSaveNote => 'Enregistrer comme note';
 
   @override
+  String get frontDoorSaveNoteHint => 'Garde tes mots tels quels';
+
+  @override
   String get frontDoorSearchingJournal => 'Recherche dans ton journal…';
 
   @override
@@ -7708,6 +7735,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get frontDoorStartGoal => 'Lancer un objectif…';
+
+  @override
+  String get frontDoorStartGoalHint =>
+      'Ouvre l\'assistant d\'objectif avec tes mots';
+
+  @override
+  String get frontDoorSuggested => 'Suggéré';
 
   @override
   String get frontDoorSummaryBased => 'd’après des résumés';
@@ -7749,6 +7783,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Agrandir le graphique';
 
   @override
+  String get frontPreviewCoverDrawing => 'Création de la couverture…';
+
+  @override
+  String get frontPreviewCoverFailed => 'La couverture n\'a pas pu être créée';
+
+  @override
+  String get frontPreviewPromptFailed =>
+      'Le prompt de code n\'a pas pu être rédigé';
+
+  @override
+  String get frontPreviewPromptWriting => 'Rédaction du prompt de code…';
+
+  @override
   String get frontPullRequestsLinesAdded => 'Lignes ajoutées';
 
   @override
@@ -7779,7 +7826,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tu veux régler quelque chose avant que je la crée ?';
 
   @override
+  String get frontTaskSetupCover => 'Couverture';
+
+  @override
+  String get frontTaskSetupCoverGenerate => 'Générer une couverture';
+
+  @override
   String get frontTaskSetupCreate => 'Créer la tâche';
+
+  @override
+  String get frontTaskSetupNoCover => 'Pas de couverture';
 
   @override
   String get frontTaskSetupPickDate => 'Choisir une date…';

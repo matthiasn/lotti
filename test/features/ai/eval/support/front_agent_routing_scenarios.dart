@@ -1,5 +1,6 @@
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 
 /// The routing index every scenario is posed against: the penguin
@@ -317,6 +318,52 @@ final List<FrontEvalScenario> frontEvalScenarios = [
         'no category guessed.',
   ),
   const FrontEvalScenario(
+    id: 'cover_art_asked',
+    input: 'Make a task to design the launch-day poster, with cover art.',
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [(kind: FrontDestinationKind.newThing, id: null)],
+    maxLookups: 1,
+    checkTask: _coverArtAskedTask,
+    note:
+        'The user asks for cover art with the task: its one segment says '
+        'so, and the request does not become a segment or a task of its own.',
+  ),
+  const FrontEvalScenario(
+    id: 'cover_art_not_asked',
+    input: 'Make a task to repaint the mural in the mess hall.',
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [(kind: FrontDestinationKind.newThing, id: null)],
+    maxLookups: 1,
+    checkTask: _coverArtNotAskedTask,
+    note:
+        'The work is about a picture, but no cover was asked for: none is '
+        'read, so no paid image is pre-selected.',
+  ),
+  const FrontEvalScenario(
+    id: 'ways_coding_work',
+    input:
+        'Make a task to fix the crash in the fish-ledger app when the tally '
+        'sync times out.',
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [(kind: FrontDestinationKind.newThing, id: null)],
+    maxLookups: 1,
+    checkTask: _codingWaysTask,
+    note:
+        'Work on software: the ways she writes beside the dispatch offer a '
+        'coding prompt for it.',
+  ),
+  const FrontEvalScenario(
+    id: 'ways_plain_errand',
+    input: 'Make a task to buy herring for the colony kitchen.',
+    outcome: FrontEvalOutcome.dispatch,
+    expectedSegments: [(kind: FrontDestinationKind.newThing, id: null)],
+    maxLookups: 1,
+    checkTask: _errandWaysTask,
+    note:
+        'An errand: she still says which ways fit, and a coding prompt is '
+        'not one of them.',
+  ),
+  const FrontEvalScenario(
     id: 'asked_task_duplicate',
     input: "Create a task to order next month's fish for the colony.",
     outcome: FrontEvalOutcome.ask,
@@ -475,6 +522,46 @@ List<String> _uncategorizedTask(FrontDispatchSegment? segment) {
   if (shape.isNotEmpty) return shape;
   return [
     if (segment!.task!.categoryId case final id?) 'guessed category $id',
+  ];
+}
+
+List<String> _coverArtAskedTask(FrontDispatchSegment? segment) {
+  final shape = _taskShape(segment);
+  if (shape.isNotEmpty) return shape;
+  return [
+    if (!segment!.task!.coverArt) 'the cover art asked for was not read',
+  ];
+}
+
+List<String> _coverArtNotAskedTask(FrontDispatchSegment? segment) {
+  final shape = _taskShape(segment);
+  if (shape.isNotEmpty) return shape;
+  return [
+    if (segment!.task!.coverArt) 'cover art nobody asked for',
+  ];
+}
+
+List<String> _codingWaysTask(FrontDispatchSegment? segment) {
+  final shape = _taskShape(segment);
+  if (shape.isNotEmpty) return shape;
+  final ways = segment!.ways;
+  return [
+    if (ways == null)
+      'no ways written for the item'
+    else if (!ways.contains(FrontInboxWay.prompt))
+      'software work without the coding-prompt way',
+  ];
+}
+
+List<String> _errandWaysTask(FrontDispatchSegment? segment) {
+  final shape = _taskShape(segment);
+  if (shape.isNotEmpty) return shape;
+  final ways = segment!.ways;
+  return [
+    if (ways == null)
+      'no ways written for the item'
+    else if (ways.contains(FrontInboxWay.prompt))
+      'a coding prompt offered for an errand',
   ];
 }
 

@@ -22,6 +22,16 @@ enum DesignSystemChipSize {
   /// Caption-sized pill with the same minimum target as a touch chip.
   compactPillTouch,
 
+  /// [compactPillTouch] with a taller visible pill inside the same minimum
+  /// target, for chips that wrap onto several rows. A [compactPillTouch]
+  /// pill fills less than half its target, so two rows of them stand a
+  /// target's slack apart — several times the gap between neighbours — and
+  /// the second row reads as a group of its own. Here the pill takes most of
+  /// the target: rows laid edge to edge stand a little over a
+  /// `spacing.step4` apart, so a `Wrap` with that spacing reads as one even
+  /// grid, and what can be tapped is closer to what is drawn.
+  pillTouch,
+
   touch,
 }
 
@@ -46,6 +56,7 @@ class DesignSystemChip extends StatefulWidget {
     this.selected = false,
     this.outlined = false,
     this.quietSelection = false,
+    this.mutedLabel = false,
     this.size = DesignSystemChipSize.compact,
     this.semanticsLabel,
     this.forcedState,
@@ -84,6 +95,12 @@ class DesignSystemChip extends StatefulWidget {
   /// resting outline, never the accent — for a choice that sits beside the
   /// surface's one accented control and must not compete with it.
   final bool quietSelection;
+
+  /// The label in medium-emphasis ink: for a chip that says nothing is set
+  /// ("No due date") among chips that carry a value, so what is set is what
+  /// the eye lands on. The chip stays as tappable and as legible as its
+  /// neighbours' glyphs and chevrons, which wear the same ink.
+  final bool mutedLabel;
 
   /// Visual/tap-target size. Defaults to the compact chip used in dense filter
   /// rows; `touch` is for primary picker choices inside modal sheets.
@@ -124,6 +141,7 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
       tokens: tokens,
       visualState: visualState,
       quietSelection: widget.quietSelection,
+      mutedLabel: widget.mutedLabel,
     );
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
@@ -136,7 +154,9 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
           : BorderSide.none,
     );
 
-    final separateTarget = widget.size == DesignSystemChipSize.compactPillTouch;
+    final separateTarget =
+        widget.size == DesignSystemChipSize.compactPillTouch ||
+        widget.size == DesignSystemChipSize.pillTouch;
     final surface = Ink(
       decoration: ShapeDecoration(
         color:
@@ -333,17 +353,23 @@ class _ChipSizeSpec {
         minHeight: null,
       ),
       DesignSystemChipSize.compactPill ||
-      DesignSystemChipSize.compactPillTouch => _ChipSizeSpec(
+      DesignSystemChipSize.compactPillTouch ||
+      DesignSystemChipSize.pillTouch => _ChipSizeSpec(
         labelStyle: tokens.typography.styles.others.caption,
-        horizontalPadding: tokens.spacing.step2 + tokens.spacing.step1,
-        verticalPadding: tokens.spacing.step1,
+        // The taller pill is as generous at its ends as above and below.
+        horizontalPadding: size == DesignSystemChipSize.pillTouch
+            ? tokens.spacing.step3
+            : tokens.spacing.step2 + tokens.spacing.step1,
+        verticalPadding: size == DesignSystemChipSize.pillTouch
+            ? tokens.spacing.step3
+            : tokens.spacing.step1,
         itemGap: tokens.spacing.step2,
         cornerRadius: tokens.radii.badgesPills,
         accessoryBoxSize: tokens.typography.lineHeight.caption,
         accessoryIconSize: tokens.typography.lineHeight.caption,
-        minHeight: size == DesignSystemChipSize.compactPillTouch
-            ? tokens.spacing.step9
-            : null,
+        minHeight: size == DesignSystemChipSize.compactPill
+            ? null
+            : tokens.spacing.step9,
       ),
       DesignSystemChipSize.touch => _ChipSizeSpec(
         labelStyle: tokens.typography.styles.body.bodyMedium,
@@ -379,6 +405,7 @@ class _ChipVariantSpec {
     required DsTokens tokens,
     required DesignSystemChipVisualState visualState,
     bool quietSelection = false,
+    bool mutedLabel = false,
   }) {
     final backgroundColor = switch (visualState) {
       DesignSystemChipVisualState.idle => tokens.colors.surface.enabled,
@@ -392,7 +419,9 @@ class _ChipVariantSpec {
 
     return _ChipVariantSpec(
       backgroundColor: backgroundColor,
-      labelColor: tokens.colors.text.highEmphasis,
+      labelColor: mutedLabel
+          ? tokens.colors.text.mediumEmphasis
+          : tokens.colors.text.highEmphasis,
       accessoryColor: tokens.colors.text.mediumEmphasis,
     );
   }

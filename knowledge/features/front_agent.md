@@ -1,17 +1,17 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, how many pull requests the user opened and shipped, how big they were on average and which were the biggest, with charts under her words, and which task some work was in — pull requests filtered by a call of their own, shown as the task page's pull request cards, with follow-ups about them — and names tasks as links, how a reply is composed of catalog components in her order, checked, stored as an A2UI surface and drawn by `a2ui_flutter`, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, how a dictated task is filled from her reading of the words and made on the tap, with cover art or a coding prompt generated from those words when asked for, how "that one" finds the task a follow-up follows, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, how she answers what is due, how much time was logged, with a chart under her words, what was completed or rejected, how many pull requests the user opened and shipped, how big they were on average and which were the biggest, with charts under her words, and which task some work was in — pull requests filtered by a call of their own, shown as the task page's pull request cards, with follow-ups about them — and names tasks as links, how she picks the ways an inbox item offers for its words, how a reply is composed of catalog components in her order, checked, stored as an A2UI surface and drawn by `a2ui_flutter`, what the chat surface renders, how a stalled or failed turn is bounded, timed and named, and what she hears and says.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-08T09:00:00Z }
-stale_after: 2027-05-08
+generated: { by: claude-code/fable-5.2, at: 2026-11-14T09:00:00Z }
+stale_after: 2027-05-14
 sources:
   - id: workflow
     resource: ../../lib/features/front_agent/workflow/front_agent_workflow.dart
     title: FrontAgentWorkflow — one routing turn per wake
-    last_modified: 2026-11-09
+    last_modified: 2026-11-15
   - id: stall-guard
     resource: ../../lib/features/front_agent/workflow/front_inference_stall_guard.dart
     title: FrontInferenceStallGuard — a silent provider call is sent once more
@@ -27,7 +27,7 @@ sources:
   - id: strategy
     resource: ../../lib/features/front_agent/workflow/front_agent_strategy.dart
     title: FrontAgentStrategy — accumulating, count-capped tool handling, her words linked
-    last_modified: 2026-11-08
+    last_modified: 2026-11-15
   - id: contract
     resource: ../../lib/features/front_agent/workflow/front_agent_contract.dart
     title: The tool contract, caps and system prompt
@@ -71,7 +71,7 @@ sources:
   - id: door
     resource: ../../lib/features/front_agent/model/front_door.dart
     title: FrontDoorRecord — the claim, the outcome, the deterministic id
-    last_modified: 2026-11-01
+    last_modified: 2026-11-15
   - id: reference-links
     resource: ../../lib/features/front_agent/model/front_reference_links.dart
     title: linkFrontReferences — a recited task or project id becomes a link
@@ -86,16 +86,24 @@ sources:
     last_modified: 2026-11-15
   - id: filing
     resource: ../../lib/features/front_agent/service/front_filing_service.dart
-    title: FrontFilingService — what the tap under a door writes
-    last_modified: 2026-11-11
+    title: FrontFilingService — what the tap under a door writes, and what it starts once a task is made
+    last_modified: 2026-11-14
   - id: task-draft
     resource: ../../lib/features/front_agent/model/front_task_draft.dart
-    title: FrontTaskDraft — the task the router read from the words, and how the user set it up
-    last_modified: 2026-11-11
+    title: FrontTaskDraft — the task the router read from the words, how the user set it up, and what is generated with it
+    last_modified: 2026-11-14
   - id: task-setup
     resource: ../../lib/features/front_agent/ui/front_task_setup.dart
-    title: FrontTaskSetup — status, priority and due day asked on the card before a task is made
-    last_modified: 2026-11-12
+    title: FrontTaskSetup — status, priority, due day and cover art asked on the card before a task is made
+    last_modified: 2026-11-14
+  - id: door-ways
+    resource: ../../lib/features/front_agent/ui/front_door_ways.dart
+    title: FrontDoorWays — an inbox item's choices, every way a row of its card, and the scope its InboxWays draws from
+    last_modified: 2026-11-16
+  - id: inbox-way
+    resource: ../../lib/features/front_agent/model/front_inbox_way.dart
+    title: FrontInboxWay — the ways an inbox item may go that she picks for its words
+    last_modified: 2026-11-15
   - id: conversation-tasks
     resource: ../../lib/features/front_agent/workflow/front_conversation_tasks.dart
     title: frontConversationTaskIds — the tasks a conversation named, newest first
@@ -154,8 +162,8 @@ sources:
     last_modified: 2026-11-11
   - id: providers
     resource: ../../lib/features/front_agent/state/front_agent_providers.dart
-    title: The registry contributions, the wake runner that routes then walks, and the setup resolver
-    last_modified: 2026-11-08
+    title: The registry contributions, the wake runner that routes then walks, the setup resolver, and the starter of what is generated with a task
+    last_modified: 2026-11-14
   - id: voice
     resource: ../../lib/features/front_agent/ui/front_chat_voice.dart
     title: FrontVoice — her spoken reply, its gating, her pose, the voice an answer said again keeps
@@ -163,15 +171,15 @@ sources:
   - id: reply-surface
     resource: ../../lib/features/front_agent/model/front_reply_surface.dart
     title: FrontReplySurface — a reply as its stored A2UI v1.0 createSurface message, its components and the data the app bound
-    last_modified: 2026-11-11
+    last_modified: 2026-11-15
   - id: reply-reader
     resource: ../../lib/features/front_agent/workflow/front_reply_reader.dart
     title: readFrontReply — her prose and the components she wrote checked against what the turn saw, task lists in her prose made cards, nothing a lookup found lost
-    last_modified: 2026-11-12
+    last_modified: 2026-11-15
   - id: reply-stream
     resource: ../../lib/features/front_agent/workflow/front_reply_stream.dart
     title: parseFrontReplyStream — her message split into Express UI blocks and prose, the authoring catalog and the prompt snippet that teaches it
-    last_modified: 2026-11-12
+    last_modified: 2026-11-15
   - id: live-answer
     resource: ../../lib/features/front_agent/model/front_live_answer.dart
     title: FrontLiveAnswer — her answer while a turn is still writing it, and the thread it is shown in
@@ -179,7 +187,7 @@ sources:
   - id: reply-catalog
     resource: ../../lib/features/front_agent/ui/a2ui/front_reply_catalog.dart
     title: frontReplyCatalog and FrontReplyScope — her reply's A2UI catalog on the chat's own widgets
-    last_modified: 2026-11-11
+    last_modified: 2026-11-16
   - id: reply-surfaces
     resource: ../../lib/features/front_agent/ui/a2ui/front_reply_surfaces.dart
     title: FrontReplySurfaces — one A2UI message processor per conversation, fed each reply's stored surface
@@ -194,12 +202,16 @@ sources:
     last_modified: 2026-11-09
   - id: entity-preview-provider
     resource: ../../lib/features/front_agent/state/front_entity_preview_provider.dart
-    title: frontEntityPreviewProvider — the live preview a card reads
-    last_modified: 2026-11-09
+    title: frontEntityPreviewProvider — the live preview a card reads, and the coding prompt summary a made task's card shows
+    last_modified: 2026-11-14
   - id: entity-preview-card
     resource: ../../lib/features/front_agent/ui/front_entity_preview_card.dart
     title: FrontEntityPreviewList and its cards — her lists of tasks and what her turn made, as preview cards, a task card's quick actions, and the label over a due list
-    last_modified: 2026-11-10
+    last_modified: 2026-11-14
+  - id: entity-preview-generated
+    resource: ../../lib/features/front_agent/ui/front_entity_preview_generated_part.dart
+    title: What is generated for a task her chat made, on its preview card — the cover while it is drawn, the coding prompt's summary
+    last_modified: 2026-11-14
   - id: due-section
     resource: ../../lib/features/front_agent/model/front_due_section.dart
     title: FrontDueSection — the window a due list was read from, kept on her reply
@@ -1182,8 +1194,12 @@ flowchart LR
   W[spoken turn<br/>transcribed, clip deleted] --> R[routing: segment new / task<br/>+ task object]
   R -->|FrontTaskDraft.fromModel| V[draft on the segment,<br/>then on the door record]
   V --> I[inbox item, waiting]
-  I -->|Make it a task| U[FrontTaskSetup on the card:<br/>status · priority · due, seeded from the draft]
+  I -->|Make it a task| U[FrontTaskSetup on the card:<br/>status · priority · due · cover art, seeded from the draft]
   U -->|Create task, FrontTaskChoices| M[makeFrontTask under frontDoorTaskId]
+  I -->|Task with a coding prompt:<br/>the draft's choices, no setup| M
+  M -->|record says made, then| X[frontTaskExtraStarterProvider:<br/>triggerSkillProvider on the words entry,<br/>the task as context]
+  X -->|cover art chosen| CA[(cover image, set as the task's cover)]
+  X -->|coding prompt asked for| CP[(prompt, an AI response under the task)]
   M --> T[(task, in its category)]
   M --> E[(the words, a text entry linked under it)]
   M -->|draft has a start| C[(timer entry from that instant,<br/>TimeService.start)]
@@ -1202,6 +1218,8 @@ flowchart LR
 | estimate | agent, only when said | minutes (≤ `frontTaskMaxEstimateMinutes`) |
 | status | agent, only when said; then the user, on the card | `inProgress`: *in progress*, and nothing more — "make it in progress" is a status, never a start. The setup offers open, groomed and in progress (`FrontTaskStart`); blocked and on hold ask a reason, so they stay on the task page |
 | timer | agent, only when a timer is asked for or a start is said | `startedMinutesAgo` (0–`frontTaskMaxStartedMinutesAgo`): *in progress*, and a timer entry linked under the task from that instant, running |
+| cover art | agent, only when asked for; then the user, on the card | `coverArt`: true only for "with cover art", "a cover", "a picture for it" (live eval scenarios `cover_art_asked` / `cover_art_not_asked`). The setup's fourth chip starts there and the user's choice wins. Generated after the task is made ([what is generated with a task](#what-is-generated-with-a-task)) |
+| coding prompt | user, from the card's other ways | *Task with a coding prompt*: the task as she read it, no setup, and the prompt generated after it is made. The router reads no field for it |
 | follows up on | agent, only for a follow-up | `followsUpTaskId`: a task in the index, a lookup this turn or `<conversation_tasks>`; anything else is dropped. Linked `followsUp` from the new task to it, and filed under its project |
 | task agent | category default | the category's `defaultTemplateId`; none without one |
 | provenance | always | the segment's verbatim words, a text entry linked under the task (`frontTaskWordsId`) |
@@ -1217,10 +1235,11 @@ runs from now. **Nothing is drafted unasked, and nothing is made without
 the tap**: a task only mentioned is offered in her words first
 ([talking back](#talking-back-and-offering-a-task)); one asked for waits in
 the inbox with its draft, and *Make it a task* asks how before anything is
-made. Its status line, action and overflow give
-way to `FrontTaskSetup`: one line in her voice and three chips — status,
-priority, due day — each opening a short menu where it sits (today,
-tomorrow, a day on the calendar, or none for the due day), so the setup is
+made. Its choices give
+way to `FrontTaskSetup`: one line in her voice and four chips — status,
+priority, due day, cover art — each opening a short menu where it sits (today,
+tomorrow, a day on the calendar, or none for the due day; generate one or
+none for the cover), so the setup is
 the conversation asking, never a form to leave it for. The chips start at
 `FrontTaskChoices.of(draft)`, so *Create task* alone makes the task as she
 read it; *Cancel* gives the card back as it was. Her line says what she heard
@@ -1229,9 +1248,22 @@ just asks; a drafted item's headline is the draft's title — the one the
 task is made with — set up or not, so a "yes, make it a task" never heads
 it. Status and priority wear the task list's own
 glyphs, and the due chip warns for today and turns late for a past day, as the
-task will. *Cancel* and *Create task* share the chips' line where it fits and
-drop below it, at the end, where it does not; there *Create task* keeps the
-overflow's slot, so it ends where *Make it a task* does. The step takes focus
+task will. **The chips are one group.** They are `DesignSystemChipSize.pillTouch`
+— a pill that fills most of its `step9` target — a `step4` apart, in a `Wrap`
+with no run spacing, so neighbours and rows stand about equally far and four
+chips on a phone read as one two-by-two block rather than two strips. They sit
+in two pairs (status and priority, then due day and cover), so where they do
+not share a line the break is between the pairs, never wherever a label's
+length puts it. A chip at what a task is made with when nothing was said —
+open, medium, no due day, no cover — wears a medium-emphasis label
+(`mutedLabel`), so what was heard or chosen is what stands out; an open chip
+takes the quiet neutral selection, and the cover glyph neutral ink, leaving
+*Create task* the card's one accent. *Cancel* and *Create task* share the chips' line where it fits and
+drop below it, at the end, where it does not (`FrontBand`), so *Create
+task* ends at the card's edge either way. the question never breaks word by word beside them. The two buttons have a chip's target height (`tapTargetSize:
+padded`) and stand a `step4` apart, and they sit further from the chips than
+the chips' rows do from each other: they act on the group, they are not its
+third row. The step takes focus
 as it opens: Enter creates and Escape leaves while it holds that focus itself,
 never once a chip or button in it does. A menu over the buttons closes on an
 outside tap without pressing them. Create hands the choices
@@ -1259,6 +1291,102 @@ of its own (rule 10), so a trailing "make it due today and urgent" never
 becomes a second inbox item. *Undo* deletes the task and the copy of the
 words under it, and stops the timer running on it; the timer entry stays,
 as logged time does on any deleted task.
+
+## What is generated with a task
+
+Two things can be asked for with a task made from her chat, and both are the
+AI popup's own skills run on text instead of a recording:
+
+| Asked for | Where | Skill | Lands as |
+|-----------|-------|-------|----------|
+| cover art | the setup's fourth chip (*No cover art* / *Cover art*), on when the words asked for one, offered where a profile can draw | `skillImageGenId` | a generated image linked under the task and set as its `coverArtId` |
+| a coding prompt | *Task with a coding prompt* among the inbox item's other ways | `skillPromptGenId` | an AI response linked under the task, and from the words entry |
+
+Neither needs audio. The skills take a `JournalEntry` as readily as a
+`JournalAudio`, and every task made here already has one: the copy of the
+user's words filed under it (`frontTaskWordsId`). `frontTaskExtraStarterProvider`
+runs `triggerSkillProvider` with that entry as the source and the task as
+`linkedTaskId`, so the profile is the task's own — its agent's, else the one
+it inherited — exactly as when the popup is opened on that entry from the
+task page. A task with no profile that can run the skill — one filed in no
+category, or whose profile names no image model — generates on the Settings
+default instead, the profile she herself falls back to
+([profile resolution](ai/profile-resolution.md)).
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant F as FrontFilingService.makeTask
+  participant M as makeFrontTask
+  participant R as door record
+  participant S as frontTaskExtraStarterProvider
+  participant T as triggerSkillProvider
+  U->>F: Create task (choices.coverArt) / Task with a coding prompt
+  F->>M: draft.withChoices(choices)
+  M-->>F: task, words entry filed, agent assigned
+  F->>R: FrontDoorTaskCreated(extras)
+  F-)S: each extra, not awaited
+  S-)T: words entry, skill, linkedTaskId
+  F-->>U: door settled — "Made into a task · … requested"
+  T-->>T: generation, a minute or more later
+```
+
+Three properties are contract:
+
+- **Started only after the record says the task is made.** A tap whose record
+  did not follow is retried, and the retry finds the task already there; had
+  the generation been started before the record, the retry would pay for a
+  second image. Started after, a crash in between costs a generation the user
+  can ask for from the task page, never a duplicate.
+- **Never awaited, never fatal.** The trigger keeps itself alive, catches its
+  own failures and reports them under the words entry and the task — a run
+  declined before it started as much as one that failed — where the task
+  page and the chat's card show them; the starter drops whatever still
+  escapes, and a start that throws is logged by the filing service rather
+  than failing a task its record already says is made. A task whose cover
+  could not be drawn is still made.
+- **What arrives is seen in the chat before the task is opened.** The made
+  task's preview card under her reply (`FrontEntityPreviewList(showsGenerated:
+  true)`, only for what a turn made — a task she merely lists reads nothing
+  extra) is where both land. Its cover's place holds a tile in the AI ink
+  while the cover is drawn, then the thumbnail; under the task's row, below a
+  rule, a line says *Drawing the cover…* or *Writing the coding prompt…*
+  while a run is going and that it could not be done when it failed — of a
+  prompt only on the card of a task a coding prompt was asked for here
+  (`codingPromptTaskIds`, from the door's `extras`), since a design or
+  research prompt started on the task's page reports under the same type —
+  and the
+  coding prompt's summary (`frontTaskCodingPromptProvider`: the newest coding
+  prompt linked under the task, its `## Summary` read by
+  `generatedPromptSummary`, three lines at most) sits there once written. A
+  tap anywhere opens the task, where the full prompt is. The runs report
+  under the task's id (`inferenceStatusControllerProvider`), in memory only:
+  after a restart what arrived still shows, a run that never finished says
+  nothing.
+- **The door card says what was asked for, not what arrived.** `FrontDoorTaskCreated.extras`
+  is stored on the outcome (`FrontTaskExtra`, unknown names dropped on read),
+  and the status line appends *coding prompt requested* and *cover art
+  requested* after *Made into a task*. Whether a generation finished is the
+  task's to show. *Undo* deletes the task; what was generated for it stays in
+  the journal, as its timer entry does.
+
+**The chip is offered only where a cover can be drawn.**
+`frontCoverArtAvailableProvider` answers for the category the task will be
+made in (`frontTaskCategoryId`: the one the draft names, else the one of the
+task it follows, as `makeFrontTask` files it): its default profile names an
+image-generation model, or the Settings default does — the two the run
+resolves from, since the task's own profile is only known once the task
+exists. The pane watches it for each waiting item a card shows and hands the
+card `coverArtDoorIds`, plain data, from which the setup gets
+`FrontTaskSetup.coverArtAvailable`; until it is known, and where no profile
+draws, the chip is not there. **The same rule is enforced where the task is
+made**: `FrontFilingService.makeTask` asks `frontCoverArtAvailable` for that
+same category before it keeps a cover in the choices, so a cover the words
+asked for is dropped whichever control made the task — the setup or *Task
+with a coding prompt* — and nothing is requested, or said to be, that could
+not arrive.
+The provider reads no models outside those two profiles: a cover is never
+drawn on a provider the user did not choose for the task or as their default.
 
 **Duplicates.** Rule 11 of the prompt has her compare a new task with the
 listed open tasks — `match_to_corpus` only when the index says more exist
@@ -1328,7 +1456,8 @@ stateDiagram-v2
   Day --> Inbox: Somewhere else — the words go to the inbox
   [*] --> Inbox: new / journal / unrouted walked
   Inbox --> SavedNote: Save as a note — text entry, owned by nothing
-  Inbox --> TaskCreated: Make it a task, then Create task — from its draft as set up, else titled with the words
+  Inbox --> TaskCreated: Make it a task, then Create task — from its draft as set up, else titled with the words, cover art started when chosen
+  Inbox --> TaskCreated: Task with a coding prompt — from its draft as read, no setup, the prompt started
   Inbox --> EventCreated: Make it an event — tentative, titled with the words
   Inbox --> Left: Leave it — nothing written, nothing waits
   Left --> Proposal: Undo — when it came from a proposal
@@ -1606,9 +1735,9 @@ by the user turn in the thread but *carried* by her reply right after it
 her bubble; until she has replied, or when no reply followed, they sit
 under the user's. One card per segment on one surface, hairlines between,
 and every card the same shape: a compact tinted tile with the kind's glyph
-(task, goal, project, person, day, inbox; the done glyph in the success
-ink once something was written, the warning in the error ink when the
-door failed), the user's words in full in body type — or, for an answer,
+(task, goal, project, person, day, inbox; the glyph of the way it went, in
+the success ink, once something was written; the warning in the error ink
+when the door failed), the user's words in full in body type — or, for an answer,
 the owner's text, a journal answer or a specialist's mirrored reply rendered
 as the Markdown it is (`AgentMarkdownView`, its links through
 `FrontDoorActions.onOpenLink`; the user's words stay plain text) — one
@@ -1616,18 +1745,50 @@ status caption (the proposal's question naming the
 task, *Where should this go?* or *… go instead?* after a proposal was sent
 there, *Filed under …*, *Made into a task*, an answer's attribution and
 caveats, a door still being walked, a reason it went nowhere), at most one
-filled action, and an overflow menu (`DesignSystemContextMenuButton`)
-holding every other way out. The filled action is always a tap that
-writes — *File it*, *Make it a task* — or, on a settled card, a secondary
-*Open*. *Make it a task* is the filled tap only on an item she drafted — a
-task the user asked for; an inbox item nobody asked to be a task has no
-filled tap, and offers *Make it a task* in the overflow among the other
-ways. The overflow holds *Somewhere else* on a proposal, *Start a goal…*
-/ *New project…* (the ellipsis says a wizard opens), *Make it an event*
-(only while `enable_events` is on — an event made where it is off would
-have no page to be found on), *Save as a note* and *Leave it* on an inbox item with the router's guess
-first, and *Undo* on
-anything settled. A busy card's action shows it loading; a failed one's
+filled action, and one trailing control holding every other way out. The
+filled action is always a tap that writes — *File it*. On a proposal the
+trailing control is an overflow menu (`DesignSystemContextMenuButton`)
+holding *Somewhere else*, and on anything settled one holding *Undo*: single
+commands.
+
+**An inbox item that waits is its choices** (`FrontDoorWays`,
+`front_door_ways.dart`): no tile, no button, nothing to open. Top to
+bottom the card holds the question, small and quiet (*Where should this
+go?*, or *… go instead?*); the words as the headline (`subtitle1`) — a
+drafted task's title, never a "yes, make it a task" — under no glyph,
+since nothing is decided yet; and every way it can go as a row of one
+list, a tap on a row doing it. The rows have one height, one radius and
+one glyph size. **The router's guess is the first row and the only tinted
+one**: the interactive colour faint as its fill
+(`DesignSystemListPalette.activatedFill`) and as a hairline outline, its
+glyph in that colour, and a filled *Suggested* tag at its end in place of
+a second line; its semantics say *Suggested* too, so the guess is
+announced and not only coloured. A task is the guess only on an item she
+drafted — a task the user asked for; on words nobody asked to be a task,
+and on an item with nothing guessed, no row is tinted and *Make it a task*
+is a row like the others, first. Every other way is a neutral row
+(`surface.enabled`) with its name over one line saying what choosing it
+does (*Save as a note — Keeps your words as they are*): *Make it a task*,
+*Task with a coding prompt*, *Start a goal…* / *New project…* (the
+ellipsis says a wizard opens), *Make it an event* (only while
+`enable_events` is on — an event made where it is off would have no page
+to be found on) and *Save as a note*, in that order after the guess.
+**Which of them are listed is hers to say**, for the item's words (see
+*The ways of an inbox item are hers to pick*, below). *Leave it, nothing
+is made* is no row but a quiet button under the list, at its start, so it
+never competes with the ways. *Make it a task* asks how first: the setup
+stands where the choices stood, under the title, and *Cancel* returns
+them. **While a way is being done its row shows the progress** where its
+glyph was — the card remembers which way was tapped
+(`_FrontDoorCardState._taken`) — the other rows step back and take no tap,
+and the card keeps its height; *Leave it* in flight loads its own button.
+
+**A card that went a way is one row**: the glyph of that way (a task's, an
+event's, a note's, a project's, or the owner's kind for something filed
+under it) and the status line in the success ink, the words on one line,
+and *Open* at the end as text with a chevron — no second filled thing to
+decide on a card that is done. *Undo* stays in its overflow. A declined
+card is unchanged. A busy card's action shows it loading;the foot of the conversation, the list scrolls itself into view. A busy card's action shows it loading; a failed one's
 status says so in the error ink and the tap reads *Try again*
 (`FrontChatComposerState.busyDoorIds` / `failedDoorIds`). *Open* leaves
 the sheet for the entry's, the task's or the event's page. The inbox filter keeps a
@@ -1769,17 +1930,61 @@ Two things are due today, and the ice survey is the one that cannot wait.
 what she may write — `Reply` (children, top to bottom), `Text` (a short
 label between parts), `TaskCards(caption, ids, notes?)`,
 `PullRequestCards(caption, ids)`, `ClosedTasks(caption)`, `LoggedTimeChart(caption)`,
-`PullRequestChart(caption)` and `QuickReplies(options)` — flat, with no
+`PullRequestChart(caption)`, `QuickReplies(options)` and
+`InboxWays(part, ways)`, which goes with a dispatch and is never drawn in
+her reply — flat, with no
 data in it: **she never passes data to a component**. The catalog has one
 component she cannot write: `CitedPoints`, which only the app composes, for a
 journal answer's points (see *Her journal answer is drawn as its points*). A card names a task
 or project by id and reads it live; a lookup's component only places what
 the app wrote from that lookup. `frontReplyPromptSnippet` is the library's
-description of that catalog and two examples in the exact format, which
+description of that catalog and three examples in the exact format, which
 `frontAgentSystemMessage` appends under *Writing UI*. `frontReplyFormat`
 allows `createSurface` alone. `parseFrontReplyStream` runs her message
 through the library's processor and returns her prose, the components in
 the order she laid them out, and an error per block it could not read.
+
+**The ways of an inbox item are hers to pick.** A part that waits for the
+user's tap — `new`, `unrouted`, a `journal` statement — could become
+several things, and most do not fit most words: "buy milk" is no coding
+prompt. Beside her `dispatch`, in the same message, she writes one
+`InboxWays(part, ways)` per such part: `part` is its position in
+`segments`, `ways` any of `FrontInboxWay` — `prompt`, `goal`, `project`,
+`event` — and empty when none fits. It is the one block that may stand
+without prose. `readFrontInboxWays` reads them by part (a part past the
+last segment names nothing, an unknown way is left out, the first for a
+part stands), `FrontAgentStrategy.inboxWays` keeps them once the message
+that carried an accepted dispatch is read, and the workflow stores them
+with the dispatch (`FrontDispatch.withWays`), so the walker copies them to
+the door's record (`FrontDoorRecord.ways`). `readFrontReply` passes an
+`InboxWays` over: it is no part of what her reply draws or stores.
+
+```mermaid
+flowchart LR
+  M["her message:<br/>InboxWays(0, [prompt]) + dispatch"] --> R[readFrontInboxWays]
+  R --> S["dispatch record:<br/>segments[0].ways"]
+  S --> W["walker:<br/>FrontDoorRecord.ways"]
+  W --> T["FrontChatThread.surfaces:<br/>ways:&lt;doorId&gt;"]
+  T --> C["door card:<br/>A2uiSurface in FrontDoorWaysScope"]
+  C --> L["InboxWays → FrontDoorWays"]
+```
+
+A waiting inbox item whose record keeps ways gets a surface of its own in
+`FrontChatThread.surfaces`, under `frontDoorWaysSurfaceId(doorId)`:
+`FrontReplySurface.inboxWays`, one `InboxWays` naming them. Its card draws
+that surface in a `FrontDoorWaysScope`, and the catalog's `InboxWays`
+builds the card's `FrontDoorWays` from what the scope offers for the names
+— so the catalog stays static and every way is still run by the card.
+**The app keeps a floor she cannot remove**: *Make it a task* (the
+suggested row on a drafted item, a plain first row otherwise), *Save as a
+note* and
+*Leave it* are always there, the router's guess is always offered and
+leads, and an event is still offered only while `enable_events` is on. The
+rest are the ways she picked, in the card's order, not hers. `ways` empty
+means none fits; `ways` absent — a record from before she picked, a block
+she left out or one that could not be read, a card drawn outside a thread
+— means nothing was said, and every way is offered as before, a project
+only as the guess.
 
 **Speech and display are separate channels.** Her prose is the only thing
 spoken and the only thing kept in `<recent_turns>`; it leads what is drawn.

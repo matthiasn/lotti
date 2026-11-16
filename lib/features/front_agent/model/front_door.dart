@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 
 /// The tool name under which a walked door is recorded in the front
@@ -145,6 +146,7 @@ sealed class FrontDoorOutcome {
           taskId: taskId,
           newKind: FrontNewKind.fromName(map['newKind']),
           generation: generation is int ? generation : 0,
+          extras: FrontTaskExtra.fromNames(map['extras']),
           at: switch (map['at']) {
             final String iso => DateTime.tryParse(iso),
             _ => null,
@@ -264,18 +266,23 @@ class FrontDoorInbox extends FrontDoorOutcome {
 /// [newKind] and [generation] are the inbox item's, kept for a take-back.
 /// [at] is when the tap made it — later than the door record, which keeps
 /// the time it was walked; null on records written before it was kept.
+/// [extras] is what was asked to be generated with it — cover art, a coding
+/// prompt — so the card can say so; whether a generation finished is the
+/// task's to show.
 class FrontDoorTaskCreated extends FrontDoorOutcome {
   const FrontDoorTaskCreated({
     required this.taskId,
     this.newKind,
     this.generation = 0,
     this.at,
+    this.extras = const {},
   });
 
   final String taskId;
   final FrontNewKind? newKind;
   final int generation;
   final DateTime? at;
+  final Set<FrontTaskExtra> extras;
 
   @override
   Map<String, Object?> toJson() => {
@@ -284,6 +291,11 @@ class FrontDoorTaskCreated extends FrontDoorOutcome {
     if (newKind != null) 'newKind': newKind!.name,
     if (generation > 0) 'generation': generation,
     if (at != null) 'at': at!.toUtc().toIso8601String(),
+    if (extras.isNotEmpty)
+      'extras': [
+        for (final extra in FrontTaskExtra.values)
+          if (extras.contains(extra)) extra.name,
+      ],
   };
 }
 
@@ -485,6 +497,7 @@ class FrontDoorRecord {
     this.ownerTitle,
     this.outcome,
     this.task,
+    this.ways,
   });
 
   final int segmentIndex;
@@ -505,6 +518,10 @@ class FrontDoorRecord {
   /// The segment's task draft: what a task made of it is filled with.
   final FrontTaskDraft? task;
 
+  /// The ways she offers while the segment waits in the inbox, picked for
+  /// its words; null when she named none, and every way is offered.
+  final List<FrontInboxWay>? ways;
+
   /// Whether another walker may take this segment: never when done, and
   /// only after [frontDoorClaimGrace] when claimed.
   bool isStaleClaimAt(DateTime now) =>
@@ -521,6 +538,7 @@ class FrontDoorRecord {
     claimedAt: claimedAt,
     outcome: outcome,
     task: task,
+    ways: ways,
   );
 
   Map<String, Object?> toJson() => {
@@ -533,6 +551,7 @@ class FrontDoorRecord {
     'claimedAt': claimedAt.toUtc().toIso8601String(),
     if (outcome != null) 'outcome': outcome!.toJson(),
     if (task != null) 'task': task!.toJson(),
+    if (ways != null) 'ways': [for (final way in ways!) way.name],
   };
 
   /// Reads a stored record; null when it is not one this build wrote.
@@ -568,6 +587,7 @@ class FrontDoorRecord {
       claimedAt: claimedAt,
       outcome: FrontDoorOutcome.fromJson(json['outcome']),
       task: FrontTaskDraft.fromJson(json['task']),
+      ways: FrontInboxWay.listFromJson(json['ways']),
     );
   }
 }

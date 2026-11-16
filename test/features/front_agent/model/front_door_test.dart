@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 
 void main() {
@@ -223,6 +224,27 @@ void main() {
     },
   );
 
+  test('the ways she picked for the segment round-trip with the record and '
+      'stay when it is done; an older record reads as none picked', () {
+    final claim = FrontDoorRecord(
+      segmentIndex: 0,
+      text: 'Fix the login crash.',
+      kind: FrontDestinationKind.newThing,
+      status: FrontDoorStatus.claimed,
+      claimedAt: claimedAt,
+      ways: const [FrontInboxWay.prompt],
+    );
+    final done = claim.done(const FrontDoorInbox(newKind: FrontNewKind.task));
+
+    expect(done.toJson()['ways'], ['prompt']);
+    expect(FrontDoorRecord.fromJson(done.toJson())!.ways, [
+      FrontInboxWay.prompt,
+    ]);
+    // Before she picked ways: nothing stored, nothing read.
+    expect(record().toJson().containsKey('ways'), isFalse);
+    expect(FrontDoorRecord.fromJson(record().toJson())!.ways, isNull);
+  });
+
   test('a stored shape this build does not know reads as nothing, not a '
       'crash', () {
     expect(FrontDoorRecord.fromJson(const {}), isNull);
@@ -320,5 +342,37 @@ void main() {
     ]) {
       expect(frontDoorAwaitsUser(settled), isFalse, reason: '$settled');
     }
+  });
+
+  group('what a made task was asked to come with', () {
+    FrontDoorTaskCreated read(Map<String, Object?> json) =>
+        FrontDoorOutcome.fromJson(jsonDecode(jsonEncode(json)))!
+            as FrontDoorTaskCreated;
+
+    test('round-trips through stored JSON, in the order it is offered', () {
+      const made = FrontDoorTaskCreated(
+        taskId: 't',
+        extras: {FrontTaskExtra.codingPrompt, FrontTaskExtra.coverArt},
+      );
+      expect(made.toJson()['extras'], ['coverArt', 'codingPrompt']);
+      expect(read(made.toJson()).extras, FrontTaskExtra.values.toSet());
+    });
+
+    test('a task made with nothing stores none, and an older record reads '
+        'as none', () {
+      const made = FrontDoorTaskCreated(taskId: 't');
+      expect(made.toJson().containsKey('extras'), isFalse);
+      expect(read({'type': 'taskCreated', 'taskId': 't'}).extras, isEmpty);
+    });
+
+    test('a name this build does not know is left out, the task kept', () {
+      final made = read({
+        'type': 'taskCreated',
+        'taskId': 't',
+        'extras': ['hologram', 'codingPrompt'],
+      });
+      expect(made.taskId, 't');
+      expect(made.extras, {FrontTaskExtra.codingPrompt});
+    });
   });
 }

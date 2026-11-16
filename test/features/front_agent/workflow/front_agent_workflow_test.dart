@@ -24,6 +24,7 @@ import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_live_answer.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
@@ -331,6 +332,53 @@ void main() {
   });
 
   group('a routed turn', () {
+    FrontDispatchSegment storedSegment() => frontDispatchFromPayload(
+      upserts.whereType<AgentMessagePayloadEntity>().singleWhere(
+        (p) => p.content['segments'] is List,
+      ),
+    )!.segments.single;
+
+    test('the ways she wrote beside the dispatch are stored with its '
+        'segments, and are no part of her reply', () async {
+      seedMessage();
+      stubModel(
+        (_) => [
+          answer('''
+<a2ui>
+surface("reply")
+root = InboxWays(0, ["event"])
+</a2ui>
+Filed under Garden.'''),
+          call('dispatch', dispatchArgs()),
+        ],
+      );
+
+      expect((await run()).success, isTrue);
+
+      expect(storedSegment().ways, [FrontInboxWay.event]);
+      final reply = upserts.whereType<AgentMessagePayloadEntity>().singleWhere(
+        (p) => p.content['text'] == 'Filed under Garden.',
+      );
+      expect(
+        jsonEncode(reply.content['surface']),
+        isNot(contains(FrontReplyComponents.inboxWays)),
+      );
+    });
+
+    test('a dispatch she wrote no ways beside stores none', () async {
+      seedMessage();
+      stubModel(
+        (_) => [
+          answer('Filed under Garden.'),
+          call('dispatch', dispatchArgs()),
+        ],
+      );
+
+      expect((await run()).success, isTrue);
+
+      expect(storedSegment().ways, isNull);
+    });
+
     test('persists the dispatch record under deterministic ids, keyed to '
         'the source message, and reports success', () async {
       seedMessage();

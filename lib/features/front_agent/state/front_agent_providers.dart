@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
@@ -18,10 +19,14 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/tools/ensure_link.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/front_agent/model/front_live_answer.dart';
 import 'package:lotti/features/front_agent/model/front_task_draft.dart';
@@ -226,8 +231,112 @@ final frontFilingServiceProvider = Provider<FrontFilingService>(
       if (deleted) await journal.deleteJournalEntity(frontTaskWordsId(entryId));
       return deleted;
     },
+    startExtra: ref.watch(frontTaskExtraStarterProvider),
+    // Asked of the resolver itself, not through the card's provider: the
+    // tap must get its answer whether or not anything is watching.
+    canDrawCover: (draft) async => frontCoverArtAvailable(
+      ref.read(profileAutomationResolverProvider),
+      await frontTaskCategoryId(
+        ref.read(journalDbProvider),
+        categoryId: draft.categoryId,
+        followsUpTaskId: draft.followsUpTaskId,
+      ),
+    ),
+    domainLogger: ref.watch(domainLoggerProvider),
   ),
   name: 'frontFilingServiceProvider',
+);
+
+/// What decides the category a task made from a draft lands in: the one the
+/// draft names, and the task it follows.
+typedef FrontTaskCategorySource = ({
+  String? categoryId,
+  String? followsUpTaskId,
+});
+
+/// Whether cover art can be drawn for the task a draft would become: a
+/// profile the run can reach names an image-generation model — the default
+/// profile of the category the task will be made in
+/// ([frontTaskCategoryId]), or the device's Settings default, which the run
+/// falls back to.
+///
+/// What the setup's cover chip is offered on, so it never asks for a cover
+/// nothing could draw. The task's own profile is only known once the task
+/// exists; these two are what it resolves from.
+final FutureProviderFamily<bool, FrontTaskCategorySource>
+frontCoverArtAvailableProvider = FutureProvider.autoDispose
+    .family<bool, FrontTaskCategorySource>(
+      (ref, source) async => frontCoverArtAvailable(
+        ref.watch(profileAutomationResolverProvider),
+        await frontTaskCategoryId(
+          ref.watch(journalDbProvider),
+          categoryId: source.categoryId,
+          followsUpTaskId: source.followsUpTaskId,
+        ),
+      ),
+      name: 'frontCoverArtAvailableProvider',
+    );
+
+/// The category a task made from a draft lands in, as [makeFrontTask] files
+/// it: the one the draft names, else the one of the task it follows — none
+/// when it names none and follows nothing, or nothing that is still a task.
+Future<String?> frontTaskCategoryId(
+  JournalDb journalDb, {
+  required String? categoryId,
+  required String? followsUpTaskId,
+}) async {
+  if (categoryId != null || followsUpTaskId == null) return categoryId;
+  final followed = await _existing(journalDb, followsUpTaskId);
+  return followed is Task ? followed.meta.categoryId : null;
+}
+
+/// The rule behind [frontCoverArtAvailableProvider], asked of [resolver]:
+/// the category's default profile names an image-generation model, or the
+/// Settings default does. One rule for the chip that offers a cover and for
+/// the filing that asks for one.
+Future<bool> frontCoverArtAvailable(
+  ProfileAutomationResolver resolver,
+  String? categoryId,
+) async {
+  if (categoryId != null) {
+    final ofCategory = await resolver.resolveForCategory(categoryId);
+    if (ofCategory?.imageGenerationProvider != null) return true;
+  }
+  final fallback = await resolver.resolveDefaultProfile();
+  return fallback?.imageGenerationProvider != null;
+}
+
+/// The built-in skill that generates [extra].
+String frontTaskExtraSkillId(FrontTaskExtra extra) => switch (extra) {
+  FrontTaskExtra.coverArt => skillImageGenId,
+  FrontTaskExtra.codingPrompt => skillPromptGenId,
+};
+
+/// How cover art or a coding prompt is started for a task made from the
+/// user's words: the skill the AI popup runs, on the copy of the words filed
+/// under the task (`frontTaskWordsId`) — typed or dictated, it is a text
+/// entry, so no recording is needed — with the task as its context.
+///
+/// Not awaited: a generation outlives the tap by a minute or more, and the
+/// trigger keeps itself alive, catches its own failures and reports them on
+/// the entry, where the task page shows them. Whatever still escapes it is
+/// dropped here rather than failing a task that is already made.
+final frontTaskExtraStarterProvider = Provider<FrontTaskExtraStarter>(
+  (ref) => (extra, {required taskId}) {
+    ref
+        .read(
+          triggerSkillProvider((
+            entityId: frontTaskWordsId(taskId),
+            skillId: frontTaskExtraSkillId(extra),
+            linkedTaskId: taskId,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        )
+        .ignore();
+  },
+  name: 'frontTaskExtraStarterProvider',
 );
 
 /// An event titled [title] under [id], tentative and dated now, as the

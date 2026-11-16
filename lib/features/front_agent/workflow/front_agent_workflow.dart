@@ -668,7 +668,12 @@ class FrontAgentWorkflow with AgentErrorLogging {
           messageId: frontAgentDispatchMessageId(agentId, runKey),
           payloadId: _dispatchPayloadId(agentId, runKey),
           toolName: FrontAgentToolNames.dispatch,
-          content: {'input': strategy.input, ...dispatch.toJson()},
+          // With the ways she picked for each part, from the message that
+          // carried the dispatch.
+          content: {
+            'input': strategy.input,
+            ...dispatch.withWays(strategy.inboxWays).toJson(),
+          },
         );
       }
       if (strategy.askUser case final ask?) {

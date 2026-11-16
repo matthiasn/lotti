@@ -16,6 +16,7 @@ import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_surfaces.dart';
 import 'package:lotti/features/front_agent/ui/front_cited_source_row.dart';
+import 'package:lotti/features/front_agent/ui/front_door_ways.dart';
 import 'package:lotti/features/front_agent/ui/front_task_setup.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -33,6 +34,7 @@ class FrontDoorActions {
     required this.onTakeBack,
     required this.onOpen,
     required this.onMakeTask,
+    required this.onMakePrompt,
     required this.onSaveNote,
     required this.onStartGoal,
     required this.onNewProject,
@@ -64,6 +66,10 @@ class FrontDoorActions {
   /// the card ([FrontTaskSetup]).
   final void Function(String doorId, FrontTaskChoices choices) onMakeTask;
 
+  /// Make a task of an inbox item, by its id, with the choices she read
+  /// from the words, and have a coding prompt written for it from them.
+  final void Function(String doorId, FrontTaskChoices choices) onMakePrompt;
+
   /// Make an event of an inbox item; null where events are off, and the
   /// item offers no such way.
   final ValueChanged<String>? onMakeEvent;
@@ -89,12 +95,13 @@ class FrontDoorActions {
 
 /// What came back through the doors of one routed turn, as a stack of
 /// cards under her reply — or under the user's bubble until she has
-/// replied. One card per segment, and every card the same shape: a kind
-/// tile, the words in full, one status line, at most one filled action —
-/// the tap that writes (decision 1), or *Open* on what was written — and an
-/// overflow menu holding every other way out. A settled card's tile is the
-/// done glyph, a failed one's the warning, so state is more than a shade of
-/// grey.
+/// replied. One card per segment: a kind tile, the words in full, one
+/// status line, at most one filled action — the tap that writes
+/// (decision 1) — and an overflow menu holding every other way out. An
+/// inbox item that waits is its choices instead: the question, the words
+/// as the headline, and every way it can go as a row ([FrontDoorWays]). A
+/// card that went a way is one row: the way's glyph in the success ink,
+/// the words on one line, what became of them, and *Open*.
 ///
 /// Specialist text is shown as the specialist's, under its owner's name —
 /// never reworded by the front agent (decision 2) — and as what it is,
@@ -112,11 +119,17 @@ class FrontDoorCard extends StatefulWidget {
     this.actions,
     this.busyDoorIds = const {},
     this.failedDoorIds = const {},
+    this.coverArtDoorIds = const {},
     this.journalAccess,
     super.key,
   });
 
   final List<FrontDoorEntry> doors;
+
+  /// The waiting items a cover can be drawn for, by their door ids: those
+  /// whose task would land in a category with a profile that draws. An
+  /// item's setup offers its cover chip only when it is one of them.
+  final Set<String> coverArtDoorIds;
 
   /// The live visibility of the sources journal answers cite; null until it
   /// is known, and a journal answer stays hidden until then.
@@ -142,6 +155,10 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
   /// ever make the one just opened.
   String? _settingUp;
 
+  /// The way last taken for each door, by its name: the row that shows
+  /// progress while the item's action is in flight.
+  final _taken = <String, String>{};
+
   @override
   void didUpdateWidget(FrontDoorCard oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -162,9 +179,11 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
     }
   }
 
-  void _setUp(String doorId, {required bool on}) => setState(
-    () => _settingUp = on ? doorId : (_settingUp == doorId ? null : _settingUp),
-  );
+  void _setUp(String doorId, {required bool on}) => setState(() {
+    _settingUp = on ? doorId : (_settingUp == doorId ? null : _settingUp);
+  });
+
+  void _take(String doorId, String way) => setState(() => _taken[doorId] = way);
 
   @override
   Widget build(BuildContext context) {
@@ -175,6 +194,7 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
       :journalAccess,
       :busyDoorIds,
       :failedDoorIds,
+      :coverArtDoorIds,
     ) = widget;
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -204,9 +224,11 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
                 journalAccess: journalAccess,
                 busy: busyDoorIds.contains(door.doorId),
                 failed: failedDoorIds.contains(door.doorId),
+                coverArtAvailable: coverArtDoorIds.contains(door.doorId),
                 settingUp: _settingUp == door.doorId,
-                quiet: _settingUp != null && _settingUp != door.doorId,
                 onSetUp: ({required on}) => _setUp(door.doorId, on: on),
+                taken: _taken[door.doorId],
+                onTake: (way) => _take(door.doorId, way),
               ),
             ],
           ],
@@ -217,8 +239,9 @@ class _FrontDoorCardState extends State<FrontDoorCard> {
 }
 
 /// One door as a card row: tile, words, status, action, overflow — or,
-/// for an inbox item being made a task, the question of how
-/// ([FrontTaskSetup]) in place of the status, action and overflow.
+/// for an inbox item that waits, its question, its words and its choices,
+/// which the question of how ([FrontTaskSetup]) stands in for while it is
+/// being made a task.
 class _DoorRow extends StatelessWidget {
   const _DoorRow({
     required this.door,
@@ -226,13 +249,19 @@ class _DoorRow extends StatelessWidget {
     required this.busy,
     required this.failed,
     required this.settingUp,
-    required this.quiet,
     required this.onSetUp,
+    required this.taken,
+    required this.onTake,
+    required this.coverArtAvailable,
     this.journalAccess,
     super.key,
   });
 
   final FrontDoorEntry door;
+
+  /// Whether a cover can be drawn for the task this item would become
+  /// ([FrontDoorCard.coverArtDoorIds]).
+  final bool coverArtAvailable;
   final FrontDoorActions? actions;
   final QueryAccessSnapshot? journalAccess;
   final bool busy;
@@ -241,11 +270,15 @@ class _DoorRow extends StatelessWidget {
   /// Whether *Make it a task* was tapped and the task is being set up.
   final bool settingUp;
 
-  /// Whether another item is being set up: this one's action steps back.
-  final bool quiet;
-
   /// Starts (`on`) or leaves the setup.
   final void Function({required bool on}) onSetUp;
+
+  /// The way last taken for this item, by name: its row shows progress
+  /// while [busy].
+  final String? taken;
+
+  /// Notes the way being taken, as it is.
+  final ValueChanged<String> onTake;
 
   @override
   Widget build(BuildContext context) {
@@ -269,10 +302,20 @@ class _DoorRow extends StatelessWidget {
     final String status;
     Widget? action;
     Widget? setup;
+    // Whether the item went a way and is done: see `made`.
+    var settled = false;
     var sources = const <QueryEvidence>[];
     // Her journal answer's points, when the thread drew them a surface.
     SurfaceModel<ComponentImplementation>? answerSurface;
     final menu = <DesignSystemContextMenuItem>[];
+
+    // The ways an inbox item can go, and the way that leaves it: the
+    // card's choices, every one in sight. Which of them are listed is hers
+    // to say, on the surface the thread drew from what she picked for the
+    // item's words.
+    FrontDoorWaysFor? waysFor;
+    SurfaceModel<ComponentImplementation>? waysSurface;
+    FrontDoorWay? leave;
 
     DesignSystemContextMenuItem item(
       String name,
@@ -285,12 +328,34 @@ class _DoorRow extends StatelessWidget {
       icon: icon,
       onTap: guarded(onTap),
     );
+    // The way on: text and a chevron, where a filled button would be a
+    // second thing to decide on a card that is done.
     Widget open() => DesignSystemButton(
       key: ValueKey('front-door-open-$index'),
       label: messages.frontDoorOpen,
-      variant: DesignSystemButtonVariant.secondary,
+      variant: DesignSystemButtonVariant.tertiary,
+      trailingIcon: LottiIcons.chevronRight,
       onPressed: acting == null ? null : guarded(() => acting.onOpen(door)),
     );
+
+    // Something the door made or filed, under the glyph of the [way] it
+    // went, in the success ink: done, opened, or taken back. The card is
+    // one row then — the words on one line, what became of them under it.
+    void made(IconData way) {
+      glyph = way;
+      ink = tokens.colors.alert.success.ink;
+      settled = true;
+      if (acting == null) return;
+      action = open();
+      menu.add(
+        item(
+          'take-back',
+          messages.frontDoorUndo,
+          LottiIcons.undo,
+          () => acting.onTakeBack(id),
+        ),
+      );
+    }
 
     switch (record.outcome) {
       case null:
@@ -402,8 +467,9 @@ class _DoorRow extends StatelessWidget {
       case FrontDoorProjectCreated():
         title = words;
         status = messages.frontDoorProjectCreated;
-        glyph = LottiIcons.confirmCircled;
+        glyph = LottiIcons.folder;
         ink = tokens.colors.alert.success.ink;
+        settled = true;
         if (acting != null) action = open();
       case FrontDoorInbox(:final newKind, :final ownerId):
         // A drafted task's headline is the title she read — the one the task
@@ -420,122 +486,145 @@ class _DoorRow extends StatelessWidget {
             index: index,
             initial: FrontTaskChoices.of(record.task),
             heard: record.task?.namesChoices ?? false,
-            // The overflow's slot, which the setup takes over.
-            endInset:
-                tokens.spacing.step1 +
-                DesignSystemContextMenuButton.extent(tokens),
+            // Offered where a profile can draw one for the task it would
+            // become: elsewhere the chip is not there to ask.
+            coverArtAvailable: coverArtAvailable,
             busy: busy,
             failed: failed,
             onCreate: (choices) => acting.onMakeTask(id, choices),
             onBack: () => onSetUp(on: false),
           );
         } else if (acting != null) {
-          // Only a task the user asked for — one she drafted — leads with
-          // *Make it a task*; words nobody asked to be a task offer it among
-          // the other ways, never as the card's one filled tap.
-          if (draft != null) {
-            action = DesignSystemButton(
-              key: ValueKey('front-door-task-$index'),
-              label: messages.frontDoorMakeTask,
-              variant: quiet
-                  ? DesignSystemButtonVariant.secondary
-                  : DesignSystemButtonVariant.primary,
-              onPressed: guarded(() => onSetUp(on: true)),
-            );
-          }
-          // The router's guess leads the other ways; leaving it comes last.
-          final ways = [
-            if (draft == null)
-              (
-                'task',
-                messages.frontDoorMakeTask,
-                LottiIcons.checkboxChecked,
-                () => onSetUp(on: true),
-              ),
-            (
+          // The router's guess is the one tinted row. A task is its guess
+          // only where the user asked for one — where she drafted it; words
+          // nobody asked to be a task offer it as a way like the others.
+          final guess = switch (newKind) {
+            FrontNewKind.goal => 'goal',
+            FrontNewKind.project => 'project',
+            FrontNewKind.task when draft != null => 'task',
+            FrontNewKind.task || null => null,
+          };
+          // A way says what choosing it does, the names alone leaving "a
+          // goal" and "a note" a guess; taken, its row shows the progress.
+          FrontDoorWay way(
+            String name,
+            String label,
+            String hint,
+            IconData icon,
+            VoidCallback go,
+          ) => FrontDoorWay(
+            name: name,
+            label: label,
+            hint: hint,
+            icon: icon,
+            suggested: name == guess,
+            inFlight: busy && taken == name,
+            onTap: guarded(() {
+              onTake(name);
+              go();
+            }),
+          );
+          final offered = [
+            way(
+              'task',
+              messages.frontDoorMakeTask,
+              messages.frontDoorMakeTaskHint,
+              LottiIcons.checkboxChecked,
+              () => onSetUp(on: true),
+            ),
+            way(
+              'prompt',
+              messages.frontDoorMakePrompt,
+              messages.frontDoorMakePromptHint,
+              LottiIcons.code,
+              () => acting.onMakePrompt(id, FrontTaskChoices.of(record.task)),
+            ),
+            way(
               'goal',
               messages.frontDoorStartGoal,
+              messages.frontDoorStartGoalHint,
               LottiIcons.focus,
               () => acting.onStartGoal(door),
             ),
-            if (newKind == FrontNewKind.project)
-              (
-                'project',
-                messages.frontDoorNewProject,
-                LottiIcons.folder,
-                () => acting.onNewProject(door),
-              ),
+            way(
+              'project',
+              messages.frontDoorNewProject,
+              messages.frontDoorNewProjectHint,
+              LottiIcons.folder,
+              () => acting.onNewProject(door),
+            ),
             if (acting.onMakeEvent case final makeEvent?)
-              (
+              way(
                 'event',
                 messages.frontDoorMakeEvent,
+                messages.frontDoorMakeEventHint,
                 LottiIcons.calendar,
                 () => makeEvent(id),
               ),
-            (
+            way(
               'note',
               messages.frontDoorSaveNote,
+              messages.frontDoorSaveNoteHint,
               LottiIcons.note,
               () => acting.onSaveNote(id),
             ),
           ];
-          final guess = switch (newKind) {
-            FrontNewKind.goal => 'goal',
-            FrontNewKind.project => 'project',
-            FrontNewKind.task || null => null,
+          // Making a task of it and keeping it as a note are always
+          // offered, and so is the router's guess, which leads. The rest
+          // are those she picked for the words; where she picked none —
+          // an item from before she did, a block she left out — every way
+          // is offered, a project only as the guess.
+          waysFor = (picked) {
+            final shown = offered.where(
+              (way) => switch (way.name) {
+                'task' || 'note' => true,
+                final name when name == guess => true,
+                'project' => picked?.contains('project') ?? false,
+                final name => picked?.contains(name) ?? true,
+              },
+            );
+            return [
+              ...shown.where((way) => way.name == guess),
+              ...shown.where((way) => way.name != guess),
+            ];
           };
-          ways.sort((a, b) {
-            if (a.$1 == guess) return -1;
-            if (b.$1 == guess) return 1;
-            return 0;
-          });
-          menu.addAll([
-            for (final (name, label, icon, go) in ways)
-              item(name, label, icon, go),
-            item(
-              'decline',
-              messages.frontDoorLeaveIt,
-              LottiIcons.close,
-              () => acting.onDecline(id),
-            ),
-          ]);
+          waysSurface = FrontReplySurfaces.surfaceOf(
+            context,
+            frontDoorWaysSurfaceId(id),
+          );
+          // The way out makes nothing: the item stays, left, in the inbox.
+          // It is one line and no row, so it has no hint of its own.
+          leave = way(
+            'decline',
+            messages.frontDoorLeaveIt,
+            '',
+            LottiIcons.inbox,
+            () => acting.onDecline(id),
+          );
         }
       case FrontDoorFiled(:final ownerId):
         title = words;
         status = ownerId == null
             ? messages.frontDoorSavedAsNote
             : messages.frontDoorFiledUnder(owner);
-        glyph = LottiIcons.confirmCircled;
-        ink = tokens.colors.alert.success.ink;
-        if (acting != null) {
-          action = open();
-          menu.add(
-            item(
-              'take-back',
-              messages.frontDoorUndo,
-              LottiIcons.undo,
-              () => acting.onTakeBack(id),
-            ),
-          );
-        }
-      case FrontDoorTaskCreated() || FrontDoorEventCreated():
+        // A note under the note's glyph; something filed, under its owner's.
+        made(ownerId == null ? LottiIcons.note : _kindGlyph(record.kind));
+      case FrontDoorTaskCreated(:final extras):
         title = words;
-        status = record.outcome is FrontDoorEventCreated
-            ? messages.frontDoorEventCreated
-            : messages.frontDoorTaskCreated;
-        glyph = LottiIcons.confirmCircled;
-        ink = tokens.colors.alert.success.ink;
-        if (acting != null) {
-          action = open();
-          menu.add(
-            item(
-              'take-back',
-              messages.frontDoorUndo,
-              LottiIcons.undo,
-              () => acting.onTakeBack(id),
-            ),
-          );
-        }
+        // What was asked for with the task is said after it, in the order
+        // it was offered: the prompt's menu row, then the cover's chip.
+        status = [
+          messages.frontDoorTaskCreated,
+          if (extras.contains(FrontTaskExtra.codingPrompt))
+            messages.frontDoorPromptRequested,
+          if (extras.contains(FrontTaskExtra.coverArt))
+            messages.frontDoorCoverRequested,
+        ].join(' · ');
+        made(LottiIcons.checkboxChecked);
+      case FrontDoorEventCreated():
+        title = words;
+        status = messages.frontDoorEventCreated;
+        made(LottiIcons.calendar);
       case FrontDoorDeclined(:final ownerId):
         title = words;
         status = ownerId == null
@@ -561,10 +650,54 @@ class _DoorRow extends StatelessWidget {
     final statusStyle = tokens.typography.styles.others.caption.copyWith(
       color: failed
           ? tokens.colors.alert.error.ink
+          : settled
+          ? tokens.colors.alert.success.ink
           : tokens.colors.text.mediumEmphasis,
     );
 
-    return Row(
+    final statusText = Text(
+      failed ? messages.frontDoorActionFailed : status,
+      key: ValueKey('front-door-status-$index'),
+      style: statusStyle,
+    );
+    // A waiting inbox item is its choices: the question, the words as the
+    // headline — under no glyph, nothing being decided yet — and every way
+    // as a row, a tap on one doing it. Being made a task, the setup stands
+    // where the choices stood.
+    if (setup != null || (leave != null && waysFor != null)) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (setup == null) ...[
+            statusText,
+            SizedBox(height: tokens.spacing.step1),
+          ],
+          Text(
+            title,
+            key: ValueKey('front-door-text-$index'),
+            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step4),
+          if (setup != null)
+            setup
+          // The ways she picked for the words: an A2UI surface of the reply
+          // catalog, whose `InboxWays` draws the list from what this card
+          // offers.
+          else if (waysSurface case final surface?)
+            FrontDoorWaysScope(
+              index: index,
+              waysFor: waysFor!,
+              leave: leave!,
+              child: A2uiSurface(key: ObjectKey(surface), surface: surface),
+            )
+          else
+            FrontDoorWays(index: index, ways: waysFor!(null), leave: leave!),
+        ],
+      );
+    }
+    final row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _Tile(
@@ -642,6 +775,10 @@ class _DoorRow extends StatelessWidget {
                   title,
                   key: ValueKey('front-door-text-$index'),
                   style: titleStyle,
+                  // Done, the card is one row: the words are on the page
+                  // *Open* leads to.
+                  maxLines: settled ? 1 : null,
+                  overflow: settled ? TextOverflow.ellipsis : null,
                 ),
               // Without its surface the answer is her Markdown, and the
               // evidence is set apart under a heading of its own.
@@ -670,43 +807,29 @@ class _DoorRow extends StatelessWidget {
                       null => null,
                     },
                   ),
-              // The setup is her question: a step more air above it groups it
-              // with its chips, not as a subtitle of the words.
-              SizedBox(
-                height: setup == null
-                    ? tokens.spacing.step1
-                    : tokens.spacing.step3,
-              ),
-              if (setup != null)
-                setup
-              else
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        failed ? messages.frontDoorActionFailed : status,
-                        key: ValueKey('front-door-status-$index'),
-                        style: statusStyle,
-                      ),
-                    ),
-                    if (action != null) ...[
-                      SizedBox(width: tokens.spacing.step2),
-                      action,
-                    ],
-                    if (menu.isNotEmpty) ...[
-                      SizedBox(width: tokens.spacing.step1),
-                      DesignSystemContextMenuButton(
-                        key: ValueKey('front-door-menu-$index'),
-                        items: menu,
-                      ),
-                    ],
+              SizedBox(height: tokens.spacing.step1),
+              Row(
+                children: [
+                  Expanded(child: statusText),
+                  if (action case final button?) ...[
+                    SizedBox(width: tokens.spacing.step2),
+                    button,
                   ],
-                ),
+                  if (menu.isNotEmpty) ...[
+                    SizedBox(width: tokens.spacing.step1),
+                    DesignSystemContextMenuButton(
+                      key: ValueKey('front-door-menu-$index'),
+                      items: menu,
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
         ),
       ],
     );
+    return row;
   }
 
   /// The glyph for where a segment went.

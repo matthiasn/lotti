@@ -12707,6 +12707,12 @@ abstract class AppLocalizations {
   /// **'Change today'**
   String get frontDoorChangeDay;
 
+  /// No description provided for @frontDoorCoverRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'cover art requested'**
+  String get frontDoorCoverRequested;
+
   /// No description provided for @frontDoorDayPlanned.
   ///
   /// In en, this message translates to:
@@ -12818,7 +12824,7 @@ abstract class AppLocalizations {
   /// No description provided for @frontDoorLeaveIt.
   ///
   /// In en, this message translates to:
-  /// **'Leave it'**
+  /// **'Leave it, nothing is made'**
   String get frontDoorLeaveIt;
 
   /// No description provided for @frontDoorLeft.
@@ -12833,17 +12839,47 @@ abstract class AppLocalizations {
   /// **'Make it an event'**
   String get frontDoorMakeEvent;
 
+  /// No description provided for @frontDoorMakeEventHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A tentative event titled with your words'**
+  String get frontDoorMakeEventHint;
+
+  /// No description provided for @frontDoorMakePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Task with a coding prompt'**
+  String get frontDoorMakePrompt;
+
+  /// No description provided for @frontDoorMakePromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A task, and a prompt from your words'**
+  String get frontDoorMakePromptHint;
+
   /// No description provided for @frontDoorMakeTask.
   ///
   /// In en, this message translates to:
   /// **'Make it a task'**
   String get frontDoorMakeTask;
 
+  /// No description provided for @frontDoorMakeTaskHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A task from your words, after a few choices'**
+  String get frontDoorMakeTaskHint;
+
   /// No description provided for @frontDoorNewProject.
   ///
   /// In en, this message translates to:
   /// **'New project…'**
   String get frontDoorNewProject;
+
+  /// No description provided for @frontDoorNewProjectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens a new project with your words'**
+  String get frontDoorNewProjectHint;
 
   /// No description provided for @frontDoorNoAgent.
   ///
@@ -12875,6 +12911,12 @@ abstract class AppLocalizations {
   /// **'Made into a project'**
   String get frontDoorProjectCreated;
 
+  /// No description provided for @frontDoorPromptRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'coding prompt requested'**
+  String get frontDoorPromptRequested;
+
   /// No description provided for @frontDoorProposal.
   ///
   /// In en, this message translates to:
@@ -12893,6 +12935,12 @@ abstract class AppLocalizations {
   /// **'Save as a note'**
   String get frontDoorSaveNote;
 
+  /// No description provided for @frontDoorSaveNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps your words as they are'**
+  String get frontDoorSaveNoteHint;
+
   /// Status while the front agent searches the journal for an answer.
   ///
   /// In en, this message translates to:
@@ -12910,6 +12958,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start a goal…'**
   String get frontDoorStartGoal;
+
+  /// No description provided for @frontDoorStartGoalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens the goal wizard with your words'**
+  String get frontDoorStartGoalHint;
+
+  /// No description provided for @frontDoorSuggested.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested'**
+  String get frontDoorSuggested;
 
   /// No description provided for @frontDoorSummaryBased.
   ///
@@ -12971,6 +13031,30 @@ abstract class AppLocalizations {
   /// **'Expand chart'**
   String get frontLoggedTimeExpand;
 
+  /// No description provided for @frontPreviewCoverDrawing.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawing the cover…'**
+  String get frontPreviewCoverDrawing;
+
+  /// No description provided for @frontPreviewCoverFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The cover could not be drawn'**
+  String get frontPreviewCoverFailed;
+
+  /// No description provided for @frontPreviewPromptFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The coding prompt could not be written'**
+  String get frontPreviewPromptFailed;
+
+  /// No description provided for @frontPreviewPromptWriting.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing the coding prompt…'**
+  String get frontPreviewPromptWriting;
+
   /// Chart toggle and series name under the companion's answer about pull requests: lines the pull requests opened that day added.
   ///
   /// In en, this message translates to:
@@ -13025,11 +13109,29 @@ abstract class AppLocalizations {
   /// **'Anything to set before I make it?'**
   String get frontTaskSetupAskPlain;
 
+  /// No description provided for @frontTaskSetupCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover art'**
+  String get frontTaskSetupCover;
+
+  /// No description provided for @frontTaskSetupCoverGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate cover art'**
+  String get frontTaskSetupCoverGenerate;
+
   /// No description provided for @frontTaskSetupCreate.
   ///
   /// In en, this message translates to:
   /// **'Create task'**
   String get frontTaskSetupCreate;
+
+  /// No description provided for @frontTaskSetupNoCover.
+  ///
+  /// In en, this message translates to:
+  /// **'No cover art'**
+  String get frontTaskSetupNoCover;
 
   /// No description provided for @frontTaskSetupPickDate.
   ///

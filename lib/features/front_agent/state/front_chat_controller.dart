@@ -477,14 +477,20 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   Future<void> takeBack(String doorId) =>
       _doorAction(doorId, (filing) => filing.takeBack(doorId));
 
-  /// Makes a task of an inbox item, set up as the user [choices]; whether
-  /// it was made, so the surface can say so aloud.
+  /// Makes a task of an inbox item, set up as the user [choices] — with a
+  /// coding prompt written for it when [codingPrompt]; whether it was made,
+  /// so the surface can say so aloud.
   Future<bool> makeTask(
     String doorId, {
     required FrontTaskChoices choices,
+    bool codingPrompt = false,
   }) => _doorAction(
     doorId,
-    (filing) => filing.makeTask(doorId, choices: choices),
+    (filing) => filing.makeTask(
+      doorId,
+      choices: choices,
+      codingPrompt: codingPrompt,
+    ),
   );
 
   /// Saves an inbox item as a note.

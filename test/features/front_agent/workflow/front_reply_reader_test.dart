@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
@@ -71,6 +72,68 @@ void main() {
     },
     foundPullRequests: foundPullRequests,
   );
+
+  group('the ways of a dispatch', () {
+    Map<String, Object?> ways(Object? part, Object? names) => {
+      'component': 'InboxWays',
+      'part': ?part,
+      'ways': names,
+    };
+
+    test('are read by part, in her order, an empty pick kept; the reply '
+        'draws none of them and drops none', () {
+      final components = [
+        ways(1, ['event', 'prompt']),
+        ways(0, <Object?>[]),
+        {'component': 'Text', 'text': 'Overdue'},
+      ];
+
+      expect(readFrontInboxWays(components), {
+        1: [FrontInboxWay.event, FrontInboxWay.prompt],
+        0: <FrontInboxWay>[],
+      });
+      final reply = read(components: components);
+      expect(reply.components, [text('Here.'), text('Overdue')]);
+      expect(reply.dropped, isEmpty);
+    });
+
+    test('one without a part speaks of the first; a whole number written '
+        'as a double is that position', () {
+      expect(
+        readFrontInboxWays([
+          ways(null, ['goal']),
+          ways(2.0, ['project']),
+        ]),
+        {
+          0: [FrontInboxWay.goal],
+          2: [FrontInboxWay.project],
+        },
+      );
+    });
+
+    test('a part that is no position, or ways that are no list, say '
+        'nothing; an unknown way is left out; the first for a part stands', () {
+      expect(
+        readFrontInboxWays([
+          ways(-1, ['goal']),
+          ways(1.5, ['goal']),
+          ways('first', ['goal']),
+          ways(3, 'goal'),
+          ways(4, ['hologram', 'event']),
+          ways(4, ['prompt']),
+          'InboxWays',
+          {'component': 'QuickReplies', 'part': 5, 'ways': <Object?>[]},
+        ]),
+        {
+          4: [FrontInboxWay.event],
+        },
+      );
+    });
+
+    test('none written is none read', () {
+      expect(readFrontInboxWays(const []), isEmpty);
+    });
+  });
 
   test('an answer still being written may have no prose yet: its '
       'components are read, and there are no words', () {

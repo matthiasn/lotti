@@ -5,10 +5,15 @@ import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/model/front_cited_answer.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
 
 void main() {
-  FrontDoorEntry door(String id, FrontDoorOutcome? outcome) => FrontDoorEntry(
+  FrontDoorEntry door(
+    String id,
+    FrontDoorOutcome? outcome, {
+    List<FrontInboxWay>? ways,
+  }) => FrontDoorEntry(
     doorId: id,
     record: FrontDoorRecord(
       segmentIndex: 0,
@@ -17,6 +22,7 @@ void main() {
       status: FrontDoorStatus.done,
       claimedAt: DateTime.utc(2026, 10, 26),
       outcome: outcome,
+      ways: ways,
     ),
   );
 
@@ -178,5 +184,46 @@ void main() {
     );
     expect(points.single.text, 'Promised.');
     expect(points.single.sources.single.id, 'e1');
+  });
+
+  test('an inbox item she picked ways for gets a surface of them under its '
+      'own id — none picked included; one she picked none for, and one no '
+      'longer waiting, get none', () {
+    const waiting = FrontDoorInbox(newKind: FrontNewKind.task);
+    final thread = FrontChatThread(
+      messages: const [],
+      doorsByMessageId: {
+        'u1': [
+          door('d:door:0', waiting, ways: const [FrontInboxWay.prompt]),
+          door('d:door:1', waiting, ways: const []),
+          // From before she picked ways: every way is offered, by the card.
+          door('d:door:2', waiting),
+          // Made: the ways are no longer asked for.
+          door(
+            'd:door:3',
+            const FrontDoorTaskCreated(taskId: 't'),
+            ways: const [FrontInboxWay.prompt],
+          ),
+        ],
+      },
+    );
+
+    final surfaces = thread.surfaces;
+
+    expect(surfaces.keys, [
+      frontDoorWaysSurfaceId('d:door:0'),
+      frontDoorWaysSurfaceId('d:door:1'),
+    ]);
+    for (final (doorId, ways) in [
+      ('d:door:0', [FrontInboxWay.prompt]),
+      ('d:door:1', <FrontInboxWay>[]),
+    ]) {
+      final id = frontDoorWaysSurfaceId(doorId);
+      expect(
+        surfaces[id]!.message,
+        FrontReplySurface.inboxWays(surfaceId: id, ways: ways).message,
+        reason: doorId,
+      );
+    }
   });
 }

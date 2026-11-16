@@ -231,6 +231,39 @@ final triggerSkillProvider = FutureProvider.autoDispose
           String? entryCategoryId;
           if (linkedTaskId != null) {
             resolvedProfile = await resolver.resolveForSubject(linkedTaskId);
+            // A task with no profile of its own — one filed in no category,
+            // as a task made in the companion's chat often is — generates on
+            // the device's Settings default, the profile the companion
+            // herself falls back to. So does cover art whose task profile
+            // names no image model, when the default names one. A model the
+            // user picked by hand needs no image slot, so a task profile
+            // without one stands and the default is not asked; a task with
+            // no profile at all still takes the default, as the profile the
+            // picked model runs under — the picked model is the one used.
+            // A default that cannot run the skill either changes nothing:
+            // the run then declines or fails where it did before.
+            if (_generates(skill) &&
+                !_canGenerate(
+                  resolvedProfile,
+                  skill,
+                  overrideModelId: params.overrideModelId,
+                )) {
+              final fallback = await resolver.resolveDefaultProfile();
+              if (_canGenerate(
+                fallback,
+                skill,
+                overrideModelId: params.overrideModelId,
+              )) {
+                loggingService.log(
+                  LogDomain.ai,
+                  'triggerSkill: task ${DomainLogger.sanitizeId(linkedTaskId)} '
+                  'has no profile that can run ${skill.id}; using the '
+                  'Settings default',
+                  subDomain: 'triggerSkillProvider',
+                );
+                resolvedProfile = fallback;
+              }
+            }
           } else {
             final entity = await ref
                 .read(journalDbProvider)
@@ -404,6 +437,30 @@ final triggerSkillProvider = FutureProvider.autoDispose
       },
     );
 
+/// Whether [skill] writes or draws something for a task: a coding, design,
+/// research or image prompt, or cover art.
+bool _generates(AiConfigSkill skill) => switch (skill.skillType) {
+  SkillType.imageGeneration ||
+  SkillType.promptGeneration ||
+  SkillType.imagePromptGeneration => true,
+  SkillType.transcription ||
+  SkillType.imageAnalysis ||
+  SkillType.audioSummary => false,
+};
+
+/// Whether [profile] can run the generating [skill]: any profile writes a
+/// prompt on its thinking model, and cover art needs an image-generation
+/// model — the profile's own, or one picked by hand ([overrideModelId]).
+bool _canGenerate(
+  ResolvedProfile? profile,
+  AiConfigSkill skill, {
+  required String? overrideModelId,
+}) =>
+    profile != null &&
+    (skill.skillType != SkillType.imageGeneration ||
+        overrideModelId != null ||
+        profile.imageGenerationProvider != null);
+
 /// Records a transcription that will not run, where the user can see it.
 ///
 /// The public half of [_declineSkill], for callers that decide *not* to start
@@ -460,22 +517,27 @@ Future<void> _declineSkill(
   );
 
   final responseType = skill.skillType.toResponseType;
-  ref
-      .read(
-        inferenceErrorControllerProvider((
-          id: entityId,
-          aiResponseType: responseType,
-        )).notifier,
-      )
-      .setError(message);
-  ref
-      .read(
-        inferenceStatusControllerProvider((
-          id: entityId,
-          aiResponseType: responseType,
-        )).notifier,
-      )
-      .setStatus(InferenceStatus.error);
+  // Under the entry, and under its task as a failed run reports: a surface
+  // that follows the task — its page, its card in the companion's chat —
+  // sees a run that never started as it sees one that failed.
+  for (final id in {entityId, ?linkedTaskId}) {
+    ref
+        .read(
+          inferenceErrorControllerProvider((
+            id: id,
+            aiResponseType: responseType,
+          )).notifier,
+        )
+        .setError(message);
+    ref
+        .read(
+          inferenceStatusControllerProvider((
+            id: id,
+            aiResponseType: responseType,
+          )).notifier,
+        )
+        .setStatus(InferenceStatus.error);
+  }
 
   // Only transcription has a durable failed state to restore: it is the one
   // whose output carrier is the source entry itself, which is what

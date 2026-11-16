@@ -11,6 +11,7 @@ import 'package:lotti/features/front_agent/model/front_closed_task_card.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_due_section.dart';
 import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
+import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
@@ -1859,6 +1860,98 @@ root = TaskCards("Found", ["task:garden"])
       expect(s.hasTerminalOutput, isFalse);
       verifyFormatFailure('UI but no prose');
       expect(s.acceptAnswer('The garden.'), isTrue);
+    });
+
+    group('the ways of a dispatch', () {
+      Future<FrontAgentStrategy> dispatched() async {
+        final s = strategy();
+        await s.processToolCalls(
+          toolCalls: [
+            _call('dispatch', {
+              'segments': [segment(start: 0, end: input.length)],
+            }),
+          ],
+          manager: manager,
+        );
+        return s;
+      }
+
+      const block = '''
+<a2ui>
+surface("reply")
+root = InboxWays(0, ["prompt", "event"])
+</a2ui>''';
+
+      test('are read from the message that carried it, and are no part of '
+          'what her reply draws', () async {
+        final s = await dispatched();
+        expect(s.inboxWays, isEmpty);
+
+        expect(s.acceptAnswer('$block\nFiled under Garden.'), isTrue);
+
+        expect(s.inboxWays, {
+          0: [FrontInboxWay.prompt, FrontInboxWay.event],
+        });
+        expect(s.replyToUser, 'Filed under Garden.');
+        expect(s.replyComponents, [text('Filed under Garden.')]);
+        verifyNever(
+          () => domainLogger.log(
+            any(),
+            any(that: startsWith('front reply format')),
+            subDomain: any(named: 'subDomain'),
+            level: any(named: 'level'),
+          ),
+        );
+      });
+
+      test('stand without prose: they are taken, there is no reply, and '
+          'nothing is logged', () async {
+        final s = await dispatched();
+
+        expect(s.acceptAnswer(block), isFalse);
+
+        expect(s.inboxWays, {
+          0: [FrontInboxWay.prompt, FrontInboxWay.event],
+        });
+        expect(s.replyToUser, isNull);
+        verifyNever(
+          () => domainLogger.log(
+            any(),
+            any(that: startsWith('front reply format')),
+            subDomain: any(named: 'subDomain'),
+            level: any(named: 'level'),
+          ),
+        );
+      });
+
+      test('with other UI and no prose, the ways are taken and the missing '
+          'prose is logged', () async {
+        final s = await dispatched();
+
+        expect(
+          s.acceptAnswer('''
+<a2ui>
+surface("reply")
+root = Reply([
+  InboxWays(0, []),
+  TaskCards("Found", ["task:garden"])
+])
+</a2ui>'''),
+          isFalse,
+        );
+
+        expect(s.inboxWays, {0: <FrontInboxWay>[]});
+        verifyFormatFailure('UI but no prose');
+      });
+
+      test('without a dispatch they belong to nothing and are not taken', () {
+        final s = strategy();
+
+        expect(s.acceptAnswer('$block\nNothing to file.'), isTrue);
+
+        expect(s.inboxWays, isEmpty);
+        expect(s.replyComponents, [text('Nothing to file.')]);
+      });
     });
 
     test('nothing at all is no answer, and nothing to log', () {

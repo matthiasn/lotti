@@ -188,6 +188,7 @@ class FrontDoorWalker {
         status: FrontDoorStatus.claimed,
         claimedAt: now.toUtc(),
         task: segment.task,
+        ways: segment.ways,
       );
       await _write(id, claimed!, dispatchRecord, now);
     });

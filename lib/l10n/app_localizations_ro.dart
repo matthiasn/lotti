@@ -7603,6 +7603,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorChangeDay => 'Modificați ziua de azi';
 
   @override
+  String get frontDoorCoverRequested => 'copertă solicitată';
+
+  @override
   String get frontDoorDayPlanned => 'Planul de azi a fost modificat';
 
   @override
@@ -7664,7 +7667,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorKindTask => 'sarcina';
 
   @override
-  String get frontDoorLeaveIt => 'Lăsați-l';
+  String get frontDoorLeaveIt => 'Lăsați-l, nu se creează nimic';
 
   @override
   String get frontDoorLeft => 'Lăsat aici, în conversație';
@@ -7673,10 +7676,29 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorMakeEvent => 'Transformați în eveniment';
 
   @override
+  String get frontDoorMakeEventHint =>
+      'Un eveniment provizoriu, intitulat cu cuvintele dvs.';
+
+  @override
+  String get frontDoorMakePrompt => 'Sarcină cu prompt de codare';
+
+  @override
+  String get frontDoorMakePromptHint =>
+      'O sarcină și un prompt din cuvintele dvs.';
+
+  @override
   String get frontDoorMakeTask => 'Transformați în sarcină';
 
   @override
+  String get frontDoorMakeTaskHint =>
+      'O sarcină din cuvintele dvs., după câteva opțiuni';
+
+  @override
   String get frontDoorNewProject => 'Proiect nou…';
+
+  @override
+  String get frontDoorNewProjectHint =>
+      'Deschide un proiect nou cu cuvintele dvs.';
 
   @override
   String frontDoorNoAgent(String owner) {
@@ -7696,6 +7718,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorProjectCreated => 'Transformat în proiect';
 
   @override
+  String get frontDoorPromptRequested => 'prompt de codare solicitat';
+
+  @override
   String frontDoorProposal(String owner) {
     return 'Înregistrați sub $owner?';
   }
@@ -7707,6 +7732,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorSaveNote => 'Salvați ca notiță';
 
   @override
+  String get frontDoorSaveNoteHint => 'Păstrează cuvintele dvs. așa cum sunt';
+
+  @override
   String get frontDoorSearchingJournal => 'Se caută în jurnalul dumneavoastră…';
 
   @override
@@ -7714,6 +7742,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontDoorStartGoal => 'Începeți un obiectiv…';
+
+  @override
+  String get frontDoorStartGoalHint =>
+      'Deschide asistentul de obiective cu cuvintele dvs.';
+
+  @override
+  String get frontDoorSuggested => 'Sugerat';
 
   @override
   String get frontDoorSummaryBased => 'din rezumate';
@@ -7754,6 +7789,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontLoggedTimeExpand => 'Măriți graficul';
 
   @override
+  String get frontPreviewCoverDrawing => 'Se desenează coperta…';
+
+  @override
+  String get frontPreviewCoverFailed => 'Coperta nu a putut fi desenată';
+
+  @override
+  String get frontPreviewPromptFailed =>
+      'Promptul de codare nu a putut fi scris';
+
+  @override
+  String get frontPreviewPromptWriting => 'Se scrie promptul de codare…';
+
+  @override
   String get frontPullRequestsLinesAdded => 'Linii adăugate';
 
   @override
@@ -7783,7 +7831,16 @@ class AppLocalizationsRo extends AppLocalizations {
       'Doriți să setați ceva înainte să o creez?';
 
   @override
+  String get frontTaskSetupCover => 'Copertă';
+
+  @override
+  String get frontTaskSetupCoverGenerate => 'Generați coperta';
+
+  @override
   String get frontTaskSetupCreate => 'Creați sarcina';
+
+  @override
+  String get frontTaskSetupNoCover => 'Fără copertă';
 
   @override
   String get frontTaskSetupPickDate => 'Alegeți o dată…';
