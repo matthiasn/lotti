@@ -94,6 +94,11 @@ libharfbuzz.so.0
 libfribidi.so.0
 libICE.so.6
 libSM.so.6
+# quill_native_bridge_linux ships a prebuilt xclip in flutter_assets for
+# clipboard images. It is an X11 client like libX11 above, so it takes libXmu
+# from the host too: every X11 desktop has it, and a bundled copy would need
+# a RUNPATH rewrite inside flutter_assets.
+libXmu.so.6
 libudev.so.1
 libsystemd.so.0
 libdbus-1.so.3
