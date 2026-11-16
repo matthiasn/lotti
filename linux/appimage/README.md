@@ -78,6 +78,12 @@ the host's libraries. After rewriting, the script runs `ldd` on every ELF file
 and fails if anything is missing, or if a direct dependency that is not
 host-provided would resolve to the host's copy instead of the bundled one.
 
+**Binaries among the Flutter assets** are data to both scripts: neither their
+libraries are bundled nor are they checked. A plugin copies such a binary out
+and runs it on the host's libraries — quill_native_bridge_linux's `xclip`
+(clipboard images) goes to the temp directory and needs the host's libXmu and
+libX11, as on any X11 desktop.
+
 ## Building locally
 
 The script uses the build machine's libraries, so the result runs only on

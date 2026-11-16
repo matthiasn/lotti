@@ -62,6 +62,8 @@ checked=0
 while IFS= read -r -d '' file; do
   is_elf "$file" || continue
   [[ "$(basename "$file")" == "libapp.so" ]] && continue
+  # Asset binaries are copied out and run on host libraries (build_appimage.sh).
+  [[ "$file" == */data/flutter_assets/* ]] && continue
   checked=$((checked + 1))
   output="$(env -u LD_LIBRARY_PATH ldd "$file" 2>&1 || true)"
   # "not found" covers both missing libraries and symbol version errors
