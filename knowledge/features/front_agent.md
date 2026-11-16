@@ -98,8 +98,8 @@ sources:
     last_modified: 2026-11-14
   - id: door-ways
     resource: ../../lib/features/front_agent/ui/front_door_ways.dart
-    title: FrontDoorWays — an inbox item's other ways, listed in its card, the toggle that opens them, and the scope its InboxWays draws from
-    last_modified: 2026-11-15
+    title: FrontDoorWays — an inbox item's choices, every way a row of its card, and the scope its InboxWays draws from
+    last_modified: 2026-11-16
   - id: inbox-way
     resource: ../../lib/features/front_agent/model/front_inbox_way.dart
     title: FrontInboxWay — the ways an inbox item may go that she picks for its words
@@ -187,7 +187,7 @@ sources:
   - id: reply-catalog
     resource: ../../lib/features/front_agent/ui/a2ui/front_reply_catalog.dart
     title: frontReplyCatalog and FrontReplyScope — her reply's A2UI catalog on the chat's own widgets
-    last_modified: 2026-11-15
+    last_modified: 2026-11-16
   - id: reply-surfaces
     resource: ../../lib/features/front_agent/ui/a2ui/front_reply_surfaces.dart
     title: FrontReplySurfaces — one A2UI message processor per conversation, fed each reply's stored surface
@@ -1235,7 +1235,7 @@ runs from now. **Nothing is drafted unasked, and nothing is made without
 the tap**: a task only mentioned is offered in her words first
 ([talking back](#talking-back-and-offering-a-task)); one asked for waits in
 the inbox with its draft, and *Make it a task* asks how before anything is
-made. Its status line, action and toggle give
+made. Its choices give
 way to `FrontTaskSetup`: one line in her voice and four chips — status,
 priority, due day, cover art — each opening a short menu where it sits (today,
 tomorrow, a day on the calendar, or none for the due day; generate one or
@@ -1259,13 +1259,8 @@ open, medium, no due day, no cover — wears a medium-emphasis label
 (`mutedLabel`), so what was heard or chosen is what stands out; an open chip
 takes the quiet neutral selection, and the cover glyph neutral ink, leaving
 *Create task* the card's one accent. *Cancel* and *Create task* share the chips' line where it fits and
-drop below it, at the end, where it does not (`FrontBand`); either way *Create task* keeps
-the toggle's slot, so it ends where *Make it a task* does — a line that fits
-only without that room is stacked, so a value changed never moves it
-sideways. The waiting item's own line is laid the same way: its question and
-its controls share a line where they fit, and at a large text size or in a
-long translation the controls drop under the question, still at the end, so
-the question never breaks word by word beside them. The two buttons have a chip's target height (`tapTargetSize:
+drop below it, at the end, where it does not (`FrontBand`), so *Create
+task* ends at the card's edge either way. the question never breaks word by word beside them. The two buttons have a chip's target height (`tapTargetSize:
 padded`) and stand a `step4` apart, and they sit further from the chips than
 the chips' rows do from each other: they act on the group, they are not its
 third row. The step takes focus
@@ -1740,9 +1735,9 @@ by the user turn in the thread but *carried* by her reply right after it
 her bubble; until she has replied, or when no reply followed, they sit
 under the user's. One card per segment on one surface, hairlines between,
 and every card the same shape: a compact tinted tile with the kind's glyph
-(task, goal, project, person, day, inbox; the done glyph in the success
-ink once something was written, the warning in the error ink when the
-door failed), the user's words in full in body type — or, for an answer,
+(task, goal, project, person, day, inbox; the glyph of the way it went, in
+the success ink, once something was written; the warning in the error ink
+when the door failed), the user's words in full in body type — or, for an answer,
 the owner's text, a journal answer or a specialist's mirrored reply rendered
 as the Markdown it is (`AgentMarkdownView`, its links through
 `FrontDoorActions.onOpenLink`; the user's words stay plain text) — one
@@ -1751,35 +1746,49 @@ task, *Where should this go?* or *… go instead?* after a proposal was sent
 there, *Filed under …*, *Made into a task*, an answer's attribution and
 caveats, a door still being walked, a reason it went nowhere), at most one
 filled action, and one trailing control holding every other way out. The
-filled action is always a tap that writes — *File it*, *Make it a task* —
-or, on a settled card, a secondary *Open*. *Make it a task* is the filled
-tap only on an item she drafted — a task the user asked for; an inbox item
-nobody asked to be a task has no filled tap, and offers *Make it a task*
-first among its other ways. On a proposal the trailing
-control is an overflow menu (`DesignSystemContextMenuButton`) holding
-*Somewhere else*, and on anything settled one holding *Undo*: single
-commands. **An inbox item's other ways are destinations, not commands, and
-they open in the card itself** (`FrontDoorWays`, `front_door_ways.dart`),
-behind a chevron in the overflow's slot (`FrontDoorWaysToggle`): the card
-grows by them on its own surface — no menu over it, no frame, no rule.
-Under the heading *Or make it something else* each way is a row of its
-name and one line saying what choosing it does (*Save as a note — Keeps
-your words as they are*): *Task with a coding prompt*, *Start a goal…* /
-*New project…* (the ellipsis says a wizard opens), *Make it an event*
-(only while `enable_events` is on — an event made where it is off would
-have no page to be found on) and *Save as a note*, with the router's guess
-first. **Which of them are listed is hers to say**, for the item's words
-(see *The ways of an inbox item are hers to pick*, below). The rows sit on the card's two columns, each glyph on a neutral tile
-under the item's tile and its text on the edge of the words, in three
-levels: a way's name is the row's one strong, heavier line; what it does
-and the heading over the list are quiet; the way out is quieter still. *Leave it — Nothing is made*
-comes last, set apart by space, without a tile and in the quiet ink, under
-the inbox glyph: it makes nothing, is no danger, and is not the way to
-close the list — the chevron
-and Escape are. One thing is open at a time: taking a way closes the list,
-*Make it a task* closes it for the setup, and another item's list closes
-both; an item that went somewhere and waits again starts closed. Opened at
-the foot of the conversation, the list scrolls itself into view. A busy card's action shows it loading; a failed one's
+filled action is always a tap that writes — *File it*. On a proposal the
+trailing control is an overflow menu (`DesignSystemContextMenuButton`)
+holding *Somewhere else*, and on anything settled one holding *Undo*: single
+commands.
+
+**An inbox item that waits is its choices** (`FrontDoorWays`,
+`front_door_ways.dart`): no tile, no button, nothing to open. Top to
+bottom the card holds the question, small and quiet (*Where should this
+go?*, or *… go instead?*); the words as the headline (`subtitle1`) — a
+drafted task's title, never a "yes, make it a task" — under no glyph,
+since nothing is decided yet; and every way it can go as a row of one
+list, a tap on a row doing it. The rows have one height, one radius and
+one glyph size. **The router's guess is the first row and the only tinted
+one**: the interactive colour faint as its fill
+(`DesignSystemListPalette.activatedFill`) and as a hairline outline, its
+glyph in that colour, and a filled *Suggested* tag at its end in place of
+a second line; its semantics say *Suggested* too, so the guess is
+announced and not only coloured. A task is the guess only on an item she
+drafted — a task the user asked for; on words nobody asked to be a task,
+and on an item with nothing guessed, no row is tinted and *Make it a task*
+is a row like the others, first. Every other way is a neutral row
+(`surface.enabled`) with its name over one line saying what choosing it
+does (*Save as a note — Keeps your words as they are*): *Make it a task*,
+*Task with a coding prompt*, *Start a goal…* / *New project…* (the
+ellipsis says a wizard opens), *Make it an event* (only while
+`enable_events` is on — an event made where it is off would have no page
+to be found on) and *Save as a note*, in that order after the guess.
+**Which of them are listed is hers to say**, for the item's words (see
+*The ways of an inbox item are hers to pick*, below). *Leave it, nothing
+is made* is no row but a quiet button under the list, at its start, so it
+never competes with the ways. *Make it a task* asks how first: the setup
+stands where the choices stood, under the title, and *Cancel* returns
+them. **While a way is being done its row shows the progress** where its
+glyph was — the card remembers which way was tapped
+(`_FrontDoorCardState._taken`) — the other rows step back and take no tap,
+and the card keeps its height; *Leave it* in flight loads its own button.
+
+**A card that went a way is one row**: the glyph of that way (a task's, an
+event's, a note's, a project's, or the owner's kind for something filed
+under it) and the status line in the success ink, the words on one line,
+and *Open* at the end as text with a chevron — no second filled thing to
+decide on a card that is done. *Undo* stays in its overflow. A declined
+card is unchanged. A busy card's action shows it loading;the foot of the conversation, the list scrolls itself into view. A busy card's action shows it loading; a failed one's
 status says so in the error ink and the tap reads *Try again*
 (`FrontChatComposerState.busyDoorIds` / `failedDoorIds`). *Open* leaves
 the sheet for the entry's, the task's or the event's page. The inbox filter keeps a
@@ -1966,8 +1975,9 @@ A waiting inbox item whose record keeps ways gets a surface of its own in
 that surface in a `FrontDoorWaysScope`, and the catalog's `InboxWays`
 builds the card's `FrontDoorWays` from what the scope offers for the names
 — so the catalog stays static and every way is still run by the card.
-**The app keeps a floor she cannot remove**: *Make it a task* (the filled
-tap on a drafted item, the first row otherwise), *Save as a note* and
+**The app keeps a floor she cannot remove**: *Make it a task* (the
+suggested row on a drafted item, a plain first row otherwise), *Save as a
+note* and
 *Leave it* are always there, the router's guess is always offered and
 leads, and an event is still offered only while `enable_events` is on. The
 rest are the ways she picked, in the card's order, not hers. `ways` empty

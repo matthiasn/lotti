@@ -492,7 +492,7 @@ class _StatusGlyph extends StatelessWidget {
 }
 
 /// Lays its two children — what is asked, then its controls: the setup's
-/// chips and buttons, a waiting item's question and its action — on one
+/// chips and its buttons — on one
 /// line when they fit, the controls at the end and both centred on it;
 /// otherwise the controls go [runGap] below, still at the end. The controls
 /// keep [endInset] clear after them either way: a line that fits only

@@ -12824,14 +12824,8 @@ abstract class AppLocalizations {
   /// No description provided for @frontDoorLeaveIt.
   ///
   /// In en, this message translates to:
-  /// **'Leave it'**
+  /// **'Leave it, nothing is made'**
   String get frontDoorLeaveIt;
-
-  /// No description provided for @frontDoorLeaveItHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing is made'**
-  String get frontDoorLeaveItHint;
 
   /// No description provided for @frontDoorLeft.
   ///
@@ -12911,12 +12905,6 @@ abstract class AppLocalizations {
   /// **'Open'**
   String get frontDoorOpen;
 
-  /// No description provided for @frontDoorOtherWays.
-  ///
-  /// In en, this message translates to:
-  /// **'Or make it something else'**
-  String get frontDoorOtherWays;
-
   /// No description provided for @frontDoorProjectCreated.
   ///
   /// In en, this message translates to:
@@ -12976,6 +12964,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Opens the goal wizard with your words'**
   String get frontDoorStartGoalHint;
+
+  /// No description provided for @frontDoorSuggested.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested'**
+  String get frontDoorSuggested;
 
   /// No description provided for @frontDoorSummaryBased.
   ///

@@ -7644,10 +7644,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorKindTask => 'úkol';
 
   @override
-  String get frontDoorLeaveIt => 'Nechat být';
-
-  @override
-  String get frontDoorLeaveItHint => 'Nic se nevytvoří';
+  String get frontDoorLeaveIt => 'Nechat být, nic se nevytvoří';
 
   @override
   String get frontDoorLeft => 'Ponecháno tady ve vlákně';
@@ -7691,9 +7688,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorOpen => 'Otevřít';
 
   @override
-  String get frontDoorOtherWays => 'Nebo z toho udělej něco jiného';
-
-  @override
   String get frontDoorProjectCreated => 'Vytvořen projekt';
 
   @override
@@ -7724,6 +7718,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontDoorStartGoalHint => 'Otevře průvodce cílem s tvými slovy';
+
+  @override
+  String get frontDoorSuggested => 'Doporučeno';
 
   @override
   String get frontDoorSummaryBased => 'ze souhrnů';

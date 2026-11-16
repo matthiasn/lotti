@@ -7505,10 +7505,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontDoorKindTask => 'the task';
 
   @override
-  String get frontDoorLeaveIt => 'Leave it';
-
-  @override
-  String get frontDoorLeaveItHint => 'Nothing is made';
+  String get frontDoorLeaveIt => 'Leave it, nothing is made';
 
   @override
   String get frontDoorLeft => 'Left here in the thread';
@@ -7554,9 +7551,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontDoorOpen => 'Open';
 
   @override
-  String get frontDoorOtherWays => 'Or make it something else';
-
-  @override
   String get frontDoorProjectCreated => 'Made into a project';
 
   @override
@@ -7587,6 +7581,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontDoorStartGoalHint => 'Opens the goal wizard with your words';
+
+  @override
+  String get frontDoorSuggested => 'Suggested';
 
   @override
   String get frontDoorSummaryBased => 'from summaries';
@@ -18811,7 +18808,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get frontDoorInboxInstead => 'Where should this go instead?';
 
   @override
-  String get frontDoorLeaveIt => 'Leave it';
+  String get frontDoorLeaveIt => 'Leave it, nothing is made';
 
   @override
   String get frontDoorLeft => 'Left here in the thread';

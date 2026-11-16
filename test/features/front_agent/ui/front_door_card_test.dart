@@ -5,7 +5,6 @@ import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -138,21 +137,27 @@ void main() {
       );
 
   /// The other ways an inbox item's card lists, once opened.
-  FrontDoorWays waysOf(WidgetTester tester) =>
-      tester.widget<FrontDoorWays>(find.byType(FrontDoorWays));
+  /// The choices of the waiting inbox item at [index].
+  FrontDoorWays waysOf(WidgetTester tester, [int index = 0]) =>
+      tester.widget<FrontDoorWays>(
+        find.descendant(
+          of: find.byKey(ValueKey('front-door-$index')),
+          matching: find.byType(FrontDoorWays),
+        ),
+      );
 
-  /// Opens what the card keeps behind its trailing control and returns the
-  /// labels it offers: a waiting inbox item's other ways, listed in the
-  /// card, or any other card's overflow menu.
+  /// What the card offers for the item at [index]: a waiting inbox item's
+  /// choices, which are in sight, with its way out last — or, for any other
+  /// card, the rows of its overflow menu, which this opens.
   Future<List<String>> openMenu(WidgetTester tester, int index) async {
+    if (menu(index).evaluate().isEmpty) {
+      final ways = waysOf(tester, index);
+      return [for (final way in ways.ways) way.label, ways.leave.label];
+    }
     await tester.tap(menu(index));
     await tester.pumpAndSettle();
-    final trigger = tester.widget(menu(index));
-    if (trigger is DesignSystemContextMenuButton) {
-      return [for (final item in trigger.items) item.label];
-    }
-    final ways = waysOf(tester);
-    return [for (final way in ways.ways) way.label, ways.leave.label];
+    final trigger = tester.widget<DesignSystemContextMenuButton>(menu(index));
+    return [for (final item in trigger.items) item.label];
   }
 
   Future<void> tapItem(WidgetTester tester, String name, int index) async {
@@ -974,7 +979,7 @@ void main() {
 
       expect(find.byType(FrontTaskSetup), findsNothing);
       expect(statusOf(tester, 0), 'Where should this go?');
-      expect(menu(0), findsOne);
+      expect(find.byType(FrontDoorWays), findsOne);
       expect(acted, isEmpty);
     });
 
@@ -1058,35 +1063,28 @@ void main() {
     });
 
     testWidgets('while one item is set up, its create is the one filled '
-        'button: the others step back, and come forward when it is left', (
-      tester,
-    ) async {
+        'button on the card: no other item has one', (tester) async {
       await pump(tester, [waiting(), waiting(index: 1)]);
-      expect(
-        button(tester, 'task', 1).variant,
-        DesignSystemButtonVariant.primary,
-      );
+      List<DesignSystemButton> filled() => [
+        for (final button in tester.widgetList<DesignSystemButton>(
+          find.byType(DesignSystemButton),
+        ))
+          if (button.variant == DesignSystemButtonVariant.primary) button,
+      ];
+      expect(filled(), isEmpty);
 
       await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
       await tester.pump();
-      expect(
-        button(tester, 'task', 1).variant,
-        DesignSystemButtonVariant.secondary,
-      );
 
-      await tester.tap(find.byKey(FrontTaskSetupKeys.back(0)));
-      await tester.pump();
-      expect(
-        button(tester, 'task', 1).variant,
-        DesignSystemButtonVariant.primary,
-      );
+      expect(filled().single.label, 'Create task');
+      // The other item still offers its ways.
+      expect(waysOf(tester, 1).ways.first.onTap, isNotNull);
     });
 
-    testWidgets('on a phone, create task ends where make it a task does, '
-        'the overflow slot kept', (tester) async {
+    testWidgets("on a phone, create task ends at the card's edge, where "
+        "another item's rows end", (tester) async {
       // A phone's width with room for the two buttons side by side in the
-      // test font, whose glyphs are a full em wide: narrower, the buttons
-      // take the overflow's slot rather than run past the card's start.
+      // test font, whose glyphs are a full em wide.
       tester.view
         ..physicalSize = const Size(430, 900)
         ..devicePixelRatio = 1;
@@ -1122,10 +1120,8 @@ void main() {
 
       expect(find.byKey(FrontTaskSetupKeys.ask(0)), findsNothing);
       expect(find.byKey(FrontTaskSetupKeys.ask(1)), findsOne);
-      expect(
-        button(tester, 'task', 0).variant,
-        DesignSystemButtonVariant.secondary,
-      );
+      // The first is its choices again.
+      expect(waysOf(tester).ways.first.name, 'task');
 
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       expect(acted, [('task', 'd:door:1')]);
@@ -1171,8 +1167,9 @@ void main() {
   });
 
   group('a settled card', () {
-    testWidgets('filed under its task shows the done tile, opens on its one '
-        'control, and undoes from the overflow', (tester) async {
+    testWidgets("filed under its task is one row under its owner's glyph in "
+        'the success ink: the words on one line, what became of them under '
+        'it, open at the end and undo in the overflow', (tester) async {
       await pump(tester, [
         entry(
           record(
@@ -1182,11 +1179,34 @@ void main() {
           ),
         ),
       ]);
+      final success = tester
+          .element(find.byType(FrontDoorCard))
+          .designTokens
+          .colors
+          .alert
+          .success
+          .ink;
       expect(statusOf(tester, 0), 'Filed under Garden');
-      expect(glyph(tester, 0).icon, LottiIcons.confirmCircled);
+      expect(statusWidget(tester, 0).style!.color, success);
+      expect(glyph(tester, 0).icon, LottiIcons.checkboxChecked);
+      expect(glyph(tester, 0).color, success);
+      final words = tester.widget<Text>(
+        find.byKey(const ValueKey('front-door-text-0')),
+      );
+      expect(words.maxLines, 1);
+      expect(words.overflow, TextOverflow.ellipsis);
       final open = button(tester, 'open', 0);
-      expect(open.variant, DesignSystemButtonVariant.secondary);
+      expect(open.variant, DesignSystemButtonVariant.tertiary);
+      expect(open.trailingIcon, LottiIcons.chevronRight);
       expect(open.label, 'Open');
+      expect(
+        tester.getRect(find.byKey(const ValueKey('front-door-open-0'))).left,
+        greaterThan(
+          tester
+              .getRect(find.byKey(const ValueKey('front-door-status-0')))
+              .left,
+        ),
+      );
       await tester.tap(find.byKey(const ValueKey('front-door-open-0')));
       expect(await openMenu(tester, 0), ['Undo']);
       await tapItem(tester, 'take-back', 0);
@@ -1218,7 +1238,9 @@ void main() {
       ]);
       expect(statusOf(tester, 0), 'Saved as a note');
       expect(statusOf(tester, 1), 'Made into a task');
-      expect(glyph(tester, 1).icon, LottiIcons.confirmCircled);
+      // Each under the glyph of the way it went.
+      expect(glyph(tester, 0).icon, LottiIcons.note);
+      expect(glyph(tester, 1).icon, LottiIcons.checkboxChecked);
       await tester.tap(find.byKey(const ValueKey('front-door-open-1')));
       await openMenu(tester, 0);
       await tapItem(tester, 'take-back', 0);
@@ -1264,11 +1286,11 @@ void main() {
         });
       }
 
-      testWidgets('is a settled card like any task: the done tile, open on '
-          'its one control, undo in the overflow', (tester) async {
+      testWidgets("is a settled card like any task: the task's glyph, open "
+          'on its one control, undo in the overflow', (tester) async {
         await pumpMade(tester, {FrontTaskExtra.coverArt});
 
-        expect(glyph(tester, 0).icon, LottiIcons.confirmCircled);
+        expect(glyph(tester, 0).icon, LottiIcons.checkboxChecked);
         expect(button(tester, 'open', 0).label, 'Open');
         await tester.tap(find.byKey(const ValueKey('front-door-open-0')));
         expect(await openMenu(tester, 0), ['Undo']);
@@ -1322,7 +1344,7 @@ void main() {
 
       expect(titleOf(tester, 0), 'Launch-day rehearsal on Friday.');
       expect(statusOf(tester, 0), 'Made into an event');
-      expect(glyph(tester, 0).icon, LottiIcons.confirmCircled);
+      expect(glyph(tester, 0).icon, LottiIcons.calendar);
       expect(button(tester, 'open', 0).label, 'Open');
       await tester.tap(find.byKey(const ValueKey('front-door-open-0')));
       expect(await openMenu(tester, 0), ['Undo']);
@@ -1409,8 +1431,9 @@ void main() {
       ]);
       expect(statusOf(tester, 0), "Today's plan changed");
       expect(statusOf(tester, 1), 'Made into a project');
+      expect(glyph(tester, 0).icon, LottiIcons.confirmCircled);
+      expect(glyph(tester, 1).icon, LottiIcons.folder);
       for (final index in [0, 1]) {
-        expect(glyph(tester, index).icon, LottiIcons.confirmCircled);
         expect(menu(index), findsNothing);
       }
       await tester.tap(find.byKey(const ValueKey('front-door-open-1')));
@@ -1420,7 +1443,7 @@ void main() {
 
   group('an inbox item', () {
     testWidgets('a task she drafted — one the user asked for — leads with '
-        'make it a task, which the overflow then does not repeat', (
+        'make it a task as the suggested way, under the title she read', (
       tester,
     ) async {
       await pump(tester, [
@@ -1437,21 +1460,29 @@ void main() {
       ]);
 
       expect(titleOf(tester, 0), 'Check the snow fences');
-      final task = button(tester, 'task', 0);
-      expect(task.variant, DesignSystemButtonVariant.primary);
-      expect(task.label, 'Make it a task');
       expect(await openMenu(tester, 0), [
+        'Make it a task',
         'Task with a coding prompt',
         'Start a goal…',
         'Make it an event',
         'Save as a note',
-        'Leave it',
+        'Leave it, nothing is made',
       ]);
+      expect(
+        [for (final way in waysOf(tester).ways) way.suggested],
+        [
+          true,
+          false,
+          false,
+          false,
+          false,
+        ],
+      );
     });
 
-    testWidgets('nobody asked to be a task asks where it should go with no '
-        'filled tap: every way, make it a task among them, in the overflow '
-        'with the guess first and leaving it last', (tester) async {
+    testWidgets('nobody asked to be a task asks where it should go: every '
+        'way, make it a task among them and not the suggested one, with the '
+        'guess first and leaving it last', (tester) async {
       await pump(tester, [
         entry(
           record(
@@ -1466,8 +1497,6 @@ void main() {
 
       expect(titleOf(tester, 0), 'Swim every morning.');
       expect(statusOf(tester, 0), 'Where should this go?');
-      expect(glyph(tester, 0).icon, LottiIcons.focus);
-      expect(find.byType(DesignSystemButton), findsNothing);
 
       expect(await openMenu(tester, 0), [
         'Start a goal…',
@@ -1475,21 +1504,24 @@ void main() {
         'Task with a coding prompt',
         'Make it an event',
         'Save as a note',
-        'Leave it',
+        'Leave it, nothing is made',
       ]);
+      expect(
+        [
+          for (final way in waysOf(tester).ways)
+            if (way.suggested) way.name,
+        ],
+        ['goal'],
+      );
       await tapItem(tester, 'task', 0);
       // The setup opens as from the filled tap, and nothing is made yet.
       expect(find.byKey(FrontTaskSetupKeys.ask(0)), findsOne);
       expect(acted, isEmpty);
       await tester.tap(find.byKey(FrontTaskSetupKeys.back(0)));
       await tester.pump();
-      await openMenu(tester, 0);
       await tapItem(tester, 'goal', 0);
-      await openMenu(tester, 0);
       await tapItem(tester, 'event', 0);
-      await openMenu(tester, 0);
       await tapItem(tester, 'note', 0);
-      await openMenu(tester, 0);
       await tapItem(tester, 'decline', 0);
       expect(acted, [
         ('goal', 'd:door:0'),
@@ -1538,11 +1570,13 @@ void main() {
         'Task with a coding prompt',
         'Start a goal…',
         'Save as a note',
-        'Leave it',
+        'Leave it, nothing is made',
       ]);
+      // Nothing was guessed: no way is the suggested one.
+      expect(waysOf(tester).ways.any((way) => way.suggested), isFalse);
     });
 
-    testWidgets('a new project leads the overflow with its own way; an '
+    testWidgets('a new project leads the choices with its own way; an '
         'unrouted one has no project way; one sent back from a proposal asks '
         'where instead', (tester) async {
       await pump(tester, [
@@ -1573,8 +1607,6 @@ void main() {
         ),
       ]);
 
-      expect(glyph(tester, 0).icon, LottiIcons.folder);
-      expect(glyph(tester, 1).icon, LottiIcons.inbox);
       expect(statusOf(tester, 2), 'Where should this go instead?');
       expect(await openMenu(tester, 0), [
         'New project…',
@@ -1583,241 +1615,266 @@ void main() {
         'Start a goal…',
         'Make it an event',
         'Save as a note',
-        'Leave it',
+        'Leave it, nothing is made',
       ]);
-      await tapItem(tester, 'project', 0);
+      expect(waysOf(tester).ways.first.suggested, isTrue);
       expect(await openMenu(tester, 1), [
         'Make it a task',
         'Task with a coding prompt',
         'Start a goal…',
         'Make it an event',
         'Save as a note',
-        'Leave it',
+        'Leave it, nothing is made',
       ]);
-      await tester.tapAt(Offset.zero);
-      await tester.pumpAndSettle();
+      await tapItem(tester, 'project', 0);
       expect(acted, [('project', 'd:door:0')]);
     });
 
-    group('its other ways, listed in the card', () {
+    group('its choices', () {
+      const drafted = FrontTaskDraft(title: 'Check the ice-pad weather window');
+
       FrontDoorEntry inbox({
         int index = 0,
         FrontNewKind? newKind = FrontNewKind.task,
-        FrontTaskDraft? task,
+        FrontTaskDraft? task = drafted,
+        String? ownerId,
       }) => entry(
         record(
           index: index,
           text: 'Check the ice-pad weather window.',
           kind: FrontDestinationKind.newThing,
           ownerTitle: null,
-          outcome: FrontDoorInbox(newKind: newKind),
+          outcome: FrontDoorInbox(newKind: newKind, ownerId: ownerId),
           task: task,
         ),
       );
-      FrontDoorWaysToggle toggle(WidgetTester tester, [int index = 0]) =>
-          tester.widget<FrontDoorWaysToggle>(menu(index));
+      Finder way(String name, [int index = 0]) =>
+          find.byKey(ValueKey('front-door-$name-$index'));
 
-      testWidgets('each way says what choosing it does', (tester) async {
-        await pump(tester, [inbox(newKind: FrontNewKind.project)]);
-        await openMenu(tester, 0);
+      testWidgets('are in sight without a tap: the question, the words as '
+          'the headline under no glyph, every way as a row, and the way '
+          'out last — no button, toggle or menu beside them', (tester) async {
+        double top(Finder finder) => tester.getTopLeft(finder).dy;
+        await pump(tester, [inbox()]);
 
-        final ways = waysOf(tester);
+        expect(statusOf(tester, 0), 'Where should this go?');
+        expect(titleOf(tester, 0), 'Check the ice-pad weather window');
+        expect(find.byKey(const ValueKey('front-door-glyph-0')), findsNothing);
+        expect(menu(0), findsNothing);
+        expect(find.byType(DesignSystemContextMenuButton), findsNothing);
+
+        final tops = [
+          top(find.byKey(const ValueKey('front-door-status-0'))),
+          top(find.byKey(const ValueKey('front-door-text-0'))),
+          for (final name in ['task', 'prompt', 'goal', 'event', 'note'])
+            top(way(name)),
+          top(way('decline')),
+        ];
+        expect(tops, [...tops]..sort());
+        expect(tops.toSet(), hasLength(tops.length));
+        // The headline outweighs the question over it.
+        final tokens = tester.element(find.byType(FrontDoorCard)).designTokens;
+        expect(
+          tester
+              .widget<Text>(find.byKey(const ValueKey('front-door-text-0')))
+              .style,
+          tokens.typography.styles.subtitle.subtitle1.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+        );
+        expect(
+          statusWidget(tester, 0).style!.color,
+          tokens.colors.text.mediumEmphasis,
+        );
+      });
+
+      testWidgets("the router's guess is the first row and the one "
+          'suggested: a goal, a project, or a task she drafted', (
+        tester,
+      ) async {
+        for (final (newKind, name) in [
+          (FrontNewKind.task, 'task'),
+          (FrontNewKind.goal, 'goal'),
+          (FrontNewKind.project, 'project'),
+        ]) {
+          await pump(tester, [inbox(newKind: newKind)]);
+
+          final ways = waysOf(tester).ways;
+          expect(ways.first.name, name);
+          expect(
+            [
+              for (final way in ways)
+                if (way.suggested) way.name,
+            ],
+            [name],
+          );
+          expect(
+            tester.widget<Semantics>(way(name)).properties.label,
+            '${ways.first.label}. Suggested',
+          );
+        }
+      });
+
+      testWidgets('with nothing guessed, or a task nobody asked for, no row '
+          'is suggested: make it a task is first and says what it does', (
+        tester,
+      ) async {
+        for (final newKind in [FrontNewKind.task, null]) {
+          await pump(tester, [inbox(newKind: newKind, task: null)]);
+
+          final ways = waysOf(tester).ways;
+          expect(ways.any((way) => way.suggested), isFalse);
+          expect(ways.first.name, 'task');
+          expect(
+            tester.widget<Semantics>(way('task')).properties.label,
+            'Make it a task. A task from your words, after a few choices',
+          );
+        }
+      });
+
+      testWidgets('every other way says what choosing it does', (
+        tester,
+      ) async {
+        await pump(tester, [inbox(newKind: FrontNewKind.project, task: null)]);
+
         expect(
           {
-            for (final way in [...ways.ways, ways.leave]) way.label: way.hint,
+            for (final way in waysOf(tester).ways)
+              if (!way.suggested) way.label: way.hint,
           },
           {
-            'New project…': 'Opens a new project with your words',
             'Make it a task': 'A task from your words, after a few choices',
             'Task with a coding prompt': 'A task, and a prompt from your words',
             'Start a goal…': 'Opens the goal wizard with your words',
             'Make it an event': 'A tentative event titled with your words',
             'Save as a note': 'Keeps your words as they are',
-            'Leave it': 'Nothing is made',
           },
         );
+        expect(waysOf(tester).leave.label, 'Leave it, nothing is made');
       });
 
-      testWidgets('leaving it comes last, under the inbox glyph: it makes '
-          'nothing, and closes nothing', (tester) async {
-        await pump(tester, [inbox()]);
-        await openMenu(tester, 0);
-
-        final ways = waysOf(tester);
-        expect(ways.leave.label, 'Leave it');
-        expect(ways.leave.icon, LottiIcons.inbox);
-        expect(ways.ways.map((way) => way.name), isNot(contains('decline')));
-
-        await tapItem(tester, 'decline', 0);
-        expect(acted, [('decline', 'd:door:0')]);
-      });
-
-      testWidgets('open in the card itself, not in a menu over it: closed '
-          'until asked for, then under a heading inside the card', (
+      testWidgets('a tap on a row does that way, once, and nothing else', (
         tester,
       ) async {
-        await pump(tester, [inbox()]);
+        for (final name in [
+          'prompt',
+          'goal',
+          'project',
+          'event',
+          'note',
+          'decline',
+        ]) {
+          acted.clear();
+          await pump(tester, [inbox(newKind: FrontNewKind.project)]);
 
-        expect(find.byType(DesignSystemContextMenuButton), findsNothing);
-        expect(find.byType(FrontDoorWays), findsNothing);
-        expect(toggle(tester).open, isFalse);
+          await tapItem(tester, name, 0);
 
-        await openMenu(tester, 0);
-
-        expect(toggle(tester).open, isTrue);
-        expect(find.byType(DesignSystemContextMenu), findsNothing);
-        expect(find.text('Or make it something else'), findsOneWidget);
-        expect(find.text('Keeps your words as they are'), findsOneWidget);
-        final card = tester.getRect(find.byType(FrontDoorCard));
-        final ways = tester.getRect(find.byType(FrontDoorWays));
-        expect(card.contains(ways.topLeft), isTrue);
-        expect(card.contains(ways.bottomRight), isTrue);
-        // Under the item's own line, never over it.
-        expect(
-          ways.top,
-          greaterThanOrEqualTo(tester.getRect(menu(0)).bottom),
-        );
-      });
-
-      testWidgets("sit on the card's two columns: a way's name on the "
-          "words' edge, its glyph under the item's tile", (tester) async {
-        await pump(tester, [inbox()]);
-        await openMenu(tester, 0);
-
-        final words = tester.getTopLeft(
-          find.byKey(const ValueKey('front-door-text-0')),
-        );
-        expect(tester.getTopLeft(find.text('Save as a note')).dx, words.dx);
-        expect(
-          tester.getTopLeft(find.text('Or make it something else')).dx,
-          words.dx,
-        );
-        expect(
-          tester.getCenter(find.byIcon(LottiIcons.note)).dx,
-          tester.getCenter(find.byKey(const ValueKey('front-door-glyph-0'))).dx,
-        );
-      });
-
-      testWidgets('the question and its controls share a line where they '
-          'fit; at a large text size the controls go under the question, '
-          'which keeps one line', (tester) async {
-        Future<void> pumpScaled(double scale, {required double width}) async {
-          tester.view
-            ..physicalSize = Size(width, 844)
-            ..devicePixelRatio = 1;
-          addTearDown(tester.view.reset);
-          await tester.pumpWidget(
-            makeTestableWidget(
-              MediaQuery.withClampedTextScaling(
-                minScaleFactor: scale,
-                maxScaleFactor: scale,
-                // A drafted task: the card's filled tap sits by the toggle.
-                child: FrontDoorCard(
-                  doors: [
-                    inbox(
-                      task: const FrontTaskDraft(
-                        title: 'Check the ice-pad weather window',
-                      ),
-                    ),
-                  ],
-                  actions: actions(),
-                ),
-              ),
-            ),
-          );
-          await tester.pump();
+          expect(acted, [(name, 'd:door:0')], reason: name);
         }
-
-        Rect status() => tester.getRect(
-          find.byKey(const ValueKey('front-door-status-0')),
-        );
-        double lineHeight() => tester
-            .element(find.byType(FrontDoorCard))
-            .designTokens
-            .typography
-            .lineHeight
-            .caption;
-
-        await pumpScaled(1, width: 800);
-        expect(tester.getRect(menu(0)).center.dy, status().center.dy);
-        expect(status().height, lessThan(lineHeight() * 1.5));
-
-        // Where the controls end on a shared line, in the same column.
-        await pumpScaled(1, width: 600);
-        expect(tester.getRect(menu(0)).center.dy, status().center.dy);
-        final end = tester.getRect(menu(0)).right;
-
-        await pumpScaled(1.3, width: 600);
-        // Still at the card's end, where they sit on a shared line.
-        expect(tester.getRect(menu(0)).right, end);
-        expect(
-          tester.getRect(menu(0)).top,
-          greaterThanOrEqualTo(status().bottom),
-        );
-        // One line still: never a column of single words.
-        expect(status().height, lessThan(lineHeight() * 1.3 * 1.5));
       });
 
-      testWidgets('the toggle closes them again', (tester) async {
+      testWidgets('make it a task asks how first, in place: the setup '
+          'stands where the choices stood, under the title, and going back '
+          'returns them', (tester) async {
         await pump(tester, [inbox()]);
-        await openMenu(tester, 0);
 
-        await tester.tap(menu(0));
+        await tapItem(tester, 'task', 0);
+
+        expect(acted, isEmpty);
+        expect(find.byType(FrontTaskSetup), findsOne);
+        expect(find.byType(FrontDoorWays), findsNothing);
+        expect(find.byKey(const ValueKey('front-door-status-0')), findsNothing);
+        expect(titleOf(tester, 0), 'Check the ice-pad weather window');
+
+        await tester.tap(find.byKey(FrontTaskSetupKeys.back(0)));
         await tester.pumpAndSettle();
 
-        expect(find.byType(FrontDoorWays), findsNothing);
-        expect(toggle(tester).open, isFalse);
-        expect(acted, isEmpty);
+        expect(find.byType(FrontTaskSetup), findsNothing);
+        expect(statusOf(tester, 0), 'Where should this go?');
+        expect(way('task'), findsOne);
       });
 
-      testWidgets('Escape closes them, and leaves the item waiting', (
+      testWidgets('while a way is being done its row shows the progress, '
+          'no row takes a tap, and the card is as tall as before', (
         tester,
       ) async {
-        await pump(tester, [inbox()]);
-        await openMenu(tester, 0);
-
-        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-        await tester.pumpAndSettle();
-
-        expect(find.byType(FrontDoorWays), findsNothing);
-        expect(acted, isEmpty);
-        expect(statusOf(tester, 0), 'Where should this go?');
-      });
-
-      testWidgets('a way taken closes the list', (tester) async {
-        await pump(tester, [inbox()]);
-        await openMenu(tester, 0);
-
+        final door = inbox();
+        await pump(tester, [door]);
+        final before = tester.getSize(find.byType(FrontDoorCard));
         await tapItem(tester, 'note', 0);
 
+        await pump(tester, [door], busy: {'d:door:0'});
+
+        expect(tester.getSize(find.byType(FrontDoorCard)), before);
+        final ways = waysOf(tester);
+        expect(
+          [
+            for (final way in ways.ways)
+              if (way.inFlight) way.name,
+          ],
+          ['note'],
+        );
+        expect(ways.ways.map((way) => way.onTap), everyElement(isNull));
+        expect(ways.leave.onTap, isNull);
+        expect(ways.leave.inFlight, isFalse);
+        expect(
+          find.byKey(const ValueKey('front-door-note-progress-0')),
+          findsOne,
+        );
+        // Nothing more is done by a tap meanwhile.
+        acted.clear();
+        await tester.tap(way('goal'), warnIfMissed: false);
+        await tester.tap(way('decline'), warnIfMissed: false);
+        expect(acted, isEmpty);
+      });
+
+      testWidgets('leaving it in flight is the way out that shows it; one '
+          "item's progress is not another's", (tester) async {
+        final doors = [inbox(), inbox(index: 1)];
+        await pump(tester, doors);
+        await tapItem(tester, 'decline', 0);
+
+        await pump(tester, doors, busy: {'d:door:0'});
+
+        expect(waysOf(tester).leave.inFlight, isTrue);
+        expect(waysOf(tester).ways.any((way) => way.inFlight), isFalse);
+        expect(waysOf(tester, 1).leave.inFlight, isFalse);
+        expect(waysOf(tester, 1).ways.first.onTap, isNotNull);
+      });
+
+      testWidgets('a way that failed says so over the words, in the error '
+          'ink, and every way can be taken again', (tester) async {
+        await pump(tester, [inbox()], failed: {'d:door:0'});
+
+        expect(statusOf(tester, 0), 'That did not go through.');
+        expect(
+          statusWidget(tester, 0).style!.color,
+          tester
+              .element(find.byType(FrontDoorCard))
+              .designTokens
+              .colors
+              .alert
+              .error
+              .ink,
+        );
+        await tapItem(tester, 'note', 0);
         expect(acted, [('note', 'd:door:0')]);
-        expect(find.byType(FrontDoorWays), findsNothing);
       });
 
-      testWidgets('one thing is open at a time: setting a task up closes '
-          "the list, and another item's list closes the setup", (tester) async {
-        await pump(tester, [inbox(), inbox(index: 1)]);
-        await openMenu(tester, 0);
+      testWidgets('one sent back from a proposal asks where instead', (
+        tester,
+      ) async {
+        await pump(tester, [inbox(ownerId: 'id-0')]);
 
-        await tester.tap(find.byKey(const ValueKey('front-door-task-0')));
-        await tester.pumpAndSettle();
-        expect(find.byType(FrontDoorWays), findsNothing);
-        expect(find.byType(FrontTaskSetup), findsOneWidget);
-
-        await openMenu(tester, 1);
-        expect(find.byType(FrontTaskSetup), findsNothing);
-        expect(waysOf(tester).index, 1);
-
-        // And another item's list closes this one.
-        await openMenu(tester, 0);
-        expect(waysOf(tester).index, 0);
-        expect(toggle(tester, 1).open, isFalse);
+        expect(statusOf(tester, 0), 'Where should this go instead?');
+        expect(way('note'), findsOne);
       });
 
-      testWidgets('an item that went somewhere is not being chosen for: '
-          'waiting again, its list is closed', (tester) async {
+      testWidgets('an item that went somewhere and waits again is its '
+          'choices again, not a setup left open', (tester) async {
         await pump(tester, [inbox()]);
-        await openMenu(tester, 0);
+        await tapItem(tester, 'task', 0);
+        expect(find.byType(FrontTaskSetup), findsOne);
 
         await pump(tester, [
           entry(
@@ -1826,57 +1883,54 @@ void main() {
               text: 'Check the ice-pad weather window.',
               kind: FrontDestinationKind.newThing,
               ownerTitle: null,
-              outcome: const FrontDoorDeclined(),
+              outcome: const FrontDoorTaskCreated(taskId: 't'),
             ),
           ),
         ]);
-        await tester.pumpAndSettle();
-        await pump(tester, [inbox()]);
-        await tester.pumpAndSettle();
-
+        expect(find.byType(FrontTaskSetup), findsNothing);
         expect(find.byType(FrontDoorWays), findsNothing);
-        expect(toggle(tester).open, isFalse);
-      });
 
-      testWidgets('a rebuild with the item still waiting keeps them open', (
-        tester,
-      ) async {
         await pump(tester, [inbox()]);
-        await openMenu(tester, 0);
-
-        await pump(tester, [inbox()], failed: {'d:door:0'});
-        await tester.pumpAndSettle();
-
-        expect(find.byType(FrontDoorWays), findsOneWidget);
+        expect(find.byType(FrontTaskSetup), findsNothing);
+        expect(way('task'), findsOne);
       });
 
-      testWidgets('the toggle takes no tap while the item is busy', (
+      testWidgets('fits a 360 wide phone with every way listed', (
         tester,
       ) async {
-        await pump(tester, [inbox()], busy: {'d:door:0'});
+        tester.view
+          ..physicalSize = const Size(360, 1400)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
 
-        expect(toggle(tester).onPressed, isNull);
-      });
-
-      testWidgets("a settled card's overflow stays a plain menu", (
-        tester,
-      ) async {
         await pump(tester, [
           entry(
             record(
               index: 0,
-              text: 'Buy a hose.',
-              kind: FrontDestinationKind.unrouted,
+              text:
+                  'Relocate the whole colony to the northern ice shelf '
+                  'before the midwinter storms close the pass.',
+              kind: FrontDestinationKind.newThing,
               ownerTitle: null,
-              outcome: const FrontDoorTaskCreated(taskId: 't-1'),
+              outcome: const FrontDoorInbox(newKind: FrontNewKind.project),
             ),
           ),
         ]);
 
-        final button = tester.widget<DesignSystemContextMenuButton>(menu(0));
-        expect(button.header, isNull);
-        expect(button.items.single.label, 'Undo');
-        expect(find.byType(FrontDoorWaysToggle), findsNothing);
+        expect(tester.takeException(), isNull);
+        for (final name in [
+          'project',
+          'task',
+          'prompt',
+          'goal',
+          'event',
+          'note',
+          'decline',
+        ]) {
+          final rect = tester.getRect(way(name));
+          expect(rect.left, greaterThanOrEqualTo(0), reason: name);
+          expect(rect.right, lessThanOrEqualTo(360), reason: name);
+        }
       });
     });
 
@@ -1935,7 +1989,7 @@ void main() {
           'Make it a task',
           'Task with a coding prompt',
           'Save as a note',
-          'Leave it',
+          'Leave it, nothing is made',
         ]);
         expect(
           find.descendant(
@@ -1946,13 +2000,13 @@ void main() {
         );
       });
 
-      testWidgets('none picked leaves what the card always offers; on a '
-          'task she drafted, only the note', (tester) async {
+      testWidgets('none picked leaves what the card always offers, on a '
+          'task she drafted too', (tester) async {
         await pumpInThread(tester, inbox(ways: const []));
         expect(await openMenu(tester, 0), [
           'Make it a task',
           'Save as a note',
-          'Leave it',
+          'Leave it, nothing is made',
         ]);
 
         await pumpInThread(
@@ -1968,7 +2022,7 @@ void main() {
             for (final way in waysOf(tester).ways) way.label,
             waysOf(tester).leave.label,
           ],
-          ['Save as a note', 'Leave it'],
+          ['Make it a task', 'Save as a note', 'Leave it, nothing is made'],
         );
       });
 
@@ -1988,7 +2042,7 @@ void main() {
           'Task with a coding prompt',
           'Make it an event',
           'Save as a note',
-          'Leave it',
+          'Leave it, nothing is made',
         ]);
       });
 
@@ -1999,7 +2053,7 @@ void main() {
           'Make it a task',
           'New project…',
           'Save as a note',
-          'Leave it',
+          'Leave it, nothing is made',
         ]);
         await tapItem(tester, 'project', 0);
         expect(acted, [('project', 'd:door:0')]);
@@ -2008,31 +2062,17 @@ void main() {
         expect(await openMenu(tester, 0), isNot(contains('New project…')));
       });
 
-      testWidgets('a picked way is taken as any other: it runs, and the '
-          'list closes', (tester) async {
+      testWidgets('a picked way is taken as any other: it runs, once', (
+        tester,
+      ) async {
         await pumpInThread(tester, inbox(ways: const [FrontInboxWay.prompt]));
-        await openMenu(tester, 0);
 
         await tapItem(tester, 'prompt', 0);
 
         expect(acted, [('prompt', 'd:door:0')]);
-        expect(find.byType(FrontDoorWays), findsNothing);
       });
 
-      testWidgets('Escape closes the list she picked, as any other', (
-        tester,
-      ) async {
-        await pumpInThread(tester, inbox(ways: const [FrontInboxWay.prompt]));
-        await openMenu(tester, 0);
-
-        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-        await tester.pumpAndSettle();
-
-        expect(find.byType(FrontDoorWays), findsNothing);
-        expect(acted, isEmpty);
-      });
-
-      testWidgets('an open list follows the card: once the item is busy, '
+      testWidgets('the list follows the card: once the item is busy, '
           'its rows take no tap', (tester) async {
         final door = inbox(ways: const [FrontInboxWay.prompt]);
         await pumpInThread(tester, door);
@@ -2060,7 +2100,7 @@ void main() {
           'Start a goal…',
           'Make it an event',
           'Save as a note',
-          'Leave it',
+          'Leave it, nothing is made',
         ]);
         expect(find.byType(A2uiSurface), findsNothing);
       });
@@ -2078,8 +2118,8 @@ void main() {
         ),
       );
 
-      testWidgets('is the first other way of an item she read as a task, '
-          'under the code glyph', (tester) async {
+      testWidgets('is the second way of an item she read as a task, after '
+          'making it one, under the code glyph', (tester) async {
         await pump(tester, [
           inbox(
             task: const FrontTaskDraft(
@@ -2089,8 +2129,8 @@ void main() {
         ]);
 
         final items = await openMenu(tester, 0);
-        expect(items.first, 'Task with a coding prompt');
-        final way = waysOf(tester).ways.first;
+        expect(items.take(2), ['Make it a task', 'Task with a coding prompt']);
+        final way = waysOf(tester).ways[1];
         expect(way.icon, LottiIcons.code);
         expect(way.name, 'prompt');
         expect(find.byKey(const ValueKey('front-door-prompt-0')), findsOne);

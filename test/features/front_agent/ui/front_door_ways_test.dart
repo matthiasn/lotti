@@ -1,5 +1,7 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/ui/front_door_ways.dart';
 import 'package:material_ui/material_ui.dart';
@@ -11,327 +13,295 @@ void main() {
 
   setUp(() => acted = []);
 
-  FrontDoorWay way(String name, {bool enabled = true}) => FrontDoorWay(
+  FrontDoorWay way(
+    String name, {
+    bool enabled = true,
+    bool suggested = false,
+    bool inFlight = false,
+    String? label,
+    String? hint,
+  }) => FrontDoorWay(
     name: name,
-    label: 'Label $name',
-    hint: 'Hint $name',
+    label: label ?? 'Label $name',
+    hint: hint ?? 'Hint $name',
     icon: LottiIcons.note,
+    suggested: suggested,
+    inFlight: inFlight,
     onTap: enabled ? () => acted.add(name) : null,
   );
 
   Future<void> pump(
     WidgetTester tester, {
     List<FrontDoorWay>? ways,
+    FrontDoorWay? leave,
     double textScale = 1,
-    bool scrolled = false,
+    double? width,
   }) async {
-    final list = FrontDoorWays(
-      index: 3,
-      ways: ways ?? [way('goal'), way('note')],
-      leave: FrontDoorWay(
-        name: 'decline',
-        label: 'Leave it',
-        hint: 'Nothing is made',
-        icon: LottiIcons.inbox,
-        onTap: () => acted.add('decline'),
-      ),
-      onClose: () => acted.add('close'),
-    );
+    if (width != null) {
+      tester.view
+        ..physicalSize = Size(width, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
     await tester.pumpWidget(
       makeTestableWidget(
         MediaQuery.withClampedTextScaling(
           minScaleFactor: textScale,
           maxScaleFactor: textScale,
-          child: scrolled
-              ? SizedBox(
-                  height: 300,
-                  child: SingleChildScrollView(
-                    key: const ValueKey('view'),
-                    // Taller than the view: the list starts below its fold.
-                    child: Column(
-                      children: [const SizedBox(height: 600), list],
-                    ),
-                  ),
-                )
-              : list,
+          child: FrontDoorWays(
+            index: 3,
+            ways:
+                ways ??
+                [way('task', suggested: true), way('goal'), way('note')],
+            leave: leave ?? way('decline', label: 'Leave it'),
+          ),
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
   }
 
   Finder row(String name) => find.byKey(ValueKey('front-door-$name-3'));
-  Color? inkOf(WidgetTester tester, String text) =>
-      tester.widget<Text>(find.text(text)).style?.color;
+  Finder inRow(String name, Finder matching) =>
+      find.descendant(of: row(name), matching: matching);
+  BoxDecoration fill(WidgetTester tester, String name) =>
+      tester
+              .widget<Ink>(find.byKey(ValueKey('front-door-$name-row-3')))
+              .decoration!
+          as BoxDecoration;
+  DsTokens tokensOf(WidgetTester tester) =>
+      tester.element(find.byType(FrontDoorWays)).designTokens;
+  DesignSystemButton leaveButton(WidgetTester tester) =>
+      tester.widget<DesignSystemButton>(row('decline'));
 
   group('FrontDoorWays', () {
-    testWidgets('lists each way as its name over what it does, under the '
-        'heading, with leaving it last', (tester) async {
+    testWidgets('lists every way as a row in the order given, each doing '
+        'its own thing once on a tap, and the way out under them', (
+      tester,
+    ) async {
       await pump(tester);
 
-      expect(
-        find.byKey(const ValueKey('front-door-ways-heading-3')),
-        findsOneWidget,
-      );
       final tops = [
-        for (final text in [
-          'Or make it something else',
-          'Label goal',
-          'Hint goal',
-          'Label note',
-          'Hint note',
-          'Leave it',
-          'Nothing is made',
-        ])
-          tester.getTopLeft(find.text(text)).dy,
+        for (final name in ['task', 'goal', 'note', 'decline'])
+          tester.getTopLeft(row(name)).dy,
       ];
       expect(tops, [...tops]..sort());
-      expect(tops.toSet(), hasLength(tops.length));
-    });
+      expect(tops.toSet(), hasLength(4));
 
-    testWidgets('a tap takes the way it lands on', (tester) async {
-      await pump(tester);
-
-      await tester.tap(row('note'));
-      await tester.tap(find.text('Hint goal'));
-      await tester.tap(row('decline'));
-
-      expect(acted, ['note', 'goal', 'decline']);
-    });
-
-    testWidgets('a way with nothing to do is announced disabled and takes '
-        'no tap', (tester) async {
-      await pump(tester, ways: [way('goal', enabled: false)]);
-
-      await tester.tap(row('goal'));
-
-      expect(acted, isEmpty);
-      expect(
-        tester.getSemantics(row('goal')),
-        isSemantics(
-          label: 'Label goal. Hint goal',
-          isButton: true,
-          hasEnabledState: true,
-          isEnabled: false,
-        ),
-      );
-    });
-
-    testWidgets('a way is announced as one button: its name, then what it '
-        'does', (tester) async {
-      await pump(tester);
-
-      expect(
-        tester.getSemantics(row('note')),
-        isSemantics(
-          label: 'Label note. Hint note',
-          isButton: true,
-          hasEnabledState: true,
-          isEnabled: true,
-          hasTapAction: true,
-        ),
-      );
-    });
-
-    testWidgets('three levels: a way leads with its name, strong and '
-        'heavier than what it does; the label over them is quiet; leaving it '
-        'is the quiet last', (tester) async {
-      await pump(tester);
-
-      final tokens = tester.element(find.byType(FrontDoorWays)).designTokens;
-      final styles = tokens.typography.styles;
-      TextStyle styleOf(String text) =>
-          tester.widget<Text>(find.text(text)).style!;
-
-      expect(inkOf(tester, 'Label note'), tokens.colors.text.highEmphasis);
-      expect(
-        styleOf('Label note').fontWeight,
-        styles.subtitle.subtitle2.fontWeight,
-      );
-      expect(
-        styleOf('Label note').fontWeight!.value,
-        greaterThan(styleOf('Hint note').fontWeight!.value),
-      );
-      for (final quiet in [
-        'Hint note',
-        'Or make it something else',
-        'Leave it',
-        'Nothing is made',
-      ]) {
-        expect(
-          inkOf(tester, quiet),
-          tokens.colors.text.mediumEmphasis,
-          reason: quiet,
-        );
+      for (final name in ['note', 'task', 'goal', 'decline']) {
+        await tester.tap(row(name));
       }
-      expect(
-        styleOf('Leave it').fontWeight,
-        styles.body.bodySmall.fontWeight,
-      );
+      expect(acted, ['note', 'task', 'goal', 'decline']);
     });
 
-    testWidgets('a way that makes something wears a tile, as the item '
-        'does; leaving it wears none', (tester) async {
+    testWidgets('the suggested way is the one tinted, outlined row: its '
+        'glyph in the interactive colour, a tag in place of its hint; the '
+        'others are neutral rows that say what they do', (tester) async {
       await pump(tester);
+      final tokens = tokensOf(tester);
+      final accent = tokens.colors.interactive.enabled;
 
-      BoxDecoration tile(String name) =>
+      expect(
+        fill(tester, 'task').color,
+        DesignSystemListPalette.activatedFill(tokens),
+      );
+      expect((fill(tester, 'task').border! as Border).top.color, accent);
+      expect(
+        tester.widget<Icon>(inRow('task', find.byType(Icon))).color,
+        accent,
+      );
+      expect(inRow('task', find.text('Suggested')), findsOne);
+      expect(inRow('task', find.text('Hint task')), findsNothing);
+      final tag =
           tester
-                  .widget<Container>(
-                    find.byKey(ValueKey('front-door-$name-tile-3')),
+                  .widget<DecoratedBox>(
+                    find.byKey(const ValueKey('front-door-task-tag-3')),
                   )
-                  .decoration!
+                  .decoration
               as BoxDecoration;
-      final tokens = tester.element(find.byType(FrontDoorWays)).designTokens;
-
-      expect(tile('note').color, tokens.colors.surface.enabled);
-      expect(tile('goal').color, tokens.colors.surface.enabled);
-      expect(tile('decline').color, isNull);
+      expect(tag.color, accent);
       expect(
-        tester.getSize(find.byKey(const ValueKey('front-door-note-tile-3'))),
-        const Size.square(ControlSizes.iconChipCompact),
+        tester.widget<Text>(find.text('Suggested')).style!.color,
+        tokens.colors.text.onInteractiveAlert,
       );
-      // The glyphs: strong on a tile, quiet without one.
-      final glyphs = tester.widgetList<Icon>(find.byType(Icon)).toList();
-      expect(glyphs.first.color, tokens.colors.text.highEmphasis);
-      expect(glyphs.last.color, tokens.colors.text.mediumEmphasis);
-    });
 
-    testWidgets('leaving it is set apart: further from the last way than '
-        'the ways are from each other', (tester) async {
-      await pump(tester);
-
-      final pitch =
-          tester.getTopLeft(row('note')).dy - tester.getTopLeft(row('goal')).dy;
-      final apart =
-          tester.getTopLeft(row('decline')).dy -
-          tester.getTopLeft(row('note')).dy;
-      expect(apart, greaterThan(pitch));
-    });
-
-    testWidgets("a way's tile is centred on its two lines, at any text "
-        'size', (tester) async {
-      for (final scale in [1.0, 2.0]) {
-        await pump(tester, ways: [way('note')], textScale: scale);
-
-        final name = tester.getRect(find.text('Label note'));
-        final hint = tester.getRect(find.text('Hint note'));
-        final tile = tester.getCenter(
-          find.byKey(const ValueKey('front-door-note-tile-3')),
+      for (final name in ['goal', 'note']) {
+        expect(fill(tester, name).color, tokens.colors.surface.enabled);
+        expect(
+          (fill(tester, name).border! as Border).top.color,
+          Colors.transparent,
+          reason: name,
         );
         expect(
-          tile.dy,
-          moreOrLessEquals((name.top + hint.bottom) / 2, epsilon: 1),
-          reason: 'scale $scale',
+          tester.widget<Icon>(inRow(name, find.byType(Icon))).color,
+          tokens.colors.text.highEmphasis,
+        );
+        expect(inRow(name, find.text('Hint $name')), findsOne);
+        expect(inRow(name, find.text('Suggested')), findsNothing);
+      }
+    });
+
+    testWidgets('every row has one height and one glyph size, the '
+        'suggested one included, at the default and at a large text size', (
+      tester,
+    ) async {
+      for (final scale in [1.0, 1.5]) {
+        await pump(tester, textScale: scale);
+
+        final sizes = {
+          for (final name in ['task', 'goal', 'note'])
+            tester.getSize(row(name)),
+        };
+        expect(sizes, hasLength(1), reason: '$scale');
+        final glyphs = {
+          for (final name in ['task', 'goal', 'note'])
+            tester.widget<Icon>(inRow(name, find.byType(Icon))).size,
+        };
+        expect(glyphs, hasLength(1), reason: '$scale');
+      }
+    });
+
+    testWidgets('a row is one button that says its name and what it does; '
+        'the suggested one says it is suggested', (tester) async {
+      await pump(tester);
+
+      Semantics semantics(String name) => tester.widget<Semantics>(row(name));
+      expect(semantics('goal').properties.label, 'Label goal. Hint goal');
+      expect(semantics('goal').properties.button, isTrue);
+      expect(semantics('goal').properties.enabled, isTrue);
+      expect(semantics('task').properties.label, 'Label task. Suggested');
+    });
+
+    testWidgets('the way out is a quiet button at the start of the list, '
+        'not a row: nothing tints or fills it', (tester) async {
+      await pump(tester);
+
+      final button = leaveButton(tester);
+      expect(button.label, 'Leave it');
+      expect(button.variant, DesignSystemButtonVariant.quiet);
+      expect(button.isLoading, isFalse);
+      expect(
+        tester.getTopLeft(row('decline')).dx,
+        tester.getTopLeft(row('note')).dx,
+      );
+      expect(
+        find.byKey(const ValueKey('front-door-decline-row-3')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('a way that takes no tap is no enabled button, and does '
+        'nothing', (tester) async {
+      await pump(
+        tester,
+        ways: [way('goal', enabled: false)],
+        leave: way('decline', enabled: false),
+      );
+
+      await tester.tap(row('goal'), warnIfMissed: false);
+      await tester.tap(row('decline'), warnIfMissed: false);
+
+      expect(acted, isEmpty);
+      expect(
+        tester.widget<Semantics>(row('goal')).properties.enabled,
+        isFalse,
+      );
+      expect(leaveButton(tester).onPressed, isNull);
+    });
+
+    testWidgets('the way being done shows progress where its glyph was, at '
+        'full strength, while the others step back — and the list is as '
+        'tall as before', (tester) async {
+      await pump(tester);
+      final before = tester.getSize(find.byType(FrontDoorWays));
+
+      await pump(
+        tester,
+        ways: [
+          way('task', suggested: true, enabled: false),
+          way('goal', enabled: false, inFlight: true),
+          way('note', enabled: false),
+        ],
+        leave: way('decline', enabled: false),
+      );
+
+      expect(tester.getSize(find.byType(FrontDoorWays)), before);
+      expect(inRow('goal', find.byType(DesignSystemSpinner)), findsOne);
+      expect(inRow('goal', find.byType(Icon)), findsNothing);
+      expect(inRow('goal', find.byType(Opacity)), findsNothing);
+      for (final name in ['task', 'note']) {
+        expect(inRow(name, find.byType(DesignSystemSpinner)), findsNothing);
+        expect(
+          tester.widget<Opacity>(inRow(name, find.byType(Opacity))).opacity,
+          tokensOf(tester).colors.text.lowEmphasis.a,
+          reason: name,
         );
       }
     });
 
-    testWidgets('Escape closes the list', (tester) async {
-      await pump(tester);
-
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-
-      expect(acted, ['close']);
-    });
-
-    testWidgets('Escape closes it from a row that holds focus too', (
-      tester,
-    ) async {
-      await pump(tester);
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.pump();
-      expect(
-        FocusManager.instance.primaryFocus?.debugLabel,
-        isNot('front-door-ways'),
+    testWidgets('leaving it in flight loads the button and steps every row '
+        'back', (tester) async {
+      await pump(
+        tester,
+        ways: [way('task', enabled: false), way('note', enabled: false)],
+        leave: way('decline', enabled: false, inFlight: true),
       );
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-
-      expect(acted, ['close']);
+      expect(leaveButton(tester).isLoading, isTrue);
+      for (final name in ['task', 'note']) {
+        expect(inRow(name, find.byType(Opacity)), findsOne, reason: name);
+      }
     });
 
-    testWidgets(
-      "a way's glyph grows with the text, short of filling the tile's "
-      'column',
-      (tester) async {
-        final sizes = <double, double?>{};
-        for (final scale in [1.0, 1.25, 3.0]) {
-          await pump(tester, ways: [way('note')], textScale: scale);
-          sizes[scale] = tester.widget<Icon>(find.byIcon(LottiIcons.note)).size;
-        }
-
-        expect(sizes, {
-          1.0: IconSizes.s,
-          1.25: IconSizes.s * 1.25,
-          3.0: IconSizes.l,
-        });
-      },
-    );
-
-    testWidgets('the heading stands further from what is over it than '
-        'from the ways it heads', (tester) async {
+    testWidgets('at rest no row is stepped back', (tester) async {
       await pump(tester);
 
-      final heading = tester.getRect(find.text('Or make it something else'));
-      final list = tester.getRect(find.byType(FrontDoorWays));
-      final first = tester.getRect(find.text('Label goal'));
-      expect(heading.top - list.top, greaterThan(first.top - heading.bottom));
-      // And further than the ways stand from each other.
-      final second = tester.getRect(find.text('Label note'));
-      final hint = tester.getRect(find.text('Hint goal'));
-      expect(
-        heading.top - list.top,
-        greaterThanOrEqualTo(second.top - hint.bottom),
-      );
+      expect(find.byType(Opacity), findsNothing);
+      expect(find.byType(DesignSystemSpinner), findsNothing);
     });
 
-    testWidgets('no other key does, nor Escape let go', (tester) async {
-      await pump(tester);
+    testWidgets('the longest labels fit a 360 wide phone: the names and '
+        'hints wrap inside their rows, nothing overflows', (tester) async {
+      await pump(tester, width: 360);
+      final twoLines = tester.getSize(row('goal')).height;
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.escape);
-
-      expect(acted, isEmpty);
-    });
-
-    testWidgets('Escape pressed while focus is elsewhere is not its own', (
-      tester,
-    ) async {
-      final other = FocusNode();
-      addTearDown(other.dispose);
-      await tester.pumpWidget(
-        makeTestableWidget(
-          Column(
-            children: [
-              Focus(focusNode: other, child: const SizedBox.square()),
-              FrontDoorWays(
-                index: 3,
-                ways: [way('note')],
-                leave: way('decline'),
-                onClose: () => acted.add('close'),
-              ),
-            ],
+      await pump(
+        tester,
+        width: 360,
+        ways: [
+          way(
+            'task',
+            suggested: true,
+            label: 'Eine Aufgabe mit einem Programmier-Prompt daraus machen',
           ),
-        ),
+          way(
+            'event',
+            label: 'Einen vorläufigen Termin daraus machen',
+            hint: 'Ein vorläufiger Termin mit deinen Worten als Titel, heute',
+          ),
+        ],
+        leave: way('decline', label: 'So lassen, es wird nichts angelegt'),
       );
-      await tester.pumpAndSettle();
-      other.requestFocus();
-      await tester.pump();
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-
-      expect(acted, isEmpty);
-    });
-
-    testWidgets('opened below the fold, it is brought into view', (
-      tester,
-    ) async {
-      await pump(tester, scrolled: true);
-
-      final view = tester.getRect(find.byKey(const ValueKey('view')));
-      final list = tester.getRect(find.byType(FrontDoorWays));
-      expect(list.bottom, lessThanOrEqualTo(view.bottom));
-      expect(list.top, greaterThanOrEqualTo(view.top));
+      expect(tester.takeException(), isNull);
+      // The tag keeps its place at the row's end, whole and on one line.
+      final tag = tester.getRect(
+        find.byKey(const ValueKey('front-door-task-tag-3')),
+      );
+      expect(tag.right, lessThan(tester.getRect(row('task')).right));
+      expect(
+        tester.getSize(find.text('Suggested')).height,
+        lessThan(twoLines / 2),
+      );
+      // The long names and the long hint wrapped rather than running off.
+      for (final name in ['task', 'event']) {
+        expect(
+          tester.getSize(row(name)).height,
+          greaterThan(twoLines),
+          reason: name,
+        );
+        expect(tester.getRect(row(name)).right, lessThanOrEqualTo(360));
+      }
     });
   });
 
@@ -350,7 +320,6 @@ void main() {
               ),
           ],
           leave: way('decline'),
-          onClose: () => acted.add('close'),
           child: child,
         );
 
@@ -361,7 +330,6 @@ void main() {
         builder: (context) {
           builds++;
           final scope = FrontDoorWaysScope.of(context);
-          scope.onClose();
           final said = [
             for (final way in scope.waysFor(const ['goal'])) way.label,
             for (final way in scope.waysFor(null)) way.name,
@@ -379,126 +347,6 @@ void main() {
       await tester.pumpWidget(scope(label: 'now', child: reader));
       expect(find.text('now every decline 3'), findsOne);
       expect(builds, 2);
-      expect(acted, ['close', 'close']);
-    });
-  });
-
-  group('FrontDoorWaysToggle', () {
-    final toggleNode = find
-        .descendant(
-          of: find.byType(FrontDoorWaysToggle),
-          matching: find.byType(Semantics),
-        )
-        .first;
-    Future<void> pumpToggle(
-      WidgetTester tester, {
-      required bool open,
-      bool enabled = true,
-    }) => tester.pumpWidget(
-      makeTestableWidget(
-        FrontDoorWaysToggle(
-          open: open,
-          onPressed: enabled ? () => acted.add('toggle') : null,
-        ),
-      ),
-    );
-
-    testWidgets('closed, it points down and says what it opens', (
-      tester,
-    ) async {
-      await pumpToggle(tester, open: false);
-
-      expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
-      expect(find.byTooltip('Or make it something else'), findsOneWidget);
-      expect(
-        tester.getSemantics(toggleNode),
-        isSemantics(
-          label: 'Or make it something else',
-          isButton: true,
-          hasExpandedState: true,
-          isExpanded: false,
-          hasEnabledState: true,
-          isEnabled: true,
-          hasTapAction: true,
-        ),
-      );
-
-      await tester.tap(find.byType(FrontDoorWaysToggle));
-      expect(acted, ['toggle']);
-    });
-
-    testWidgets('open, it points up, in the stronger ink', (tester) async {
-      await pumpToggle(tester, open: false);
-      final closedInk = tester
-          .widget<Icon>(find.byIcon(LottiIcons.chevronDown))
-          .color;
-      await pumpToggle(tester, open: true);
-
-      final glyph = tester.widget<Icon>(find.byIcon(LottiIcons.chevronUp));
-      expect(glyph.color, isNot(closedInk));
-      expect(
-        glyph.color,
-        tester
-            .element(find.byType(FrontDoorWaysToggle))
-            .designTokens
-            .colors
-            .text
-            .highEmphasis,
-      );
-      expect(
-        tester.getSemantics(toggleNode),
-        isSemantics(
-          label: 'Or make it something else',
-          isButton: true,
-          hasExpandedState: true,
-          isExpanded: true,
-          hasEnabledState: true,
-          isEnabled: true,
-          hasTapAction: true,
-        ),
-      );
-    });
-
-    testWidgets('its chevron grows with the text, within its slot', (
-      tester,
-    ) async {
-      final sizes = <double, double?>{};
-      for (final scale in [1.0, 1.25, 3.0]) {
-        await tester.pumpWidget(
-          makeTestableWidget(
-            MediaQuery.withClampedTextScaling(
-              minScaleFactor: scale,
-              maxScaleFactor: scale,
-              child: FrontDoorWaysToggle(open: false, onPressed: () {}),
-            ),
-          ),
-        );
-        sizes[scale] = tester
-            .widget<IconButton>(find.byType(IconButton))
-            .iconSize;
-      }
-
-      expect(sizes, {
-        1.0: IconSizes.m,
-        1.25: IconSizes.m * 1.25,
-        3.0: IconSizes.l,
-      });
-    });
-
-    testWidgets('is a full touch target', (tester) async {
-      await pumpToggle(tester, open: false);
-
-      final size = tester.getSize(find.byType(FrontDoorWaysToggle));
-      expect(size.width, greaterThanOrEqualTo(48));
-      expect(size.height, greaterThanOrEqualTo(48));
-    });
-
-    testWidgets('with nothing to press it takes no tap', (tester) async {
-      await pumpToggle(tester, open: false, enabled: false);
-
-      await tester.tap(find.byType(FrontDoorWaysToggle));
-
-      expect(acted, isEmpty);
     });
   });
 }

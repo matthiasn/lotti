@@ -25,15 +25,16 @@
   back, so what she heard or you chose stands out, and Cancel and Create task
   are easier to hit and further apart.
 
-- **"Where should this go?" lists its other choices in the card.** The
-  other ways to file something in the companion chat sat in a menu that
-  floated over the page as bare names. They now open inside the card itself
-  under *Or make it something else*, each with a line saying what it makes —
-  a goal, an event, a note, a task with a coding prompt — and *Leave it* set
-  apart at the end. The arrow beside *Make it a task* opens and closes them.
-  She offers only the ones that fit what you said — a coding prompt for work
-  on software, an event when you name a day — while making it a task,
-  keeping it as a note and leaving it are always there.
+- **"Where should this go?" shows every choice at once.** The other ways to
+  file something in the companion chat sat in a menu that floated over the
+  page as bare names. Each is now a row of the card itself, with a line
+  saying what it makes — a goal, an event, a note, a task with a coding
+  prompt — and a tap on a row does it. The one she suggests comes first,
+  tinted and marked *Suggested*; *Leave it, nothing is made* sits quietly
+  under the list. She offers only the ways that fit what you said — a coding
+  prompt for work on software, an event when you name a day — while making
+  it a task and keeping it as a note are always there. Once you choose, the
+  card folds to one line that says what was made, with *Open* beside it.
 
 ### Fixed
 - **Cover art and prompts were not generated for a task in no category.**

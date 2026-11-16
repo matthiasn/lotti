@@ -3167,9 +3167,6 @@ void main() {
         thread: () async => inbox(FrontNewKind.task),
         onClose: () => closed++,
       );
-
-      await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('front-door-prompt-0')));
       await tester.pump();
       await tester.pump();
@@ -3276,9 +3273,6 @@ void main() {
         onClose: () => closed++,
         flagsOn: {enableEventsFlag},
       );
-
-      await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('front-door-event-0')));
       await tester.pump();
       await tester.pump();
@@ -3316,9 +3310,6 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
-      await tester.pumpAndSettle();
-
       final list = tester.widget<FrontDoorWays>(find.byType(FrontDoorWays));
       expect([for (final way in list.ways) way.name], ['task', 'goal', 'note']);
       expect(
@@ -3335,9 +3326,6 @@ void main() {
     ) async {
       await pumpPane(tester, thread: () async => inbox(FrontNewKind.task));
 
-      await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
-      await tester.pumpAndSettle();
-
       expect(find.byKey(const ValueKey('front-door-note-0')), findsOneWidget);
       expect(find.byKey(const ValueKey('front-door-event-0')), findsNothing);
     });
@@ -3348,9 +3336,6 @@ void main() {
       beamToNamedOverride = paths.add;
       addTearDown(() => beamToNamedOverride = null);
       await pumpPane(tester, thread: () async => inbox(FrontNewKind.goal));
-
-      await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('front-door-goal-0')));
       await tester.pump();
 
@@ -3362,9 +3347,6 @@ void main() {
     testWidgets('new project opens the project creation, titled with the '
         'words', (tester) async {
       await pumpPane(tester, thread: () async => inbox(FrontNewKind.project));
-
-      await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('front-door-project-0')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -3397,8 +3379,6 @@ void main() {
       );
 
       Future<void> choose() async {
-        await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
-        await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('front-door-project-0')));
         await tester.pumpAndSettle();
       }

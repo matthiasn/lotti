@@ -7661,10 +7661,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontDoorKindTask => 'la tâche';
 
   @override
-  String get frontDoorLeaveIt => 'Laisser';
-
-  @override
-  String get frontDoorLeaveItHint => 'Rien n\'est créé';
+  String get frontDoorLeaveIt => 'Laisser, rien n\'est créé';
 
   @override
   String get frontDoorLeft => 'Laissé ici dans le fil';
@@ -7711,9 +7708,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontDoorOpen => 'Ouvrir';
 
   @override
-  String get frontDoorOtherWays => 'Ou fais-en autre chose';
-
-  @override
   String get frontDoorProjectCreated => 'Transformé en projet';
 
   @override
@@ -7745,6 +7739,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get frontDoorStartGoalHint =>
       'Ouvre l\'assistant d\'objectif avec tes mots';
+
+  @override
+  String get frontDoorSuggested => 'Suggéré';
 
   @override
   String get frontDoorSummaryBased => 'd’après des résumés';

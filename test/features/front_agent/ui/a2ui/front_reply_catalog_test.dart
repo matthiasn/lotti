@@ -500,7 +500,7 @@ void main() {
   group('InboxWays', () {
     testWidgets("draws the card's list for the ways the surface names — "
         'handing the card each name as stored, known to it or not — with '
-        "the card's way out and its close", (tester) async {
+        "the card's way out", (tester) async {
       const id = 'ways:d:door:0';
       final asked = <List<String>?>[];
       final acted = <String>[];
@@ -538,7 +538,6 @@ void main() {
                   return [for (final name in picked!) way(name)];
                 },
                 leave: way('decline'),
-                onClose: () => acted.add('close'),
                 child: A2uiSurface(
                   surface: FrontReplySurfaces.surfaceOf(context, id)!,
                 ),
@@ -564,8 +563,7 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('front-door-prompt-4')));
       await tester.tap(find.byKey(const ValueKey('front-door-decline-4')));
-      list.onClose();
-      expect(acted, ['prompt', 'decline', 'close']);
+      expect(acted, ['prompt', 'decline']);
     });
   });
 }

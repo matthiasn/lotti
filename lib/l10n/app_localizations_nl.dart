@@ -7563,10 +7563,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontDoorKindTask => 'de taak';
 
   @override
-  String get frontDoorLeaveIt => 'Laat maar';
-
-  @override
-  String get frontDoorLeaveItHint => 'Er wordt niets gemaakt';
+  String get frontDoorLeaveIt => 'Laat maar, er wordt niets gemaakt';
 
   @override
   String get frontDoorLeft => 'Hier in het gesprek gelaten';
@@ -7613,9 +7610,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontDoorOpen => 'Openen';
 
   @override
-  String get frontDoorOtherWays => 'Of maak er iets anders van';
-
-  @override
   String get frontDoorProjectCreated => 'Omgezet in een project';
 
   @override
@@ -7646,6 +7640,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontDoorStartGoalHint => 'Opent de doelwizard met je woorden';
+
+  @override
+  String get frontDoorSuggested => 'Voorgesteld';
 
   @override
   String get frontDoorSummaryBased => 'uit samenvattingen';

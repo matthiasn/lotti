@@ -7636,10 +7636,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontDoorKindTask => 'la tarea';
 
   @override
-  String get frontDoorLeaveIt => 'Dejarlo';
-
-  @override
-  String get frontDoorLeaveItHint => 'No se crea nada';
+  String get frontDoorLeaveIt => 'Dejarlo, no se crea nada';
 
   @override
   String get frontDoorLeft => 'Se queda aquí en el hilo';
@@ -7687,9 +7684,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontDoorOpen => 'Abrir';
 
   @override
-  String get frontDoorOtherWays => 'O conviértelo en otra cosa';
-
-  @override
   String get frontDoorProjectCreated => 'Convertido en proyecto';
 
   @override
@@ -7721,6 +7715,9 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get frontDoorStartGoalHint =>
       'Abre el asistente de objetivos con tus palabras';
+
+  @override
+  String get frontDoorSuggested => 'Sugerido';
 
   @override
   String get frontDoorSummaryBased => 'de resúmenes';

@@ -364,7 +364,6 @@ final _inboxWays = ComponentImplementation(
       index: scope.index,
       ways: scope.waysFor(props.list('ways').whereType<String>().toList()),
       leave: scope.leave,
-      onClose: scope.onClose,
     );
   },
 );

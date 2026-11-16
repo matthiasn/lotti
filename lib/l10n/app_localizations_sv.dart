@@ -7553,10 +7553,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontDoorKindTask => 'uppgiften';
 
   @override
-  String get frontDoorLeaveIt => 'Låt det vara';
-
-  @override
-  String get frontDoorLeaveItHint => 'Inget skapas';
+  String get frontDoorLeaveIt => 'Låt det vara, inget skapas';
 
   @override
   String get frontDoorLeft => 'Lämnat här i tråden';
@@ -7601,9 +7598,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontDoorOpen => 'Öppna';
 
   @override
-  String get frontDoorOtherWays => 'Eller gör något annat av det';
-
-  @override
   String get frontDoorProjectCreated => 'Gjort till ett projekt';
 
   @override
@@ -7634,6 +7628,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontDoorStartGoalHint => 'Öppnar målguiden med dina ord';
+
+  @override
+  String get frontDoorSuggested => 'Föreslaget';
 
   @override
   String get frontDoorSummaryBased => 'från sammanfattningar';
