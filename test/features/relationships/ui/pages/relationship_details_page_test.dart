@@ -58,6 +58,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/fts5_stubs.dart';
 import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
@@ -96,6 +97,12 @@ void main() {
   // The morning after the fixture's date: the cadence pills are computed
   // against the clock, so every header assertion pumps under this one.
   final now = DateTime(2026, 8, 14, 10, 30);
+
+  // The briefing card's attribution row is laid out against real glyph
+  // widths: under the test font's square glyphs "This report · " alone is
+  // wider than the card leaves it. Without this the file passed only when an
+  // earlier test in the same CI shard had loaded the fonts.
+  setUpAll(loadAppFonts);
 
   late MockRelationshipRepository mockRepository;
   late MockRelationshipAgentService mockAgentService;
