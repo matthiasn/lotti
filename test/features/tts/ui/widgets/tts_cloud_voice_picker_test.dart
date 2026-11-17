@@ -287,6 +287,111 @@ void main() {
     expect(find.text('Unlabelled voice'), findsOneWidget);
   });
 
+  testWidgets('a pick of a voice that is neither female nor male leaves the '
+      'filter and its list as they were', (tester) async {
+    final base = catalogOf(female: 5, male: 5);
+    await pump(
+      tester,
+      CloudVoiceCatalog(
+        fetchedAt: base.fetchedAt,
+        voices: [
+          ...base.voices,
+          const CloudVoice(
+            id: 'n0',
+            name: 'Neutral voice',
+            gender: 'neutral',
+            languages: ['en_us'],
+          ),
+          const CloudVoice(
+            id: 'u0',
+            name: 'Unlabelled voice',
+            languages: ['en_us'],
+          ),
+        ],
+      ),
+    );
+    final female = [
+      for (var i = 0; i < 5; i++) 'Female voice $i',
+      'Neutral voice',
+      'Unlabelled voice',
+    ];
+    expect(rowTitles(tester), female);
+
+    await tester.tap(find.text('Neutral voice'));
+    await tester.pumpAndSettle();
+    expect(picks(), {'en': 'n0'});
+    expect(rowTitles(tester), female);
+    expect(
+      tester
+          .widget<DsSegmentedToggle<String>>(
+            find.byType(DsSegmentedToggle<String>),
+          )
+          .selected,
+      'female',
+    );
+  });
+
+  testWidgets('a sheet opened on a male pick stays on the male voices when '
+      'an unlabelled voice is picked', (tester) async {
+    final base = catalogOf(female: 5, male: 5);
+    await pump(
+      tester,
+      CloudVoiceCatalog(
+        fetchedAt: base.fetchedAt,
+        voices: [
+          ...base.voices,
+          const CloudVoice(
+            id: 'u0',
+            name: 'Unlabelled voice',
+            languages: ['en_us'],
+          ),
+        ],
+      ),
+      stored: {'en': 'm1'},
+    );
+    // The default and the pick are pinned; the toggle is never touched.
+    final male = [
+      'Female voice 0',
+      'Male voice 1',
+      'Male voice 0',
+      for (var i = 2; i < 5; i++) 'Male voice $i',
+      'Unlabelled voice',
+    ];
+    expect(rowTitles(tester), male);
+
+    await tester.tap(find.text('Unlabelled voice'));
+    await tester.pumpAndSettle();
+    expect(picks(), {'en': 'u0'});
+    expect(rowTitles(tester), male);
+  });
+
+  testWidgets('a sheet opened on a neutral pick lists the female voices '
+      'with it', (tester) async {
+    final base = catalogOf(female: 5, male: 5);
+    await pump(
+      tester,
+      CloudVoiceCatalog(
+        fetchedAt: base.fetchedAt,
+        voices: [
+          ...base.voices,
+          const CloudVoice(
+            id: 'n0',
+            name: 'Neutral voice',
+            gender: 'neutral',
+            languages: ['en_us'],
+          ),
+        ],
+      ),
+      stored: {'en': 'n0'},
+    );
+
+    expect(rowTitles(tester), [
+      'Female voice 0',
+      'Neutral voice',
+      for (var i = 1; i < 5; i++) 'Female voice $i',
+    ]);
+  });
+
   testWidgets('picking the default clears the choice rather than pinning '
       'it', (tester) async {
     await pump(tester, catalogOf(), stored: {'en': 'm0'});

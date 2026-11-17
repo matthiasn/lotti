@@ -200,17 +200,31 @@ class CloudVoicePicker extends ConsumerStatefulWidget {
 }
 
 class _CloudVoicePickerState extends ConsumerState<CloudVoicePicker> {
-  String? _gender;
-
   /// The user's own pick when the sheet opened, kept above the filter.
   late final String? _openedWith = ref
       .read(ttsSettingsControllerProvider)
       .cloudVoiceFor(_provider, widget.language);
 
+  /// The filter's side: that of the voice in use when the sheet opened, so
+  /// its check mark is in view, and from then on only what the toggle was
+  /// set to. A pick never moves it — the list a voice was tapped in stays —
+  /// and a voice that is neither female nor male opens it on female, where
+  /// that voice is listed as under either.
+  late String _gender =
+      _genderOf(
+            widget.catalog.resolve(
+              languageCode: widget.language,
+              preferredVoiceId: _openedWith,
+            ),
+          ) ==
+          'male'
+      ? 'male'
+      : 'female';
+
   AiConfigInferenceProvider get _provider => widget.service.provider;
 
-  static String? _genderOf(CloudVoice voice) =>
-      voice.gender?.trim().toLowerCase();
+  static String? _genderOf(CloudVoice? voice) =>
+      voice?.gender?.trim().toLowerCase();
 
   void _pick(CloudVoice voice, CloudVoice? defaultVoice) {
     ref
@@ -247,9 +261,6 @@ class _CloudVoicePickerState extends ConsumerState<CloudVoicePicker> {
         voices.length > CloudVoicePicker.genderFilterThreshold &&
         voices.any((v) => _genderOf(v) == 'female') &&
         voices.any((v) => _genderOf(v) == 'male');
-    // Opens on the selected voice's gender, so the check mark is in view.
-    final gender =
-        _gender ?? (selected == null ? null : _genderOf(selected)) ?? 'female';
     final pinned = [
       ?defaultVoice,
       if (_openedWith != null && _openedWith != defaultVoice?.id)
@@ -259,7 +270,7 @@ class _CloudVoicePickerState extends ConsumerState<CloudVoicePicker> {
     // own: it stays in the list under either, so it is always reachable.
     bool passesFilter(CloudVoice voice) {
       final own = _genderOf(voice);
-      return !filtered || own == gender || (own != 'female' && own != 'male');
+      return !filtered || own == _gender || (own != 'female' && own != 'male');
     }
 
     final shown = [
@@ -336,7 +347,7 @@ class _CloudVoicePickerState extends ConsumerState<CloudVoicePicker> {
         // The filter sits with the list it filters.
         if (filtered)
           TtsGenderFilter<String>(
-            selected: gender,
+            selected: _gender,
             female: 'female',
             male: 'male',
             onChanged: (value) => setState(() => _gender = value),
