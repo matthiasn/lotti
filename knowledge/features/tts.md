@@ -335,7 +335,11 @@ edited row never jumps.
 The picker sheet (`CloudVoicePicker`) pins the default voice and the pick it
 opened with (labelled "Your pick" while in use, "Previous" once another is
 tapped) above a Female/Male filter (`TtsGenderFilter`, shared with the
-on-device list, shown for more than eight voices of both genders). A tap
+on-device list, shown for more than eight voices of both genders). The
+filter opens on Male when the voice in use is labelled male and on Female
+otherwise — a neutral or unlabelled voice has no side of its own — and from
+then on moves only when its toggle is tapped, never with a pick; a voice the
+service gives another gender (`neutral`) or none is listed under both sides. A tap
 picks a voice and plays it; picking the default clears the choice. The
 sheet stays open, and closing it on a different voice than it opened with
 shows a toast with Undo back to that voice. Previews go through a
