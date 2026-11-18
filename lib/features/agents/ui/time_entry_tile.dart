@@ -1,4 +1,4 @@
-import 'package:lotti/features/agents/time_entry_datetime.dart';
+import 'package:lotti/features/agents/ui/time_entry_labels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -6,8 +6,10 @@ import 'package:material_ui/material_ui.dart';
 
 /// Shared presentation for a pending `create_time_entry` proposal.
 ///
-/// Renders the start/end labels (falling back to the raw string when the
-/// timestamp is unparseable, or "running" when `endTime` is absent),
+/// Renders the start/end labels, each with its day ([timeEntryRangeLabels]:
+/// the end names the day only when it is not the start's) — falling back to
+/// the raw string when the timestamp is unparseable, or "running" when
+/// `endTime` is absent —
 /// optional session summary, and a trailing progress indicator while the
 /// parent widget is busy.
 class TimeEntryTile extends StatelessWidget {
@@ -26,17 +28,13 @@ class TimeEntryTile extends StatelessWidget {
     final endRaw = _trimmedString(args['endTime']);
     final summary = _trimmedString(args['summary']) ?? '';
 
-    final start = startRaw != null
-        ? parseTimeEntryLocalDateTime(startRaw)
-        : null;
-    final end = endRaw != null ? parseTimeEntryLocalDateTime(endRaw) : null;
-
-    final startStr = start != null
-        ? formatTimeEntryHhMm(start)
-        : (startRaw ?? '?');
-    final endStr = end != null
-        ? formatTimeEntryHhMm(end)
-        : endRaw ?? context.messages.timeEntryItemRunning;
+    final labels = timeEntryRangeLabels(
+      context.messages.localeName,
+      startTime: startRaw,
+      endTime: endRaw,
+    );
+    final startStr = labels.start ?? '?';
+    final endStr = labels.end ?? context.messages.timeEntryItemRunning;
 
     final dimStyle = context.textTheme.bodySmall?.copyWith(
       color: context.colorScheme.onSurfaceVariant,

@@ -493,6 +493,7 @@
   "agentSummarySuggestPerson": "{name} estava lá",
   "agentSummarySuggestPersonUnnamed": "Alguém estava lá",
   "agentSummaryTimeEntry": "Registro de tempo {range}: \"{summary}\"",
+  "agentSummaryTimeRangeAcrossDays": "{start} – {end}",
   "agentSummaryTimeRangeBetween": "{start}–{end}",
   "agentSummaryTimeRangeFrom": "a partir de {start}",
   "agentSummaryTimeRangeUntil": "até {end}",

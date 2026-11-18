@@ -468,6 +468,7 @@
   "agentSummarySuggestPerson": "{name} war dabei",
   "agentSummarySuggestPersonUnnamed": "Jemand war dabei",
   "agentSummaryTimeEntry": "Zeiteintrag {range}: „{summary}“",
+  "agentSummaryTimeRangeAcrossDays": "{start} – {end}",
   "agentSummaryTimeRangeBetween": "{start}–{end}",
   "agentSummaryTimeRangeFrom": "ab {start}",
   "agentSummaryTimeRangeUntil": "bis {end}",

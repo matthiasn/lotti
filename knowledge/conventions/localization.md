@@ -23,7 +23,7 @@ sources:
   - id: change-summary
     resource: ../../lib/features/agents/ui/localized_change_summary.dart
     title: Render-time proposal summaries
-    last_modified: 2026-07-30
+    last_modified: 2026-11-18
 ---
 
 # The rule
@@ -114,6 +114,16 @@ properties of it are contract rather than detail:
   as their apply-path handlers normalize them — so a proposal can never display
   a different value than accepting it would set. Outside the vocabulary the raw
   value passes through verbatim.
+- **A time entry names its day, in the reader's date format.** `startTime` and
+  `endTime` are local wall-clock timestamps and the day is part of the
+  proposal — sessions backfilled for different days at the same hours would
+  otherwise read identically. `time_entry_labels.dart` writes each end with
+  `DateFormat` in the catalog's locale (`Wed, Jul 8, 09:00`, `Mi., 8. Juli,
+  09:00`), joined by the locale's own CLDR date-time pattern; the year appears
+  only when it is not the current one. A same-day end is the time alone
+  (`09:00–12:30`); an end on another day names it and takes the spaced-dash
+  template (`agentSummaryTimeRangeAcrossDays`). The day's own spaces are
+  no-break, so a narrow row never wraps inside it.
 - **A relation to a task that does not exist yet is its own sentence.** The
   create-follow-up clause cannot reuse the `linkSummary*` `{target}` templates
   with a pronoun: that slot is a direct object in some templates and a

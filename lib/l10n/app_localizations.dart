@@ -1957,6 +1957,12 @@ abstract class AppLocalizations {
   /// **'Time entry {range}: \"{summary}\"'**
   String agentSummaryTimeEntry(Object range, Object summary);
 
+  /// A time entry range whose end names its own day, e.g. 'Fri, Jul 10, 22:30 – Sat, Jul 11, 01:15'. The dash is spaced because both ends carry words.
+  ///
+  /// In en, this message translates to:
+  /// **'{start} – {end}'**
+  String agentSummaryTimeRangeAcrossDays(Object start, Object end);
+
   /// No description provided for @agentSummaryTimeRangeBetween.
   ///
   /// In en, this message translates to:

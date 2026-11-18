@@ -494,6 +494,7 @@
   "agentSummarySuggestPerson": "{name} c'era",
   "agentSummarySuggestPersonUnnamed": "Qualcuno c'era",
   "agentSummaryTimeEntry": "Voce di tempo {range}: \"{summary}\"",
+  "agentSummaryTimeRangeAcrossDays": "{start} – {end}",
   "agentSummaryTimeRangeBetween": "{start}–{end}",
   "agentSummaryTimeRangeFrom": "dalle {start}",
   "agentSummaryTimeRangeUntil": "fino alle {end}",

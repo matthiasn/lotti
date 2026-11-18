@@ -2,10 +2,10 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/goal_window.dart';
-import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/ui/time_entry_labels.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill.dart';
 import 'package:lotti/features/ai/functions/task_due_date_handler.dart'
     show isValidDueDateWireValue;
@@ -442,25 +442,29 @@ String? _pullRequest(AppLocalizations messages, Map<String, dynamic> args) {
 /// proposal the handler will reject as an invalid completed session as if it
 /// were a running timer.
 String _createTimeEntry(AppLocalizations messages, Map<String, dynamic> args) {
-  final start = _hhMm(args['startTime']);
+  final ends = _timeEntryEnds(messages, args);
+  final start = ends.start ?? '?';
   final range = args.containsKey('endTime')
-      ? messages.agentSummaryTimeRangeBetween(
-          start ?? '?',
-          _hhMm(args['endTime']) ?? '?',
+      ? _timeRangeBetween(
+          messages,
+          start,
+          ends.end ?? '?',
+          endNamesDay: ends.endNamesDay,
         )
-      : messages.agentSummaryTimeRangeFrom(start ?? '?');
+      : messages.agentSummaryTimeRangeFrom(start);
   return messages.agentSummaryTimeEntry(range, _trimmed(args['summary']));
 }
 
 String _updateTimeEntry(AppLocalizations messages, Map<String, dynamic> args) {
-  final start = _hhMm(args['startTime']);
-  final end = _hhMm(args['endTime']);
+  final ends = _timeEntryEnds(messages, args);
   final summary = _trimmed(args['summary']);
 
-  final range = switch ((start, end)) {
-    (final String s, final String e) => messages.agentSummaryTimeRangeBetween(
+  final range = switch ((ends.start, ends.end)) {
+    (final String s, final String e) => _timeRangeBetween(
+      messages,
       s,
       e,
+      endNamesDay: ends.endNamesDay,
     ),
     (final String s, null) => messages.agentSummaryTimeRangeFrom(s),
     (null, final String e) => messages.agentSummaryTimeRangeUntil(e),
@@ -476,6 +480,19 @@ String _updateTimeEntry(AppLocalizations messages, Map<String, dynamic> args) {
       ? messages.agentSummaryReviseTimeEntryText(summary)
       : messages.agentSummaryUpdateTimeEntryRangeText(range, summary);
 }
+
+/// A range between two stated ends: `09:00–12:30` tight when the end is a
+/// bare time, and with a spaced dash when the end names its own day —
+/// `Fri, Jul 10, 22:30 – Sat, Jul 11, 01:15` — where a tight one would read
+/// `22:30–Sat` as the unit.
+String _timeRangeBetween(
+  AppLocalizations messages,
+  String start,
+  String end, {
+  required bool endNamesDay,
+}) => endNamesDay
+    ? messages.agentSummaryTimeRangeAcrossDays(start, end)
+    : messages.agentSummaryTimeRangeBetween(start, end);
 
 String _recommendNextSteps(
   AppLocalizations messages,
@@ -504,18 +521,23 @@ String _suggestPerson(AppLocalizations messages, Map<String, dynamic> args) {
       : messages.agentSummarySuggestPersonUnnamed;
 }
 
-/// The wall-clock `HH:mm` for a time-entry argument.
+/// Both ends of a time-entry proposal, each with its day — see
+/// [timeEntryRangeLabels] for when the end repeats the day and when it does
+/// not.
 ///
-/// `null` only when the argument is absent — the caller then omits that end
-/// of the range. An unparseable *present* value is returned verbatim instead,
-/// exactly as the wake-time generator renders it: dropping it would make two
-/// different proposals read identically, and the model's malformed value is
-/// still evidence of what it asked for.
-String? _hhMm(Object? raw) {
-  if (raw is! String) return null;
-  final parsed = parseTimeEntryLocalDateTime(raw);
-  return parsed == null ? raw : formatTimeEntryHhMm(parsed);
-}
+/// An end is `null` only when its argument is absent — the caller then omits
+/// that end of the range. An unparseable *present* value comes back verbatim
+/// instead, exactly as the wake-time generator renders it: dropping it would
+/// make two different proposals read identically, and the model's malformed
+/// value is still evidence of what it asked for.
+({String? start, String? end, bool endNamesDay}) _timeEntryEnds(
+  AppLocalizations messages,
+  Map<String, dynamic> args,
+) => timeEntryRangeLabels(
+  messages.localeName,
+  startTime: args['startTime'],
+  endTime: args['endTime'],
+);
 
 String _string(Object? value, {String fallback = ''}) =>
     value?.toString() ?? fallback;
