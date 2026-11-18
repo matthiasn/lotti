@@ -67,7 +67,10 @@ void main() {
 
   // Reduced motion so the looping constellation controller stops and
   // pumpAndSettle can complete.
-  const mq = MediaQueryData(size: Size(390, 844), disableAnimations: true);
+  // Phone-width, and tall: the panel fills the height and grows past it
+  // where a step's text wraps long in the test font, so the surface is tall
+  // enough that the main button at its foot is on-screen on every step.
+  const mq = MediaQueryData(size: Size(390, 1400), disableAnimations: true);
 
   setUpAll(registerAllFallbackValues);
 
@@ -138,26 +141,19 @@ void main() {
     Widget? child,
     ThemeData? theme,
     List<Override> overrides = const [],
+    MediaQueryData mediaQuery = mq,
   }) async {
-    // The fixed-height modal panel (~680) is taller than the default 800x600
-    // render surface; size the surface to the 844-tall MediaQuery so the lower
-    // controls are on-screen and hit-testable.
-    tester.view
-      ..physicalSize = const Size(390, 1000)
-      ..devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
     final launchHost = child ?? host();
     await tester.pumpWidget(
       theme == null
           ? makeTestableWidget(
               launchHost,
-              mediaQueryData: mq,
+              mediaQueryData: mediaQuery,
               overrides: overrides,
             )
           : makeTestableWidgetNoScroll(
               launchHost,
-              mediaQueryData: mq,
+              mediaQueryData: mediaQuery,
               theme: theme,
             ),
     );
@@ -174,8 +170,7 @@ void main() {
 
   /// From the welcome to the one-key step: one tap.
   Future<void> toConnect(WidgetTester tester) async {
-    await tester.tap(find.text('Get started with one key'));
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Get started with one key'));
   }
 
   testWidgets('shows the welcome promise and records welcomeShown', (
@@ -238,11 +233,13 @@ void main() {
       final providerTitle = tester.widget<Text>(
         find.text('One key is all it takes'),
       );
-      final providerBackdrop = tester.widget<ColoredBox>(
-        find.descendant(
-          of: find.byType(OnboardingBackdrop),
-          matching: find.byType(ColoredBox),
-        ),
+      final providerSurface = tester.widget<ColoredBox>(
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('onboarding-connect')),
+              matching: find.byType(ColoredBox),
+            )
+            .first,
       );
 
       expect(
@@ -250,7 +247,7 @@ void main() {
         theme.tokens.colors.text.highEmphasis,
       );
       expect(
-        providerBackdrop.color,
+        providerSurface.color,
         theme.tokens.colors.background.level01,
       );
     });
@@ -393,6 +390,7 @@ void main() {
     await toConnect(tester);
     await tester.tap(find.text('Mistral'));
     await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Continue with Mistral'));
 
     expect(find.text('Paste your API key'), findsOneWidget);
   });
@@ -404,6 +402,7 @@ void main() {
     await toConnect(tester);
     await tester.tap(find.text('Mistral'));
     await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Continue with Mistral'));
     expect(find.text('Paste your API key'), findsOneWidget);
 
     // The key step's back arrow returns to the provider list.
@@ -419,11 +418,8 @@ void main() {
   ) async {
     var dismissed = false;
     await openWelcome(tester, child: host(onDismiss: () => dismissed = true));
-    // Scroll the skip link into the render surface — the display hero title
-    // pushes it below the fold in the bare test viewport.
-    await tester.ensureVisible(find.text('Look around first'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Look around first'));
+    // The welcome's way out is the close button in its bar.
+    await tester.tap(find.byIcon(LottiIcons.close));
     await tester.pumpAndSettle();
 
     expect(dismissed, isTrue);
@@ -450,6 +446,33 @@ void main() {
     expect(dismissed, isTrue);
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.welcomeSkipped), isTrue);
+  });
+
+  testWidgets('past the welcome, Escape and system back go back one step '
+      'like the arrow, and do not close the flow', (tester) async {
+    var dismissed = false;
+    await openWelcome(tester, child: host(onDismiss: () => dismissed = true));
+    await toConnect(tester);
+    await tapVisible(tester, find.text('Continue with Mistral'));
+    expect(find.text('Paste your API key'), findsOneWidget);
+
+    // Escape from the key step: back to the providers, nothing lost.
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('Paste your API key'), findsNothing);
+    expect(find.byKey(const ValueKey('onboarding-connect')), findsOneWidget);
+
+    // System back from the providers: back to the welcome.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('onboarding-welcome')), findsOneWidget);
+    expect(dismissed, isFalse);
+
+    // On the welcome, which has no way back, it closes the flow.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('onboarding-welcome')), findsNothing);
+    expect(dismissed, isTrue);
   });
 
   testWidgets('Explore with sample data pops the modal, enters the demo, '
@@ -542,22 +565,68 @@ void main() {
     ).called(1);
   });
 
+  testWidgets('on a phone the panel takes the screen below the status bar, '
+      'on every step it is opened on', (tester) async {
+    const phone = MediaQueryData(
+      size: Size(390, 1400),
+      padding: EdgeInsets.only(top: 50),
+      disableAnimations: true,
+    );
+    await openWelcome(tester, mediaQuery: phone);
+
+    Rect panel(String key) => tester.getRect(find.byKey(ValueKey(key)));
+    expect(panel('onboarding-welcome'), const Rect.fromLTWH(0, 50, 390, 1350));
+
+    await toConnect(tester);
+    expect(panel('onboarding-connect'), const Rect.fromLTWH(0, 50, 390, 1350));
+  });
+
+  testWidgets('with the keyboard up on a phone, the room it takes is added '
+      'below the panel so the key field can be scrolled clear', (
+    tester,
+  ) async {
+    await openWelcome(
+      tester,
+      mediaQuery: const MediaQueryData(
+        size: Size(390, 1400),
+        viewInsets: EdgeInsets.only(bottom: 300),
+        disableAnimations: true,
+      ),
+    );
+
+    final scroll = tester.widget<SingleChildScrollView>(
+      find.ancestor(
+        of: find.byKey(const ValueKey('onboarding-welcome')),
+        matching: find.byType(SingleChildScrollView),
+      ),
+    );
+    expect(scroll.padding, const EdgeInsets.only(bottom: 300));
+  });
+
   testWidgets(
-    'tapping outside the panel closes the flow (tap-outside-to-dismiss)',
+    'in a window, tapping outside the panel closes the flow '
+    '(tap-outside-to-dismiss)',
     (tester) async {
       var dismissed = false;
-      await openWelcome(tester, child: host(onDismiss: () => dismissed = true));
+      await openWelcome(
+        tester,
+        child: host(onDismiss: () => dismissed = true),
+        mediaQuery: const MediaQueryData(
+          size: Size(1000, 1400),
+          disableAnimations: true,
+        ),
+      );
       expect(find.text('Get started with one key'), findsOneWidget);
 
-      // The sheet shrink-wraps to its content at the bottom, leaving empty
-      // space above it. A tap there must close the flow — the route's modal
+      // The panel is a dialog in the middle of the window, with the dimmed
+      // app around it. A tap there must close the flow — the route's modal
       // barrier alone never received the tap (the full-screen scroll view sat
       // on top of it), so the scaffold dismisses explicitly.
-      final panelTop = tester
+      final panelLeft = tester
           .getTopLeft(find.byKey(const ValueKey('onboarding-welcome')))
-          .dy;
-      expect(panelTop, greaterThan(30));
-      await tester.tapAt(Offset(195, panelTop - 20));
+          .dx;
+      expect(panelLeft, greaterThan(30));
+      await tester.tapAt(Offset(panelLeft - 20, 700));
       await tester.pumpAndSettle();
 
       expect(find.text('Get started with one key'), findsNothing);
@@ -583,6 +652,7 @@ void main() {
     List<CategoryDefinition> existingCategories = const [],
     bool failCategoryWrites = false,
     VoidCallback? onCompleted,
+    Completer<List<CategoryDefinition>>? categoriesGate,
   }) async {
     final aiRepo = MockAiConfigRepository();
     when(() => aiRepo.saveConfig(any())).thenAnswer((_) async {});
@@ -594,7 +664,9 @@ void main() {
     // still trip the UNIQUE(name) constraint).
     when(
       catRepo.getAllCategoriesIncludingHidden,
-    ).thenAnswer((_) async => existingCategories);
+    ).thenAnswer(
+      (_) => categoriesGate?.future ?? Future.value(existingCategories),
+    );
     // Reused categories are resurrected/rebound through updateCategory;
     // echo back the updated definition like the real repository does.
     when(() => catRepo.updateCategory(any())).thenAnswer(
@@ -625,14 +697,6 @@ void main() {
       );
     }
     final captureService = MockOnboardingCaptureToTaskService();
-
-    // Match the render surface to the 844-tall MediaQuery so the lower tiles /
-    // Connect button are on-screen and hit-testable.
-    tester.view
-      ..physicalSize = const Size(390, 1000)
-      ..devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
       makeTestableWidget(
@@ -674,13 +738,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ollama'));
     await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Continue with Ollama'));
 
     // Ollama probes reachability on open; let the ≥1s checking dwell elapse.
     await tester.pump(const Duration(milliseconds: 1100));
     await tester.pumpAndSettle();
     expect(find.text('Connection verified'), findsOneWidget);
 
-    await tester.tap(find.text('Connect'));
+    await tester.tap(find.textContaining('Continue with'));
     await tester.pumpAndSettle();
 
     // Connect leads straight into the category step: no success screen
@@ -739,11 +804,6 @@ void main() {
     final cloudFile = MockIoFile();
     when(() => cloudFile.path).thenReturn('/tmp/first_words.wav');
     when(cloudFile.existsSync).thenReturn(false);
-    tester.view
-      ..physicalSize = const Size(390, 1000)
-      ..devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       makeTestableWidget(
         host(),
@@ -780,18 +840,17 @@ void main() {
     await toConnect(tester);
     await tapVisible(tester, find.text('Other providers'));
     await tapVisible(tester, find.text('Ollama'));
+    await tapVisible(tester, find.text('Continue with Ollama'));
     await tester.pump(const Duration(milliseconds: 1100));
     await tester.pumpAndSettle();
     expect(
       tester.widget<OnboardingCompanion>(find.byType(OnboardingCompanion)).beat,
       OnboardingCompanionBeat.keyVerified,
     );
-    await tapVisible(tester, find.text('Connect'));
+    await tapVisible(tester, find.textContaining('Continue with'));
   }
 
-  const areasExplanation =
-      'Each area of your life gets its own space. Pick any that fit — or '
-      'add your own.';
+  const areasExplanation = 'Each area of your life gets its own space.';
 
   testWidgets('she reacts to the key check and, connected to a provider '
       'without a voice, opens the areas saying she is ready', (tester) async {
@@ -806,7 +865,7 @@ void main() {
       find.byType(OnboardingCompanion),
     );
     expect(her.beat, OnboardingCompanionBeat.areas);
-    expect(her.framing, CompanionFraming.bust);
+    expect(her.framing, CompanionFraming.full);
     expect(her.cloudVoice, isNull);
     expect(
       her.line,
@@ -976,12 +1035,8 @@ void main() {
     expect(find.text('Monday'), findsNothing);
     expect(beamed, isEmpty);
 
-    // Tapping the hint line (part of the card's tap target) pops the modal
-    // and deep-links to the real task page.
-    await tester.tap(
-      find.text('Tap your task to open it'),
-      warnIfMissed: false,
-    );
+    // The main button pops the modal and deep-links to the real task page.
+    await tester.tap(find.text('Open task'), warnIfMissed: false);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -1184,6 +1239,151 @@ void main() {
     expect(updated.defaultTemplateId, 'template-tom-001');
   });
 
+  testWidgets('while the areas are being written the close button is off, '
+      'and the flow goes on to the first task once they are', (tester) async {
+    final gate = Completer<List<CategoryDefinition>>();
+    await driveToFirstTaskStep(tester, categoriesGate: gate);
+
+    // Continue is in flight: still on the areas, and no way to close the
+    // flow from under the write.
+    expect(find.text('Where should your AI work?'), findsOneWidget);
+    // The button keeps its place in the bar, disabled.
+    expect(
+      tester
+          .widget<IconButton>(find.widgetWithIcon(IconButton, LottiIcons.close))
+          .onPressed,
+      isNull,
+    );
+
+    gate.complete(const []);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Create your first task'), findsOneWidget);
+  });
+
+  testWidgets('a tap outside the panel closes the flow on the welcome only: '
+      'past it, one stray click throws nothing away', (tester) async {
+    var dismissed = false;
+    await openWelcome(
+      tester,
+      child: host(onDismiss: () => dismissed = true),
+      mediaQuery: const MediaQueryData(
+        size: Size(1000, 1400),
+        disableAnimations: true,
+      ),
+    );
+    await toConnect(tester);
+
+    final left = tester
+        .getTopLeft(find.byKey(const ValueKey('onboarding-connect')))
+        .dx;
+    await tester.tapAt(Offset(left - 20, 700));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('onboarding-connect')), findsOneWidget);
+    expect(dismissed, isFalse);
+
+    // Back on the welcome, it closes again.
+    await tester.tap(find.byIcon(LottiIcons.back));
+    await tester.pumpAndSettle();
+    await tester.tapAt(Offset(left - 20, 700));
+    await tester.pumpAndSettle();
+    expect(dismissed, isTrue);
+  });
+
+  testWidgets('back from the first-task prompt returns to the areas', (
+    tester,
+  ) async {
+    await driveToFirstTaskStep(tester);
+    expect(find.text('Create your first task'), findsOneWidget);
+
+    await tester.tap(find.byIcon(LottiIcons.back));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Where should your AI work?'), findsOneWidget);
+  });
+
+  testWidgets('in a short landscape window the panel scrolls as a whole and '
+      'its main button can be reached and pressed', (tester) async {
+    await openWelcome(
+      tester,
+      mediaQuery: const MediaQueryData(
+        size: Size(667, 375),
+        disableAnimations: true,
+      ),
+    );
+    expect(find.text("Hi, I'm Lotti."), findsOneWidget);
+
+    // The button starts below the window's edge: the panel is taller than
+    // the window, so the whole panel has to scroll to bring it into reach.
+    final button = find.text('Get started with one key');
+    expect(tester.getRect(button).top, greaterThan(375));
+    final panelTop = tester
+        .getTopLeft(find.byKey(const ValueKey('onboarding-welcome')))
+        .dy;
+    // A user drags the panel up, as they would.
+    await tester.drag(
+      find.byKey(const ValueKey('onboarding-welcome')),
+      const Offset(0, -600),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('onboarding-welcome'))).dy,
+      lessThan(panelTop),
+    );
+    await tester.pumpAndSettle();
+    final rect = tester.getRect(button);
+    expect(rect.bottom, lessThanOrEqualTo(375));
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('onboarding-connect')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the close button on the first task ends the flow as '
+      'completed, the key kept', (tester) async {
+    var completed = 0;
+    final mocks = await driveToFirstTaskStep(
+      tester,
+      onCompleted: () => completed++,
+    );
+    expect(find.text('Create your first task'), findsOneWidget);
+
+    await tester.tap(find.byIcon(LottiIcons.close));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Create your first task'), findsNothing);
+    expect(completed, 1);
+    verify(() => mocks.aiRepo.saveConfig(any())).called(1);
+  });
+
+  testWidgets('on the areas, where the arrow is disabled, system back does '
+      'nothing rather than end onboarding', (tester) async {
+    var completed = 0;
+    final gate = Completer<List<CategoryDefinition>>();
+    await driveToFirstTaskStep(
+      tester,
+      categoriesGate: gate,
+      onCompleted: () => completed++,
+    );
+    // Hold the step on the areas by not letting Continue finish yet.
+    expect(find.text('Where should your AI work?'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Where should your AI work?'), findsOneWidget);
+    expect(completed, 0);
+
+    gate.complete(const []);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+  });
+
   testWidgets('a category write failure surfaces an error toast and keeps '
       'the category step usable', (tester) async {
     await driveToFirstTaskStep(tester, failCategoryWrites: true);
@@ -1317,8 +1517,7 @@ void main() {
     expect(
       her().line,
       "Hi, I'm Lotti. Tell me what's on your mind and I'll turn it into a "
-      'plan. All I need to get going is one API key, and '
-      "I'll help you set it up.",
+      'plan. All I need is one key.',
     );
 
     Future<void> frames() async {
@@ -1329,14 +1528,14 @@ void main() {
 
     await tester.tap(find.text('Get started with one key'));
     await frames();
-    // On the one-key step she recommends Mistral, as a bust by her bubble.
+    // On the one-key step she recommends Mistral, standing as on every step.
     expect(her().beat, OnboardingCompanionBeat.recommend);
     expect(
       her().line,
       "I'd go with Mistral: with its one key I can think, transcribe what you "
       'say and read aloud to you.',
     );
-    expect(her().framing, CompanionFraming.bust);
+    expect(her().framing, CompanionFraming.full);
 
     // Back on the welcome she waves again, but says the promise only once.
     await tester.tap(find.byIcon(LottiIcons.back));

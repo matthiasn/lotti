@@ -19,11 +19,13 @@ Abre **Ajustes → Onboarding** cuando quieras iniciar o repetir el recorrido. L
 
 <ManualScreenshot
   caseId="onboarding/welcome"
-  alt="Panel de bienvenida del onboarding de Lotti que invita a conectar un cerebro de IA y convertir voz en una tarea estructurada"
-  caption="El panel de bienvenida se abre sobre la app actual. Elige tu cerebro de IA para continuar o sal sin cambiar la configuración."
+  alt="Bienvenida del onboarding de Lotti con Lotti, su saludo y los tres pasos: conectar una clave, elegir tus áreas, crear tu primera tarea"
+  caption="Cada paso tiene el mismo diseño: Lotti, su bocadillo y el contenido propio del paso encima del botón principal. La bienvenida enumera los tres pasos que vienen."
 />
 
-Pulsa **Elige tu cerebro de IA** para empezar. **Explorar primero**, el área atenuada fuera del panel y la acción de volver del sistema cierran el onboarding sin conectar nada. Podrás volver desde Ajustes más adelante.
+Pulsa **Empezar con una sola clave** para empezar, o **Explorar con datos de ejemplo** para echar primero un vistazo a un mundo de demostración ya amueblado. El botón de cerrar de arriba, la acción de volver del sistema y, en un ordenador, un clic fuera del panel cierran el onboarding desde la bienvenida sin conectar nada. Podrás volver desde Ajustes más adelante.
+
+Pasada la bienvenida, la flecha de volver de arriba —y la acción de volver del sistema— te llevan al paso anterior, y el botón de cerrar sale del onboarding. Tres segmentos junto a ellos muestran cuánto has avanzado con la clave, tus áreas y tu primera tarea.
 
 Lotti también puede ofrecer esta bienvenida automáticamente a un perfil que cumpla los requisitos. El aviso automático tiene una frecuencia limitada de reintentos; la entrada de Ajustes no, así que siempre podrás volver.
 
@@ -31,25 +33,25 @@ Lotti también puede ofrecer esta bienvenida automáticamente a un perfil que cu
 
 <ManualScreenshot
   caseId="onboarding/providers"
-  alt="Selector de proveedores del onboarding de Lotti con Mistral, Melious.ai, Gemini, Qwen, OpenAI y Ollama"
-  caption="Los principales proveedores alojados aparecen primero. Despliega Más opciones para OpenAI y la opción local de Ollama."
+  alt="Paso de proveedores del onboarding de Lotti con Mistral elegido y el botón Continuar con Mistral"
+  caption="Mistral es la opción recomendada y viene elegida de entrada. Abre Otros proveedores para ver el resto, incluida la opción local de Ollama."
 />
 
-La página de proveedores identifica las opciones alojadas y locales disponibles:
+Mistral está elegido al abrirse el paso. Toca otra tarjeta para elegir ese proveedor en su lugar; el botón de abajo indica con cuál vas a continuar, y solo el botón avanza. Los proveedores son:
 
 - **Mistral** es la opción predeterminada recomendada, alojada en la UE.
 - **Melious.ai** está alojado en la UE y ofrece enrutamiento dinámico de modelos.
 - **Gemini** y **Qwen** ofrecen sus regiones alojadas correspondientes.
-- **OpenAI** aparece al desplegar las opciones adicionales.
+- **OpenAI** está disponible en **Otros proveedores**, junto con los demás.
 - **Ollama** se conecta a un endpoint local compatible y no requiere una clave de API alojada.
 
 <ManualScreenshot
   caseId="onboarding/api-key"
   alt="Panel de verificación del proveedor durante el onboarding de Lotti, con una conexión local de Ollama verificada"
-  caption="Lotti verifica el proveedor elegido antes de activar Conectar. Los proveedores alojados usan el mismo paso con un campo para la clave de API."
+  caption="Lotti verifica el proveedor elegido antes de que el botón avance. Los proveedores alojados usan el mismo paso con un campo para la clave de API."
 />
 
-Para un proveedor alojado, pega su clave de API. Lotti verifica la conexión antes de activar **Conectar**. Ollama verifica el endpoint local configurado e informa de los modelos disponibles. Una conexión correcta guarda el proveedor y prepara los modelos y el perfil de inferencia que usan los pasos restantes.
+Para un proveedor alojado, pega su clave de API. Lotti verifica la conexión y muestra el resultado en la tarjeta del proveedor antes de activar **Continuar con** ese proveedor. Ollama verifica el endpoint local configurado e informa de los modelos disponibles. Una conexión correcta guarda el proveedor y prepara los modelos y el perfil de inferencia que usan los pasos restantes.
 
 El texto de las tareas capturadas se envía al proveedor asignado a la categoría seleccionada para estructurarlo. Elige un proveedor cuyo despliegue y tratamiento de datos encajen con el material que vas a capturar. Si Ollama se ejecuta en un endpoint local accesible, la solicitud de estructuración permanece en la máquina que lo ejecuta.
 
@@ -77,8 +79,8 @@ Los datos de demostración del manual crean dos destinos reales —**Penguin Ope
 
 El panel de primera tarea utiliza el flujo de captura habitual de Lotti. Elige la categoría de destino y sigue uno de estos tres caminos:
 
-1. Selecciona la visualización de grabación y di la tarea con una frase normal.
-2. Elige una sugerencia inicial para probar enseguida la estructuración.
+1. Selecciona **Toca para hablar** y di la tarea con una frase normal. La grabadora aparece mientras el micrófono está abierto; **Listo** termina la grabación y **Empezar de nuevo** la descarta.
+2. Elige una sugerencia inicial para crear una tarea a partir de ella al instante.
 3. Elige **¿Prefieres escribir?** e introduce la idea sin usar el micrófono.
 
 Lotti muestra las palabras capturadas mientras las estructura. El resultado es una tarea real en la categoría elegida, no datos de ejemplo exclusivos del onboarding. Cuando la estructuración propone elementos para una lista de verificación, llegan a la tarea como propuestas para que puedas confirmarlas en vez de cambiar la tarea silenciosamente. Esa vía de propuestas necesita que la categoría de la tarea tenga una plantilla de agente predeterminada: la introducción se la asigna a las categorías que crea siempre que hayas conectado un proveedor de IA, pero una categoría creada después en Ajustes no tiene ninguna hasta que se la asignes, y una lista de verificación para una tarea de esa categoría se descarta en lugar de proponerse.
@@ -89,7 +91,7 @@ Lotti muestra las palabras capturadas mientras las estructura. El resultado es u
   caption="La idea escrita de Project Waddle se convierte en «Inspeccionar el relé de sardinas de Europa». La tarea permanece en el panel hasta que la eliges."
 />
 
-Elige la tarjeta de la tarea creada para cerrar el onboarding y abrir su página de tarea habitual. Desde ahí puedes revisar propuestas de lista de verificación, añadir una ilustración de portada o material de apoyo, establecer una fecha límite y prioridad, y llevar la tarea a Daily OS.
+Selecciona **Abrir tarea** para cerrar el onboarding y abrir la página habitual de la tarea. Desde ahí puedes revisar propuestas de lista de verificación, añadir una ilustración de portada o material de apoyo, establecer una fecha límite y prioridad, y llevar la tarea a Daily OS.
 
 Si cierras el flujo después de conectar un proveedor, Lotti conserva esa configuración y considera completada la bienvenida. Repetir el onboarding más tarde sigue siendo seguro: es una acción explícita de Ajustes, no otro aviso automático.
 

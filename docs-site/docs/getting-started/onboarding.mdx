@@ -24,14 +24,20 @@ AI-structured task.
 
 <ManualScreenshot
   caseId="onboarding/welcome"
-  alt="Lotti onboarding welcome panel inviting the user to connect an AI brain and turn speech into a structured task"
-  caption="The welcome panel opens over the current app. Choose your AI brain to continue, or leave the flow without changing setup."
+  alt="Lotti onboarding welcome with Lotti, her greeting, and the three steps: connect one key, pick your areas, create your first task"
+  caption="Every step has the same layout: Lotti, her speech bubble, and the step's own content above the main button. The welcome lists the three steps ahead."
 />
 
-Select **Choose your AI brain** to begin. Choosing **Look around first**,
-tapping the dimmed area outside the panel, and using the system back action
-all leave onboarding without connecting anything. You can return from Settings
-later.
+Select **Get started with one key** to begin, or **Explore with sample data**
+to look around a furnished demo world first. The close button at the top, the
+system back action and, on a desktop, a click outside the panel all leave
+onboarding from the welcome without connecting anything. You can return from
+Settings later.
+
+Past the welcome, the back arrow at the top — and the system back action —
+return to the previous step, and the close button leaves onboarding. Three
+segments next to them show how far along you are with the key, your areas and
+your first task.
 
 Lotti may also offer this welcome automatically to an eligible profile. The
 automatic prompt has a limited retry cadence; the Settings entry does not, so
@@ -41,27 +47,30 @@ you always have a way back.
 
 <ManualScreenshot
   caseId="onboarding/providers"
-  alt="Lotti onboarding provider chooser with Mistral, Melious.ai, Gemini, Qwen, OpenAI, and Ollama"
-  caption="Primary hosted providers appear first. Expand More options for OpenAI and the local Ollama path."
+  alt="Lotti onboarding provider step with Mistral chosen and the button Continue with Mistral"
+  caption="Mistral is recommended and chosen to start with. Open Other providers for the rest, including the local Ollama path."
 />
 
-The provider page identifies the available hosted and local choices:
+Mistral is chosen when the step opens. Tap another card to choose that
+provider instead; the button at the bottom names the one you will continue
+with, and only the button moves on. The providers are:
 
 - **Mistral** is the recommended EU-hosted default.
 - **Melious.ai** is EU-hosted, with dynamic model routing.
 - **Gemini** and **Qwen** expose their corresponding hosted regions.
-- **OpenAI** is available under the expanded options.
+- **OpenAI** is available under **Other providers**, with the others.
 - **Ollama** connects to a compatible local endpoint and does not require a
   hosted API key.
 
 <ManualScreenshot
   caseId="onboarding/api-key"
   alt="Lotti onboarding provider verification panel showing a verified local Ollama connection"
-  caption="Lotti verifies the chosen provider before enabling Connect. Hosted providers use the same step with an API-key field."
+  caption="Lotti verifies the chosen provider before the button moves on. Hosted providers use the same step with an API-key field."
 />
 
 For a hosted provider, paste the provider API key. Lotti verifies the
-connection before enabling **Connect**. Ollama verifies the configured local
+connection and shows the result on the provider's card before enabling
+**Continue with** the provider. Ollama verifies the configured local
 endpoint and reports reachable models. A successful connection saves the
 provider and seeds the models and inference profile used by the remaining
 steps.
@@ -104,8 +113,10 @@ working account sees.
 The first-task panel uses Lotti's normal capture pipeline. Choose the target
 category, then use one of three paths:
 
-1. Select the recording visual and speak the task in a normal sentence.
-2. Choose a starter suggestion to try the structuring path immediately.
+1. Select **Tap to talk** and speak the task in a normal sentence. The
+   recorder appears while the microphone is open; **Done** ends the
+   recording, and **Start over** drops it.
+2. Choose a starter suggestion to create a task from it straight away.
 3. Choose **Rather type?** and enter the thought without using the microphone.
 
 Lotti echoes the captured words while it structures them. The result is a real
@@ -123,7 +134,7 @@ checklist for a task in such a category is dropped rather than proposed.
   caption="The typed Project Waddle thought becomes “Inspect the Europa sardine relay.” The task stays in the panel until you choose it."
 />
 
-Choose the created task card to close onboarding and open its normal task page.
+Select **Open task** to close onboarding and open the task's normal page.
 From there you can review checklist proposals, add cover art or evidence, set a
 due date and priority, and bring the task into Daily OS.
 

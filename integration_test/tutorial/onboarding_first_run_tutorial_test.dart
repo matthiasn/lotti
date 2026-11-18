@@ -151,7 +151,15 @@ void main() {
         await driver.holdUntil(
           driver.timeline.elapsed + const Duration(milliseconds: 800),
         );
+        // A card chooses the provider; the main button goes on with it.
         await tapLabel(l10n.aiProviderMeliousName, within: panel('connect'));
+        await driver.holdUntil(
+          driver.timeline.elapsed + const Duration(milliseconds: 600),
+        );
+        await tapLabel(
+          l10n.onboardingConnectContinueWith(l10n.aiProviderMeliousName),
+          within: panel('connect'),
+        );
         await driver.pumpUntilFound(panel('apikey-melious'));
       });
 
@@ -190,8 +198,9 @@ void main() {
         await driver.holdUntil(
           driver.timeline.elapsed + const Duration(milliseconds: 800),
         );
+        // The key step's button names the provider it goes on with.
         await tapLabel(
-          l10n.onboardingApiKeyConnect,
+          l10n.onboardingConnectContinueWith(l10n.aiProviderMeliousName),
           within: panel('apikey-melious'),
         );
         // Connecting saves the provider and runs the FTUE model seeding
@@ -225,22 +234,32 @@ void main() {
       });
 
       await driver.step('first_task', () async {
-        final orb = find
+        // The main button opens the mic; the recorder appears in the tray
+        // once it has.
+        final talk = find
             .descendant(
               of: panel('first-task'),
-              matching: find.byType(VoiceOrbZone),
+              matching: find.text(l10n.dailyOsNextCaptureIdleTalk),
             )
             .hitTestable();
-        await driver.pumpUntilFound(orb);
+        await driver.pumpUntilFound(talk);
         // The narrator dictates in their own voice — let the step's narration
         // finish so they never talk over themselves.
         await driver.waitForNarration();
-        await driver.tapLikeUser(orb.first);
+        await driver.tapLikeUser(talk.first);
+        await driver.pumpUntilFound(
+          find.descendant(
+            of: panel('first-task'),
+            matching: find.byType(VoiceOrbZone),
+          ),
+        );
         await tester.pump(const Duration(milliseconds: 500));
         await driver.speakIntoMic(manifest.step('first_task').dictation!);
-        // Tapping the orb again stops the recording and starts transcribing.
-        await driver.pumpUntilFound(orb);
-        await driver.tapLikeUser(orb.first);
+        // Done stops the recording and starts transcribing.
+        await tapLabel(
+          l10n.dailyOsNextCaptureDoneCta,
+          within: panel('first-task'),
+        );
         await tester.pump(const Duration(milliseconds: 500));
       });
 
@@ -256,9 +275,9 @@ void main() {
         await driver.holdUntil(
           driver.timeline.elapsed + const Duration(seconds: 2),
         );
-        // The hint line shares the created card's tap target.
+        // The landed task is a preview; the main button opens it.
         await tapLabel(
-          l10n.onboardingFirstTaskCreatedHint,
+          l10n.agentTemplateInstanceOpenTask,
           within: panel('first-task'),
         );
         await driver.pumpUntilFound(

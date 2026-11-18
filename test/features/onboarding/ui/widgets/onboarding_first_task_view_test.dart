@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_view.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_stage.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:material_ui/material_ui.dart';
@@ -46,6 +47,9 @@ void main() {
     bool reduceMotion = true,
     String createdTaskTitle = '',
     Widget? companion,
+    VoidCallback? onClose,
+    VoidCallback? onBack,
+    VoidCallback? onStartOver,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -69,9 +73,11 @@ void main() {
               thinkingReassurance: 'You can edit everything next',
               ratherTypeLabel: 'Rather type?',
               recordSemanticLabel: 'Record',
+              recordLabel: 'Tap to talk',
+              stopLabel: 'Done',
+              openTaskLabel: 'Open task',
               categoryPrompt: 'Where should this land?',
               createdHeadline: 'Your first task is ready',
-              createdHint: 'Tap your task to open it',
               createdTaskTitle: createdTaskTitle,
               categories: categories,
               selectedCategoryId: selectedCategoryId,
@@ -81,6 +87,13 @@ void main() {
               onRatherType: () => ratherTypeTaps++,
               onOpenTask: () => openTaskTaps++,
               companion: companion,
+              onClose: onClose,
+              onBack: onBack,
+              onStartOver: onStartOver,
+              startOverLabel: 'Start over',
+              createdCaption: 'Your task',
+              landedIn: 'Work',
+              createdText: 'It is in Work.',
               transcript: 'call the dentist and book the car service',
               amplitudes: const [0.2, 0.6, 0.4, 0.8, 0.3],
               dbfs: -20,
@@ -88,7 +101,7 @@ void main() {
           ),
         ),
         mediaQueryData: MediaQueryData(
-          size: const Size(390, 844),
+          size: const Size(390, 1400),
           disableAnimations: reduceMotion,
         ),
       ),
@@ -124,19 +137,32 @@ void main() {
     testWidgets('Rather type? invokes its callback', (tester) async {
       await pumpView(tester, OnboardingFirstTaskPhase.prompt);
 
-      // Invoke the handler directly: the idle orb's shader overflow box can
-      // cover the lower region in the test surface, so a hit-test tap is
-      // unreliable — we're verifying the callback is wired, not geometry.
-      tester
-          .widget<TextButton>(find.widgetWithText(TextButton, 'Rather type?'))
-          .onPressed!();
+      await tester.ensureVisible(find.text('Rather type?'));
+      await tester.tap(find.text('Rather type?'), warnIfMissed: false);
       expect(ratherTypeTaps, 1);
+    });
+
+    testWidgets('the main button opens the mic, and no recorder stands in '
+        'the tray until it has', (tester) async {
+      await pumpView(tester, OnboardingFirstTaskPhase.prompt);
+
+      expect(find.byType(VoiceOrbZone), findsNothing);
+      expect(find.byType(AnalogVuMeter), findsNothing);
+      final stage = tester.widget<OnboardingStage>(
+        find.byType(OnboardingStage),
+      );
+      expect(stage.primary?.label, 'Tap to talk');
+      expect(stage.primary?.icon, LottiIcons.mic);
+
+      await tester.ensureVisible(find.text('Tap to talk'));
+      await tester.tap(find.text('Tap to talk'), warnIfMissed: false);
+      expect(recordTaps, 1);
     });
   });
 
   group('recording style', () {
     testWidgets('modern renders the tappable orb zone', (tester) async {
-      await pumpView(tester, OnboardingFirstTaskPhase.prompt);
+      await pumpView(tester, OnboardingFirstTaskPhase.listening);
 
       expect(find.byType(VoiceOrbZone), findsOneWidget);
       expect(find.byType(AnalogVuMeter), findsNothing);
@@ -148,7 +174,7 @@ void main() {
     testWidgets('analogue renders the tappable VU meter pair', (tester) async {
       await pumpView(
         tester,
-        OnboardingFirstTaskPhase.prompt,
+        OnboardingFirstTaskPhase.listening,
         style: RecordingStyle.analogue,
       );
 
@@ -162,7 +188,7 @@ void main() {
     testWidgets('analogue recorder activates via keyboard', (tester) async {
       await pumpView(
         tester,
-        OnboardingFirstTaskPhase.prompt,
+        OnboardingFirstTaskPhase.listening,
         style: RecordingStyle.analogue,
       );
 
@@ -211,8 +237,9 @@ void main() {
       expect(find.text('Tap when done'), findsOneWidget);
       expect(find.text('Tap to talk and say what needs doing.'), findsNothing);
       expect(find.text('Or start with one of these:'), findsNothing);
-      // Still composing, so the escape hatch remains.
-      expect(find.text('Rather type?'), findsOneWidget);
+      // Typing instead would throw away what is being said: not offered
+      // while the mic is open.
+      expect(find.text('Rather type?'), findsNothing);
     });
 
     testWidgets('light themed orb keeps a defined center surface', (
@@ -231,51 +258,58 @@ void main() {
       );
     });
 
-    testWidgets('uses a clear headline, status, and destination hierarchy', (
-      tester,
-    ) async {
+    testWidgets('the headline and the live caption lead, and the main '
+        'button ends the recording', (tester) async {
       await pumpView(
         tester,
         OnboardingFirstTaskPhase.listening,
         categories: twoCategories,
       );
 
-      final tokens = tester
-          .element(find.text('Create your first task'))
-          .designTokens;
-      final headline = tester.widget<Text>(find.text('Create your first task'));
-      final status = tester.widget<Text>(find.text('Tap when done'));
-      final destination = tester.widget<Text>(
-        find.text('Where should this land?'),
+      final stage = tester.widget<OnboardingStage>(
+        find.byType(OnboardingStage),
       );
-      final selectedCategory = tester.widget<Text>(find.text('Work'));
-      final typeInstead = tester.widget<Text>(find.text('Rather type?'));
+      expect(stage.title, 'Create your first task');
+      expect(stage.text, 'Tap when done');
+      expect(stage.secondary, isNull);
+      expect(stage.primary?.label, 'Done');
+      // A check: Done keeps what was said; the orb is the one stop shape.
+      expect(stage.primary?.icon, LottiIcons.confirm);
+      // The caption is over the recorder, the main button under it.
+      expect(
+        tester.getBottomLeft(find.text('Tap when done')).dy,
+        lessThan(tester.getTopLeft(find.byType(VoiceOrbZone)).dy),
+      );
+      expect(
+        tester.getBottomLeft(find.byType(VoiceOrbZone)).dy,
+        lessThan(tester.getTopLeft(find.text('Done')).dy),
+      );
 
-      expect(
-        headline.style?.fontSize,
-        tokens.typography.styles.heading.heading2.fontSize,
-      );
-      expect(
-        status.style?.fontSize,
-        tokens.typography.styles.subtitle.subtitle1.fontSize,
-      );
-      expect(
-        status.style?.fontWeight,
-        tokens.typography.styles.subtitle.subtitle1.fontWeight,
-      );
-      expect(
-        destination.style?.fontWeight,
-        tokens.typography.styles.subtitle.subtitle2.fontWeight,
-      );
-      expect(
-        selectedCategory.style?.fontWeight,
-        tokens.typography.styles.subtitle.subtitle2.fontWeight,
-      );
-      expect(
-        typeInstead.style?.fontSize,
-        tokens.typography.styles.subtitle.subtitle1.fontSize,
-      );
+      await tester.ensureVisible(find.text('Done'));
+      await tester.tap(find.text('Done'), warnIfMissed: false);
+      expect(recordTaps, 1);
     });
+  });
+
+  testWidgets('while listening the link starts over, dropping what was '
+      'said; at the prompt it is typing instead', (tester) async {
+    var startedOver = 0;
+    await pumpView(
+      tester,
+      OnboardingFirstTaskPhase.listening,
+      onStartOver: () => startedOver++,
+    );
+    await tester.ensureVisible(find.text('Start over'));
+    await tester.tap(find.text('Start over'), warnIfMissed: false);
+    expect(startedOver, 1);
+
+    await pumpView(
+      tester,
+      OnboardingFirstTaskPhase.prompt,
+      onStartOver: () => startedOver++,
+    );
+    expect(find.text('Start over'), findsNothing);
+    expect(find.text('Rather type?'), findsOneWidget);
   });
 
   group('thinking frame', () {
@@ -321,8 +355,8 @@ void main() {
     const title = 'Plan my week';
 
     testWidgets(
-      'shows a title-only card with the open hint (checklist is not '
-      'previewed — it lands as proposals on the task page)',
+      'shows the task as a preview card, her bubble saying where it is, no '
+      'checklist, and the main button the way to it',
       (tester) async {
         await pumpView(
           tester,
@@ -332,44 +366,30 @@ void main() {
 
         expect(find.text('Your first task is ready'), findsOneWidget);
         expect(find.text(title), findsOneWidget);
-        expect(find.text('Tap your task to open it'), findsOneWidget);
-        // No checklist preview on the card — those items surface as confirmable
-        // proposals once the user opens the task.
+        final stage = tester.widget<OnboardingStage>(
+          find.byType(OnboardingStage),
+        );
+        expect(stage.text, 'It is in Work.');
+        // Under a caption, like every step's content; its area under its
+        // title, and a check that says it is done.
+        expect(stage.caption, 'Your task');
+        expect(
+          tester.getBottomLeft(find.text(title)).dy,
+          lessThanOrEqualTo(tester.getTopLeft(find.text('Work')).dy),
+        );
+        expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+        // No checklist preview on the card — those items surface as
+        // confirmable proposals once the user opens the task.
         expect(find.byIcon(LottiIcons.radioUnselected), findsNothing);
-        // The composing/thinking furniture is gone — the card owns the panel.
+        // The composing/thinking furniture is gone — the card owns the tray.
         expect(find.text('Rather type?'), findsNothing);
         expect(find.byType(VoiceOrbZone), findsNothing);
         expect(find.byType(AnalogVuMeter), findsNothing);
+        // One way on: the card itself is not a second button.
+        await tester.tap(find.text(title), warnIfMissed: false);
+        expect(openTaskTaps, 0);
       },
     );
-
-    testWidgets('tapping the card fires onOpenTask', (tester) async {
-      await pumpView(
-        tester,
-        OnboardingFirstTaskPhase.created,
-        createdTaskTitle: title,
-      );
-
-      await tester.tap(find.text(title), warnIfMissed: false);
-      expect(openTaskTaps, 1);
-    });
-
-    testWidgets('created task card activates via keyboard', (tester) async {
-      await pumpView(
-        tester,
-        OnboardingFirstTaskPhase.created,
-        createdTaskTitle: title,
-      );
-
-      final task = find.text(title);
-      final focus = Focus.of(tester.element(task))..requestFocus();
-      await tester.pump();
-      expect(focus.hasPrimaryFocus, isTrue);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pump();
-
-      expect(openTaskTaps, 1);
-    });
 
     testWidgets('the invite glow loops when motion is enabled', (
       tester,
@@ -399,20 +419,27 @@ void main() {
       expect(find.text('Where should this land?'), findsNothing);
     });
 
-    for (final phase in [
-      OnboardingFirstTaskPhase.prompt,
-      OnboardingFirstTaskPhase.listening,
-    ]) {
-      testWidgets('shows all areas while composing (${phase.name})', (
+    testWidgets('shows all areas at the prompt', (tester) async {
+      await pumpView(
         tester,
-      ) async {
-        await pumpView(tester, phase, categories: twoCategories);
+        OnboardingFirstTaskPhase.prompt,
+        categories: twoCategories,
+      );
 
-        expect(find.text('Where should this land?'), findsOneWidget);
-        expect(find.text('Work'), findsOneWidget);
-        expect(find.text('Family'), findsOneWidget);
-      });
-    }
+      expect(find.text('Where should this land?'), findsOneWidget);
+      expect(find.text('Work'), findsOneWidget);
+      expect(find.text('Family'), findsOneWidget);
+    });
+
+    testWidgets('is hidden once the mic is open', (tester) async {
+      await pumpView(
+        tester,
+        OnboardingFirstTaskPhase.listening,
+        categories: twoCategories,
+      );
+
+      expect(find.text('Where should this land?'), findsNothing);
+    });
 
     testWidgets('tapping an area reports its id', (tester) async {
       await pumpView(
@@ -453,9 +480,8 @@ void main() {
     });
   });
 
-  testWidgets('the companion stands above the headline, hero-avatar sized', (
-    tester,
-  ) async {
+  testWidgets('the companion stands on the stage, the headline and the '
+      'guidance in the bubble under her', (tester) async {
     await pumpView(
       tester,
       OnboardingFirstTaskPhase.prompt,
@@ -463,11 +489,61 @@ void main() {
     );
 
     final her = tester.getRect(find.byKey(const ValueKey('her')));
-    expect(her.size, const Size.square(ControlSizes.avatarHero));
+    final bubble = find.byType(OnboardingSpeechBubble);
+    expect(her.bottom, lessThanOrEqualTo(tester.getTopLeft(bubble).dy));
     expect(
-      her.bottom,
-      lessThan(tester.getTopLeft(find.text('Create your first task')).dy),
+      tester.widget<OnboardingSpeechBubble>(bubble).title,
+      'Create your first task',
     );
+    expect(
+      tester.widget<OnboardingSpeechBubble>(bubble).text,
+      'Tap to talk and say what needs doing.',
+    );
+  });
+
+  testWidgets('the progress moves with the frame, the close button leaves '
+      'on every frame, and back to the areas is only offered at the prompt', (
+    tester,
+  ) async {
+    var back = 0;
+    var left = 0;
+    Future<OnboardingStage> stageFor(OnboardingFirstTaskPhase phase) async {
+      await pumpView(
+        tester,
+        phase,
+        onClose: () => left++,
+        onBack: () => back++,
+      );
+      return tester.widget<OnboardingStage>(find.byType(OnboardingStage));
+    }
+
+    final prompt = await stageFor(OnboardingFirstTaskPhase.prompt);
+    expect(prompt.progress, const OnboardingProgress(done: 2, current: 0.25));
+    await tester.tap(find.byIcon(LottiIcons.close));
+    expect(left, 1);
+    await tester.tap(find.byIcon(LottiIcons.back));
+    expect(back, 1);
+
+    final listening = await stageFor(OnboardingFirstTaskPhase.listening);
+    expect(listening.progress, const OnboardingProgress(done: 2, current: 0.5));
+    expect(listening.onClose, isNotNull);
+    // The arrow stays in the bar, disabled, once something is being said.
+    expect(listening.onBack, isNull);
+    expect(listening.showBack, isTrue);
+
+    final thinking = await stageFor(OnboardingFirstTaskPhase.thinking);
+    expect(thinking.progress, const OnboardingProgress(done: 2, current: 0.75));
+    // Nothing to press while the words are being structured.
+    expect(thinking.primary, isNull);
+
+    final created = await stageFor(OnboardingFirstTaskPhase.created);
+    expect(created.progress, const OnboardingProgress(done: 3));
+    // A way out stays once the task has landed, beside Open task.
+    expect(created.onClose, isNotNull);
+    expect(created.primary?.label, 'Open task');
+    await tester.ensureVisible(find.text('Open task'));
+    await tester.tap(find.text('Open task'), warnIfMissed: false);
+    expect(openTaskTaps, 1);
   });
 
   testWidgets('without a companion, the headline leads', (tester) async {
@@ -492,12 +568,11 @@ void main() {
     );
     expect(bubble.title, 'Create your first task');
     expect(bubble.text, 'Tap to talk and say what needs doing.');
-    expect(bubble.tail, OnboardingBubbleTail.up);
     // Said once, in the bubble.
     expect(find.text('Tap to talk and say what needs doing.'), findsOneWidget);
   });
 
-  testWidgets('past the prompt her bubble holds the headline alone', (
+  testWidgets('while she thinks her bubble says nothing is final yet', (
     tester,
   ) async {
     await pumpView(
@@ -510,6 +585,8 @@ void main() {
       find.byType(OnboardingSpeechBubble),
     );
     expect(bubble.title, 'Building your task');
-    expect(bubble.text, isNull);
+    expect(bubble.text, 'You can edit everything next');
+    // Said once: not again under the pulse.
+    expect(find.text('You can edit everything next'), findsOneWidget);
   });
 }

@@ -8,6 +8,7 @@ import 'package:lotti/features/onboarding/ui/widgets/crystallize_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/neural_constellation.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_stage.dart';
 import 'package:lotti/features/onboarding/ui/widgets/waveform_text_hero.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:material_ui/material_ui.dart';
@@ -788,13 +789,12 @@ void main() {
 
     expect(find.byKey(const ValueKey('her')), findsOneWidget);
     expect(find.byType(NeuralConstellation), findsNothing);
-    // The promise is hers: a bubble pointing up at her, greeting first.
+    // The promise is hers: a bubble under her, greeting first.
     final bubble = tester.widget<OnboardingSpeechBubble>(
       find.byType(OnboardingSpeechBubble),
     );
     expect(bubble.title, "Hi, I'm Lotti.");
-    expect(bubble.text, contains('one API key'));
-    expect(bubble.tail, OnboardingBubbleTail.up);
+    expect(bubble.text, contains('one key'));
     expect(find.text('Talk. Lotti turns it into a plan.'), findsNothing);
     expect(find.text('Get started with one key'), findsOneWidget);
     expect(find.text('Choose your AI brain'), findsNothing);
@@ -803,6 +803,120 @@ void main() {
       tester.getCenter(find.byKey(const ValueKey('her'))).dy,
       lessThan(tester.getTopLeft(find.text("Hi, I'm Lotti.")).dy),
     );
+  });
+
+  testWidgets('with her the tray lists the three things in order, the main '
+      'button starts on the key, the demo is the link above it and the close '
+      'button the way out', (tester) async {
+    final calls = <String>[];
+    await tester.pumpWidget(
+      makeTestableWidget(
+        boundedPanel(
+          OnboardingHeroPanel(
+            onConnect: () => calls.add('connect'),
+            onSkip: () => calls.add('skip'),
+            onExploreDemo: () => calls.add('demo'),
+            companion: const ColoredBox(
+              key: ValueKey('her'),
+              color: Colors.red,
+            ),
+          ),
+        ),
+        mediaQueryData: const MediaQueryData(
+          size: Size(480, 1600),
+          disableAnimations: true,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final stage = tester.widget<OnboardingStage>(find.byType(OnboardingStage));
+    // Nothing is started yet, so no progress is shown.
+    expect(stage.progress, isNull);
+    expect(find.byType(OnboardingProgressBar), findsNothing);
+    expect(find.text(messages.onboardingWelcomeStepsCaption), findsOneWidget);
+    final rows = [
+      (messages.onboardingWelcomeStepKey, '1'),
+      (messages.onboardingWelcomeStepAreas, '2'),
+      (messages.onboardingFirstTaskTitle, '3'),
+    ];
+    var above = tester
+        .getBottomLeft(find.text(messages.onboardingWelcomeStepsCaption))
+        .dy;
+    for (final (title, number) in rows) {
+      final row = tester.getRect(find.text(title));
+      expect(row.top, greaterThanOrEqualTo(above), reason: title);
+      // Its number leads it, on the same line.
+      final badge = tester.getRect(find.text(number));
+      expect(badge.right, lessThan(row.left));
+      expect(badge.center.dy, closeTo(row.center.dy, row.height));
+      above = row.bottom;
+    }
+    expect(
+      find.text(messages.onboardingWelcomeStepKeyDetail),
+      findsOneWidget,
+    );
+    expect(
+      find.text(messages.onboardingWelcomeStepAreasDetail),
+      findsOneWidget,
+    );
+    expect(
+      find.text(messages.onboardingWelcomeStepTaskDetail),
+      findsOneWidget,
+    );
+    expect(find.text(messages.onboardingWelcomeSettingsNote), findsOneWidget);
+
+    // The key leads; the demo is offered without competing with it.
+    expect(
+      buttonWithLabel(tester, messages.onboardingWelcomeOneKeyButton).variant,
+      DesignSystemButtonVariant.primary,
+    );
+    expect(
+      buttonWithLabel(tester, messages.demoOnboardingExplore).variant,
+      DesignSystemButtonVariant.tertiary,
+    );
+    await tester.tap(
+      find.text(messages.onboardingWelcomeOneKeyButton),
+      warnIfMissed: false,
+    );
+    await tester.tap(
+      find.text(messages.demoOnboardingExplore),
+      warnIfMissed: false,
+    );
+    expect(find.text(messages.onboardingWelcomeSkipButton), findsNothing);
+    await tester.tap(find.byIcon(LottiIcons.close));
+    expect(calls, ['connect', 'demo', 'skip']);
+  });
+
+  testWidgets('with her and no demo wired, the welcome offers none', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidget(
+        boundedPanel(
+          OnboardingHeroPanel(
+            onConnect: () {},
+            onSkip: () {},
+            companion: const ColoredBox(
+              key: ValueKey('her'),
+              color: Colors.red,
+            ),
+          ),
+        ),
+        mediaQueryData: const MediaQueryData(
+          size: Size(480, 1600),
+          disableAnimations: true,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text(messages.demoOnboardingExplore), findsNothing);
+    expect(
+      tester.widget<OnboardingStage>(find.byType(OnboardingStage)).secondary,
+      isNull,
+    );
+    expect(find.text(messages.onboardingWelcomeOneKeyButton), findsOneWidget);
   });
 
   test('her welcome line is the words of her bubble', () async {

@@ -10,15 +10,20 @@ them to one moment: speak a thought, and watch it become a structured task.
   voice-to-task moment — not a tour of menus, and nothing optional on the way.
   Her look and her voices are settings, in Settings › Companion and Settings ›
   Speech.
+- **Looks the same from step to step.** She stands in one place, her speech
+  bubble under her says what the step is about, and the step's own content
+  sits in a tray below with the main button at its foot. Three segments at
+  the top show how far along the key, the areas and the first task are.
 - **Hears her for the first time when the key works.** She thinks while the
   key is checked and, once it is connected, the areas open with her first
   words, in the provider's own voice where it has one (Mistral's Voxtral). No
   screen sits in between just to be tapped away.
 - **Says what it takes: one API key.** The connect step leads with one
-  recommended provider, Mistral, whose single key covers thinking,
-  transcription and the voice; the others sit behind a disclosure.
-- **Never traps anyone.** "Look around first" persists nothing and keeps the
-  offer available later.
+  recommended provider, Mistral, already chosen, whose single key covers
+  thinking, transcription and the voice; the others sit behind a disclosure.
+  A card chooses a provider and the main button goes on with it.
+- **Never traps anyone.** Every step has the same close button. Closing before
+  a key is connected persists nothing and keeps the offer available later.
 - **Does not nag.** The welcome auto-shows a small number of times within a fixed
   window and then stops. Completing it retires the offer entirely.
 - **Has a face.** The companion leads it, whether or not she is switched on

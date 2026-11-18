@@ -4,8 +4,8 @@ import 'package:lotti/features/daily_os_next/state/capture_state.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
-import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
-import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_choice_chip.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_stage.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
@@ -29,20 +29,21 @@ enum OnboardingFirstTaskPhase {
   created,
 }
 
-/// Presentational surface for the onboarding first-task step, hosted *inside*
-/// the onboarding panel (unlike the pre-FTUE full-screen capture page).
+/// Presentational surface for the onboarding first-task step, on the shared
+/// [OnboardingStage] (unlike the pre-FTUE full-screen capture page).
 ///
-/// The composing/thinking frames share one composition: a per-phase headline,
-/// then a **fixed-height active band** rendering the recording-style
-/// preference ([RecordingStyle.modern] orb by default, or the
-/// [RecordingStyle.analogue] VU meter when chosen under Settings → Recording
-/// Style), then per-phase support: guidance +
-/// tappable starter-task suggestions while idle, a live caption while
-/// listening, and the thinking cluster while structuring. A quiet "Rather
-/// type?" escape hatch stays pinned under the composing frames. The created
-/// frame swaps the band for the landed task itself — a glowing tappable card
-/// whose tap fires [onOpenTask]. Checklist proposals stay on the real task
-/// page, where they can be reviewed and confirmed.
+/// Her bubble carries the per-phase headline, with the guidance at the
+/// prompt and the live caption while listening. At the prompt the tray
+/// holds the destination picker and tappable starter-task suggestions, and
+/// the main button opens the mic. While listening and thinking it holds one
+/// **active band**: the recording-style preference ([RecordingStyle.modern]
+/// orb by default, or the [RecordingStyle.analogue] VU meter when chosen
+/// under Settings → Recording Style) riding the voice, then the thinking
+/// cluster while structuring. The main button ends the recording, and — on
+/// the created frame, where the band gives way to the landed task as a
+/// glowing tappable card — opens the task ([onOpenTask]); "Rather type?" is
+/// the link above it while composing. Checklist proposals stay on the real task page, where they can
+/// be reviewed and confirmed.
 ///
 /// It is string- and callback-injected (no `getIt`/Riverpod) so it renders
 /// identically under the real capture flow and in isolation for design review.
@@ -61,9 +62,11 @@ class OnboardingFirstTaskView extends StatelessWidget {
     required this.thinkingReassurance,
     required this.ratherTypeLabel,
     required this.recordSemanticLabel,
+    required this.recordLabel,
+    required this.stopLabel,
+    required this.openTaskLabel,
     required this.categoryPrompt,
     required this.createdHeadline,
-    required this.createdHint,
     required this.categories,
     required this.selectedCategoryId,
     required this.onSelectCategory,
@@ -76,6 +79,13 @@ class OnboardingFirstTaskView extends StatelessWidget {
     this.amplitudes = const [],
     this.dbfs = CaptureState.defaultDbfs,
     this.companion,
+    this.onClose,
+    this.onBack,
+    this.createdText = '',
+    this.createdCaption = '',
+    this.landedIn = '',
+    this.startOverLabel = '',
+    this.onStartOver,
     super.key,
   });
 
@@ -118,20 +128,26 @@ class OnboardingFirstTaskView extends StatelessWidget {
   /// Accessibility label for the record affordance (orb or VU meter).
   final String recordSemanticLabel;
 
+  /// The main button at the prompt ("Tap to talk").
+  final String recordLabel;
+
+  /// The main button while the mic is open ("Done").
+  final String stopLabel;
+
+  /// The main button once the task has landed ("Open task").
+  final String openTaskLabel;
+
   /// Lead-in over the destination pills ("Where should this land?").
   final String categoryPrompt;
 
   /// Headline of the created beat ("Your first task is ready").
   final String createdHeadline;
 
-  /// Invitation under the created card ("Tap your task to open it").
-  final String createdHint;
-
   /// The landed task's title, shown on the created card.
   final String createdTaskTitle;
 
   /// The areas created in the category step. With more than one, a destination
-  /// picker appears while composing.
+  /// picker appears at the prompt.
   final List<OnboardingCaptureCategory> categories;
 
   /// The area the structured task will land in.
@@ -160,20 +176,37 @@ class OnboardingFirstTaskView extends StatelessWidget {
   /// Latest raw dBFS for the breathing visual.
   final double dbfs;
 
-  /// The companion, above the headline at the person hero-avatar size; the
-  /// host builds her for the phase, so this view stays free of providers.
+  /// The companion, on the stage; the host builds her for the phase, so this
+  /// view stays free of providers.
   final Widget? companion;
 
-  bool get _isComposing =>
-      phase == OnboardingFirstTaskPhase.prompt ||
-      phase == OnboardingFirstTaskPhase.listening;
+  /// Leaves onboarding from here, offered until the task has landed: after
+  /// that the main button is the way on.
+  final VoidCallback? onClose;
+
+  /// Goes back to the areas, offered at the prompt — before anything has
+  /// been said.
+  final VoidCallback? onBack;
+
+  /// What she adds once the task has landed: where it is, and what opening
+  /// it shows.
+  final String createdText;
+
+  /// The caption over the landed task, so it starts where every step's
+  /// content does.
+  final String createdCaption;
+
+  /// The area the landed task is in, named on its card.
+  final String landedIn;
+
+  /// The link while the mic is open: drops what was said and goes back to
+  /// the prompt, so recording is never commit-or-quit.
+  final String startOverLabel;
+  final VoidCallback? onStartOver;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final textHigh = tokens.colors.text.highEmphasis;
-    final textMedium = tokens.colors.text.mediumEmphasis;
-    final panelBg = tokens.colors.background.level01;
     // Minimum height for the band the active element is centred in, so the
     // recording visual and the thinking cluster share one optical anchor across
     // phases. Sized on the token scale to seat the tallest visual (the modern
@@ -183,132 +216,122 @@ class OnboardingFirstTaskView extends StatelessWidget {
     final activeBandHeight =
         tokens.spacing.step13 + tokens.spacing.step10 + tokens.spacing.step3;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(tokens.radii.l),
-      child: Stack(
+    final prompt = phase == OnboardingFirstTaskPhase.prompt;
+    final picker = prompt && categories.length > 1;
+    return OnboardingStage(
+      companion: companion,
+      // Her line is the headline, in her bubble, and every frame has a
+      // second line: the guidance at the prompt, the live caption while she
+      // listens, that nothing is final while she thinks, and where the task
+      // is once it has landed.
+      title: _headline,
+      text: switch (phase) {
+        OnboardingFirstTaskPhase.prompt => guidance,
+        OnboardingFirstTaskPhase.listening => listeningCaption,
+        OnboardingFirstTaskPhase.thinking => thinkingReassurance,
+        OnboardingFirstTaskPhase.created => createdText,
+      },
+      progress: switch (phase) {
+        OnboardingFirstTaskPhase.prompt => const OnboardingProgress(
+          done: 2,
+          current: 0.25,
+        ),
+        OnboardingFirstTaskPhase.listening => const OnboardingProgress(
+          done: 2,
+          current: 0.5,
+        ),
+        OnboardingFirstTaskPhase.thinking => const OnboardingProgress(
+          done: 2,
+          current: 0.75,
+        ),
+        OnboardingFirstTaskPhase.created => const OnboardingProgress(
+          done: OnboardingProgress.total,
+        ),
+      },
+      // Back to the areas only before anything has been said; the arrow
+      // stays in the bar, disabled, after that.
+      onBack: prompt ? onBack : null,
+      showBack: true,
+      onClose: onClose,
+      // Where the task lands comes first, then the shortcuts; the landed
+      // task under a caption of its own.
+      caption: phase == OnboardingFirstTaskPhase.created
+          ? createdCaption
+          : !prompt
+          ? null
+          : picker
+          ? categoryPrompt
+          : suggestionsLabel,
+      // The recorder and the thinking pulse are the one thing on their
+      // frames, and move; they sit in the middle of the tray.
+      centered:
+          phase == OnboardingFirstTaskPhase.listening ||
+          phase == OnboardingFirstTaskPhase.thinking,
+      // Typing instead is offered before the mic opens. While it is open,
+      // the way out short of Done is to start over — said plainly, since it
+      // drops what was said.
+      secondary: prompt
+          ? OnboardingStageAction(
+              label: ratherTypeLabel,
+              onPressed: onRatherType,
+            )
+          : phase == OnboardingFirstTaskPhase.listening && onStartOver != null
+          ? OnboardingStageAction(
+              label: startOverLabel,
+              onPressed: onStartOver,
+            )
+          : null,
+      primary: switch (phase) {
+        OnboardingFirstTaskPhase.prompt => OnboardingStageAction(
+          label: recordLabel,
+          onPressed: onRecordTap,
+          icon: LottiIcons.mic,
+        ),
+        OnboardingFirstTaskPhase.listening => OnboardingStageAction(
+          label: stopLabel,
+          onPressed: onRecordTap,
+          icon: LottiIcons.confirm,
+        ),
+        OnboardingFirstTaskPhase.thinking => null,
+        OnboardingFirstTaskPhase.created => OnboardingStageAction(
+          label: openTaskLabel,
+          onPressed: onOpenTask,
+          icon: LottiIcons.forward,
+        ),
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Positioned.fill(child: OnboardingBackdrop()),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    panelBg.withValues(alpha: 0.2),
-                    panelBg.withValues(alpha: 0.62),
-                  ],
-                ),
+          if (phase == OnboardingFirstTaskPhase.created)
+            _CreatedTaskCard(
+              tokens: tokens,
+              taskTitle: createdTaskTitle,
+              landedIn: landedIn,
+            )
+          else if (!prompt)
+            ConstrainedBox(
+              constraints: BoxConstraints(minHeight: activeBandHeight),
+              child: Center(child: _activeElement(tokens)),
+            ),
+          if (prompt) ...[
+            if (picker) ...[
+              _CategoryPicker(
+                tokens: tokens,
+                categories: categories,
+                selectedId: selectedCategoryId,
+                onSelect: onSelectCategory,
               ),
+              SizedBox(height: tokens.spacing.step6),
+              OnboardingTrayCaption(suggestionsLabel),
+              SizedBox(height: tokens.spacing.step4),
+            ],
+            _SuggestionChips(
+              tokens: tokens,
+              suggestions: suggestions,
+              onTap: onSuggestionTap,
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.spacing.step5,
-              tokens.spacing.step6,
-              tokens.spacing.step5,
-              tokens.spacing.step6 + MediaQuery.paddingOf(context).bottom,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (companion != null) ...[
-                  Center(
-                    child: SizedBox.square(
-                      dimension: ControlSizes.avatarHero,
-                      child: companion,
-                    ),
-                  ),
-                  // Her line is the headline, in her bubble; at the prompt
-                  // the guidance follows it there.
-                  OnboardingSpeechBubble(
-                    title: _headline,
-                    text: phase == OnboardingFirstTaskPhase.prompt
-                        ? guidance
-                        : null,
-                  ),
-                ] else ...[
-                  Text(
-                    _headline,
-                    textAlign: TextAlign.center,
-                    style: tokens.typography.styles.heading.heading2.copyWith(
-                      color: textHigh,
-                    ),
-                  ),
-                ],
-                if (companion == null &&
-                    phase == OnboardingFirstTaskPhase.prompt) ...[
-                  SizedBox(height: tokens.spacing.step2),
-                  Text(
-                    guidance,
-                    textAlign: TextAlign.center,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: textMedium,
-                    ),
-                  ),
-                ],
-                SizedBox(height: tokens.spacing.step4),
-                // The created card sits at its natural height; the other frames
-                // share the fixed band so the visual keeps one optical anchor
-                // across phases.
-                if (phase == OnboardingFirstTaskPhase.created)
-                  _CreatedTaskCard(
-                    tokens: tokens,
-                    accent: accent,
-                    taskTitle: createdTaskTitle,
-                    hint: createdHint,
-                    onTap: onOpenTask,
-                  )
-                else
-                  ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: activeBandHeight),
-                    child: Center(child: _activeElement(tokens)),
-                  ),
-                if (phase == OnboardingFirstTaskPhase.listening) ...[
-                  SizedBox(height: tokens.spacing.step3),
-                  Text(
-                    listeningCaption,
-                    textAlign: TextAlign.center,
-                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                      color: textHigh,
-                    ),
-                  ),
-                ],
-                if (_isComposing && categories.length > 1) ...[
-                  SizedBox(height: tokens.spacing.step4),
-                  _CategoryPicker(
-                    tokens: tokens,
-                    accent: accent,
-                    prompt: categoryPrompt,
-                    categories: categories,
-                    selectedId: selectedCategoryId,
-                    onSelect: onSelectCategory,
-                  ),
-                ],
-                if (phase == OnboardingFirstTaskPhase.prompt) ...[
-                  SizedBox(height: tokens.spacing.step5),
-                  _SuggestionChips(
-                    tokens: tokens,
-                    label: suggestionsLabel,
-                    suggestions: suggestions,
-                    onTap: onSuggestionTap,
-                  ),
-                ],
-                if (_isComposing) ...[
-                  SizedBox(height: tokens.spacing.step3),
-                  TextButton(
-                    onPressed: onRatherType,
-                    child: Text(
-                      ratherTypeLabel,
-                      style: tokens.typography.styles.subtitle.subtitle1
-                          .copyWith(color: accent),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -327,16 +350,12 @@ class OnboardingFirstTaskView extends StatelessWidget {
         tokens: tokens,
         accent: accent,
         transcript: transcript,
-        reassurance: thinkingReassurance,
       );
     }
-    final capturePhase = phase == OnboardingFirstTaskPhase.listening
-        ? CapturePhase.listening
-        : CapturePhase.idle;
     switch (style) {
       case RecordingStyle.modern:
         return VoiceOrbZone(
-          phase: capturePhase,
+          phase: CapturePhase.listening,
           caption: '',
           captionColor: tokens.colors.text.mediumEmphasis,
           semanticLabel: recordSemanticLabel,
@@ -412,336 +431,142 @@ class _AnalogueRecorder extends StatelessWidget {
   }
 }
 
-/// Starter-task one-liners under a small lead-in: a no-mic path into the same
-/// voice→task pipeline, for users not ready to speak yet.
+/// Starter-task one-liners, under the tray's caption: a no-mic path into the
+/// same voice→task pipeline, for users not ready to speak yet. A tap makes
+/// the task straight away, so each is a full-width row ending in an arrow —
+/// a way on, not a choice to tick.
 class _SuggestionChips extends StatelessWidget {
   const _SuggestionChips({
     required this.tokens,
-    required this.label,
     required this.suggestions,
     required this.onTap,
   });
 
   final DsTokens tokens;
-  final String label;
   final List<String> suggestions;
   final void Function(String suggestion) onTap;
 
   @override
   Widget build(BuildContext context) {
-    final textHigh = tokens.colors.text.highEmphasis;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
+        for (final (i, suggestion) in suggestions.indexed)
+          Padding(
+            padding: EdgeInsets.only(top: i == 0 ? 0 : tokens.spacing.step3),
+            child: OnboardingChoiceChip(
+              label: suggestion,
+              trailing: LottiIcons.forward,
+              wrapLabel: true,
+              onTap: () => onTap(suggestion),
+            ),
           ),
-        ),
-        SizedBox(height: tokens.spacing.step3),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: tokens.spacing.step2,
-          runSpacing: tokens.spacing.step2,
-          children: [
-            for (final suggestion in suggestions)
-              Semantics(
-                button: true,
-                label: suggestion,
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: InkWell(
-                    onTap: () => onTap(suggestion),
-                    borderRadius: BorderRadius.circular(tokens.radii.l),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: tokens.colors.background.level02.withValues(
-                          alpha: 0.4,
-                        ),
-                        borderRadius: BorderRadius.circular(tokens.radii.l),
-                        border: Border.all(
-                          color: textHigh.withValues(alpha: 0.32),
-                        ),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: tokens.spacing.step4,
-                          vertical: tokens.spacing.step2,
-                        ),
-                        child: Text(
-                          suggestion,
-                          style: tokens.typography.styles.body.bodySmall
-                              .copyWith(color: textHigh),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
       ],
     );
   }
 }
 
-/// The first-task destination picker: a short prompt over a centred wrap of
-/// pills naming the areas the user created, so they choose which one the
-/// structured task lands in. Selection is colour-led (a solid brand fill for
-/// the chosen area, an outline for the rest) so it stays legible on either
-/// themed panel.
+/// The first-task destination picker: chips naming the areas the user
+/// created, under the tray's caption, so they choose which one the
+/// structured task lands in.
 class _CategoryPicker extends StatelessWidget {
   const _CategoryPicker({
     required this.tokens,
-    required this.accent,
-    required this.prompt,
     required this.categories,
     required this.selectedId,
     required this.onSelect,
   });
 
   final DsTokens tokens;
-  final Color accent;
-  final String prompt;
   final List<OnboardingCaptureCategory> categories;
   final String selectedId;
   final void Function(String id) onSelect;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Wrap(
+      spacing: tokens.spacing.step3,
+      runSpacing: tokens.spacing.step3,
       children: [
-        Text(
-          prompt,
-          textAlign: TextAlign.center,
-          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
+        for (final category in categories)
+          OnboardingChoiceChip(
+            label: category.label,
+            selected: category.id == selectedId,
+            dense: true,
+            onTap: () => onSelect(category.id),
           ),
-        ),
-        SizedBox(height: tokens.spacing.step3),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: tokens.spacing.step2,
-          runSpacing: tokens.spacing.step2,
-          children: [
-            for (final category in categories)
-              _PickerChip(
-                tokens: tokens,
-                accent: accent,
-                label: category.label,
-                selected: category.id == selectedId,
-                onTap: () => onSelect(category.id),
-              ),
-          ],
-        ),
       ],
     );
   }
 }
 
-/// One destination pill. Selected fills solid brand with an on-interactive
-/// label; the rest use a quiet outline and high-emphasis label.
-class _PickerChip extends StatelessWidget {
-  const _PickerChip({
-    required this.tokens,
-    required this.accent,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final DsTokens tokens;
-  final Color accent;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final fg = selected
-        ? tokens.colors.text.onInteractiveAlert
-        : tokens.colors.text.highEmphasis;
-    final radius = BorderRadius.circular(tokens.radii.l);
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: radius,
-          focusColor: tokens.colors.surface.focusPressed,
-          hoverColor: tokens.colors.surface.hover,
-          child: Ink(
-            decoration: BoxDecoration(
-              color: selected ? accent : Colors.transparent,
-              borderRadius: radius,
-              border: Border.all(
-                color: selected
-                    ? accent
-                    : tokens.colors.text.mediumEmphasis.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step4,
-                vertical: tokens.spacing.step2,
-              ),
-              child: Text(
-                label,
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                  color: fg,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The created beat: the landed task rendered as a glowing, tappable card —
-/// its title over an invitation line. The checklist is deliberately *not*
-/// previewed here: it lands on the task page as confirmable proposals, so the
-/// card stays a clean one-tap handoff onto the real task rather than a preview
-/// that duplicates (and pre-empts) those suggestions.
-///
-/// Enters with a one-shot fade + scale settle, then breathes a soft accent
-/// glow so the card reads as *the* thing to touch next. Under reduced motion
-/// both rest on a calm static frame.
-class _CreatedTaskCard extends StatefulWidget {
+/// The created beat: the landed task, on the surface every onboarding choice
+/// is made on, marked done with its check — its title over the area it
+/// landed in. It is a preview, not a button: "Open task" opens it. The
+/// checklist is deliberately *not* previewed: it lands on the task page as
+/// confirmable proposals. It settles in with a one-shot fade.
+class _CreatedTaskCard extends StatelessWidget {
   const _CreatedTaskCard({
     required this.tokens,
-    required this.accent,
     required this.taskTitle,
-    required this.hint,
-    required this.onTap,
+    required this.landedIn,
   });
 
   final DsTokens tokens;
-  final Color accent;
   final String taskTitle;
-  final String hint;
-  final VoidCallback onTap;
-
-  @override
-  State<_CreatedTaskCard> createState() => _CreatedTaskCardState();
-}
-
-class _CreatedTaskCardState extends State<_CreatedTaskCard>
-    with SingleTickerProviderStateMixin {
-  /// Drives the breathing invite glow (0 → 1 → 0).
-  late final AnimationController _glow = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1400),
-  );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (reduceMotion) {
-      if (_glow.isAnimating) _glow.stop();
-      _glow.value = 0.5;
-    } else if (!_glow.isAnimating) {
-      _glow.repeat(reverse: true);
-    }
-  }
-
-  @override
-  void dispose() {
-    _glow.dispose();
-    super.dispose();
-  }
+  final String landedIn;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = widget.tokens;
-    final textHigh = tokens.colors.text.highEmphasis;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-
-    final card = AnimatedBuilder(
-      animation: _glow,
-      builder: (context, child) {
-        final t = _glow.value;
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(tokens.radii.l),
-            border: Border.all(
-              color: widget.accent.withValues(alpha: 0.35 + 0.35 * t),
+    final textMedium = tokens.colors.text.mediumEmphasis;
+    final card = OnboardingSelectableSurface(
+      label: taskTitle,
+      onTap: null,
+      selected: true,
+      padding: EdgeInsets.all(tokens.spacing.step4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            taskTitle,
+            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+              color: tokens.colors.text.highEmphasis,
             ),
-            color: tokens.colors.background.level02.withValues(alpha: 0.55),
-            boxShadow: [
-              BoxShadow(
-                color: widget.accent.withValues(alpha: 0.10 + 0.16 * t),
-                blurRadius: tokens.spacing.step6,
-                spreadRadius: 1,
-              ),
-            ],
           ),
-          child: child,
-        );
-      },
-      child: Padding(
-        padding: EdgeInsets.all(tokens.spacing.step5),
-        child: Text(
-          widget.taskTitle,
-          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-            color: textHigh,
-          ),
-        ),
-      ),
-    );
-
-    // The hint line shares the card's tap target — "Tap your task to open it"
-    // must itself be tappable, not just the card above it.
-    final content = Semantics(
-      button: true,
-      label: widget.taskTitle,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(tokens.radii.l),
-          focusColor: tokens.colors.surface.focusPressed,
-          hoverColor: tokens.colors.surface.hover,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              card,
-              SizedBox(height: tokens.spacing.step3),
-              Text(
-                widget.hint,
-                textAlign: TextAlign.center,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: widget.accent,
+          if (landedIn.isNotEmpty) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Row(
+              children: [
+                Icon(
+                  LottiIcons.label,
+                  size: tokens.spacing.step4,
+                  color: textMedium,
                 ),
-              ),
-            ],
-          ),
-        ),
+                SizedBox(width: tokens.spacing.step2),
+                Flexible(
+                  child: Text(
+                    landedIn,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: textMedium,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
-
-    if (reduceMotion) return content;
-
-    // One-shot entrance: the card settles in with a fade + gentle scale so the
-    // payoff lands as an arrival, not a hard swap.
+    if (reduceMotion) return card;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration: MotionDurations.medium4,
       curve: MotionCurves.emphasizedDecelerate,
-      builder: (context, t, child) => Opacity(
-        opacity: t,
-        child: Transform.scale(scale: 0.94 + 0.06 * t, child: child),
-      ),
-      child: content,
+      builder: (context, t, child) => Opacity(opacity: t, child: child),
+      child: card,
     );
   }
 }
@@ -751,13 +576,11 @@ class _ThinkingCluster extends StatelessWidget {
     required this.tokens,
     required this.accent,
     required this.transcript,
-    required this.reassurance,
   });
 
   final DsTokens tokens;
   final Color accent;
   final String transcript;
-  final String reassurance;
 
   @override
   Widget build(BuildContext context) {
@@ -775,9 +598,8 @@ class _ThinkingCluster extends StatelessWidget {
           // than deflating to a bare progress bar.
           _ThinkingPulse(color: accent, size: tokens.spacing.step11),
           SizedBox(height: tokens.spacing.step6),
-          // Flexible so the quote yields to the pulse and the reassurance line
-          // inside the fixed-height active band — a long transcript ellipsizes
-          // earlier instead of pushing the reassurance out of the band.
+          // Flexible so the quote yields to the pulse inside the active band
+          // — a long transcript ellipsizes rather than overflowing it.
           Flexible(
             child: Text(
               '"$transcript"',
@@ -788,14 +610,6 @@ class _ThinkingCluster extends StatelessWidget {
                 color: tokens.colors.text.highEmphasis,
                 fontStyle: FontStyle.italic,
               ),
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step5),
-          Text(
-            reassurance,
-            textAlign: TextAlign.center,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
         ],

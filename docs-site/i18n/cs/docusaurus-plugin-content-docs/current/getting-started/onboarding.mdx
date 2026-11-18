@@ -24,13 +24,19 @@ první úkol pomocí AI.
 
 <ManualScreenshot
   caseId="onboarding/welcome"
-  alt="Uvítací panel průvodce Lotti s výzvou k připojení AI a převodu řeči na strukturovaný úkol"
-  caption="Uvítací panel se otevře nad aktuální aplikací. Pokračuj volbou AI, nebo průvodce opusť beze změny nastavení."
+  alt="Uvítání průvodce Lotti s Lotti, jejím pozdravem a třemi kroky: připojit jeden klíč, vybrat oblasti, vytvořit první úkol"
+  caption="Každý krok má stejné rozvržení: Lotti, její bublinu s textem a vlastní obsah kroku nad hlavním tlačítkem. Uvítání vypisuje tři kroky, které tě čekají."
 />
 
-Začni volbou **Vybrat AI**. Volba **Nejdřív se rozhlédnout**, ztmavená oblast
-mimo panel i systémová akce zpět průvodce ukončí, aniž by se cokoli připojilo.
-Později se k němu můžeš vrátit z Nastavení.
+Začni volbou **Začít s jedním klíčem**, nebo si volbou **Prozkoumat s ukázkovými
+daty** nejdřív prohlédni zařízený ukázkový svět. Tlačítko zavřít nahoře,
+systémová akce zpět a na počítači i kliknutí mimo panel ukončí průvodce z
+uvítání, aniž by se cokoli připojilo. Později se k němu můžeš vrátit z
+Nastavení.
+
+Za uvítáním vrací šipka zpět nahoře — stejně jako systémová akce zpět — na
+předchozí krok a tlačítko zavřít průvodce ukončí. Tři segmenty vedle nich
+ukazují, jak daleko jsi s klíčem, svými oblastmi a prvním úkolem.
 
 Lotti může toto uvítání nabídnout vhodnému profilu také automaticky.
 Automatická výzva se opakuje jen omezeně; položka v Nastavení toto omezení
@@ -40,27 +46,30 @@ nemá, takže cesta zpět zůstane vždy dostupná.
 
 <ManualScreenshot
   caseId="onboarding/providers"
-  alt="Výběr poskytovatele v průvodci Lotti s možnostmi Mistral, Melious.ai, Gemini, Qwen, OpenAI a Ollama"
-  caption="Hlavní cloudoví poskytovatelé jsou uvedeni jako první. OpenAI a místní Ollamu najdeš po rozbalení dalších možností."
+  alt="Krok výběru poskytovatele v průvodci Lotti se zvoleným Mistralem a tlačítkem Pokračovat s Mistral"
+  caption="Mistral je doporučený a na začátku zvolený. Ostatní, včetně místní Ollamy, najdeš po otevření Další poskytovatelé."
 />
 
-Stránka poskytovatelů rozlišuje dostupné cloudové a místní možnosti:
+Při otevření kroku je zvolený Mistral. Klepnutím na jinou kartu zvolíš místo
+něj toho poskytovatele; tlačítko dole uvádí, se kterým budeš pokračovat, a dál
+tě posune jen tlačítko. Poskytovatelé jsou:
 
 - **Mistral** je doporučená výchozí volba hostovaná v EU.
 - **Melious.ai** je hostovaný v EU s dynamickým směrováním modelů.
 - **Gemini** a **Qwen** používají své vlastní cloudové služby.
-- **OpenAI** najdeš mezi rozšířenými možnostmi.
+- **OpenAI** najdeš spolu s ostatními pod **Další poskytovatelé**.
 - **Ollama** se připojuje ke kompatibilnímu místnímu koncovému bodu a
   nepotřebuje hostovaný API klíč.
 
 <ManualScreenshot
   caseId="onboarding/api-key"
   alt="Ověřovací krok úvodního průvodce s potvrzeným místním připojením k Ollamě"
-  caption="Lotti zvoleného poskytovatele ověří dřív, než zpřístupní Připojit. U cloudového poskytovatele ukazuje stejný krok i pole pro API klíč."
+  caption="Lotti zvoleného poskytovatele ověří dřív, než tě tlačítko posune dál. U cloudového poskytovatele ukazuje stejný krok i pole pro API klíč."
 />
 
-U cloudového poskytovatele vlož jeho API klíč. Lotti ověří připojení, než
-zpřístupní tlačítko **Připojit**. U Ollamy ověří nastavený místní koncový bod a
+U cloudového poskytovatele vlož jeho API klíč. Lotti ověří připojení, výsledek
+zobrazí na kartě poskytovatele a teprve potom zpřístupní **Pokračovat s**
+poskytovatelem. U Ollamy ověří nastavený místní koncový bod a
 zobrazí dostupné modely. Úspěšné připojení uloží poskytovatele a připraví modely
 i profil inference pro zbývající kroky.
 
@@ -101,8 +110,10 @@ Na snímcích v příručce jsou dvě skutečné kategorie — **Tučňáčí pr
 Panel prvního úkolu používá běžný proces zachycení v Lotti. Vyber cílovou
 kategorii a potom jednu ze tří cest:
 
-1. Spusť nahrávání a řekni úkol běžnou větou.
-2. Vyber úvodní návrh a hned vyzkoušej strukturování.
+1. Vyber **Klepni pro mluvení** a řekni úkol běžnou větou. Dokud je mikrofon
+   otevřený, zobrazuje se nahrávání; **Hotovo** nahrávání ukončí a **Začít
+   znovu** ho zahodí.
+2. Vyber úvodní návrh a rovnou z něj vytvoř úkol.
 3. Zvol **Raději psát?** a zadej myšlenku bez mikrofonu.
 
 Lotti během strukturování zobrazuje zachycená slova. Výsledkem je skutečný úkol
@@ -116,7 +127,7 @@ které můžeš potvrdit, místo aby úkol tiše změnily. Tato cesta k návrhů
   caption="Napsaná myšlenka z Project Waddle se promění v úkol „Zkontrolovat sardinkový retranslátor na Europě“. Dokud ho nevybereš, zůstane v panelu."
 />
 
-Výběrem karty vytvořeného úkolu zavřeš průvodce a otevřeš běžnou stránku úkolu.
+Volbou **Otevřít úkol** zavřeš průvodce a otevřeš běžnou stránku úkolu.
 Tam můžeš zkontrolovat návrhy kontrolního seznamu, přidat titulní obrázek nebo
 podklady, nastavit termín a prioritu a zařadit úkol do Daily OS.
 

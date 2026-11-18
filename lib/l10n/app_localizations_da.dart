@@ -11944,9 +11944,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get nudgeBannerSnoozeTitle => 'Udsæt banner';
 
   @override
-  String get onboardingApiKeyConnect => 'Forbind';
-
-  @override
   String get onboardingApiKeyConnecting => 'Forbinder...';
 
   @override
@@ -11975,8 +11972,14 @@ class AppLocalizationsDa extends AppLocalizations {
       'Kører på din enhed — ingen nøgle nødvendig.';
 
   @override
+  String get onboardingApiKeyLocalTitle => 'Lad mig finde den på din enhed.';
+
+  @override
   String get onboardingApiKeyNoKeyHelp =>
       'Ny her? Log ind, opret en API-nøgle, og indsæt den så — gratis at starte med.';
+
+  @override
+  String get onboardingApiKeyProviderCaption => 'Din udbyder';
 
   @override
   String get onboardingApiKeyReveal => 'Show-nøgle';
@@ -11988,6 +11991,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String onboardingApiKeyUnreachable(String providerName) {
     return 'Kunne ikke nå $providerName. Tjek nøglen eller din forbindelse og prøv igen.';
   }
+
+  @override
+  String get onboardingApiKeyVerifiedText =>
+      'Fortsæt, så sætter jeg det hele op for dig.';
+
+  @override
+  String get onboardingApiKeyVerifiedTitle => 'Det virker';
 
   @override
   String get onboardingApiKeyVerifying => 'Bekræfter...';
@@ -12023,7 +12033,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get onboardingCategoryExplanation =>
-      'Hvert område af dit liv får sit eget rum. Vælg dem, der passer – eller tilføj din egen.';
+      'Hvert område af dit liv får sit eget rum.';
 
   @override
   String get onboardingCategoryFamily => 'Familie';
@@ -12033,6 +12043,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get onboardingCategoryFriends => 'Venner';
+
+  @override
+  String get onboardingCategoryPickOne =>
+      'Vælg mindst ét område for at fortsætte.';
 
   @override
   String get onboardingCategoryTitle => 'Hvor skal din AI fungere?';
@@ -12053,7 +12067,12 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get onboardingCompanionOneKey =>
-      'Fortæl mig, hvad du har på hjerte, så laver jeg det om til en plan. For at komme i gang skal jeg bare bruge én API-nøgle, og jeg hjælper dig med at sætte den op.';
+      'Fortæl mig, hvad du har på hjerte, så laver jeg det om til en plan. Jeg skal kun bruge én nøgle.';
+
+  @override
+  String onboardingConnectContinueWith(String provider) {
+    return 'Fortsæt med $provider';
+  }
 
   @override
   String get onboardingConnectGeminiName => 'Tvillingerne';
@@ -12067,6 +12086,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get onboardingConnectHideOtherProviders => 'Skjul andre udbydere';
+
+  @override
+  String get onboardingConnectKeyNote =>
+      'En nøgle er en slags adgangskode til en AI-tjeneste.';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
@@ -12103,15 +12126,19 @@ class AppLocalizationsDa extends AppLocalizations {
   String get onboardingConnectRecommended => 'Anbefalet';
 
   @override
-  String get onboardingFirstTaskCreatedHint =>
-      'Tryk på din opgave for at åbne den';
+  String get onboardingFirstTaskCreatedCaption => 'Din opgave';
+
+  @override
+  String onboardingFirstTaskCreatedText(String area) {
+    return 'Den ligger i $area. Åbn den for at se de trin, jeg foreslår.';
+  }
 
   @override
   String get onboardingFirstTaskCreatedTitle => 'Din første opgave er klar';
 
   @override
   String get onboardingFirstTaskGuidance =>
-      'Tryk for at tale og sig, hvad der skal gøres — Lotti gør det til en reel opgave.';
+      'Tryk for at tale og sig, hvad der skal gøres — jeg gør det til en rigtig opgave.';
 
   @override
   String get onboardingFirstTaskSuggestionDentist =>
@@ -12126,7 +12153,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get onboardingFirstTaskSuggestionsLabel =>
-      'Ikke klar til at tale? Start med en af disse:';
+      'Eller tryk på en for at gøre den til din første opgave';
 
   @override
   String get onboardingFirstTaskTitle => 'Lav din første opgave';
@@ -12171,6 +12198,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get onboardingRecordingStyleTryVoice => 'Prøv med din stemme';
 
   @override
+  String onboardingStageProgress(int current, int total) {
+    return 'Trin $current af $total';
+  }
+
+  @override
   String get onboardingWelcomeConnectButton => 'Vælg din AI-hjerne';
 
   @override
@@ -12181,7 +12213,32 @@ class AppLocalizationsDa extends AppLocalizations {
   String get onboardingWelcomeOneKeyButton => 'Kom i gang med én nøgle';
 
   @override
+  String get onboardingWelcomeSettingsNote =>
+      'Du kan ændre det hele senere i Indstillinger.';
+
+  @override
   String get onboardingWelcomeSkipButton => 'Se dig omkring først';
+
+  @override
+  String get onboardingWelcomeStepAreas => 'Vælg dine områder';
+
+  @override
+  String get onboardingWelcomeStepAreasDetail =>
+      'Hver del af dit liv får sit eget rum';
+
+  @override
+  String get onboardingWelcomeStepKey => 'Tilslut én nøgle';
+
+  @override
+  String get onboardingWelcomeStepKeyDetail =>
+      'Så jeg kan tænke, lytte og læse højt';
+
+  @override
+  String get onboardingWelcomeStepsCaption => 'Tre ting, så er du i gang';
+
+  @override
+  String get onboardingWelcomeStepTaskDetail =>
+      'Sig én ting, og se den blive til en opgave';
 
   @override
   String get onboardingWelcomeTitle => 'Tal. Lotti gør det til en plan.';

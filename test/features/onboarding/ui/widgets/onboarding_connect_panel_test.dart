@@ -1,4 +1,4 @@
-import 'dart:ui' show SemanticsAction;
+import 'dart:ui' show SemanticsAction, Tristate;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,14 +13,15 @@ import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
-  // Reduced motion so the aurora/constellation backdrop controllers stop and
-  // the panel settles deterministically under a bare `pump()`.
+  // Reduced motion so the panel settles deterministically under a bare
+  // `pump()`.
   const mq = MediaQueryData(size: Size(390, 844), disableAnimations: true);
 
   Future<void> pumpPanel(
     WidgetTester tester, {
     void Function(InferenceProviderType)? onSelect,
     VoidCallback? onBack,
+    VoidCallback? onClose,
     Widget? companion,
   }) async {
     await tester.binding.setSurfaceSize(const Size(480, 900));
@@ -34,6 +35,7 @@ void main() {
             child: OnboardingConnectPanel(
               onSelect: onSelect ?? (_) {},
               onBack: onBack ?? () {},
+              onClose: onClose,
               companion: companion,
             ),
           ),
@@ -52,24 +54,35 @@ void main() {
   });
 
   group('OnboardingConnectPanel widget', () {
-    testWidgets('leads with one card: the recommended provider, badged, '
-        'with what its one key covers', (tester) async {
+    testWidgets('leads with one card under the "Recommended" caption: the '
+        'recommended provider, with what its one key covers', (tester) async {
       await pumpPanel(tester);
 
       expect(find.text(m.onboardingConnectOneKeyTitle), findsOneWidget);
       expect(onboardingRecommendedProvider, InferenceProviderType.mistral);
       expect(find.text('Mistral'), findsOneWidget);
-      expect(find.text(m.onboardingConnectRecommended), findsOneWidget);
       // The pitch takes the tagline's place on the recommended card.
       expect(find.text(m.onboardingConnectMistralPitch), findsOneWidget);
       expect(find.text(m.onboardingConnectMistralTagline), findsNothing);
-      // The badge sits on the Mistral card, beside its name.
+      // The caption names the card from above it; the card carries no badge
+      // of its own.
+      expect(find.text(m.onboardingConnectRecommended), findsOneWidget);
       expect(
-        (tester.getCenter(find.text(m.onboardingConnectRecommended)).dy -
-                tester.getCenter(find.text('Mistral')).dy)
-            .abs(),
-        lessThan(24),
+        tester.getBottomLeft(find.text(m.onboardingConnectRecommended)).dy,
+        lessThan(tester.getTopLeft(find.text('Mistral')).dy),
       );
+    });
+
+    testWidgets('the main button goes on with the recommended provider, and '
+        'a line under the card says what a key is', (tester) async {
+      final selected = <InferenceProviderType>[];
+      await pumpPanel(tester, onSelect: selected.add);
+
+      expect(find.text(m.onboardingConnectKeyNote), findsOneWidget);
+      final button = find.text(m.onboardingConnectContinueWith('Mistral'));
+      await tester.ensureVisible(button);
+      await tester.tap(button);
+      expect(selected, [InferenceProviderType.mistral]);
     });
 
     testWidgets('every other provider waits behind the closed disclosure', (
@@ -101,8 +114,8 @@ void main() {
       expect(find.byType(OnboardingSpeechBubble), findsNothing);
     });
 
-    testWidgets('with the companion she recommends it in her bubble, '
-        'pointing at her', (tester) async {
+    testWidgets('with the companion she stands on the stage and recommends '
+        'it in the bubble under her', (tester) async {
       await pumpPanel(
         tester,
         companion: const ColoredBox(
@@ -112,20 +125,21 @@ void main() {
       );
 
       final companion = find.byKey(const ValueKey('companion'));
-      expect(tester.getSize(companion), const Size.square(80));
       final bubble = tester.widget<OnboardingSpeechBubble>(
         find.byType(OnboardingSpeechBubble),
       );
+      expect(bubble.title, m.onboardingConnectOneKeyTitle);
       expect(bubble.text, m.onboardingConnectGuide);
-      expect(bubble.tail, OnboardingBubbleTail.left);
       expect(find.text(m.onboardingConnectNotSure), findsNothing);
-      // She stands left of her bubble, and both sit above the card.
-      expect(
-        tester.getCenter(companion).dx,
-        lessThan(tester.getCenter(find.text(m.onboardingConnectGuide)).dx),
-      );
+      // She stands over her bubble, and both sit above the card.
       expect(
         tester.getBottomLeft(companion).dy,
+        lessThanOrEqualTo(
+          tester.getTopLeft(find.byType(OnboardingSpeechBubble)).dy,
+        ),
+      );
+      expect(
+        tester.getBottomLeft(find.byType(OnboardingSpeechBubble)).dy,
         lessThan(tester.getTopLeft(find.text('Mistral')).dy),
       );
     });
@@ -208,129 +222,131 @@ void main() {
       }
     });
 
-    testWidgets('tapping a primary tile fires onSelect with its type', (
+    testWidgets('the recommended provider starts out chosen; a tile '
+        'chooses its provider and only the main button goes on, with the one '
+        'chosen', (tester) async {
+      final selected = <InferenceProviderType>[];
+      await pumpPanel(tester, onSelect: selected.add);
+
+      expect(find.text(m.onboardingConnectContinueWith('Mistral')), findsOne);
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+
+      await tester.tap(find.text(m.onboardingConnectOtherProviders));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.tap(
+        find.text(onboardingProviderName(m, InferenceProviderType.ollama)),
+      );
+      await tester.pump();
+
+      // Choosing is not going on.
+      expect(selected, isEmpty);
+      expect(find.text(m.onboardingConnectContinueWith('Ollama')), findsOne);
+      // One chosen at a time, marked by more than colour.
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+      expect(
+        tester
+            .getSemantics(
+              find.bySemanticsLabel(
+                onboardingProviderName(m, InferenceProviderType.ollama),
+              ),
+            )
+            .getSemanticsData()
+            .flagsCollection
+            .isSelected,
+        Tristate.isTrue,
+      );
+
+      final button = find.text(m.onboardingConnectContinueWith('Ollama'));
+      await tester.ensureVisible(button);
+      await tester.tap(button);
+      expect(selected, [InferenceProviderType.ollama]);
+    });
+
+    testWidgets('a provider tile can be chosen from the keyboard', (
       tester,
     ) async {
       final selected = <InferenceProviderType>[];
       await pumpPanel(tester, onSelect: selected.add);
-
-      // Tap the Mistral tile via its localized name.
-      await tester.tap(
-        find.text(onboardingProviderName(m, InferenceProviderType.mistral)),
-      );
+      await tester.tap(find.text(m.onboardingConnectOtherProviders));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
 
-      expect(selected, [InferenceProviderType.mistral]);
-    });
-
-    testWidgets('a primary provider activates via keyboard', (tester) async {
-      final selected = <InferenceProviderType>[];
-      await pumpPanel(tester, onSelect: selected.add);
-
-      final providerName = find.text(
-        onboardingProviderName(m, InferenceProviderType.mistral),
+      final gemini = find.text(
+        onboardingProviderName(m, InferenceProviderType.gemini),
       );
-      final focus = Focus.of(tester.element(providerName))..requestFocus();
+      final focus = Focus.of(tester.element(gemini))..requestFocus();
       await tester.pump();
       expect(focus.hasPrimaryFocus, isTrue);
-
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
 
-      expect(selected, [InferenceProviderType.mistral]);
-      final provider = find.bySemanticsLabel(
-        '${onboardingProviderName(m, InferenceProviderType.mistral)}, '
-        '${m.onboardingConnectRecommended}',
+      expect(selected, isEmpty);
+      expect(find.text(m.onboardingConnectContinueWith('Gemini')), findsOne);
+      final semantics = tester.getSemantics(
+        find.bySemanticsLabel(
+          '${onboardingProviderName(m, InferenceProviderType.mistral)}, '
+          '${m.onboardingConnectRecommended}',
+        ),
       );
-      expect(provider, findsOneWidget);
-      final semantics = tester.getSemantics(provider);
-      expect(semantics.label, contains('Mistral'));
       expect(
         semantics.getSemanticsData().hasAction(SemanticsAction.tap),
         isTrue,
       );
     });
 
-    testWidgets('tapping a revealed extra tile fires onSelect with its type', (
-      tester,
-    ) async {
-      final selected = <InferenceProviderType>[];
-      await pumpPanel(tester, onSelect: selected.add);
+    testWidgets('opening the other providers leaves her where she is: only '
+        'the tray scrolls', (tester) async {
+      await pumpPanel(
+        tester,
+        companion: const ColoredBox(
+          key: ValueKey('companion'),
+          color: Color(0xFF000000),
+        ),
+      );
+      final before = tester.getSize(find.byKey(const ValueKey('companion')));
 
       await tester.tap(find.text(m.onboardingConnectOtherProviders));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
 
-      await tester.tap(
-        find.text(onboardingProviderName(m, InferenceProviderType.ollama)),
+      expect(
+        tester.getSize(find.byKey(const ValueKey('companion'))),
+        before,
       );
+    });
+
+    testWidgets('the cards wear no brand colour: the icon sits in a quiet '
+        'well, so nothing but the chosen card reads as chosen', (tester) async {
+      await pumpPanel(tester);
+      await tester.tap(find.text(m.onboardingConnectOtherProviders));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      final tokens = tester
+          .element(find.byType(OnboardingConnectPanel))
+          .designTokens;
 
-      expect(selected, [InferenceProviderType.ollama]);
-    });
-  });
-
-  group('onboardingProviderBrandColor', () {
-    test('returns a distinct brand color for every surfaced provider', () {
-      final byType = <InferenceProviderType, Color>{
-        for (final type in [
-          onboardingRecommendedProvider,
-          ...onboardingOtherProviders,
-        ])
-          type: onboardingProviderBrandColor(type),
-      };
-
-      // Every surfaced provider resolves to its own dedicated brand color
-      // (none fall through to the teal fallback).
-      const fallback = Color(0xFF5ED4B7);
-      for (final entry in byType.entries) {
-        expect(
-          entry.value,
-          isNot(fallback),
-          reason: '${entry.key} should have a dedicated brand color',
-        );
+      for (final icon in tester.widgetList<Icon>(
+        find.descendant(
+          of: find.byType(OnboardingProviderCard),
+          matching: find.byType(Icon),
+        ),
+      )) {
+        if (icon.icon == LottiIcons.confirm) continue;
+        expect(icon.color, tokens.colors.text.mediumEmphasis);
       }
-      // Colors are distinct from one another.
-      expect(byType.values.toSet().length, byType.length);
-
-      // Spot-check the explicit brand hues for the listed arms.
-      expect(
-        onboardingProviderBrandColor(InferenceProviderType.melious),
-        const Color(0xFF14B8A6),
-      );
-      expect(
-        onboardingProviderBrandColor(InferenceProviderType.gemini),
-        const Color(0xFF4285F4),
-      );
-      expect(
-        onboardingProviderBrandColor(InferenceProviderType.mistral),
-        const Color(0xFFFF7000),
-      );
-      expect(
-        onboardingProviderBrandColor(InferenceProviderType.alibaba),
-        const Color(0xFF615CED),
-      );
-      expect(
-        onboardingProviderBrandColor(InferenceProviderType.openAi),
-        const Color(0xFF10A37F),
-      );
-      expect(
-        onboardingProviderBrandColor(InferenceProviderType.ollama),
-        const Color(0xFFC7C7CC),
-      );
     });
 
-    test('falls back to the brand teal for unlisted providers', () {
-      const fallback = Color(0xFF5ED4B7);
-      // Types not in the switch's explicit arms hit the `_` fallback.
-      expect(
-        onboardingProviderBrandColor(InferenceProviderType.anthropic),
-        fallback,
-      );
-      expect(
-        onboardingProviderBrandColor(InferenceProviderType.whisper),
-        fallback,
-      );
+    testWidgets('the close button leaves where the host offers it', (
+      tester,
+    ) async {
+      var closed = 0;
+      await pumpPanel(tester, onClose: () => closed++);
+      await tester.tap(find.byIcon(LottiIcons.close));
+      expect(closed, 1);
+
+      await pumpPanel(tester);
+      expect(find.byIcon(LottiIcons.close), findsNothing);
     });
   });
 

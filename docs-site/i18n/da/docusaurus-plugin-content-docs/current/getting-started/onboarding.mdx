@@ -24,14 +24,20 @@ AI-strukturerede opgave.
 
 <ManualScreenshot
   caseId="onboarding/welcome"
-  alt="Lottis onboarding-velkomstpanel, der inviterer til at forbinde en AI-hjerne og gøre tale til en struktureret opgave"
-  caption="Velkomstpanelet åbner oven på den aktuelle app. Vælg din AI-hjerne for at fortsætte, eller forlad flowet uden at ændre opsætningen."
+  alt="Lottis onboarding-velkomst med Lotti, hendes hilsen og de tre trin: forbind én nøgle, vælg dine områder, opret din første opgave"
+  caption="Alle trin har samme layout: Lotti, hendes taleboble og trinnets eget indhold over hovedknappen. Velkomsten viser de tre trin, der venter."
 />
 
-Vælg **Vælg din AI-hjerne** for at begynde. At vælge **Se dig omkring
-først**, trykke på det dæmpede område uden for panelet eller bruge systemets
-tilbage-handling forlader alle onboarding uden at forbinde noget. Du kan
-vende tilbage fra Indstillinger senere.
+Vælg **Kom i gang med én nøgle** for at begynde, eller **Udforsk med
+eksempeldata** for først at se dig omkring i en møbleret demoverden.
+Lukkeknappen øverst, systemets tilbage-handling og, på en computer, et klik
+uden for panelet forlader alle onboarding fra velkomsten uden at forbinde
+noget. Du kan vende tilbage fra Indstillinger senere.
+
+Efter velkomsten går tilbage-pilen øverst — og systemets tilbage-handling —
+til det forrige trin, og lukkeknappen forlader onboarding. Tre segmenter ved
+siden af dem viser, hvor langt du er med nøglen, dine områder og din første
+opgave.
 
 Lotti kan også automatisk tilbyde denne velkomst til en berettiget profil.
 Den automatiske prompt har en begrænset gentagelseskadence; det har
@@ -41,27 +47,30 @@ indstillingsposten ikke, så du har altid en vej tilbage.
 
 <ManualScreenshot
   caseId="onboarding/providers"
-  alt="Lottis onboarding-udbydervælger med Mistral, Melious.ai, Gemini, Qwen, OpenAI og Ollama"
-  caption="De primære hostede udbydere vises først. Udvid Flere muligheder for OpenAI og den lokale Ollama-vej."
+  alt="Lottis onboarding-udbydertrin med Mistral valgt og knappen Fortsæt med Mistral"
+  caption="Mistral anbefales og er valgt fra start. Åbn Andre udbydere for resten, herunder den lokale Ollama-vej."
 />
 
-Udbydersiden identificerer de tilgængelige hostede og lokale valgmuligheder:
+Mistral er valgt, når trinnet åbner. Tryk på et andet kort for at vælge den
+udbyder i stedet; knappen nederst nævner den, du fortsætter med, og kun
+knappen går videre. Udbyderne er:
 
 - **Mistral** er den anbefalede EU-hostede standard.
 - **Melious.ai** er EU-hostet med dynamisk modelruting.
 - **Gemini** og **Qwen** viser deres tilsvarende hostede regioner.
-- **OpenAI** er tilgængelig under de udvidede muligheder.
+- **OpenAI** er tilgængelig under **Andre udbydere** sammen med de øvrige.
 - **Ollama** forbinder til et kompatibelt lokalt endpoint og kræver ikke en
   hostet API-nøgle.
 
 <ManualScreenshot
   caseId="onboarding/api-key"
   alt="Lottis onboarding-panel til udbyderverifikation med en verificeret lokal Ollama-forbindelse"
-  caption="Lotti verificerer den valgte udbyder, før Forbind aktiveres. Hostede udbydere bruger samme trin med et API-nøglefelt."
+  caption="Lotti verificerer den valgte udbyder, før knappen går videre. Hostede udbydere bruger samme trin med et API-nøglefelt."
 />
 
 For en hostet udbyder indsætter du udbyderens API-nøgle. Lotti verificerer
-forbindelsen, før **Forbind** aktiveres. Ollama verificerer det konfigurerede
+forbindelsen og viser resultatet på udbyderens kort, før **Fortsæt med**
+udbyderen aktiveres. Ollama verificerer det konfigurerede
 lokale endpoint og rapporterer de modeller, der kan nås. En vellykket
 forbindelse gemmer udbyderen og opretter de modeller og den inferensprofil,
 som de resterende trin bruger.
@@ -107,8 +116,10 @@ som en arbejdende konto ser.
 Panelet til første opgave bruger Lottis normale indfangningspipeline. Vælg
 målkategorien, og brug derefter en af tre veje:
 
-1. Vælg optagevisualiseringen, og sig opgaven i en normal sætning.
-2. Vælg et startforslag for at prøve struktureringsvejen med det samme.
+1. Vælg **Tryk for at tale**, og sig opgaven i en normal sætning. Optageren
+   vises, mens mikrofonen er åben; **Færdig** afslutter optagelsen, og **Start
+   forfra** kasserer den.
+2. Vælg et startforslag for at oprette en opgave ud fra det med det samme.
 3. Vælg **Vil du hellere skrive?**, og indtast tanken uden at bruge
    mikrofonen.
 
@@ -123,8 +134,8 @@ skal bekræfte, i stedet for at ændre opgaven i det skjulte. Den forslagsvej kr
   caption="Den indtastede Project Waddle-tanke bliver til “Inspicer Europa-sardin-relæet”. Opgaven bliver i panelet, indtil du vælger den."
 />
 
-Vælg det oprettede opgavekort for at lukke onboarding og åbne dets normale
-opgaveside. Derfra kan du gennemgå tjeklisteforslag, tilføje coverkunst eller
+Vælg **Åbn opgave** for at lukke onboarding og åbne opgavens normale
+side. Derfra kan du gennemgå tjeklisteforslag, tilføje coverkunst eller
 beviser, sætte en forfaldsdato og prioritet og tage opgaven med ind i Daily
 OS.
 

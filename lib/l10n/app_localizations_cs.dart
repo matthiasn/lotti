@@ -12108,9 +12108,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get nudgeBannerSnoozeTitle => 'Odložit banner';
 
   @override
-  String get onboardingApiKeyConnect => 'Připojit';
-
-  @override
   String get onboardingApiKeyConnecting => 'Připojuji…';
 
   @override
@@ -12139,8 +12136,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Běží na tvém zařízení – klíč není potřeba.';
 
   @override
+  String get onboardingApiKeyLocalTitle => 'Najdu ho ve tvém zařízení.';
+
+  @override
   String get onboardingApiKeyNoKeyHelp =>
       'Poprvé tady? Přihlas se, vytvoř API klíč a vlož ho – zdarma na začátek.';
+
+  @override
+  String get onboardingApiKeyProviderCaption => 'Tvůj poskytovatel';
 
   @override
   String get onboardingApiKeyReveal => 'Zobrazit klíč';
@@ -12152,6 +12155,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String onboardingApiKeyUnreachable(String providerName) {
     return 'Nepodařilo se spojit s $providerName. Zkontroluj klíč nebo připojení a zkus to znovu.';
   }
+
+  @override
+  String get onboardingApiKeyVerifiedText => 'Pokračuj a já všechno nastavím.';
+
+  @override
+  String get onboardingApiKeyVerifiedTitle => 'Funguje to';
 
   @override
   String get onboardingApiKeyVerifying => 'Ověřuji…';
@@ -12185,7 +12194,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get onboardingCategoryExplanation =>
-      'Každá oblast života má vlastní prostor. Vyber, co se hodí — nebo přidej vlastní.';
+      'Každá oblast života má vlastní prostor.';
 
   @override
   String get onboardingCategoryFamily => 'Rodina';
@@ -12195,6 +12204,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get onboardingCategoryFriends => 'Přátelé';
+
+  @override
+  String get onboardingCategoryPickOne =>
+      'Pro pokračování vyber aspoň jednu oblast.';
 
   @override
   String get onboardingCategoryTitle => 'Kde má tvoje AI pracovat?';
@@ -12215,7 +12228,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get onboardingCompanionOneKey =>
-      'Řekni mi, co máš na mysli, a udělám z toho plán. Na začátek stačí jeden klíč API – a s nastavením ti pomůžu.';
+      'Řekni mi, co máš na mysli, a udělám z toho plán. Stačí mi jeden klíč.';
+
+  @override
+  String onboardingConnectContinueWith(String provider) {
+    return 'Pokračovat s $provider';
+  }
 
   @override
   String get onboardingConnectGeminiName => 'Gemini';
@@ -12229,6 +12247,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get onboardingConnectHideOtherProviders => 'Skrýt další poskytovatele';
+
+  @override
+  String get onboardingConnectKeyNote =>
+      'Klíč je něco jako heslo ke službě AI.';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
@@ -12265,15 +12287,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingConnectRecommended => 'Doporučeno';
 
   @override
-  String get onboardingFirstTaskCreatedHint =>
-      'Klepni na svůj úkol a otevři ho';
+  String get onboardingFirstTaskCreatedCaption => 'Tvůj úkol';
+
+  @override
+  String onboardingFirstTaskCreatedText(String area) {
+    return 'Je v oblasti $area. Otevři ho a uvidíš kroky, které navrhuju.';
+  }
 
   @override
   String get onboardingFirstTaskCreatedTitle => 'Tvůj první úkol je připraven';
 
   @override
   String get onboardingFirstTaskGuidance =>
-      'Klepni, mluv a řekni, co potřebuješ udělat — Lotti z toho udělá skutečný úkol.';
+      'Klepni, mluv a řekni, co potřebuješ udělat — udělám z toho skutečný úkol.';
 
   @override
   String get onboardingFirstTaskSuggestionDentist => 'Objednat se k zubaři';
@@ -12287,7 +12313,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get onboardingFirstTaskSuggestionsLabel =>
-      'Ještě se ti nechce mluvit? Začni jedním z těchto:';
+      'Nebo klepni na jeden a bude z něj tvůj první úkol';
 
   @override
   String get onboardingFirstTaskTitle => 'Vytvoř svůj první úkol';
@@ -12332,6 +12358,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingRecordingStyleTryVoice => 'Vyzkoušej svým hlasem';
 
   @override
+  String onboardingStageProgress(int current, int total) {
+    return 'Krok $current z $total';
+  }
+
+  @override
   String get onboardingWelcomeConnectButton => 'Vybrat AI mozek';
 
   @override
@@ -12342,7 +12373,32 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingWelcomeOneKeyButton => 'Začít s jedním klíčem';
 
   @override
+  String get onboardingWelcomeSettingsNote =>
+      'Všechno to můžeš později změnit v Nastavení.';
+
+  @override
   String get onboardingWelcomeSkipButton => 'Nejdřív se rozhlédnout';
+
+  @override
+  String get onboardingWelcomeStepAreas => 'Vyber své oblasti';
+
+  @override
+  String get onboardingWelcomeStepAreasDetail =>
+      'Každá část tvého života má vlastní prostor';
+
+  @override
+  String get onboardingWelcomeStepKey => 'Připoj jeden klíč';
+
+  @override
+  String get onboardingWelcomeStepKeyDetail =>
+      'Ať můžu přemýšlet, poslouchat a číst nahlas';
+
+  @override
+  String get onboardingWelcomeStepsCaption => 'Tři věci a jsi uvnitř';
+
+  @override
+  String get onboardingWelcomeStepTaskDetail =>
+      'Řekni jednu věc a sleduj, jak se z ní stane úkol';
 
   @override
   String get onboardingWelcomeTitle => 'Mluv. Lotti z toho udělá plán.';

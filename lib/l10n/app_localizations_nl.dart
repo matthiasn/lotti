@@ -5190,7 +5190,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Tik op om te praten · type in plaats daarvan';
 
   @override
-  String get dailyOsNextCaptureIdleTalk => 'Tik op om te praten';
+  String get dailyOsNextCaptureIdleTalk => 'Tik om te praten';
 
   @override
   String get dailyOsNextCaptureListeningStatus => 'Luisteren...';
@@ -11975,9 +11975,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get nudgeBannerSnoozeTitle => 'Banner snoozen';
 
   @override
-  String get onboardingApiKeyConnect => 'Verbinden';
-
-  @override
   String get onboardingApiKeyConnecting => 'Verbinden...';
 
   @override
@@ -12006,8 +12003,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Runs op uw apparaat .. geen sleutel nodig.';
 
   @override
+  String get onboardingApiKeyLocalTitle => 'Ik zoek het op je apparaat.';
+
+  @override
   String get onboardingApiKeyNoKeyHelp =>
       'Hier nieuw? Meld je aan, maak een API-toets en plak deze vervolgens gratis om te beginnen.';
+
+  @override
+  String get onboardingApiKeyProviderCaption => 'Je aanbieder';
 
   @override
   String get onboardingApiKeyReveal => 'Sleutel tonen';
@@ -12019,6 +12022,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String onboardingApiKeyUnreachable(String providerName) {
     return 'Kon niet bereiken ${providerName}Controleer de sleutel of uw verbinding en probeer het opnieuw.';
   }
+
+  @override
+  String get onboardingApiKeyVerifiedText =>
+      'Ga verder, dan stel ik alles voor je in.';
+
+  @override
+  String get onboardingApiKeyVerifiedTitle => 'Dat werkt';
 
   @override
   String get onboardingApiKeyVerifying => 'Verifiëren...';
@@ -12033,7 +12043,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingCaptureOrbLabel => 'Neem je gedachten op.';
 
   @override
-  String get onboardingCaptureRatherType => '- Nogal type?';
+  String get onboardingCaptureRatherType => 'Liever typen?';
 
   @override
   String get onboardingCaptureReassurance => 'Dan kun je alles aanpassen.';
@@ -12053,7 +12063,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get onboardingCategoryExplanation =>
-      'Elk gebied van je leven krijgt zijn eigen ruimte. Kies een die past .. of voeg je eigen.';
+      'Elk gebied van je leven krijgt zijn eigen ruimte.';
 
   @override
   String get onboardingCategoryFamily => 'Familie';
@@ -12063,6 +12073,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get onboardingCategoryFriends => 'Vrienden';
+
+  @override
+  String get onboardingCategoryPickOne =>
+      'Kies minstens één gebied om verder te gaan.';
 
   @override
   String get onboardingCategoryTitle => 'Waar moet je AI werken?';
@@ -12083,7 +12097,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get onboardingCompanionOneKey =>
-      'Vertel me wat je bezighoudt en ik maak er een plan van. Om te beginnen heb ik maar één API-sleutel nodig, en ik help je die in te stellen.';
+      'Vertel me wat je bezighoudt en ik maak er een plan van. Ik heb maar één sleutel nodig.';
+
+  @override
+  String onboardingConnectContinueWith(String provider) {
+    return 'Verder met $provider';
+  }
 
   @override
   String get onboardingConnectGeminiName => 'Gemini';
@@ -12098,6 +12117,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get onboardingConnectHideOtherProviders =>
       'Andere aanbieders verbergen';
+
+  @override
+  String get onboardingConnectKeyNote =>
+      'Een sleutel is een soort wachtwoord voor een AI-dienst.';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
@@ -12134,15 +12157,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingConnectRecommended => 'Aanbevolen';
 
   @override
-  String get onboardingFirstTaskCreatedHint =>
-      'Tik op uw taak om het te openen';
+  String get onboardingFirstTaskCreatedCaption => 'Je taak';
+
+  @override
+  String onboardingFirstTaskCreatedText(String area) {
+    return 'Hij staat in $area. Open hem om de stappen te zien die ik voorstel.';
+  }
 
   @override
   String get onboardingFirstTaskCreatedTitle => 'Je eerste taak is klaar.';
 
   @override
   String get onboardingFirstTaskGuidance =>
-      'Tik op om te praten en te zeggen wat moet doen . . Lotti maakt het in een echte taak.';
+      'Tik om te praten en zeg wat er moet gebeuren — ik maak er een echte taak van.';
 
   @override
   String get onboardingFirstTaskSuggestionDentist =>
@@ -12156,7 +12183,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingFirstTaskSuggestionPlanWeek => 'Plan mijn week';
 
   @override
-  String get onboardingFirstTaskSuggestionsLabel => 'Begin met één van deze:';
+  String get onboardingFirstTaskSuggestionsLabel =>
+      'Of tik op een om er je eerste taak van te maken';
 
   @override
   String get onboardingFirstTaskTitle => 'Maak je eerste taak aan';
@@ -12201,6 +12229,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingRecordingStyleTryVoice => 'Probeer het met je stem';
 
   @override
+  String onboardingStageProgress(int current, int total) {
+    return 'Stap $current van $total';
+  }
+
+  @override
   String get onboardingWelcomeConnectButton => 'Kies uw AI-hersenen';
 
   @override
@@ -12211,7 +12244,32 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingWelcomeOneKeyButton => 'Begin met één sleutel';
 
   @override
+  String get onboardingWelcomeSettingsNote =>
+      'Je kunt dit allemaal later wijzigen in Instellingen.';
+
+  @override
   String get onboardingWelcomeSkipButton => 'Kijk eerst om je heen.';
+
+  @override
+  String get onboardingWelcomeStepAreas => 'Kies je gebieden';
+
+  @override
+  String get onboardingWelcomeStepAreasDetail =>
+      'Elk deel van je leven krijgt zijn eigen ruimte';
+
+  @override
+  String get onboardingWelcomeStepKey => 'Koppel één sleutel';
+
+  @override
+  String get onboardingWelcomeStepKeyDetail =>
+      'Zodat ik kan denken, luisteren en voorlezen';
+
+  @override
+  String get onboardingWelcomeStepsCaption => 'Drie dingen, dan ben je binnen';
+
+  @override
+  String get onboardingWelcomeStepTaskDetail =>
+      'Zeg één ding en zie het een taak worden';
 
   @override
   String get onboardingWelcomeTitle => 'Lotti maakt er een plan van.';

@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/onboarding
     title: Onboarding feature source
-    last_modified: 2026-08-05
+    last_modified: 2026-11-18
   - id: metrics-db
     resource: ../../lib/database/onboarding_metrics_db.dart
     title: OnboardingMetricsDb
@@ -40,14 +40,18 @@ flowchart TD
     L[First launch · no provider configured] -->|eligible| W[OnboardingWelcomeModal]
     L -->|budget spent / already completed| NONE[no auto-show · replay via Settings › Onboarding]
     W --> WL[welcome · the companion + her one-key promise + CTA]
-    WL -->|Get started with one key| CN[connect · one recommended card]
-    CN -->|Other providers| CNO[the remaining provider tiles]
-    CN --> KEY[the key · verified live]
-    CNO --> KEY
+    WL -->|Get started with one key| CN[connect · the recommended card, chosen]
+    CN -->|Other providers| CNO[the remaining provider cards]
+    CN -->|Continue with the chosen provider| KEY[the key · verified live]
+    CNO -->|choose a card| CN
     KEY -->|Connect| AR[areas · she says the key worked]
     AR -->|Continue| FT[first task · speak, tap a suggestion or type]
     WL -->|Explore with sample data| DEMO[the demo world · nothing recorded]
-    WL -->|Look around first| SK[skip → onDismiss · no persistence, grace period preserved]
+    WL -->|close| SK[skip → onDismiss · no persistence, grace period preserved]
+    CN -->|close| SK
+    KEY -->|close| SK
+    AR -->|close| DONE[pop · the welcome is completed, the key is kept]
+    FT -->|close| DONE
 ```
 
 **Five panels, each asking for one thing.** Nothing optional stands between
@@ -61,19 +65,102 @@ welcome remains eligible to reappear within its cadence budget.
 
 It is not, however, storage-neutral: the modal records a `welcomeSkipped` event,
 and the auto-show path has already written the shown count and first-shown
-timestamp *before* opening. What "look around first" costs you is a slot in the
+timestamp *before* opening. What closing it costs you is a slot in the
 cadence budget, not the offer itself.
+
+# One stage for every step
+
+Every step is built on one layout, `OnboardingStage`
+(`ui/widgets/onboarding_stage.dart`), so that nothing moves between steps but
+what the step is about. From the top:
+
+- **A bar**: the way back, the progress, and the close button. Both buttons
+  are in place on every step past the welcome, disabled — not removed — where
+  a step cannot use them: back from the areas (a connected key is not undone
+  here) and from the first task once something is being said, close while
+  the key is being set up or the areas written (`showBack`, `showClose`). The
+  progress
+  (`OnboardingProgress`) is three segments, one per thing asked for — the key,
+  the areas, the first task — filled when done and part filled while in
+  progress, in a neutral ink: the accent is the main button's. The welcome
+  shows none, since nothing is started and its tray lists the three things.
+- **The companion**, standing full length at one height on every step of a
+  screen: full size only on a tall one (`OnboardingStage.fullFrom`), a size
+  down on most phones and small on a short screen or window
+  (`compactBelow`) — the tray, where each step's content is, needs the room
+  more than she does.
+- **Her speech bubble**, outlined on the panel's own surface so it reads as
+  her speaking and not as one more raised block, with the step's headline and
+  a second line on every step and phase.
+- **A tray** holding the step's own content under an optional caption
+  (`OnboardingTrayCaption`, a size below the labels it names) with a helper
+  line under it, then the foot: one link a size below the main button, when
+  the step has one, and the main button. The button is pinned at the tray's
+  foot, so it is at one height either way, and a step without a link gives
+  that room to its content.
+
+**The bubble is one height on every step**: a headline over three lines on a
+phone and two in the wider dialog (`OnboardingStage.bubbleHeight`), measured
+from the very styles and text scale it is drawn in, its words from the top.
+Every step's words are written to fit it, so the headline and the tray start
+at the same height throughout; longer words or larger text grow it.
+
+The host sets how tall a step is (`OnboardingStageHeight`): on a phone the
+screen below the status bar, in a window what the window allows up to a
+phone's height. **The tray takes exactly what is left**, its foot pinned and
+only what is over it scrolling, under a fade where it runs into the foot — so
+a list that opens never pushes the main button away, and she and her bubble
+never move. Content starts at the top of the tray, at the same height on
+every step; only the recorder and the thinking pulse, the one thing on their
+frames, sit in its middle (`centered`).
+Where no host sets a height the tray is its content's height or its least,
+whichever is more.
+
+**The tray takes the rest by its own layout** (`RenderStageColumn`). A column
+cannot: under the modal's scroll view its height is unbounded, so nothing in
+it can be told to take what is left.
+
+**On a phone the panel is the whole screen**, so there is no dimmed app
+around it to tap, and the close button in the bar is the way out on every
+step. In a window the panel is a dialog, and a tap outside it closes the flow
+on the welcome only: past it, one stray click must not throw away a key or a
+recording.
+
+**Choices look one way.** Every choice is made on one
+`OnboardingSelectableSurface`: a quiet outlined surface, the chosen one
+marked by the accent on its outline and a check — never a solid fill, which
+is the main button's alone. The provider cards (`OnboardingProviderCard`)
+and the chips (`OnboardingChoiceChip`: an area, the area a task lands in, a
+starter suggestion, "Add your own") are built on it, with one label style and
+one corner radius. An action rather than a choice ends in its own icon: the
+starter suggestions, which make the task at once, end in an arrow.
+
+**System back and Escape do what the bar does.** On a step that shows the
+back arrow they go back with it, or do nothing while it is disabled, instead
+of closing the flow; on the welcome, which has none, they close it. The stage
+catches them itself (a `PopScope` in `OnboardingStage`), so no step can opt
+out; during a crossfade only the arriving step answers, so one press never
+goes back twice.
+
+**The keyboard does not resize the route.** The room it takes is added below
+the panel instead, so the key field can be scrolled clear of it.
 
 # The one key
 
 The connect step (`OnboardingConnectPanel`) is built around one message: a
 single API key is all it takes. It leads with one card,
-`onboardingRecommendedProvider` (Mistral), badged *Recommended*, with what its
-key covers in place of a tagline — the seeded Mistral profile names a thinking,
-a transcription and a read-aloud model. Every other provider
-(`onboardingOtherProviders`) waits behind the *Other providers* disclosure. The
-demo AI sheet reuses the panel without her, and states the recommendation as a
-plain subtitle instead.
+`onboardingRecommendedProvider` (Mistral), under the tray's *Recommended*
+caption and already chosen, with what its key covers in place of a tagline —
+the seeded Mistral profile names a thinking, a transcription and a read-aloud
+model. Every other provider (`onboardingOtherProviders`) waits behind the
+*Other providers* disclosure. **A card chooses; only the main button goes
+on**, and it names the provider chosen ("Continue with Mistral"), so no tap
+on a card is a surprise. The cards wear no brand colour, so nothing but the
+chosen one reads as chosen. The key step shows the same card under "Your
+provider", with the state of its connection inside it in place of a check of
+its own; once the key checks out she says so, and the button reads
+"Continue with …" there too. The demo AI sheet reuses the panel without her, and states the
+recommendation as a plain subtitle instead.
 
 # The companion
 
@@ -83,22 +170,23 @@ The [companion](companion.md) leads onboarding
 app. Her lines sit in speech bubbles (`OnboardingSpeechBubble`) whose tail
 points at her.
 
-- **The welcome hero.** She stands, full length, in the welcome's hero frame in
-  place of the `heroStyle` artwork (`OnboardingHeroPanel.companion`), at the
-  frame's own height. The promise below her is her bubble: her greeting, then
-  the one key she needs (`onboardingCompanionWelcomeLine`). The panel keeps its
-  artwork and its own promise only where a host passes no companion — the
-  animation gallery.
-- **The connect step.** A bust, `ControlSizes.avatarHero` square, beside a
-  bubble in which she recommends the one key.
-- **The key step.** A bust at the end of the title row
-  (`OnboardingApiKeyPanel.companion`), built for the key check as the user
-  sees it (`OnboardingCompanionBeat.ofKeyCheck`): waiting while the field is
-  empty, thinking while the key is checked and while the provider is set up
-  after Connect, a thumbs-up when it is verified, a shrug when it is turned
-  down. She says nothing there; the status line carries the words.
+She stands on the stage on every step, at the same size, and the bubble under
+her is that step's headline.
+
+- **The welcome.** Her bubble is her greeting, then the one key she needs
+  (`onboardingCompanionWelcomeLine`). The tray lists the three things in
+  order; the main button starts on the first, the demo is the link above it.
+  `OnboardingHeroPanel` keeps its `heroStyle` artwork and its own promise only
+  where a host passes no companion — the animation gallery.
+- **The connect step.** She recommends the one key in her bubble.
+- **The key step.** She is built for the key check as the user sees it
+  (`OnboardingCompanionBeat.ofKeyCheck`): waiting while the field is empty,
+  thinking while the key is checked and while the provider is set up after
+  Connect, a thumbs-up when it is verified, a shrug when it is turned down.
+  Her bubble asks for the key and says how to get one, but she says nothing
+  aloud there; the status line under the field carries the answer.
 - **The areas, and her first words.** The key step leads straight here, so
-  this is where she says it worked: a bust celebrating beside a bubble
+  this is where she says it worked: she celebrates over a bubble
   (`OnboardingCategoryView.companion`) that opens with her first words and
   goes on to explain the areas — one line, said as one. The provider's seeded
   profile is resolved (`onboardingFirstWords`, `resolveByProfileId`) and,
@@ -114,10 +202,20 @@ points at her.
   does not say it: said that early, it would start in the voice on hand and
   start over in the cloud voice a moment later. A lookup that fails is final
   (`onboardingConnectedProfileProvider` does not retry), for the same reason.
-- **The first-task step.** A bust, `ControlSizes.avatarHero` square, above the
-  headline (`OnboardingFirstTaskView.companion`), whose headline — and, at
-  the prompt, its guidance — is her bubble; the view stays free of providers
-  and the step builds her for the frame.
+- **The first-task step.** Her bubble is the frame's headline
+  (`OnboardingFirstTaskView.companion`) with a second line on every frame:
+  the guidance at the prompt, the live caption while she listens, that
+  nothing is final while she thinks, and where the task landed once it has;
+  the view stays free of providers and the step builds her for the frame. At
+  the prompt the tray holds where the task will land, then the starter
+  suggestions, and the main button opens the mic; back returns to the areas,
+  which reuse what they created. The recorder — the orb, or the VU meter
+  chosen under Settings › Recording Style — stands in the tray only once the
+  mic is open; "Done", with a check, then ends the recording, and the link
+  is "Start over", which drops the take and opens the prompt again —
+  "Rather type?" is not offered while the mic is open. The landed task is a
+  preview on the shared surface, marked done with its check, its area under
+  its title, under the caption "Your task"; "Open task" opens it.
 
 Each moment is an `OnboardingCompanionBeat`:
 

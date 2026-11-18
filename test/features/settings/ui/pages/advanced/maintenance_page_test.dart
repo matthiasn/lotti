@@ -178,7 +178,8 @@ void main() {
       // surface. (The dim modal is transparent, so the maintenance list stays
       // in the tree behind it; asserting its absence would be wrong.)
       expect(find.text('Get started with one key'), findsOneWidget);
-      expect(find.text('Look around first'), findsOneWidget);
+      // Its way out is the close button in its bar.
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
     });
 
     testWidgets('Onboarding animation gallery pushes the gallery page', (
