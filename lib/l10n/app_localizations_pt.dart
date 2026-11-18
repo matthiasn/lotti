@@ -12075,9 +12075,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get nudgeBannerSnoozeTitle => 'Adiar banner';
 
   @override
-  String get onboardingApiKeyConnect => 'Conectar';
-
-  @override
   String get onboardingApiKeyConnecting => 'Conectando…';
 
   @override
@@ -12106,8 +12103,15 @@ class AppLocalizationsPt extends AppLocalizations {
       'Funciona no seu dispositivo – sem necessidade de chave.';
 
   @override
+  String get onboardingApiKeyLocalTitle =>
+      'Deixa-me encontrá-lo no teu dispositivo.';
+
+  @override
   String get onboardingApiKeyNoKeyHelp =>
       'Novo aqui? Faça login, crie uma chave de API e cole-a – grátis para começar.';
+
+  @override
+  String get onboardingApiKeyProviderCaption => 'O teu fornecedor';
 
   @override
   String get onboardingApiKeyReveal => 'Mostrar chave';
@@ -12119,6 +12123,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String onboardingApiKeyUnreachable(String providerName) {
     return 'Não foi possível entrar em contato com $providerName. Verifique a chave ou sua conexão e tente novamente.';
   }
+
+  @override
+  String get onboardingApiKeyVerifiedText =>
+      'Continua e eu trato de configurar tudo.';
+
+  @override
+  String get onboardingApiKeyVerifiedTitle => 'Funciona';
 
   @override
   String get onboardingApiKeyVerifying => 'Verificando…';
@@ -12154,7 +12165,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get onboardingCategoryExplanation =>
-      'Cada área da sua vida ganha seu próprio espaço. Escolha qualquer um que combine – ou adicione o seu próprio.';
+      'Cada área da tua vida tem o seu próprio espaço.';
 
   @override
   String get onboardingCategoryFamily => 'Família';
@@ -12164,6 +12175,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get onboardingCategoryFriends => 'Amigos';
+
+  @override
+  String get onboardingCategoryPickOne =>
+      'Escolhe pelo menos uma área para continuar.';
 
   @override
   String get onboardingCategoryTitle => 'Onde sua IA deve funcionar?';
@@ -12184,7 +12199,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get onboardingCompanionOneKey =>
-      'Diz-me o que tens em mente e eu transformo isso num plano. Para começar, só preciso de uma chave de API, e eu ajudo-te a configurá-la.';
+      'Diz-me o que tens em mente e eu transformo isso num plano. Só preciso de uma chave.';
+
+  @override
+  String onboardingConnectContinueWith(String provider) {
+    return 'Continuar com $provider';
+  }
 
   @override
   String get onboardingConnectGeminiName => 'Gêmeos';
@@ -12199,6 +12219,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get onboardingConnectHideOtherProviders =>
       'Ocultar outros fornecedores';
+
+  @override
+  String get onboardingConnectKeyNote =>
+      'Uma chave é uma espécie de palavra-passe para um serviço de IA.';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
@@ -12235,8 +12259,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get onboardingConnectRecommended => 'Recomendado';
 
   @override
-  String get onboardingFirstTaskCreatedHint =>
-      'Toque na sua tarefa para abri-la';
+  String get onboardingFirstTaskCreatedCaption => 'A tua tarefa';
+
+  @override
+  String onboardingFirstTaskCreatedText(String area) {
+    return 'Está em $area. Abre-a para veres os passos que sugiro.';
+  }
 
   @override
   String get onboardingFirstTaskCreatedTitle =>
@@ -12244,7 +12272,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get onboardingFirstTaskGuidance =>
-      'Toque para falar e dizer o que precisa ser feito - Lotti transforma isso em uma tarefa real.';
+      'Toca para falar e diz o que precisas de fazer — eu transformo isso numa tarefa a sério.';
 
   @override
   String get onboardingFirstTaskSuggestionDentist =>
@@ -12259,7 +12287,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get onboardingFirstTaskSuggestionsLabel =>
-      'Não está pronto para conversar? Comece com um destes:';
+      'Ou toca numa para a tornares a tua primeira tarefa';
 
   @override
   String get onboardingFirstTaskTitle => 'Crie sua primeira tarefa';
@@ -12306,6 +12334,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get onboardingRecordingStyleTryVoice => 'Tente com sua voz';
 
   @override
+  String onboardingStageProgress(int current, int total) {
+    return 'Passo $current de $total';
+  }
+
+  @override
   String get onboardingWelcomeConnectButton => 'Escolha seu cérebro de IA';
 
   @override
@@ -12316,7 +12349,32 @@ class AppLocalizationsPt extends AppLocalizations {
   String get onboardingWelcomeOneKeyButton => 'Começar com uma só chave';
 
   @override
+  String get onboardingWelcomeSettingsNote =>
+      'Podes mudar tudo isto mais tarde nas Configurações.';
+
+  @override
   String get onboardingWelcomeSkipButton => 'Olhe ao redor primeiro';
+
+  @override
+  String get onboardingWelcomeStepAreas => 'Escolhe as tuas áreas';
+
+  @override
+  String get onboardingWelcomeStepAreasDetail =>
+      'Cada parte da tua vida tem o seu próprio espaço';
+
+  @override
+  String get onboardingWelcomeStepKey => 'Liga uma chave';
+
+  @override
+  String get onboardingWelcomeStepKeyDetail =>
+      'Para eu poder pensar, ouvir e ler em voz alta';
+
+  @override
+  String get onboardingWelcomeStepsCaption => 'Três coisas e já estás dentro';
+
+  @override
+  String get onboardingWelcomeStepTaskDetail =>
+      'Diz uma coisa e vê-a tornar-se uma tarefa';
 
   @override
   String get onboardingWelcomeTitle =>

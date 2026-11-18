@@ -5,7 +5,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/aurora_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/crystallize_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/neural_constellation.dart';
-import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_stage.dart';
 import 'package:lotti/features/onboarding/ui/widgets/waveform_text_hero.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -278,13 +278,17 @@ String onboardingCompanionWelcomeLine(AppLocalizations messages) =>
     '${messages.onboardingCompanionGreeting} '
     '${messages.onboardingCompanionOneKey}';
 
-/// The cinematic welcome content: a theme-aware rounded panel with the
-/// animated [heroStyle] hero filling the upper region and the promise, the
-/// action stack and skip below. Surface, text, controls, and hero palette all
-/// resolve from the active design-system theme.
+/// The welcome.
 ///
-/// The action stack leads with the demo when [onExploreDemo] is wired — see
-/// that field for why the connect path is the secondary action there.
+/// With a [companion] it is the first step on the shared [OnboardingStage]:
+/// she greets in her bubble, the tray lists the three things onboarding asks
+/// for, and the main button starts on the first — the key. The demo is the
+/// link above it and the close button in the bar the way out.
+///
+/// Without one — the animation gallery — it is a theme-aware rounded panel
+/// with the animated [heroStyle] hero filling the upper region and the
+/// promise, the action stack and skip below; that stack leads with the demo
+/// when [onExploreDemo] is wired.
 class OnboardingHeroPanel extends StatelessWidget {
   const OnboardingHeroPanel({
     required this.onConnect,
@@ -298,19 +302,19 @@ class OnboardingHeroPanel extends StatelessWidget {
 
   final OnboardingHeroStyle heroStyle;
 
-  /// The companion, standing in the hero frame in place of the [heroStyle]
-  /// artwork; null shows the artwork. With her there, the promise is hers: a
-  /// speech bubble introducing her and the one key she needs
+  /// The companion, standing on the stage; null shows the [heroStyle]
+  /// artwork instead. With her there, the promise is hers: a speech bubble
+  /// introducing her and the one key she needs
   /// ([onboardingCompanionWelcomeLine]).
   final Widget? companion;
   final VoidCallback onConnect;
   final VoidCallback onSkip;
 
-  /// When set, "Explore with sample data" becomes the panel's *primary* call
-  /// to action and the connect path is demoted to secondary: a first-run user
-  /// can see a furnished world before being asked for an API key. Null hides
-  /// the demo entry (gallery/preview hosts without demo plumbing) and leaves
-  /// connect as the primary action, so the panel is never without one.
+  /// Opens the demo world. Beside the companion it is the link above the
+  /// main button; on the artwork panel it becomes the *primary* call to
+  /// action and the connect path is demoted to secondary. Null hides the demo
+  /// entry (gallery/preview hosts without demo plumbing) and leaves connect
+  /// as the primary action, so the panel is never without one.
   final VoidCallback? onExploreDemo;
 
   final double heroHeight;
@@ -324,6 +328,47 @@ class OnboardingHeroPanel extends StatelessWidget {
     final brightness = Theme.of(context).brightness;
     final leadsWithDemo = onExploreDemo != null;
     final messages = context.messages;
+
+    if (companion case final companion?) {
+      return OnboardingStage(
+        companion: companion,
+        title: messages.onboardingCompanionGreeting,
+        text: messages.onboardingCompanionOneKey,
+        // No progress yet: nothing is started, and the tray lists the three
+        // things themselves. The way out is the same close button as on
+        // every step, leaving the sample data the one worded alternative.
+        onClose: onSkip,
+        caption: messages.onboardingWelcomeStepsCaption,
+        helper: Text(messages.onboardingWelcomeSettingsNote),
+        secondary: onExploreDemo == null
+            ? null
+            : OnboardingStageAction(
+                label: messages.demoOnboardingExplore,
+                onPressed: onExploreDemo,
+              ),
+        primary: OnboardingStageAction(
+          label: messages.onboardingWelcomeOneKeyButton,
+          onPressed: onConnect,
+          icon: LottiIcons.forward,
+        ),
+        child: _WelcomeSteps(
+          steps: [
+            (
+              messages.onboardingWelcomeStepKey,
+              messages.onboardingWelcomeStepKeyDetail,
+            ),
+            (
+              messages.onboardingWelcomeStepAreas,
+              messages.onboardingWelcomeStepAreasDetail,
+            ),
+            (
+              messages.onboardingFirstTaskTitle,
+              messages.onboardingWelcomeStepTaskDetail,
+            ),
+          ],
+        ),
+      );
+    }
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.l),
@@ -346,13 +391,11 @@ class OnboardingHeroPanel extends StatelessWidget {
                     artworkColor: brightness == Brightness.light
                         ? panelBg
                         : tokens.colors.aiCard.background,
-                    child:
-                        companion ??
-                        buildOnboardingHeroVisual(
-                          heroStyle,
-                          tokens: tokens,
-                          brightness: brightness,
-                        ),
+                    child: buildOnboardingHeroVisual(
+                      heroStyle,
+                      tokens: tokens,
+                      brightness: brightness,
+                    ),
                   ),
                 ),
               ),
@@ -373,32 +416,25 @@ class OnboardingHeroPanel extends StatelessWidget {
                 interval: const Duration(milliseconds: 34),
                 rise: tokens.spacing.step2,
                 children: [
-                  if (companion != null)
-                    OnboardingSpeechBubble(
-                      title: messages.onboardingCompanionGreeting,
-                      text: messages.onboardingCompanionOneKey,
-                    )
-                  else ...[
-                    Text(
-                      messages.onboardingWelcomeTitle,
+                  Text(
+                    messages.onboardingWelcomeTitle,
+                    textAlign: TextAlign.center,
+                    // Heading 2 keeps the promise dominant without letting it
+                    // overpower the visual or CTA on a phone-sized panel.
+                    style: tokens.typography.styles.heading.heading2.copyWith(
+                      color: textHigh,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(top: tokens.spacing.step3),
+                    child: Text(
+                      messages.onboardingWelcomeMessage,
                       textAlign: TextAlign.center,
-                      // Heading 2 keeps the promise dominant without letting it
-                      // overpower the visual or CTA on a phone-sized panel.
-                      style: tokens.typography.styles.heading.heading2.copyWith(
-                        color: textHigh,
+                      style: tokens.typography.styles.body.bodyLarge.copyWith(
+                        color: textMed,
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.only(top: tokens.spacing.step3),
-                      child: Text(
-                        messages.onboardingWelcomeMessage,
-                        textAlign: TextAlign.center,
-                        style: tokens.typography.styles.body.bodyLarge.copyWith(
-                          color: textMed,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                   // The demo leads: showing a furnished world costs the user
                   // nothing, where the connect path opens with "paste an API
                   // key". Where the demo is unavailable, connect keeps the
@@ -422,9 +458,7 @@ class OnboardingHeroPanel extends StatelessWidget {
                     ),
                     child: DesignSystemButton(
                       onPressed: onConnect,
-                      label: companion != null
-                          ? messages.onboardingWelcomeOneKeyButton
-                          : messages.onboardingWelcomeConnectButton,
+                      label: messages.onboardingWelcomeConnectButton,
                       leadingIcon: LottiIcons.forward,
                       variant: leadsWithDemo
                           ? DesignSystemButtonVariant.secondary
@@ -448,6 +482,73 @@ class OnboardingHeroPanel extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The three things onboarding asks for, numbered, each a title over a line
+/// saying what it is for.
+class _WelcomeSteps extends StatelessWidget {
+  const _WelcomeSteps({required this.steps});
+
+  final List<(String title, String detail)> steps;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final (i, (title, detail)) in steps.indexed)
+          Padding(
+            padding: EdgeInsets.only(top: i == 0 ? 0 : spacing.step4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ExcludeSemantics(
+                  child: Container(
+                    width: ControlSizes.iconChipCompact,
+                    height: ControlSizes.iconChipCompact,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: tokens.colors.decorative.level03,
+                      ),
+                    ),
+                    child: Text(
+                      '${i + 1}',
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(color: tokens.colors.text.mediumEmphasis),
+                    ),
+                  ),
+                ),
+                SizedBox(width: spacing.step4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: tokens.typography.styles.subtitle.subtitle1
+                            .copyWith(color: tokens.colors.text.highEmphasis),
+                      ),
+                      Text(
+                        detail,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

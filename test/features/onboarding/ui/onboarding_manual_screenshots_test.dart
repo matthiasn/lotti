@@ -386,7 +386,12 @@ void main() {
 
   Future<void> driveToApiKey(WidgetTester tester) async {
     await driveToOtherProviders(tester);
+    // A card chooses the provider; the main button goes on with it.
     await tapText(tester, 'Ollama');
+    await tapText(
+      tester,
+      _messages(tester).onboardingConnectContinueWith('Ollama'),
+    );
 
     await tester.pump(const Duration(milliseconds: 1100));
     await settleFrames(tester, 4);
@@ -399,7 +404,7 @@ void main() {
   Future<void> driveToCategories(WidgetTester tester) async {
     await driveToApiKey(tester);
     final messages = _messages(tester);
-    await tapText(tester, messages.onboardingApiKeyConnect);
+    await tapText(tester, messages.onboardingConnectContinueWith('Ollama'));
     expect(
       find.text(messages.onboardingCategoryTitle),
       findsOneWidget,
@@ -448,12 +453,11 @@ void main() {
 
   Future<void> driveToFirstTaskListening(WidgetTester tester) async {
     await driveToFirstTaskPrompt(tester);
-    await tester.tap(
-      find.bySemanticsLabel(
-        _messages(tester).onboardingCaptureOrbLabel,
-      ),
+    await tapText(
+      tester,
+      _messages(tester).dailyOsNextCaptureIdleTalk,
+      frames: 6,
     );
-    await settleFrames(tester, 6);
     expect(
       find.text(_messages(tester).onboardingCaptureListening),
       findsOneWidget,

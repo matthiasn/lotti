@@ -20107,12 +20107,6 @@ abstract class AppLocalizations {
   /// **'Snooze banner'**
   String get nudgeBannerSnoozeTitle;
 
-  /// No description provided for @onboardingApiKeyConnect.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect'**
-  String get onboardingApiKeyConnect;
-
   /// No description provided for @onboardingApiKeyConnecting.
   ///
   /// In en, this message translates to:
@@ -20161,11 +20155,23 @@ abstract class AppLocalizations {
   /// **'Runs on your device — no key needed.'**
   String get onboardingApiKeyLocalNote;
 
+  /// No description provided for @onboardingApiKeyLocalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let me find it on your device.'**
+  String get onboardingApiKeyLocalTitle;
+
   /// No description provided for @onboardingApiKeyNoKeyHelp.
   ///
   /// In en, this message translates to:
   /// **'New here? Sign in, create an API key, then paste it — free to start.'**
   String get onboardingApiKeyNoKeyHelp;
+
+  /// No description provided for @onboardingApiKeyProviderCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Your provider'**
+  String get onboardingApiKeyProviderCaption;
 
   /// No description provided for @onboardingApiKeyReveal.
   ///
@@ -20184,6 +20190,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t reach {providerName}. Check the key or your connection and try again.'**
   String onboardingApiKeyUnreachable(String providerName);
+
+  /// No description provided for @onboardingApiKeyVerifiedText.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue, and I\'ll set everything up for you.'**
+  String get onboardingApiKeyVerifiedText;
+
+  /// No description provided for @onboardingApiKeyVerifiedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'That works'**
+  String get onboardingApiKeyVerifiedTitle;
 
   /// No description provided for @onboardingApiKeyVerifying.
   ///
@@ -20248,7 +20266,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingCategoryExplanation.
   ///
   /// In en, this message translates to:
-  /// **'Each area of your life gets its own space. Pick any that fit — or add your own.'**
+  /// **'Each area of your life gets its own space.'**
   String get onboardingCategoryExplanation;
 
   /// No description provided for @onboardingCategoryFamily.
@@ -20268,6 +20286,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Friends'**
   String get onboardingCategoryFriends;
+
+  /// No description provided for @onboardingCategoryPickOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick at least one area to continue.'**
+  String get onboardingCategoryPickOne;
 
   /// No description provided for @onboardingCategoryTitle.
   ///
@@ -20302,8 +20326,14 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingCompanionOneKey.
   ///
   /// In en, this message translates to:
-  /// **'Tell me what\'s on your mind and I\'ll turn it into a plan. All I need to get going is one API key, and I\'ll help you set it up.'**
+  /// **'Tell me what\'s on your mind and I\'ll turn it into a plan. All I need is one key.'**
   String get onboardingCompanionOneKey;
+
+  /// No description provided for @onboardingConnectContinueWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with {provider}'**
+  String onboardingConnectContinueWith(String provider);
 
   /// No description provided for @onboardingConnectGeminiName.
   ///
@@ -20328,6 +20358,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide other providers'**
   String get onboardingConnectHideOtherProviders;
+
+  /// No description provided for @onboardingConnectKeyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'A key is a kind of password for an AI service.'**
+  String get onboardingConnectKeyNote;
 
   /// No description provided for @onboardingConnectMistralName.
   ///
@@ -20395,11 +20431,17 @@ abstract class AppLocalizations {
   /// **'Recommended'**
   String get onboardingConnectRecommended;
 
-  /// No description provided for @onboardingFirstTaskCreatedHint.
+  /// No description provided for @onboardingFirstTaskCreatedCaption.
   ///
   /// In en, this message translates to:
-  /// **'Tap your task to open it'**
-  String get onboardingFirstTaskCreatedHint;
+  /// **'Your task'**
+  String get onboardingFirstTaskCreatedCaption;
+
+  /// No description provided for @onboardingFirstTaskCreatedText.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s in {area}. Open it to see the steps I suggest.'**
+  String onboardingFirstTaskCreatedText(String area);
 
   /// No description provided for @onboardingFirstTaskCreatedTitle.
   ///
@@ -20410,7 +20452,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingFirstTaskGuidance.
   ///
   /// In en, this message translates to:
-  /// **'Tap to talk and say what needs doing — Lotti turns it into a real task.'**
+  /// **'Tap to talk and say what needs doing — I\'ll turn it into a real task.'**
   String get onboardingFirstTaskGuidance;
 
   /// No description provided for @onboardingFirstTaskSuggestionDentist.
@@ -20434,7 +20476,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingFirstTaskSuggestionsLabel.
   ///
   /// In en, this message translates to:
-  /// **'Not ready to talk? Start with one of these:'**
+  /// **'Or tap one to make it your first task'**
   String get onboardingFirstTaskSuggestionsLabel;
 
   /// No description provided for @onboardingFirstTaskTitle.
@@ -20515,6 +20557,12 @@ abstract class AppLocalizations {
   /// **'Try with your voice'**
   String get onboardingRecordingStyleTryVoice;
 
+  /// No description provided for @onboardingStageProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String onboardingStageProgress(int current, int total);
+
   /// No description provided for @onboardingWelcomeConnectButton.
   ///
   /// In en, this message translates to:
@@ -20533,11 +20581,53 @@ abstract class AppLocalizations {
   /// **'Get started with one key'**
   String get onboardingWelcomeOneKeyButton;
 
+  /// No description provided for @onboardingWelcomeSettingsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You can change all of this later in Settings.'**
+  String get onboardingWelcomeSettingsNote;
+
   /// No description provided for @onboardingWelcomeSkipButton.
   ///
   /// In en, this message translates to:
   /// **'Look around first'**
   String get onboardingWelcomeSkipButton;
+
+  /// No description provided for @onboardingWelcomeStepAreas.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick your areas'**
+  String get onboardingWelcomeStepAreas;
+
+  /// No description provided for @onboardingWelcomeStepAreasDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Each part of your life gets its own space'**
+  String get onboardingWelcomeStepAreasDetail;
+
+  /// No description provided for @onboardingWelcomeStepKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect one key'**
+  String get onboardingWelcomeStepKey;
+
+  /// No description provided for @onboardingWelcomeStepKeyDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'So I can think, listen and read aloud'**
+  String get onboardingWelcomeStepKeyDetail;
+
+  /// No description provided for @onboardingWelcomeStepsCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Three things, then you\'re in'**
+  String get onboardingWelcomeStepsCaption;
+
+  /// No description provided for @onboardingWelcomeStepTaskDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Say one thing and watch it become a task'**
+  String get onboardingWelcomeStepTaskDetail;
 
   /// No description provided for @onboardingWelcomeTitle.
   ///

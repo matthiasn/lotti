@@ -24,14 +24,21 @@ structurée par IA.
 
 <ManualScreenshot
   caseId="onboarding/welcome"
-  alt="Panneau de bienvenue de l’intégration Lotti invitant à connecter un cerveau IA et à transformer la parole en tâche structurée"
-  caption="Le panneau de bienvenue s’ouvre au-dessus de l’application actuelle. Choisis ton cerveau IA pour continuer, ou quitte le parcours sans modifier ta configuration."
+  alt="Bienvenue de l’intégration Lotti avec Lotti, son salut et les trois étapes : connecter une clé, choisir tes domaines, créer ta première tâche"
+  caption="Chaque étape a la même mise en page : Lotti, sa bulle et le contenu propre à l’étape au-dessus du bouton principal. La bienvenue liste les trois étapes à venir."
 />
 
-Choisis **Choisir ton cerveau IA** pour commencer. **Explorer d’abord**, la zone
-assombrie hors du panneau et l’action système de retour quittent tous
-l’intégration sans rien connecter. Tu pourras y revenir plus tard depuis les
+Choisis **Commencer avec une seule clé** pour commencer, ou **Explorer avec des
+données d'exemple** pour d’abord parcourir un monde de démonstration déjà
+aménagé. Le bouton de fermeture en haut, l’action système de retour et, sur un
+ordinateur, un clic hors du panneau quittent tous l’intégration depuis la
+bienvenue sans rien connecter. Tu pourras y revenir plus tard depuis les
 Paramètres.
+
+Après la bienvenue, la flèche de retour en haut — et l’action système de
+retour — ramènent à l’étape précédente, et le bouton de fermeture quitte
+l’intégration. Trois segments à côté montrent où tu en es avec la clé, tes
+domaines et ta première tâche.
 
 Lotti peut aussi proposer automatiquement cette bienvenue à un profil éligible.
 L’invite automatique a une cadence de tentatives limitée ; l’entrée dans les
@@ -41,27 +48,30 @@ Paramètres n’en a pas, de sorte que tu gardes toujours un moyen d’y revenir
 
 <ManualScreenshot
   caseId="onboarding/providers"
-  alt="Sélecteur de fournisseurs de l’intégration Lotti avec Mistral, Melious.ai, Gemini, Qwen, OpenAI et Ollama"
-  caption="Les principaux fournisseurs hébergés apparaissent d’abord. Déplie Plus d’options pour OpenAI et le parcours local Ollama."
+  alt="Étape des fournisseurs de l’intégration Lotti avec Mistral choisi et le bouton Continuer avec Mistral"
+  caption="Mistral est recommandé et choisi d’entrée. Ouvre Autres fournisseurs pour le reste, y compris le parcours local Ollama."
 />
 
-La page des fournisseurs présente les choix hébergés et locaux disponibles :
+Mistral est choisi à l’ouverture de l’étape. Tape sur une autre carte pour
+choisir plutôt ce fournisseur ; le bouton en bas indique celui avec lequel tu
+continueras, et seul le bouton fait avancer. Les fournisseurs sont :
 
 - **Mistral** est le choix par défaut recommandé, hébergé dans l’UE.
 - **Melious.ai** est hébergé dans l’UE, avec routage dynamique des modèles.
 - **Gemini** et **Qwen** exposent leurs régions hébergées correspondantes.
-- **OpenAI** est disponible parmi les options supplémentaires.
+- **OpenAI** est disponible sous **Autres fournisseurs**, avec les autres.
 - **Ollama** se connecte à un point de terminaison local compatible et ne
   nécessite pas de clé d’API hébergée.
 
 <ManualScreenshot
   caseId="onboarding/api-key"
   alt="Panneau de vérification de fournisseur de l’intégration Lotti montrant une connexion Ollama locale vérifiée"
-  caption="Lotti vérifie le fournisseur choisi avant d’activer Connecter. Les fournisseurs hébergés utilisent la même étape avec un champ de clé API."
+  caption="Lotti vérifie le fournisseur choisi avant que le bouton fasse avancer. Les fournisseurs hébergés utilisent la même étape avec un champ de clé API."
 />
 
-Pour un fournisseur hébergé, colle sa clé API. Lotti vérifie la connexion avant
-d’activer **Connecter**. Ollama vérifie le point de terminaison local configuré
+Pour un fournisseur hébergé, colle sa clé API. Lotti vérifie la connexion et affiche
+le résultat sur la carte du fournisseur avant d’activer **Continuer avec** ce
+fournisseur. Ollama vérifie le point de terminaison local configuré
 et indique les modèles joignables. Une connexion réussie conserve le
 fournisseur et prépare les modèles ainsi que le profil d’inférence utilisés
 dans les étapes suivantes.
@@ -107,8 +117,10 @@ même choix de catégorie qu’un compte réellement utilisé.
 Le panneau de première tâche utilise le pipeline de capture habituel de Lotti.
 Choisis la catégorie cible, puis suis l’un de ces trois chemins :
 
-1. Sélectionne le visuel d’enregistrement et exprime la tâche dans une phrase naturelle.
-2. Choisis une suggestion de départ pour essayer tout de suite le parcours de structuration.
+1. Sélectionne **Tape pour parler** et exprime la tâche dans une phrase naturelle.
+   L’enregistreur apparaît tant que le microphone est ouvert ; **Terminer**
+   arrête l’enregistrement et **Recommencer** l’abandonne.
+2. Choisis une suggestion de départ pour en créer une tâche tout de suite.
 3. Choisis **Plutôt écrire ?** et saisis la pensée sans utiliser le microphone.
 
 Lotti affiche les mots capturés pendant qu’il les structure. Le résultat est une
@@ -123,8 +135,8 @@ confirmer plutôt que de laisser la tâche se modifier à ton insu.
   caption="La pensée saisie du Projet Waddle devient « Inspecter le relais de sardines d’Europe ». La tâche reste dans le panneau jusqu’à ce que tu la choisisses."
 />
 
-Choisis la carte de la tâche créée pour fermer l’intégration et ouvrir sa page
-normale. Tu peux alors examiner les propositions de liste de contrôle — elles n’existent que si la catégorie de la tâche a un modèle d’agent par défaut, que l’intégration attribue aux catégories qu’elle crée dès lors que tu as connecté un fournisseur d’IA ; une catégorie créée plus tard dans les Paramètres n’en a pas tant que tu ne lui en assignes pas un, et la liste de contrôle est alors abandonnée plutôt que proposée —, ajouter
+Sélectionne **Ouvrir la tâche** pour fermer l’intégration et ouvrir la page
+normale de la tâche. Tu peux alors examiner les propositions de liste de contrôle — elles n’existent que si la catégorie de la tâche a un modèle d’agent par défaut, que l’intégration attribue aux catégories qu’elle crée dès lors que tu as connecté un fournisseur d’IA ; une catégorie créée plus tard dans les Paramètres n’en a pas tant que tu ne lui en assignes pas un, et la liste de contrôle est alors abandonnée plutôt que proposée —, ajouter
 une illustration de couverture ou une preuve, définir une échéance et une
 priorité, puis intégrer la tâche à Daily OS.
 

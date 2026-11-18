@@ -6351,18 +6351,23 @@ void main() {
         await step();
         await tester.ensureVisible(find.text('Ollama'));
         await step();
+        // A card chooses the provider; the main button goes on with it.
         await tester.tap(find.text('Ollama'));
+        await step();
+        await tester.ensureVisible(find.text('Continue with Ollama'));
+        await tester.tap(find.text('Continue with Ollama'));
         await step();
         // The reachability probe holds its "checking" state for a moment.
         await tester.pump(const Duration(milliseconds: 1100));
         await step();
-        await tester.tap(find.text('Connect'));
+        await tester.ensureVisible(find.text('Continue with Ollama'));
+        await tester.tap(find.text('Continue with Ollama'));
         await step();
         expect(find.text('Where should your AI work?'), findsOneWidget);
         expect(markCompletedCount, 0, reason: 'still open on the areas');
 
         // Close the welcome from the areas, the step the key leads to.
-        await tester.tapAt(const Offset(5, 5));
+        await tester.tap(find.byIcon(LottiIcons.close));
         await step();
 
         expect(find.text('Where should your AI work?'), findsNothing);
@@ -6406,10 +6411,9 @@ void main() {
         await tester.pump(const Duration(milliseconds: 800));
         expect(find.text('Get started with one key'), findsOneWidget);
 
-        // Skip out of the welcome without connecting — the modal's own
-        // "Look around first" link (the `onDismiss` path).
-        await tester.ensureVisible(find.text('Look around first'));
-        await tester.tap(find.text('Look around first'));
+        // Skip out of the welcome without connecting — the welcome's own
+        // close button (the `onDismiss` path).
+        await tester.tap(find.byIcon(LottiIcons.close));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump();

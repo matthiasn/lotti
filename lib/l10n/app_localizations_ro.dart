@@ -12171,9 +12171,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get nudgeBannerSnoozeTitle => 'Amânați bannerul';
 
   @override
-  String get onboardingApiKeyConnect => 'Conectați';
-
-  @override
   String get onboardingApiKeyConnecting => 'Se conectează…';
 
   @override
@@ -12202,8 +12199,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Rulează pe dispozitiv – nu e nevoie de cheie.';
 
   @override
+  String get onboardingApiKeyLocalTitle =>
+      'Îl caut pe dispozitivul dumneavoastră.';
+
+  @override
   String get onboardingApiKeyNoKeyHelp =>
       'Prima dată? Conectați-vă, creați o cheie API și lipiți-o — gratuit la început.';
+
+  @override
+  String get onboardingApiKeyProviderCaption => 'Furnizorul dumneavoastră';
 
   @override
   String get onboardingApiKeyReveal => 'Afișați cheia';
@@ -12215,6 +12219,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String onboardingApiKeyUnreachable(String providerName) {
     return 'Nu s-a putut contacta $providerName. Verificați cheia sau conexiunea și încercați din nou.';
   }
+
+  @override
+  String get onboardingApiKeyVerifiedText =>
+      'Continuați, iar eu configurez totul.';
+
+  @override
+  String get onboardingApiKeyVerifiedTitle => 'Funcționează';
 
   @override
   String get onboardingApiKeyVerifying => 'Se verifică…';
@@ -12250,7 +12261,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingCategoryExplanation =>
-      'Fiecare zonă a vieții are spațiul ei. Alegeți ce se potrivește sau adăugați-vă propriile.';
+      'Fiecare zonă a vieții are spațiul ei.';
 
   @override
   String get onboardingCategoryFamily => 'Familie';
@@ -12260,6 +12271,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingCategoryFriends => 'Prieteni';
+
+  @override
+  String get onboardingCategoryPickOne =>
+      'Alegeți cel puțin o zonă pentru a continua.';
 
   @override
   String get onboardingCategoryTitle => 'Unde să lucreze AI-ul dvs.?';
@@ -12280,7 +12295,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingCompanionOneKey =>
-      'Spuneți-mi ce aveți în minte și o transform într-un plan. Ca să încep, am nevoie doar de o cheie API, iar eu vă ajut s-o configurați.';
+      'Spuneți-mi ce aveți în minte și o transform într-un plan. Am nevoie doar de o cheie.';
+
+  @override
+  String onboardingConnectContinueWith(String provider) {
+    return 'Continuați cu $provider';
+  }
 
   @override
   String get onboardingConnectGeminiName => 'Gemini';
@@ -12295,6 +12315,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get onboardingConnectHideOtherProviders =>
       'Ascundeți ceilalți furnizori';
+
+  @override
+  String get onboardingConnectKeyNote =>
+      'O cheie este un fel de parolă pentru un serviciu de AI.';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
@@ -12332,15 +12356,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingConnectRecommended => 'Recomandat';
 
   @override
-  String get onboardingFirstTaskCreatedHint =>
-      'Atingeți sarcina pentru a o deschide';
+  String get onboardingFirstTaskCreatedCaption => 'Sarcina dumneavoastră';
+
+  @override
+  String onboardingFirstTaskCreatedText(String area) {
+    return 'Este în $area. Deschideți-o pentru a vedea pașii pe care îi sugerez.';
+  }
 
   @override
   String get onboardingFirstTaskCreatedTitle => 'Prima dvs. sarcină este gata';
 
   @override
   String get onboardingFirstTaskGuidance =>
-      'Atingeți pentru a vorbi și spuneți ce aveți de făcut — Lotti o transformă într-o sarcină reală.';
+      'Atingeți pentru a vorbi și spuneți ce aveți de făcut — o transform într-o sarcină reală.';
 
   @override
   String get onboardingFirstTaskSuggestionDentist =>
@@ -12356,7 +12384,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingFirstTaskSuggestionsLabel =>
-      'Nu sunteți încă pregătit să vorbiți? Începeți cu una dintre acestea:';
+      'Sau atingeți una ca să devină prima dumneavoastră sarcină';
 
   @override
   String get onboardingFirstTaskTitle => 'Creați-vă prima sarcină';
@@ -12402,6 +12430,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingRecordingStyleTryVoice => 'Încercați cu vocea';
 
   @override
+  String onboardingStageProgress(int current, int total) {
+    return 'Pasul $current din $total';
+  }
+
+  @override
   String get onboardingWelcomeConnectButton => 'Alegeți creierul AI';
 
   @override
@@ -12412,7 +12445,32 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingWelcomeOneKeyButton => 'Începeți cu o singură cheie';
 
   @override
+  String get onboardingWelcomeSettingsNote =>
+      'Puteți schimba toate acestea mai târziu în Setări.';
+
+  @override
   String get onboardingWelcomeSkipButton => 'Explorați mai întâi';
+
+  @override
+  String get onboardingWelcomeStepAreas => 'Alegeți-vă zonele';
+
+  @override
+  String get onboardingWelcomeStepAreasDetail =>
+      'Fiecare parte a vieții are spațiul ei';
+
+  @override
+  String get onboardingWelcomeStepKey => 'Conectați o cheie';
+
+  @override
+  String get onboardingWelcomeStepKeyDetail =>
+      'Ca să pot gândi, asculta și citi cu voce tare';
+
+  @override
+  String get onboardingWelcomeStepsCaption => 'Trei lucruri și ați intrat';
+
+  @override
+  String get onboardingWelcomeStepTaskDetail =>
+      'Spuneți un lucru și priviți cum devine o sarcină';
 
   @override
   String get onboardingWelcomeTitle =>

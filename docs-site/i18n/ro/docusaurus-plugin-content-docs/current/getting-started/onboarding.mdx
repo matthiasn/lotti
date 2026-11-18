@@ -19,11 +19,13 @@ Deschideți **Setări → Configurare inițială** ori de câte ori doriți să 
 
 <ManualScreenshot
   caseId="onboarding/welcome"
-  alt="Panoul de bun venit al configurării inițiale Lotti, care invită utilizatorul să conecteze un creier AI și să transforme vorbirea într-o sarcină structurată"
-  caption="Panoul de bun venit se deschide peste aplicația curentă. Alegeți creierul AI pentru a continua sau părăsiți fluxul fără a modifica configurarea."
+  alt="Bun venit în configurarea inițială Lotti, cu Lotti, salutul ei și cei trei pași: conectați o cheie, alegeți domeniile, creați prima sarcină"
+  caption="Fiecare pas are același aspect: Lotti, balonul ei de dialog și conținutul propriu al pasului deasupra butonului principal. Ecranul de bun venit enumeră cei trei pași care urmează."
 />
 
-Apăsați **Alegeți creierul AI** pentru a începe. **Explorați mai întâi**, zona estompată din afara panoului și acțiunea Înapoi a sistemului închid configurarea inițială fără să conecteze nimic. Vă puteți întoarce ulterior din Setări.
+Apăsați **Începeți cu o singură cheie** pentru a începe sau **Explorați cu date de exemplu** pentru a explora mai întâi o lume demonstrativă gata amenajată. Butonul de închidere din partea de sus, acțiunea Înapoi a sistemului și, pe desktop, un clic în afara panoului închid configurarea inițială din ecranul de bun venit fără să conecteze nimic. Vă puteți întoarce ulterior din Setări.
+
+După ecranul de bun venit, săgeata Înapoi din partea de sus — și acțiunea Înapoi a sistemului — revin la pasul anterior, iar butonul de închidere părăsește configurarea inițială. Trei segmente de lângă ele arată cât de departe ați ajuns cu cheia, domeniile și prima sarcină.
 
 Lotti poate oferi automat acest mesaj de bun venit unui profil eligibil. Solicitarea automată are o cadență limitată de reîncercare; intrarea din Setări nu are această limită, deci veți avea întotdeauna o cale de întoarcere.
 
@@ -31,25 +33,25 @@ Lotti poate oferi automat acest mesaj de bun venit unui profil eligibil. Solicit
 
 <ManualScreenshot
   caseId="onboarding/providers"
-  alt="Selectorul de furnizori din configurarea inițială Lotti, cu Mistral, Melious.ai, Gemini, Qwen, OpenAI și Ollama"
-  caption="Furnizorii găzduiți principali apar primii. Extindeți Mai multe opțiuni pentru OpenAI și ruta locală Ollama."
+  alt="Pasul furnizorilor din configurarea inițială Lotti, cu Mistral ales și butonul Continuați cu Mistral"
+  caption="Mistral este recomandat și ales de la început. Deschideți Alți furnizori pentru restul, inclusiv ruta locală Ollama."
 />
 
-Pagina furnizorilor prezintă opțiunile găzduite și locale disponibile:
+Mistral este ales când se deschide pasul. Atingeți alt card pentru a alege în schimb acel furnizor; butonul din partea de jos numește furnizorul cu care veți continua și doar butonul trece mai departe. Furnizorii sunt:
 
 - **Mistral** este opțiunea implicită recomandată, găzduită în UE.
 - **Melious.ai** este găzduit în UE, cu rutare dinamică a modelelor.
 - **Gemini** și **Qwen** vin fiecare cu propriile regiuni de găzduire.
-- **OpenAI** este disponibil în opțiunile extinse.
+- **OpenAI** este disponibil la **Alți furnizori**, împreună cu ceilalți.
 - **Ollama** se conectează la un punct final local compatibil și nu necesită o cheie API găzduită.
 
 <ManualScreenshot
   caseId="onboarding/api-key"
   alt="Panoul de verificare a furnizorului din configurarea inițială Lotti, care arată o conexiune locală Ollama verificată"
-  caption="Lotti verifică furnizorul ales înainte de a activa Conectare. Furnizorii găzduiți folosesc același pas, cu un câmp pentru cheia API."
+  caption="Lotti verifică furnizorul ales înainte ca butonul să treacă mai departe. Furnizorii găzduiți folosesc același pas, cu un câmp pentru cheia API."
 />
 
-Pentru un furnizor găzduit, lipiți cheia API a furnizorului. Lotti verifică conexiunea înainte de a activa **Conectare**. Ollama verifică punctul final local configurat și raportează modelele accesibile. O conexiune reușită păstrează furnizorul și inițializează modelele și profilul de inferență folosite în pașii următori.
+Pentru un furnizor găzduit, lipiți cheia API a furnizorului. Lotti verifică conexiunea și afișează rezultatul pe cardul furnizorului înainte de a activa **Continuați cu** furnizorul respectiv. Ollama verifică punctul final local configurat și raportează modelele accesibile. O conexiune reușită păstrează furnizorul și inițializează modelele și profilul de inferență folosite în pașii următori.
 
 Textul capturat al sarcinii este trimis pentru structurare la furnizorul atribuit categoriei selectate. Alegeți un furnizor al cărui mod de implementare și de prelucrare a datelor se potrivește materialului pe care intenționați să îl capturați. Un punct final Ollama local accesibil menține această solicitare de structurare pe dispozitivul pe care rulează.
 
@@ -77,8 +79,8 @@ Fixture-ul manualului creează două destinații reale — **Operațiuni cu ping
 
 Panoul primei sarcini folosește fluxul obișnuit de capturare al Lotti. Alegeți categoria-țintă, apoi una dintre cele trei căi:
 
-1. Selectați vizualul de înregistrare și rostiți sarcina într-o propoziție obișnuită.
-2. Alegeți o sugestie de început pentru a încerca imediat structurarea.
+1. Selectați **Apăsați pentru a vorbi** și rostiți sarcina într-o propoziție obișnuită. Înregistratorul apare cât timp microfonul este deschis; **Gata** încheie înregistrarea, iar **Reîncepeți** renunță la ea.
+2. Alegeți o sugestie de început pentru a crea imediat o sarcină din ea.
 3. Alegeți **Mai degrabă scrieți?** și introduceți gândul fără microfon.
 
 Lotti repetă cuvintele capturate în timp ce le structurează. Rezultatul este o sarcină reală în categoria aleasă, nu date demonstrative rezervate configurării inițiale. Când structurarea produce sugestii de listă de verificare, acestea ajung pe sarcină ca propuneri, astfel încât să le puteți confirma în loc ca sarcina să se modifice pe tăcute. Această cale a propunerilor necesită ca sarcina să aibă o categorie cu șablon de agent implicit — configurarea inițială îl atribuie categoriilor pe care le creează atunci când ați conectat un furnizor AI, însă o categorie creată ulterior în Setări nu are niciunul până nu îi atribuiți unul, iar o listă de verificare pentru o sarcină dintr-o astfel de categorie este eliminată în loc să fie propusă.
@@ -89,7 +91,7 @@ Lotti repetă cuvintele capturate în timp ce le structurează. Rezultatul este 
   caption="Gândul tastat din Project Waddle devine „Inspectați releul de sardine Europa”. Sarcina rămâne în panou până când o alegeți."
 />
 
-Alegeți cardul sarcinii create pentru a închide configurarea inițială și a deschide pagina sa obișnuită. De acolo puteți revizui propunerile pentru lista de verificare, adăuga o copertă sau dovezi, stabili un termen și o prioritate și aduce sarcina în Daily OS.
+Selectați **Deschideți sarcina** pentru a închide configurarea inițială și a deschide pagina obișnuită a sarcinii. De acolo puteți revizui propunerile pentru lista de verificare, adăuga o copertă sau dovezi, stabili un termen și o prioritate și aduce sarcina în Daily OS.
 
 Dacă închideți fluxul după conectarea unui furnizor, Lotti păstrează configurarea acelui furnizor și consideră mesajul de bun venit finalizat. Reluarea configurării ulterior rămâne sigură: este o acțiune explicită din Setări, nu o nouă solicitare automată.
 

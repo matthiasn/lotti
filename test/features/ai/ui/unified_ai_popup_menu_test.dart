@@ -514,7 +514,12 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 400));
           await tester.pump(const Duration(milliseconds: 400));
-          await tester.tap(find.text('Mistral'), warnIfMissed: false);
+          // Mistral is chosen when the step opens; the main button goes on.
+          await tester.ensureVisible(find.text('Continue with Mistral'));
+          await tester.tap(
+            find.text('Continue with Mistral'),
+            warnIfMissed: false,
+          );
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 400));
           await tester.pump(const Duration(milliseconds: 400));

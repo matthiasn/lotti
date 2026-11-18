@@ -210,9 +210,13 @@ void main() {
       await tester.tap(find.text('Connect'));
       await settlePanelSwap(tester);
 
-      // Tapping a provider tile invokes onSelect → switches to the API-key view
-      // for that provider, covering the connect panel's onSelect closure.
+      // Choosing a provider and going on invokes onSelect → switches to the
+      // API-key view for that provider, covering the connect panel's
+      // onSelect closure.
       await tester.tap(find.text('Mistral'));
+      await tester.pump();
+      await tester.ensureVisible(find.text('Continue with Mistral'));
+      await tester.tap(find.text('Continue with Mistral'));
       await settlePanelSwap(tester);
 
       expect(find.text('Paste your API key'), findsOneWidget);
@@ -323,6 +327,9 @@ void main() {
     await tester.tap(find.text('Other providers'));
     await settlePanelSwap(tester);
     await tester.tap(find.text('Ollama'));
+    await tester.pump();
+    await tester.ensureVisible(find.text('Continue with Ollama'));
+    await tester.tap(find.text('Continue with Ollama'));
     await settlePanelSwap(tester);
 
     // Ollama probes on open; let the ≥1s checking dwell elapse, then connect.
@@ -331,7 +338,9 @@ void main() {
     expect(find.text('Connection verified'), findsOneWidget);
 
     // Target the panel's Connect button (the gallery view chip is also "Connect").
-    await tester.tap(find.widgetWithText(DesignSystemButton, 'Connect'));
+    await tester.tap(
+      find.widgetWithText(DesignSystemButton, 'Continue with Ollama'),
+    );
     await settlePanelSwap(tester);
 
     // onConnected flipped the gallery back to the welcome view.

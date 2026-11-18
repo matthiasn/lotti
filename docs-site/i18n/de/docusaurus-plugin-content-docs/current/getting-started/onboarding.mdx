@@ -24,13 +24,20 @@ KI-strukturierte Aufgabe erstellt hat.
 
 <ManualScreenshot
   caseId="onboarding/welcome"
-  alt="Lottis Onboarding-Begrüßung mit Einladung, ein KI-Gehirn zu verbinden und Sprache in eine strukturierte Aufgabe zu verwandeln"
-  caption="Die Begrüßung öffnet sich über der aktuellen App. Wähle dein KI-Gehirn oder verlasse den Ablauf ohne Änderungen."
+  alt="Lottis Onboarding-Begrüßung mit Lotti, ihrem Gruß und den drei Schritten: einen Schlüssel verbinden, Bereiche wählen, erste Aufgabe anlegen"
+  caption="Jeder Schritt hat dasselbe Layout: Lotti, ihre Sprechblase und der eigene Inhalt des Schritts über der Hauptschaltfläche. Die Begrüßung zeigt die drei kommenden Schritte."
 />
 
-Wähle **Dein KI-Gehirn auswählen**. **Erst umsehen**, der abgedunkelte Bereich
-außerhalb und die System-Zurück-Aktion verlassen das Onboarding ohne Verbindung.
-Du kannst später aus den Einstellungen zurückkehren.
+Wähle **Mit einem Schlüssel loslegen**, oder sieh dich mit **Mit Beispieldaten
+erkunden** zuerst in einer eingerichteten Demowelt um. Die Schließen-Schaltfläche
+oben, die System-Zurück-Aktion und am Desktop ein Klick außerhalb des Panels
+verlassen das Onboarding von der Begrüßung aus ohne Verbindung. Du kannst
+später aus den Einstellungen zurückkehren.
+
+Nach der Begrüßung führen der Zurück-Pfeil oben — und die System-Zurück-Aktion —
+zum vorherigen Schritt, und die Schließen-Schaltfläche verlässt das Onboarding.
+Drei Segmente daneben zeigen, wie weit du mit dem Schlüssel, deinen Bereichen
+und deiner ersten Aufgabe bist.
 
 Lotti kann die Begrüßung geeigneten Profilen automatisch anbieten. Dieser
 Hinweis folgt einem begrenzten Wiederholungsrhythmus; der Einstellungseintrag
@@ -40,26 +47,29 @@ bleibt jederzeit verfügbar.
 
 <ManualScreenshot
   caseId="onboarding/providers"
-  alt="Lottis Onboarding-Anbieterauswahl mit Mistral, Melious.ai, Gemini, Qwen, OpenAI und Ollama"
-  caption="Wichtige gehostete Anbieter stehen zuerst. Unter Mehr Optionen findest du OpenAI und den lokalen Ollama-Pfad."
+  alt="Lottis Onboarding-Anbieterschritt mit gewähltem Mistral und der Schaltfläche Weiter mit Mistral"
+  caption="Mistral ist empfohlen und zu Beginn gewählt. Unter Andere Anbieter findest du den Rest, auch den lokalen Ollama-Pfad."
 />
 
-Die Seite trennt gehostete und lokale Möglichkeiten:
+Beim Öffnen des Schritts ist Mistral gewählt. Tippe auf eine andere Karte, um
+stattdessen diesen Anbieter zu wählen; die Schaltfläche unten nennt den, mit dem
+du weitermachst, und nur die Schaltfläche geht weiter. Die Anbieter:
 
 - **Mistral** ist der empfohlene EU-gehostete Standard.
 - **Melious.ai** ist EU-gehostet und bietet dynamisches Modellrouting.
 - **Gemini** und **Qwen** verwenden ihre jeweiligen Hostingregionen.
-- **OpenAI** steht unter den erweiterten Optionen.
+- **OpenAI** steht mit den übrigen unter **Andere Anbieter**.
 - **Ollama** verbindet einen kompatiblen lokalen Endpunkt ohne gehosteten API-Schlüssel.
 
 <ManualScreenshot
   caseId="onboarding/api-key"
   alt="Überprüfungsseite des Onboardings mit einer bestätigten lokalen Ollama-Verbindung"
-  caption="Lotti prüft die gewählte Verbindung, bevor Verbinden verfügbar wird. Bei gehosteten Anbietern zeigt derselbe Schritt ein Feld für den API-Schlüssel."
+  caption="Lotti prüft die gewählte Verbindung, bevor die Schaltfläche weitergeht. Bei gehosteten Anbietern zeigt derselbe Schritt ein Feld für den API-Schlüssel."
 />
 
 Bei gehosteten Anbietern fügst du den API-Schlüssel ein. Lotti prüft die
-Verbindung, bevor **Verbinden** aktiv wird. Ollama prüft den lokalen Endpunkt
+Verbindung und zeigt das Ergebnis auf der Karte des Anbieters, bevor **Weiter
+mit** dem Anbieter aktiv wird. Ollama prüft den lokalen Endpunkt
 und meldet erreichbare Modelle. Bei Erfolg speichert Lotti Anbieter, Modelle
 und das für weitere Schritte benötigte Inferenzprofil.
 
@@ -100,8 +110,10 @@ der nächste Schritt dieselbe Zielauswahl wie ein echter Arbeitsbereich zeigt.
 Die erste Aufgabe verwendet Lottis normale Erfassungspipeline. Wähle die
 Kategorie und einen von drei Wegen:
 
-1. Tippe auf die Aufnahmevisualisierung und sprich einen normalen Satz.
-2. Verwende einen Startvorschlag für eine sofortige Strukturierung.
+1. Wähle **Tippen zum Sprechen** und sprich die Aufgabe in einem normalen Satz.
+   Die Aufnahme erscheint, solange das Mikrofon offen ist; **Fertig** beendet
+   sie, und **Von vorne beginnen** verwirft sie.
+2. Wähle einen Startvorschlag, um daraus sofort eine Aufgabe anzulegen.
 3. Wähle **Lieber tippen?** und gib den Gedanken ohne Mikrofon ein.
 
 Während der Strukturierung spiegelt Lotti die erfassten Wörter. Das Ergebnis
@@ -114,7 +126,7 @@ auf deine Bestätigung, statt die Aufgabe still zu ändern. Dieser Vorschlagsweg
   caption="Der getippte Project-Waddle-Gedanke wird zu „Sardinenrelais von Europa inspizieren“. Die Aufgabe bleibt bis zur Auswahl im Panel."
 />
 
-Wähle die Aufgabenkarte, um das Onboarding zu schließen und die normale
+Wähle **Aufgabe öffnen**, um das Onboarding zu schließen und die normale
 Aufgabenseite zu öffnen. Dort prüfst du Vorschläge, ergänzt Titelgrafik oder
 Belege, setzt Fälligkeit und Priorität und nimmst die Aufgabe in Daily OS auf.
 

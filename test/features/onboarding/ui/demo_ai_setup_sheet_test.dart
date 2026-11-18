@@ -135,6 +135,9 @@ void main() {
     expect(find.byType(OnboardingConnectPanel), findsOneWidget);
     await openOtherProviders(tester);
     await tester.tap(find.text('Gemini'), warnIfMissed: false);
+    await tester.pump();
+    await tester.ensureVisible(find.text('Continue with Gemini'));
+    await tester.tap(find.text('Continue with Gemini'));
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -159,6 +162,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await openOtherProviders(tester);
     await tester.tap(find.text('Gemini'), warnIfMissed: false);
+    await tester.pump();
+    await tester.ensureVisible(find.text('Continue with Gemini'));
+    await tester.tap(find.text('Continue with Gemini'));
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -196,6 +202,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await openOtherProviders(tester);
     await tester.tap(find.text('Gemini'), warnIfMissed: false);
+    await tester.pump();
+    await tester.ensureVisible(find.text('Continue with Gemini'));
+    await tester.tap(find.text('Continue with Gemini'));
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -295,6 +304,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await openOtherProviders(tester);
     await tester.tap(find.text('Gemini'), warnIfMissed: false);
+    await tester.pump();
+    await tester.ensureVisible(find.text('Continue with Gemini'));
+    await tester.tap(find.text('Continue with Gemini'));
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(OnboardingApiKeyPanel), findsOneWidget);
@@ -326,6 +338,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await openOtherProviders(tester);
     await tester.tap(find.text('Gemini'), warnIfMissed: false);
+    await tester.pump();
+    await tester.ensureVisible(find.text('Continue with Gemini'));
+    await tester.tap(find.text('Continue with Gemini'));
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
     tester
@@ -396,6 +411,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await openOtherProviders(tester);
     await tester.tap(find.text('Gemini'), warnIfMissed: false);
+    await tester.pump();
+    await tester.ensureVisible(find.text('Continue with Gemini'));
+    await tester.tap(find.text('Continue with Gemini'));
     await settleStep(tester);
     await tester.pump(const Duration(milliseconds: 400));
     tester
@@ -453,6 +471,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       await openOtherProviders(tester);
       await tester.tap(find.text('Gemini'), warnIfMissed: false);
+      await tester.pump();
+      await tester.ensureVisible(find.text('Continue with Gemini'));
+      await tester.tap(find.text('Continue with Gemini'));
       await settleStep(tester);
       await tester.pump(const Duration(milliseconds: 400));
       tester
@@ -505,6 +526,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       await openOtherProviders(tester);
       await tester.tap(find.text('Gemini'), warnIfMissed: false);
+      await tester.pump();
+      await tester.ensureVisible(find.text('Continue with Gemini'));
+      await tester.tap(find.text('Continue with Gemini'));
       await settleStep(tester);
       await tester.pump(const Duration(milliseconds: 400));
       tester

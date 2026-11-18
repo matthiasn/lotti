@@ -8,11 +8,10 @@ import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart'
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
-import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_stage.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
@@ -28,13 +27,8 @@ const _verifyDebounce = Duration(milliseconds: 800);
 /// that arrives sooner is held until this elapses.
 const _minCheckingVisible = Duration(seconds: 1);
 
-/// How long the backdrop takes to drain to greyscale on a rejected key (and to
-/// recover). Deliberately slower than any motion token — a gradual, mournful
-/// fade reads as a deliberate mood shift rather than a snap.
-const _bleakFade = Duration(milliseconds: 1100);
-
-/// Screen 3 of the FTUE: the visually-matching, simple step that gathers just
-/// the API key for the chosen provider, **verifies it live** against the
+/// The key step, on the shared [OnboardingStage]: it gathers just the API key
+/// for the chosen provider, **verifies it live** against the
 /// provider's "list models" endpoint, and only then creates the provider and
 /// runs the existing per-provider FTUE setup natively (no detour to the plain
 /// settings editor). Cloud providers show a key field + "get a key" link;
@@ -50,7 +44,9 @@ class OnboardingApiKeyPanel extends ConsumerStatefulWidget {
     required this.type,
     required this.onBack,
     required this.onConnected,
+    this.onClose,
     this.companion,
+    this.progress,
     super.key,
   });
 
@@ -58,12 +54,19 @@ class OnboardingApiKeyPanel extends ConsumerStatefulWidget {
   final VoidCallback onBack;
   final VoidCallback onConnected;
 
+  /// Leaves the flow; null where there is none to leave (the demo's AI
+  /// setup). Not offered while the provider is being set up.
+  final VoidCallback? onClose;
+
   /// Builds the companion for the key check's [ConnectionCheckState] as the
   /// user sees it — thinking while it runs, pleased or let down by the
-  /// answer — shown as a bust at the end of the title row; while the provider
-  /// is being set up after Connect, she is built as still checking. Null
-  /// leaves her out.
+  /// answer — standing on the stage; while the provider is being set up
+  /// after Connect, she is built as still checking. Null leaves her out.
   final Widget Function(ConnectionCheckState status)? companion;
+
+  /// Where this step is in onboarding; null where it is borrowed (the demo's
+  /// AI setup).
+  final OnboardingProgress? progress;
 
   @override
   ConsumerState<OnboardingApiKeyPanel> createState() =>
@@ -229,10 +232,9 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final brand = onboardingProviderBrandColor(widget.type);
+    final accent = tokens.colors.interactive.enabled;
     final textHigh = tokens.colors.text.highEmphasis;
     final textMed = tokens.colors.text.mediumEmphasis;
-    final panelBg = tokens.colors.background.level01;
     final errorColor = tokens.colors.alert.error.ink;
     final console = aiProviderKeyConsoleUrl(widget.type);
     // Listen (not watch) keeps the verifier alive and feeds the local display
@@ -244,9 +246,9 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
     final verifyState = _display;
 
     // One fixed-height slot crossfades between the at-rest hint and the live
-    // verification status, so the Connect button never moves as the user types
-    // / verifies / is rejected (the "jumpy when validating" complaint). The
-    // "how to get a key" guidance lives in its own persistent block above.
+    // verification status, so nothing moves as the user types / verifies / is
+    // rejected (the "jumpy when validating" complaint). The "how to get a
+    // key" guidance is the step's own line, above.
     final Widget statusChild;
     if (verifyState is ConnectionCheckIdle) {
       statusChild = _requiresKey
@@ -266,289 +268,182 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
       );
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(tokens.radii.l),
-      child: Stack(
+    final providerName = onboardingProviderName(messages, widget.type);
+    final verified = !_busy && verifyState is ConnectionCheckVerified;
+    return OnboardingStage(
+      // She says nothing here: the status line carries the words.
+      companion: widget.companion?.call(
+        _busy ? const ConnectionCheckChecking() : verifyState,
+      ),
+      // A local provider has no key to ask for: she says what she is doing
+      // instead, and the provider is named in the tray.
+      // Once the check has passed she says so, and what the button does.
+      title: verified
+          ? messages.onboardingApiKeyVerifiedTitle
+          : _requiresKey
+          ? messages.onboardingApiKeyTitle
+          : messages.onboardingApiKeyLocalTitle,
+      // Plain-language guidance, so getting a key isn't a dead-end "link
+      // and leave".
+      text: verified
+          ? messages.onboardingApiKeyVerifiedText
+          : !_requiresKey
+          ? messages.onboardingApiKeyLocalNote
+          : console != null
+          ? messages.onboardingApiKeyNoKeyHelp
+          : null,
+      progress: widget.progress,
+      // Both stay in the bar, only disabled while the provider is set up.
+      onBack: _busy ? null : widget.onBack,
+      showBack: true,
+      onClose: _busy ? null : widget.onClose,
+      showClose: widget.onClose != null,
+      caption: messages.onboardingApiKeyProviderCaption,
+      primary: !_requiresKey && !_busy && _isRejected(verifyState)
+          // Nothing to retype for a local provider that did not answer:
+          // once it is running, the check is run again from here.
+          ? OnboardingStageAction(
+              label: messages.agentKnowledgeRetry,
+              onPressed: _verifyNow,
+            )
+          : OnboardingStageAction(
+              // The label narrates the gate: Verifying… while a probe runs,
+              // Connecting… while creating the provider (power-user review).
+              label: _busy
+                  ? messages.onboardingApiKeyConnecting
+                  : verifyState is ConnectionCheckChecking
+                  ? messages.onboardingApiKeyVerifying
+                  : messages.onboardingConnectContinueWith(providerName),
+              // Disabled until the key is verified, so the user can only
+              // proceed with a key the provider actually accepted.
+              onPressed: (_busy || verifyState is! ConnectionCheckVerified)
+                  ? null
+                  : _connect,
+              icon: LottiIcons.forward,
+            ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Positioned.fill(
-            // Bleak fade: the brand-lit backdrop desaturates to greyscale when
-            // the key is rejected, then recovers to full brand colour once the
-            // user fixes it (or while still typing/verifying).
-            child: TweenAnimationBuilder<double>(
-              tween: Tween<double>(end: _isRejected(verifyState) ? 0 : 1),
-              duration: _bleakFade,
-              curve: MotionCurves.standard,
-              child: OnboardingBackdrop(accent: brand),
-              builder: (context, saturation, child) => ColorFiltered(
-                colorFilter: _saturationColorFilter(saturation),
-                child: child,
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    panelBg.withValues(alpha: 0),
-                    panelBg.withValues(alpha: 0.55),
-                  ],
+          // The provider chosen on the step before, the same card in the
+          // same place, now saying how its connection stands. A fixed slot,
+          // tall enough for a two-line rejection, so nothing moves as it
+          // crosses from the hint to "Checking…" to the answer.
+          // No check of its own: the status line under its name carries the
+          // one, once the key has passed.
+          OnboardingProviderCard(
+            type: widget.type,
+            chosen: null,
+            onTap: null,
+            status: SizedBox(
+              height: tokens.spacing.step8,
+              child: Align(
+                alignment: AlignmentDirectional.topStart,
+                child: AnimatedSwitcher(
+                  duration: MotionDurations.short3,
+                  child: statusChild,
                 ),
               ),
             ),
           ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.spacing.step5,
-              tokens.spacing.step5,
-              tokens.spacing.step5,
-              // Clear the home indicator when flush to the bottom as a sheet.
-              tokens.spacing.step6 + MediaQuery.paddingOf(context).bottom,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Semantics(
-                    button: true,
-                    label: MaterialLocalizations.of(
-                      context,
-                    ).backButtonTooltip,
-                    onTap: _busy ? null : widget.onBack,
-                    child: ExcludeSemantics(
-                      child: IconButton(
-                        tooltip: MaterialLocalizations.of(
-                          context,
-                        ).backButtonTooltip,
-                        onPressed: _busy ? null : widget.onBack,
-                        iconSize: tokens.spacing.step5,
-                        color: textHigh,
-                        icon: const Icon(LottiIcons.back),
-                      ),
-                    ),
-                  ),
+          SizedBox(height: tokens.spacing.step4),
+          if (_requiresKey) ...[
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              enabled: !_busy,
+              // A secret like a password: obscured by default with an
+              // eye toggle to reveal for paste verification.
+              obscureText: _obscure,
+              enableSuggestions: false,
+              autocorrect: false,
+              onChanged: _onKeyChanged,
+              // Enter connects when already verified, otherwise forces an
+              // immediate check instead of waiting out the debounce.
+              onSubmitted: (_) {
+                if (verifyState is ConnectionCheckVerified) {
+                  _connect();
+                } else {
+                  _debounce?.cancel();
+                  _verifyNow();
+                }
+              },
+              style: tokens.typography.styles.body.bodyLarge.copyWith(
+                color: textHigh,
+              ),
+              cursorColor: accent,
+              decoration: InputDecoration(
+                hintText: messages.onboardingApiKeyField,
+                hintStyle: tokens.typography.styles.body.bodyLarge.copyWith(
+                  color: textMed,
                 ),
-                SizedBox(height: tokens.spacing.step4),
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(tokens.spacing.step3),
-                      decoration: BoxDecoration(
-                        color: textHigh.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(tokens.radii.m),
-                      ),
-                      child: Icon(aiProviderIcon(widget.type), color: brand),
-                    ),
-                    SizedBox(width: tokens.spacing.step4),
-                    Expanded(
-                      child: Text(
-                        onboardingProviderName(messages, widget.type),
-                        style: tokens.typography.styles.heading.heading3
-                            .copyWith(color: textHigh),
-                      ),
-                    ),
-                    if (widget.companion case final companion?)
-                      // Decorative: the status line says in words what she
-                      // shows.
-                      ExcludeSemantics(
-                        child: SizedBox.square(
-                          dimension: ControlSizes.avatarHero,
-                          child: companion(
-                            _busy
-                                ? const ConnectionCheckChecking()
-                                : verifyState,
-                          ),
-                        ),
-                      ),
-                  ],
+                filled: true,
+                fillColor: tokens.colors.background.level01,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step4,
+                  vertical: tokens.spacing.step3,
                 ),
-                SizedBox(height: tokens.spacing.step5),
-                if (_requiresKey) ...[
-                  Text(
-                    messages.onboardingApiKeyTitle,
-                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                      color: textHigh,
-                    ),
-                  ),
-                  SizedBox(height: tokens.spacing.step3),
-                  TextField(
-                    controller: _controller,
-                    autofocus: true,
-                    enabled: !_busy,
-                    // A secret like a password: obscured by default with an
-                    // eye toggle to reveal for paste verification.
-                    obscureText: _obscure,
-                    enableSuggestions: false,
-                    autocorrect: false,
-                    onChanged: _onKeyChanged,
-                    // Enter connects when already verified, otherwise forces an
-                    // immediate check instead of waiting out the debounce.
-                    onSubmitted: (_) {
-                      if (verifyState is ConnectionCheckVerified) {
-                        _connect();
-                      } else {
-                        _debounce?.cancel();
-                        _verifyNow();
-                      }
-                    },
-                    style: tokens.typography.styles.body.bodyLarge.copyWith(
-                      color: textHigh,
-                    ),
-                    cursorColor: brand,
-                    decoration: InputDecoration(
-                      hintText: messages.onboardingApiKeyField,
-                      hintStyle: tokens.typography.styles.body.bodyLarge
-                          .copyWith(color: textMed),
-                      filled: true,
-                      fillColor: textHigh.withValues(alpha: 0.08),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: tokens.spacing.step4,
-                        vertical: tokens.spacing.step3,
-                      ),
-                      suffixIcon: IconButton(
-                        onPressed: _busy
-                            ? null
-                            : () => setState(() => _obscure = !_obscure),
-                        icon: Icon(
-                          _obscure ? LottiIcons.visible : LottiIcons.hidden,
-                          color: textMed,
-                          size: tokens.spacing.step5,
-                        ),
-                        tooltip: _obscure
-                            ? messages.onboardingApiKeyReveal
-                            : messages.onboardingApiKeyHide,
-                      ),
-                      // A visible resting border so the field reads as a
-                      // discrete control at rest (low-vision review), brightening
-                      // to the brand colour on focus.
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(tokens.radii.m),
-                        borderSide: BorderSide(
-                          color: textHigh.withValues(alpha: 0.24),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(tokens.radii.m),
-                        borderSide: BorderSide(color: brand, width: 2),
-                      ),
-                    ),
-                  ),
-                  if (console != null) ...[
-                    SizedBox(height: tokens.spacing.step3),
-                    _GetKeyHelp(console: console),
-                  ],
-                ] else
-                  Text(
-                    messages.onboardingApiKeyLocalNote,
-                    style: tokens.typography.styles.body.bodyLarge.copyWith(
-                      color: textMed,
-                    ),
-                  ),
-                SizedBox(height: tokens.spacing.step3),
-                // FIXED-height slot (tall enough for a 2-line error) so the
-                // Connect button never moves as the slot crosses between the
-                // at-rest hint, "Checking…", "Verified", and the rejection —
-                // the "jumpy when validating" complaint. States crossfade in
-                // place within the reserved height.
-                SizedBox(
-                  height: tokens.spacing.step10,
-                  child: Align(
-                    alignment: Alignment.topLeft,
-                    child: AnimatedSwitcher(
-                      duration: MotionDurations.short3,
-                      child: statusChild,
-                    ),
-                  ),
-                ),
-                if (_error != null)
-                  Padding(
-                    padding: EdgeInsets.only(top: tokens.spacing.step4),
-                    child: Text(
-                      _error!,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: errorColor,
-                      ),
-                    ),
-                  ),
-                SizedBox(height: tokens.spacing.step5),
-                DesignSystemButton(
-                  // Disabled until the key is verified, so the user can only
-                  // proceed with a key the provider actually accepted.
-                  onPressed: (_busy || verifyState is! ConnectionCheckVerified)
+                suffixIcon: IconButton(
+                  onPressed: _busy
                       ? null
-                      : _connect,
-                  // The label narrates the gate: Verifying… while a probe runs,
-                  // Connecting… while creating the provider (power-user review).
-                  label: _busy
-                      ? messages.onboardingApiKeyConnecting
-                      : verifyState is ConnectionCheckChecking
-                      ? messages.onboardingApiKeyVerifying
-                      : messages.onboardingApiKeyConnect,
-                  leadingIcon: LottiIcons.forward,
-                  size: DesignSystemButtonSize.large,
-                  fullWidth: true,
+                      : () => setState(() => _obscure = !_obscure),
+                  icon: Icon(
+                    _obscure ? LottiIcons.visible : LottiIcons.hidden,
+                    color: textMed,
+                    size: tokens.spacing.step5,
+                  ),
+                  tooltip: _obscure
+                      ? messages.onboardingApiKeyReveal
+                      : messages.onboardingApiKeyHide,
                 ),
-              ],
+                // A visible resting border so the field reads as a
+                // discrete control at rest (low-vision review), in the
+                // outline every onboarding control wears, brightening to
+                // the accent on focus.
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(tokens.radii.m),
+                  borderSide: BorderSide(
+                    color: tokens.colors.decorative.level03,
+                    width: tokens.spacing.step1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(tokens.radii.m),
+                  borderSide: BorderSide(
+                    color: accent,
+                    width: tokens.spacing.step1,
+                  ),
+                ),
+              ),
             ),
-          ),
+            if (console != null) ...[
+              SizedBox(height: tokens.spacing.step3),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: _GetKeyLink(console: console),
+              ),
+            ],
+          ],
+          if (_error != null)
+            Padding(
+              padding: EdgeInsets.only(top: tokens.spacing.step4),
+              child: Text(
+                _error!,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: errorColor,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
-/// Whether the verification state is a rejection — drives the bleak greyscale
-/// fade of the backdrop. Checking / verified / idle all stay in full colour.
+/// Whether the check ended in a rejection or no answer: a local provider is
+/// then offered the check again.
 bool _isRejected(ConnectionCheckState state) =>
     state is ConnectionCheckFailedHttp || state is ConnectionCheckFailedNetwork;
-
-/// A luminance-preserving saturation [ColorFilter]: [s] == 1 leaves colour
-/// untouched, [s] == 0 collapses to greyscale. Intermediate values (driven by a
-/// tween) give the smooth desaturation when a key is rejected.
-ColorFilter _saturationColorFilter(double s) {
-  const lumR = 0.2126;
-  const lumG = 0.7152;
-  const lumB = 0.0722;
-  final inv = 1 - s;
-  return ColorFilter.matrix(<double>[
-    lumR * inv + s, lumG * inv, lumB * inv, 0, 0, //
-    lumR * inv, lumG * inv + s, lumB * inv, 0, 0, //
-    lumR * inv, lumG * inv, lumB * inv + s, 0, 0, //
-    0, 0, 0, 1, 0, //
-  ]);
-}
-
-/// Persistent novice guidance for the cloud-provider key step: the tappable
-/// console link plus a one-line, plain-language walkthrough so getting a key
-/// isn't a dead-end "link and leave". Always visible (not buried in the live
-/// status slot) so it survives the moment the user starts typing.
-class _GetKeyHelp extends StatelessWidget {
-  const _GetKeyHelp({required this.console});
-
-  final String console;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _GetKeyLink(console: console),
-        SizedBox(height: tokens.spacing.step1),
-        Text(
-          context.messages.onboardingApiKeyNoKeyHelp,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 /// Tappable "Get a key at `<console>`" hint that launches the provider's API-key
 /// console in the browser. The host is rendered in the provider's brand colour

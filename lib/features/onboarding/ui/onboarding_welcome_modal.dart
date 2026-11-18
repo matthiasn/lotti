@@ -6,7 +6,6 @@ import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
-import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.da
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_step.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_words.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_stage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -89,6 +89,9 @@ class OnboardingWelcomeModal {
     // Set when the user chose "Explore with sample data" on the welcome
     // step: the modal pops and the demo world opens instead.
     var demoRequested = false;
+    // Whether a tap outside the panel closes the flow: only on the welcome.
+    // Past it, one stray click must not throw away a key or a recording.
+    final outsideCloses = ValueNotifier<bool>(true);
     final dismissLabel = MaterialLocalizations.of(
       context,
     ).modalBarrierDismissLabel;
@@ -122,6 +125,7 @@ class OnboardingWelcomeModal {
               child: ModalEscapeScope(
                 child: _OnboardingScaffold(
                   heroStyle: heroStyle,
+                  outsideCloses: outsideCloses,
                   recordEvent: (name, {provider}) => unawaited(
                     repo?.recordEvent(name, provider: provider),
                   ),
@@ -153,6 +157,8 @@ class OnboardingWelcomeModal {
         },
       ),
     );
+
+    outsideCloses.dispose();
 
     if (demoRequested) {
       // Deliberately records NEITHER completed nor skipped: exploring the
@@ -206,6 +212,7 @@ void openOnboardingCreatedTask(String taskId) {
 class _OnboardingScaffold extends StatelessWidget {
   const _OnboardingScaffold({
     required this.heroStyle,
+    required this.outsideCloses,
     required this.recordEvent,
     required this.onConnected,
     required this.onTaskCreated,
@@ -215,6 +222,10 @@ class _OnboardingScaffold extends StatelessWidget {
   });
 
   final OnboardingHeroStyle heroStyle;
+
+  /// Whether a tap outside the panel closes the flow; the flow clears it
+  /// once the welcome is left.
+  final ValueNotifier<bool> outsideCloses;
 
   /// Records a funnel event from inside the flow.
   final void Function(OnboardingEventName name, {String? provider}) recordEvent;
@@ -241,6 +252,7 @@ class _OnboardingScaffold extends StatelessWidget {
       onTap: () {},
       child: _OnboardingFlow(
         heroStyle: heroStyle,
+        outsideCloses: outsideCloses,
         recordEvent: recordEvent,
         onConnected: onConnected,
         onTaskCreated: onTaskCreated,
@@ -252,28 +264,46 @@ class _OnboardingScaffold extends StatelessWidget {
 
     final Widget content;
     if (wide) {
-      // Desktop: a centred dialog capped at a comfortable width.
+      // Desktop: a centred dialog capped at a comfortable width, every step
+      // as tall as the window allows up to that of a phone.
+      final spacing = context.designTokens.spacing;
+      final margin = spacing.step6;
       content = SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(margin),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
-              child: panel,
+              child: OnboardingStageHeight(
+                minHeight: (mq.size.height - mq.padding.vertical - 2 * margin)
+                    .clamp(0, spacing.step13 * 5),
+                child: panel,
+              ),
             ),
           ),
         ),
       );
     } else {
-      // Phone: a full-width sheet flush to the bottom edge — it covers the app's
-      // bottom navigation (no SafeArea bottom inset, no horizontal margin). The
-      // panel's own content carries the bottom safe-area padding so controls
-      // clear the home indicator while the surface still reaches the screen edge.
+      // Phone: the panel takes the screen below the status bar, flush to the
+      // bottom edge — it covers the app's bottom navigation (no SafeArea
+      // bottom inset, no horizontal margin). Every step is that tall, so
+      // nothing but the tray's contents moves between them. The panel's own
+      // content carries the bottom safe-area padding so controls clear the
+      // home indicator while the surface still reaches the screen edge.
       content = Align(
         alignment: Alignment.bottomCenter,
         child: SingleChildScrollView(
-          padding: EdgeInsets.only(top: mq.padding.top),
-          child: panel,
+          // The keyboard is not allowed to resize the route, so the room it
+          // takes is added below the panel: the key field can then be
+          // scrolled clear of it.
+          padding: EdgeInsets.only(
+            top: mq.padding.top,
+            bottom: mq.viewInsets.bottom,
+          ),
+          child: OnboardingStageHeight(
+            minHeight: mq.size.height - mq.padding.top,
+            child: panel,
+          ),
         ),
       );
     }
@@ -286,7 +316,9 @@ class _OnboardingScaffold extends StatelessWidget {
       // skip vs. connected appropriately.
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onSkip,
+        onTap: () {
+          if (outsideCloses.value) onSkip();
+        },
         child: content,
       ),
     );
@@ -306,6 +338,7 @@ enum _FlowStep {
 class _OnboardingFlow extends StatefulWidget {
   const _OnboardingFlow({
     required this.heroStyle,
+    required this.outsideCloses,
     required this.recordEvent,
     required this.onConnected,
     required this.onTaskCreated,
@@ -315,6 +348,9 @@ class _OnboardingFlow extends StatefulWidget {
   });
 
   final OnboardingHeroStyle heroStyle;
+
+  /// Set while the welcome is up, cleared once it is left.
+  final ValueNotifier<bool> outsideCloses;
 
   /// Records a funnel event from inside the flow.
   final void Function(OnboardingEventName name, {String? provider}) recordEvent;
@@ -388,6 +424,13 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
     );
   }
 
+  /// Moves to [step]; a tap outside the panel closes the flow only while
+  /// the welcome is up.
+  void _go(_FlowStep step) {
+    widget.outsideCloses.value = step == _FlowStep.welcome;
+    _step = step;
+  }
+
   Widget _buildStep() {
     switch (_step) {
       case _FlowStep.welcome:
@@ -407,7 +450,7 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           onConnect: () {
             setState(() {
               _greeted = true;
-              _step = _FlowStep.connect;
+              _go(_FlowStep.connect);
             });
             widget.recordEvent(OnboardingEventName.providerModalShown);
           },
@@ -421,12 +464,13 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           companion: OnboardingCompanion(
             beat: OnboardingCompanionBeat.recommend,
             line: context.messages.onboardingConnectGuide,
-            framing: CompanionFraming.bust,
           ),
-          onBack: () => setState(() => _step = _FlowStep.welcome),
+          progress: const OnboardingProgress(done: 0, current: 1 / 3),
+          onBack: () => setState(() => _go(_FlowStep.welcome)),
+          onClose: widget.onSkip,
           onSelect: (type) => setState(() {
             _type = type;
-            _step = _FlowStep.apiKey;
+            _go(_FlowStep.apiKey);
           }),
         );
       case _FlowStep.apiKey:
@@ -437,15 +481,16 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           // or badly.
           companion: (status) => OnboardingCompanion(
             beat: OnboardingCompanionBeat.ofKeyCheck(status),
-            framing: CompanionFraming.bust,
           ),
-          onBack: () => setState(() => _step = _FlowStep.connect),
+          progress: const OnboardingProgress(done: 0, current: 2 / 3),
+          onBack: () => setState(() => _go(_FlowStep.connect)),
+          onClose: widget.onSkip,
           onConnected: () {
             // Provider + models are created — record the win and move on to
             // the areas, where she says so: no screen stands between the key
             // and the next thing to do just to be tapped away.
             widget.onConnected(_type);
-            setState(() => _step = _FlowStep.category);
+            setState(() => _go(_FlowStep.category));
           },
         );
       case _FlowStep.category:
@@ -457,7 +502,7 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           // rather than popping out to a full-screen takeover.
           onStartCapture: (capture) => setState(() {
             _capture = capture;
-            _step = _FlowStep.firstTask;
+            _go(_FlowStep.firstTask);
           }),
           onDone: widget.onComplete,
         );
@@ -468,6 +513,8 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           providerName: _capture.providerName,
           onTaskCreated: widget.onTaskCreated,
           onDone: widget.onComplete,
+          // Back to the areas, which reuse what they already created.
+          onBack: () => setState(() => _go(_FlowStep.category)),
         );
     }
   }
@@ -494,8 +541,8 @@ class _OnboardingCategoryStep extends ConsumerStatefulWidget {
   /// selection — the flow advances to the in-panel first-task step.
   final void Function(OnboardingFirstCapture) onStartCapture;
 
-  /// Invoked when the step completes with no area created (nothing selected) —
-  /// just pops the modal back to the app.
+  /// Invoked by the step's close button, and when the step completes with no
+  /// area created (nothing selected) — just pops the modal back to the app.
   final VoidCallback onDone;
 
   @override
@@ -658,6 +705,9 @@ class _OnboardingCategoryStepState
         );
       }
 
+      // Closed while the areas were being written: the flow above is gone,
+      // and there is no step to advance.
+      if (!mounted) return;
       if (created.isNotEmpty) {
         // Hand every created area to the in-panel first-task step. With more
         // than one area the step lets the user pick which one the task lands
@@ -708,17 +758,24 @@ class _OnboardingCategoryStepState
     // One bubble, said as one line: that the key worked, then what to do.
     final line = '${firstWords.line} ${messages.onboardingCategoryExplanation}';
     return OnboardingCategoryView(
-      accent: context.designTokens.colors.interactive.enabled,
       companion: OnboardingCompanion(
         beat: OnboardingCompanionBeat.areas,
         // Said once it is known which voice says it; the bubble shows it
         // meanwhile.
         line: firstWords.settled ? line : null,
-        framing: CompanionFraming.bust,
         cloudVoice: firstWords.voice,
       ),
+      progress: const OnboardingProgress(done: 1, current: 0.5),
+      // Not while the areas are being written: they would land with no step
+      // left to hand them to.
+      onClose: _busy ? null : widget.onDone,
       title: messages.onboardingCategoryTitle,
       explanation: line,
+      // Named as on the welcome's list of the three things — and, while
+      // nothing is picked, saying what Continue needs, beside the chips.
+      caption: _selected.isEmpty
+          ? messages.onboardingCategoryPickOne
+          : messages.onboardingWelcomeStepAreas,
       whyLabel: messages.onboardingCategoryWhy,
       continueLabel: messages.onboardingCategoryContinue,
       addOwnLabel: messages.onboardingCategoryAddOwn,

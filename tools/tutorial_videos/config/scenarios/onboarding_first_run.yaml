@@ -346,37 +346,37 @@ steps:
     narration:
       en: >-
         Lotti listens, writes it down, and turns it into a task with a
-        title and a checklist. Tap it to open it.
+        title and a checklist. Tap Open task to see it.
       de: >-
         Lotti hört zu, schreibt mit und macht daraus eine Aufgabe mit
-        Titel und Checkliste. Tippe darauf, um sie zu öffnen.
+        Titel und Checkliste. Tippe auf Aufgabe öffnen, um sie zu sehen.
       fr: >-
         Lotti écoute, prend note et en fait une tâche avec un titre et
-        une checklist. Touche-la pour l'ouvrir.
+        une checklist. Touche Ouvrir la tâche pour la voir.
       it: >-
         Lotti ascolta, prende nota e la trasforma in un'attività con un
-        titolo e una checklist. Toccala per aprirla.
+        titolo e una checklist. Tocca Apri attività per vederla.
       es: >-
         Lotti escucha, lo anota y lo convierte en una tarea con un
-        título y una lista de tareas. Tócala para abrirla.
+        título y una lista de tareas. Toca Abrir tarea para verla.
       cs: >-
         Lotti poslouchá, zapíše si to a udělá z toho úkol s názvem a
-        seznamem úkolů. Klepni na něj a otevři ho.
+        seznamem úkolů. Klepni na Otevřít úkol a uvidíš ho.
       nl: >-
         Lotti luistert, schrijft het op en maakt er een taak van met een
-        titel en een checklist. Tik erop om hem te openen.
+        titel en een checklist. Tik op Taak openen om hem te zien.
       ro: >-
         Lotti ascultă, notează și transformă totul într-o sarcină cu un
-        titlu și o listă de verificare. Atingeți-o pentru a o deschide.
+        titlu și o listă de verificare. Atingeți Deschideți sarcina ca s-o vedeți.
       pt: >-
         O Lotti ouve, anota e transforma isso em uma tarefa com um
-        título e uma checklist. Toque nela para abri-la.
+        título e uma checklist. Toque em Abrir tarefa para a ver.
       da: >-
         Lotti lytter, skriver med og laver det til en opgave med en
-        titel og en tjekliste. Tryk på den for at åbne den.
+        titel og en tjekliste. Tryk på Åbn opgave for at se den.
       sv: >-
         Lotti lyssnar, skriver ner det och gör det till en uppgift med
-        en titel och en checklista. Tryck på den för att öppna den.
+        en titel och en checklista. Tryck på Öppna uppgift för att se den.
 
   - id: outro
     min_duration: 4.0

@@ -7,10 +7,11 @@ import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_choice_chip.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_step.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
@@ -45,7 +46,8 @@ void main() {
   late MockOnboardingMetricsRepository metrics;
 
   // Reduced motion so the orb breath / shimmer tickers settle.
-  const mq = MediaQueryData(size: Size(390, 844), disableAnimations: true);
+  // Tall enough that the main button at the panel's foot is on-screen.
+  const mq = MediaQueryData(size: Size(390, 1400), disableAnimations: true);
 
   // A real (in-progress) task landed; `task` carries the id the step hands to
   // onTaskCreated.
@@ -68,9 +70,11 @@ void main() {
 
   /// Once structuring lands, the created beat owns the panel — the task card
   /// (titled by [realAha]) must be tapped to hand the task to the host.
+  /// The landed task is a preview; the main button opens it.
   Future<void> tapCreatedCard(WidgetTester tester) async {
     expect(find.text('Your first task is ready'), findsOneWidget);
-    await tester.tap(find.text('Car & health errands'), warnIfMissed: false);
+    await tester.ensureVisible(find.text('Open task'));
+    await tester.tap(find.text('Open task'), warnIfMissed: false);
     await tester.pump();
   }
 
@@ -160,6 +164,15 @@ void main() {
       await pumpStep(tester, styleValue: Future.value('analogue'));
       // Let the style preference future resolve into the provider.
       await tester.pump();
+      // The recorder stands in the tray once the mic is open.
+      controller.emit(
+        const CaptureState(
+          phase: CapturePhase.listening,
+          transcript: '',
+          amplitudes: <double>[],
+        ),
+      );
+      await tester.pump();
 
       expect(find.byType(AnalogVuMeter), findsOneWidget);
       expect(find.byType(VoiceOrbZone), findsNothing);
@@ -171,6 +184,14 @@ void main() {
       // A never-completing preference load: the step must not blank out — the
       // signature orb stands in until the style resolves.
       await pumpStep(tester, styleValue: Completer<String?>().future);
+      controller.emit(
+        const CaptureState(
+          phase: CapturePhase.listening,
+          transcript: '',
+          amplitudes: <double>[],
+        ),
+      );
+      await tester.pump();
 
       expect(find.byType(VoiceOrbZone), findsOneWidget);
       expect(find.byType(AnalogVuMeter), findsNothing);
@@ -183,20 +204,64 @@ void main() {
     await pumpStep(tester);
 
     expect(find.text('Create your first task'), findsOneWidget);
-    expect(find.byType(VoiceOrbZone), findsOneWidget);
+    // The main button invites the first words; the recorder waits for them.
+    expect(find.text('Tap to talk'), findsOneWidget);
+    expect(find.byType(VoiceOrbZone), findsNothing);
     expect(find.text('Plan my week'), findsOneWidget);
     expect(find.text('Book a dentist appointment'), findsOneWidget);
     expect(find.text("Prepare for Monday's meeting"), findsOneWidget);
     expect(find.text('Rather type?'), findsOneWidget);
   });
 
-  testWidgets('record tap delegates to the controller toggle', (tester) async {
+  testWidgets('the main button delegates to the controller toggle', (
+    tester,
+  ) async {
     var toggles = 0;
     controller.onToggle = () => toggles++;
     await pumpStep(tester);
 
-    await tester.tap(find.byType(VoiceButton), warnIfMissed: false);
+    await tester.ensureVisible(find.text('Tap to talk'));
+    await tester.tap(find.text('Tap to talk'), warnIfMissed: false);
     expect(toggles, 1);
+  });
+
+  testWidgets('Start over while listening drops the take and opens the '
+      'prompt again', (tester) async {
+    await pumpStep(tester);
+    controller.emit(
+      const CaptureState(
+        phase: CapturePhase.listening,
+        transcript: '',
+        amplitudes: <double>[],
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Start over'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Start over'));
+    await tester.tap(find.text('Start over'), warnIfMissed: false);
+    await tester.pump();
+
+    // Back at the prompt, nothing recorded and nothing structured.
+    expect(controller.state.phase, CapturePhase.idle);
+    expect(find.text('Tap to talk'), findsOneWidget);
+    expect(find.text('Start over'), findsNothing);
+  });
+
+  testWidgets('the close button finishes onboarding without a task', (
+    tester,
+  ) async {
+    var dones = 0;
+    final created = <String>[];
+    await pumpStep(
+      tester,
+      onDone: () => dones++,
+      onTaskCreated: created.add,
+    );
+
+    await tester.tap(find.byIcon(LottiIcons.close));
+    expect(dones, 1);
+    expect(created, isEmpty);
   });
 
   testWidgets('listening maps to the live frame', (tester) async {
@@ -322,7 +387,7 @@ void main() {
     expect(created, ['suggested-task']);
   });
 
-  testWidgets('a double-tap on the created card hands off only once', (
+  testWidgets('a double-tap on Open task hands off only once', (
     tester,
   ) async {
     stubStructuring(realAha());
@@ -343,9 +408,10 @@ void main() {
     // Two rapid taps before the host can tear the panel down — the latch means
     // only the first reaches onTaskCreated (a second pop would tear down the
     // route beneath the modal).
-    final card = find.text('Car & health errands');
-    await tester.tap(card, warnIfMissed: false);
-    await tester.tap(card, warnIfMissed: false);
+    final open = find.text('Open task');
+    await tester.ensureVisible(open);
+    await tester.tap(open, warnIfMissed: false);
+    await tester.tap(open, warnIfMissed: false);
     await tester.pump();
 
     expect(created, ['task-1']);
@@ -382,6 +448,138 @@ void main() {
     expect(dones, 1);
   });
 
+  testWidgets('closing while it structures leaves once: a failure landing '
+      'during the exit does not leave a second time', (tester) async {
+    final gate = Completer<OnboardingCaptureResult>();
+    when(
+      () => service.createTaskFromTranscript(
+        transcript: any(named: 'transcript'),
+        categoryId: any(named: 'categoryId'),
+        providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
+      ),
+    ).thenAnswer((_) => gate.future);
+    var dones = 0;
+    final created = <String>[];
+    await pumpStep(tester, onDone: () => dones++, onTaskCreated: created.add);
+
+    controller.emit(
+      const CaptureState(
+        phase: CapturePhase.captured,
+        transcript: transcript,
+        amplitudes: <double>[],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    // Structuring is under way, waiting on the gate.
+    verify(
+      () => service.createTaskFromTranscript(
+        transcript: transcript,
+        categoryId: any(named: 'categoryId'),
+        providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
+      ),
+    ).called(1);
+
+    await tester.tap(find.byIcon(LottiIcons.close));
+    expect(dones, 1);
+
+    // The structuring fails after the close, while the step is still on
+    // screen in the exit animation.
+    gate.complete(const OnboardingCaptureResult(task: null, title: ''));
+    await tester.pump();
+    await tester.pump();
+    expect(dones, 1);
+    expect(created, isEmpty);
+  });
+
+  testWidgets('closing while the funnel event is written creates no task', (
+    tester,
+  ) async {
+    final gate = Completer<void>();
+    when(
+      () => metrics.recordEvent(any(), provider: any(named: 'provider')),
+    ).thenAnswer((_) => gate.future);
+    stubStructuring(realAha());
+    var dones = 0;
+    await pumpStep(tester, onDone: () => dones++);
+
+    controller.emit(
+      const CaptureState(
+        phase: CapturePhase.captured,
+        transcript: transcript,
+        amplitudes: <double>[],
+      ),
+    );
+    await tester.pump();
+    // The funnel event is being written: the step is waiting on it.
+    verify(
+      () => metrics.recordEvent(
+        OnboardingEventName.typedCaptureUsed,
+        provider: providerName,
+      ),
+    ).called(1);
+    await tester.tap(find.byIcon(LottiIcons.close));
+    expect(dones, 1);
+
+    gate.complete();
+    await tester.pump();
+    await tester.pump();
+    verifyNever(
+      () => service.createTaskFromTranscript(
+        transcript: any(named: 'transcript'),
+        categoryId: any(named: 'categoryId'),
+        providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
+      ),
+    );
+  });
+
+  testWidgets('a second suggestion tapped before the prompt gives way starts '
+      'nothing and does not replace the words being structured', (
+    tester,
+  ) async {
+    final gate = Completer<OnboardingCaptureResult>();
+    when(
+      () => service.createTaskFromTranscript(
+        transcript: any(named: 'transcript'),
+        categoryId: any(named: 'categoryId'),
+        providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
+      ),
+    ).thenAnswer((_) => gate.future);
+    await pumpStep(tester);
+
+    // Both taps land before the frame that swaps the prompt out.
+    await tester.tap(find.text('Plan my week'), warnIfMissed: false);
+    await tester.tap(
+      find.text('Book a dentist appointment'),
+      warnIfMissed: false,
+    );
+    await tester.pump();
+
+    verify(
+      () => service.createTaskFromTranscript(
+        transcript: 'Plan my week',
+        categoryId: any(named: 'categoryId'),
+        providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
+      ),
+    ).called(1);
+    verifyNever(
+      () => service.createTaskFromTranscript(
+        transcript: 'Book a dentist appointment',
+        categoryId: any(named: 'categoryId'),
+        providerName: any(named: 'providerName'),
+        audioId: any(named: 'audioId'),
+      ),
+    );
+    expect(controller.state.transcript, 'Plan my week');
+    gate.complete(realAha());
+    await tester.pump();
+  });
+
   testWidgets('a thrown structuring error re-arms the prompt for a retry', (
     tester,
   ) async {
@@ -416,7 +614,7 @@ void main() {
     expect(created, isEmpty);
     expect(dones, 0);
     expect(find.text('Create your first task'), findsOneWidget);
-    expect(find.byType(VoiceOrbZone), findsOneWidget);
+    expect(find.text('Tap to talk'), findsOneWidget);
 
     // A fresh capture re-runs structuring (the in-flight guard was cleared).
     stubStructuring(realAha());
@@ -725,7 +923,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Create your first task'), findsOneWidget);
-    expect(find.byType(VoiceOrbZone), findsOneWidget);
+    expect(find.text('Tap to talk'), findsOneWidget);
   });
 
   testWidgets('a single area shows no destination picker', (tester) async {
@@ -774,6 +972,17 @@ void main() {
           audioId: null,
         ),
       ).called(1);
+      // The preview names the area the task was sent to — on the card
+      // itself, not a leftover picker.
+      final card = find.ancestor(
+        of: find.text('Car & health errands'),
+        matching: find.byType(OnboardingSelectableSurface),
+      );
+      expect(
+        find.descendant(of: card, matching: find.text('Family')),
+        findsOneWidget,
+      );
+      expect(find.text('Where should this land?'), findsNothing);
       await tapCreatedCard(tester);
       expect(created, ['task-1']);
     },
@@ -834,11 +1043,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(her(tester).beat, OnboardingCompanionBeat.prompt);
-      expect(her(tester).framing, CompanionFraming.bust);
+      expect(her(tester).framing, CompanionFraming.full);
       expect(
         her(tester).line,
         'Create your first task '
-        'Tap to talk and say what needs doing — Lotti turns it into a real '
+        "Tap to talk and say what needs doing — I'll turn it into a real "
         'task.',
       );
     });

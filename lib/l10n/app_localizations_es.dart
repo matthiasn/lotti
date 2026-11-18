@@ -12111,9 +12111,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get nudgeBannerSnoozeTitle => 'Posponer banner';
 
   @override
-  String get onboardingApiKeyConnect => 'Conectar';
-
-  @override
   String get onboardingApiKeyConnecting => 'Conectando…';
 
   @override
@@ -12142,8 +12139,15 @@ class AppLocalizationsEs extends AppLocalizations {
       'Se ejecuta en tu dispositivo: no necesitas clave.';
 
   @override
+  String get onboardingApiKeyLocalTitle =>
+      'Déjame encontrarlo en tu dispositivo.';
+
+  @override
   String get onboardingApiKeyNoKeyHelp =>
       '¿Primera vez? Inicia sesión, crea una clave de API y pégala — gratis para empezar.';
+
+  @override
+  String get onboardingApiKeyProviderCaption => 'Tu proveedor';
 
   @override
   String get onboardingApiKeyReveal => 'Mostrar clave';
@@ -12155,6 +12159,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String onboardingApiKeyUnreachable(String providerName) {
     return 'No se pudo conectar con $providerName. Revisa la clave o tu conexión e inténtalo de nuevo.';
   }
+
+  @override
+  String get onboardingApiKeyVerifiedText =>
+      'Continúa y lo configuro todo por ti.';
+
+  @override
+  String get onboardingApiKeyVerifiedTitle => 'Funciona';
 
   @override
   String get onboardingApiKeyVerifying => 'Verificando…';
@@ -12190,7 +12201,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingCategoryExplanation =>
-      'Cada área de tu vida tiene su propio espacio. Elige las que encajen o añade las tuyas.';
+      'Cada área de tu vida tiene su propio espacio.';
 
   @override
   String get onboardingCategoryFamily => 'Familia';
@@ -12200,6 +12211,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingCategoryFriends => 'Amigos';
+
+  @override
+  String get onboardingCategoryPickOne =>
+      'Elige al menos un área para continuar.';
 
   @override
   String get onboardingCategoryTitle => '¿Dónde quieres que trabaje tu IA?';
@@ -12220,7 +12235,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingCompanionOneKey =>
-      'Cuéntame lo que tienes en mente y lo convierto en un plan. Para empezar solo necesito una clave de API, y te ayudo a configurarla.';
+      'Cuéntame lo que tienes en mente y lo convierto en un plan. Solo necesito una clave.';
+
+  @override
+  String onboardingConnectContinueWith(String provider) {
+    return 'Continuar con $provider';
+  }
 
   @override
   String get onboardingConnectGeminiName => 'Gemini';
@@ -12234,6 +12254,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingConnectHideOtherProviders => 'Ocultar otros proveedores';
+
+  @override
+  String get onboardingConnectKeyNote =>
+      'Una clave es una especie de contraseña para un servicio de IA.';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
@@ -12271,14 +12295,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingConnectRecommended => 'Recomendado';
 
   @override
-  String get onboardingFirstTaskCreatedHint => 'Toca tu tarea para abrirla';
+  String get onboardingFirstTaskCreatedCaption => 'Tu tarea';
+
+  @override
+  String onboardingFirstTaskCreatedText(String area) {
+    return 'Está en $area. Ábrela para ver los pasos que te sugiero.';
+  }
 
   @override
   String get onboardingFirstTaskCreatedTitle => 'Tu primera tarea está lista';
 
   @override
   String get onboardingFirstTaskGuidance =>
-      'Toca para hablar y di qué necesitas hacer: Lotti lo convierte en una tarea real.';
+      'Toca para hablar y di qué necesitas hacer: lo convierto en una tarea real.';
 
   @override
   String get onboardingFirstTaskSuggestionDentist =>
@@ -12293,7 +12322,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingFirstTaskSuggestionsLabel =>
-      '¿Aún no quieres hablar? Empieza con una de estas:';
+      'O toca una para convertirla en tu primera tarea';
 
   @override
   String get onboardingFirstTaskTitle => 'Crea tu primera tarea';
@@ -12340,6 +12369,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingRecordingStyleTryVoice => 'Pruébalo con tu voz';
 
   @override
+  String onboardingStageProgress(int current, int total) {
+    return 'Paso $current de $total';
+  }
+
+  @override
   String get onboardingWelcomeConnectButton => 'Elige tu cerebro de IA';
 
   @override
@@ -12350,7 +12384,32 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingWelcomeOneKeyButton => 'Empezar con una sola clave';
 
   @override
+  String get onboardingWelcomeSettingsNote =>
+      'Puedes cambiar todo esto más tarde en Ajustes.';
+
+  @override
   String get onboardingWelcomeSkipButton => 'Explorar primero';
+
+  @override
+  String get onboardingWelcomeStepAreas => 'Elige tus áreas';
+
+  @override
+  String get onboardingWelcomeStepAreasDetail =>
+      'Cada parte de tu vida tiene su propio espacio';
+
+  @override
+  String get onboardingWelcomeStepKey => 'Conecta una clave';
+
+  @override
+  String get onboardingWelcomeStepKeyDetail =>
+      'Para que pueda pensar, escuchar y leer en voz alta';
+
+  @override
+  String get onboardingWelcomeStepsCaption => 'Tres cosas y ya estás dentro';
+
+  @override
+  String get onboardingWelcomeStepTaskDetail =>
+      'Di una cosa y mira cómo se convierte en una tarea';
 
   @override
   String get onboardingWelcomeTitle => 'Habla. Lotti lo convierte en un plan.';

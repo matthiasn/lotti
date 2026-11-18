@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -51,6 +52,25 @@ class _DeferredProbe extends ConnectionProbe {
     required Duration timeout,
     required http.Client client,
   }) => completer.future;
+}
+
+/// Answers every probe with [result], counting how often it was asked.
+class _CountingProbe extends ConnectionProbe {
+  _CountingProbe(this.result);
+
+  final ConnectionCheckState result;
+  int calls = 0;
+
+  @override
+  Future<ConnectionCheckState> probe({
+    required Uri baseUri,
+    required String apiKey,
+    required Duration timeout,
+    required http.Client client,
+  }) async {
+    calls++;
+    return result;
+  }
 }
 
 void main() {
@@ -230,7 +250,7 @@ void main() {
     expect(find.textContaining('That key was rejected'), findsOneWidget);
     expect(find.textContaining('sk-bad'), findsNothing); // never echo the key
     expect(connectOnPressed(tester), isNull);
-    await tester.tap(find.text('Connect'), warnIfMissed: false);
+    await tester.tap(find.textContaining('Continue with'), warnIfMissed: false);
     await tester.pump();
     expect(connected, isFalse);
   });
@@ -338,7 +358,7 @@ void main() {
     await enterKeyAndSettle(tester, 'good-key');
     expect(connectOnPressed(tester), isNotNull);
 
-    await tester.tap(find.text('Connect'));
+    await tester.tap(find.textContaining('Continue with'));
     await tester.pumpAndSettle();
 
     verify(() => repo.saveConfig(any())).called(1);
@@ -365,7 +385,7 @@ void main() {
     );
 
     await enterKeyAndSettle(tester, 'good-key');
-    await tester.tap(find.text('Connect'));
+    await tester.tap(find.textContaining('Continue with'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -390,7 +410,7 @@ void main() {
     );
 
     await enterKeyAndSettle(tester, 'good-key');
-    await tester.tap(find.text('Connect'));
+    await tester.tap(find.textContaining('Continue with'));
     await tester.pumpAndSettle();
 
     expect(
@@ -415,9 +435,50 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1100)); // dwell → result
     await tester.pumpAndSettle();
 
-    expect(find.text('Runs on your device — no key needed.'), findsOneWidget);
+    // Once it answers she says it works, and the card under "Your
+    // provider" says it is connected.
+    expect(find.text('That works'), findsOneWidget);
+    expect(find.text('Your provider'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
     expect(find.text('Connection verified'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Connection verified')).dy,
+      greaterThan(tester.getTopLeft(find.text('Ollama')).dy),
+    );
+    expect(find.text('Continue with Ollama'), findsOneWidget);
+    // One check: the status line's, not a second one on the card.
+    expect(find.byIcon(LottiIcons.confirm), findsNothing);
+  });
+
+  testWidgets('a local provider that does not answer is offered the check '
+      'again, which runs it again', (tester) async {
+    final probe = _CountingProbe(
+      const ConnectionCheckFailedNetwork(
+        message: 'connection refused',
+      ),
+    );
+    await pumpPanel(
+      tester,
+      type: InferenceProviderType.ollama,
+      extraOverrides: [
+        connectionProbeRegistryProvider.overrideWith(
+          (ref) => {InferenceProviderType.ollama: probe},
+        ),
+      ],
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1100));
+    await tester.pumpAndSettle();
+    expect(probe.calls, 1);
+
+    final retry = find.text('Try again');
+    expect(retry, findsOneWidget);
+    await tester.ensureVisible(retry);
+    await tester.tap(retry);
+    await tester.pump();
+    expect(probe.calls, 2);
+    await tester.pump(const Duration(milliseconds: 1100));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('a result resolving after the dwell is applied immediately', (
@@ -521,13 +582,37 @@ void main() {
       );
     };
 
+    testWidgets('for a local provider her bubble says she is looking for it '
+        'and that it needs no key, and the tray names it', (tester) async {
+      final probe = _DeferredProbe();
+      await pumpPanel(
+        tester,
+        type: InferenceProviderType.ollama,
+        extraOverrides: [
+          connectionProbeRegistryProvider.overrideWith(
+            (ref) => {InferenceProviderType.ollama: probe},
+          ),
+        ],
+        companion: recorder([]),
+      );
+      await tester.pump();
+
+      final bubble = tester.widget<OnboardingSpeechBubble>(
+        find.byType(OnboardingSpeechBubble),
+      );
+      expect(bubble.title, 'Let me find it on your device.');
+      expect(bubble.text, 'Runs on your device — no key needed.');
+      expect(find.text('Ollama'), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+    });
+
     testWidgets('is left out without a builder', (tester) async {
       await pumpPanel(tester, type: InferenceProviderType.gemini);
 
       expect(find.byKey(const ValueKey('her')), findsNothing);
     });
 
-    testWidgets('stands at the end of the title row, waiting while the key '
+    testWidgets('stands on the stage over the bubble, waiting while the key '
         'is empty', (tester) async {
       final seen = <ConnectionCheckState>[];
       await pumpPanel(
@@ -537,10 +622,20 @@ void main() {
       );
 
       final her = find.byKey(const ValueKey('her'));
-      expect(tester.getSize(her), const Size.square(ControlSizes.avatarHero));
+      // The bubble under her asks for the key and says how to get one; the
+      // provider is named in the tray below.
+      final bubble = find.byType(OnboardingSpeechBubble);
       expect(
-        tester.getCenter(her).dx,
-        greaterThan(tester.getCenter(find.text('Gemini')).dx),
+        tester.getBottomLeft(her).dy,
+        lessThanOrEqualTo(tester.getTopLeft(bubble).dy),
+      );
+      expect(
+        tester.widget<OnboardingSpeechBubble>(bubble).title,
+        'Paste your API key',
+      );
+      expect(
+        tester.getBottomLeft(bubble).dy,
+        lessThan(tester.getTopLeft(find.text('Gemini')).dy),
       );
       expect(seen.last, isA<ConnectionCheckIdle>());
     });
@@ -583,7 +678,7 @@ void main() {
       await enterKeyAndSettle(tester, 'good-key');
       expect(seen.last, isA<ConnectionCheckVerified>());
 
-      await tester.tap(find.text('Connect'));
+      await tester.tap(find.textContaining('Continue with'));
       await tester.pump();
 
       expect(seen.last, isA<ConnectionCheckChecking>());

@@ -32,8 +32,8 @@ void main() {
   );
 
   group('OnboardingSpeechBubble', () {
-    testWidgets('pointing up: the tail sits centred above the body, and the '
-        'title and text are centred in it', (tester) async {
+    testWidgets('the tail sits centred above the body, and the title and '
+        'text are centred in it', (tester) async {
       await pumpBubble(
         tester,
         const OnboardingSpeechBubble(title: 'Hi', text: 'One key'),
@@ -41,9 +41,13 @@ void main() {
 
       final tailRect = tester.getRect(tail());
       final bodyRect = tester.getRect(bubbleBody());
-      expect(tailRect.bottom, bodyRect.top);
+      // The tail reaches over the body's top edge by the outline's width,
+      // covering the stretch of outline under it.
+      expect(
+        tailRect.bottom,
+        bodyRect.top + OnboardingBubbleTailPainter.overlap,
+      );
       expect(tailRect.center.dx, closeTo(bodyRect.center.dx, 0.01));
-      expect(tailPainter(tester).tail, OnboardingBubbleTail.up);
 
       expect(tester.widget<Text>(find.text('Hi')).textAlign, TextAlign.center);
       expect(
@@ -56,27 +60,46 @@ void main() {
       );
     });
 
-    testWidgets("pointing left: the tail sits at the body's left edge, "
-        'mid-height, and the text starts at the leading edge', (
+    testWidgets('without a minimum height the body wraps its words', (
+      tester,
+    ) async {
+      await pumpBubble(tester, const OnboardingSpeechBubble(text: 'Mistral'));
+
+      final body = tester.getSize(bubbleBody());
+      expect(body.width, lessThan(320));
+      expect(
+        body.height,
+        lessThan(tester.getSize(find.text('Mistral')).height * 3),
+      );
+    });
+
+    testWidgets('with a minimum height the body spans the width and takes '
+        'that height, its words from the top; longer words grow it', (
       tester,
     ) async {
       await pumpBubble(
         tester,
-        const OnboardingSpeechBubble(
-          text: 'Mistral',
-          tail: OnboardingBubbleTail.left,
-        ),
+        const OnboardingSpeechBubble(text: 'Mistral', minHeight: 200),
       );
 
-      final tailRect = tester.getRect(tail());
-      final bodyRect = tester.getRect(bubbleBody());
-      expect(tailRect.right, bodyRect.left);
-      expect(tailRect.center.dy, closeTo(bodyRect.center.dy, 0.01));
-      expect(tailPainter(tester).tail, OnboardingBubbleTail.left);
+      final body = tester.getRect(bubbleBody());
+      expect(body.size, const Size(320, 200));
+      // The words start at the top, so the headline is at one height
+      // whatever follows it.
       expect(
-        tester.widget<Text>(find.text('Mistral')).textAlign,
-        TextAlign.start,
+        tester.getTopLeft(find.text('Mistral')).dy - body.top,
+        lessThan(body.height / 4),
       );
+
+      await pumpBubble(
+        tester,
+        OnboardingSpeechBubble(
+          text: List.filled(40, 'word').join(' '),
+          minHeight: 40,
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(tester.getSize(bubbleBody()).height, greaterThan(40));
     });
 
     testWidgets('without text only the title shows', (tester) async {
@@ -108,8 +131,8 @@ void main() {
       );
     });
 
-    testWidgets('the body and tail share the raised surface; the title is '
-        'high-, the text medium-emphasis', (tester) async {
+    testWidgets('the body and tail are the panel surface under one outline; '
+        'the title is high-, the text medium-emphasis', (tester) async {
       await pumpBubble(
         tester,
         const OnboardingSpeechBubble(title: 'Hi', text: 'One key'),
@@ -118,8 +141,13 @@ void main() {
 
       final decoration =
           tester.widget<DecoratedBox>(bubbleBody()).decoration as BoxDecoration;
-      expect(decoration.color, tokens.colors.background.level02);
-      expect(tailPainter(tester).color, tokens.colors.background.level02);
+      expect(decoration.color, tokens.colors.background.level01);
+      expect(
+        (decoration.border! as Border).top.color,
+        tokens.colors.decorative.level02,
+      );
+      expect(tailPainter(tester).color, tokens.colors.background.level01);
+      expect(tailPainter(tester).outline, tokens.colors.decorative.level02);
       expect(
         tester.widget<Text>(find.text('Hi')).style?.color,
         tokens.colors.text.highEmphasis,
@@ -137,7 +165,6 @@ void main() {
         tester,
         OnboardingSpeechBubble(
           text: List.filled(40, 'word').join(' '),
-          tail: OnboardingBubbleTail.left,
         ),
       );
 
@@ -147,42 +174,24 @@ void main() {
   });
 
   group('OnboardingBubbleTailPainter', () {
-    test('an upward tail has its tip at the top centre', () {
-      final bounds = OnboardingBubbleTailPainter.tailPath(
-        const Size(20, 10),
-        OnboardingBubbleTail.up,
-      ).getBounds();
-      expect(bounds, const Rect.fromLTWH(0, 0, 20, 10));
-      final path = OnboardingBubbleTailPainter.tailPath(
-        const Size(20, 10),
-        OnboardingBubbleTail.up,
-      );
+    test('the tail has its tip at the top centre', () {
+      final path = OnboardingBubbleTailPainter.tailPath(const Size(20, 10));
+      expect(path.getBounds(), const Rect.fromLTWH(0, 0, 20, 10));
       expect(path.contains(const Offset(10, 1)), isTrue);
       expect(path.contains(const Offset(1, 1)), isFalse);
       expect(path.contains(const Offset(19, 1)), isFalse);
     });
 
-    test('a leftward tail has its tip at the left middle', () {
-      final path = OnboardingBubbleTailPainter.tailPath(
-        const Size(10, 20),
-        OnboardingBubbleTail.left,
-      );
-      expect(path.getBounds(), const Rect.fromLTWH(0, 0, 10, 20));
-      expect(path.contains(const Offset(1, 10)), isTrue);
-      expect(path.contains(const Offset(1, 1)), isFalse);
-      expect(path.contains(const Offset(1, 19)), isFalse);
-    });
-
-    test('repaints only when its colour or direction changes', () {
+    test('repaints only when its colour or outline changes', () {
       const painter = OnboardingBubbleTailPainter(
         color: Color(0xFF000000),
-        tail: OnboardingBubbleTail.up,
+        outline: Color(0xFF111111),
       );
       expect(
         painter.shouldRepaint(
           const OnboardingBubbleTailPainter(
             color: Color(0xFF000000),
-            tail: OnboardingBubbleTail.up,
+            outline: Color(0xFF111111),
           ),
         ),
         isFalse,
@@ -191,7 +200,7 @@ void main() {
         painter.shouldRepaint(
           const OnboardingBubbleTailPainter(
             color: Color(0xFFFFFFFF),
-            tail: OnboardingBubbleTail.up,
+            outline: Color(0xFF111111),
           ),
         ),
         isTrue,
@@ -200,7 +209,7 @@ void main() {
         painter.shouldRepaint(
           const OnboardingBubbleTailPainter(
             color: Color(0xFF000000),
-            tail: OnboardingBubbleTail.left,
+            outline: Color(0xFF222222),
           ),
         ),
         isTrue,

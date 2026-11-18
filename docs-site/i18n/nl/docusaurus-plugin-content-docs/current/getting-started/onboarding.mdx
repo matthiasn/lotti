@@ -24,14 +24,20 @@ aangemaakt.
 
 <ManualScreenshot
   caseId="onboarding/welcome"
-  alt="Lotti-onboarding-welkomstpaneel nodigt de gebruiker uit om een AI-brein te verbinden en spraak om te zetten in een gestructureerde taak"
-  caption="Het welkomstpaneel opent boven de huidige app. Kies je AI-brein om door te gaan, of verlaat de flow zonder de setup te wijzigen."
+  alt="Lotti-onboarding-welkom met Lotti, haar begroeting en de drie stappen: één sleutel verbinden, je gebieden kiezen, je eerste taak maken"
+  caption="Elke stap heeft dezelfde indeling: Lotti, haar tekstballon en de eigen inhoud van de stap boven de hoofdknop. Het welkom noemt de drie stappen die komen."
 />
 
-Selecteer **Kies uw AI-hersenen** om te beginnen. Met **Kijk eerst om je heen.**,
-een tik op het gedimde gebied buiten het paneel of de terugactie van het systeem
-verlaat je de onboarding zonder iets te verbinden. Je kunt later terugkeren via
-Instellingen.
+Selecteer **Begin met één sleutel** om te beginnen, of **Verkennen met
+voorbeeldgegevens** om eerst rond te kijken in een ingerichte demowereld. Met de
+sluitknop bovenaan, de terugactie van het systeem en, op een desktop, een klik
+buiten het paneel verlaat je de onboarding vanaf het welkom zonder iets te
+verbinden. Je kunt later terugkeren via Instellingen.
+
+Na het welkom brengen de terugpijl bovenaan — en de terugactie van het systeem —
+je naar de vorige stap, en verlaat de sluitknop de onboarding. Drie segmenten
+ernaast laten zien hoe ver je bent met de sleutel, je gebieden en je eerste
+taak.
 
 Lotti kan dit welkom ook automatisch aanbieden aan een profiel dat daarvoor in
 aanmerking komt. De automatische prompt heeft een beperkt herhaalritme; het item in
@@ -41,27 +47,30 @@ Instellingen niet, dus je hebt altijd een weg terug.
 
 <ManualScreenshot
   caseId="onboarding/providers"
-  alt="Lotti-onboarding-providerkiezer met Mistral, Melious.ai, Gemini, Qwen, OpenAI en Ollama"
-  caption="Primaire gehoste providers verschijnen eerst. Vouw Meer opties uit voor OpenAI en het lokale Ollama-pad."
+  alt="Lotti-onboarding-providerstap met Mistral gekozen en de knop Verder met Mistral"
+  caption="Mistral wordt aanbevolen en is bij de start gekozen. Open Andere aanbieders voor de rest, inclusief het lokale Ollama-pad."
 />
 
-De providerpagina identificeert de beschikbare gehoste en lokale keuzes:
+Mistral is gekozen wanneer de stap opent. Tik op een andere kaart om in plaats
+daarvan die provider te kiezen; de knop onderaan noemt de provider waarmee je
+verdergaat, en alleen de knop gaat door. De providers zijn:
 
 - **Mistral** is de aanbevolen, in de EU gehoste standaard.
 - **Melious.ai** wordt in de EU gehost, met dynamische modelroutering.
 - **Gemini** en **Qwen** tonen hun bijbehorende gehoste regio's.
-- **OpenAI** is beschikbaar onder de uitgevouwen opties.
+- **OpenAI** is samen met de andere beschikbaar onder **Andere aanbieders**.
 - **Ollama** maakt verbinding met een compatibel lokaal eindpunt en vereist geen
   gehoste API-sleutel.
 
 <ManualScreenshot
   caseId="onboarding/api-key"
   alt="Lotti-onboarding-providerverificatiepaneel met een geverifieerde lokale Ollama-verbinding"
-  caption="Lotti controleert de gekozen provider voordat Verbinden wordt ingeschakeld. Gehoste providers gebruiken dezelfde stap met een API-sleutelveld."
+  caption="Lotti controleert de gekozen provider voordat de knop verdergaat. Gehoste providers gebruiken dezelfde stap met een API-sleutelveld."
 />
 
 Voor een gehoste provider plak je de API-sleutel van de provider. Lotti verifieert de
-verbinding voordat **Verbinden** wordt ingeschakeld. Ollama verifieert het
+verbinding en toont het resultaat op de kaart van de provider voordat **Verder
+met** die provider wordt ingeschakeld. Ollama verifieert het
 geconfigureerde lokale eindpunt en rapporteert bereikbare modellen. Een geslaagde
 verbinding slaat de provider op en legt de modellen en het inferentieprofiel aan die
 door de overige stappen worden gebruikt.
@@ -105,9 +114,11 @@ die een echt account ziet.
 Het eerste-taakpaneel gebruikt de normale opnamepijplijn van Lotti. Kies de
 doelcategorie en gebruik vervolgens een van de drie paden:
 
-1. Selecteer het opnamebeeld en spreek de taak in een normale zin uit.
-2. Kies een startersuggestie om het structureringspad meteen uit te proberen.
-3. Kies **- Nogal type?** en typ de gedachte zonder de microfoon te gebruiken.
+1. Selecteer **Tik om te praten** en spreek de taak in een normale zin uit.
+   De recorder verschijnt zolang de microfoon open is; **Klaar** beëindigt de
+   opname en **Overnieuw beginnen** gooit hem weg.
+2. Kies een startersuggestie om er meteen een taak van te maken.
+3. Kies **Liever typen?** en typ de gedachte zonder de microfoon te gebruiken.
 
 Lotti herhaalt de vastgelegde woorden terwijl het ze structureert. Het resultaat is een
 echte taak in de gekozen categorie, en niet alleen voorbeeldgegevens voor de
@@ -121,7 +132,7 @@ gewijzigd. Dat voorstelpad vereist dat de categorie van de taak een standaard ag
   caption="De getypte Project Waddle-gedachte wordt “Controleer het Europa sardinerelais.” De taak blijft in het paneel staan totdat je die kiest."
 />
 
-Kies de gemaakte taakkaart om de onboarding te sluiten en de normale taakpagina te
+Selecteer **Taak openen** om de onboarding te sluiten en de normale taakpagina te
 openen. Van daaruit kun je checklistvoorstellen bekijken, omslagafbeeldingen of
 bewijsmateriaal toevoegen, een vervaldatum en prioriteit instellen, en de taak naar
 Daily OS brengen.

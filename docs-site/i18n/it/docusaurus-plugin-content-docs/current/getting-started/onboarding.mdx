@@ -24,14 +24,20 @@ attività strutturata dall'AI.
 
 <ManualScreenshot
   caseId="onboarding/welcome"
-  alt="Pannello di benvenuto dell'onboarding di Lotti che invita a collegare un cervello AI e a trasformare il parlato in un'attività strutturata"
-  caption="Il pannello di benvenuto si apre sopra l'app corrente. Scegli il tuo cervello AI per continuare, oppure lascia il flusso senza cambiare la configurazione."
+  alt="Benvenuto dell'onboarding di Lotti con Lotti, il suo saluto e i tre passaggi: collega una chiave, scegli le tue aree, crea la tua prima attività"
+  caption="Ogni passaggio ha lo stesso layout: Lotti, il suo fumetto e il contenuto del passaggio sopra il pulsante principale. Il benvenuto elenca i tre passaggi che ti aspettano."
 />
 
-Seleziona **Scegli il tuo cervello AI** per iniziare. Scegliere **Guarda
-prima.**, toccare l'area oscurata fuori dal pannello o usare l'azione Indietro
-di sistema chiude l'onboarding senza collegare nulla. Puoi tornarci più tardi
-dalle Impostazioni.
+Seleziona **Inizia con una sola chiave** per iniziare, oppure **Esplora con dati
+di esempio** per dare prima un'occhiata a un mondo demo già arredato. Il
+pulsante di chiusura in alto, l'azione Indietro di sistema e, su desktop, un
+clic fuori dal pannello chiudono l'onboarding dal benvenuto senza collegare
+nulla. Puoi tornarci più tardi dalle Impostazioni.
+
+Dopo il benvenuto, la freccia Indietro in alto — e l'azione Indietro di
+sistema — tornano al passaggio precedente, e il pulsante di chiusura esce
+dall'onboarding. Tre segmenti accanto mostrano a che punto sei con la chiave,
+le tue aree e la tua prima attività.
 
 Lotti può anche proporre questo benvenuto automaticamente a un profilo idoneo.
 Il prompt automatico ha una cadenza di ripetizione limitata; la voce nelle
@@ -41,27 +47,30 @@ Impostazioni no, quindi hai sempre una via per tornarci.
 
 <ManualScreenshot
   caseId="onboarding/providers"
-  alt="Selettore del provider nell'onboarding di Lotti con Mistral, Melious.ai, Gemini, Qwen, OpenAI e Ollama"
-  caption="I principali provider ospitati compaiono per primi. Espandi Altre opzioni per OpenAI e per il percorso locale con Ollama."
+  alt="Passaggio dei provider nell'onboarding di Lotti con Mistral scelto e il pulsante Continua con Mistral"
+  caption="Mistral è consigliato e scelto fin dall'inizio. Apri Altri fornitori per gli altri, compreso il percorso locale con Ollama."
 />
 
-La pagina dei provider presenta le scelte disponibili, ospitate e locali:
+All'apertura del passaggio è scelto Mistral. Tocca un'altra scheda per scegliere
+invece quel provider; il pulsante in basso indica quello con cui continuerai, e
+solo il pulsante va avanti. I provider sono:
 
 - **Mistral** è l'impostazione predefinita consigliata, ospitata nell'UE.
 - **Melious.ai** è ospitato nell'UE, con instradamento dinamico dei modelli.
 - **Gemini** e **Qwen** espongono le rispettive regioni ospitate.
-- **OpenAI** è disponibile tra le opzioni espanse.
+- **OpenAI** è disponibile sotto **Altri fornitori**, insieme agli altri.
 - **Ollama** si collega a un endpoint locale compatibile e non richiede una
   chiave API ospitata.
 
 <ManualScreenshot
   caseId="onboarding/api-key"
   alt="Pannello di verifica del provider nell'onboarding di Lotti che mostra una connessione locale Ollama verificata"
-  caption="Lotti verifica il provider scelto prima di abilitare Collegamento. I provider ospitati usano lo stesso passaggio con un campo per la chiave API."
+  caption="Lotti verifica il provider scelto prima che il pulsante vada avanti. I provider ospitati usano lo stesso passaggio con un campo per la chiave API."
 />
 
 Per un provider ospitato, incolla la chiave API del provider. Lotti verifica la
-connessione prima di abilitare **Collegamento**. Ollama verifica l'endpoint
+connessione e mostra il risultato sulla scheda del provider prima di abilitare
+**Continua con** il provider. Ollama verifica l'endpoint
 locale configurato e riporta i modelli raggiungibili. Una connessione riuscita
 salva il provider e inizializza i modelli e il profilo di inferenza usati dai
 passaggi restanti.
@@ -100,18 +109,18 @@ categoria che vede un account di lavoro.
 
 <ManualScreenshot
   caseId="onboarding/first-task"
-  alt="Pannello della prima attività nell'onboarding di Lotti con cattura vocale, le destinazioni Operazioni del Pinguino e Controllo delle missioni, i suggerimenti e l'opzione Piuttosto tipo?"
-  caption="Scegli dove deve atterrare l'attività, poi parla con naturalezza, usa un suggerimento iniziale o seleziona Piuttosto tipo?. Qui è selezionata Operazioni del Pinguino."
+  alt="Pannello della prima attività nell'onboarding di Lotti con cattura vocale, le destinazioni Operazioni del Pinguino e Controllo delle missioni, i suggerimenti e l'opzione Preferisci scrivere?"
+  caption="Scegli dove deve atterrare l'attività, poi parla con naturalezza, usa un suggerimento iniziale o seleziona Preferisci scrivere?. Qui è selezionata Operazioni del Pinguino."
 />
 
 Il pannello della prima attività usa la normale pipeline di cattura di Lotti.
 Scegli la categoria di destinazione, poi usa uno dei tre percorsi:
 
-1. Seleziona la visualizzazione di registrazione e detta l'attività in una
-   frase normale.
-2. Scegli un suggerimento iniziale per provare subito il percorso di
-   strutturazione.
-3. Scegli **Piuttosto tipo?** e digita il pensiero senza usare il microfono.
+1. Seleziona **Tocca per parlare** e detta l'attività in una frase normale.
+   Il registratore compare finché il microfono è aperto; **Fatto** termina la
+   registrazione e **Ricomincia** la scarta.
+2. Scegli un suggerimento iniziale per creare subito un'attività da esso.
+3. Scegli **Preferisci scrivere?** e digita il pensiero senza usare il microfono.
 
 Lotti ripete le parole catturate mentre le struttura. Il risultato è una vera
 attività nella categoria scelta, non dati di esempio validi solo
@@ -125,8 +134,8 @@ modificare l'attività in silenzio. Questo percorso di proposte richiede che la 
   caption="Il pensiero digitato di Project Waddle diventa “Ispezione del relè Europa sardine”. L'attività resta nel pannello finché non la scegli."
 />
 
-Scegli la scheda dell'attività creata per chiudere l'onboarding e aprire la sua
-normale pagina attività. Da lì puoi rivedere le proposte della lista di
+Seleziona **Apri attività** per chiudere l'onboarding e aprire la normale
+pagina dell'attività. Da lì puoi rivedere le proposte della lista di
 controllo, aggiungere copertina o prove, impostare data di scadenza e priorità
 e portare l'attività nel Daily OS.
 

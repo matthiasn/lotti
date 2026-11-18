@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/onboarding_event.dart';
-import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
@@ -54,6 +53,7 @@ class OnboardingFirstTaskStep extends ConsumerStatefulWidget {
     required this.onTaskCreated,
     required this.onDone,
     this.providerName,
+    this.onBack,
     super.key,
   }) : // `.isNotEmpty` is not potentially-constant, so it cannot appear in a
        // const constructor's assert — `.length > 0` is the only option here
@@ -68,13 +68,18 @@ class OnboardingFirstTaskStep extends ConsumerStatefulWidget {
   /// Optional low-cardinality provider funnel dimension (e.g. "Gemini").
   final String? providerName;
 
+  /// Goes back to the areas, offered at the prompt.
+  final VoidCallback? onBack;
+
   /// Fired with the new task's id once structuring lands a real (in-progress)
   /// task. The host pops the modal and navigates to that task's detail page;
   /// injected so the step stays decoupled from the task UI and testable.
   final void Function(String taskId) onTaskCreated;
 
-  /// Fired when the capture cannot produce a task at all (a total structuring
-  /// failure) — finishes onboarding rather than stranding the user.
+  /// Finishes onboarding from this step: fired by the step's close button,
+  /// and when the capture cannot produce a task at all (a total structuring
+  /// failure), rather than stranding the user. Closing starts no new task;
+  /// one already being saved when it is pressed still lands.
   final VoidCallback onDone;
 
   @override
@@ -100,10 +105,16 @@ class _OnboardingFirstTaskStepState
   OnboardingCaptureResult? _created;
   String? _createdTaskId;
 
-  /// Latches on the first created-card tap so a fast double-tap can't hand the
-  /// task off twice — the host pops the modal on handoff, and a second pop
-  /// would tear down the route beneath it.
+  /// Latches on the first way out — Open task, the close button, or a
+  /// structuring that cannot land a task — so the step leaves once: the host
+  /// pops the modal each time, and a second pop would tear down the route
+  /// beneath it. The step stays mounted through the exit animation, so a
+  /// result landing then is ignored too.
   bool _handedOff = false;
+
+  /// The area the attempt in flight was sent to, set when structuring
+  /// starts: what the created preview names, whatever is picked after.
+  String? _structuringCategoryId;
 
   /// The area the structured task lands in. Pre-selected to the first created
   /// area; when more than one exists the user can re-pick via the destination
@@ -152,6 +163,15 @@ class _OnboardingFirstTaskStepState
 
     final messages = context.messages;
     final phase = _viewPhase(captureState.phase);
+    // The area the task was sent to, not whatever is picked now: a pick
+    // landing after structuring started must not rename where it went.
+    final landedId = _structuringCategoryId ?? _selectedCategoryId;
+    final landedIn = widget.categories
+        .firstWhere(
+          (c) => c.id == landedId,
+          orElse: () => widget.categories.first,
+        )
+        .label;
     return OnboardingFirstTaskView(
       phase: phase,
       style: style,
@@ -170,9 +190,11 @@ class _OnboardingFirstTaskStepState
       thinkingReassurance: messages.onboardingCaptureReassurance,
       ratherTypeLabel: messages.onboardingCaptureRatherType,
       recordSemanticLabel: messages.onboardingCaptureOrbLabel,
+      recordLabel: messages.dailyOsNextCaptureIdleTalk,
+      stopLabel: messages.dailyOsNextCaptureDoneCta,
+      openTaskLabel: messages.agentTemplateInstanceOpenTask,
       categoryPrompt: messages.onboardingCaptureCategoryPrompt,
       createdHeadline: messages.onboardingFirstTaskCreatedTitle,
-      createdHint: messages.onboardingFirstTaskCreatedHint,
       createdTaskTitle: _created?.title ?? '',
       categories: widget.categories,
       selectedCategoryId: _selectedCategoryId,
@@ -184,10 +206,17 @@ class _OnboardingFirstTaskStepState
       transcript: _displayTranscript(captureState),
       amplitudes: captureState.amplitudes,
       dbfs: captureState.dbfs,
+      onClose: _leave,
+      onBack: widget.onBack,
+      createdText: messages.onboardingFirstTaskCreatedText(landedIn),
+      createdCaption: messages.onboardingFirstTaskCreatedCaption,
+      landedIn: landedIn,
+      startOverLabel: messages.dailyOsNextCaptureVoiceButtonReset,
+      // Drops what was said and opens the prompt again.
+      onStartOver: () => ref.read(captureControllerProvider.notifier).reset(),
       companion: OnboardingCompanion(
         beat: OnboardingCompanionBeat.of(phase),
         line: _companionLine(messages, phase),
-        framing: CompanionFraming.bust,
       ),
     );
   }
@@ -207,6 +236,14 @@ class _OnboardingFirstTaskStepState
     OnboardingFirstTaskPhase.created =>
       messages.onboardingFirstTaskCreatedTitle,
   };
+
+  /// Leaves onboarding without a task, once: the close button and a failed
+  /// structuring that lands during the exit must not each pop a route.
+  void _leave() {
+    if (_handedOff) return;
+    _handedOff = true;
+    widget.onDone();
+  }
 
   /// The created card was tapped — hand the landed task to the host, which
   /// pops the modal and opens the real task page.
@@ -251,6 +288,9 @@ class _OnboardingFirstTaskStepState
   /// jumps straight to `captured` with the suggestion as the transcript, and
   /// the same structuring pipeline turns it into a real task.
   void _onSuggestion(String suggestion) {
+    // A second tap before the prompt has given way must not replace the
+    // words already being structured.
+    if (_structuring || _handedOff) return;
     ref.read(captureControllerProvider.notifier)
       ..startTyping()
       ..updateTranscript(suggestion);
@@ -263,17 +303,33 @@ class _OnboardingFirstTaskStepState
   /// Kicks off structuring once the controller has a captured, non-empty
   /// transcript. Idempotent per transcript so it never double-fires.
   void _maybeStructure(CaptureState state) {
+    // Nothing is created once the user has left, and one attempt at a time:
+    // a second suggestion tapped before the first lands waits for it.
+    if (_handedOff || _structuring) return;
     if (state.phase != CapturePhase.captured) return;
     final transcript = state.transcript.trim();
     if (transcript.isEmpty) return;
     if (_structuringForTranscript == transcript) return;
 
     _structuringForTranscript = transcript;
-    setState(() => _structuring = true);
-    unawaited(_structure(transcript, audioId: state.audioId));
+    setState(() {
+      _structuring = true;
+      _structuringCategoryId = _selectedCategoryId;
+    });
+    unawaited(
+      _structure(
+        transcript,
+        categoryId: _selectedCategoryId,
+        audioId: state.audioId,
+      ),
+    );
   }
 
-  Future<void> _structure(String transcript, {String? audioId}) async {
+  Future<void> _structure(
+    String transcript, {
+    required String categoryId,
+    String? audioId,
+  }) async {
     // Telemetry is best-effort: a metrics DB failure must never kill this
     // (unawaited) future before the orchestrator runs — that would strand the
     // user on the thinking frame with `_structuring` stuck true.
@@ -293,14 +349,15 @@ class _OnboardingFirstTaskStepState
       // Proceed without the funnel event.
     }
     // The modal can be barrier-dismissed while the telemetry write was
-    // awaited — using `ref` after disposal throws.
-    if (!mounted) return;
+    // awaited — using `ref` after disposal throws — and the user may have
+    // closed it, which means finishing without a task: none is created.
+    if (!mounted || _handedOff) return;
     final service = ref.read(onboardingCaptureToTaskServiceProvider);
     final OnboardingCaptureResult result;
     try {
       result = await service.createTaskFromTranscript(
         transcript: transcript,
-        categoryId: _selectedCategoryId,
+        categoryId: categoryId,
         providerName: widget.providerName,
         audioId: audioId,
       );
@@ -309,26 +366,32 @@ class _OnboardingFirstTaskStepState
       // unexpected (e.g. persistence). Don't strand the user on the thinking
       // frame — re-arm the prompt so they can retry.
       if (!mounted) return;
-      setState(() => _structuring = false);
+      setState(() {
+        _structuring = false;
+        // A retry takes the destination picked by then.
+        _structuringCategoryId = null;
+      });
       _structuringForTranscript = null;
       ref.read(captureControllerProvider.notifier).reset();
       return;
     }
-    if (!mounted) return;
+    // Left while it was structuring: the flow is closing, nothing to show.
+    if (!mounted || _handedOff) return;
     final task = result.task;
     if (task != null) {
-      // The task landed — reveal the created beat inside the panel: the title
-      // + checklist as a tappable card. The user taps it to leave the dialogue
-      // and land on the real task page, instead of the modal vanishing the
-      // moment structuring resolves.
+      // The task landed — reveal the created beat inside the panel, naming
+      // the area this attempt was sent to; Open task then leaves for the
+      // real task page, instead of the modal vanishing the moment
+      // structuring resolves.
       setState(() {
         _created = result;
         _createdTaskId = task.meta.id;
+        _structuringCategoryId = categoryId;
       });
     } else {
       // Couldn't persist even a title-only floor task — leave onboarding rather
       // than strand the user on the thinking frame.
-      widget.onDone();
+      _leave();
     }
   }
 
@@ -341,7 +404,7 @@ class _OnboardingFirstTaskStepState
   /// a task…" behind it while nothing is being structured.
   Future<void> _onRatherType() async {
     final typed = await _promptForText();
-    if (!mounted) return;
+    if (!mounted || _structuring || _handedOff) return;
     final transcript = typed?.trim() ?? '';
     // Nothing typed — the controller was never touched, so the panel is
     // still sitting on the prompt frame.

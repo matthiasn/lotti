@@ -24,14 +24,20 @@ estruturada por IA.
 
 <ManualScreenshot
   caseId="onboarding/welcome"
-  alt="Painel de boas-vindas de integração da Lotti convidando o usuário a conectar um cérebro de IA e transformar a fala em uma tarefa estruturada"
-  caption="O painel de boas-vindas abre sobre o aplicativo atual. Escolha seu cérebro de IA para continuar ou saia do fluxo sem alterar a configuração."
+  alt="Boas-vindas da integração da Lotti com a Lotti, a saudação dela e as três etapas: conectar uma chave, escolher suas áreas, criar sua primeira tarefa"
+  caption="Cada etapa tem o mesmo layout: a Lotti, o balão de fala dela e o conteúdo próprio da etapa acima do botão principal. As boas-vindas listam as três etapas seguintes."
 />
 
-Selecione **Escolha seu cérebro de IA** para começar. Escolher **Olhe ao redor
-primeiro**, tocar na área escurecida fora do painel ou usar a ação de voltar
-do sistema sai da integração sem conectar nada. Você pode voltar mais tarde
-pelas Configurações.
+Selecione **Começar com uma só chave** para começar, ou **Explorar com dados de
+exemplo** para conhecer primeiro um mundo de demonstração já mobiliado. O botão
+de fechar no topo, a ação de voltar do sistema e, no computador, um clique fora
+do painel saem da integração a partir das boas-vindas sem conectar nada. Você
+pode voltar mais tarde pelas Configurações.
+
+Depois das boas-vindas, a seta de voltar no topo — e a ação de voltar do
+sistema — retornam à etapa anterior, e o botão de fechar sai da integração.
+Três segmentos ao lado mostram quanto você já avançou com a chave, suas áreas e
+sua primeira tarefa.
 
 Lotti também pode oferecer essas boas-vindas automaticamente a um perfil
 elegível. O prompt automático tem uma cadência limitada de novas tentativas; a
@@ -42,27 +48,30 @@ volta.
 
 <ManualScreenshot
   caseId="onboarding/providers"
-  alt="Seletor de provedor de integração Lotti com Mistral, Melious.ai, Gemini, Qwen, OpenAI e Ollama"
-  caption="Os provedores hospedados primários aparecem primeiro. Expanda Mais opções para OpenAI e o caminho local do Ollama."
+  alt="Etapa de provedores da integração Lotti com Mistral escolhido e o botão Continuar com Mistral"
+  caption="O Mistral é recomendado e já vem escolhido. Abra Outros fornecedores para ver o resto, incluindo o caminho local do Ollama."
 />
 
-A página do provedor identifica as opções hospedadas e locais disponíveis:
+O Mistral está escolhido quando a etapa abre. Toque em outro cartão para
+escolher esse provedor; o botão na parte inferior mostra com qual você vai
+continuar, e só o botão avança. Os provedores são:
 
 - **Mistral** é o padrão recomendado, hospedado na UE.
 - **Melious.ai** é hospedado na UE, com roteamento dinâmico de modelos.
 - **Gemini** e **Qwen** expõem suas respectivas regiões de hospedagem.
-- **OpenAI** está disponível nas opções expandidas.
+- **OpenAI** está disponível em **Outros fornecedores**, junto com os demais.
 - **Ollama** se conecta a um endpoint local compatível e não requer um
   chave de API hospedada.
 
 <ManualScreenshot
   caseId="onboarding/api-key"
   alt="Painel de verificação do provedor de integração Lotti mostrando uma conexão local verificada do Ollama"
-  caption="Lotti verifica o provedor escolhido antes de ativar o Connect. Os provedores hospedados usam a mesma etapa com um campo de chave de API."
+  caption="Lotti verifica o provedor escolhido antes de o botão avançar. Os provedores hospedados usam a mesma etapa com um campo de chave de API."
 />
 
 Para um provedor hospedado, cole a chave de API do provedor. Lotti verifica a
-conexão antes de ativar **Conectar**. O Ollama verifica o endpoint local
+conexão e mostra o resultado no cartão do provedor antes de ativar **Continuar
+com** o provedor. O Ollama verifica o endpoint local
 configurado e informa os modelos acessíveis. Uma conexão bem-sucedida salva o
 provedor e semeia os modelos e o perfil de inferência usados pelas etapas
 seguintes.
@@ -108,8 +117,10 @@ categoria que uma conta em uso real vê.
 O painel da primeira tarefa usa o pipeline de captura normal de Lotti. Escolha
 a categoria de destino e use um dos três caminhos:
 
-1. Selecione o visual de gravação e fale a tarefa em uma frase normal.
-2. Escolha uma sugestão inicial para tentar o caminho de estruturação imediatamente.
+1. Selecione **Toque para falar** e fale a tarefa em uma frase normal. O
+   gravador aparece enquanto o microfone está aberto; **Concluído** encerra a
+   gravação e **Recomeçar** a descarta.
+2. Escolha uma sugestão inicial para criar uma tarefa a partir dela na hora.
 3. Escolha **Prefere digitar?** e insira o pensamento sem usar o microfone.
 
 Lotti ecoa as palavras capturadas enquanto as estrutura. O resultado é uma
@@ -124,7 +135,7 @@ tarefa silenciosamente. Esse caminho de propostas exige que a categoria da taref
   caption="O pensamento digitado do Project Waddle torna-se “Inspecionar o revezamento da sardinha Europa”. A tarefa permanece no painel até que você a escolha."
 />
 
-Escolha o cartão da tarefa criada para fechar a integração e abrir a página
+Selecione **Abrir tarefa** para fechar a integração e abrir a página
 normal da tarefa. A partir daí, você pode revisar propostas de lista de
 verificação, adicionar capa ou evidências, definir data de vencimento e
 prioridade e trazer a tarefa para o Daily OS.

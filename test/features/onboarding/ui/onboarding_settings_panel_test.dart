@@ -199,10 +199,10 @@ void main() {
       await tester.tap(find.text('Start onboarding'));
       await tester.pumpAndSettle();
 
-      // Both welcome CTAs are present — the FTUE welcome step, not some
-      // other surface.
+      // The welcome's main button and its way out are present — the FTUE
+      // welcome step, not some other surface.
       expect(find.text('Get started with one key'), findsOneWidget);
-      expect(find.text('Look around first'), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
     });
 
     testWidgets(
@@ -274,11 +274,14 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Ollama'));
         await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Continue with Ollama'));
+        await tester.tap(find.text('Continue with Ollama'));
+        await tester.pumpAndSettle();
         // Ollama probes reachability on open; let the ≥1s dwell elapse.
         await tester.pump(const Duration(milliseconds: 1100));
         await tester.pumpAndSettle();
         expect(find.text('Connection verified'), findsOneWidget);
-        await tester.tap(find.text('Connect'));
+        await tester.tap(find.textContaining('Continue with'));
         await tester.pumpAndSettle();
         expect(find.text('Where should your AI work?'), findsOneWidget);
 
@@ -288,12 +291,9 @@ void main() {
           isNull,
         );
 
-        // Close the modal by tapping outside the panel: the flow ends with a
+        // Close the modal with the step's close button: the flow ends with a
         // connected provider, so `onCompleted` fires and persists the flag.
-        final panelTop = tester
-            .getTopLeft(find.byKey(const ValueKey('onboarding-category')))
-            .dy;
-        await tester.tapAt(Offset(195, panelTop - 20));
+        await tester.tap(find.byIcon(LottiIcons.close));
         await tester.pumpAndSettle();
 
         expect(
@@ -329,9 +329,9 @@ void main() {
 
         await tester.tap(find.text('Start onboarding'));
         await tester.pumpAndSettle();
-        // Close the welcome via the skip CTA — the modal pops and the
+        // Close the welcome with its close button — the modal pops and the
         // action's await resolves.
-        await tester.tap(find.text('Look around first'));
+        await tester.tap(find.byIcon(LottiIcons.close));
         await tester.pumpAndSettle();
 
         // A second funnel read fired once the modal closed.

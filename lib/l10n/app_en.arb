@@ -7795,7 +7795,6 @@
   "nudgeBannerSnoozeSixHours": "6 hours",
   "nudgeBannerSnoozeThreeHours": "3 hours",
   "nudgeBannerSnoozeTitle": "Snooze banner",
-  "onboardingApiKeyConnect": "Connect",
   "onboardingApiKeyConnecting": "Connecting…",
   "onboardingApiKeyEnterKeyHint": "Enter a valid key to continue.",
   "onboardingApiKeyError": "Couldn't connect. Check your key and try again.",
@@ -7804,7 +7803,9 @@
   "onboardingApiKeyHide": "Hide key",
   "onboardingApiKeyInvalid": "That key was rejected. Double-check it and paste it again.",
   "onboardingApiKeyLocalNote": "Runs on your device — no key needed.",
+  "onboardingApiKeyLocalTitle": "Let me find it on your device.",
   "onboardingApiKeyNoKeyHelp": "New here? Sign in, create an API key, then paste it — free to start.",
+  "onboardingApiKeyProviderCaption": "Your provider",
   "onboardingApiKeyReveal": "Show key",
   "onboardingApiKeyTitle": "Paste your API key",
   "onboardingApiKeyUnreachable": "Couldn't reach {providerName}. Check the key or your connection and try again.",
@@ -7815,6 +7816,8 @@
       }
     }
   },
+  "onboardingApiKeyVerifiedText": "Continue, and I'll set everything up for you.",
+  "onboardingApiKeyVerifiedTitle": "That works",
   "onboardingApiKeyVerifying": "Verifying…",
   "onboardingCaptureCategoryPrompt": "Where should this land?",
   "onboardingCaptureListening": "Listening… tap when you're done",
@@ -7825,10 +7828,11 @@
   "onboardingCaptureTypePrompt": "Type your thought",
   "onboardingCategoryAddOwn": "Add your own",
   "onboardingCategoryContinue": "Continue",
-  "onboardingCategoryExplanation": "Each area of your life gets its own space. Pick any that fit — or add your own.",
+  "onboardingCategoryExplanation": "Each area of your life gets its own space.",
   "onboardingCategoryFamily": "Family",
   "onboardingCategoryFitness": "Fitness",
   "onboardingCategoryFriends": "Friends",
+  "onboardingCategoryPickOne": "Pick at least one area to continue.",
   "onboardingCategoryTitle": "Where should your AI work?",
   "onboardingCategoryWhy": "Why areas?",
   "onboardingCategoryWhyDetail": "Each area can use its own AI. {provider} will power the areas you pick here — later you can give different areas different AIs.",
@@ -7841,11 +7845,20 @@
   },
   "onboardingCategoryWork": "Work",
   "onboardingCompanionGreeting": "Hi, I'm Lotti.",
-  "onboardingCompanionOneKey": "Tell me what's on your mind and I'll turn it into a plan. All I need to get going is one API key, and I'll help you set it up.",
+  "onboardingCompanionOneKey": "Tell me what's on your mind and I'll turn it into a plan. All I need is one key.",
+  "onboardingConnectContinueWith": "Continue with {provider}",
+  "@onboardingConnectContinueWith": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
   "onboardingConnectGeminiName": "Gemini",
   "onboardingConnectGeminiTagline": "United States",
   "onboardingConnectGuide": "I'd go with Mistral: with its one key I can think, transcribe what you say and read aloud to you.",
   "onboardingConnectHideOtherProviders": "Hide other providers",
+  "onboardingConnectKeyNote": "A key is a kind of password for an AI service.",
   "onboardingConnectMistralName": "Mistral",
   "onboardingConnectMistralPitch": "One key for thinking, transcription and voice · hosted in the EU",
   "onboardingConnectMistralTagline": "European Union",
@@ -7857,13 +7870,21 @@
   "onboardingConnectQwenName": "Qwen",
   "onboardingConnectQwenTagline": "China",
   "onboardingConnectRecommended": "Recommended",
-  "onboardingFirstTaskCreatedHint": "Tap your task to open it",
+  "onboardingFirstTaskCreatedCaption": "Your task",
+  "onboardingFirstTaskCreatedText": "It's in {area}. Open it to see the steps I suggest.",
+  "@onboardingFirstTaskCreatedText": {
+    "placeholders": {
+      "area": {
+        "type": "String"
+      }
+    }
+  },
   "onboardingFirstTaskCreatedTitle": "Your first task is ready",
-  "onboardingFirstTaskGuidance": "Tap to talk and say what needs doing — Lotti turns it into a real task.",
+  "onboardingFirstTaskGuidance": "Tap to talk and say what needs doing — I'll turn it into a real task.",
   "onboardingFirstTaskSuggestionDentist": "Book a dentist appointment",
   "onboardingFirstTaskSuggestionMeeting": "Prepare for Monday's meeting",
   "onboardingFirstTaskSuggestionPlanWeek": "Plan my week",
-  "onboardingFirstTaskSuggestionsLabel": "Not ready to talk? Start with one of these:",
+  "onboardingFirstTaskSuggestionsLabel": "Or tap one to make it your first task",
   "onboardingFirstTaskTitle": "Create your first task",
   "onboardingFirstWordsQuiet": "We're connected, and I'm ready to help.",
   "onboardingFirstWordsVoiced": "There, now you can hear me too!",
@@ -7898,10 +7919,28 @@
   "onboardingRecordingStyleAnalogue": "Analogue — VU meter",
   "onboardingRecordingStyleModern": "Modern — energy orb",
   "onboardingRecordingStyleTryVoice": "Try with your voice",
+  "onboardingStageProgress": "Step {current} of {total}",
+  "@onboardingStageProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "onboardingWelcomeConnectButton": "Choose your AI brain",
   "onboardingWelcomeMessage": "Connect your AI brain, then speak a thought and watch it become a structured task.",
   "onboardingWelcomeOneKeyButton": "Get started with one key",
+  "onboardingWelcomeSettingsNote": "You can change all of this later in Settings.",
   "onboardingWelcomeSkipButton": "Look around first",
+  "onboardingWelcomeStepAreas": "Pick your areas",
+  "onboardingWelcomeStepAreasDetail": "Each part of your life gets its own space",
+  "onboardingWelcomeStepKey": "Connect one key",
+  "onboardingWelcomeStepKeyDetail": "So I can think, listen and read aloud",
+  "onboardingWelcomeStepsCaption": "Three things, then you're in",
+  "onboardingWelcomeStepTaskDetail": "Say one thing and watch it become a task",
   "onboardingWelcomeTitle": "Talk. Lotti turns it into a plan.",
   "optionalCategoryLabel": "Category (optional)",
   "outboxActionRemove": "Remove",
