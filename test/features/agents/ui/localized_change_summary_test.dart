@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
@@ -36,7 +37,17 @@ void main() {
     String toolName,
     Map<String, dynamic> args, {
     AppLocalizations? messages,
-  }) => localizedChangeSummary(messages ?? en, toolName, args);
+  }) => withClock(
+    // Pinned: a time entry names its year only when it is not this one.
+    Clock.fixed(DateTime(2026, 8)),
+    // A time entry's day is held together with no-break spaces
+    // (time_entry_labels_test.dart); compared here with ordinary ones.
+    () => localizedChangeSummary(
+      messages ?? en,
+      toolName,
+      args,
+    )?.replaceAll('\u00A0', ' '),
+  );
 
   test('label assignment is localized when a current name is supplied', () {
     expect(
@@ -452,7 +463,7 @@ void main() {
           'endTime': '2026-07-29T11:30:00',
           'summary': 'Pairing',
         }),
-        'Time entry 10:00–11:30: "Pairing"',
+        'Time entry Wed, Jul 29, 10:00–11:30: "Pairing"',
       );
     });
 
@@ -462,14 +473,14 @@ void main() {
           'startTime': '2026-07-29T10:00:00',
           'summary': 'Pairing',
         }),
-        'Time entry from 10:00: "Pairing"',
+        'Time entry from Wed, Jul 29, 10:00: "Pairing"',
       );
     });
 
     test('a present-but-invalid end never reads as a running timer', () {
       // The apply path distinguishes "endTime absent" (running timer) from
       // "endTime present but malformed" (a rejected completed session). A row
-      // that rendered the second as "from 10:00" would describe a proposal
+      // that rendered the second as "from … 10:00" would describe a proposal
       // the handler will refuse as if accepting it started a timer.
       expect(
         summary(TaskAgentToolNames.createTimeEntry, {
@@ -477,7 +488,7 @@ void main() {
           'endTime': 42,
           'summary': 'Pairing',
         }),
-        'Time entry 10:00–?: "Pairing"',
+        'Time entry Wed, Jul 29, 10:00–?: "Pairing"',
       );
       expect(
         summary(TaskAgentToolNames.createTimeEntry, {
@@ -485,7 +496,7 @@ void main() {
           'endTime': null,
           'summary': 'Pairing',
         }),
-        'Time entry 10:00–?: "Pairing"',
+        'Time entry Wed, Jul 29, 10:00–?: "Pairing"',
       );
     });
 
@@ -502,7 +513,7 @@ void main() {
           'startTime': s,
           'endTime': e,
         }),
-        'Update time entry 10:00–11:30',
+        'Update time entry Wed, Jul 29, 10:00–11:30',
       );
       expect(
         summary(TaskAgentToolNames.updateTimeEntry, const {
@@ -516,7 +527,7 @@ void main() {
           'endTime': e,
           'summary': 'Revised',
         }),
-        'Update time entry 10:00–11:30: "Revised"',
+        'Update time entry Wed, Jul 29, 10:00–11:30: "Revised"',
       );
     });
 
@@ -526,11 +537,90 @@ void main() {
 
       expect(
         summary(TaskAgentToolNames.updateTimeEntry, const {'startTime': s}),
-        'Update time entry from 10:00',
+        'Update time entry from Wed, Jul 29, 10:00',
       );
       expect(
         summary(TaskAgentToolNames.updateTimeEntry, const {'endTime': e}),
-        'Update time entry until 11:30',
+        'Update time entry until Wed, Jul 29, 11:30',
+      );
+    });
+
+    test('a session across midnight names both days, dash spaced', () {
+      // "22:30–Sat" would read as the unit; the ends are the two halves.
+      expect(
+        summary(TaskAgentToolNames.createTimeEntry, {
+          'startTime': '2026-07-10T22:30:00',
+          'endTime': '2026-07-11T01:15:00',
+          'summary': 'Night watch',
+        }),
+        'Time entry Fri, Jul 10, 22:30 – Sat, Jul 11, 01:15: "Night watch"',
+      );
+      expect(
+        summary(TaskAgentToolNames.updateTimeEntry, const {
+          'startTime': '2026-07-10T22:30:00',
+          'endTime': '2026-07-11T01:15:00',
+        }),
+        'Update time entry Fri, Jul 10, 22:30 – Sat, Jul 11, 01:15',
+      );
+    });
+
+    test('an entry in another year says so', () {
+      expect(
+        summary(TaskAgentToolNames.createTimeEntry, {
+          'startTime': '2025-12-30T10:00:00',
+          'endTime': '2025-12-30T11:45:00',
+          'summary': 'Write-up',
+        }),
+        'Time entry Tue, Dec 30, 2025, 10:00–11:45: "Write-up"',
+      );
+    });
+
+    test('sessions on different days no longer read alike', () {
+      // The regression: backfilled sessions at the same hours on different
+      // days produced identical rows.
+      String? on(String day) => summary(TaskAgentToolNames.createTimeEntry, {
+        'startTime': '${day}T09:00:00',
+        'endTime': '${day}T12:30:00',
+        'summary': 'Census',
+      });
+
+      expect(on('2026-07-08'), 'Time entry Wed, Jul 8, 09:00–12:30: "Census"');
+      expect(on('2026-07-15'), 'Time entry Wed, Jul 15, 09:00–12:30: "Census"');
+    });
+
+    test("the day is written in the reader's language", () {
+      expect(
+        summary(
+          TaskAgentToolNames.createTimeEntry,
+          {
+            'startTime': '2026-07-08T09:00:00',
+            'endTime': '2026-07-08T12:30:00',
+            'summary': 'Zählung',
+          },
+          messages: de,
+        ),
+        'Zeiteintrag Mi., 8. Juli, 09:00–12:30: „Zählung“',
+      );
+      expect(
+        summary(
+          TaskAgentToolNames.updateTimeEntry,
+          const {
+            'startTime': '2026-07-10T22:30:00',
+            'endTime': '2026-07-11T01:15:00',
+          },
+          messages: de,
+        ),
+        contains('Fr., 10. Juli, 22:30 – Sa., 11. Juli, 01:15'),
+      );
+    });
+
+    test('an unparseable start still leaves a parsed end its day', () {
+      expect(
+        summary(TaskAgentToolNames.updateTimeEntry, const {
+          'startTime': 'yesterday',
+          'endTime': '2026-07-29T11:30:00',
+        }),
+        'Update time entry yesterday – Wed, Jul 29, 11:30',
       );
     });
 

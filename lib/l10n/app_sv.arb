@@ -494,6 +494,7 @@
   "agentSummarySuggestPerson": "{name} var där",
   "agentSummarySuggestPersonUnnamed": "Någon var där",
   "agentSummaryTimeEntry": "Tidspost {range}: ”{summary}”",
+  "agentSummaryTimeRangeAcrossDays": "{start} – {end}",
   "agentSummaryTimeRangeBetween": "{start}–{end}",
   "agentSummaryTimeRangeFrom": "från {start}",
   "agentSummaryTimeRangeUntil": "till {end}",

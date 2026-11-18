@@ -493,6 +493,7 @@
   "agentSummarySuggestPerson": "{name} was erbij",
   "agentSummarySuggestPersonUnnamed": "Iemand was erbij",
   "agentSummaryTimeEntry": "Tijdregistratie {range}: \"{summary}\"",
+  "agentSummaryTimeRangeAcrossDays": "{start} – {end}",
   "agentSummaryTimeRangeBetween": "{start}–{end}",
   "agentSummaryTimeRangeFrom": "vanaf {start}",
   "agentSummaryTimeRangeUntil": "tot {end}",

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -601,9 +602,13 @@ void main() {
         ],
       );
 
-      await pumpEventCard(tester, changeSets: [changeSet]);
+      // The tile names a year only when it is not the current one.
+      await withClock(
+        Clock.fixed(DateTime(2026, 3, 20)),
+        () => pumpEventCard(tester, changeSets: [changeSet]),
+      );
 
-      expect(find.text('09:00'), findsOneWidget);
+      expect(find.text('Sun,\u00A0Mar\u00A015, 09:00'), findsOneWidget);
       expect(find.text('10:30'), findsOneWidget);
       expect(find.text('Counted the colony at the feeder'), findsOneWidget);
       expect(find.text('Raw time entry summary'), findsNothing);

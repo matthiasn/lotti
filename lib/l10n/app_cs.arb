@@ -475,6 +475,7 @@
   "agentSummarySuggestPerson": "{name} tam byl/a",
   "agentSummarySuggestPersonUnnamed": "Někdo tam byl",
   "agentSummaryTimeEntry": "Časový záznam {range}: „{summary}“",
+  "agentSummaryTimeRangeAcrossDays": "{start} – {end}",
   "agentSummaryTimeRangeBetween": "{start}–{end}",
   "agentSummaryTimeRangeFrom": "od {start}",
   "agentSummaryTimeRangeUntil": "do {end}",

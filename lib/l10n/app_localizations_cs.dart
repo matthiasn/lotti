@@ -1125,6 +1125,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String agentSummaryTimeRangeAcrossDays(Object start, Object end) {
+    return '$start – $end';
+  }
+
+  @override
   String agentSummaryTimeRangeBetween(Object start, Object end) {
     return '$start–$end';
   }
