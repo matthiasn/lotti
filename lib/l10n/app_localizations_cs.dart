@@ -14164,15 +14164,12 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentBriefNow => 'Vytvořit briefing teď';
-
-  @override
   String get relationshipAgentFailedBody =>
       'Poskytovatel vrátil chybu dřív, než se briefing napsal. Tvoje check-iny zůstaly beze změny.';
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'Pro briefingy není nastaven žádný model. Vyber ho v Nastavení AI › Agenti. Podrobnosti najdeš na kartě Aktivita.';
+      'Pro briefingy není nastaven žádný model. Vyber ho v řádku s modelem dole, nebo ho přidej v Nastavení AI.';
 
   @override
   String get relationshipAgentFailedPlain => 'Poslední běh selhal';
@@ -14188,13 +14185,13 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvých $count check-inů; telefon ani e-mail nikdy nevidí.',
+          'Zatím žádný briefing. „Aktualizovat nyní“ ho napíše z tvých $count check-inů; telefon ani e-mail nikdy nevidí.',
       few:
-          'Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvých $count check-inů; telefon ani e-mail nikdy nevidí.',
+          'Zatím žádný briefing. „Aktualizovat nyní“ ho napíše z tvých $count check-inů; telefon ani e-mail nikdy nevidí.',
       one:
-          'Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvého check-inu; telefon ani e-mail nikdy nevidí.',
+          'Zatím žádný briefing. „Aktualizovat nyní“ ho napíše z tvého check-inu; telefon ani e-mail nikdy nevidí.',
       zero:
-          'Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše, jakmile zaznamenáš check-in; telefon ani e-mail nikdy nevidí.',
+          'Zatím žádný briefing. „Aktualizovat nyní“ ho napíše, jakmile zaznamenáš check-in; telefon ani e-mail nikdy nevidí.',
     );
     return '$_temp0';
   }
@@ -14216,9 +14213,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get relationshipAgentPausedBody =>
       'Briefingy se pozastaví, dokud je tato osoba neaktivní nebo archivovaná.';
-
-  @override
-  String get relationshipAgentSeeActivity => 'Zobrazit aktivitu';
 
   @override
   String relationshipAgentSources(int count) {
@@ -14268,9 +14262,6 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get relationshipBriefingOptions => 'Možnosti briefingu';
 
   @override
   String get relationshipBriefingRequestFailed =>

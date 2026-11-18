@@ -385,20 +385,20 @@ class TldrBody extends StatelessWidget {
     required this.onToggle,
     required this.disclosureKey,
     this.onOpenInternals,
-    this.bodyStyle,
+    this.trailing,
     super.key,
   });
+
+  /// What the host says about the reading, after it and above its
+  /// disclosure row — the person briefing's band rationale and sources —
+  /// shown whenever given; the host decides when.
+  final Widget? trailing;
 
   final String tldr;
   final bool expanded;
   final String? additionalReport;
   final VoidCallback onToggle;
   final VoidCallback? onOpenInternals;
-
-  /// The prose tier, when a host's other faces set it: the relationship
-  /// card reads at bodyMedium on every face, so its briefing must too.
-  /// Null keeps the compact summary size the task and goal cards use.
-  final TextStyle? bodyStyle;
 
   /// Key on the Read more / Show less control. Required rather than
   /// defaulted: a default would hand a fourth surface the task card's key
@@ -427,10 +427,9 @@ class TldrBody extends StatelessWidget {
     final messages = context.messages;
     // Match entry-editor prose and compact card summaries; the header and
     // card treatment provide the hierarchy without enlarging report text.
-    final bodyStyle =
-        (this.bodyStyle ?? tokens.typography.styles.body.bodySmall).copyWith(
-          color: ai.bodyText,
-        );
+    final bodyStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: ai.bodyText,
+    );
     final hasMore = additionalReport?.trim().isNotEmpty ?? false;
     final hasDisclosure = hasMore || expanded || onOpenInternals != null;
 
@@ -453,6 +452,7 @@ class TldrBody extends StatelessWidget {
             ),
           ),
         ],
+        ?trailing,
         // No spacer above the disclosure row: its 40-high tap target already
         // carries ~12 px of optical padding on each side, so an explicit gap
         // stacked a second one on top and left a dead band under the prose.

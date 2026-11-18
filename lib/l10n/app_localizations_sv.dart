@@ -13983,15 +13983,12 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentBriefNow => 'Briefa nu';
-
-  @override
   String get relationshipAgentFailedBody =>
       'Leverantören svarade med ett fel innan briefingen skrevs. Dina avstämningar är oförändrade.';
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'Ingen modell är inställd för briefingar. Välj en under AI-inställningar › Agenter. Detaljer finns under fliken Aktivitet.';
+      'Ingen modell är inställd för briefingar. Välj en på modellraden nedan, eller lägg till en under AI-inställningar.';
 
   @override
   String get relationshipAgentFailedPlain => 'Senaste körningen misslyckades';
@@ -14007,11 +14004,11 @@ class AppLocalizationsSv extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Ingen briefing än. „Briefa nu“ skriver en utifrån dina $count avstämningar; den ser aldrig telefonnummer eller e-post.',
+          'Ingen briefing än. „Uppdatera nu“ skriver en utifrån dina $count avstämningar; den ser aldrig telefonnummer eller e-post.',
       one:
-          'Ingen briefing än. „Briefa nu“ skriver en utifrån din avstämning; den ser aldrig telefonnummer eller e-post.',
+          'Ingen briefing än. „Uppdatera nu“ skriver en utifrån din avstämning; den ser aldrig telefonnummer eller e-post.',
       zero:
-          'Ingen briefing än. „Briefa nu“ skriver en så fort du loggat en avstämning; den ser aldrig telefonnummer eller e-post.',
+          'Ingen briefing än. „Uppdatera nu“ skriver en så fort du loggat en avstämning; den ser aldrig telefonnummer eller e-post.',
     );
     return '$_temp0';
   }
@@ -14033,9 +14030,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get relationshipAgentPausedBody =>
       'Briefingar pausas så länge personen är vilande eller arkiverad.';
-
-  @override
-  String get relationshipAgentSeeActivity => 'Visa aktivitet';
 
   @override
   String relationshipAgentSources(int count) {
@@ -14083,9 +14077,6 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get relationshipBriefingOptions => 'Briefingalternativ';
 
   @override
   String get relationshipBriefingRequestFailed =>

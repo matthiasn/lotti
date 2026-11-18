@@ -282,7 +282,12 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
                 child: lead,
               ),
             ),
-          ...trailing,
+          // Alone on the line the trigger may shrink to it: at large text on
+          // a phone, its label is wider than the card.
+          if (lead == null)
+            for (final widget in trailing) Flexible(child: widget)
+          else
+            ...trailing,
         ],
       );
       final Widget row;

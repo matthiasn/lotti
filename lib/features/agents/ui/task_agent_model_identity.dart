@@ -76,6 +76,15 @@ class TaskAgentModelIdentityViewData {
   final InferenceRouteSnapshot? currentRoute;
   final InferenceRouteSnapshot? reportRoute;
   final bool reportAttributionUnavailable;
+
+  /// Whether the identity region adds a second row naming the route that
+  /// wrote the report on screen: it differs from the current setup, or the
+  /// setup is gone while a report remains.
+  bool get showsReportRow =>
+      presentation == TaskAgentIdentityPresentation.split ||
+      ((presentation == TaskAgentIdentityPresentation.broken ||
+              presentation == TaskAgentIdentityPresentation.disabled) &&
+          (reportRoute != null || reportAttributionUnavailable));
 }
 
 /// Human-readable model publisher and serving-provider identity.

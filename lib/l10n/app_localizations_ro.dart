@@ -14230,15 +14230,12 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentBriefNow => 'Creați briefingul acum';
-
-  @override
   String get relationshipAgentFailedBody =>
       'Furnizorul a returnat o eroare înainte ca briefingul să fie scris. Check-in-urile dvs. sunt neschimbate.';
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'Nu este configurat niciun model pentru briefinguri. Alegeți unul în Setări AI › Agenți. Detaliile sunt în fila Activitate.';
+      'Nu este configurat niciun model pentru briefinguri. Alegeți unul din rândul modelului de mai jos sau adăugați unul în Setări AI.';
 
   @override
   String get relationshipAgentFailedPlain => 'Ultima rulare a eșuat';
@@ -14254,13 +14251,13 @@ class AppLocalizationsRo extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Niciun briefing încă. „Creați briefingul acum“ scrie unul din cele $count de check-in-uri; nu vede niciodată telefonul sau e-mailul.',
+          'Niciun briefing încă. „Actualizați acum“ scrie unul din cele $count de check-in-uri; nu vede niciodată telefonul sau e-mailul.',
       few:
-          'Niciun briefing încă. „Creați briefingul acum“ scrie unul din cele $count check-in-uri; nu vede niciodată telefonul sau e-mailul.',
+          'Niciun briefing încă. „Actualizați acum“ scrie unul din cele $count check-in-uri; nu vede niciodată telefonul sau e-mailul.',
       one:
-          'Niciun briefing încă. „Creați briefingul acum“ scrie unul din check-in-ul dumneavoastră; nu vede niciodată telefonul sau e-mailul.',
+          'Niciun briefing încă. „Actualizați acum“ scrie unul din check-in-ul dumneavoastră; nu vede niciodată telefonul sau e-mailul.',
       zero:
-          'Niciun briefing încă. „Creați briefingul acum“ scrie unul de îndată ce înregistrați un check-in; nu vede niciodată telefonul sau e-mailul.',
+          'Niciun briefing încă. „Actualizați acum“ scrie unul de îndată ce înregistrați un check-in; nu vede niciodată telefonul sau e-mailul.',
     );
     return '$_temp0';
   }
@@ -14282,9 +14279,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get relationshipAgentPausedBody =>
       'Briefingurile sunt în pauză cât timp această persoană este inactivă sau arhivată.';
-
-  @override
-  String get relationshipAgentSeeActivity => 'Vedeți activitatea';
 
   @override
   String relationshipAgentSources(int count) {
@@ -14334,9 +14328,6 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get relationshipBriefingOptions => 'Opțiuni pentru briefing';
 
   @override
   String get relationshipBriefingRequestFailed =>

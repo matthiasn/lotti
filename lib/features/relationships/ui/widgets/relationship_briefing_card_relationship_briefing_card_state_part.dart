@@ -15,24 +15,8 @@ String relationshipHealthBandLabel(
     context.messages.relationshipHealthStrained,
 };
 
-/// The accent a health band wears wherever it is shown as a tinted pill —
-/// the briefing card's chip and the person header's band pill alike. The
-/// band accent as text on its own tint is a contrast failure, so callers
-/// paint the label in high-emphasis ink and let the colour ride the tint.
-Color relationshipHealthBandColor(
-  DsTokens tokens,
-  RelationshipHealthBand band,
-) => switch (band) {
-  RelationshipHealthBand.thriving => tokens.colors.alert.success.defaultColor,
-  // Neutral: the accent means pressable on the same card.
-  RelationshipHealthBand.steady => tokens.colors.text.mediumEmphasis,
-  RelationshipHealthBand.needsAttention =>
-    tokens.colors.alert.warning.defaultColor,
-  RelationshipHealthBand.strained => tokens.colors.alert.error.defaultColor,
-};
-
-/// The band as the design system's presence dot: the same hues as
-/// [relationshipHealthBandColor], through the badge's own tone ramp.
+/// The band as the design system's presence dot, in the badge's own tone
+/// ramp.
 DesignSystemBadgeTone relationshipHealthBandTone(RelationshipHealthBand band) =>
     switch (band) {
       RelationshipHealthBand.thriving => DesignSystemBadgeTone.success,
@@ -401,9 +385,6 @@ class _RelationshipBriefingCardState
     final modelMissing =
         identityData.presentation == TaskAgentIdentityPresentation.disabled ||
         identityData.presentation == TaskAgentIdentityPresentation.broken;
-    final usage = ref.watch(agentTokenUsageSummariesProvider(agentId)).value;
-    final totalTokens =
-        usage?.fold<int>(0, (sum, summary) => sum + summary.totalTokens) ?? 0;
     final identity = ref.watch(agentIdentityProvider(agentId)).value;
     // The relationship agent is NAMED after the person it watches, and this
     // card sits under a hero already carrying that name — so the internals
@@ -421,13 +402,11 @@ class _RelationshipBriefingCardState
       report: report,
       agentState: state,
       health: health,
-      totalTokens: totalTokens,
       identityData: identityData,
       modelMissing: modelMissing,
       expanded: _expanded,
       folded: widget.folded && !_opened,
       onOpen: () => setState(() => _opened = true),
-      requesting: _requesting,
       onToggleExpanded: () => setState(() => _expanded = !_expanded),
       onOpenInternals: () => _openInternals(agentName),
       onBrief: _requesting ? null : _briefMe,
@@ -637,17 +616,13 @@ class _BandRationale extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Padding(
-      padding: EdgeInsets.only(
-        left: tokens.spacing.cardPadding,
-        right: tokens.spacing.cardPadding,
-        bottom: tokens.spacing.step3,
-      ),
+      padding: EdgeInsets.only(top: tokens.spacing.step4),
       child: Text(
         text,
         key: const ValueKey('relationship-agent-band-rationale'),
         maxLines: 3,
         overflow: TextOverflow.ellipsis,
-        style: tokens.typography.styles.body.bodySmall.copyWith(color: color),
+        style: tokens.typography.styles.others.caption.copyWith(color: color),
       ),
     );
   }
@@ -660,10 +635,15 @@ class _StatusLine extends StatelessWidget {
     required this.color,
     this.icon,
     this.leading,
-    this.leadingSize = IconSizes.s,
     this.metaColor,
+    this.glyphColor,
     this.liveRegion = false,
   });
+
+  /// The glyph's ink when the state has an alert colour: the glyph carries
+  /// it, and the word stays in reading ink — the task card's freshness
+  /// cluster does the same.
+  final Color? glyphColor;
 
   /// The ink for the detail after the state word (`· 20 min ago`): the
   /// alert colour is the state's alone, and the age is metadata.
@@ -683,20 +663,19 @@ class _StatusLine extends StatelessWidget {
   /// dot.
   final Widget? leading;
 
-  /// The glyph's height, so it can be centred on the first line of text at
-  /// any text scale rather than pinned a fixed step from the top.
-  final double leadingSize;
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final style = tokens.typography.styles.others.caption.copyWith(
       color: color,
     );
-    final glyphSize = icon == null ? leadingSize : IconSizes.s;
+    // Every glyph — icon, spinner, the band's dot in its box — is this size.
+    const glyphSize = IconSizes.s;
     final glyph =
         leading ??
-        (icon == null ? null : Icon(icon, size: IconSizes.s, color: color));
+        (icon == null
+            ? null
+            : Icon(icon, size: IconSizes.s, color: glyphColor ?? color));
     // Centred on the first line: the line as the text engine lays it out at
     // the reader's scale, less the glyph, halved — so at 1.6× the dot still
     // sits on the words rather than above them.
@@ -736,132 +715,6 @@ class _StatusLine extends StatelessWidget {
                   : style.copyWith(color: metaColor),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A quiet caption row under the footer's actions: the sources line on a
-/// briefing, the AI note on the plain card.
-class _MetaLine extends StatelessWidget {
-  const _MetaLine({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: tokens.spacing.step6),
-        child: Row(
-          children: [
-            Flexible(
-              child: Text(
-                label,
-                key: const ValueKey('relationship-agent-meta'),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: color,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The card's quiet controls band — the task card's footer grammar: one
-/// text action on the leading edge, the one primary on the trailing rail,
-/// the model identity row and the sources line below. Its wash and top
-/// hairline are the container; nothing inside draws a second fill.
-class _AgentCardFooter extends StatelessWidget {
-  const _AgentCardFooter({
-    required this.action,
-    this.leading,
-    this.identity,
-  });
-
-  /// The secondary, text-only action on the leading edge.
-  final Widget? leading;
-  final Widget? action;
-  final Widget? identity;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final stacked =
-        MediaQuery.textScalerOf(context).scale(1) > TextScales.large;
-    final ai = tokens.colors.aiCard;
-
-    return Container(
-      key: const ValueKey('relationship-agent-footer'),
-      // Full width regardless of what sits inside: a footer with only the
-      // model row (the running face) must still wash the whole card.
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: ai.footerWash,
-        border: Border(top: BorderSide(color: ai.borderSoft)),
-      ),
-      // A step more above than below when the model row closes the card;
-      // with nothing under the action row the inset is symmetric.
-      padding: EdgeInsets.fromLTRB(
-        tokens.spacing.cardPadding,
-        tokens.spacing.step4,
-        tokens.spacing.cardPadding,
-        identity == null ? tokens.spacing.step4 : tokens.spacing.step3,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Above the large-text bar the leading slot — a quiet action, or
-          // the not-enrolled face's privacy note — takes its own full-width
-          // line above the primary, so neither is squeezed by the other.
-          if (stacked && leading != null && action != null) ...[
-            leading!,
-            SizedBox(height: tokens.spacing.step3),
-            // The same row height as the side-by-side branch, so the
-            // stacked footer keeps its rhythm below the primary too.
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: TapTargets.minimum,
-              ),
-              child: Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: action,
-              ),
-            ),
-          ] else if (leading != null || action != null)
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: TapTargets.minimum,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: leading ?? const SizedBox.shrink(),
-                    ),
-                  ),
-                  if (action != null) ...[
-                    SizedBox(width: tokens.spacing.step3),
-                    action!,
-                  ],
-                ],
-              ),
-            ),
-          // A designed gap under the action row: the 48pt floor gives no
-          // slack once a large-text pill outgrows it.
-          if ((leading != null || action != null) && identity != null)
-            SizedBox(height: tokens.spacing.step3),
-          ?identity,
         ],
       ),
     );

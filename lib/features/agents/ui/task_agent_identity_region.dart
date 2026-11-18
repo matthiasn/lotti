@@ -23,19 +23,12 @@ class TaskAgentIdentityRegion extends StatelessWidget {
   const TaskAgentIdentityRegion({
     required this.data,
     required this.onSetupTap,
-    this.trailingMeta,
     this.alwaysNameProvider = false,
     super.key,
   });
 
   final TaskAgentModelIdentityViewData data;
   final VoidCallback onSetupTap;
-
-  /// A fact that rides the setup row after the route — the relationship
-  /// briefing's token count — so `model · via provider · 18.4K tokens` is
-  /// one line rather than two. Appended to every wording tier, and dropped
-  /// from none, because it is the reader's cost rather than decoration.
-  final String? trailingMeta;
 
   /// Keeps the serving provider in every width tier of the setup row; see
   /// [inferenceRouteIdentityTiers].
@@ -44,19 +37,13 @@ class TaskAgentIdentityRegion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    final routeTiers = data.currentRoute == null
+    final currentTiers = data.currentRoute == null
         ? null
         : inferenceRouteIdentityTiers(
             data.currentRoute!,
             viaLabel: messages.taskAgentRouteVia,
             alwaysNameProvider: alwaysNameProvider,
           );
-    final meta = trailingMeta;
-    final currentTiers = routeTiers == null || meta == null
-        ? routeTiers
-        // When even the shortest wording cannot carry the cost, the cost
-        // goes rather than being cut: a number cut short reads as another.
-        : [for (final tier in routeTiers) '$tier · $meta', ...routeTiers];
     final currentIdentity = currentTiers?.first;
     final combined =
         data.presentation == TaskAgentIdentityPresentation.combined;
@@ -97,11 +84,7 @@ class TaskAgentIdentityRegion extends StatelessWidget {
           onTap: onSetupTap,
           semanticsLabel: semanticsLabel,
         ),
-      if (data.presentation == TaskAgentIdentityPresentation.split ||
-          ((data.presentation == TaskAgentIdentityPresentation.broken ||
-                  data.presentation ==
-                      TaskAgentIdentityPresentation.disabled) &&
-              (data.reportRoute != null || data.reportAttributionUnavailable)))
+      if (data.showsReportRow)
         _ReportIdentityRow(
           label: messages.taskAgentThisReportHeader,
           tiers: (data.reportAttributionUnavailable || data.reportRoute == null)
