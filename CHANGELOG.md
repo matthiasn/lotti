@@ -4,6 +4,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.106]
+
+### Changed
+
+- **Onboarding looks the same from step to step.** Every step now has one
+  layout: Lotti standing in the same place, her speech bubble under her at one
+  size, and what the step asks for in a tray below with the main button at its
+  foot, where it stays even when a list opens. Three segments at the top show
+  how far along you are with the key, your areas and your first task, and the
+  same close button is there on every step. The welcome lists those three
+  things and starts on the key; the sample data is still one tap away. On a
+  phone onboarding takes the whole screen.
+- **Choosing a provider is one tap to choose and one to go on.** Mistral is
+  chosen to start with; tapping another card chooses it, and the button says
+  which one you will continue with.
+- **The first task starts from a button.** "Tap to talk" opens the
+  microphone, and the recorder appears once you are speaking; "Done" ends the
+  recording, "Start over" drops it, and "Open task" opens what it became.
+- **Back no longer ends onboarding by accident.** Escape and the system back
+  gesture now go back one step, as the arrow does, and only close onboarding
+  from the welcome.
+
+### Fixed
+
+- **Voices vanished from the cloud voice list while you were trying them.**
+  The Female/Male filter followed the voice you had just tapped. Picking a
+  voice the service labels neither female nor male — ElevenLabs' River is
+  "neutral" — left neither side selected and hid every female and male voice.
+  A list that had opened on the male side could jump to female when an
+  unlabelled voice was picked there. The filter now opens on Male when the
+  voice in use is male and on Female otherwise, and only moves when you tap
+  it; a neutral or unlabelled voice is listed under both sides.
+- **A suggested time entry now says which day it is for.** When you asked the
+  task agent to log time for yesterday or for last Wednesday, each suggestion
+  showed only the hours — `09:00–12:30` — so a list of sessions from different
+  days could not be told apart, or checked against anything, before you
+  confirmed them. Every time entry suggestion now leads with the day, written
+  the way your language writes dates (`Wed, Jul 8, 09:00–12:30`), names both
+  days when a session runs past midnight, and adds the year when it is not
+  this one.
+
 ## [1.1.105]
 
 ### Added
