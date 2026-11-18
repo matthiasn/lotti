@@ -5364,7 +5364,7 @@
   "relationshipAddToTimeline": "Adăugați în cronologia persoanei {name}",
   "relationshipAgentAsOfBand": "{band} · actualizat {age}",
   "relationshipAgentFailedBody": "Furnizorul a returnat o eroare înainte ca briefingul să fie scris. Check-in-urile dvs. sunt neschimbate.",
-  "relationshipAgentFailedNoModel": "Nu este configurat niciun model pentru briefinguri. Alegeți unul din rândul modelului de mai jos.",
+  "relationshipAgentFailedNoModel": "Nu este configurat niciun model pentru briefinguri. Alegeți unul din rândul modelului de mai jos sau adăugați unul în Setări AI.",
   "relationshipAgentFailedPlain": "Ultima rulare a eșuat",
   "relationshipAgentLastRunFailed": "Ultima rulare a eșuat · {time}",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Niciun briefing încă. „Actualizați acum“ scrie unul de îndată ce înregistrați un check-in; nu vede niciodată telefonul sau e-mailul.} =1{Niciun briefing încă. „Actualizați acum“ scrie unul din check-in-ul dumneavoastră; nu vede niciodată telefonul sau e-mailul.} few{Niciun briefing încă. „Actualizați acum“ scrie unul din cele {count} check-in-uri; nu vede niciodată telefonul sau e-mailul.} other{Niciun briefing încă. „Actualizați acum“ scrie unul din cele {count} de check-in-uri; nu vede niciodată telefonul sau e-mailul.}}",

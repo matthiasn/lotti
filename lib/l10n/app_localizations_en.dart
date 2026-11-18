@@ -13899,7 +13899,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'No model is set up for briefings. Choose one in the model row below.';
+      'No model is set up for briefings. Choose one in the model row below, or add one in AI Settings.';
 
   @override
   String get relationshipAgentFailedPlain => 'Last run failed';

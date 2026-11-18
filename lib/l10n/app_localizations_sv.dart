@@ -13988,7 +13988,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'Ingen modell är inställd för briefingar. Välj en på modellraden nedan.';
+      'Ingen modell är inställd för briefingar. Välj en på modellraden nedan, eller lägg till en under AI-inställningar.';
 
   @override
   String get relationshipAgentFailedPlain => 'Senaste körningen misslyckades';

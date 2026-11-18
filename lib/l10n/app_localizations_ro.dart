@@ -14235,7 +14235,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'Nu este configurat niciun model pentru briefinguri. Alegeți unul din rândul modelului de mai jos.';
+      'Nu este configurat niciun model pentru briefinguri. Alegeți unul din rândul modelului de mai jos sau adăugați unul în Setări AI.';
 
   @override
   String get relationshipAgentFailedPlain => 'Ultima rulare a eșuat';

@@ -9000,7 +9000,7 @@
     }
   },
   "relationshipAgentFailedBody": "The provider returned an error before the briefing was written. Your check-ins are unchanged.",
-  "relationshipAgentFailedNoModel": "No model is set up for briefings. Choose one in the model row below.",
+  "relationshipAgentFailedNoModel": "No model is set up for briefings. Choose one in the model row below, or add one in AI Settings.",
   "relationshipAgentFailedPlain": "Last run failed",
   "relationshipAgentLastRunFailed": "Last run failed · {time}",
   "@relationshipAgentLastRunFailed": {

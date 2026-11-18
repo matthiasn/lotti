@@ -5953,7 +5953,7 @@
   "relationshipAddToTimeline": "Adicionar à cronologia de {name}",
   "relationshipAgentAsOfBand": "{band} · atualizado {age}",
   "relationshipAgentFailedBody": "O fornecedor devolveu um erro antes de o briefing ser escrito. Os teus check-ins estão inalterados.",
-  "relationshipAgentFailedNoModel": "Não há nenhum modelo configurado para briefings. Escolhe um na linha do modelo, em baixo.",
+  "relationshipAgentFailedNoModel": "Não há nenhum modelo configurado para briefings. Escolhe um na linha do modelo, em baixo, ou adiciona um em Definições de IA.",
   "relationshipAgentFailedPlain": "Última execução falhou",
   "relationshipAgentLastRunFailed": "Última execução falhou · {time}",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Ainda sem briefing. „Atualizar agora“ escreve um assim que registares um check-in; nunca vê o telefone nem o e-mail.} =1{Ainda sem briefing. „Atualizar agora“ escreve um a partir do teu check-in; nunca vê o telefone nem o e-mail.} other{Ainda sem briefing. „Atualizar agora“ escreve um a partir dos teus {count} check-ins; nunca vê o telefone nem o e-mail.}}",

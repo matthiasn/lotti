@@ -14212,7 +14212,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'Aucun modèle n\'est configuré pour les briefings. Choisis-en un dans la ligne du modèle, en bas.';
+      'Aucun modèle n\'est configuré pour les briefings. Choisis-en un dans la ligne du modèle, en bas, ou ajoutes-en un dans Réglages IA.';
 
   @override
   String get relationshipAgentFailedPlain => 'Dernière exécution échouée';

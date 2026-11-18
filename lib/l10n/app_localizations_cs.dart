@@ -14169,7 +14169,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'Pro briefingy není nastaven žádný model. Vyber ho v řádku s modelem dole.';
+      'Pro briefingy není nastaven žádný model. Vyber ho v řádku s modelem dole, nebo ho přidej v Nastavení AI.';
 
   @override
   String get relationshipAgentFailedPlain => 'Poslední běh selhal';

@@ -5954,7 +5954,7 @@
   "relationshipAddToTimeline": "Lägg till i tidslinjen för {name}",
   "relationshipAgentAsOfBand": "{band} · uppdaterad {age}",
   "relationshipAgentFailedBody": "Leverantören svarade med ett fel innan briefingen skrevs. Dina avstämningar är oförändrade.",
-  "relationshipAgentFailedNoModel": "Ingen modell är inställd för briefingar. Välj en på modellraden nedan.",
+  "relationshipAgentFailedNoModel": "Ingen modell är inställd för briefingar. Välj en på modellraden nedan, eller lägg till en under AI-inställningar.",
   "relationshipAgentFailedPlain": "Senaste körningen misslyckades",
   "relationshipAgentLastRunFailed": "Senaste körningen misslyckades · {time}",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Ingen briefing än. „Uppdatera nu“ skriver en så fort du loggat en avstämning; den ser aldrig telefonnummer eller e-post.} =1{Ingen briefing än. „Uppdatera nu“ skriver en utifrån din avstämning; den ser aldrig telefonnummer eller e-post.} other{Ingen briefing än. „Uppdatera nu“ skriver en utifrån dina {count} avstämningar; den ser aldrig telefonnummer eller e-post.}}",

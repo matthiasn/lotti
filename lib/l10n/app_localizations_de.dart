@@ -14064,7 +14064,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'Für Briefings ist kein Modell eingerichtet. Wähle eins in der Modellzeile unten.';
+      'Für Briefings ist kein Modell eingerichtet. Wähle eins in der Modellzeile unten oder füge eins in den KI-Einstellungen hinzu.';
 
   @override
   String get relationshipAgentFailedPlain => 'Letzter Lauf fehlgeschlagen';

@@ -5364,7 +5364,7 @@
   "relationshipAddToTimeline": "Zur Zeitleiste von {name} hinzufügen",
   "relationshipAgentAsOfBand": "{band} · Stand {age}",
   "relationshipAgentFailedBody": "Der Anbieter hat einen Fehler gemeldet, bevor das Briefing geschrieben wurde. Deine Check-ins sind unverändert.",
-  "relationshipAgentFailedNoModel": "Für Briefings ist kein Modell eingerichtet. Wähle eins in der Modellzeile unten.",
+  "relationshipAgentFailedNoModel": "Für Briefings ist kein Modell eingerichtet. Wähle eins in der Modellzeile unten oder füge eins in den KI-Einstellungen hinzu.",
   "relationshipAgentFailedPlain": "Letzter Lauf fehlgeschlagen",
   "relationshipAgentLastRunFailed": "Letzter Lauf fehlgeschlagen · {time}",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Noch kein Briefing. „Jetzt aktualisieren“ schreibt eins, sobald du einen Check-in erfasst hast; Telefonnummer und E-Mail sieht es nie.} =1{Noch kein Briefing. „Jetzt aktualisieren“ schreibt eins aus deinem Check-in; Telefonnummer und E-Mail sieht es nie.} other{Noch kein Briefing. „Jetzt aktualisieren“ schreibt eins aus deinen {count} Check-ins; Telefonnummer und E-Mail sieht es nie.}}",

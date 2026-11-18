@@ -1583,6 +1583,11 @@ void main() {
         find.text('Sources: 2 check-ins · contact channels never sent'),
         findsOneWidget,
       );
+      // …and neither is why the band says what it does.
+      expect(
+        find.byKey(const ValueKey('relationship-agent-band-rationale')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('no face shows the cost, even with usage on file', (
@@ -1860,6 +1865,27 @@ void main() {
       expect(find.byType(AgentMarkdownView), findsOneWidget);
       expect(find.text('Pip is in good spirits.'), findsOneWidget);
       expect(updateNow, findsOneWidget);
+    });
+
+    testWidgets('an update running behind a folded card says so in its header '
+        '— the footer and its Thinking… are not on screen', (tester) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(),
+        running: true,
+        folded: true,
+      );
+
+      expect(statusText(tester), 'Writing the briefing…');
+      expect(
+        find.descendant(
+          of: find.byType(TldrHeader),
+          matching: find.byType(DesignSystemSpinner),
+        ),
+        findsOneWidget,
+      );
+      expect(updateStrip, findsNothing);
     });
 
     testWidgets('a face that asks something of the reader is never folded', (

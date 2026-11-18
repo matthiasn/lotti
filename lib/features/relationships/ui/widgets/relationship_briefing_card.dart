@@ -123,17 +123,19 @@ class _AgentCard extends StatelessWidget {
         metaColor: ai.metaText,
       ),
       // A first briefing has no age or band to show yet: the spinner and
-      // what the agent is doing. An update keeps the current face's line —
-      // the footer's Thinking… is the one busy signal.
-      RelationshipAgentCardState.running when report == null => _StatusLine(
-        leading: const DesignSystemSpinner(
-          style: DesignSystemSpinnerStyle.plain,
-          size: IconSizes.s,
+      // what the agent is doing. So has a folded card, whose footer — and
+      // its Thinking… — is not on screen. An open update keeps the current
+      // face's line, and the footer's Thinking… is the one busy signal.
+      RelationshipAgentCardState.running when report == null || folded =>
+        _StatusLine(
+          leading: const DesignSystemSpinner(
+            style: DesignSystemSpinnerStyle.plain,
+            size: IconSizes.s,
+          ),
+          tiers: [messages.relationshipAgentWriting],
+          color: ai.bodyText,
+          liveRegion: true,
         ),
-        tiers: [messages.relationshipAgentWriting],
-        color: ai.bodyText,
-        liveRegion: true,
-      ),
       // A past event in the same grammar as "as of": how long ago, not a
       // clock time that reads as an appointment.
       RelationshipAgentCardState.failed => _StatusLine(
@@ -241,8 +243,9 @@ class _AgentCard extends StatelessWidget {
     final hasMore =
         resolveReportAdditional(current)?.trim().isNotEmpty ?? false;
     final readingCurrent = state == RelationshipAgentCardState.current;
-    final rationale = readingCurrent && expanded ? health?.rationale : null;
-    final showsSources = readingCurrent && (expanded || !hasMore);
+    final opened = expanded || !hasMore;
+    final rationale = readingCurrent && opened ? health?.rationale : null;
+    final showsSources = readingCurrent && opened;
     final trailing = rationale == null && !showsSources
         ? null
         : Column(

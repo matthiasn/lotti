@@ -5954,7 +5954,7 @@
   "relationshipAddToTimeline": "Tilføj til tidslinjen for {name}",
   "relationshipAgentAsOfBand": "{band} · opdateret {age}",
   "relationshipAgentFailedBody": "Udbyderen svarede med en fejl, før briefingen blev skrevet. Dine check-ins er uændrede.",
-  "relationshipAgentFailedNoModel": "Der er ikke sat en model op til briefinger. Vælg en i modellinjen nedenfor.",
+  "relationshipAgentFailedNoModel": "Der er ikke sat en model op til briefinger. Vælg en i modellinjen nedenfor, eller tilføj en under AI-indstillinger.",
   "relationshipAgentFailedPlain": "Seneste kørsel mislykkedes",
   "relationshipAgentLastRunFailed": "Seneste kørsel mislykkedes · {time}",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Ingen briefing endnu. „Opdater nu“ skriver en, når du har logget et check-in; den ser aldrig telefonnummer eller e-mail.} =1{Ingen briefing endnu. „Opdater nu“ skriver en ud fra dit check-in; den ser aldrig telefonnummer eller e-mail.} other{Ingen briefing endnu. „Opdater nu“ skriver en ud fra dine {count} check-ins; den ser aldrig telefonnummer eller e-mail.}}",

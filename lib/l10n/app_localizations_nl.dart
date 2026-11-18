@@ -14002,7 +14002,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'Er is geen model ingesteld voor briefings. Kies er een in de modelregel hieronder.';
+      'Er is geen model ingesteld voor briefings. Kies er een in de modelregel hieronder, of voeg er een toe in AI-instellingen.';
 
   @override
   String get relationshipAgentFailedPlain => 'Laatste run mislukt';

@@ -23308,7 +23308,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentFailedNoModel.
   ///
   /// In en, this message translates to:
-  /// **'No model is set up for briefings. Choose one in the model row below.'**
+  /// **'No model is set up for briefings. Choose one in the model row below, or add one in AI Settings.'**
   String get relationshipAgentFailedNoModel;
 
   /// No description provided for @relationshipAgentFailedPlain.

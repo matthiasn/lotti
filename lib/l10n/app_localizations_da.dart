@@ -13965,7 +13965,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'Der er ikke sat en model op til briefinger. Vælg en i modellinjen nedenfor.';
+      'Der er ikke sat en model op til briefinger. Vælg en i modellinjen nedenfor, eller tilføj en under AI-indstillinger.';
 
   @override
   String get relationshipAgentFailedPlain => 'Seneste kørsel mislykkedes';
