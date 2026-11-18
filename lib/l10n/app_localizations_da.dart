@@ -13960,15 +13960,12 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentBriefNow => 'Brief nu';
-
-  @override
   String get relationshipAgentFailedBody =>
       'Udbyderen svarede med en fejl, før briefingen blev skrevet. Dine check-ins er uændrede.';
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'Der er ikke sat en model op til briefinger. Vælg en under AI-indstillinger › Agenter. Detaljer findes under fanen Aktivitet.';
+      'Der er ikke sat en model op til briefinger. Vælg en i modellinjen nedenfor.';
 
   @override
   String get relationshipAgentFailedPlain => 'Seneste kørsel mislykkedes';
@@ -13984,11 +13981,11 @@ class AppLocalizationsDa extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Ingen briefing endnu. „Brief nu“ skriver en ud fra dine $count check-ins; den ser aldrig telefonnummer eller e-mail.',
+          'Ingen briefing endnu. „Opdater nu“ skriver en ud fra dine $count check-ins; den ser aldrig telefonnummer eller e-mail.',
       one:
-          'Ingen briefing endnu. „Brief nu“ skriver en ud fra dit check-in; den ser aldrig telefonnummer eller e-mail.',
+          'Ingen briefing endnu. „Opdater nu“ skriver en ud fra dit check-in; den ser aldrig telefonnummer eller e-mail.',
       zero:
-          'Ingen briefing endnu. „Brief nu“ skriver en, når du har logget et check-in; den ser aldrig telefonnummer eller e-mail.',
+          'Ingen briefing endnu. „Opdater nu“ skriver en, når du har logget et check-in; den ser aldrig telefonnummer eller e-mail.',
     );
     return '$_temp0';
   }
@@ -14010,9 +14007,6 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get relationshipAgentPausedBody =>
       'Briefinger holder pause, mens denne person er i dvale eller arkiveret.';
-
-  @override
-  String get relationshipAgentSeeActivity => 'Se aktivitet';
 
   @override
   String relationshipAgentSources(int count) {
@@ -14060,9 +14054,6 @@ class AppLocalizationsDa extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get relationshipBriefingOptions => 'Indstillinger for briefing';
 
   @override
   String get relationshipBriefingRequestFailed =>

@@ -65,19 +65,18 @@ overdue person's warning pill opens the same meeting sheet.
 
 The agent card has six states: not enrolled, no briefing, running, failed,
 current and out of date — the last not reached today, since nothing yet
-marks a relationship briefing stale. One status line under the title says which, in
-that state's colour. A current briefing, and one being written, close the
-way the task agent's card does: *Update now* always in reach (*Thinking…*
-while a briefing is written), on one line with the model row naming the model,
-the provider and the cost so far; tapping the header opens the agent's
-activity. The other states offer one quiet action, seeing the agent's
-activity, and one primary: brief now, choose a model, retry or update. Without reminders the card is an offer:
-how often, and *Turn on reminders*. An out-of-date briefing shows
-its age in the header; open task proposals are counted by their own band
-under the body. A current briefing names its sources, and why its band says
+marks a relationship briefing stale. One status line under the title says which, its colour on
+its glyph. Every face closes the way the task agent's card does, on one line:
+the model row naming the model and provider, and *Update now* — *Thinking…*
+while a briefing is written, waiting while no model is set up. Tapping the
+header, or *Open agent internals* beside *Read more*, opens the agent's
+activity; the model row opens the model setup. Without reminders the card is an offer:
+how often, and *Turn on reminders*. An out-of-date briefing says its age
+on the status line; open task proposals are counted by their own band
+under the footer. A current briefing names its sources, and why its band says
 what it does, with its full text. The model and provider are named before
-anything is sent, so *Brief now* and *Update now*
-start at once, with no confirmation; while a new briefing is written the
+anything is sent, so *Update now*
+starts at once, with no confirmation; while a new briefing is written the
 previous one stays readable under the spinner, and after a failed run it
 stays readable under the failure, with its age. The agent keeps private notes
 between briefings — a corrected name, a complaint about its briefing, how

@@ -1438,11 +1438,11 @@ removed:
 - **The provider is named on the card, not confirmed per tap** (ADR 0061,
   refining ADR 0037 Decision 3). The card's model row — `{model} · via
   {provider}`, on every enrolled face before and during a run — is the
-  disclosure; *Brief now* and *Update now* call `requestBriefing` at once,
+  disclosure; *Update now* calls `requestBriefing` at once,
   with no consent sheet and no acknowledgement toast (the running face is the
   acknowledgement). A failure to enqueue still toasts. There is no pre-tap
   route resolution any more: a wake whose route resolves to nothing is
-  stamped failed, and the failed face offers *Choose a model*, which opens
+  stamped failed, and the failed face points at the model row, which opens
   `AgentModelSheet`.
 
 ## The briefing wears the shared AI panel
@@ -1467,11 +1467,12 @@ rather than from any relationship-specific code:
 * Retuning the wash, border or radius happens once in `ai_card_chrome.dart`
   and lands on all three surfaces together.
 
-The footer includes the shared model identity row — with the agent's token
-cost riding it as `trailingMeta`, so `model · via provider · 18.4K tokens`
-is one line; where no wording fits with the cost, the cost is dropped rather
-than cut mid-number — and a link to `AgentModelSheet`, alongside the
-relationship-specific check-in and briefing controls. Report freshness
+The footer is the task card's one line on every enrolled face:
+`AgentAutomationRow.compact` with the shared model identity row
+(`model · via provider`, opening `AgentModelSheet`) in its `leading` slot and
+the shared *Update now* trigger on the trailing edge. Above the large-text bar
+(`TextScales.large`) the model row takes its own line over the trigger. The
+card shows no token count; usage lives in the agent internals. Report freshness
 describes the stored report; model availability describes the current
 configuration and is a separate signal.
 
@@ -1493,33 +1494,36 @@ rides the design system's presence dot (`DesignSystemBadge.dot`, toned by
 `relationshipHealthBandTone`) in the status line's glyph slot, so the
 judgement is carried by more than its word (*steady* is the hueless
 `neutral` tone, never the accent that means pressable on the same card);
-every status glyph is centred on the first line by a computed offset, so at
-1.6× it still sits on the words.
+every status glyph — icon, spinner, or the dot in an `IconSizes.s` box — is
+centred on the first line by a computed offset, so at 1.6× it still sits on
+the words, and the status word starts at one x on every face.
 
-**The band says why.** Directly under the status line, a current briefing
-renders `RelationshipHealthMetrics.rationale` — the one sentence the contract
+**The band says why.** Inside the expanded reading of a current briefing, a
+meta footnote above *Show less* renders `RelationshipHealthMetrics.rationale` — the one sentence the contract
 requires of the model ("One sentence tracing the band to specific check-in
 evidence"), stored as report provenance under
 `relationship_health_rationale`. It had been required, produced and persisted
 since the band existed, and read by nothing, so a verdict on a person arrived
-with no way to check it. It sits with the band rather than behind *Read more*
-— an unexplained verdict is not a summary — and is capped at three lines so a
-model that writes an essay cannot push the briefing itself off the card. Only
+with no way to check it. It sits with the sources line, through `TldrBody`'s
+`trailing` slot, as one footnote block a paragraph below the prose, and is
+capped at three lines so a model that writes an essay cannot push the
+briefing itself off the card. Only
 the current face carries it: out of date, the status line drops the band for
 its warning, so the sentence would explain something no longer on screen. The not-enrolled
 face wears `TldrHeader`'s plain badge — a neutral tile, not the AI accent it
-disclaims — and its privacy note rides the action row's leading slot. The header's trailing rail holds only an out-of-date
-briefing's age (`6 days old`, an outlined tag in the meta ink, so the status
-line's warning ink is the one orange thing on the face and the tag never
-competes for the first read), which is what that rail — capped at half the header width,
-ellipsizing — can carry without truncating a judgement. The status line is
+disclaims — and its privacy note rides the action row's leading slot. An out-of-date
+briefing a day old or more says its age as the status line's last segment
+(`Out of date · new check-in Wed 12 Aug · 6 days old`), not in a tag beside
+it. The status line is
 a `DsTieredText` that is a live region on the transitions only — running,
 failed and out of date, announced as the state word without the age behind
 it, so a resting "as of" never re-reads its own ticking — and one that
 survives the shared header, which excludes only its badge and title from
-semantics so the status can speak for itself. The alert ink is the state
-word's alone: the detail after the separator (`· 20 min ago`, `· new
-check-in Thursday`) reads in the meta ink through `DsTieredText.tailStyle`.
+semantics so the status can speak for itself. Every face uses one ink
+grammar: the state word in reading ink, the detail after the separator
+(`· 20 min ago`, `· new check-in Thursday`) in the meta ink through
+`DsTieredText.tailStyle`, and an alert colour only on the glyph — as the task
+card's freshness cluster does.
 It sheds its date or time before it
 wraps (`Out of date · new check-in Thursday` → `Out of date · new check-in`
 → `Out of date`; `Last run failed · 19 min ago` → `Last run failed` — a past
@@ -1578,11 +1582,18 @@ briefings without being asked each time — so the one privacy claim on the
 surface described the state the reader was one tap from leaving and said
 nothing about the one they were entering. What the agent sends belongs
 somewhere it can be explained, not in a caption that expires on tap.
-| No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · *See activity* · **Brief now** |
-| Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · the briefing being replaced, still readable (TL;DR + Read more), or no body before the first — never a duration estimate · one footer line, the task card's strip (`AgentAutomationRow.compact`) with the model row in its `leading` slot and the trigger reading *Thinking…*, disabled |
-| Failed | `lastWakeFailed` — the state row's failed watermark is newer than its completed one — and newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · the briefing it failed to replace, if there is one, kept readable under that with its age · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
-| Current | report, not stale | `{band} · as of {ago}` · TL;DR + Read more · one footer line, the task card's strip: the model row naming model, provider and cost (ADR 0061) in its `leading` slot, where the task card has its freshness word — the status line already dates the briefing — and **Update now** (tertiary, refresh glyph) on the trailing edge · sources line with the full briefing: behind *Read more*, or at once when the TL;DR is the whole of it |
-| Out of date | `AgentStateEntity.isReportStale` | `Out of date · new check-in {day}` in warning ink, `{n} days old` pill once a day old · body · *See activity* · **Update now** (primary) — no sources line, since the count would include the check-in it missed |
+| No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Update now* would read, and that it never sees a channel · the footer line |
+| Running | `agentIsRunningProvider` | with a briefing on file, the current face's `{band} · as of {ago}` and that briefing, still readable; before the first, a spinner and `Writing the briefing…` — never a duration estimate · the footer line, its trigger reading *Thinking…*, disabled |
+| Failed | `lastWakeFailed` — the state row's failed watermark is newer than its completed one — and newer than the report | error glyph · `Last run failed · {ago}` · the provider returned an error, your check-ins are unchanged — or that no model is set up, choose one in the model row — as a caption above the briefing it failed to replace, if there is one, which keeps its age · the footer line |
+| Current | report, not stale | band dot · `{band} · as of {ago}` · TL;DR + *Read more* + *Open agent internals* · the footer line · the band's reason and the sources line as one footnote with the full briefing: behind *Read more*, or at once when the TL;DR is the whole of it |
+| Out of date | `AgentStateEntity.isReportStale` | warning glyph · `Out of date · new check-in {day}`, ` · {n} days old` once a day old · body · the footer line — no sources line, since the count would include the check-in it missed |
+
+**The footer line** is the same on every enrolled face, the task card's:
+`AgentAutomationRow.compact`, the model row (`model · via provider`, ADR 0061)
+leading where the task card has its freshness word, and *Update now*
+(tertiary, dense, refresh glyph) trailing — *Thinking…* while a briefing is
+written, disabled while no model is set up. The proposals band follows it, as
+on the task card.
 
 Open task proposals are counted once, by the proposals band beneath the
 body (`2 pending`), never again in the header: a state said twice is a
@@ -1591,19 +1602,19 @@ sources line (`Sources: 6 check-ins · contact details never sent`) is part
 of the full reading — it appears with the whole briefing, behind *Read more*
 or at once when the TL;DR is all there is — so the folded card stays status ·
 TL;DR · one next step. Logging a check-in and calling are the page's verbs,
-held by its sticky action bar, not the card's: the waiting faces' quiet
-action is *See activity*; the calm faces (current, running) have no footer
-band and no menu — their header opens the agent's activity, as on the task
-card, and their model row opens *Choose a model*.
+held by its sticky action bar, not the card's. No face has a menu or a
+*See activity* button: the header and *Open agent internals* beside *Read
+more* open the agent's activity, as on the task card, and the model row opens
+the model setup.
 
 ```mermaid
 stateDiagram-v2
   [*] --> NotEnrolled
   NotEnrolled --> NoBriefing: Remind me about {name} (agent created)
-  NoBriefing --> Running: Brief now / wake
+  NoBriefing --> Running: Update now / wake
   Running --> Current: report written
   Running --> Failed: wake failed
-  Failed --> Running: Try again / Choose a model, then wake
+  Failed --> Running: Update now / a model chosen in the model row, then wake
   Current --> OutOfDate: check-in newer than the report (reportStaleAt)
   OutOfDate --> Running: Update now / refresh wake
   note right of OutOfDate : unreachable today — nothing writes reportStaleAt for a relationship agent

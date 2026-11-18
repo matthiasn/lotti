@@ -8999,9 +8999,8 @@
       }
     }
   },
-  "relationshipAgentBriefNow": "Brief now",
   "relationshipAgentFailedBody": "The provider returned an error before the briefing was written. Your check-ins are unchanged.",
-  "relationshipAgentFailedNoModel": "No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.",
+  "relationshipAgentFailedNoModel": "No model is set up for briefings. Choose one in the model row below.",
   "relationshipAgentFailedPlain": "Last run failed",
   "relationshipAgentLastRunFailed": "Last run failed · {time}",
   "@relationshipAgentLastRunFailed": {
@@ -9011,7 +9010,7 @@
       }
     }
   },
-  "relationshipAgentNoBriefingBody": "{count, plural, =0{No briefing yet. Brief now writes one once you have logged a check-in; it never sees the phone number or email.} =1{No briefing yet. Brief now writes one from your check-in; it never sees the phone number or email.} other{No briefing yet. Brief now writes one from your {count} check-ins; it never sees the phone number or email.}}",
+  "relationshipAgentNoBriefingBody": "{count, plural, =0{No briefing yet. Update now writes one once you have logged a check-in; it never sees the phone number or email.} =1{No briefing yet. Update now writes one from your check-in; it never sees the phone number or email.} other{No briefing yet. Update now writes one from your {count} check-ins; it never sees the phone number or email.}}",
   "@relationshipAgentNoBriefingBody": {
     "placeholders": {
       "count": {
@@ -9040,7 +9039,6 @@
     "description": "The out-of-date status line's middle tier when the day does not fit beside the age pill."
   },
   "relationshipAgentPausedBody": "Briefings pause while this person is dormant or archived.",
-  "relationshipAgentSeeActivity": "See activity",
   "relationshipAgentSources": "Sources: {count, plural, =1{1 check-in} other{{count} check-ins}} · contact channels never sent",
   "@relationshipAgentSources": {
     "placeholders": {
@@ -9084,10 +9082,6 @@
         "type": "int"
       }
     }
-  },
-  "relationshipBriefingOptions": "Briefing options",
-  "@relationshipBriefingOptions": {
-    "description": "Tooltip of the briefing card's overflow menu."
   },
   "relationshipBriefingRequestFailed": "Could not request the briefing.",
   "relationshipBriefingTitle": "Briefing",

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -21,7 +20,6 @@ import 'package:lotti/features/design_system/components/badges/design_system_bad
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -62,11 +60,9 @@ class _AgentCard extends StatelessWidget {
     required this.report,
     required this.agentState,
     required this.health,
-    required this.totalTokens,
     required this.identityData,
     required this.modelMissing,
     required this.expanded,
-    required this.requesting,
     required this.onToggleExpanded,
     required this.folded,
     required this.onOpen,
@@ -86,11 +82,9 @@ class _AgentCard extends StatelessWidget {
   final AgentReportEntity? report;
   final AgentStateEntity? agentState;
   final RelationshipHealthMetrics? health;
-  final int totalTokens;
   final TaskAgentModelIdentityViewData identityData;
   final bool modelMissing;
   final bool expanded;
-  final bool requesting;
   final VoidCallback onToggleExpanded;
 
   /// Whether a calm face shows its header row alone ([RelationshipBriefingCard.folded]).
@@ -101,9 +95,7 @@ class _AgentCard extends StatelessWidget {
   final VoidCallback onChooseModel;
 
   /// The faces that ask nothing of the reader: a current briefing, and one
-  /// being written. They close the way the task card does — *Update now*
-  /// under the reading, and the model row naming the provider it would send
-  /// to (ADR 0061) — rather than with the waiting faces' footer band.
+  /// being written. Only these fold to their header row on a phone.
   bool get _calm =>
       state == RelationshipAgentCardState.current ||
       state == RelationshipAgentCardState.running;
@@ -119,6 +111,7 @@ class _AgentCard extends StatelessWidget {
     return switch (state) {
       RelationshipAgentCardState.noBriefing => _StatusLine(
         icon: LottiIcons.timer,
+        glyphColor: ai.metaText,
         tiers: [
           if (due != null)
             messages.relationshipAgentWatchingNextLook(
@@ -126,22 +119,26 @@ class _AgentCard extends StatelessWidget {
             ),
           messages.relationshipAgentWatching,
         ],
-        color: ai.metaText,
+        color: ai.bodyText,
+        metaColor: ai.metaText,
       ),
-      RelationshipAgentCardState.running => _StatusLine(
+      // A first briefing has no age or band to show yet: the spinner and
+      // what the agent is doing. An update keeps the current face's line —
+      // the footer's Thinking… is the one busy signal.
+      RelationshipAgentCardState.running when report == null => _StatusLine(
         leading: const DesignSystemSpinner(
           style: DesignSystemSpinnerStyle.plain,
           size: IconSizes.s,
         ),
         tiers: [messages.relationshipAgentWriting],
-        // The spinner says busy; the words stay in the meta ink.
-        color: ai.metaText,
+        color: ai.bodyText,
         liveRegion: true,
       ),
       // A past event in the same grammar as "as of": how long ago, not a
       // clock time that reads as an appointment.
       RelationshipAgentCardState.failed => _StatusLine(
         icon: LottiIcons.error,
+        glyphColor: tokens.colors.alert.error.ink,
         tiers: [
           if (failedAt != null)
             messages.relationshipAgentLastRunFailed(
@@ -149,22 +146,27 @@ class _AgentCard extends StatelessWidget {
             ),
           messages.relationshipAgentFailedPlain,
         ],
-        color: tokens.colors.alert.error.ink,
+        color: ai.bodyText,
         metaColor: ai.metaText,
         liveRegion: true,
       ),
       // The band as a colour as well as a word — a dot in the glyph slot,
       // in the band's own accent, the one status the card said only in text.
-      RelationshipAgentCardState.current => _StatusLine(
+      RelationshipAgentCardState.current ||
+      RelationshipAgentCardState.running => _StatusLine(
         leading: switch (health?.band) {
           null => null,
-          final band => DesignSystemBadge.dot(
-            key: const ValueKey('relationship-agent-band-dot'),
-            tone: relationshipHealthBandTone(band),
-            excludeFromSemantics: true,
+          final band => SizedBox.square(
+            dimension: IconSizes.s,
+            child: Center(
+              child: DesignSystemBadge.dot(
+                key: const ValueKey('relationship-agent-band-dot'),
+                tone: relationshipHealthBandTone(band),
+                excludeFromSemantics: true,
+              ),
+            ),
           ),
         },
-        leadingSize: tokens.spacing.step3,
         tiers: [
           switch (health) {
             null => messages.goalDetailReadAsOf(_age(messages)),
@@ -174,7 +176,8 @@ class _AgentCard extends StatelessWidget {
             ),
           },
         ],
-        color: ai.metaText,
+        color: health == null ? ai.metaText : ai.bodyText,
+        metaColor: ai.metaText,
         // Live only as it arrives: a briefing finishing or a failure
         // clearing is news; the age ticking afterwards is not.
         liveRegion: announceArrival,
@@ -183,16 +186,21 @@ class _AgentCard extends StatelessWidget {
       // the status never orphans a date under itself next to a pill.
       RelationshipAgentCardState.outOfDate => _StatusLine(
         icon: LottiIcons.warning,
+        glyphColor: tokens.colors.alert.warning.ink,
         tiers: [
-          if (latest != null) ...[
-            messages.relationshipAgentOutOfDateNewCheckIn(
-              relationshipDayLabelOf(context, latest.meta.dateFrom),
-            ),
-            messages.relationshipAgentOutOfDateNewCheckInShort,
-          ],
+          for (final tier in [
+            if (latest != null) ...[
+              messages.relationshipAgentOutOfDateNewCheckIn(
+                relationshipDayLabelOf(context, latest.meta.dateFrom),
+              ),
+              messages.relationshipAgentOutOfDateNewCheckInShort,
+            ],
+            messages.taskAgentStatusOutOfDate,
+          ])
+            ?_withAge(tier, messages),
           messages.taskAgentStatusOutOfDate,
         ],
-        color: tokens.colors.alert.warning.ink,
+        color: ai.bodyText,
         metaColor: ai.metaText,
         liveRegion: true,
       ),
@@ -207,29 +215,17 @@ class _AgentCard extends StatelessWidget {
     };
   }
 
+  /// [tier] with how old the briefing is, once it is a day old: the age
+  /// rides the status line as its tail, rather than a pill beside it.
+  String? _withAge(String tier, AppLocalizations messages) {
+    final days = clock.now().difference(report!.createdAt).inDays;
+    return days < 1
+        ? tier
+        : '$tier · ${messages.relationshipBriefingAge(days)}';
+  }
+
   String _age(AppLocalizations messages) =>
       relativeAgoLabel(messages, clock.now().difference(report!.createdAt));
-
-  /// The header's trailing pill: on an out-of-date briefing, how old it
-  /// is — a neutral tag, so the status line's warning ink is the one orange
-  /// thing on the face. Open proposals are not counted here: the band
-  /// beneath carries its own count, and a state said twice is a state said
-  /// badly.
-  Widget? _pill(BuildContext context, AppLocalizations messages) {
-    if (state != RelationshipAgentCardState.outOfDate) return null;
-    final days = clock.now().difference(report!.createdAt).inDays;
-    if (days < 1) return null;
-    final ai = context.designTokens.colors.aiCard;
-    return DsPill(
-      key: const ValueKey('relationship-briefing-age'),
-      // Outlined in the meta ink: a fact beside the status line, never a
-      // second thing competing with it for the first read.
-      variant: DsPillVariant.outline,
-      shape: DsPillShape.tag,
-      color: ai.metaText,
-      label: messages.relationshipBriefingAge(days),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -237,6 +233,58 @@ class _AgentCard extends StatelessWidget {
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
     final current = report;
+    // What the expanded reading says about itself, above its Show less:
+    // why the band says what it does, then what the briefing read. Only a
+    // current briefing can say what it was written from — on an out-of-date
+    // one the count already includes the check-in it missed — and only once
+    // the reader opened it, unless there is nothing to open.
+    final hasMore =
+        resolveReportAdditional(current)?.trim().isNotEmpty ?? false;
+    final readingCurrent = state == RelationshipAgentCardState.current;
+    final rationale = readingCurrent && expanded ? health?.rationale : null;
+    final showsSources = readingCurrent && (expanded || !hasMore);
+    final trailing = rationale == null && !showsSources
+        ? null
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (rationale != null)
+                _BandRationale(text: rationale, color: ai.metaText),
+              if (showsSources)
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: rationale == null
+                        ? tokens.spacing.step4
+                        : tokens.spacing.step1,
+                  ),
+                  child: Text(
+                    messages.relationshipAgentSources(checkInCount),
+                    key: const ValueKey('relationship-agent-meta'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: ai.metaText,
+                    ),
+                  ),
+                ),
+            ],
+          );
+    // The briefing as every reading face shows it, with the task card's
+    // disclosure row: Read more, and the worded door to the agent's
+    // internals beside it.
+    TldrBody reading(AgentReportEntity report) => TldrBody(
+      key: const ValueKey('relationship-briefing-body'),
+      disclosureKey: const ValueKey('relationship-briefing-expand'),
+      tldr: resolveReportTldr(report),
+      expanded: expanded,
+      additionalReport: resolveReportAdditional(report),
+      onToggle: onToggleExpanded,
+      onOpenInternals: onOpenInternals,
+      trailing: trailing,
+    );
+    final caption = tokens.typography.styles.others.caption.copyWith(
+      color: ai.metaText,
+    );
     final body = switch (state) {
       RelationshipAgentCardState.noBriefing => Text(
         messages.relationshipAgentNoBriefingBody(checkInCount),
@@ -245,73 +293,53 @@ class _AgentCard extends StatelessWidget {
           color: ai.bodyText,
         ),
       ),
-      // An update keeps the briefing it will replace in view — the spinner
-      // on the status line is the only thing that says it is running, and
-      // the new briefing swaps in when it lands. A first briefing has
-      // nothing to show yet, so the status line stands alone.
+      // An update keeps the briefing it will replace in view — the footer's
+      // Thinking… says it is running, and the new briefing swaps in when it
+      // lands. A first briefing has nothing to show yet, so the status line
+      // stands alone.
       RelationshipAgentCardState.running => switch (current) {
         null => null,
-        final report => TldrBody(
-          key: const ValueKey('relationship-briefing-body'),
-          disclosureKey: const ValueKey('relationship-briefing-expand'),
-          bodyStyle: tokens.typography.styles.body.bodySmall,
-          tldr: resolveReportTldr(report),
-          expanded: expanded,
-          additionalReport: resolveReportAdditional(report),
-          onToggle: onToggleExpanded,
-        ),
+        final report => reading(report),
       },
       // A failed run says what went wrong — and, like an update in
       // progress, keeps the briefing it failed to replace. The reader came
       // for what to bring up with this person; a provider error is a reason
-      // to retry, not a reason to take that away. The kept briefing is
-      // dated, because the status line above now dates the failure instead.
-      RelationshipAgentCardState.failed => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            modelMissing
-                ? messages.relationshipAgentFailedNoModel
-                : messages.relationshipAgentFailedBody,
-            key: const ValueKey('relationship-agent-body'),
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: ai.bodyText,
-            ),
+      // to retry, not a reason to take that away. Beside a kept briefing
+      // the error is a caption above it, with the briefing's age, because
+      // the status line now dates the failure instead.
+      RelationshipAgentCardState.failed => switch (current) {
+        null => Text(
+          modelMissing
+              ? messages.relationshipAgentFailedNoModel
+              : messages.relationshipAgentFailedBody,
+          key: const ValueKey('relationship-agent-body'),
+          style: tokens.typography.styles.body.bodySmall.copyWith(
+            color: ai.bodyText,
           ),
-          if (current != null) ...[
+        ),
+        final report => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              modelMissing
+                  ? messages.relationshipAgentFailedNoModel
+                  : messages.relationshipAgentFailedBody,
+              key: const ValueKey('relationship-agent-body'),
+              style: caption,
+            ),
             SizedBox(height: tokens.spacing.step4),
             Text(
               messages.goalDetailReadAsOf(_age(messages)),
               key: const ValueKey('relationship-briefing-kept-age'),
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: ai.metaText,
-              ),
+              style: caption,
             ),
             SizedBox(height: tokens.spacing.step1),
-            TldrBody(
-              key: const ValueKey('relationship-briefing-body'),
-              disclosureKey: const ValueKey('relationship-briefing-expand'),
-              bodyStyle: tokens.typography.styles.body.bodySmall,
-              tldr: resolveReportTldr(current),
-              expanded: expanded,
-              additionalReport: resolveReportAdditional(current),
-              onToggle: onToggleExpanded,
-            ),
+            reading(report),
           ],
-        ],
-      ),
+        ),
+      },
       RelationshipAgentCardState.current ||
-      RelationshipAgentCardState.outOfDate => TldrBody(
-        key: const ValueKey('relationship-briefing-body'),
-        disclosureKey: const ValueKey('relationship-briefing-expand'),
-        // The reading faces at the same size as the waiting faces' prose:
-        // one body tier across all seven.
-        bodyStyle: tokens.typography.styles.body.bodySmall,
-        tldr: resolveReportTldr(current),
-        expanded: expanded,
-        additionalReport: resolveReportAdditional(current),
-        onToggle: onToggleExpanded,
-      ),
+      RelationshipAgentCardState.outOfDate => reading(current!),
       // Unreachable by construction, see _status.
       // coverage:ignore-start
       RelationshipAgentCardState.notEnrolled => const SizedBox.shrink(),
@@ -320,113 +348,7 @@ class _AgentCard extends StatelessWidget {
 
     // Whether the body closes on the briefing, whose disclosure row brings
     // its own trailing gap.
-    final endsInBriefing =
-        body is TldrBody ||
-        (state == RelationshipAgentCardState.failed && current != null);
-
-    // The quiet text actions start the footer's row: their label sits on
-    // the card's content column, not a button inset in from it.
-    //
-    // *See activity* is this card's one worded door to the agent's
-    // internals (the header opens them too). The shared disclosure row's
-    // "Open agent internals" is not passed to the reading faces above: on
-    // the task card it is the only such door, here it was a third one to the
-    // same place, in vocabulary ("internals") the reader has no use for.
-    // Quiet, not tertiary: tertiary wears the accent, and beside the footer's
-    // one filled primary that made two equal teal links on a card that has
-    // one next step. The door stays; the colour says which comes first.
-    final seeActivity = DesignSystemButton(
-      key: const ValueKey('relationship-agent-see-activity'),
-      label: messages.relationshipAgentSeeActivity,
-      variant: DesignSystemButtonVariant.quiet,
-      alignsLabelToLeadingEdge: true,
-      tapTargetSize: MaterialTapTargetSize.padded,
-      onPressed: onOpenInternals,
-    );
-    final updateNow = DesignSystemButton(
-      key: const ValueKey('relationship-brief-me'),
-      tapTargetSize: MaterialTapTargetSize.padded,
-      label: messages.taskAgentUpdateNow,
-      leadingIcon: LottiIcons.refresh,
-      // Accent only when the briefing actually needs regenerating. On a
-      // current briefing the card's offer is the reading, not the rewrite,
-      // and a filled `Update now` made maintenance the loudest thing on a
-      // card whose job is to be read.
-      variant: switch (state) {
-        RelationshipAgentCardState.outOfDate =>
-          DesignSystemButtonVariant.primary,
-        RelationshipAgentCardState.current =>
-          DesignSystemButtonVariant.tertiary,
-        _ => DesignSystemButtonVariant.secondary,
-      },
-      onPressed: onBrief,
-    );
-    final ({Widget? leading, Widget? action}) footer = switch (state) {
-      // Every face has its quiet door: a check-in before the first
-      // briefing, the activity log while one is being written.
-      // Even here the card does not borrow the bar's verb: the body
-      // already says a check-in is what the agent needs, and the bar
-      // below offers it as the page's primary.
-      RelationshipAgentCardState.noBriefing => (
-        leading: seeActivity,
-        action: DesignSystemButton(
-          key: const ValueKey('relationship-brief-me'),
-          tapTargetSize: MaterialTapTargetSize.padded,
-          label: messages.relationshipAgentBriefNow,
-          leadingIcon: LottiIcons.aiSpark,
-          onPressed: onBrief,
-        ),
-      ),
-      RelationshipAgentCardState.running => (
-        leading: seeActivity,
-        action: null,
-      ),
-      RelationshipAgentCardState.failed => (
-        leading: seeActivity,
-        action: modelMissing
-            ? DesignSystemButton(
-                key: const ValueKey('relationship-agent-choose-model'),
-                tapTargetSize: MaterialTapTargetSize.padded,
-                label: messages.inferenceProfileChooseModelTitle,
-                onPressed: onChooseModel,
-              )
-            : DesignSystemButton(
-                key: const ValueKey('relationship-brief-me'),
-                tapTargetSize: MaterialTapTargetSize.padded,
-                label: messages.relationshipAgentTryAgain,
-                leadingIcon: LottiIcons.refresh,
-                onPressed: onBrief,
-              ),
-      ),
-      // Once a briefing exists the card owns only the agent's own verbs.
-      // Logging a check-in and calling are *doing* verbs, and the sticky
-      // action bar carries both of those on every viewport — offering them
-      // here too put the same two actions on screen twice, each one loud in
-      // one place and quiet in the other, so neither read as the primary.
-      // Being overdue changes what the bar's primary is for, not who owns
-      // it, so the two current faces are now one arm.
-      RelationshipAgentCardState.current ||
-      RelationshipAgentCardState.outOfDate => (
-        leading: seeActivity,
-        action: updateNow,
-      ),
-      // Unreachable by construction, see _status.
-      // coverage:ignore-start
-      RelationshipAgentCardState.notEnrolled => (leading: null, action: null),
-      // coverage:ignore-end
-    };
-
-    // Only a current briefing can say what it was written from: on an
-    // out-of-date one the count already includes the check-in it missed.
-    // And only once the reader has opened it — collapsed, the summary
-    // outweighs its provenance, which is the point of a summary.
-    // The sources line is part of the expanded reading — unless there is
-    // nothing to expand (no report beyond the summary), when it would
-    // otherwise be unreachable.
-    final hasMore =
-        resolveReportAdditional(current)?.trim().isNotEmpty ?? false;
-    final showsSources =
-        state == RelationshipAgentCardState.current && (expanded || !hasMore);
+    final endsInBriefing = current != null && body is! Text;
 
     if (folded && _calm) {
       return AgentSummaryCardSurface(
@@ -456,21 +378,26 @@ class _AgentCard extends StatelessWidget {
       // This row is the disclosure a briefing starts on (ADR 0061): no width
       // or text size may shed the provider from it.
       alwaysNameProvider: true,
-      trailingMeta: totalTokens > 0
-          ? messages.agentConversationTokenCount(
-              NumberFormat.compact(
-                locale: Localizations.localeOf(context).toString(),
-              ).format(totalTokens),
-            )
-          : null,
     );
+
+    final largeText =
+        MediaQuery.textScalerOf(context).scale(1) > TextScales.large;
+    Widget updateStrip({required Widget? leading}) =>
+        AgentAutomationRow.compact(
+          key: const ValueKey('relationship-update-strip'),
+          leading: leading,
+          inferenceAvailable: !modelMissing,
+          isRunning: state == RelationshipAgentCardState.running,
+          hasReportContent: false,
+          isStale: false,
+          onRunNow: onBrief,
+        );
 
     return AgentSummaryCardSurface(
       key: const ValueKey('relationship-briefing-card'),
       children: [
         _BriefingHeader(
           status: _status(context, messages),
-          trailing: _pill(context, messages),
           onTap: onOpenInternals,
         ),
         if (body != null)
@@ -485,59 +412,35 @@ class _AgentCard extends StatelessWidget {
             ),
             child: body,
           ),
-        // Why the band says what it says, under the summary it qualifies and
-        // only once the reader opened the briefing: collapsed, the summary is
-        // the 10-second read, and the evidence line above it pushed that read
-        // down. In the body ink — it is content, not metadata.
-        if (state == RelationshipAgentCardState.current &&
-            health != null &&
-            expanded)
-          _BandRationale(text: health!.rationale, color: ai.bodyText),
+        // The task card's footer line on every face: *Update now* always in
+        // the same place — *Thinking…* while a briefing is written, disabled
+        // while no model is set up — and the model row where the task card
+        // has its freshness word, since the status line already says how
+        // current the briefing is. The row names the provider beside the
+        // trigger that sends to it (ADR 0061), and opens the model setup.
+        Padding(
+          padding: EdgeInsets.only(
+            left: tokens.spacing.cardPadding,
+            right: tokens.spacing.cardPadding,
+            bottom: tokens.spacing.step4,
+          ),
+          // The model row takes its own line over the trigger above the
+          // large-text bar, and when it carries a second row naming the
+          // report's own route: neither fits beside the trigger.
+          child: largeText || identityData.showsReportRow
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [identity, updateStrip(leading: null)],
+                )
+              : updateStrip(leading: identity),
+        ),
+        // Proposals after the footer line, as on the task card: the line that
+        // updates the briefing stays with the briefing.
         RelationshipSuggestionsBand(
           relationshipId: item.relationship.id,
           checkIns: checkIns,
           showHistory: expanded,
         ),
-        if (!_calm)
-          _AgentCardFooter(
-            leading: footer.leading,
-            action: footer.action,
-            identity: identity,
-          )
-        else
-          // The task card's footer line: *Update now* always in reach,
-          // reading *Thinking…* while a briefing is written. The model row
-          // takes the freshness word's place — the header's status line
-          // already dates the briefing — so the provider it sends to sits
-          // beside the trigger (ADR 0061).
-          Padding(
-            padding: EdgeInsets.only(
-              left: tokens.spacing.cardPadding,
-              right: tokens.spacing.cardPadding,
-              bottom: tokens.spacing.step4,
-            ),
-            child: AgentAutomationRow.compact(
-              key: const ValueKey('relationship-update-strip'),
-              leading: identity,
-              inferenceAvailable: !modelMissing,
-              isRunning: state == RelationshipAgentCardState.running,
-              hasReportContent: false,
-              isStale: false,
-              onRunNow: onBrief,
-            ),
-          ),
-        if (showsSources)
-          Padding(
-            padding: EdgeInsets.only(
-              left: tokens.spacing.cardPadding,
-              right: tokens.spacing.cardPadding,
-              bottom: tokens.spacing.step4,
-            ),
-            child: _MetaLine(
-              label: messages.relationshipAgentSources(checkInCount),
-              color: ai.metaText,
-            ),
-          ),
       ],
     );
   }

@@ -11,11 +11,13 @@ import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -23,6 +25,7 @@ import 'package:lotti/features/design_system/components/badges/design_system_bad
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -161,6 +164,7 @@ void main() {
     String content = 'The **long** version.',
     String? band = 'thriving',
     DateTime? createdAt,
+    bool attributed = true,
   }) =>
       AgentDomainEntity.agentReport(
             id: 'report-1',
@@ -174,6 +178,20 @@ void main() {
               RelationshipReportProvenanceKeys.healthBand: ?band,
               RelationshipReportProvenanceKeys.healthRationale:
                   'Two good calls in a row.',
+              if (attributed)
+                ...ReportInferenceProvenance.executorOnly(
+                  InferenceRunSnapshot(
+                    runKey: 'run-1',
+                    threadId: 'thread-1',
+                    executor: InferenceRouteSnapshot.fromResolvedProfile(
+                      ResolvedProfile(
+                        thinkingModelId: testAiModel().providerModelId,
+                        thinkingProvider: testInferenceProvider(),
+                        thinkingModel: testAiModel(),
+                      ),
+                    ),
+                  ),
+                ).toReportMap(),
             },
           )
           as AgentReportEntity;
@@ -807,8 +825,8 @@ void main() {
 
   group('enrolled, no briefing', () {
     testWidgets('wears the AI chrome, names the watching agent, counts the '
-        'check-ins it would read, and offers Brief now next to the next '
-        'look', (tester) async {
+        'check-ins it would read, and offers the one Update now next to the '
+        'next look', (tester) async {
       await pump(tester, checkIns: onTrackCheckIns);
 
       final card = tester.widget<DecoratedBox>(
@@ -824,13 +842,13 @@ void main() {
       expect(statusText(tester), 'Agent watching · next look Wed 19 Aug');
       expect(
         find.text(
-          'No briefing yet. Brief now writes one from your 2 check-ins; it '
+          'No briefing yet. Update now writes one from your 2 check-ins; it '
           'never sees the phone number or email.',
         ),
         findsOneWidget,
       );
-      expect(find.byType(DsPill), findsNothing);
-      expect(find.text('Brief now'), findsOneWidget);
+      expect(updateNow, findsOneWidget);
+      expect(tester.widget<DesignSystemButton>(updateNow).label, 'Update now');
       expect(
         find.byKey(const ValueKey('relationship-chat-button')),
         findsNothing,
@@ -851,12 +869,11 @@ void main() {
     // Sending to the configured provider is what the app is for; the card's
     // model row already names it. No confirmation, and no toast — the
     // running face's spinner is the acknowledgement.
-    testWidgets('Brief now requests at once — no dialog, no toast', (
-      tester,
-    ) async {
+    testWidgets('Update now requests a first briefing at once — no dialog, '
+        'no toast', (tester) async {
       await pump(tester, checkIns: onTrackCheckIns);
 
-      await tester.tap(briefMe);
+      await tester.tap(updateNow);
       await tester.pumpAndSettle();
 
       verify(
@@ -873,7 +890,7 @@ void main() {
       ).thenThrow(StateError('no model'));
       await pump(tester, checkIns: onTrackCheckIns);
 
-      await tester.tap(briefMe);
+      await tester.tap(updateNow);
       await tester.pumpAndSettle();
 
       expect(find.text('Could not request the briefing.'), findsOneWidget);
@@ -916,7 +933,9 @@ void main() {
     // An update must not blank the card: the briefing being replaced stays
     // readable under the spinner until the new one lands.
     testWidgets('a refresh keeps the briefing on file in view while it '
-        'writes', (tester) async {
+        'writes, still dated — the footer Thinking… is the one busy signal', (
+      tester,
+    ) async {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
@@ -924,7 +943,18 @@ void main() {
         running: true,
       );
 
-      expect(statusText(tester), 'Writing the briefing…');
+      expect(statusText(tester), 'Thriving · as of 1 h ago');
+      expect(
+        find.descendant(
+          of: find.byType(TldrHeader),
+          matching: find.byType(DesignSystemSpinner),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: updateStrip, matching: find.text('Thinking…')),
+        findsOneWidget,
+      );
       expect(
         find.byKey(const ValueKey('relationship-briefing-body')),
         findsOneWidget,
@@ -937,9 +967,8 @@ void main() {
   group('failed', () {
     final failedAt = DateTime(2026, 8, 13, 13, 41);
 
-    testWidgets('with no model set up, the reason is the fix: Choose a model', (
-      tester,
-    ) async {
+    testWidgets('with no model set up, the model row is the fix and Update '
+        'now waits for it', (tester) async {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
@@ -968,12 +997,12 @@ void main() {
         find.textContaining('No model is set up for briefings.'),
         findsOneWidget,
       );
-      expect(find.text('Choose a model'), findsOneWidget);
-      expect(find.text('See activity'), findsOneWidget);
-      expect(briefMe, findsNothing);
+      expect(find.byType(TaskAgentIdentityRegion), findsOneWidget);
+      expect(tester.widget<DesignSystemButton>(updateNow).onPressed, isNull);
+      expect(find.text('See activity'), findsNothing);
     });
 
-    testWidgets('Choose a model opens the agent setup sheet', (tester) async {
+    testWidgets('the model row opens the agent setup sheet', (tester) async {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
@@ -981,9 +1010,7 @@ void main() {
         state: agentState(failures: 1, failedAt: failedAt),
       );
 
-      await tester.tap(
-        find.byKey(const ValueKey('relationship-agent-choose-model')),
-      );
+      await tester.tap(find.byType(TaskAgentIdentityRegion));
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(RelationshipBriefingCard));
@@ -1001,8 +1028,7 @@ void main() {
       );
 
       expect(find.textContaining('Last run failed'), findsNothing);
-      expect(find.text('Try again'), findsNothing);
-      expect(find.text('Brief now'), findsOneWidget);
+      expect(statusText(tester), startsWith('Agent watching'));
     });
 
     testWidgets('a failed refresh keeps the briefing it failed to replace, '
@@ -1034,7 +1060,18 @@ void main() {
             .data,
         startsWith('as of '),
       );
-      expect(find.text('Try again'), findsOneWidget);
+      // The age sits with the briefing it dates, not with the error above.
+      final error = tester.getRect(
+        find.byKey(const ValueKey('relationship-agent-body')),
+      );
+      final age = tester.getRect(
+        find.byKey(const ValueKey('relationship-briefing-kept-age')),
+      );
+      final briefing = tester.getRect(
+        find.byKey(const ValueKey('relationship-briefing-body')),
+      );
+      expect(briefing.top - age.bottom, lessThan(age.top - error.bottom));
+      expect(updateNow, findsOneWidget);
     });
 
     testWidgets('a first briefing that failed has nothing to keep', (
@@ -1056,23 +1093,23 @@ void main() {
       );
     });
 
-    testWidgets('See activity opens the internals panel', (tester) async {
+    testWidgets('Open agent internals, beside Read more, opens the panel', (
+      tester,
+    ) async {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
+        current: report(),
         state: agentState(failures: 1, failedAt: failedAt),
       );
 
-      await tester.tap(
-        find.byKey(const ValueKey('relationship-agent-see-activity')),
-      );
+      await tester.tap(find.text('Open agent internals'));
       await tester.pumpAndSettle();
 
       expect(find.byType(AgentInternalsPanel), findsOneWidget);
     });
 
-    testWidgets('with a model, the action is Try again, which requests a '
-        'briefing', (tester) async {
+    testWidgets('with a model, the same Update now retries', (tester) async {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
@@ -1086,7 +1123,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      await tester.tap(find.text('Try again'));
+      await tester.tap(updateNow);
       await tester.pumpAndSettle();
 
       verify(() => agentService.requestBriefing(any())).called(1);
@@ -1094,9 +1131,11 @@ void main() {
   });
 
   group('current', () {
-    testWidgets('the status line says when and which band; the cost rides '
-        'the model row; the sources line closes the card; Log check-in '
-        'sits beside a quiet Update now, with no doing verbs', (tester) async {
+    testWidgets('the status line says when and which band; no cost even '
+        'with usage on file; the sources line closes the reading; one quiet '
+        "Update now on the model row's line, with no doing verbs", (
+      tester,
+    ) async {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
@@ -1107,15 +1146,12 @@ void main() {
 
       expect(statusText(tester), 'Thriving · as of 1 h ago');
       expect(find.byType(DsPill), findsNothing);
-      // No footer band: Update now and the model row close the card the
-      // way the task card's strip does, so the update never goes anywhere
-      // unshown (ADR 0061), and the cost rides the model row.
-      expect(
-        find.byKey(const ValueKey('relationship-agent-footer')),
-        findsNothing,
-      );
+      // Update now and the model row close the card the way the task card's
+      // strip does, so the update never goes anywhere unshown (ADR 0061).
+      // Usage lives in the agent internals, not on the card (owner,
+      // 2026-11-15).
       expect(find.textContaining('Gemini'), findsOneWidget);
-      expect(find.textContaining('38.2K tokens'), findsOneWidget);
+      expect(find.textContaining('tokens'), findsNothing);
       // Provenance waits behind Read more: collapsed, the summary outweighs
       // its sources. Under the fixed clock: a rebuild on the real one would
       // find the fixture overdue and swap the footer to Call.
@@ -1131,10 +1167,9 @@ void main() {
         findsOneWidget,
       );
       // The card carries the agent's verbs and only those: logging a
-      // check-in is the page's verb and lives on the sticky action bar.
-      // "Open agent internals" beside Read more was a third way to the
-      // same place, collapsed or expanded.
-      expect(find.text('Open agent internals'), findsNothing);
+      // check-in is the page's verb and lives on the sticky action bar. The
+      // worded door to the internals is the task card's, beside Read more.
+      expect(find.text('Open agent internals'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('relationship-agent-log-check-in')),
         findsNothing,
@@ -1320,8 +1355,9 @@ void main() {
         running.add(true);
         await tester.pump();
         await tester.pump();
-        expect(statusText(tester), 'Writing the briefing…');
-        expect(statusNode(tester).flagsCollection.isLiveRegion, isTrue);
+        // An update keeps the briefing's dated line while it runs.
+        expect(statusText(tester), 'Thriving · as of just now');
+        expect(statusNode(tester).flagsCollection.isLiveRegion, isFalse);
 
         // The run finishes: the current face arrives, and that is news.
         running.add(false);
@@ -1382,9 +1418,24 @@ void main() {
       });
     });
 
-    testWidgets('an out-of-date footer keeps a designed gap between its '
-        'actions and the model row, at every text size', (tester) async {
-      for (final scale in [1.0, 1.6]) {
+    testWidgets('a report written by another route adds its own row to the '
+        'model line, which then sits over the trigger', (tester) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(attributed: false),
+      );
+
+      expect(find.text('Attribution unavailable'), findsOneWidget);
+      final action = tester.getRect(updateNow);
+      final identity = tester.getRect(find.byType(TaskAgentIdentityRegion));
+      expect(identity.bottom, lessThanOrEqualTo(action.top));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets("the model row shares the trigger's line, and above the "
+        'large-text bar takes its own line over it', (tester) async {
+      for (final (scale, stacked) in [(1.0, false), (1.6, true)]) {
         await pump(
           tester,
           checkIns: onTrackCheckIns,
@@ -1392,16 +1443,13 @@ void main() {
           state: agentState(staleAt: DateTime(2026, 8, 12, 19, 6)),
           textScaler: TextScaler.linear(scale),
         );
-        final tokens = tester
-            .element(find.byType(RelationshipBriefingCard))
-            .designTokens;
-        final action = tester.getRect(briefMe);
+        final action = tester.getRect(updateNow);
         final identity = tester.getRect(find.byType(TaskAgentIdentityRegion));
-        expect(
-          identity.top - action.bottom,
-          greaterThanOrEqualTo(tokens.spacing.step3),
-          reason: 'scale $scale: the primary must not touch the model row',
-        );
+        if (stacked) {
+          expect(identity.bottom, lessThanOrEqualTo(action.top));
+        } else {
+          expect(identity.center.dy, closeTo(action.center.dy, 1));
+        }
       }
     });
 
@@ -1513,7 +1561,10 @@ void main() {
           .top;
       expect(
         offset,
-        (line.fontSize! * line.height! - tokens.spacing.step3) / 2,
+        ((line.fontSize! * line.height! - IconSizes.s) / 2).clamp(
+          0.0,
+          double.infinity,
+        ),
       );
     });
 
@@ -1534,7 +1585,7 @@ void main() {
       );
     });
 
-    testWidgets('an out-of-date face carries the cost on its model row', (
+    testWidgets('no face shows the cost, even with usage on file', (
       tester,
     ) async {
       await pump(
@@ -1545,20 +1596,7 @@ void main() {
         totalTokens: 38200,
       );
 
-      expect(
-        find.descendant(
-          of: find.byType(TaskAgentIdentityRegion),
-          matching: find.textContaining('38.2K tokens', findRichText: true),
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('no cost on the model row without usage', (tester) async {
-      await pump(tester, checkIns: onTrackCheckIns, current: report());
-
-      expect(statusText(tester), 'Thriving · as of 1 h ago');
-      expect(find.textContaining('tokens'), findsNothing);
+      expect(find.textContaining('38.2K'), findsNothing);
     });
 
     testWidgets('Update now requests a briefing', (tester) async {
@@ -1686,8 +1724,8 @@ void main() {
   });
 
   group('out of date', () {
-    testWidgets('names the new check-in in warning tone and offers Update '
-        'now as the primary', (tester) async {
+    testWidgets('names the new check-in beside a warning glyph, and offers '
+        'the same quiet Update now', (tester) async {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
@@ -1699,6 +1737,11 @@ void main() {
       final tokens = tester
           .element(find.byType(RelationshipBriefingCard))
           .designTokens;
+      // The glyph carries the alert colour; the word stays in reading ink.
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIcons.warning)).color,
+        tokens.colors.alert.warning.ink,
+      );
       expect(
         tester
             .widget<Text>(
@@ -1706,14 +1749,14 @@ void main() {
             )
             .style
             ?.color,
-        tokens.colors.alert.warning.ink,
+        tokens.colors.aiCard.bodyText,
       );
-      final update = tester.widget<DesignSystemButton>(briefMe);
+      final update = tester.widget<DesignSystemButton>(updateNow);
       expect(update.label, 'Update now');
-      expect(update.variant, DesignSystemButtonVariant.primary);
+      expect(update.variant, DesignSystemButtonVariant.tertiary);
       expect(
-        find.byKey(const ValueKey('relationship-briefing-age')),
-        findsNothing,
+        statusText(tester),
+        isNot(contains('days old')),
         reason: 'an hour-old briefing is not old enough to count in days',
       );
       expect(
@@ -1723,7 +1766,7 @@ void main() {
       );
     });
 
-    testWidgets('a briefing days old wears its age on the trailing rail', (
+    testWidgets('a briefing days old says its age on the status line', (
       tester,
     ) async {
       await pump(
@@ -1734,13 +1777,10 @@ void main() {
       );
 
       expect(
-        tester
-            .widget<DsPill>(
-              find.byKey(const ValueKey('relationship-briefing-age')),
-            )
-            .label,
-        '6 days old',
+        statusText(tester),
+        'Out of date · new check-in Wed 12 Aug · 6 days old',
       );
+      expect(find.byType(DsPill), findsNothing);
     });
   });
 
@@ -1837,7 +1877,7 @@ void main() {
         find.byKey(const ValueKey('relationship-briefing-open')),
         findsNothing,
       );
-      expect(briefMe, findsOneWidget);
+      expect(updateNow, findsOneWidget);
     });
   });
 }

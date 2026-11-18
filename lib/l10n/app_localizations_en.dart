@@ -13894,15 +13894,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentBriefNow => 'Brief now';
-
-  @override
   String get relationshipAgentFailedBody =>
       'The provider returned an error before the briefing was written. Your check-ins are unchanged.';
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.';
+      'No model is set up for briefings. Choose one in the model row below.';
 
   @override
   String get relationshipAgentFailedPlain => 'Last run failed';
@@ -13918,11 +13915,11 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'No briefing yet. Brief now writes one from your $count check-ins; it never sees the phone number or email.',
+          'No briefing yet. Update now writes one from your $count check-ins; it never sees the phone number or email.',
       one:
-          'No briefing yet. Brief now writes one from your check-in; it never sees the phone number or email.',
+          'No briefing yet. Update now writes one from your check-in; it never sees the phone number or email.',
       zero:
-          'No briefing yet. Brief now writes one once you have logged a check-in; it never sees the phone number or email.',
+          'No briefing yet. Update now writes one once you have logged a check-in; it never sees the phone number or email.',
     );
     return '$_temp0';
   }
@@ -13944,9 +13941,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get relationshipAgentPausedBody =>
       'Briefings pause while this person is dormant or archived.';
-
-  @override
-  String get relationshipAgentSeeActivity => 'See activity';
 
   @override
   String relationshipAgentSources(int count) {
@@ -13994,9 +13988,6 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get relationshipBriefingOptions => 'Briefing options';
 
   @override
   String get relationshipBriefingRequestFailed =>

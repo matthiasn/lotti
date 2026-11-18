@@ -45,7 +45,6 @@ void main() {
     WidgetTester tester, {
     required TaskAgentModelIdentityViewData data,
     VoidCallback? onSetupTap,
-    String? trailingMeta,
     double? width,
     TextScaler textScaler = TextScaler.noScaling,
   }) {
@@ -63,7 +62,6 @@ void main() {
         TaskAgentIdentityRegion(
           data: data,
           onSetupTap: onSetupTap ?? () {},
-          trailingMeta: trailingMeta,
         ),
         mediaQueryData: MediaQueryData.fromView(
           tester.view,
@@ -105,52 +103,6 @@ void main() {
         find.descendant(of: finder, matching: find.byType(RichText)),
       )
       .didExceedMaxLines;
-
-  testWidgets('trailing meta rides the setup row after the route, on every '
-      'wording tier that can carry it', (tester) async {
-    await pumpRegion(
-      tester,
-      data: const TaskAgentModelIdentityViewData(
-        presentation: TaskAgentIdentityPresentation.combined,
-        currentRoute: route,
-        reportRoute: route,
-      ),
-      trailingMeta: '18.4K tokens',
-      width: 1000,
-    );
-    expect(find.text('$routeLabel · 18.4K tokens'), findsOneWidget);
-
-    // Narrow enough that the full wording cannot fit: the shorter tier is
-    // chosen, and the meta is still on it.
-    await pumpRegion(
-      tester,
-      data: const TaskAgentModelIdentityViewData(
-        presentation: TaskAgentIdentityPresentation.combined,
-        currentRoute: route,
-        reportRoute: route,
-      ),
-      trailingMeta: '18.4K tokens',
-      width: 330,
-    );
-    expect(find.text('$routeLabel · 18.4K tokens'), findsNothing);
-    expect(find.textContaining('· 18.4K tokens'), findsOneWidget);
-  });
-
-  testWidgets('where no wording can carry the meta, the meta goes rather '
-      'than being cut short, and the model stays', (tester) async {
-    await pumpRegion(
-      tester,
-      data: const TaskAgentModelIdentityViewData(
-        presentation: TaskAgentIdentityPresentation.combined,
-        currentRoute: route,
-        reportRoute: route,
-      ),
-      trailingMeta: '18.4K tokens',
-      width: 200,
-    );
-    expect(find.textContaining('18.4K'), findsNothing);
-    expect(find.text('Qwen 3.5 Plus'), findsOneWidget);
-  });
 
   testWidgets('combined row is tappable, accessible, and at least step6 high', (
     tester,

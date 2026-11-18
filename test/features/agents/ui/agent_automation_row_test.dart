@@ -317,6 +317,28 @@ void main() {
       expect(lead.center.dy, closeTo(trigger.center.dy, 1));
     });
 
+    testWidgets('alone on its line, the trigger fits a phone at large text '
+        'rather than overflowing it', (tester) async {
+      await pumpRow(
+        tester,
+        AgentAutomationRow.compact(
+          inferenceAvailable: true,
+          isRunning: false,
+          hasReportContent: false,
+          isStale: false,
+          onRunNow: () {},
+        ),
+        width: 200,
+        textScaler: const TextScaler.linear(2.5),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getRect(find.byKey(const ValueKey('taskAgentWakeButton'))).right,
+        lessThanOrEqualTo(200),
+      );
+    });
+
     testWidgets('Out of date outranks the age, and no summary shows neither', (
       tester,
     ) async {

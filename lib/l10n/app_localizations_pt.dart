@@ -14112,15 +14112,12 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentBriefNow => 'Criar briefing agora';
-
-  @override
   String get relationshipAgentFailedBody =>
       'O fornecedor devolveu um erro antes de o briefing ser escrito. Os teus check-ins estão inalterados.';
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'Não há nenhum modelo configurado para briefings. Escolhe um em Definições de IA › Agentes. Os detalhes estão no separador Atividade.';
+      'Não há nenhum modelo configurado para briefings. Escolhe um na linha do modelo, em baixo.';
 
   @override
   String get relationshipAgentFailedPlain => 'Última execução falhou';
@@ -14136,11 +14133,11 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Ainda sem briefing. „Criar briefing agora“ escreve um a partir dos teus $count check-ins; nunca vê o telefone nem o e-mail.',
+          'Ainda sem briefing. „Atualizar agora“ escreve um a partir dos teus $count check-ins; nunca vê o telefone nem o e-mail.',
       one:
-          'Ainda sem briefing. „Criar briefing agora“ escreve um a partir do teu check-in; nunca vê o telefone nem o e-mail.',
+          'Ainda sem briefing. „Atualizar agora“ escreve um a partir do teu check-in; nunca vê o telefone nem o e-mail.',
       zero:
-          'Ainda sem briefing. „Criar briefing agora“ escreve um assim que registares um check-in; nunca vê o telefone nem o e-mail.',
+          'Ainda sem briefing. „Atualizar agora“ escreve um assim que registares um check-in; nunca vê o telefone nem o e-mail.',
     );
     return '$_temp0';
   }
@@ -14162,9 +14159,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get relationshipAgentPausedBody =>
       'Os briefings ficam em pausa enquanto esta pessoa estiver inativa ou arquivada.';
-
-  @override
-  String get relationshipAgentSeeActivity => 'Ver atividade';
 
   @override
   String relationshipAgentSources(int count) {
@@ -14214,9 +14208,6 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get relationshipBriefingOptions => 'Opções do briefing';
 
   @override
   String get relationshipBriefingRequestFailed =>

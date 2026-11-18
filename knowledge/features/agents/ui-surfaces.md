@@ -822,8 +822,8 @@ page instead. On the task and project cards it is reachable two ways: the header
 `TldrHeader`) and the quiet *Open agent internals* text link under the report,
 which `TldrBody` shows whenever the host passes `onOpenInternals` — not only
 when the report is expanded. The goal agent's read uses `TldrHeader` plus an
-overflow-menu item; the relationship briefing deliberately omits the link and
-offers its own *See activity* button. It is a thin shell —
+overflow-menu item; the relationship briefing shows the same link beside
+*Read more*. It is a thin shell —
 header and close button; the sheet owns width, edge and scrim, and shows no
 drag handle on a phone, whose opaque strip would otherwise sit over the close
 button — hosting the host's optional

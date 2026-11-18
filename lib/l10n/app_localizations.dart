@@ -23299,12 +23299,6 @@ abstract class AppLocalizations {
   /// **'{band} · as of {age}'**
   String relationshipAgentAsOfBand(String age, String band);
 
-  /// No description provided for @relationshipAgentBriefNow.
-  ///
-  /// In en, this message translates to:
-  /// **'Brief now'**
-  String get relationshipAgentBriefNow;
-
   /// No description provided for @relationshipAgentFailedBody.
   ///
   /// In en, this message translates to:
@@ -23314,7 +23308,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentFailedNoModel.
   ///
   /// In en, this message translates to:
-  /// **'No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.'**
+  /// **'No model is set up for briefings. Choose one in the model row below.'**
   String get relationshipAgentFailedNoModel;
 
   /// No description provided for @relationshipAgentFailedPlain.
@@ -23332,7 +23326,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentNoBriefingBody.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No briefing yet. Brief now writes one once you have logged a check-in; it never sees the phone number or email.} =1{No briefing yet. Brief now writes one from your check-in; it never sees the phone number or email.} other{No briefing yet. Brief now writes one from your {count} check-ins; it never sees the phone number or email.}}'**
+  /// **'{count, plural, =0{No briefing yet. Update now writes one once you have logged a check-in; it never sees the phone number or email.} =1{No briefing yet. Update now writes one from your check-in; it never sees the phone number or email.} other{No briefing yet. Update now writes one from your {count} check-ins; it never sees the phone number or email.}}'**
   String relationshipAgentNoBriefingBody(int count);
 
   /// No description provided for @relationshipAgentNotEnrolledBody.
@@ -23358,12 +23352,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Briefings pause while this person is dormant or archived.'**
   String get relationshipAgentPausedBody;
-
-  /// No description provided for @relationshipAgentSeeActivity.
-  ///
-  /// In en, this message translates to:
-  /// **'See activity'**
-  String get relationshipAgentSeeActivity;
 
   /// No description provided for @relationshipAgentSources.
   ///
@@ -23418,12 +23406,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{days, plural, =1{1 day old} other{{days} days old}}'**
   String relationshipBriefingAge(int days);
-
-  /// Tooltip of the briefing card's overflow menu.
-  ///
-  /// In en, this message translates to:
-  /// **'Briefing options'**
-  String get relationshipBriefingOptions;
 
   /// No description provided for @relationshipBriefingRequestFailed.
   ///

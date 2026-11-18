@@ -13997,15 +13997,12 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentBriefNow => 'Nu briefen';
-
-  @override
   String get relationshipAgentFailedBody =>
       'De provider gaf een fout voordat de briefing geschreven was. Je check-ins zijn ongewijzigd.';
 
   @override
   String get relationshipAgentFailedNoModel =>
-      'Er is geen model ingesteld voor briefings. Kies er een onder AI-instellingen › Agents. Details staan op het tabblad Activiteit.';
+      'Er is geen model ingesteld voor briefings. Kies er een in de modelregel hieronder.';
 
   @override
   String get relationshipAgentFailedPlain => 'Laatste run mislukt';
@@ -14021,11 +14018,11 @@ class AppLocalizationsNl extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Nog geen briefing. „Nu briefen“ schrijft er een op basis van je $count check-ins; het ziet nooit het telefoonnummer of het e-mailadres.',
+          'Nog geen briefing. „Nu bijwerken“ schrijft er een op basis van je $count check-ins; het ziet nooit het telefoonnummer of het e-mailadres.',
       one:
-          'Nog geen briefing. „Nu briefen“ schrijft er een op basis van je check-in; het ziet nooit het telefoonnummer of het e-mailadres.',
+          'Nog geen briefing. „Nu bijwerken“ schrijft er een op basis van je check-in; het ziet nooit het telefoonnummer of het e-mailadres.',
       zero:
-          'Nog geen briefing. „Nu briefen“ schrijft er een zodra je een check-in hebt gelogd; het ziet nooit het telefoonnummer of het e-mailadres.',
+          'Nog geen briefing. „Nu bijwerken“ schrijft er een zodra je een check-in hebt gelogd; het ziet nooit het telefoonnummer of het e-mailadres.',
     );
     return '$_temp0';
   }
@@ -14047,9 +14044,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get relationshipAgentPausedBody =>
       'Briefings pauzeren zolang deze persoon slapend of gearchiveerd is.';
-
-  @override
-  String get relationshipAgentSeeActivity => 'Activiteit bekijken';
 
   @override
   String relationshipAgentSources(int count) {
@@ -14097,9 +14091,6 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get relationshipBriefingOptions => 'Briefingopties';
 
   @override
   String get relationshipBriefingRequestFailed =>
