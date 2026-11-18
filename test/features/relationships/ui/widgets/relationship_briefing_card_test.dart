@@ -1074,6 +1074,27 @@ void main() {
       expect(updateNow, findsOneWidget);
     });
 
+    testWidgets('with no model and a briefing kept, the no-model reason sits '
+        'over the kept briefing', (tester) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(),
+        modelResolved: false,
+        state: agentState(failures: 1, failedAt: now),
+      );
+
+      expect(
+        find.textContaining('No model is set up for briefings.'),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('relationship-briefing-body')),
+        findsOneWidget,
+      );
+      expect(tester.widget<DesignSystemButton>(updateNow).onPressed, isNull);
+    });
+
     testWidgets('a first briefing that failed has nothing to keep', (
       tester,
     ) async {
@@ -1565,6 +1586,24 @@ void main() {
           0.0,
           double.infinity,
         ),
+      );
+    });
+
+    testWidgets('a briefing without a band still says what it read, with no '
+        'reason line above it', (tester) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(tldr: null, band: null),
+      );
+
+      expect(
+        find.text('Sources: 2 check-ins · contact channels never sent'),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('relationship-agent-band-rationale')),
+        findsNothing,
       );
     });
 
