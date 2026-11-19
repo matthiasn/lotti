@@ -433,7 +433,7 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count actifs',
-      one: '1 actif',
+      one: '$count actif',
     );
     return '$_temp0';
   }
@@ -462,7 +462,7 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count instances',
-      one: '1 instance',
+      one: '$count instance',
     );
     return '$_temp0';
   }
@@ -625,6 +625,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentPendingWakesPendingLabel => 'En attente';
+
+  @override
+  String agentPendingWakesResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count réveils',
+      one: '$count réveil',
+    );
+    return '$_temp0';
+  }
 
   @override
   String agentPendingWakesRunningHeading(int count) {
@@ -881,6 +892,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentSoulSettingsTab => 'Paramètres';
+
+  @override
+  String agentSoulsResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count âmes',
+      one: '$count âme',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentSoulsSearchPlaceholder => 'Rechercher des âmes…';
@@ -1340,6 +1362,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentTemplatesGroupNone => 'Tous';
+
+  @override
+  String agentTemplatesResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modèles',
+      one: '$count modèle',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentTemplatesSearchPlaceholder => 'Rechercher des modèles…';
@@ -4667,10 +4700,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get conflictSideThisDevice => 'CET APPAREIL';
 
   @override
-  String get conflictsResolved => 'résolu';
+  String get conflictsResolved => 'Résolu';
 
   @override
-  String get conflictsUnresolved => 'non résolu';
+  String get conflictsUnresolved => 'Non résolu';
 
   @override
   String get conflictValueAbsent => 'Non défini';
@@ -10527,7 +10560,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalDateLabel => 'Date';
 
   @override
-  String get journalDateNowButton => 'maintenant';
+  String get journalDateNowButton => 'Maintenant';
 
   @override
   String get journalDateSaveButton => 'Enregistrer';
@@ -16876,7 +16909,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sidebarWakesQueuedLabel => 'En file';
 
   @override
-  String get sidebarWakesWorkingLabel => 'Travaille';
+  String get sidebarWakesWorkingLabel => 'En cours';
 
   @override
   String get skillsSectionTitle => 'Compétences';

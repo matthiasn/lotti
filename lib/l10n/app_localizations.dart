@@ -1183,6 +1183,12 @@ abstract class AppLocalizations {
   /// **'Pending'**
   String get agentPendingWakesPendingLabel;
 
+  /// Toolbar count over the wake cycles list (pending and scheduled wakes) when no filter narrows it.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 wake} other{{count} wakes}}'**
+  String agentPendingWakesResultCountAll(int count);
+
   /// No description provided for @agentPendingWakesRunningHeading.
   ///
   /// In en, this message translates to:
@@ -1608,6 +1614,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get agentSoulSettingsTab;
+
+  /// Toolbar count over the souls list when no filter narrows it.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 soul} other{{count} souls}}'**
+  String agentSoulsResultCountAll(int count);
 
   /// No description provided for @agentSoulsSearchPlaceholder.
   ///
@@ -2304,6 +2316,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All'**
   String get agentTemplatesGroupNone;
+
+  /// Toolbar count over the agent templates list when no filter narrows it.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 template} other{{count} templates}}'**
+  String agentTemplatesResultCountAll(int count);
 
   /// No description provided for @agentTemplatesSearchPlaceholder.
   ///
@@ -7766,13 +7784,13 @@ abstract class AppLocalizations {
   /// No description provided for @conflictsResolved.
   ///
   /// In en, this message translates to:
-  /// **'resolved'**
+  /// **'Resolved'**
   String get conflictsResolved;
 
   /// No description provided for @conflictsUnresolved.
   ///
   /// In en, this message translates to:
-  /// **'unresolved'**
+  /// **'Unresolved'**
   String get conflictsUnresolved;
 
   /// No description provided for @conflictValueAbsent.

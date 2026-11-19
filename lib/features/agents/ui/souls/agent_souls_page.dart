@@ -34,6 +34,7 @@ class AgentSoulsPage extends ConsumerWidget {
       groupAxes: _buildGroupAxes(messages),
       sortAxes: _buildSortAxes(messages),
       searchPlaceholder: messages.agentSoulsSearchPlaceholder,
+      countLabel: messages.agentSoulsResultCountAll,
       emptyMessage: messages.agentSoulsEmptyFiltered,
       axisMatcher: _noAxisMatch,
     );

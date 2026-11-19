@@ -70,7 +70,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get addHabitCommentLabel => 'Kommentar';
 
   @override
-  String get addHabitDateLabel => 'Färdigställd i';
+  String get addHabitDateLabel => 'Slutförd';
 
   @override
   String get addLinkedEntryLabel => 'Lägg till länkad post';
@@ -240,7 +240,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentEvolutionChartVersionPerformance => 'Per version';
 
   @override
-  String get agentEvolutionChartWakeHistory => 'Vake-historia';
+  String get agentEvolutionChartWakeHistory => 'Väckningshistorik';
 
   @override
   String get agentEvolutionChatPlaceholder =>
@@ -265,7 +265,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentEvolutionMetricSuccess => 'Framgång';
 
   @override
-  String get agentEvolutionMetricWakes => 'Vakor';
+  String get agentEvolutionMetricWakes => 'Väckningar';
 
   @override
   String get agentEvolutionNoSessions => 'Inga evolutionssessioner än';
@@ -410,7 +410,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentInstancesFilterClearAll => 'Rensa allt';
 
   @override
-  String get agentInstancesFilterClearSection => 'Klart';
+  String get agentInstancesFilterClearSection => 'Rensa';
 
   @override
   String get agentInstancesFilterSectionSoul => 'Själ';
@@ -479,7 +479,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentInstancesSortOldest => 'Äldsta';
 
   @override
-  String get agentInstancesSortRecent => 'Nyligen';
+  String get agentInstancesSortRecent => 'Senaste';
 
   @override
   String get agentInstancesTitle => 'Instanser';
@@ -604,11 +604,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inga observationer har ännu registrerats.';
 
   @override
-  String get agentPendingWakesDeleteTooltip => 'Ta bort en våg';
+  String get agentPendingWakesDeleteTooltip => 'Ta bort väckning';
 
   @override
   String get agentPendingWakesEmptyFiltered =>
-      'Inga vaken matchar dina filter.';
+      'Inga väckningar matchar dina filter.';
 
   @override
   String get agentPendingWakesFilterSectionType => 'Typ';
@@ -618,6 +618,17 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get agentPendingWakesPendingLabel => 'Väntar';
+
+  @override
+  String agentPendingWakesResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count väckningar',
+      one: '1 väckning',
+    );
+    return '$_temp0';
+  }
 
   @override
   String agentPendingWakesRunningHeading(int count) {
@@ -634,16 +645,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentPendingWakesScheduledLabel => 'Planerade';
 
   @override
-  String get agentPendingWakesSearchPlaceholder => 'Sök vaknar...';
+  String get agentPendingWakesSearchPlaceholder => 'Sök väckningar…';
 
   @override
-  String get agentPendingWakesSortDueLatest => 'Senaste tiden';
+  String get agentPendingWakesSortDueLatest => 'Senast planerad';
 
   @override
-  String get agentPendingWakesSortDueSoonest => 'Snart beräknad';
+  String get agentPendingWakesSortDueSoonest => 'Tidigast planerad';
 
   @override
-  String get agentPendingWakesTitle => 'Vakningscykler';
+  String get agentPendingWakesTitle => 'Väckningscykler';
 
   @override
   String get agentReportHistoryBadge => 'Rapport';
@@ -733,11 +744,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get agentRitualSummaryWakeHistory30Days =>
-      'Vaken aktivitet (senaste 30 dagarna)';
+      'Väckningsaktivitet (senaste 30 dagarna)';
 
   @override
   String get agentRitualSummaryWakesSinceLast =>
-      'Vakor sedan senaste en-mot-en-mötet';
+      'Väckningar sedan senaste en-mot-en-mötet';
 
   @override
   String get agentRitualTypingSemantics => 'Agenten skriver ett svar';
@@ -747,8 +758,8 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count vakor sedan ert senaste samtal',
-      one: '1 vaka sedan ert senaste samtal',
+      other: '$count väckningar sedan ert senaste samtal',
+      one: '1 väckning sedan ert senaste samtal',
     );
     return '$_temp0';
   }
@@ -769,7 +780,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentSettingsTitle => 'Agenter';
 
   @override
-  String get agentSoulAntiSycophancyLabel => 'Anti-smygningspolitik';
+  String get agentSoulAntiSycophancyLabel => 'Policy mot inställsamhet';
 
   @override
   String get agentSoulAssignedTemplatesTitle => 'Tilldelade mallar';
@@ -873,6 +884,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentSoulSettingsTab => 'Inställningar';
 
   @override
+  String agentSoulsResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count själar',
+      one: '1 själ',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get agentSoulsSearchPlaceholder => 'Sök själar...';
 
   @override
@@ -919,10 +941,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentStateHeading => 'Delstatsinformation';
 
   @override
-  String get agentStateLastWake => 'Sista vaket';
+  String get agentStateLastWake => 'Senaste väckning';
 
   @override
-  String get agentStateNextWake => 'Nästa vaka';
+  String get agentStateNextWake => 'Nästa väckning';
 
   @override
   String get agentStateRevision => 'Revision';
@@ -931,7 +953,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentStateSleepingUntil => 'Sov tills';
 
   @override
-  String get agentStateWakeCount => 'Vakenräkning';
+  String get agentStateWakeCount => 'Antal väckningar';
 
   @override
   String get agentStopWakeStopping => 'Stoppar…';
@@ -1176,7 +1198,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get agentTabActivity => 'Verksamhet';
+  String get agentTabActivity => 'Aktivitet';
 
   @override
   String get agentTabConversations => 'Samtal';
@@ -1274,7 +1296,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentTemplateKindTaskAgent => 'Task Agent';
 
   @override
-  String get agentTemplateMetricsTotalWakes => 'Totala vågor';
+  String get agentTemplateMetricsTotalWakes => 'Totalt antal väckningar';
 
   @override
   String get agentTemplateNoneAssigned => 'Ingen mall tilldelad';
@@ -1307,7 +1329,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String agentTemplateRollbackConfirm(int version) {
-    return 'Rulla tillbaka till version $version? Agenten kommer att använda denna version vid nästa vaka.';
+    return 'Rulla tillbaka till version $version? Agenten använder den här versionen vid nästa väckning.';
   }
 
   @override
@@ -1330,6 +1352,17 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get agentTemplatesGroupNone => 'Alla';
+
+  @override
+  String agentTemplatesResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mallar',
+      one: '1 mall',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentTemplatesSearchPlaceholder => 'Sök mallar...';
@@ -1362,7 +1395,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentTemplateVersionSaved => 'Ny version sparad';
 
   @override
-  String get agentThreadReportLabel => 'Rapport producerad under denna vaka';
+  String get agentThreadReportLabel =>
+      'Rapport skapad under den här väckningen';
 
   @override
   String get agentTokenUsageCachedTokens => 'Cachad';
@@ -1388,7 +1422,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentTokenUsageModel => 'Modell';
 
   @override
-  String get agentTokenUsageOutputTokens => 'Produktion';
+  String get agentTokenUsageOutputTokens => 'Utdata';
 
   @override
   String get agentTokenUsageThoughtsTokens => 'Tankar';
@@ -1397,7 +1431,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentTokenUsageTotalTokens => 'Totalt';
 
   @override
-  String get agentTokenUsageWakeCount => 'Vakor';
+  String get agentTokenUsageWakeCount => 'Väckningar';
 
   @override
   String get agentToolGoalRevisionLabel => 'Förslag på måljustering';
@@ -1668,32 +1702,32 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String aiCardHistoryToggle(int count) {
-    return 'Historia · $count';
+    return 'Historik · $count';
   }
 
   @override
   String get aiCardMenuActionDelete => 'Radera';
 
   @override
-  String get aiCardMenuActionEdit => 'Redigering';
+  String get aiCardMenuActionEdit => 'Redigera';
 
   @override
   String get aiCardMenuTooltip => 'Fler åtgärder';
 
   @override
-  String get aiCardOpenAgentInternals => 'Öppna agent-interna funktioner';
+  String get aiCardOpenAgentInternals => 'Öppna agentens interna detaljer';
 
   @override
   String get aiCardProposalConfirmed => 'Bekräftat';
 
   @override
-  String get aiCardProposalDismissed => 'Avskedad';
+  String get aiCardProposalDismissed => 'Avfärdad';
 
   @override
   String get aiCardProposalKindAdd => 'Lägg till';
 
   @override
-  String get aiCardProposalKindDue => 'Två';
+  String get aiCardProposalKindDue => 'Förfaller';
 
   @override
   String get aiCardProposalKindEstimate => 'Uppskattning';
@@ -2067,7 +2101,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiInferenceErrorUnknownTitle => 'Fel';
 
   @override
-  String get aiInternalsTitle => 'Agentens inre delar';
+  String get aiInternalsTitle => 'Agentens interna detaljer';
 
   @override
   String get aiModelCardDeleteTooltip => 'Radera modell';
@@ -2076,8 +2110,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiModelPickerByProviderLabel => 'Välj en leverantör';
 
   @override
-  String get aiModelPickerCurrentDefaultLabel =>
-      'Nuvarande betalningsinställelse';
+  String get aiModelPickerCurrentDefaultLabel => 'Nuvarande standard';
 
   @override
   String aiModelPickerProviderModelCount(int count) {
@@ -2163,7 +2196,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiPickProviderContinueButton => 'Fortsätt';
 
   @override
-  String get aiPickProviderDontShowAgainButton => 'Visa dig inte igen';
+  String get aiPickProviderDontShowAgainButton => 'Visa inte igen';
 
   @override
   String get aiPickProviderFooterHint =>
@@ -2192,13 +2225,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
 
   @override
-  String get aiProviderAnthropicName => 'Anthropiske Claude';
+  String get aiProviderAnthropicName => 'Anthropic Claude';
 
   @override
   String get aiProviderCardDraftBadge => 'DRAFT';
 
   @override
-  String get aiProviderCardFixButton => 'Fix';
+  String get aiProviderCardFixButton => 'Åtgärda';
 
   @override
   String aiProviderCardModelCount(int count) {
@@ -2302,10 +2335,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get aiProviderConnectionRetestButton => 'Omtest';
+  String get aiProviderConnectionRetestButton => 'Testa igen';
 
   @override
-  String get aiProviderConnectionRetryButton => 'Omprövning';
+  String get aiProviderConnectionRetryButton => 'Försök igen';
 
   @override
   String aiProviderConnectionVerifiedSubtitle(int count, int ms) {
@@ -2378,7 +2411,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiProviderDetailDisplayNameLabel => 'Visningsnamn';
 
   @override
-  String get aiProviderDetailEditButton => 'Redigering';
+  String get aiProviderDetailEditButton => 'Redigera';
 
   @override
   String get aiProviderDetailEditTooltip => 'Redigeringsleverantör';
@@ -2415,7 +2448,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Profiler som använder den här leverantören';
 
   @override
-  String get aiProviderDetailRemoveButton => 'Ta bort vårdgivaren';
+  String get aiProviderDetailRemoveButton => 'Ta bort leverantör';
 
   @override
   String get aiProviderDetailRemoveDescription =>
@@ -2431,7 +2464,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiProviderElevenLabsName => 'ElevenLabs';
 
   @override
-  String get aiProviderGeminiName => 'Googla Gemini';
+  String get aiProviderGeminiName => 'Google Gemini';
 
   @override
   String get aiProviderGenericOpenAiName => 'OpenAI-kompatibel';
@@ -2549,13 +2582,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Välj hur många olika agenter som kan köra inferens samtidigt. Högre värden svarar snabbare men använder mer kapacitet för leverantörer och enheter.';
 
   @override
-  String get aiSettingsAgentWakeConcurrencyLabel => 'Samtidigt agent vaknar';
+  String get aiSettingsAgentWakeConcurrencyLabel => 'Samtidiga agentväckningar';
 
   @override
   String get aiSettingsClearAllFiltersTooltip => 'Rensa alla filter';
 
   @override
-  String get aiSettingsClearFiltersButton => 'Klart';
+  String get aiSettingsClearFiltersButton => 'Rensa';
 
   @override
   String get aiSettingsCounterModels => 'Modeller';
@@ -2600,7 +2633,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det tar ungefär en minut. Lotti kommer att sätta upp modeller och en startprofil åt dig.';
 
   @override
-  String get aiSettingsFtueBannerStartButton => 'Startuppsättning';
+  String get aiSettingsFtueBannerStartButton => 'Starta konfiguration';
 
   @override
   String get aiSettingsFtueBannerTitle => 'Lägg till din första AI-leverantör';
@@ -2762,13 +2795,13 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get aiSetupWizardRunButton => 'Köruppsättning';
+  String get aiSetupWizardRunButton => 'Kör konfiguration';
 
   @override
   String get aiSetupWizardRunLabel => 'Kör installationsguiden';
 
   @override
-  String get aiSetupWizardRunningButton => 'Springer...';
+  String get aiSetupWizardRunningButton => 'Körs…';
 
   @override
   String get aiSetupWizardSafeToRunMultiple =>
@@ -2870,7 +2903,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String apiKeyKnownModelOutputLabel(String modalities) {
-    return 'Ute: $modalities';
+    return 'Ut: $modalities';
   }
 
   @override
@@ -3131,7 +3164,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillResetUnresolvableTrigger => 'Återställ olösbara poster';
 
   @override
-  String get backfillRetireStuckConfirmAccept => 'Gå i pension nu';
+  String get backfillRetireStuckConfirmAccept => 'Avveckla nu';
 
   @override
   String backfillRetireStuckConfirmContent(int count) {
@@ -3761,7 +3794,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String checklistAiConfidenceLabel(String level) {
-    return 'Självförtroende: $level';
+    return 'Säkerhet: $level';
   }
 
   @override
@@ -3850,10 +3883,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get clearButton => 'Klart';
+  String get clearButton => 'Rensa';
 
   @override
-  String get colorCustomLabel => 'Sedvänja';
+  String get colorCustomLabel => 'Anpassad';
 
   @override
   String get colorLabel => 'Färg';
@@ -4159,7 +4192,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'När den är aktiverad kommer appen att försöka generera inbäddningar för dina bidrag för att förbättra sök- och relaterade innehållsförslag.';
 
   @override
-  String get configFlagDailyOsOnboardingEnabled => 'Daglig OS-genomgång';
+  String get configFlagDailyOsOnboardingEnabled => 'Daily OS-genomgång';
 
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
@@ -4216,7 +4249,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get configFlagEnableForkHealingDescription =>
-      'Läka divergerande agenthistorier från användning med flera enheter genom att slå ihop dem vid nästa vak.';
+      'Läk isärgångna agenthistoriker från användning på flera enheter genom att slå ihop dem vid nästa väckning.';
 
   @override
   String get configFlagEnableFrontAgent => 'Följeslagarchatt';
@@ -4342,7 +4375,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Experimentell: kör synkroniseringen – Matrix-klienten, ikappkörningen, bilagenedladdningar och sändning – i en bakgrundsprocess i stället för i gränssnittet, som bara tillämpar det som kommer in. Gäller efter en omstart.';
 
   @override
-  String get conflictApplyButton => 'Ansök';
+  String get conflictApplyButton => 'Tillämpa';
 
   @override
   String get conflictApplyFailedTitle => 'Kunde inte applicera upplösning';
@@ -4611,7 +4644,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get conflictsResolved => 'Löst';
 
   @override
-  String get conflictsUnresolved => 'olöst';
+  String get conflictsUnresolved => 'Olöst';
 
   @override
   String get conflictValueAbsent => 'Inte inställt';
@@ -4973,7 +5006,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextBlockEditTooltip => 'Redigera block';
 
   @override
-  String get dailyOsNextBlockEditWhyLabel => 'Varför just den här gången';
+  String get dailyOsNextBlockEditWhyLabel => 'Varför den här tiden';
 
   @override
   String get dailyOsNextBlockLinked => 'Kopplat till uppgiften.';
@@ -5211,7 +5244,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Rätta till allt som transkriptet gjorde fel innan du planerar.';
 
   @override
-  String get dailyOsNextCaptureTranscriptLabel => 'Recensionstranskription';
+  String get dailyOsNextCaptureTranscriptLabel => 'Granska transkription';
 
   @override
   String get dailyOsNextCaptureTypeInstead => 'Typ istället';
@@ -5331,7 +5364,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextDraftingBackToDecisions => 'Tillbaka till besluten';
 
   @override
-  String get dailyOsNextDraftingHeader => 'Utkast till din dag...';
+  String get dailyOsNextDraftingHeader => 'Planerar din dag…';
 
   @override
   String dailyOsNextDraftingInternalsAttempt(int attempt, int max) {
@@ -5380,7 +5413,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextDraftingRecoveryBody =>
-      'Vaket gav ingen plan. Försök igen, eller gå tillbaka och justera besluten innan du utkastar.';
+      'Väckningen gav ingen plan. Försök igen, eller gå tillbaka och justera besluten innan du skapar utkastet.';
 
   @override
   String get dailyOsNextDraftingRecoveryTitle => 'Draften stannade av';
@@ -5975,7 +6008,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsSettingsDefaultProfileMissing => 'Välj en profil';
 
   @override
-  String get dailyOsSettingsDefaultRestored => 'Daglig OS-standard återställd';
+  String get dailyOsSettingsDefaultRestored => 'Daily OS-standard återställd';
 
   @override
   String get dailyOsSettingsDirectOverrideActive =>
@@ -5992,7 +6025,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Använd Daily OS standardprofil, välj en profilöverskrivning eller åsidosätt endast denna planerares tänkandemodell.';
 
   @override
-  String get dailyOsSettingsInstanceOverrideTitle => 'Daglig OS-inferens';
+  String get dailyOsSettingsInstanceOverrideTitle => 'Daily OS-inferens';
 
   @override
   String get dailyOsSettingsLocalDisclosure =>
@@ -6067,7 +6100,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dashboardAddChartsTitle => 'Topplistor';
 
   @override
-  String get dashboardAddHabitButton => 'Habiter';
+  String get dashboardAddHabitButton => 'Vanor';
 
   @override
   String get dashboardAddHabitTitle => 'Vanediagram';
@@ -6088,7 +6121,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dashboardAddMeasurementTooltip => 'Lägg till mätning';
 
   @override
-  String get dashboardAddSurveyButton => 'Undersökningar';
+  String get dashboardAddSurveyButton => 'Enkäter';
 
   @override
   String get dashboardAddSurveyTitle => 'Kartor';
@@ -6167,7 +6200,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dashboardDescriptionLabel => 'Beskrivning (valfritt)';
 
   @override
-  String get dashboardEditAggregationLabel => 'Redigeringsaggregering';
+  String get dashboardEditAggregationLabel => 'Redigera aggregering';
 
   @override
   String get dashboardHealthBloodPressure => 'Blodtryck';
@@ -6223,7 +6256,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dashboardRemoveChartLabel => 'Ta bort diagram';
 
   @override
-  String get dashboardReorderChartLabel => 'Omordning diagram';
+  String get dashboardReorderChartLabel => 'Ändra ordning på diagram';
 
   @override
   String get dashboardTakeSurveyTooltip => 'Gör en undersökning';
@@ -7995,7 +8028,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get githubLinkUrlHint => 'https://github.com/agare/repo/pull/123';
 
   @override
-  String get githubLinkUrlLabel => 'URL eller agare/repo#123';
+  String get githubLinkUrlLabel => 'URL eller ägare/repo#123';
 
   @override
   String get githubMergeBehind => 'Efter basgrenen';
@@ -9393,11 +9426,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitCategoryLabel => 'Kategori';
 
   @override
-  String get habitCloseCompletionLabel => 'Slutförande av nära vanor';
+  String get habitCloseCompletionLabel => 'Stäng vanregistrering';
 
   @override
   String habitCompleteSemanticLabel(String habit) {
-    return 'Record $habit';
+    return 'Registrera $habit';
   }
 
   @override
@@ -9639,7 +9672,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitLogOtherDayHint => 'Håll kvar för att logga en annan dag';
 
   @override
-  String get habitNotRecordedLabel => 'Ej inspelat';
+  String get habitNotRecordedLabel => 'Ej registrerad';
 
   @override
   String get habitPriorityLabel => 'Prioritet';
@@ -9673,7 +9706,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitsChartUseZeroBaseline => 'Använd nollbaslinje';
 
   @override
-  String get habitsCompletedHeader => 'Färdigställd';
+  String get habitsCompletedHeader => 'Slutförda';
 
   @override
   String get habitsCompletionRateTitle => 'Slutförandegrad';
@@ -9709,7 +9742,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitsFilterCompleted => 'Klart';
 
   @override
-  String get habitsFilterOpenNow => 'två';
+  String get habitsFilterOpenNow => 'Nu';
 
   @override
   String get habitsFilterPendingLater => 'Senare';
@@ -9789,7 +9822,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get habitsOpenHeader => 'Ska vara klar nu';
+  String get habitsOpenHeader => 'Att göra nu';
 
   @override
   String get habitsPendingLaterHeader => 'Senare idag';
@@ -9806,7 +9839,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get habitsRecordButton => 'Rekord';
+  String get habitsRecordButton => 'Registrera';
 
   @override
   String get habitsRollingAverageLabel => '7-dagars Ø';
@@ -10092,7 +10125,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get inferenceProfilePinnedHostNoneLabel =>
-      'Inte fastnade (ingen auto-trigger)';
+      'Inte fastnålad (ingen automatisk start)';
 
   @override
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (denna apparat)';
@@ -10354,7 +10387,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get insightsTablePrevious => 'TIDIGARE';
 
   @override
-  String get insightsTableShare => 'DELA';
+  String get insightsTableShare => 'ANDEL';
 
   @override
   String get insightsTableTotal => 'TOTALT';
@@ -10420,7 +10453,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get journalEntryExpandLabel => 'Expandera post';
 
   @override
-  String get journalFilterEntryTypesTitle => 'Inträdetyper';
+  String get journalFilterEntryTypesTitle => 'Posttyper';
 
   @override
   String get journalFilterFlagged => 'Flaggad';
@@ -10429,13 +10462,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get journalFilterPrivate => 'Privat';
 
   @override
-  String get journalFilterShowTitle => 'Show';
+  String get journalFilterShowTitle => 'Visa';
 
   @override
-  String get journalFilterStarred => 'Medverkad';
+  String get journalFilterStarred => 'Stjärnmärkta';
 
   @override
-  String get journalFilterTitle => 'Filterjournal';
+  String get journalFilterTitle => 'Filtrera journal';
 
   @override
   String get journalHideLinkHint => 'Dölj länk';
@@ -10453,10 +10486,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get journalLinkedEntriesActivityFilterImages => 'Bilder';
 
   @override
-  String get journalLinkedEntriesActivityFilterTimer => 'Öppettider';
+  String get journalLinkedEntriesActivityFilterTimer => 'Timer';
 
   @override
-  String get journalLinkedEntriesFilterModalTitle => 'Filter & Sort';
+  String get journalLinkedEntriesFilterModalTitle => 'Filtrera och sortera';
 
   @override
   String get journalLinkedEntriesShowFlaggedOnly =>
@@ -10469,10 +10502,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get journalLinkedEntriesSortLabel => 'Sortera efter';
 
   @override
-  String get journalLinkedEntriesSortNewestFirst => 'Nyaste första gången';
+  String get journalLinkedEntriesSortNewestFirst => 'Nyaste först';
 
   @override
-  String get journalLinkedEntriesSortOldestFirst => 'Äldsta första';
+  String get journalLinkedEntriesSortOldestFirst => 'Äldsta först';
 
   @override
   String get journalLinkedFromLabel => 'Länkad från:';
@@ -10614,7 +10647,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get keyboardCommandToggle => 'Växla fokuserat föremål';
 
   @override
-  String get keyboardKeyAlt => 'Gammal';
+  String get keyboardKeyAlt => 'Alt';
 
   @override
   String get keyboardKeyArrowDown => 'Nedåtpil';
@@ -10635,16 +10668,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get keyboardKeyDelete => 'Radera';
 
   @override
-  String get keyboardKeyEnd => 'Slut';
+  String get keyboardKeyEnd => 'End';
 
   @override
-  String get keyboardKeyEnter => 'Kom in';
+  String get keyboardKeyEnter => 'Enter';
 
   @override
-  String get keyboardKeyEscape => 'Flykt';
+  String get keyboardKeyEscape => 'Esc';
 
   @override
-  String get keyboardKeyHome => 'Hem';
+  String get keyboardKeyHome => 'Home';
 
   @override
   String get keyboardKeyMinus => 'Minus';
@@ -10653,19 +10686,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get keyboardKeyOr => 'eller';
 
   @override
-  String get keyboardKeyPageDown => 'Sida ner';
+  String get keyboardKeyPageDown => 'Page Down';
 
   @override
   String get keyboardKeyPageUp => 'Page Up';
 
   @override
-  String get keyboardKeyPlus => 'Mer';
+  String get keyboardKeyPlus => 'Plus';
 
   @override
   String get keyboardKeyShift => 'Skift';
 
   @override
-  String get keyboardKeySpace => 'Rymden';
+  String get keyboardKeySpace => 'Mellanslag';
 
   @override
   String get keyboardResizeDividerLabel => 'Storleksjustera rutorna';
@@ -11162,7 +11195,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get loggingDomainGeneral => 'Allmänt';
 
   @override
-  String get loggingDomainHabits => 'Habiter';
+  String get loggingDomainHabits => 'Vanor';
 
   @override
   String get loggingDomainHealth => 'Hälsa';
@@ -11171,7 +11204,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get loggingDomainLabels => 'Etiketter';
 
   @override
-  String get loggingDomainLocation => 'Läge';
+  String get loggingDomainLocation => 'Plats';
 
   @override
   String get loggingDomainNavigation => 'Navigering';
@@ -11186,7 +11219,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get loggingDomainPersistence => 'Beständighet';
 
   @override
-  String get loggingDomainRatings => 'Tittarsiffror';
+  String get loggingDomainRatings => 'Betyg';
 
   @override
   String get loggingDomainScreenshots => 'Skärmdumpar';
@@ -11802,7 +11835,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get navSidebarManualBrowserHint => 'Öppnas i din webbläsare';
 
   @override
-  String get navSidebarManualLabel => 'Manuell';
+  String get navSidebarManualLabel => 'Handbok';
 
   @override
   String get navSidebarOpenLabel => 'Öppna navigeringen';
@@ -11831,7 +11864,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get navTabTitleGoals => 'Mål';
 
   @override
-  String get navTabTitleHabits => 'Habiter';
+  String get navTabTitleHabits => 'Vanor';
 
   @override
   String get navTabTitleInsights => 'Insikter';
@@ -11897,7 +11930,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get notificationChannelRemindersName => 'Påminnelser';
 
   @override
-  String get notificationInboxDismiss => 'Avvisande meddelande';
+  String get notificationInboxDismiss => 'Avvisa avisering';
 
   @override
   String get notificationInboxEmpty => 'Du är helt ikapp.';
@@ -12030,7 +12063,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get onboardingCaptureListening => 'Lyssnar... Knack när du är klar';
 
   @override
-  String get onboardingCaptureOrbLabel => 'Skriv ner dina tankar';
+  String get onboardingCaptureOrbLabel => 'Spela in din tanke';
 
   @override
   String get onboardingCaptureRatherType => 'Hellre skriva?';
@@ -12096,7 +12129,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get onboardingConnectGeminiName => 'Tvillingarna';
+  String get onboardingConnectGeminiName => 'Gemini';
 
   @override
   String get onboardingConnectGeminiTagline => 'USA';
@@ -12205,7 +12238,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get onboardingMetricsNo => 'Nej';
 
   @override
-  String get onboardingMetricsReachedRealAha => 'Nådde riktigt aha.';
+  String get onboardingMetricsReachedRealAha => 'Nådde riktigt aha';
 
   @override
   String get onboardingMetricsYes => 'ja';
@@ -12282,10 +12315,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get outboxFilterFailed => 'Misslyckades';
 
   @override
-  String get outboxFilterWaiting => 'Väntan';
+  String get outboxFilterWaiting => 'Väntar';
 
   @override
-  String get outboxMonitorAttachmentLabel => 'Fäste';
+  String get outboxMonitorAttachmentLabel => 'Bilaga';
 
   @override
   String get outboxMonitorDelete => 'Ta bort';
@@ -12337,7 +12370,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get outboxMonitorRetries => 'Omprövningar';
 
   @override
-  String get outboxMonitorRetriesLabel => 'Omprövningar';
+  String get outboxMonitorRetriesLabel => 'Försök';
 
   @override
   String get outboxMonitorRetry => 'Omprövning';
@@ -13158,7 +13191,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectStatusChangeTitle => 'Ändra status';
 
   @override
-  String get projectStatusCompleted => 'Färdigställd';
+  String get projectStatusCompleted => 'Slutförd';
 
   @override
   String get projectStatusMonitoring => 'Övervakning';
@@ -14986,7 +15019,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get sessionRatingDifficultyLabel => 'Det här arbetet kändes...';
 
   @override
-  String get sessionRatingEditButton => 'Redigeringsbetyg';
+  String get sessionRatingEditButton => 'Redigera betyg';
 
   @override
   String get sessionRatingEnergyQuestion => 'Hur energisk kände du dig?';
@@ -15031,7 +15064,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsAboutDailyOsPersonalizationTitle =>
-      'Daglig personalisering av operativsystemet';
+      'Personalisering av Daily OS';
 
   @override
   String get settingsAboutDailyOsUserNameHelper =>
@@ -15104,7 +15137,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsAiProfilesSubtitle => 'Leverantörer och modeller';
 
   @override
-  String get settingsAiProfilesTitle => 'Slutsatsprofiler';
+  String get settingsAiProfilesTitle => 'Inferensprofiler';
 
   @override
   String get settingsAiProvidersSubtitle =>
@@ -15137,7 +15170,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsCategoriesCreateTitle => 'Skapa kategori';
 
   @override
-  String get settingsCategoriesDetailsLabel => 'Redigeringskategori';
+  String get settingsCategoriesDetailsLabel => 'Redigera kategori';
 
   @override
   String get settingsCategoriesEmptyState => 'Inga kategorier än';
@@ -15182,7 +15215,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ett popp och gnistor när du bockar av en vara';
 
   @override
-  String get settingsCelebrationsChecklistTitle => 'Checklistor';
+  String get settingsCelebrationsChecklistTitle => 'Checklistpunkter';
 
   @override
   String get settingsCelebrationsCustomizeTitle => 'Anpassa';
@@ -15211,14 +15244,14 @@ class AppLocalizationsSv extends AppLocalizations {
       'Lyser och gnistrar när du fullföljer en vana';
 
   @override
-  String get settingsCelebrationsHabitsTitle => 'Habiter';
+  String get settingsCelebrationsHabitsTitle => 'Vanor';
 
   @override
   String get settingsCelebrationsHapticsDescription =>
       'Ett kort surr när du är klar med något – oberoende av animationen.';
 
   @override
-  String get settingsCelebrationsHapticsTitle => 'Kompletteringshaptik';
+  String get settingsCelebrationsHapticsTitle => 'Haptik vid slutförande';
 
   @override
   String get settingsCelebrationsKnobClearCenter => 'Mittgap';
@@ -15410,7 +15443,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Spela en flourish när du är klar med något. Att stänga av en håller slutförandet och det är haptiskt — det hoppar bara över animationen.';
 
   @override
-  String get settingsCelebrationsSectionTitle => 'Färdigställandefiranden';
+  String get settingsCelebrationsSectionTitle => 'Firanden vid slutförande';
 
   @override
   String get settingsCelebrationsStyleDescription =>
@@ -15430,7 +15463,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsCelebrationsTasksTitle => 'Uppgifter';
 
   @override
-  String get settingsCelebrationsTitle => 'Underhållning';
+  String get settingsCelebrationsTitle => 'Animationer';
 
   @override
   String get settingsCelebrationsVariantBubbles => 'Bubblor';
@@ -15534,7 +15567,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsFlagsGroupPreferences => 'PREFERENSER';
 
   @override
-  String get settingsFlagsSearchHint => 'Sökflaggor';
+  String get settingsFlagsSearchHint => 'Sök flaggor';
 
   @override
   String get settingsFlagsSubtitle =>
@@ -15570,7 +15603,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsHabitsErrorLoading => 'Felladdningsvanor';
 
   @override
-  String get settingsHabitsNameLabel => 'Habitnamn';
+  String get settingsHabitsNameLabel => 'Vanans namn';
 
   @override
   String settingsHabitsNoMatchQuery(String query) {
@@ -15590,7 +15623,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsHabitsSubtitle => 'Hantera dina vanor och rutiner';
 
   @override
-  String get settingsHabitsTitle => 'Habiter';
+  String get settingsHabitsTitle => 'Vanor';
 
   @override
   String get settingsHealthImportAccessHint =>
@@ -15778,7 +15811,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsLabelsNameHint => 'Bugg, frisättningsblockerare, synk...';
 
   @override
-  String get settingsLabelsNameLabel => 'Skivbolagets namn';
+  String get settingsLabelsNameLabel => 'Etikettnamn';
 
   @override
   String settingsLabelsNoMatchCreate(String query) {
@@ -15830,7 +15863,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsLoggingGlobalToggleSubtitle =>
-      'Huvudomkopplare för all avverkning';
+      'Huvudreglage för all loggning';
 
   @override
   String get settingsLoggingSlowQueries => 'Långsamma databasfrågor';
@@ -15853,7 +15886,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsMaintenanceOnboardingWelcomeTitle =>
-      'Välkommen för introduktion av programmet';
+      'Visa onboarding-välkomst';
 
   @override
   String get settingsMaintenanceTitle => 'Underhåll';
@@ -15921,7 +15954,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsMatrixDiagnosticDialogTitle =>
-      'Synkronisera diagnostisk information';
+      'Diagnostisk information för synk';
 
   @override
   String get settingsMatrixDiagnosticShowButton => 'Tekniska detaljer';
@@ -15957,7 +15990,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsMatrixStartVerificationLabel => 'Starta verifiering';
 
   @override
-  String get settingsMatrixStatsTitle => 'Matrisstatistik';
+  String get settingsMatrixStatsTitle => 'Matrix-statistik';
 
   @override
   String get settingsMatrixTitle => 'Synkroniseringsinställningar';
@@ -16028,7 +16061,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsMeasurableDescriptionLabel => 'Beskrivning (valfritt)';
 
   @override
-  String get settingsMeasurableDetailsLabel => 'Redigering mätbar';
+  String get settingsMeasurableDetailsLabel => 'Redigera mätbar';
 
   @override
   String get settingsMeasurableNameLabel => 'Mätbart namn';
@@ -16184,7 +16217,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsOnboardingMetricsTitle => 'Onboarding-mått';
 
   @override
-  String get settingsOnboardingReplayTitle => 'Omspelningsintroduktion';
+  String get settingsOnboardingReplayTitle => 'Spela upp introduktionen igen';
 
   @override
   String get settingsOnboardingStartTitle => 'Börja onboarding';
@@ -16433,10 +16466,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsSyncNodeProfileSubtitle => 'Enhetsnamn och funktioner';
 
   @override
-  String get settingsSyncNodeProfileTitle => 'Den här apparaten';
+  String get settingsSyncNodeProfileTitle => 'Den här enheten';
 
   @override
-  String get settingsSyncOutboxTitle => 'Sync Outbox';
+  String get settingsSyncOutboxTitle => 'Synkutkorg';
 
   @override
   String get settingsSyncStatsSubtitle => 'Inspektera synkpipeline-metrik';
@@ -16475,7 +16508,8 @@ class AppLocalizationsSv extends AppLocalizations {
       'Välj en sektion till vänster för att börja.';
 
   @override
-  String get settingsTreeResizeHandleLabel => 'Ändra storleksinställningsträd';
+  String get settingsTreeResizeHandleLabel =>
+      'Ändra storlek på inställningsträdet';
 
   @override
   String get settingsTreeRootCrumb => 'Inställningar';
@@ -16552,64 +16586,64 @@ class AppLocalizationsSv extends AppLocalizations {
       'Transkribera på den här enheten utan server. Ladda ner en modell och välj den sedan i din inferensprofil.';
 
   @override
-  String get sidebarActiveSectionTitle => 'Verksamhet';
+  String get sidebarActiveSectionTitle => 'Aktivitet';
 
   @override
-  String get sidebarActivityCollapseTooltip => 'Kollapsaktivitet';
+  String get sidebarActivityCollapseTooltip => 'Fäll ihop aktivitet';
 
   @override
-  String get sidebarActivityExpandTooltip => 'Utöka verksamheten';
+  String get sidebarActivityExpandTooltip => 'Fäll ut aktivitet';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Inspelning';
 
   @override
-  String get sidebarRunningTimerLabel => 'Löptimer';
+  String get sidebarRunningTimerLabel => 'Pågående timer';
 
   @override
-  String get sidebarRunningTimerStopTooltip => 'Stopptimer';
+  String get sidebarRunningTimerStopTooltip => 'Stoppa timer';
 
   @override
-  String get sidebarTimerStatusLabel => 'Öppettider';
+  String get sidebarTimerStatusLabel => 'Timer';
 
   @override
-  String get sidebarToggleCollapseLabel => 'Kollaps-sidofält';
+  String get sidebarToggleCollapseLabel => 'Fäll ihop sidofältet';
 
   @override
-  String get sidebarToggleExpandLabel => 'Utöka sidofältet';
+  String get sidebarToggleExpandLabel => 'Fäll ut sidofältet';
 
   @override
   String sidebarWakesActiveCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count aktiv',
+      other: '$count aktiva',
       one: '1 aktiv',
     );
     return '$_temp0';
   }
 
   @override
-  String get sidebarWakesCancelTooltip => 'Avbrytningsagent';
+  String get sidebarWakesCancelTooltip => 'Avbryt agent';
 
   @override
   String get sidebarWakesHeader => 'Agenter';
 
   @override
-  String get sidebarWakesNow => 'Nu';
+  String get sidebarWakesNow => 'nu';
 
   @override
-  String get sidebarWakesOpenList => 'Öppen lista';
+  String get sidebarWakesOpenList => 'Öppna lista';
 
   @override
-  String get sidebarWakesOpenTask => 'Öppen uppgift';
+  String get sidebarWakesOpenTask => 'Öppna uppgift';
 
   @override
   String sidebarWakesQueuedCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count köad ',
+      other: '$count köade',
       one: '1 köad',
     );
     return '$_temp0';
@@ -16619,7 +16653,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get sidebarWakesQueuedLabel => 'Köad';
 
   @override
-  String get sidebarWakesWorkingLabel => 'Arbete';
+  String get sidebarWakesWorkingLabel => 'Arbetar';
 
   @override
   String get skillsSectionTitle => 'Färdigheter';
@@ -17620,13 +17654,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskActionBarMoreActions => 'Fler åtgärder';
 
   @override
-  String get taskActionBarOpenRunningTimer => 'Öppen löptimer';
+  String get taskActionBarOpenRunningTimer => 'Öppna pågående timer';
 
   @override
-  String get taskActionBarStopTracking => 'Stopptidsspårning';
+  String get taskActionBarStopTracking => 'Stoppa tidsregistrering';
 
   @override
-  String get taskActionBarTrackTime => 'Bantid';
+  String get taskActionBarTrackTime => 'Registrera tid';
 
   @override
   String get taskAgentAssignHint =>
@@ -17661,7 +17695,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get taskAgentCreateChipLabel => 'Tilldelad agent';
+  String get taskAgentCreateChipLabel => 'Tilldela agent';
 
   @override
   String taskAgentCreateError(String error) {
@@ -18070,7 +18104,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskLanguageRussian => 'Ryska';
 
   @override
-  String get taskLanguageSelectedLabel => 'För närvarande utvald';
+  String get taskLanguageSelectedLabel => 'Valt just nu';
 
   @override
   String get taskLanguageSerbian => 'Serbiska';
@@ -18228,7 +18262,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskSetEstimateLabel => 'Lägg till uppskattning';
 
   @override
-  String get tasksFilterApplyTitle => 'Använd filter';
+  String get tasksFilterApplyTitle => 'Tillämpa filter';
 
   @override
   String get tasksFilterClearAll => 'Rensa allt';
@@ -18312,7 +18346,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksLabelsDialogClose => 'Stäng';
 
   @override
-  String get tasksLabelsSheetApply => 'Ansök';
+  String get tasksLabelsSheetApply => 'Tillämpa';
 
   @override
   String get tasksLabelsSheetSearchHint => 'Söketiketter...';
@@ -18390,7 +18424,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksSavedFiltersAllTasks => 'Alla uppgifter';
 
   @override
-  String get tasksSavedFiltersCustom => 'Sedvänja';
+  String get tasksSavedFiltersCustom => 'Anpassad';
 
   @override
   String get tasksSavedFiltersDeleteConfirmAction => 'Radera';
@@ -18414,7 +18448,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksSavedFiltersDone => 'Klart';
 
   @override
-  String get tasksSavedFiltersEdit => 'Redigering';
+  String get tasksSavedFiltersEdit => 'Redigera';
 
   @override
   String get tasksSavedFiltersFilterNameLabel => 'Filternamn';
@@ -18528,7 +18562,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFiltersUpdateButtonLabel => 'Uppdateringsfilter';
+  String get tasksSavedFiltersUpdateButtonLabel => 'Uppdatera filter';
 
   @override
   String get tasksSavedFiltersUpdateExistingDescription =>
@@ -18568,7 +18602,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksSortByCreationDate => 'Skapad';
 
   @override
-  String get tasksSortByDueDate => 'Beräknat datum';
+  String get tasksSortByDueDate => 'Förfallodatum';
 
   @override
   String get tasksSortByLabel => 'Sortera efter';
@@ -18586,7 +18620,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskStatusDone => 'Klart';
 
   @override
-  String get taskStatusGroomed => 'Välvårdad';
+  String get taskStatusGroomed => 'Förberedd';
 
   @override
   String get taskStatusInProgress => 'Pågående';

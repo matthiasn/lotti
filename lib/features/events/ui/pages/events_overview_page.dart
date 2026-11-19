@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -42,7 +43,9 @@ MobileNavDockAction eventsTabDockAction(BuildContext context) =>
 /// Watches [eventsOverviewControllerProvider] — a paged, searchable,
 /// category-filterable source that loads the archive a page at a time — maps
 /// the loaded events into localized cards and time sections, and renders them
-/// in [EventsOverviewView]. The header's search field and filter funnel drive
+/// in [EventsOverviewView]. "Now" for the Upcoming/past split and the relative
+/// date labels comes from `clock.now()`, so a pinned clock pins the sections.
+/// The header's search field and filter funnel drive
 /// the controller; scrolling near the bottom fetches the next page. The filter
 /// offers every active category (not just the loaded page), so it is stable
 /// and complete however far the user has scrolled.
@@ -77,7 +80,7 @@ class EventsOverviewPage extends ConsumerWidget {
     EventsOverviewState data,
   ) {
     final messages = context.messages;
-    final now = DateTime.now();
+    final now = clock.now();
     final locale = Localizations.localeOf(context).toString();
     final fallbackTitle = messages.entryTypeLabelJournalEvent;
     final controller = ref.read(eventsOverviewControllerProvider.notifier);

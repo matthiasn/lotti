@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' show ExploreConfig, Glados, any;
 import 'package:intl/date_symbol_data_local.dart';
@@ -571,5 +572,36 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+  group('chart range helpers', () {
+    final pinnedNow = DateTime(2026, 7, 17, 15, 30);
+
+    test('getRangeEnd ends the window at the start of the pinned tomorrow', () {
+      withClock(Clock.fixed(pinnedNow), () {
+        expect(getRangeEnd(), DateTime(2026, 7, 18));
+        expect(getRangeEnd(shiftDays: 2), DateTime(2026, 7, 16));
+      });
+    });
+
+    testWidgets('getRangeStart counts back one day per scale from the pinned '
+        'day', (tester) async {
+      late DateTime start;
+      await withClock(Clock.fixed(pinnedNow), () async {
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(size: Size(300, 600)),
+            child: Builder(
+              builder: (context) {
+                start = getRangeStart(context: context);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+      });
+
+      // 300 px at the default scale of 10 is a 30-day window.
+      expect(start, DateTime(2026, 6, 17));
+    });
   });
 }

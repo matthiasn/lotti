@@ -78,6 +78,12 @@ void main() {
       findsAtLeast(1),
     );
     expect(find.text('v1'), findsOneWidget);
+    // The toolbar counts templates, not instances.
+    final ctx = tester.element(find.byType(AgentTemplatesPage));
+    expect(
+      find.text(ctx.messages.agentTemplatesResultCountAll(1)),
+      findsOneWidget,
+    );
   });
 
   testWidgets('pending-review template gets a purple leading icon', (

@@ -341,6 +341,15 @@
   "agentPendingWakesFilterSectionType": "Type",
   "agentPendingWakesGroupByType": "Type",
   "agentPendingWakesPendingLabel": "Pending",
+  "agentPendingWakesResultCountAll": "{count, plural, =1{1 wake} other{{count} wakes}}",
+  "@agentPendingWakesResultCountAll": {
+    "description": "Toolbar count over the wake cycles list (pending and scheduled wakes) when no filter narrows it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentPendingWakesRunningHeading": "{count, plural, =1{Running now} other{Running now ({count})}}",
   "@agentPendingWakesRunningHeading": {
     "placeholders": {
@@ -443,6 +452,15 @@
   "agentSoulSelectTitle": "Select Soul",
   "agentSoulsEmptyFiltered": "No souls match your filters.",
   "agentSoulSettingsTab": "Settings",
+  "agentSoulsResultCountAll": "{count, plural, =1{1 soul} other{{count} souls}}",
+  "@agentSoulsResultCountAll": {
+    "description": "Toolbar count over the souls list when no filter narrows it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentSoulsSearchPlaceholder": "Search souls…",
   "agentSoulsTitle": "Souls",
   "agentSoulToneBoundsLabel": "Tone Bounds",
@@ -948,6 +966,15 @@
   "agentTemplatesFilterSectionKind": "Kind",
   "agentTemplatesGroupByKind": "Kind",
   "agentTemplatesGroupNone": "All",
+  "agentTemplatesResultCountAll": "{count, plural, =1{1 template} other{{count} templates}}",
+  "@agentTemplatesResultCountAll": {
+    "description": "Toolbar count over the agent templates list when no filter narrows it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentTemplatesSearchPlaceholder": "Search templates…",
   "agentTemplateStatsTab": "Stats",
   "@agentTemplateStatsTab": {
@@ -3138,8 +3165,8 @@
   "conflictsEmptyTitle": "No conflicts detected",
   "conflictSideFromSync": "FROM SYNC",
   "conflictSideThisDevice": "THIS DEVICE",
-  "conflictsResolved": "resolved",
-  "conflictsUnresolved": "unresolved",
+  "conflictsResolved": "Resolved",
+  "conflictsUnresolved": "Unresolved",
   "conflictValueAbsent": "Not set",
   "conflictValueNo": "No",
   "conflictValueYes": "Yes",

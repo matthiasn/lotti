@@ -46,10 +46,17 @@ List<AgentListSortAxis> _sortAxes() => [
 /// Stateful host: applies every `onChanged` so the toolbar re-renders with
 /// the new state, mirroring how `AgentListingShell` owns the state.
 class _ToolbarHost extends StatefulWidget {
-  const _ToolbarHost({this.onState, this.initial = _initialState});
+  const _ToolbarHost({
+    this.onState,
+    this.initial = _initialState,
+    this.countLabel,
+  });
 
   final ValueChanged<AgentListFilterState>? onState;
   final AgentListFilterState initial;
+
+  /// The page's count label; defaults to the Instances page's.
+  final String Function(int count)? countLabel;
 
   @override
   State<_ToolbarHost> createState() => _ToolbarHostState();
@@ -72,6 +79,8 @@ class _ToolbarHostState extends State<_ToolbarHost> {
       groupAxes: _groupAxes(),
       sortAxes: _sortAxes(),
       searchPlaceholder: 'Search agents…',
+      countLabel:
+          widget.countLabel ?? context.messages.agentInstancesResultCountAll,
     );
   }
 }
@@ -88,6 +97,7 @@ void main() {
     WidgetTester tester, {
     ValueChanged<AgentListFilterState>? onState,
     AgentListFilterState initial = _initialState,
+    String Function(int count)? countLabel,
   }) async {
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -97,7 +107,11 @@ void main() {
           body: Builder(
             builder: (context) {
               capturedContext = context;
-              return _ToolbarHost(onState: onState, initial: initial);
+              return _ToolbarHost(
+                onState: onState,
+                initial: initial,
+                countLabel: countLabel,
+              );
             },
           ),
         ),
@@ -117,6 +131,27 @@ void main() {
   }
 
   group('AgentListToolbar', () {
+    testWidgets('names the unfiltered count with the page label, not '
+        '"instances"', (tester) async {
+      // The Templates page lists templates: its toolbar must not call them
+      // instances.
+      await pumpToolbar(
+        tester,
+        countLabel: (count) =>
+            capturedContext.messages.agentTemplatesResultCountAll(count),
+      );
+      final messages = capturedContext.messages;
+
+      expect(
+        find.text(messages.agentTemplatesResultCountAll(9)),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.agentInstancesResultCountAll(9)),
+        findsNothing,
+      );
+    });
+
     testWidgets(
       'renders the buttons, search field and the unfiltered result count',
       (tester) async {

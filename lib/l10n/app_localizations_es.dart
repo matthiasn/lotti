@@ -623,6 +623,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentPendingWakesPendingLabel => 'Pendiente';
 
   @override
+  String agentPendingWakesResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count activaciones',
+      one: '1 activación',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentPendingWakesRunningHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -875,6 +886,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agentSoulSettingsTab => 'Configuración';
+
+  @override
+  String agentSoulsResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count almas',
+      one: '1 alma',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentSoulsSearchPlaceholder => 'Buscar almas…';
@@ -1334,6 +1356,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agentTemplatesGroupNone => 'Todas';
+
+  @override
+  String agentTemplatesResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plantillas',
+      one: '1 plantilla',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentTemplatesSearchPlaceholder => 'Buscar plantillas…';
@@ -4656,10 +4689,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get conflictSideThisDevice => 'ESTE DISPOSITIVO';
 
   @override
-  String get conflictsResolved => 'resueltos';
+  String get conflictsResolved => 'Resueltos';
 
   @override
-  String get conflictsUnresolved => 'sin resolver';
+  String get conflictsUnresolved => 'Sin resolver';
 
   @override
   String get conflictValueAbsent => 'Sin definir';
@@ -9818,7 +9851,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitsFilterCompleted => 'hecho';
 
   @override
-  String get habitsFilterOpenNow => 'vencido';
+  String get habitsFilterOpenNow => 'pendientes';
 
   @override
   String get habitsFilterPendingLater => 'más tarde';
@@ -9898,7 +9931,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get habitsOpenHeader => 'Vencido ahora';
+  String get habitsOpenHeader => 'Pendientes ahora';
 
   @override
   String get habitsPendingLaterHeader => 'Más tarde hoy';
@@ -15643,7 +15676,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsCompanionTitle => 'Acompañante';
 
   @override
-  String get settingsConflictsTitle => 'Conflictos de Sincronización';
+  String get settingsConflictsTitle => 'Conflictos de sincronización';
 
   @override
   String get settingsDashboardDetailsLabel => 'Editar panel';
@@ -16568,7 +16601,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsSpeechSubtitle => 'Voz y lectura en voz alta';
 
   @override
-  String get settingsSpeechTitle => 'Habla';
+  String get settingsSpeechTitle => 'Voz';
 
   @override
   String get settingsSyncConflictsSubtitle =>

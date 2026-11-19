@@ -311,6 +311,14 @@
   "agentPendingWakesFilterSectionType": "Tipo",
   "agentPendingWakesGroupByType": "Tipo",
   "agentPendingWakesPendingLabel": "Pendiente",
+  "agentPendingWakesResultCountAll": "{count, plural, =1{1 activación} other{{count} activaciones}}",
+  "@agentPendingWakesResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentPendingWakesRunningHeading": "{count, plural, =1{En ejecución} other{En ejecución ({count})}}",
   "agentPendingWakesScheduledLabel": "Programado",
   "agentPendingWakesSearchPlaceholder": "Buscar activaciones…",
@@ -396,6 +404,14 @@
   "agentSoulSelectTitle": "Seleccionar alma",
   "agentSoulsEmptyFiltered": "Ningún alma coincide con tus filtros.",
   "agentSoulSettingsTab": "Configuración",
+  "agentSoulsResultCountAll": "{count, plural, =1{1 alma} other{{count} almas}}",
+  "@agentSoulsResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentSoulsSearchPlaceholder": "Buscar almas…",
   "agentSoulsTitle": "Almas",
   "agentSoulToneBoundsLabel": "Límites de tono",
@@ -533,6 +549,14 @@
   "agentTemplatesFilterSectionKind": "Tipo",
   "agentTemplatesGroupByKind": "Tipo",
   "agentTemplatesGroupNone": "Todas",
+  "agentTemplatesResultCountAll": "{count, plural, =1{1 plantilla} other{{count} plantillas}}",
+  "@agentTemplatesResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentTemplatesSearchPlaceholder": "Buscar plantillas…",
   "agentTemplateStatsTab": "Estadísticas",
   "agentTemplateStatusActive": "Activo",
@@ -1928,8 +1952,8 @@
   "conflictsEmptyTitle": "No se detectaron conflictos",
   "conflictSideFromSync": "DESDE SINCRONIZACIÓN",
   "conflictSideThisDevice": "ESTE DISPOSITIVO",
-  "conflictsResolved": "resueltos",
-  "conflictsUnresolved": "sin resolver",
+  "conflictsResolved": "Resueltos",
+  "conflictsUnresolved": "Sin resolver",
   "conflictValueAbsent": "Sin definir",
   "conflictValueNo": "No",
   "conflictValueYes": "Sí",
@@ -3800,7 +3824,7 @@
   "habitSectionOptionsTitle": "Opciones",
   "habitsFilterAll": "todos",
   "habitsFilterCompleted": "hecho",
-  "habitsFilterOpenNow": "vencido",
+  "habitsFilterOpenNow": "pendientes",
   "habitsFilterPendingLater": "más tarde",
   "habitsGoalLineLabel": "Meta",
   "habitsHeatmapEmpty": "Añade un hábito para empezar a construir tu constancia",
@@ -3822,7 +3846,7 @@
   "habitSignalTodayLogged": "hoy: registrado",
   "habitSignalTodayNone": "hoy: —",
   "habitsLaggardHint": "{habit} — {kept} de {active} cumplidos",
-  "habitsOpenHeader": "Vencido ahora",
+  "habitsOpenHeader": "Pendientes ahora",
   "habitsPendingLaterHeader": "Más tarde hoy",
   "habitsPointsToGoal": "{points, plural, one{1 pt para la meta} other{{points} pts para la meta}}",
   "habitsRecordButton": "Registrar",
@@ -5900,7 +5924,7 @@
   "settingsCelebrationsVariantSparks": "Chispas",
   "settingsCompanionSubtitle": "Aspecto, voz y personalidad",
   "settingsCompanionTitle": "Acompañante",
-  "settingsConflictsTitle": "Conflictos de Sincronización",
+  "settingsConflictsTitle": "Conflictos de sincronización",
   "settingsDashboardDetailsLabel": "Editar panel",
   "settingsDashboardSaveLabel": "Guardar",
   "settingsDashboardsCreateTitle": "Crear panel",
@@ -6233,7 +6257,7 @@
   "settingsSpeechDictionaryTermLabel": "Término",
   "settingsSpeechDictionaryTitle": "Diccionario de voz",
   "settingsSpeechSubtitle": "Voz y lectura en voz alta",
-  "settingsSpeechTitle": "Habla",
+  "settingsSpeechTitle": "Voz",
   "settingsSyncConflictsSubtitle": "Resuelve conflictos de sincronización",
   "settingsSyncNodeProfileCapabilitiesEmpty": "Ninguna detectada — el auto-disparador de inferencia de audio sincronizado no apuntará a este dispositivo.",
   "settingsSyncNodeProfileCapabilitiesLabel": "Capacidades de IA detectadas",

@@ -347,7 +347,7 @@ void main() {
                 en: 'Tasks',
                 de: 'Aufgaben',
                 fr: 'Tâches',
-                it: 'Compiti',
+                it: 'Attività',
                 es: 'Tareas',
                 cs: 'Úkoly',
                 nl: 'Taken',

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/events/state/event_view_mapping.dart';
@@ -16,8 +17,9 @@ import 'package:material_ui/material_ui.dart';
 /// The compact, photo-led representation of an event when it appears inside
 /// another entry's linked list (e.g. a task's timeline). Resolves the event's
 /// cover and metadata the same way the detail page does — so the card and the
-/// detail never disagree — and taps through to the dedicated event page,
-/// or to [onTap] when the host needs to leave first.
+/// detail never disagree, including the date label measured against
+/// `clock.now()` — and taps through to the dedicated event page, or to
+/// [onTap] when the host needs to leave first.
 class LinkedEventCard extends ConsumerWidget {
   const LinkedEventCard({required this.event, this.onTap, super.key});
 
@@ -40,7 +42,7 @@ class LinkedEventCard extends ConsumerWidget {
     final data = eventDetailDataFromEntities(
       event: event,
       linked: linked,
-      now: DateTime.now(),
+      now: clock.now(),
       locale: Localizations.localeOf(context).toString(),
       categoryColor: colorFromCssHex(category?.color),
       categoryName: category?.name,

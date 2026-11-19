@@ -89,8 +89,8 @@
   "agentControlsDestroyDialogTitle": "Distrugeți agentul?",
   "agentControlsDestroyedMessage": "Acest agent a fost distrus.",
   "agentControlsPauseButton": "Pauză",
-  "agentControlsReanalyzeButton": "Reanalizează",
-  "agentControlsResumeButton": "Reia",
+  "agentControlsReanalyzeButton": "Reanalizați",
+  "agentControlsResumeButton": "Reluați",
   "agentConversationEmpty": "Nicio conversație încă.",
   "agentConversationLiveBanner": "Agentul încă lucrează la această conversație. Dacă opriți agentul, mesajele deja salvate se păstrează, iar răspunsul în curs se pierde.",
   "agentConversationStopped": "Oprită",
@@ -311,6 +311,14 @@
   "agentPendingWakesFilterSectionType": "Tip",
   "agentPendingWakesGroupByType": "Tip",
   "agentPendingWakesPendingLabel": "În așteptare",
+  "agentPendingWakesResultCountAll": "{count, plural, =1{1 trezire} few{{count} treziri} other{{count} de treziri}}",
+  "@agentPendingWakesResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentPendingWakesRunningHeading": "{count, plural, =1{În execuție} other{În execuție ({count})}}",
   "agentPendingWakesScheduledLabel": "Programată",
   "agentPendingWakesSearchPlaceholder": "Căutați treziri…",
@@ -396,6 +404,14 @@
   "agentSoulSelectTitle": "Selectați un suflet",
   "agentSoulsEmptyFiltered": "Niciun suflet nu se potrivește cu filtrele dvs.",
   "agentSoulSettingsTab": "Setări",
+  "agentSoulsResultCountAll": "{count, plural, =1{1 suflet} few{{count} suflete} other{{count} de suflete}}",
+  "@agentSoulsResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentSoulsSearchPlaceholder": "Căutați suflete…",
   "agentSoulsTitle": "Suflete",
   "agentSoulToneBoundsLabel": "Limite de ton",
@@ -533,6 +549,14 @@
   "agentTemplatesFilterSectionKind": "Tip",
   "agentTemplatesGroupByKind": "Tip",
   "agentTemplatesGroupNone": "Toate",
+  "agentTemplatesResultCountAll": "{count, plural, =1{1 șablon} few{{count} șabloane} other{{count} de șabloane}}",
+  "@agentTemplatesResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentTemplatesSearchPlaceholder": "Căutați șabloane…",
   "agentTemplateStatsTab": "Statistici",
   "agentTemplateStatusActive": "Activ",
@@ -1036,7 +1060,7 @@
   "aiSettingsDefaultWakeCadenceDescription": "Cât de des se actualizează singuri asistenții sarcinilor atunci când nici sarcina, nici categoria ei nu stabilesc acest lucru. „Cel mult o dată pe oră” se actualizează totuși imediat după o înregistrare, un cronometru oprit sau o sarcină marcată ca finalizată și în decurs de un minut după o imagine.",
   "aiSettingsEmptyDescription": "Adăugați unul pentru a debloca transcrierea, recunoașterea de imagini, generarea de imagini și căutarea semantică.",
   "aiSettingsEmptyTitle": "Încă niciun furnizor",
-  "aiSettingsFilterByCapabilityTooltip": "Filtrează după capabilitatea {capability}",
+  "aiSettingsFilterByCapabilityTooltip": "Filtrați după capabilitatea {capability}",
   "@aiSettingsFilterByCapabilityTooltip": {
     "placeholders": {
       "capability": {
@@ -1044,7 +1068,7 @@
       }
     }
   },
-  "aiSettingsFilterByProviderTooltip": "Filtrează după {provider}",
+  "aiSettingsFilterByProviderTooltip": "Filtrați după {provider}",
   "@aiSettingsFilterByProviderTooltip": {
     "placeholders": {
       "provider": {
@@ -1052,7 +1076,7 @@
       }
     }
   },
-  "aiSettingsFilterByReasoningTooltip": "Filtrează după capacitatea de raționament",
+  "aiSettingsFilterByReasoningTooltip": "Filtrați după capacitatea de raționament",
   "aiSettingsFtueBannerDescription": "Durează aproximativ un minut. Lotti va configura modelele și un profil inițial pentru dvs.",
   "aiSettingsFtueBannerStartButton": "Începeți configurarea",
   "aiSettingsFtueBannerTitle": "Adăugați primul dvs. furnizor AI",
@@ -1189,8 +1213,8 @@
       }
     }
   },
-  "aiSetupWizardRunButton": "Rulează configurarea",
-  "aiSetupWizardRunLabel": "Rulează asistentul de configurare",
+  "aiSetupWizardRunButton": "Rulați configurarea",
+  "aiSetupWizardRunLabel": "Rulați asistentul de configurare",
   "aiSetupWizardRunningButton": "Se rulează...",
   "aiSetupWizardSafeToRunMultiple": "Poate fi rulat de mai multe ori - elementele existente vor fi păstrate",
   "aiSetupWizardTitle": "Asistent de configurare AI",
@@ -1334,7 +1358,7 @@
   "backfillResetUnresolvableProcessing": "Se resetează...",
   "backfillResetUnresolvableTitle": "Resetare nerezolvabile",
   "backfillResetUnresolvableTrigger": "Resetați intrările nerezolvabile",
-  "backfillRetireStuckConfirmAccept": "Retrage acum",
+  "backfillRetireStuckConfirmAccept": "Retrageți acum",
   "backfillRetireStuckConfirmContent": "{count, plural, =1{Marcați 1 intrare deschisă în prezent (lipsă sau solicitată) din jurnalul de secvență ca nerezolvabilă. Folosiți această opțiune pentru a debloca marcajul când intrările sunt blocate de ceva vreme, fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi recuperate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.} few{Marcați cele {count} intrări deschise în prezent (lipsă sau solicitate) din jurnalul de secvență ca nerezolvabile. Folosiți această opțiune pentru a debloca marcajul când intrările sunt blocate de ceva vreme, fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi recuperate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.} other{Marcați cele {count} de intrări deschise în prezent (lipsă sau solicitate) din jurnalul de secvență ca nerezolvabile. Folosiți această opțiune pentru a debloca marcajul când intrările sunt blocate de ceva vreme, fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi recuperate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.}}",
   "@backfillRetireStuckConfirmContent": {
     "placeholders": {
@@ -1928,8 +1952,8 @@
   "conflictsEmptyTitle": "Nu s-au detectat conflicte",
   "conflictSideFromSync": "DIN SINCRONIZARE",
   "conflictSideThisDevice": "ACEST DISPOZITIV",
-  "conflictsResolved": "rezolvat",
-  "conflictsUnresolved": "nerezolvat",
+  "conflictsResolved": "Rezolvat",
+  "conflictsUnresolved": "Nerezolvat",
   "conflictValueAbsent": "Nedefinit",
   "conflictValueNo": "Nu",
   "conflictValueYes": "Da",
@@ -2296,7 +2320,7 @@
   "dailyOsNextCategoryFilterAll": "Toate categoriile",
   "dailyOsNextCategoryFilterDescription": "Doar categoriile activate pentru planificarea zilei sunt folosite pentru procesarea automată Daily OS.",
   "dailyOsNextCategoryFilterEmpty": "Nu există încă categorii activate pentru planificarea zilei.",
-  "dailyOsNextCategoryFilterIncludeAll": "Include toate",
+  "dailyOsNextCategoryFilterIncludeAll": "Includeți toate",
   "dailyOsNextCategoryFilterTitle": "Categorii de procesare",
   "dailyOsNextCategoryFilterTooltip": "Alegeți categoriile de procesare Daily OS",
   "dailyOsNextCommitDone": "Plan confirmat",
@@ -2652,7 +2676,7 @@
   "dashboardAddMeasurementButton": "Măsurători",
   "dashboardAddMeasurementTitle": "Adăugați diagrame de măsurători",
   "dashboardAddMeasurementTooltip": "Adăugați o măsurătoare",
-  "dashboardAddSurveyButton": "Studii",
+  "dashboardAddSurveyButton": "Chestionare",
   "dashboardAddSurveyTitle": "Sondaje",
   "dashboardAddWorkoutButton": "Antrenamente",
   "dashboardAddWorkoutTitle": "Bord de Antrenament",
@@ -2661,7 +2685,7 @@
   "dashboardAggregationDailyMax": "Maxim zilnic",
   "dashboardAggregationDailyTotal": "Total zilnic",
   "dashboardAggregationHourlyTotal": "Total orar",
-  "dashboardAggregationLabel": "Agregare",
+  "dashboardAggregationLabel": "Tip de agregare:",
   "dashboardAggregationTitle": "Tip de agregare",
   "dashboardAvailableChartsDescription": "Alegeți un tip, selectați unul sau mai multe grafice, apoi adăugați-le.",
   "dashboardAvailableChartsTitle": "Adăugați grafice după tip",
@@ -3879,7 +3903,7 @@
   "imagePromptGenerationCopyButton": "Copiați promptul",
   "imagePromptGenerationCopyTooltip": "Copiați promptul de imagine în clipboard",
   "imagePromptGenerationExpandTooltip": "Afișați promptul complet",
-  "imagePromptGenerationFullPromptLabel": "Prompt Imagine Complet:",
+  "imagePromptGenerationFullPromptLabel": "Prompt complet pentru imagine:",
   "images": "Imagini",
   "imageViewerDownloadFailed": "Nu s-a putut salva imaginea",
   "imageViewerDownloadingTooltip": "Se salvează imaginea",
@@ -4031,7 +4055,7 @@
   "journalDateFromLabel": "De la:",
   "journalDateInvalid": "Dată invalidă",
   "journalDateLabel": "Dată",
-  "journalDateNowButton": "acum",
+  "journalDateNowButton": "Acum",
   "journalDateSaveButton": "Salvați",
   "journalDateTimeRangeTitle": "Dată și oră",
   "journalDateToLabel": "Până la:",
@@ -4555,7 +4579,7 @@
   "navTabTitleEvents": "Evenimente",
   "navTabTitleGoals": "Obiective",
   "navTabTitleHabits": "Obiceiuri",
-  "navTabTitleInsights": "Informaţii",
+  "navTabTitleInsights": "Informații",
   "navTabTitleJournal": "Jurnal",
   "navTabTitlePeople": "Persoane",
   "navTabTitleProjects": "Proiecte",
@@ -5070,7 +5094,7 @@
   "projectsSortTooltip": "Sortați proiectele",
   "projectStatusActive": "Activ",
   "projectStatusArchived": "Arhivat",
-  "projectStatusChangeTitle": "Schimbă starea",
+  "projectStatusChangeTitle": "Schimbați starea",
   "projectStatusCompleted": "Finalizat",
   "projectStatusMonitoring": "Monitorizare",
   "projectStatusOnHold": "În așteptare",
@@ -5755,7 +5779,7 @@
   "sessionRatingRateAction": "Evaluează sesiunea",
   "sessionRatingSaveButton": "Salvați",
   "sessionRatingSaveError": "Nu s-a putut salva evaluarea. Vă rugăm să încercați din nou.",
-  "sessionRatingSkipButton": "Omite",
+  "sessionRatingSkipButton": "Omiteți",
   "sessionRatingTitle": "Evaluează această sesiune",
   "sessionRatingViewAction": "Vedeți evaluarea",
   "settingsAboutAppInformation": "Informații aplicație",
@@ -5900,7 +5924,7 @@
   "settingsCelebrationsVariantSparks": "Scântei",
   "settingsCompanionSubtitle": "Aspect, voce și personalitate",
   "settingsCompanionTitle": "Însoțitor",
-  "settingsConflictsTitle": "Sync cu conflicte",
+  "settingsConflictsTitle": "Conflicte de sincronizare",
   "settingsDashboardDetailsLabel": "Editare panou de bord",
   "settingsDashboardSaveLabel": "Salvați",
   "settingsDashboardsCreateTitle": "Creare panou de bord",
@@ -5928,7 +5952,7 @@
   "settingsFlagsGroupPreferences": "PREFERINȚE",
   "settingsFlagsSearchHint": "Căutați marcaje",
   "settingsFlagsSubtitle": "Configurați indicatoarele și opțiunile",
-  "settingsFlagsTitle": "Marcaje",
+  "settingsFlagsTitle": "Indicatori de configurare",
   "settingsGitHubSubtitle": "Tokenul dvs. pentru legarea pull request-urilor de sarcini",
   "settingsGitHubTitle": "GitHub",
   "settingsHabitsCreateTitle": "Creare obicei",
@@ -6138,7 +6162,7 @@
   "settingsMeasurablesSearchHint": "Căutați măsurători…",
   "settingsMeasurablesSubtitle": "Configurați tipurile de date măsurabile",
   "settingsMeasurablesTitle": "Măsurători",
-  "settingsMeasurableUnitLabel": "Unitatea abrevierii",
+  "settingsMeasurableUnitLabel": "Abrevierea unității (opțional)",
   "settingsMeasurableValueKindChoice": "Opțiune",
   "settingsMeasurableValueKindHelper": "Un număr cu unitate sau una dintre opțiunile pe care le definiți",
   "settingsMeasurableValueKindLabel": "Se înregistrează ca",
@@ -6316,8 +6340,8 @@
   "sidebarRunningTimerLabel": "Cronometru în execuție",
   "sidebarRunningTimerStopTooltip": "Opriți cronometrul",
   "sidebarTimerStatusLabel": "Cronometru",
-  "sidebarToggleCollapseLabel": "Restrânge bara laterală",
-  "sidebarToggleExpandLabel": "Extinde bara laterală",
+  "sidebarToggleCollapseLabel": "Restrângeți bara laterală",
+  "sidebarToggleExpandLabel": "Extindeți bara laterală",
   "sidebarWakesActiveCount": "{count, plural, =1{1 activ} few{{count} activi} other{{count} activi}}",
   "sidebarWakesCancelTooltip": "Anulați agentul",
   "sidebarWakesHeader": "Agenți",
@@ -6790,7 +6814,7 @@
   "taskBlockerPickerTitle": "Ce o blochează?",
   "taskCategoryAllLabel": "toate",
   "taskCategoryLabel": "Categorie:",
-  "taskCategoryUnassignedLabel": "neeatribuit",
+  "taskCategoryUnassignedLabel": "neatribuit",
   "taskDueDateLabel": "Data scadenței",
   "taskDueDateWithDate": "Scadent: {date}",
   "@taskDueDateWithDate": {
@@ -6812,7 +6836,7 @@
   "taskDueTomorrow": "Scadent mâine",
   "taskDueYesterday": "Scadent ieri",
   "taskEditTitleLabel": "Editați titlul sarcinii",
-  "taskEstimateLabel": "Timp Estimat:",
+  "taskEstimateLabel": "Timp estimat:",
   "taskEstimateModalTitle": "Timp estimat",
   "taskEstimateProgressLabel": "{tracked} din {estimate}",
   "@taskEstimateProgressLabel": {
@@ -7078,7 +7102,7 @@
   "tasksSearchResultsSection": "Rezultate",
   "tasksShowCreationDate": "Afișați data creării pe carduri",
   "tasksShowDueDate": "Afișați data scadenței pe carduri",
-  "tasksSortByCreationDate": "Creație",
+  "tasksSortByCreationDate": "Creare",
   "tasksSortByDueDate": "Scadență",
   "tasksSortByLabel": "Sortare după",
   "tasksSortByPriority": "Prioritate",
@@ -7087,7 +7111,7 @@
   "taskStatusDone": "Terminat",
   "taskStatusGroomed": "Pregătit",
   "taskStatusInProgress": "În progres",
-  "taskStatusLabel": "Starea Sarcinii:",
+  "taskStatusLabel": "Starea sarcinii:",
   "taskStatusOnHold": "În așteptare",
   "taskStatusOpen": "Deschis",
   "taskStatusRejected": "Respins",
@@ -7125,7 +7149,7 @@
   "unifiedGoalSummaryNoData": "Încă nu există date – înregistrați un obicei sau conectați un semnal pentru a începe.",
   "unifiedGoalSummaryPartial": "{total, plural, one{{onTrack} din 1 obicei pe drumul cel bun} few{{onTrack} din {total} obiceiuri pe drumul cel bun} other{{onTrack} din {total} de obiceiuri pe drumul cel bun}}",
   "unifiedGoalsUngroupedHabitsHeader": "Fără obiectiv",
-  "unlinkButton": "Dezleagă",
+  "unlinkButton": "Eliminați legătura",
   "unlinkTaskConfirm": "Sigur doriți să deconectați această sarcină?",
   "unlinkTaskConfirmNamed": "Deconectați „{title}”? Sarcina în sine nu este ștearsă.",
   "unlinkTaskFailedMessage": "Nu s-a putut deconecta sarcina. Vă rugăm să încercați din nou.",
@@ -7136,5 +7160,5 @@
   "viewMenuZoomReset": "Dimensiune reală",
   "whatsNewBadgeNew": "NOU",
   "whatsNewDoneButton": "Gata",
-  "whatsNewSkipButton": "Omite"
+  "whatsNewSkipButton": "Omiteți"
 }

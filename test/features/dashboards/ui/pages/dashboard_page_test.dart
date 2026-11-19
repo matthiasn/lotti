@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
@@ -158,6 +159,36 @@ void main() {
         dashboardWidget.rangeEnd.difference(dashboardWidget.rangeStart).inDays,
         inInclusiveRange(90, 91),
       );
+    });
+
+    testWidgets('derives the chart window from the injected clock', (
+      tester,
+    ) async {
+      when(
+        () => mockPersistenceLogic.createMeasurementEntry(
+          data: any(named: 'data'),
+          private: false,
+        ),
+      ).thenAnswer((_) async => null);
+
+      // A date far from any real "today", so a wall-clock read cannot match.
+      final pinnedNow = DateTime(2026, 7, 17, 15, 30);
+      await withClock(Clock.fixed(pinnedNow), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DashboardPage(dashboardId: testDashboardConfig.id),
+          ),
+        );
+        await tester.pump();
+      });
+
+      final dashboardWidget = tester.widget<DashboardWidget>(
+        find.byType(DashboardWidget),
+      );
+      // The window ends on the last second of the pinned day and starts at
+      // midnight 90 days earlier.
+      expect(dashboardWidget.rangeEnd, DateTime(2026, 7, 17, 23, 59, 59));
+      expect(dashboardWidget.rangeStart, DateTime(2026, 4, 18));
     });
 
     testWidgets(

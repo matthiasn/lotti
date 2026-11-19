@@ -89,6 +89,7 @@ void main() {
     List<AgentListFilterAxis> filterAxes = const [],
     String empty = 'Nothing here',
     String placeholder = 'Search…',
+    String Function(int count)? countLabel,
     AgentListAxisMatcher matcher = _alwaysMatch,
     bool settle = true,
   }) async {
@@ -105,6 +106,7 @@ void main() {
             groupAxes: [_flatGroup()],
             sortAxes: [_byName()],
             searchPlaceholder: placeholder,
+            countLabel: countLabel ?? (count) => '$count rows',
             emptyMessage: empty,
             axisMatcher: matcher,
           ),
@@ -146,6 +148,21 @@ void main() {
         find.text(context.messages.agentInstancesToolbarFilters),
         findsOneWidget,
       );
+    });
+
+    testWidgets("the toolbar counts the rows with the page's label", (
+      tester,
+    ) async {
+      await pumpShell(
+        tester,
+        rowsAsync: AsyncData([
+          _row(id: 'a', title: 'Alpha'),
+          _row(id: 'b', title: 'Bravo'),
+        ]),
+        countLabel: (count) => '$count souls on board',
+      );
+
+      expect(find.text('2 souls on board'), findsOneWidget);
     });
 
     testWidgets('no axes — no Filters button', (tester) async {
@@ -541,6 +558,7 @@ class _AxisSwapHarnessState extends State<_AxisSwapHost> {
       groupAxes: _swapped ? c.swappedGroupAxes : c.initialGroupAxes,
       sortAxes: _swapped ? c.swappedSortAxes : c.initialSortAxes,
       searchPlaceholder: 'Search…',
+      countLabel: (count) => '$count rows',
       emptyMessage: 'Nothing here',
       axisMatcher: _alwaysMatch,
     );

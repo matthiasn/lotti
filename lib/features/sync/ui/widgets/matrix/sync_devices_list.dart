@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
@@ -23,11 +24,10 @@ import 'package:material_ui/material_ui.dart';
 /// unverified device is excluded from key sharing, a one-time hand-off offer
 /// when a device joins and verifies while the roster is open, and one
 /// [DeviceCard] per session — on a two-column grid where the pane affords it.
+/// Each card's staleness hint is measured against `clock.now()`, so a pinned
+/// clock (tests, manual captures) pins which devices read as unused.
 class SyncDevicesList extends ConsumerStatefulWidget {
-  const SyncDevicesList({super.key, this.now});
-
-  /// Test seam for the staleness computation; defaults to the wall clock.
-  final DateTime Function()? now;
+  const SyncDevicesList({super.key});
 
   @override
   ConsumerState<SyncDevicesList> createState() => _SyncDevicesListState();
@@ -215,7 +215,7 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
     } else {
       bannerText = messages.syncDevicesPausedBanner(blockers.length);
     }
-    final referenceTime = widget.now?.call() ?? DateTime.now();
+    final referenceTime = clock.now();
     final justJoined = _handOffDismissed ? null : _justJoined;
 
     return Column(

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
@@ -16,7 +17,6 @@ import 'package:lotti/features/settings/state/health_import_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/health_import.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/widgets/settings/settings_icon.dart';
@@ -29,8 +29,14 @@ import 'package:lotti/widgets/settings/settings_icon.dart';
 /// or an error — because the page's previous incarnation fired every import
 /// without awaiting it and rendered nothing afterwards, which made a working
 /// import and a failing one look identical.
+///
+/// [platform] is forwarded to [HealthImportBody]; it defaults to the platform
+/// the app is running on.
 class HealthImportPage extends StatelessWidget {
-  const HealthImportPage({super.key});
+  const HealthImportPage({this.platform, super.key});
+
+  /// The platform the page is laid out for; `null` means the running one.
+  final TargetPlatform? platform;
 
   @override
   Widget build(BuildContext context) {
@@ -38,15 +44,24 @@ class HealthImportPage extends StatelessWidget {
       title: context.messages.settingsHealthImportTitle,
       subtitle: context.messages.settingsHealthImportSubtitle,
       showBackButton: true,
-      child: const HealthImportBody(),
+      child: HealthImportBody(platform: platform),
     );
   }
 }
 
 /// Chrome-free body of the health import page, so the surface can be pumped in
 /// tests (and hosted elsewhere) without the sliver scaffold around it.
+///
+/// On a desktop [platform] (macOS, Linux, Windows) the body leads with a
+/// callout saying health data only exists on iOS and Android. The platform is
+/// injected rather than read from the host process, so a phone layout rendered
+/// on a desktop machine (a test, a screenshot) shows the phone page.
 class HealthImportBody extends ConsumerWidget {
-  const HealthImportBody({super.key});
+  const HealthImportBody({this.platform, super.key});
+
+  /// The platform the page is laid out for; `null` means
+  /// [defaultTargetPlatform].
+  final TargetPlatform? platform;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -82,7 +97,7 @@ class HealthImportBody extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (isDesktop) ...[
+            if (_isDesktopPlatform(platform ?? defaultTargetPlatform)) ...[
               DesignSystemInlineCallout(
                 icon: LottiIcons.computerOff,
                 text: messages.settingsHealthImportUnavailable,
@@ -176,6 +191,16 @@ class HealthImportBody extends ConsumerWidget {
     );
   }
 }
+
+/// Whether [platform] is one the health stores do not exist on.
+bool _isDesktopPlatform(TargetPlatform platform) => switch (platform) {
+  TargetPlatform.macOS ||
+  TargetPlatform.linux ||
+  TargetPlatform.windows => true,
+  TargetPlatform.iOS ||
+  TargetPlatform.android ||
+  TargetPlatform.fuchsia => false,
+};
 
 /// Uppercase eyebrow above a band of content.
 class _SectionLabel extends StatelessWidget {

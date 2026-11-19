@@ -118,6 +118,12 @@ void main() {
       );
       // Countdown lands in the trailing slot via the page-scoped ticker.
       expect(find.text('02:05'), findsOneWidget);
+      // The toolbar counts wakes, not instances.
+      final ctx = tester.element(find.byType(AgentPendingWakesPage));
+      expect(
+        find.text(ctx.messages.agentPendingWakesResultCountAll(1)),
+        findsOneWidget,
+      );
     });
   });
 

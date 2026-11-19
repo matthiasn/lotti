@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -99,6 +100,28 @@ void main() {
     await tester.tap(find.byType(EventSummaryCard));
     await tester.pump();
     expect(beamed, ['/events/evt-1']);
+  });
+
+  testWidgets('dates the card against the injected clock', (tester) async {
+    // In a later year the May 2026 event carries its year; a wall-clock read
+    // in 2026 would show "12 May" instead.
+    await withClock(Clock.fixed(DateTime(2030, 1, 5)), () async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            resolvedOutgoingLinkedEntriesProvider(
+              'evt-1',
+            ).overrideWithValue(const []),
+          ],
+          child: makeTestableWidget2(
+            Scaffold(body: LinkedEventCard(event: _event('evt-1'))),
+          ),
+        ),
+      );
+      await tester.pump();
+    });
+
+    expect(find.textContaining('May 2026'), findsOneWidget);
   });
 
   testWidgets('a host that must leave first gets the tap instead, and '
