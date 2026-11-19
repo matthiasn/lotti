@@ -26,7 +26,7 @@ Maintenance** separano aree davvero diverse della spedizione.
 />
 
 1. Apri **Impostazioni → Definizioni → Categorie**.
-2. Seleziona **Creare una categoria**.
+2. Seleziona **Crea categoria**.
 3. Inserisci un nome, un colore e un'icona distinti.
 4. Creala, poi riapri la categoria per configurarne il comportamento.
 
@@ -61,14 +61,28 @@ più rumoroso.
 
 ## Aggiungi contesto di automazione specifico della categoria
 
-Una categoria può fornire i valori predefiniti per le nuove attività: un
-profilo di inferenza e un modello di agente. Sono predefiniti, non blocchi
-permanenti; le scelte a livello di attività possono comunque cambiare in
-seguito.
+In **Predefinizioni dell'IA**, una categoria può fornire i valori predefiniti
+per le nuove attività: un profilo di inferenza e un modello di agente. Sono
+predefiniti, non blocchi permanenti; le scelte a livello di attività possono
+comunque cambiare in seguito.
+
+- **Inferenza automatica** permette a Lotti di trascrivere i nuovi audio,
+  analizzare le nuove immagini e riassumere le pull request di questa
+  categoria senza che tu lo chieda. Compare non appena il profilo della
+  categoria può fare una di queste cose e resta visibile finché è attiva.
+- Con un modello di agente scelto, **Attiva l'assistente automaticamente**
+  decide se i nuovi agenti delle attività si aggiornano da soli quando
+  un'attività cambia, e **Frequenza di aggiornamento** stabilisce ogni quanto
+  lo fanno.
+
+**Conoscenze della categoria** è ciò che ogni prompt AI per le attività di
+questa categoria dovrebbe sapere: di cosa si tratta, dove sta il codice,
+convenzioni, insidie. Entra nel prompt parola per parola, fino a 4.000
+caratteri.
 
 <ManualScreenshot
   caseId="categories/automation"
-  alt="Impostazioni avanzate di Operazioni del Pinguino con la conoscenza della categoria e le correzioni apprese della lista di controllo per Sir Flaps-a-Lot"
+  alt="Editor della categoria Operazioni del Pinguino scorso fino a un campo Conoscenze della categoria vuoto e a due esempi di correzioni apprese della lista di controllo, tra cui Sir Flaps-a-Lot, sopra Elimina"
   caption="Le correzioni della lista di controllo vengono apprese dalle modifiche e possono essere riviste o eliminate qui."
 />
 

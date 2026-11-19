@@ -5,8 +5,12 @@ description: Controla indicadores de configuración y registro, ejecuta herramie
 
 # Usa los Ajustes avanzados con seguridad
 
-Abre **Ajustes → Ajustes avanzados** para acceder a controles avanzados,
-diagnósticos y mantenimiento. Estas páginas cambian cómo se ejecuta Lotti u
+Abre **Ajustes → Configuración avanzada** para acceder a controles avanzados,
+diagnósticos y mantenimiento. Contiene **Configuración de indicadores**,
+**GitHub**, **Idioma**, **Dominios de registro**, **Estado del sistema**,
+**Mantenimiento**, **Métricas de onboarding** y **Acerca de Lotti**; en iOS y
+Android, **Importación de salud** aparece entre **Estado del sistema** y
+**Mantenimiento**. Estas páginas cambian cómo se ejecuta Lotti u
 operan directamente sobre los datos locales, así que la personalización habitual
 debe hacerse en otras partes de Ajustes.
 
@@ -16,7 +20,7 @@ controles y valores persistentes en ambos diseños.
 
 <ManualScreenshot
   caseId="advanced-settings/hub"
-  alt="Centro de Ajustes avanzados de Lotti con indicadores de configuración, idioma, registro, mantenimiento, métricas de incorporación y Acerca de Lotti"
+  alt="Configuración avanzada de Lotti con Configuración de indicadores, GitHub, Idioma, Dominios de registro, Estado del sistema, Mantenimiento, Métricas de onboarding y Acerca de Lotti"
   caption="Ajustes avanzados agrupa controles operativos lejos de las preferencias diarias. Algunas entradas varían según la plataforma y las capacidades activadas."
 />
 
@@ -34,26 +38,27 @@ solo el enlace a la documentación. La entrada Manual al final de Ajustes y
 
 <ManualScreenshot
   caseId="advanced-settings/flags"
-  alt="Página de indicadores de configuración de Lotti con interruptores con búsqueda para entradas privadas, registro de ubicación, sugerencias y streaming de IA"
+  alt="Página Configuración de indicadores de Lotti con un campo Buscar indicadores e interruptores agrupados en Preferencias, empezando por entradas privadas, registro de ubicación, sugerencias y valoraciones de sesión, y después Avanzado y experimental"
   caption="La búsqueda coincide con los nombres y las descripciones de los indicadores. Cada interruptor cambia de inmediato la capacidad de tiempo de ejecución almacenada."
 />
 
-Los **indicadores de configuración** son el tablero de interruptores de
-capacidades. Incluyen controles para:
+**Configuración de indicadores** es el tablero de interruptores de
+capacidades. Las filas se agrupan en **Preferencias**, lo que razonablemente
+puedes querer cambiar, y **Avanzado y experimental**, que es diagnóstico y
+trabajo sin terminar.
 
-- visibilidad de entradas privadas, captura de ubicación y
-  sugerencias;
-- streaming de respuestas de IA y reproducción de resúmenes;
-- tu acompañante y su chat (consulta [Habla con tu acompañante](../getting-started/companion.mdx));
-- comportamiento del registro y de la sincronización Matrix;
-- avisos de Novedades y valoraciones de sesión;
-- embeddings y búsqueda vectorial; y
-- indicadores operativos, como la actividad de sincronización, las activaciones
-  de agentes pendientes y la reparación de bifurcaciones.
+- **Preferencias:** visibilidad de entradas privadas, captura de ubicación,
+  sugerencias, valoraciones de sesión, Novedades, streaming de respuestas de
+  IA, reproducción de resúmenes de IA y sincronización Matrix.
+- **Avanzado y experimental:** el chat de tareas experimental, tu acompañante y
+  su chat (consulta [Habla con tu acompañante](../getting-started/companion.mdx)),
+  embeddings, sincronización de embeddings y búsqueda vectorial, el recorrido
+  de Daily OS, la reparación de bifurcaciones de agentes, el proceso de
+  sincronización en segundo plano, el registro y el reenvío de adjuntos
+  fallidos.
 
-Las filas se agrupan en **Preferencias**, lo que razonablemente puedes
-cambiar, y **Avanzado y experimental**, que es diagnóstico y trabajo sin
-terminar. Las secciones completas, como Hábitos, Proyectos o Daily OS, ya
+Los interruptores de notificaciones están en **Ajustes → Notificaciones**. Las
+secciones completas, como Hábitos, Proyectos o Daily OS, ya
 no están aquí: viven en [Secciones](./settings.mdx).
 
 Usa **Buscar indicadores** para limitar la lista por título o descripción.
@@ -70,15 +75,17 @@ ni cambia la privacidad de una entrada.
 
 <ManualScreenshot
   caseId="advanced-settings/logging"
-  alt="Ajustes de registro de Lotti con un interruptor maestro, dominios operativos individuales y registro de consultas lentas"
+  alt="Página Dominios de registro de Lotti con el interruptor maestro Activar registro sobre interruptores por dominio como Sincronización, IA, Conversación, Voz y audio, Base de datos y Tareas y listas"
   caption="El interruptor maestro controla los controles por dominio. El conjunto de Project Waddle mantiene activados Sync, IA y Tareas para un diagnóstico centrado."
 />
 
-**Registro** comienza con el interruptor global **Activar registro**. Cuando está
-activado, habilita solo los dominios necesarios para una investigación, como
-Sync, IA, Tareas, Etiquetas, Salud, Hábitos, Navegación, Notificaciones o Daily
-OS. **Registrar consultas lentas** añade diagnósticos del rendimiento de la base
-de datos.
+**Dominios de registro** comienza con el interruptor global **Activar
+registro**. Cuando está activado, habilita solo los dominios necesarios para una
+investigación, entre ellos **Sincronización**, **IA**, **Conversación**, **Voz y
+audio**, **Base de datos**, **Runtime de agentes**, **Tareas y listas**,
+**Etiquetas**, **Salud**, **Hábitos**, **Navegación**, **Notificaciones** y
+**Daily OS**. **Consultas lentas de base de datos** escribe las consultas lentas
+a la base de datos en su propio registro diario `slow_queries-*.log`.
 
 Desactivar el interruptor maestro desactiva los controles por dominio. Los
 errores se siguen escribiendo en el registro diario `error-*.log`; estos
@@ -113,29 +120,48 @@ en **Informes anteriores**, y el informe en pantalla indica siempre qué periodo
 analizó y cuándo se generó. Sin modelo, o si
 la llamada al modelo falla, obtienes igualmente el resumen.
 
+## Conecta GitHub
+
+**GitHub** guarda el token de acceso personal de solo lectura que Lotti usa
+para leer las pull requests que vinculas a tareas. **Crear un token en GitHub**
+abre el formulario de tokens de GitHub con los permisos ya rellenados; elige tus
+repositorios, pega el token en **Token de acceso personal** y selecciona
+**Conectar**. Después, la página muestra qué cuenta está conectada y ofrece
+**Desconectar**. El token se sincroniza con cifrado de extremo a extremo con tus
+otros dispositivos y solo se usa para solicitudes a api.github.com. Con él
+conectado, tu acompañante también puede responder preguntas sobre tus pull
+requests. Consulta [Conecta GitHub](./github.mdx) para seguir pull requests en
+tareas y ver qué hace la IA con ellas.
+
 ## Ejecuta las acciones de mantenimiento deliberadamente
 
 <ManualScreenshot
   caseId="advanced-settings/maintenance"
-  alt="Página de mantenimiento de Lotti con vistas previas de incorporación, acciones de restablecimiento, eliminación de base de datos, purga, índice de búsqueda, embeddings y diagnósticos de repintado"
+  alt="Página de mantenimiento de Lotti con vistas previas de incorporación, acciones de restablecimiento, comprobación de integridad de la base de datos, eliminación de base de datos, purga, índice de texto completo, reparación del almacenamiento de capturas, embeddings y el interruptor de superposición arcoíris de repintado"
   caption="Mantenimiento combina vistas previas seguras con acciones destructivas y de diagnóstico. Lee la confirmación y el alcance antes de continuar."
 />
 
 **Mantenimiento** contiene varios tipos de acciones:
 
-- **Mostrar bienvenida de incorporación** y **Galería de animaciones de
+- **Mostrar bienvenida de onboarding** y **Galería de animaciones de
   incorporación** son vistas previas en directo para desarrollo y QA.
 - **Restablecer sugerencias de la aplicación** permite que los consejos de una
   sola vez vuelvan a aparecer.
 - **Restablecer diálogo de configuración de Gemini** borra su descarte para que
   se pueda probar de nuevo el mensaje del proveedor.
-- **Eliminar base de datos del editor** quita los borradores del editor.
-- **Eliminar base de datos de agentes** quita la base de datos de agentes y
+- **Comprobar la integridad de la base de datos** verifica que los archivos de
+  la base de datos están en buen estado.
+- **Eliminar la base de datos de borradores del editor** quita los borradores
+  del editor.
+- **Eliminar la base de datos de agentes** quita la base de datos de agentes y
   cierra Lotti para que la aplicación pueda reiniciarse con un almacén limpio.
 - **Purgar elementos eliminados** borra permanentemente registros eliminados de
   forma lógica mediante un flujo de confirmación específico.
-- **Recrear índice de texto completo** reconstruye los datos de búsqueda locales
-  sin recrear entradas de diario.
+- **Recrear el índice de texto completo** reconstruye los datos de búsqueda
+  locales sin recrear entradas de diario.
+- **Reparar almacenamiento de capturas** mueve las capturas de pantalla
+  guardadas por versiones anteriores a la carpeta correcta para que el análisis
+  de imágenes con IA pueda leerlas.
 - **Generar embeddings** aparece cuando el almacén de embeddings está disponible
   y rellena las categorías seleccionadas.
 - **Repintar superposición arcoíris** ilumina las regiones que se repintan para

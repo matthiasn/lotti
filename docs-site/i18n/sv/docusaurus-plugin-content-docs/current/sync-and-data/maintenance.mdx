@@ -13,7 +13,7 @@ du inte kan återskapa.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lottis synkroniseringsunderhåll med Ta bort synkdatabasen, Synkronisera mätbara saker, instrumentpaneler, vanor, kategorier, AI-inställningar, Meddelandehistorik, Fyll i synksekvenslogg och Rensa gamla ut-ut-varor"
+  alt="Lottis synkroniseringsunderhåll med Ta bort synkdatabasen, Synkronisera mätbara saker, instrumentpaneler, vanor, kategorier, AI-inställningar, Meddelandehistorik, Fyll i synksekvenslogg, Djup återfyllning och Rensa gamla ut-ut-varor"
   caption="Underhåll samlar destruktiva, upprepande och rensande åtgärder på en sida. Bekräftelsetexten avgränsar varje åtgärds omfattning."
 />
 
@@ -33,17 +33,21 @@ du inte kan återskapa.
 - **Fyll i synksekvenslogg** indexerar befintliga poster så att återfyllningen
   också kan svara på begäranden om poster som skapades innan
   sekvensspårningen fanns.
+- **Djup återfyllning** skickar en lista över varje post på den här enheten,
+  borttagningar inräknade, till dina andra enheter. Var och en ber om det den
+  saknar och skickar tillbaka det som den här enheten saknar. Dina andra
+  enheter behöver vara online för att svara; bekräfta med **Ja, starta**.
 - **Rensa gamla ut-ut-varor** tar bort skickade rader i utboxen som är äldre än
   7 dagar och frigör diskutrymme. Poster som väntar eller har misslyckats
   behålls.
 
 Börja med den minsta åtgärd som passar symptomet. En bilaga som fastnat hör
 hemma i [utboxen](./sync.mdx#inspektera-utboxen), bestående luckor i sekvensen
-hör till Backfill-synkronisering, och två giltiga samtidiga redigeringar hör
+hör till **Synkroniseringsstatus**, och två giltiga samtidiga redigeringar hör
 till [konflikterna](./conflicts.mdx). Att ta bort synkroniseringsdatabasen bör
 vara en lokal återställning i sista hand, gjord med en känd pålitlig enhet och en
 säkerhetskopia till hands.
 
-Gå efter en reparation tillbaka till **Matrisstatistik**, kontrollera att
+Gå efter en reparation tillbaka till **Matrix-statistik**, kontrollera att
 tillämpat arbete går framåt och kön töms, och att utboxen och antalet saknade
-poster i återfyllningen lugnar sig.
+poster i **Synkroniseringsstatus** lugnar sig.

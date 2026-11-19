@@ -13,7 +13,7 @@ dati che non puoi ricreare.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Manutenzione della sincronizzazione di Lotti con Eliminare il database Sync, Sincronizzabili, cruscotti, abitudini, categorie, Impostazioni AI, Cronologia messaggi, Sequenza di sincronizzazione populare log e Purge vecchio inviato outbox articoli"
+  alt="Manutenzione della sincronizzazione di Lotti con Eliminare il database Sync, Sincronizzabili, cruscotti, abitudini, categorie, Impostazioni AI, Cronologia messaggi, Sequenza di sincronizzazione populare log, Recupero completo e Purge vecchio inviato outbox articoli"
   caption="La manutenzione raccoglie su una pagina azioni distruttive, di riproduzione e di pulizia. Il testo di conferma definisce la portata di ogni operazione."
 />
 
@@ -34,17 +34,21 @@ dati che non puoi ricreare.
 - **Sequenza di sincronizzazione populare log** indicizza le voci esistenti in
   modo che il recupero possa rispondere alle richieste di voci create prima che
   esistesse il tracciamento delle sequenze.
+- **Recupero completo** invia agli altri tuoi dispositivi l'elenco di tutti i
+  record su questo dispositivo, eliminazioni comprese. Ognuno chiede ciò che
+  gli manca e rimanda ciò che manca a questo dispositivo. Gli altri tuoi
+  dispositivi devono essere online per rispondere; conferma con **Sì, avvia**.
 - **Purge vecchio inviato outbox articoli** elimina le righe già inviate della
   posta in uscita più vecchie di 7 giorni e libera spazio su disco. Gli elementi
   in attesa o non riusciti vengono conservati.
 
 Inizia dall'operazione più piccola che corrisponde al sintomo. Un allegato
 bloccato va nella [posta in uscita](./sync.mdx#ispeziona-la-posta-in-uscita);
-buchi di sequenza persistenti vanno nella Sincronizzazione di backup; due
+buchi di sequenza persistenti vanno in **Stato della sincronizzazione**; due
 modifiche concorrenti valide vanno nei [conflitti](./conflicts.mdx). Eliminare
 il database di sincronizzazione dovrebbe restare un ripristino locale di ultima
 istanza, fatto con un peer affidabile e un backup a disposizione.
 
 Dopo una riparazione, torna a **Statistiche Matrix**, controlla che il lavoro
 applicato avanzi e che la coda si svuoti, e che la posta in uscita e il numero
-di mancanti del recupero si assestino.
+di mancanti in **Stato della sincronizzazione** si assestino.

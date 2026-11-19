@@ -29,7 +29,7 @@ service yet.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Lotti Sync Settings listing Devices, This device, Backfill sync, Matrix Stats, Sync Outbox, Sync Conflicts, and Maintenance"
+  alt="Lotti Sync Settings listing Devices, This device, Sync health, Matrix Stats, Sync Outbox, Sync Conflicts, and Maintenance"
   caption="Sync Settings keeps everyday status next to diagnostics and recovery tools. Project Waddle currently has three outbox items to inspect."
 />
 
@@ -121,19 +121,21 @@ are descriptive; the relevant AI profile must still be configured to use them.
 
 ## Understand catch-up and backfill
 
-Normal sync processes changes as they arrive. **Backfill sync** detects gaps in
+Normal sync processes changes as they arrive. **Sync health** detects gaps in
 the sequence received from known devices and requests missing records again.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Lotti Backfill sync page showing inbound queue, missing, and skipped counts, sync statistics, automatic backfill, and advanced recovery"
-  caption="Project Waddle has received 2,868 sequence records and currently knows about four missing records across two device IDs."
+  alt="Lotti Sync health page showing records on this device, inbound queue and missing counts, sync statistics, automatic backfill, and advanced recovery"
+  caption="Project Waddle tracks 2,868 sequence counters, has received 2,775 of them, and currently knows about four missing records across two device IDs."
 />
 
+- **Records on this device** counts what this device holds, deletions
+  included. Devices that are in sync show the same numbers here.
 - **Inbound queue** is work currently waiting to be applied.
 - **Missing** is the number of known sequence gaps.
-- **Skipped** is work the inbound queue gave up on after it could not be
-  processed normally.
+- **Skipped**, in **Sync statistics**, is work the inbound queue gave up on
+  after it could not be processed normally.
 - **Automatic backfill** requests missing entries from the last 24 hours and
   is the right default for normal use.
 - **Advanced recovery** contains manual actions for an investigation, such as

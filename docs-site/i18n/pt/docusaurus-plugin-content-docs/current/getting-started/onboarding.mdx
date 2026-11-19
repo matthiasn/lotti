@@ -1,150 +1,156 @@
 ---
-title: Configure Lotti com integração
-description: Conecte um provedor de IA, escolha as áreas de trabalho e transforme um primeiro pensamento em uma tarefa real.
+title: Configura o Lotti com a integração
+description: Liga um fornecedor de IA, escolhe as áreas de trabalho e transforma um primeiro pensamento numa tarefa real.
 ---
 
-# Configure Lotti com integração
+# Configura o Lotti com a integração
 
-A integração conecta as peças mínimas necessárias para o fluxo de trabalho de
-tarefas assistido por IA de Lotti: um provedor, pelo menos uma categoria e uma primeira tarefa real. É uma configuração guiada, não
-um ambiente de demonstração separado – provedores, categorias e tarefas
-criados aqui permanecem no aplicativo normal.
+A integração liga as peças mínimas de que o fluxo de tarefas assistido por IA
+do Lotti precisa: um fornecedor, pelo menos uma categoria e uma primeira
+tarefa real. É uma configuração guiada, não um ambiente de demonstração à
+parte — os fornecedores, categorias e tarefas criados aqui ficam na aplicação
+normal.
 
-Abra **Configurações → Integração** sempre que quiser iniciar ou repetir o
-fluxo. A página também mostra se este perfil já criou sua primeira tarefa
+Abre **Configurações → Integração** sempre que quiseres iniciar ou repetir o
+fluxo. A página mostra também se este perfil já criou a sua primeira tarefa
 estruturada por IA.
 
 <ManualScreenshot
   caseId="onboarding/settings"
-  alt="Configurações de integração do Lotti mostrando o status ativado e a ação de repetir a integração"
-  caption="Este perfil do Project Waddle já criou sua primeira tarefa de IA. Repetir a integração continua disponível após a ativação."
+  alt="Definições de Integração do Lotti a mostrar o estado ativado e a ação Repetir a integração"
+  caption="Este perfil do Project Waddle já criou a sua primeira tarefa de IA. Repetir a integração continua disponível depois da ativação."
 />
 
-## Comece com a promessa de boas-vindas
+## Começa pela promessa de boas-vindas
 
 <ManualScreenshot
   caseId="onboarding/welcome"
-  alt="Boas-vindas da integração da Lotti com a Lotti, a saudação dela e as três etapas: conectar uma chave, escolher suas áreas, criar sua primeira tarefa"
-  caption="Cada etapa tem o mesmo layout: a Lotti, o balão de fala dela e o conteúdo próprio da etapa acima do botão principal. As boas-vindas listam as três etapas seguintes."
+  alt="Boas-vindas da integração do Lotti com o Lotti, a sua saudação e os três passos: ligar uma chave, escolher as tuas áreas, criar a tua primeira tarefa"
+  caption="Cada passo tem a mesma disposição: o Lotti, o seu balão de fala e o conteúdo próprio do passo por cima do botão principal. As boas-vindas enumeram os três passos seguintes."
 />
 
-Selecione **Começar com uma só chave** para começar, ou **Explorar com dados de
-exemplo** para conhecer primeiro um mundo de demonstração já mobiliado. O botão
-de fechar no topo, a ação de voltar do sistema e, no computador, um clique fora
-do painel saem da integração a partir das boas-vindas sem conectar nada. Você
-pode voltar mais tarde pelas Configurações.
+Seleciona **Começar com uma só chave** para começares, ou **Explorar com dados
+de exemplo** para conheceres primeiro um mundo de demonstração já recheado. O
+botão de fechar no topo, a ação de voltar do sistema e, no computador, um
+clique fora do painel saem da integração a partir das boas-vindas sem ligar
+nada. Podes voltar mais tarde a partir das Configurações.
 
 Depois das boas-vindas, a seta de voltar no topo — e a ação de voltar do
-sistema — retornam à etapa anterior, e o botão de fechar sai da integração.
-Três segmentos ao lado mostram quanto você já avançou com a chave, suas áreas e
-sua primeira tarefa.
+sistema — regressam ao passo anterior, e o botão de fechar sai da integração.
+Três segmentos ao lado mostram até onde já chegaste com a chave, as tuas áreas
+e a tua primeira tarefa.
 
-Lotti também pode oferecer essas boas-vindas automaticamente a um perfil
-elegível. O prompt automático tem uma cadência limitada de novas tentativas; a
-entrada nas Configurações não tem, então você sempre mantém um caminho de
-volta.
+O Lotti também pode oferecer estas boas-vindas automaticamente a um perfil
+elegível. O aviso automático tem um ritmo limitado de novas tentativas; a
+entrada nas Configurações não tem, por isso tens sempre um caminho de volta.
 
-## Escolha onde a estruturação de tarefas é executada
+## Escolhe onde corre a estruturação de tarefas
 
 <ManualScreenshot
   caseId="onboarding/providers"
-  alt="Etapa de provedores da integração Lotti com Mistral escolhido e o botão Continuar com Mistral"
-  caption="O Mistral é recomendado e já vem escolhido. Abra Outros fornecedores para ver o resto, incluindo o caminho local do Ollama."
+  alt="Passo de fornecedores da integração do Lotti com o Mistral escolhido e o botão Continuar com Mistral"
+  caption="O Mistral é recomendado e já vem escolhido. Abre Outros fornecedores para veres os restantes, incluindo o caminho local do Ollama."
 />
 
-O Mistral está escolhido quando a etapa abre. Toque em outro cartão para
-escolher esse provedor; o botão na parte inferior mostra com qual você vai
-continuar, e só o botão avança. Os provedores são:
+O Mistral está escolhido quando o passo abre. Toca noutro cartão para
+escolheres esse fornecedor; o botão em baixo indica com qual vais continuar, e
+só o botão avança. Os fornecedores são:
 
-- **Mistral** é o padrão recomendado, hospedado na UE.
-- **Melious.ai** é hospedado na UE, com roteamento dinâmico de modelos.
-- **Gemini** e **Qwen** expõem suas respectivas regiões de hospedagem.
-- **OpenAI** está disponível em **Outros fornecedores**, junto com os demais.
-- **Ollama** se conecta a um endpoint local compatível e não requer um
-  chave de API hospedada.
+- **Mistral** é a predefinição recomendada, alojada na UE.
+- **Melious.ai** está alojado na UE, com encaminhamento dinâmico de modelos.
+- **Gemini** e **Qwen** indicam as respetivas regiões de alojamento.
+- **OpenAI** está disponível em **Outros fornecedores**, com os restantes.
+- **Ollama** liga-se a um endpoint local compatível e não precisa de uma
+  chave de API alojada.
 
 <ManualScreenshot
   caseId="onboarding/api-key"
-  alt="Painel de verificação do provedor de integração Lotti mostrando uma conexão local verificada do Ollama"
-  caption="Lotti verifica o provedor escolhido antes de o botão avançar. Os provedores hospedados usam a mesma etapa com um campo de chave de API."
+  alt="Painel de verificação do fornecedor na integração do Lotti a mostrar uma ligação local do Ollama verificada"
+  caption="O Lotti verifica o fornecedor escolhido antes de o botão avançar. Os fornecedores alojados usam o mesmo passo com um campo para a chave de API."
 />
 
-Para um provedor hospedado, cole a chave de API do provedor. Lotti verifica a
-conexão e mostra o resultado no cartão do provedor antes de ativar **Continuar
-com** o provedor. O Ollama verifica o endpoint local
-configurado e informa os modelos acessíveis. Uma conexão bem-sucedida salva o
-provedor e semeia os modelos e o perfil de inferência usados pelas etapas
+Para um fornecedor alojado, cola a chave de API do fornecedor. O Lotti
+verifica a ligação e mostra o resultado no cartão do fornecedor antes de
+ativar **Continuar com** o fornecedor. O Ollama verifica o endpoint local
+configurado e indica os modelos acessíveis. Uma ligação bem-sucedida guarda o
+fornecedor e cria os modelos e o perfil de inferência usados nos passos
 seguintes.
 
-O texto de tarefa capturado é enviado para estruturação ao provedor atribuído
-à categoria selecionada. Escolha um provedor cujo modelo de implantação e de
-tratamento de dados combine com o material que você planeja capturar. Um
-endpoint local acessível do Ollama mantém essa solicitação de estruturação na
-máquina que a executa.
+O texto de tarefa captado é enviado para estruturação ao fornecedor atribuído
+à categoria selecionada. Escolhe um fornecedor cujo modelo de implementação e
+de tratamento de dados seja adequado ao material que pensas captar. Um
+endpoint local do Ollama acessível mantém esse pedido de estruturação na
+máquina que o executa.
 
-## Escolha as áreas de trabalho
+## Escolhe as tuas áreas de trabalho
 
-Depois que a conexão for bem-sucedida, a integração segue direto para as áreas
-de trabalho. A primeira tarefa é gravada com o orbe de energia; você pode trocar
-para o medidor VU a qualquer momento em **Configurações → Preferências → Estilo
-de gravação**.
+Depois de a ligação ser bem-sucedida, a integração segue diretamente para as
+tuas áreas de trabalho. A primeira tarefa é gravada com o orbe de energia;
+podes mudar para o medidor VU a qualquer momento em **Configurações →
+Preferências → Estilo de gravação**.
 
 <ManualScreenshot
   caseId="onboarding/categories"
-  alt="Seletor de área de trabalho de integração Lotti com Trabalho, Fitness, Família, Amigos e Adicione suas próprias escolhas"
-  caption="Escolha uma ou mais áreas para o novo provedor. Texto dimensionado e layouts estreitos usam automaticamente uma opção de largura total por linha."
+  alt="Seletor de áreas de trabalho da integração do Lotti com as opções Trabalho, Fitness, Família, Amigos e Adiciona a tua"
+  caption="Escolhe uma ou mais áreas para o novo fornecedor. Com texto ampliado ou disposições estreitas, cada opção ocupa automaticamente uma linha inteira."
 />
 
-A seguir, selecione uma ou mais áreas de trabalho. As predefinições cobrem
-categorias comuns, como Trabalho, Fitness, Família e Amigos; **Adicione o seu
-próprio** cria uma categoria com um nome que corresponda ao seu espaço de
-trabalho. A integração reutiliza uma categoria existente com o mesmo nome em
-vez de criar uma duplicata, restaura-a quando necessário e a conecta ao perfil
-de inferência recém-semeado.
+A seguir, seleciona uma ou mais áreas de trabalho. As predefinições cobrem
+categorias comuns, como Trabalho, Fitness, Família e Amigos; **Adiciona a tua**
+cria uma categoria com um nome que corresponda ao teu espaço de trabalho. A
+integração reutiliza uma categoria existente com o mesmo nome em vez de criar
+um duplicado, restaura-a quando necessário e liga-a ao perfil de inferência
+acabado de criar.
 
-O cenário do manual cria dois destinos reais – **Penguin Operations** e
-**Controle da missão** –, então a próxima etapa demonstra a mesma escolha de
+O cenário do manual cria dois destinos reais — **Operações com pinguins** e
+**Controle da Missão** —, por isso o passo seguinte mostra a mesma escolha de
 categoria que uma conta em uso real vê.
 
-## Capture a primeira tarefa real
+## Capta a primeira tarefa real
 
 <ManualScreenshot
   caseId="onboarding/first-task"
-  alt="Painel de integração da primeira tarefa do Lotti com captura de voz, os destinos Penguin Operations e Controle da missão, sugestões e a opção Prefere digitar"
-  caption="Escolha onde a tarefa deve chegar e então fale naturalmente, use uma sugestão inicial ou selecione Prefere digitar. Penguin Operations está selecionada aqui."
+  alt="Painel da primeira tarefa da integração do Lotti com captura de voz, os destinos Operações com pinguins e Controle da Missão, sugestões e a opção Preferes escrever"
+  caption="Escolhe onde a tarefa deve ficar e depois fala naturalmente, usa uma sugestão inicial ou seleciona Preferes escrever. Aqui está selecionada Operações com pinguins."
 />
 
-O painel da primeira tarefa usa o pipeline de captura normal de Lotti. Escolha
-a categoria de destino e use um dos três caminhos:
+O painel da primeira tarefa usa o fluxo de captura normal do Lotti. Escolhe a
+categoria de destino e usa um de três caminhos:
 
-1. Selecione **Toque para falar** e fale a tarefa em uma frase normal. O
-   gravador aparece enquanto o microfone está aberto; **Concluído** encerra a
-   gravação e **Recomeçar** a descarta.
-2. Escolha uma sugestão inicial para criar uma tarefa a partir dela na hora.
-3. Escolha **Prefere digitar?** e insira o pensamento sem usar o microfone.
+1. Seleciona **Toque para falar** e diz a tarefa numa frase normal. O
+   gravador aparece enquanto o microfone está aberto; **Concluído** termina a
+   gravação e **Recomeçar** descarta-a.
+2. Escolhe uma sugestão inicial para criares de imediato uma tarefa a partir
+   dela.
+3. Escolhe **Preferes escrever?** e escreve o pensamento sem usar o microfone.
 
-Lotti ecoa as palavras capturadas enquanto as estrutura. O resultado é uma
-tarefa real na categoria escolhida, e não dados de exemplo restritos à
+O Lotti repete as palavras captadas enquanto as estrutura. O resultado é uma
+tarefa real na categoria escolhida, e não dados de exemplo exclusivos da
 integração. Quando a estruturação produz sugestões de lista de verificação,
-elas chegam à tarefa como propostas para você confirmar, em vez de alterar a
-tarefa silenciosamente. Esse caminho de propostas exige que a categoria da tarefa tenha um modelo de agente padrão — a integração o atribui às categorias que cria sempre que você conectou um provedor de IA, mas uma categoria criada depois nas Configurações não tem nenhum até você atribuir, e uma lista de verificação para uma tarefa nessa categoria é descartada em vez de proposta.
+estas chegam à tarefa como propostas para confirmares, em vez de alterarem a
+tarefa em silêncio. Esse caminho de propostas exige que a categoria da tarefa
+tenha um modelo de agente predefinido — a integração atribui um às categorias
+que cria sempre que ligaste um fornecedor de IA, mas uma categoria criada mais
+tarde nas Configurações não tem nenhum até lho atribuíres, e uma lista de
+verificação estruturada para uma tarefa nessa categoria é descartada em vez de
+proposta.
 
 <ManualScreenshot
   caseId="onboarding/task-created"
-  alt="Painel de sucesso de integração da Lotti mostrando a tarefa criada Inspecionar o revezamento da sardinha Europa"
-  caption="O pensamento digitado do Project Waddle torna-se “Inspecionar o revezamento da sardinha Europa”. A tarefa permanece no painel até que você a escolha."
+  alt="Painel de sucesso da integração do Lotti a mostrar a tarefa criada Inspecione o revezamento da sardinha Europa"
+  caption="O pensamento escrito do Project Waddle torna-se «Inspecione o revezamento da sardinha Europa». A tarefa fica no painel até a escolheres."
 />
 
-Selecione **Abrir tarefa** para fechar a integração e abrir a página
-normal da tarefa. A partir daí, você pode revisar propostas de lista de
-verificação, adicionar capa ou evidências, definir data de vencimento e
+Seleciona **Abrir tarefa** para fechares a integração e abrires a página normal
+da tarefa. A partir daí, podes rever as propostas de lista de verificação,
+acrescentar uma capa ou evidências, definir a data de vencimento e a
 prioridade e trazer a tarefa para o Daily OS.
 
-Se você fechar o fluxo depois de conectar um provedor, Lotti mantém a
-configuração desse provedor e trata as boas-vindas como concluídas. Repetir a
-integração mais tarde continua seguro: é uma ação explícita nas Configurações,
-e não outro prompt automático.
+Se fechares o fluxo depois de ligares um fornecedor, o Lotti mantém a
+configuração desse fornecedor e considera as boas-vindas concluídas. Repetir a
+integração mais tarde continua a ser seguro: é uma ação explícita nas
+Configurações, e não outro aviso automático.
 
-Continue com [criar sua primeira tarefa](./first-task.mdx),
-[gerenciar categorias](../organize-and-reflect/categories.mdx) e
-[configurar provedores](../ai-and-automation/provider-setup.mdx).
+Continua com [criar a tua primeira tarefa](./first-task.mdx),
+[gerir categorias](../organize-and-reflect/categories.mdx) e
+[configurar fornecedores](../ai-and-automation/provider-setup.mdx).

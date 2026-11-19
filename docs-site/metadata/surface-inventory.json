@@ -1034,8 +1034,8 @@
       "routes": [
         "/settings/advanced/github"
       ],
-      "page": "tasks/github-pull-requests",
-      "status": "planned"
+      "page": "reference/github",
+      "status": "documented"
     },
     {
       "id": "settings-logging",
@@ -1391,8 +1391,8 @@
         "/goals/details/:agentId/chat",
         "/goals/details/:agentId/timeline"
       ],
-      "page": "ai-and-automation/goal-agents",
-      "status": "planned"
+      "page": "organize-and-reflect/goals",
+      "status": "documented"
     },
     {
       "id": "people-relationships",
@@ -1410,7 +1410,7 @@
         "/people/:relationshipId/check-ins/:checkInId"
       ],
       "page": "organize-and-reflect/people",
-      "status": "planned"
+      "status": "documented"
     }
   ]
 }

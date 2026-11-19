@@ -12,7 +12,7 @@ you cannot recreate.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lotti sync Maintenance with Delete Sync Database, Sync measurables, dashboards, habits, categories, AI settings, Message history, Populate sync sequence log, and Purge old sent outbox items"
+  alt="Lotti sync Maintenance with Delete Sync Database, Sync measurables, dashboards, habits, categories, AI settings, Message history, Populate sync sequence log, Deep backfill, and Purge old sent outbox items"
   caption="Maintenance groups destructive, replay, and cleanup actions on one page. The confirmation text defines the scope of each operation."
 />
 
@@ -30,15 +30,19 @@ you cannot recreate.
   failed entries** repeats just those.
 - **Populate sync sequence log** indexes existing entries so that backfill can
   answer requests for entries created before sequence tracking existed.
+- **Deep backfill** sends a list of every record on this device, deletions
+  included, to your other devices. Each one asks for what it is missing and
+  sends back what this device lacks. Your other devices need to be online to
+  answer; confirm with **Yes, start**.
 - **Purge old sent outbox items** deletes sent outbox rows older than 7 days
   and reclaims disk space. Items that are still waiting or failed are kept.
 
 Start with the smallest operation that matches the symptom. A stuck attachment
 belongs in the [Outbox](./sync.mdx#inspect-the-outbox); persistent sequence gaps
-belong in Backfill sync; two valid concurrent edits belong in
+belong in **Sync health**; two valid concurrent edits belong in
 [Conflicts](./conflicts.mdx). Deleting the sync database should be a last-resort
 local reset performed with a known-good peer and backup available.
 
 After a repair, return to **Matrix Stats**, confirm that applied work is
-advancing and the queue drains, and check that the Sync Outbox and the Backfill
-missing count settle.
+advancing and the queue drains, and check that the Sync Outbox and the missing
+count in **Sync health** settle.

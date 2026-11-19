@@ -6,7 +6,10 @@ description: Beheer functievlaggen en logboekregistratie, voer onderhoudstools u
 # Gebruik geavanceerde instellingen veilig
 
 Open **Instellingen → Geavanceerde instellingen** voor besturingselementen voor
-gevorderde gebruikers, diagnostiek en onderhoud. Deze pagina's veranderen hoe Lotti
+gevorderde gebruikers, diagnostiek en onderhoud. Er staan **Configuratievlaggen**,
+**GitHub**, **Taal**, **Logdomeinen**, **Systeemstatus**, **Onderhoud**,
+**Onboarding-statistieken** en **Over Lotti**; op iOS en Android verschijnt
+**Gezondheidsimport** tussen **Systeemstatus** en **Onderhoud**. Deze pagina's veranderen hoe Lotti
 werkt of werken rechtstreeks op lokale gegevens, dus gewone personalisatie hoort
 elders in Instellingen.
 
@@ -16,7 +19,7 @@ besturingselementen en bewaarde waarden gebruikt.
 
 <ManualScreenshot
   caseId="advanced-settings/hub"
-  alt="Lotti-hub voor geavanceerde instellingen met configuratievlaggen, taal, loggen, onderhoud, onboarding-statistieken en Over Lotti"
+  alt="Lotti Geavanceerde instellingen met Configuratievlaggen, GitHub, Taal, Logdomeinen, Systeemstatus, Onderhoud, Onboarding-statistieken en Over Lotti"
   caption="Geavanceerde instellingen groeperen operationele besturing weg van alledaagse voorkeuren. Sommige items variëren per platform en ingeschakelde mogelijkheden."
 />
 
@@ -34,24 +37,24 @@ beide deze instelling.
 
 <ManualScreenshot
   caseId="advanced-settings/flags"
-  alt="Lotti-configuratievlaggenpagina met doorzoekbare schakelaars voor privé-invoer, locatieregistratie, tooltips en AI-streaming"
+  alt="Lotti-pagina Configuratievlaggen met een veld Zoekvlaggen en schakelaars gegroepeerd onder Voorkeuren, beginnend met privé-invoer, locatieregistratie, tooltips en sessiebeoordelingen, daarna Geavanceerd en experimenteel"
   caption="Zoeken matcht zowel vlagnamen als beschrijvingen. Elke schakelaar wijzigt de opgeslagen runtime-mogelijkheid onmiddellijk."
 />
 
-**Vlaggen instellen** is het schakelbord voor mogelijkheden. Het bevat besturing voor:
+**Configuratievlaggen** is het schakelbord voor mogelijkheden. De rijen zijn verdeeld
+over **Voorkeuren**, wat je redelijkerwijs wilt aanpassen, en **Geavanceerd en
+experimenteel**, voor diagnostiek en onafgemaakt werk.
 
-- zichtbaarheid van privé-invoer, locatieregistratie en tooltips;
-- AI-antwoordstreaming en het voorlezen van samenvattingen;
-- de metgezel en haar chat (zie [Praat met je metgezel](../getting-started/companion.mdx));
-- loggen en Matrix-synchronisatiegedrag;
-- Wat is er nieuw-meldingen en sessiebeoordelingen;
-- embeddings en vectorzoeken; en
-- operationele indicatoren zoals synchronisatieactiviteit, wachtende wakkercycli en
-  fork-herstel.
+- **Voorkeuren:** zichtbaarheid van privé-invoer, locatieregistratie, tooltips,
+  sessiebeoordelingen, Wat is er nieuw, AI-antwoordstreaming, het voorlezen van
+  AI-samenvattingen en Matrix-synchronisatie.
+- **Geavanceerd en experimenteel:** de experimentele taakchat, de metgezel en haar
+  chat (zie [Praat met je metgezel](../getting-started/companion.mdx)), embeddings,
+  het synchroniseren van embeddings en vectorzoeken, de Daily OS-rondleiding,
+  fork-herstel van agenten, de achtergrondsynchronisatie, loggen en het opnieuw
+  versturen van mislukte bijlagen.
 
-De rijen zijn verdeeld over **Voorkeuren**, wat je redelijkerwijs wilt
-aanpassen, en **Geavanceerd en experimenteel**, voor diagnostiek en
-onafgemaakt werk. Hele onderdelen zoals Gewoontes, Projecten en Daily OS
+Meldingsschakelaars staan in **Instellingen → Meldingen**. Hele onderdelen zoals Gewoontes, Projecten en Daily OS
 staan hier niet meer; die vind je bij [Onderdelen](./settings.mdx).
 
 Gebruik **Zoekvlaggen** om de lijst te verfijnen op titel of beschrijving. Selecteer
@@ -68,15 +71,17 @@ een invoer niet.
 
 <ManualScreenshot
   caseId="advanced-settings/logging"
-  alt="Lotti-loginstellingen met een hoofdschakelaar voor loggen, individuele operationele domeinen en logging van langzame query's"
+  alt="Lotti-pagina Logdomeinen met de hoofdschakelaar Loggen inschakelen boven schakelaars per domein zoals Synchroniseren, AI, Gesprek, Spraak & audio, Database en Taken & controlelijsten"
   caption="De hoofdschakelaar bepaalt de besturing per domein. De Project Waddle-fixture houdt Sync, AI en Taken ingeschakeld voor gerichte diagnostiek."
 />
 
-**Loggen van domeinnamen** begint met de algemene schakelaar **Loggen inschakelen**.
+**Logdomeinen** begint met de algemene schakelaar **Loggen inschakelen**.
 Schakel, wanneer die aanstaat, alleen de domeinen in die nodig zijn voor een
-onderzoek, zoals Sync, AI, Taken, Labels, Gezondheid, Gewoonten, Navigatie,
-Meldingen of Daily OS. **Langzame database-vragen** voegt diagnostiek van
-databaseprestaties toe.
+onderzoek – waaronder **Synchroniseren**, **AI**, **Gesprek**, **Spraak & audio**,
+**Database**, **Agent runtime**, **Taken & controlelijsten**, **Labels**,
+**Gezondheid**, **Gewoontes**, **Navigatie**, **Meldingen** en **Daily OS**.
+**Langzame database-vragen** schrijft langzame databasequery's naar een eigen
+dagelijkse `slow_queries-*.log`.
 
 Als je de hoofdschakelaar uitschakelt, worden de domeinbesturingen uitgeschakeld.
 Fouten worden nog steeds naar de dagelijkse `error-*.log` geschreven; deze schakelaars
@@ -107,21 +112,34 @@ opnieuw getoond als je de pagina de volgende keer opent, eerdere staan onder
 het analyseerde en wanneer het is gemaakt. Zonder model, of als de
 modelaanroep mislukt, krijg je toch de samenvatting.
 
+## Verbind GitHub
+
+**GitHub** bewaart het alleen-lezen persoonlijke toegangstoken waarmee Lotti de pull
+requests leest die je aan taken koppelt. **Token aanmaken op GitHub** opent het
+tokenformulier van GitHub met de rechten al ingevuld; kies je repository's, plak het
+token in **Persoonlijk toegangstoken** en selecteer **Verbinden**. De pagina toont
+daarna welk account verbonden is en biedt **Verbinding verbreken**. Het token wordt
+end-to-end versleuteld naar je andere apparaten gesynchroniseerd en alleen gebruikt
+voor verzoeken aan api.github.com. Is het verbonden, dan kan de metgezel ook vragen
+over je pull requests beantwoorden. Zie [GitHub verbinden](./github.mdx) voor het
+volgen van pull requests op taken en wat de AI ermee doet.
+
 ## Voer bewust onderhoudsacties uit
 
 <ManualScreenshot
   caseId="advanced-settings/maintenance"
-  alt="Lotti-onderhoudspagina met onboarding-previews, resetacties, databaseverwijdering, opschonen, zoekindex, embeddings en repaint-diagnostiek"
+  alt="Lotti-onderhoudspagina met onboarding-previews, resetacties, controle van de database-integriteit, databaseverwijdering, opschonen, volledige-tekstindex, herstel van screenshotopslag, embeddings en de schakelaar voor de repaint rainbow overlay"
   caption="Onderhoud combineert veilige previews met destructieve en diagnostische acties. Lees de bevestiging en de scope voordat je verdergaat."
 />
 
 **Onderhoud** omvat verschillende soorten acties:
 
-- **Ontvangst aan boord tonen** en **Animatiegalerij aan boord** zijn live
+- **Onboarding-welkom tonen** en **Onboarding-animatiegalerij** zijn live
   previews voor ontwikkeling en kwaliteitscontrole.
 - **In-app hints resetten** zorgt ervoor dat eenmalige tips opnieuw kunnen verschijnen.
 - **Gemini instellen dialoogvenster resetten** wist het wegklikken, zodat de
   providerprompt opnieuw getest kan worden.
+- **Database-integriteit controleren** controleert of de databasebestanden in orde zijn.
 - **Editordatabase verwijderen** verwijdert editorconcepten.
 - **Database verwijderen** verwijdert de agentendatabase en sluit Lotti af, zodat de
   app opnieuw kan opstarten met een schone opslag.
@@ -129,6 +147,8 @@ modelaanroep mislukt, krijg je toch de samenvatting.
   speciale bevestigingsstroom.
 - **Volledige tekst-index opnieuw aanmaken** bouwt lokale zoekgegevens opnieuw op
   zonder logboekinvoer opnieuw te maken.
+- **Screenshotopslag herstellen** verplaatst screenshots die oudere versies hebben
+  opgeslagen naar de juiste map, zodat AI-beeldanalyse ze kan lezen.
 - **Inbeddingen genereren** verschijnt wanneer de embeddingopslag beschikbaar is en
   vult geselecteerde categorieën aan.
 - **Repaint rainbow overlay** laat opnieuw getekende gebieden knipperen voor
@@ -146,7 +166,7 @@ eventuele lopende synchronisatie- of schrijfbewerkingen eerst eindigen.
   caption="De deterministische handleiding-fixture bereikte zijn echte aha-moment over vier actieve dagen, na het verbinden van een provider en het opnemen van meerdere captures."
 />
 
-**Metrics aan boord** is een oppervlak voor ontwikkelaars en QA. Het leidt een lokale
+**Onboarding-statistieken** is een oppervlak voor ontwikkelaars en QA. Het leidt een lokale
 trechter af uit inhoudsvrije gebeurtenissen en toont:
 
 - de eerst geziene tijdstempel in UTC;
@@ -159,7 +179,7 @@ De pagina registreert gebeurtenisnamen en metagegevens met lage kardinaliteit, g
 logboektekst, taaktitels, transcripten of de sardinegevoelige details van Project
 Waddle.
 
-**Aan boord van de test herstellen** wist het ritme van de onboardingprompt en de
+**Onboarding-teststatus resetten** wist het ritme van de onboardingprompt en de
 lokale trechterstatistieken na bevestiging. Het verwijdert geen logboekgegevens,
 configuratievlaggen of echte Daily OS-plangeschiedenis. Een profiel dat al een dag
 heeft gepland, komt daarom niet in aanmerking voor het exacte
@@ -178,7 +198,7 @@ is. Het toont de app-versie en het buildnummer, het platform en het buildtype. N
 die waarden op in een diagnostisch rapport, zodat gedrag aan de juiste code en release
 gekoppeld kan worden.
 
-De kaart **Uw gegevens** vat lokale logboekinvoer, gemarkeerde invoer en
+De kaart **Je gegevens** vat lokale logboekinvoer, gemarkeerde invoer en
 taakaantallen samen, opgesplitst in Open, In uitvoering, In de wacht, Geblokkeerd en
 Klaar. De gevestigde Project Waddle-werkruimte van de handleiding toont een niet-leeg
 account: 2.604 logboekinvoeren, 11 gemarkeerde invoeren en 65 taken in plaats van

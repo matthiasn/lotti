@@ -12,19 +12,30 @@ modell hanterar ljud?” borta från varje enskild uppgift och automationsregel.
 
 ## Granska sparade modeller
 
-Öppna **Inställningar → AI-inställningar → Modeller**. Listan grupperar
-modeller efter leverantör och erbjuder kapacitetsfilter för text, syn, ljud
-och resonemang.
+Öppna **Inställningar → AI-inställningar → Modeller**. Modellerna bildar en
+enda lista. Ovanför den smalnar ett filterchip per leverantör och chipen
+**Text**, **Vision**, **Ljud** och **Resonemang** av listan, och sökfältet
+hittar leverantörer, modeller och profiler efter namn.
 
 <ManualScreenshot
   caseId="ai/models"
-  alt="Lottis AI-modellista med Project Waddle-modeller för text, resonemang, syn, transkription och bildgenerering"
+  alt="Lottis sida Modeller med AI-inställningarnas kontroller överst, filterchip för leverantörer och kapaciteter och en lista över Project Waddle-modeller märkta Tänkande eller Bildigenkänning"
   caption="Project Waddle-arbetsytan blandar moln- och lokala modeller och håller samtidigt varje modells kapaciteter uttryckliga."
 />
 
-Kontrollen **Samtidigt agent vaknar** högst upp i AI-inställningarna begränsar
-hur många olika agenter som får köra inferens samtidigt. Ett högre värde kan
-förbättra genomströmningen, men det ökar också antalet samtidiga
+Tre kontroller finns högst upp i AI-inställningarna:
+
+- **Samtidiga agentväckningar** begränsar hur många olika agenter som får köra
+  inferens samtidigt.
+- **Uppdateringsrytm** anger hur ofta uppgiftsagenter uppdaterar sig själva när
+  varken uppgiften eller dess kategori anger det. **Högst varje timme**
+  uppdaterar ändå direkt efter en inspelning, en stoppad timer eller en uppgift
+  som markerats som klar.
+- **Standardinferensprofil** är reserven för agenter utan en konfigurerad
+  inferensrutt på den här enheten.
+
+Ett högre värde för **Samtidiga agentväckningar** kan förbättra
+genomströmningen, men det ökar också antalet samtidiga
 leverantörsförfrågningar och belastningen på den lokala enheten. Håll det
 försiktigt när en leverantör har strikta frekvensgränser eller en lokal
 modellserver har begränsat minne.
@@ -67,18 +78,30 @@ varje konfigurerad plats.
 Redigera en profil för att tilldela modeller för de kapaciteter du använder:
 
 - **Tänkande** är den obligatoriska allmänna textmodellen.
+- **Chattmodell** svarar i chattar; den använder tänkandemodellen när den inte
+  är angiven.
 - **Tänkande (avancerat)** kan hantera arbete som uttryckligen begär den mer
   kapabla resonemangsvägen.
 - **Bildigenkänning** analyserar bilder.
 - **Transkription** omvandlar ljud till text.
+- **Efterbearbetning av ljud** rättar en transkription mot röstordlistan och
+  skriver inspelningens sammanfattning; den använder tänkandemodellen när den
+  inte är angiven.
 - **Bildgenerering** skapar uppgiftskonst och andra genererade bilder. Den
   nuvarande inbyggda bildgenereringsvägen använder en konfigurerad
   fjärrleverantör, så välj den leverantören och de referenser du skickar med
   samma omsorg som vilken annan molninferensväg som helst.
+- **Läs upp** är den molnbaserade talmodell som läser upp sammanfattningar och
+  svar; den använder rösten på enheten när den inte är angiven.
+
+Under **Automatiserade färdigheter** längst ned i formuläret slår du på vilka
+färdigheter — transkription och bildanalys — som körs av sig själva med den
+här profilen. Var och en använder modellen i sin plats, så reglaget kräver att
+platsen är ifylld.
 
 <ManualScreenshot
   caseId="ai/profile-editor"
-  alt="Profilredigeraren för Projekt Waddle Command som tilldelar modeller för tänkande, avancerat resonemang, bildigenkänning, transkription och bildgenerering"
+  alt="Profilredigeraren för Projekt Waddle Command med namn, beskrivning och modellplatser för Tänkande, Chattmodell, Tänkande (avancerat), Bildigenkänning, Transkription, Efterbearbetning av ljud och Bildgenerering"
   caption="En profil ruttar varje Project Waddle-modalitet utan att modellval upprepas mellan uppgifter."
 />
 
@@ -103,14 +126,17 @@ ljudmodell för textresonemang.
 ## Sätt en kategoristandard
 
 En kategori kan välja en standardinferensprofil under **Inställningar →
-Definitioner → Kategorier**. Nytt arbete i den kategorin kan sedan ärva en
-sammanhängande routningspolicy. Välj profilen vars mix av integritet och
-kapacitet matchar kategorin, i stället för att välja enbart efter hastighet.
+Definitioner → Kategorier**. En agent körs på den profil som valts för den;
+utan en sådan följer den kategorins profil vid varje körning, så när du ändrar
+kategorins profil följer dess agenter med. Utan någondera faller den tillbaka
+på **Standardinferensprofil** högst upp i AI-inställningarna. Välj profilen
+vars mix av integritet och kapacitet matchar kategorin, i stället för att
+välja enbart efter hastighet.
 
 <ManualScreenshot
   caseId="ai/profile-picker"
   alt="Kategoriredigeraren för Penguin-operationer med en modal som erbjuder profilerna Projekt Waddle Command, Habitat lokalt-först och Fiskdiplomati"
-  caption="Märket för endast skrivbord gör plattformsbegränsningar synliga innan en kategoristandard väljs."
+  caption="En skärmikon markerar en profil som är Endast för skrivbord innan den väljs som kategoristandard."
 />
 
 ## Äldre profilrutt

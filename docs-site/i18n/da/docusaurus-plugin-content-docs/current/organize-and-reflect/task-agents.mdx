@@ -13,10 +13,12 @@ destillerer den aktuelle situation til en kort rapport og kan foreslå
 det systemdækkende overblik over alle kørende agenter, se [Kør og overvåg
 agenter](../ai-and-automation/agents.mdx).
 
-Den tildelte agent vises under opgavens tjeklister og tilknyttede opgaver. Kortet
-holder det seneste resumé og eventuelle foreslåede ændringer, og intet andet.
-Opdateringskontrollerne og AI-opsætningen ligger bag **Åbne agent-internals**,
-så opgavesiden læses som en opgave og ikke som en AI-konsol.
+Den tildelte agents **AI-oversigt**-kort sidder øverst i opgaven, under dens
+noter og over dens tjeklister og tilknyttede opgaver. Kortet holder det
+seneste resumé, eventuelle foreslåede ændringer og en **Opdater nu**-handling.
+Opdateringsindstillingerne og AI-opsætningen ligger bag **Åbne
+agent-internals**, så opgavesiden læses som en opgave og ikke som en
+AI-konsol.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
@@ -25,14 +27,14 @@ så opgavesiden læses som en opgave og ikke som en AI-konsol.
 />
 
 Uanset skærmstørrelse følger kortet én læserækkefølge: identitet, rapport og
-derefter foreslåede ændringer og historik. Er resuméet kommet bagud i forhold
-til opgaven, dukker meddelelsen **Forældet** og handlingen **Opdater nu** op
-imellem de to; så længe resuméet er aktuelt, siger kortet intet om sin
-aktualitet.
+derefter foreslåede ændringer og historik. Mellem rapporten og forslagene
+siger én linje, hvor længe siden rapporten blev skrevet, og tilbyder **Opdater
+nu**; er resuméet kommet bagud i forhold til opgaven, siger linjen
+**Forældet** i stedet.
 
 Vælg **Læs mere** for at udvide hele rapporten på stedet. Det udvidede kort
 holder opgaven synlig, tilføjer rapportens understøttende vurdering og
-anbefalede næste skridt, og tilbyder **Åbne agent-internals**, når du har
+anbefalede næste skridt, og tilbyder **Åbn agentens interne detaljer**, når du har
 brug for agentens opdateringskontroller og AI-opsætning eller for dens
 rapporter, samtaler, observationer og detaljer om kørslen.
 
@@ -44,7 +46,7 @@ rapporter, samtaler, observationer og detaljer om kørslen.
 
 ## Vælg agentens AI-opsætning
 
-Åbn **Åbne agent-internals** — fra agentens navn øverst på kortet eller fra
+Åbn **Åbn agentens interne detaljer** — fra agentens navn øverst på kortet eller fra
 linket under den udvidede rapport: dér viser rækken **Nuværende opsætning** den
 profil, model og udbyder, der bruges til agentens næste vågning. Vælg den for at vælge en gemt
 inferensprofil, kun overstyre tænkemodellen, gå tilbage til profilens
@@ -76,8 +78,10 @@ indtil du tager stilling til dem.
 Brug krydset til at **afvise** et forslag, eller fluebenet til at
 **bekræfte** og anvende det. Du kan også swipe et forslag til venstre for at
 afvise eller til højre for at bekræfte. Når flere forslag er afventende,
-anvender **Bekræft alt** de aktuelt viste ændringer samlet. Gennemgå
-masseforslag omhyggeligt, især ændringer i status, dato og tjekliste.
+anvender **Bekræft alt** de aktuelt viste ændringer samlet. En foreslået
+statusændring er aldrig en del af det: den venter i sit eget
+**Statusændringer**-bånd, indtil du bekræfter eller afviser den for sig.
+Gennemgå masseforslag omhyggeligt, især ændringer i dato og tjekliste.
 
 Åbn **Historik** for at genbesøge de seneste resultater. Den skelner mellem
 bekræftede og afviste ændringer. En afvist post kan enten repræsentere din
@@ -93,7 +97,7 @@ vis afgør forslag, der allerede venter på din beslutning.
 
 Nye task agents starter med **Automatiske opdateringer slået fra**. Tildeling
 alene bruger ikke tokens i baggrunden. Kontakten, nedtællingen til næste
-opdatering og **Spring over én gang** ligger alle i **Åbne agent-internals**,
+opdatering og **Spring over én gang** ligger alle i **Åbn agentens interne detaljer**,
 ved siden af agentens rapporthistorik og aktivitet. Mens opdateringerne er
 slået fra, bliver Lotti ved med at bemærke relevante ændringer i opgaven og
 dens tilknyttede poster, markerer et ældre resumé som forældet på selve kortet

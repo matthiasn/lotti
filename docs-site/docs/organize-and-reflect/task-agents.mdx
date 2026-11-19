@@ -12,10 +12,11 @@ situation into a short report, and can surface proposed task or checklist
 changes for you to confirm or reject. For the system-wide view across every
 running agent, see [Run and monitor agents](../ai-and-automation/agents.mdx).
 
-The assigned agent appears below the task's checklists and linked tasks. The
-card keeps the latest summary and any proposed changes, and nothing else. Its
-update controls and AI setup live behind **Open agent internals**, so the task
-page reads like a task rather than an AI console.
+The assigned agent's **AI summary** card sits at the top of the task, under its
+notes and above its checklists and linked tasks. The card keeps the latest
+summary, any proposed changes, and an **Update now** action. Its update
+settings and AI setup live behind **Open agent internals**, so the task page
+reads like a task rather than an AI console.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
@@ -24,9 +25,9 @@ page reads like a task rather than an AI console.
 />
 
 At every screen size the card follows one reading order: identity, report, then
-proposed changes and history. When the summary has fallen behind the task, an
-**Out of date** notice and an **Update now** action appear between the two;
-while the summary is current, the card says nothing about freshness at all.
+proposed changes and history. Between the report and the proposals, one line
+says how long ago the report was written and offers **Update now**; when the
+summary has fallen behind the task, that line says **Out of date** instead.
 
 Choose **Read more** to expand the complete report in place. The expanded card
 keeps the task visible, adds the report's supporting assessment and recommended
@@ -72,8 +73,9 @@ edit the task. Proposals remain pending until you act on them.
 Use the cross to **Dismiss** a proposal or the check to **Confirm** and apply
 it. You can also swipe a proposal left to dismiss or right to confirm. When
 several proposals are pending, **Confirm all** applies the currently listed
-changes together. Review bulk proposals carefully, especially status, date,
-and checklist changes.
+changes together. A proposed status change is never part of that: it waits in
+its own **Status changes** band until you confirm or dismiss it on its own.
+Review bulk proposals carefully, especially date and checklist changes.
 
 Open **History** to revisit recent outcomes. It distinguishes confirmed
 changes from dismissed ones. A dismissed entry can represent either your

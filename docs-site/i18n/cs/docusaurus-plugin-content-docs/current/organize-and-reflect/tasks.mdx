@@ -28,7 +28,7 @@ obrázků, popisuje část [Generuj titulní obrázek úkolu](./task-cover-art.m
 
 <ManualScreenshot
   caseId="tasks/detail"
-  alt="Produkční stránka podrobností úkolu pro kontrolu orbitálního obydlí tučňáků se stejným titulním obrázkem jako v náhledech"
+  alt="Stránka úkolu pro kontrolu orbitálního obydlí tučňáků s kategorií, stavem Probíhá, prioritou Vysoká, termínem, zaznamenaným časem oproti odhadu, štítky a AI souhrnem"
 />
 
 Jeden úkol může obsahovat popis, kategorii, štítky, termín, časové záznamy,
@@ -67,8 +67,15 @@ kategoriemi a dalšími vlastnostmi úkolu.
   alt="Panel filtru úkolů s ovládáním řazení, stavu, priority, kategorie a štítků"
 />
 
+Chceš-li se vrátit k neomezenému pohledu, použij **Vymazat** v panelu nebo
+**Vymazat vše** vedle aktivních filtrů v seznamu, místo abys rušil každou volbu
+zvlášť.
+
 Výchozí pořadí priorit je P0 až P3. Uvnitř priority se novější úkoly zobrazují
-první, pokud výsledek nezmění jiný aktivní pohled nebo řazení.
+první, pokud výsledek nezmění jiný aktivní pohled nebo řazení. Vyhledávání
+nejdřív uvede úkoly, jejichž slova odpovídají, od nejlepší shody, a pod nimi
+sekci **Významově související** s úkoly, které říkají totéž jinými slovy.
+Během hledání jsou ztlumené filtrační čipy, které vyhledávání nepoužívá.
 
 ## Používej kontrolní seznamy pro další úroveň
 
@@ -79,9 +86,9 @@ navrhovat z kontextu úkolu.
 
 ## Přidej kontext úkolu
 
-Pomocí akce **Přidat** připoj kontrolní seznam, další úkol, zvukovou nahrávku,
-časovač, textový záznam nebo obrázek bez opuštění úkolu. Dostupné akce závisí
-na platformě a aktuálním kontextu.
+Pomocí akce **Přidat** připoj poznámku, kontrolní seznam, hlasovou poznámku,
+propojený úkol nebo obrázek bez opuštění úkolu; **Sledovat čas** na liště akcí
+úkolu spustí časovač. Dostupné akce závisí na platformě a aktuálním kontextu.
 
 <ManualScreenshot
   caseId="entries/create-menu"
@@ -112,13 +119,17 @@ souhrn zůstane sbalený, dokud ho neotevřeš. Na klávesnici přesouváš výb
 
 ## Propojuj související úkoly
 
-Otevři sekci **Propojené** a zvol propojení existujícího úkolu. Vyhledej
-výsledek ve výběru a zvol ho. Lotti vyloučí aktuální úkol a úkoly, které jsou v
-daném směru už propojené.
+V sekci úkolu **Propojené úkoly** vyber **Propojit úkol…** – nebo **Propojit**,
+když už úkol nějaká propojení má – a otevře se dialog **Propojit**. Pod **Tento
+úkol…** zvol vztah: **Souvisí s**, nebo jeden z **Blokuje**, **Je blokováno**,
+**Navazuje na**, **Má návaznost**, **Duplikuje**, **Je duplikováno**,
+**Opravuje**, **Je opraveno**, **Nahrazuje** a **Je nahrazeno**. Pak vyhledej
+ve výběru související úkol a zvol ho. Lotti vyloučí aktuální úkol a úkoly,
+které jsou v daném směru už propojené.
 
 <ManualScreenshot
   caseId="tasks/link-picker"
-  alt="Produkční výběr propojení úkolu se souvisejícími úkoly Project Waddle a jejich stavem, prioritou, kategorií a termínem"
+  alt="Výběr propojení existujícího úkolu nad úkolem kontroly orbitálního obydlí tučňáků, s Tento úkol… nastaveným na Souvisí s, polem Hledat úkoly a dvěma úkoly Tučňáčí provoz s jejich stavem"
 />
 
 Propojení úkolů jsou směrová: aktuální úkol ukazuje na vybraný úkol. Obě strany

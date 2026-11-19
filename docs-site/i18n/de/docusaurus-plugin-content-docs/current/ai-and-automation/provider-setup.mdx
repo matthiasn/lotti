@@ -30,9 +30,17 @@ Anbieter und prüfe danach Modelle und Profile.
   kompatiblen Proxy oder Gateway richten. Der Anbietertyp steuert weiterhin
   protokollspezifisches Verhalten.
 
+Lotti spricht mit diesen Anbietertypen: **Mistral**, **Melious.ai**, **Google
+Gemini**, **Alibaba Cloud (Qwen)**, **OpenAI**, **Anthropic Claude**,
+**OpenRouter**, **Nebius AI Studio**, **ElevenLabs**, jedem
+**OpenAI-kompatibel**-Endpunkt sowie den lokalen **Ollama**, **oMLX (lokal)**,
+**Voxtral (lokal)**, **Whisper (lokal)** und **sherpa-onnx (auf dem Gerät)**.
+Wenn du unsicher bist, beginne mit Mistral — dem empfohlenen Standard, bei der
+Anbieterwahl mit **EMPFOHLEN** markiert.
+
 ## Einen Anbieter verbinden
 
-1. Öffne **Einstellungen → KI-Einstellungen → Anbieter**.
+1. Öffne **Einstellungen → AI-Einstellungen → Anbieter**.
 2. Wähle **+**.
 3. Wähle einen unterstützten Anbieter.
 4. Gib Anzeigename, Endpunkt und bei Bedarf API-Schlüssel ein.
@@ -60,7 +68,10 @@ bearbeiten, ein Modell ergänzen oder den Anbieter entfernen.
 />
 
 Eine neue Basis-URL oder ein neuer API-Schlüssel betrifft jedes Modell dieses
-Anbieters. Teste danach eine repräsentative KI-Aktion. Auch das Entfernen kann
+Anbieters. Teste danach eine repräsentative KI-Aktion. Scheitert ein Aufruf,
+weil das Konto beim Anbieter kein Guthaben mehr hat, meldet Lotti **Guthaben
+aufgebraucht**, zitiert die Meldung des Anbieters und schlägt vor, das Konto
+aufzuladen oder ein Modell eines anderen Anbieters zu wählen. Auch das Entfernen kann
 Profile beschädigen, die über diese Modelle routen; prüfe zuerst die
 Abhängigkeiten.
 

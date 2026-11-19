@@ -30,7 +30,7 @@ og referencebilleder.
 
 <ManualScreenshot
   caseId="tasks/detail"
-  alt="Produktionsopgaveside for inspektion af det orbitale pingvinhabitat med den samme coverkunst, som opgaveminiaturerne bruger"
+  alt="Opgaveside for inspektion af det orbitale pingvinhabitat med kategori, status I gang, prioritet Høj, forfaldsdato, registreret tid mod estimatet, etiketter og AI-resumé"
 />
 
 Den samme opgave kan indeholde en beskrivelse, kategori, etiketter,
@@ -79,15 +79,18 @@ Projekter er aktiveret — projekter. Kategori- og etiketvælgerne tilbyder ogs�
 
 Valg inden for ét filter er alternativer: at vælge P0 og P1 viser begge
 prioriteter. Forskellige filtre indsnævrer resultatet sammen: at vælge P0
-eller P1 *og* Penguin-operationer viser kun matchende arbejde. Brug **Ryd
-alt** for at vende tilbage til en ubegrænset visning i stedet for at forsøge
-at omgøre hvert valg enkeltvis.
+eller P1 *og* Penguin-operationer viser kun matchende arbejde. Brug **Ryd**
+i arket, eller **Ryd alt** ved siden af de aktive filtre i listen, for at vende
+tilbage til en ubegrænset visning i stedet for at forsøge at omgøre hvert valg
+enkeltvis.
 
 Vælg **Forfaldsdato**, **Oprettet** eller **Prioritet** i samme ark for at
 ændre rækkefølgen. Prioritetsrækkefølgen er P0 til P3, med nyere opgaver først
-inden for en prioritet, medmindre en anden sortering er aktiv. På desktop kan
-en aktiveret vektorsøgningsopsætning også tilbyde semantisk søgning sammen med
-almindelig fuldtekstsøgning.
+inden for en prioritet, medmindre en anden sortering er aktiv. Søgningen viser
+først de opgaver, hvis ord matcher, med det bedste match øverst, efterfulgt af
+en sektion **Beslægtede i betydning** med opgaver, der siger det samme med
+andre ord. Mens du søger, er de filterchips, som søgningen ikke anvender,
+nedtonede.
 
 Når du regelmæssigt vender tilbage til den samme fokuserede visning, så gem
 det aktive filter fra arket, og giv det et klart navn. Genåbn det fra
@@ -102,10 +105,10 @@ AI-færdigheder ud fra opgavekonteksten.
 
 ## Tilføj opgavekontekst
 
-Brug opgavens **Tilføj**-handling til at vedhæfte en tjekliste, en anden
-opgave, en lydoptagelse, en timer, en tekstindtastning eller et billede uden
-at forlade opgaven. De tilgængelige handlinger afhænger af den aktuelle
-platform og kontekst.
+Brug opgavens **Tilføj**-handling til at vedhæfte en note, en tjekliste, en
+talenote, en tilknyttet opgave eller et billede uden at forlade opgaven;
+**Registrér tid** på opgavens handlingslinje starter en timer. De tilgængelige
+handlinger afhænger af den aktuelle platform og kontekst.
 
 <ManualScreenshot
   caseId="entries/create-menu"
@@ -136,13 +139,18 @@ eller Mellemrum til at følge det og Escape til at gå tilbage.
 
 ## Link relaterede opgaver
 
-Åbn opgavens **Links**-sektion, og vælg at linke en eksisterende opgave.
-Søgningen vælger derefter det relevante mål. Lotti udelukker den aktuelle
-opgave og opgaver, der allerede er forbundet i den retning.
+I opgavens sektion **Sammenkoblede opgaver** vælger du **Kæd en opgave…** –
+eller **Kæd**, når opgaven allerede har links – for at åbne **Kæd eksisterende
+opgave**. Under **Denne opgave…** vælger du relationen: **Relaterer til** eller
+en af **Blokerer**, **Er blokeret af**, **Følger op på**, **Har opfølgning**,
+**Duplikerer**, **Er duplikeret af**, **Løser**, **Er løst af**, **Erstatter**
+og **Er erstattet af**. Søg derefter i vælgeren, og vælg den relaterede
+opgave. Lotti udelukker den aktuelle opgave og opgaver, der allerede er
+forbundet i den retning.
 
 <ManualScreenshot
   caseId="tasks/link-picker"
-  alt="Produktionsvælger til opgavelinks med relaterede Project Waddle-opgaver og deres status-, prioritets-, kategori- og forfaldsdatokontekst"
+  alt="Vælgeren Kæd eksisterende opgave over opgaven om inspektion af det orbitale pingvinhabitat, med Denne opgave… sat til Relaterer til, et søgefelt og to Penguin-operationer-opgaver med deres status"
 />
 
 Opgavelinks er retningsbestemte: den aktuelle opgave peger på den opgave, du

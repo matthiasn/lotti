@@ -5,8 +5,11 @@ description: Řiď přepínače funkcí a protokolování, spouštěj údržbu, 
 
 # Bezpečné používání Pokročilého nastavení
 
-Otevři **Nastavení → Pokročilé nastavení** pro ovládání zkušených uživatelů,
-diagnostiku a údržbu. Tyto stránky mění běh Lotti nebo pracují přímo s místními
+Otevři **Nastavení → Pokročilá nastavení** pro ovládání zkušených uživatelů,
+diagnostiku a údržbu. Obsahuje **Konfigurační příznaky**, **GitHub**,
+**Jazyk**, **Oblasti protokolování**, **Stav systému**, **Údržba**, **Metriky
+onboardingu** a **O Lotti**; v iOS a Androidu se mezi **Stav systému** a
+**Údržba** objeví **Import zdraví**. Tyto stránky mění běh Lotti nebo pracují přímo s místními
 daty, takže běžné přizpůsobení patří jinam do Nastavení.
 
 Počítač drží strom nastavení vedle vybrané stránky. Mobil otevírá vždy jednu
@@ -15,7 +18,7 @@ uložené hodnoty.
 
 <ManualScreenshot
   caseId="advanced-settings/hub"
-  alt="Centrum Pokročilého nastavení Lotti s Přepínači, Jazykem, Protokolováním, Údržbou, Metrikami průvodce a O Lotti"
+  alt="Pokročilá nastavení Lotti s položkami Konfigurační příznaky, GitHub, Jazyk, Oblasti protokolování, Stav systému, Údržba, Metriky onboardingu a O Lotti"
   caption="Pokročilé nastavení odděluje provozní ovládání od každodenních předvoleb. Některé položky se liší podle platformy a zapnutých schopností."
 />
 
@@ -29,31 +32,31 @@ stránce trvale uložíš jinou volbu — přepne se s ní i rozhraní, nejen od
 dokumentaci. Položka **Příručka** na konci Nastavení i **Nápověda → Příručka**
 v macOS používají toto nastavení.
 
-## Řiď schopnosti pomocí přepínačů
+## Řiď schopnosti pomocí konfiguračních příznaků
 
 <ManualScreenshot
   caseId="advanced-settings/flags"
-  alt="Stránka Přepínače Lotti s prohledávatelnými volbami soukromých záznamů, polohy, tipů a streamování AI"
+  alt="Stránka Konfigurační příznaky Lotti s polem Hledat příznaky a přepínači seskupenými pod Předvolby, počínaje soukromými záznamy, záznamem polohy, tipy a hodnocením relací, pak Pokročilé a experimentální"
   caption="Vyhledávání porovnává názvy i popisy přepínačů. Každý přepínač okamžitě mění uloženou schopnost běhu."
 />
 
-**Přepínače** jsou rozvaděčem schopností. Obsahují ovládání pro:
+**Konfigurační příznaky** jsou rozvaděčem schopností. Řádky jsou rozdělené
+na **Předvolby**, které má smysl měnit, a **Pokročilé a experimentální** pro
+diagnostiku a nedokončenou práci.
 
-- viditelnost soukromých záznamů, polohu a tipy;
-- streamování odpovědí AI a přehrávání shrnutí;
-- společníka a jeho chat (viz [Mluv se svým společníkem](../getting-started/companion.mdx));
-- protokolování a chování Matrix Sync;
-- oznámení Co je nového a hodnocení relací;
-- embeddings a vektorové vyhledávání; a
-- provozní ukazatele jako aktivita synchronizace, čekající probuzení agentů a
-  opravy rozvětvení.
+- **Předvolby:** viditelnost soukromých záznamů, záznam polohy, tipy,
+  hodnocení relací, Co je nového, streamování odpovědí AI, přehrávání AI
+  souhrnů a Matrix Sync.
+- **Pokročilé a experimentální:** experimentální chat úkolu, společník a jeho
+  chat (viz [Mluv se svým společníkem](../getting-started/companion.mdx)),
+  embeddings, synchronizace embeddings a vektorové vyhledávání, průvodce Daily
+  OS, oprava rozvětvení agentů, synchronizace na pozadí, protokolování a
+  opětovné odeslání neúspěšných příloh.
 
-Řádky jsou rozdělené na **Předvolby**, které má smysl měnit, a
-**Pokročilé a experimentální** pro diagnostiku a nedokončenou práci.
-Celé části aplikace jako Návyky, Projekty nebo Daily OS tu už nejsou –
+Přepínače oznámení jsou v **Nastavení → Oznámení**. Celé části aplikace jako Návyky, Projekty nebo Daily OS tu už nejsou –
 najdeš je v [Sekcích](./settings.mdx).
 
-Pomocí **Hledat přepínače** zúž seznam podle názvu nebo popisu. Volbu změň
+Pomocí **Hledat příznaky** zúž seznam podle názvu nebo popisu. Volbu změň
 výběrem řádku nebo přepínače. Nová hodnota se uloží okamžitě; není zde
 samostatná akce Uložit.
 
@@ -66,14 +69,17 @@ nešifruje, neexportuje, nemaže ani nemění jeho soukromí.
 
 <ManualScreenshot
   caseId="advanced-settings/logging"
-  alt="Nastavení protokolování Lotti s hlavním přepínačem, jednotlivými provozními oblastmi a protokolováním pomalých dotazů"
+  alt="Stránka Oblasti protokolování Lotti s hlavním přepínačem Zapnout protokolování nad přepínači jednotlivých oblastí, jako jsou Synchronizace, AI, Chat, Řeč a zvuk, Databáze a Úkoly a seznamy"
   caption="Hlavní přepínač řídí ovládání jednotlivých oblastí. Ukázka Project Waddle nechává Sync, AI a Úkoly zapnuté pro cílenou diagnostiku."
 />
 
-**Protokolování** začíná globálním přepínačem **Povolit protokolování**. Když
-je zapnutý, povol jen oblasti potřebné pro aktuální šetření, například Sync,
-AI, Úkoly, Štítky, Zdraví, Návyky, Navigaci, Oznámení nebo Daily OS.
-**Protokolovat pomalé dotazy** přidává diagnostiku výkonu databáze.
+**Oblasti protokolování** začínají globálním přepínačem **Zapnout
+protokolování**. Když je zapnutý, povol jen oblasti potřebné pro aktuální
+šetření – mezi nimi **Synchronizace**, **AI**, **Chat**, **Řeč a zvuk**,
+**Databáze**, **Běh agentů**, **Úkoly a seznamy**, **Štítky**, **Zdraví**,
+**Návyky**, **Navigace**, **Oznámení** a **Daily OS**. **Pomalé databázové
+dotazy** zapisují pomalé databázové dotazy do vlastního denního
+`slow_queries-*.log`.
 
 Vypnutí hlavního přepínače znepřístupní ovládání oblastí. Chyby se stále
 zapisují do denního `error-*.log`; tyto přepínače řídí další diagnostiku, ne
@@ -103,11 +109,23 @@ při příštím otevření stránky, starší najdeš v části **Předchozí z
 zobrazená zpráva vždy uvádí, jaké období analyzovala a kdy vznikla. Bez modelu,
 nebo když volání modelu selže, dostaneš i tak přehled.
 
+## Připoj GitHub
+
+**GitHub** uchovává osobní přístupový token jen pro čtení, kterým Lotti čte
+pull requesty propojené s úkoly. **Vytvořit token na GitHubu** otevře
+formulář tokenu na GitHubu s předvyplněnými oprávněními; vyber své
+repozitáře, vlož token do **Osobní přístupový token** a vyber **Připojit**.
+Stránka pak ukáže, který účet je připojený, a nabídne **Odpojit**. Token se
+synchronizuje end-to-end šifrovaně do tvých dalších zařízení a používá se jen
+pro požadavky na api.github.com. Když je připojený, umí společník odpovídat i
+na otázky o tvých pull requestech. Sledování pull requestů v úkolech a to, co
+s nimi dělá AI, popisuje [Připoj GitHub](./github.mdx).
+
 ## Spouštěj údržbu záměrně
 
 <ManualScreenshot
   caseId="advanced-settings/maintenance"
-  alt="Stránka Údržba Lotti s náhledy průvodce, resetováním, mazáním databází, čištěním, indexem vyhledávání, embeddings a diagnostikou překreslování"
+  alt="Stránka Údržba Lotti s náhledy průvodce, resetováním, kontrolou integrity databáze, mazáním databází, čištěním, fulltextovým indexem, opravou úložiště snímků obrazovky, embeddings a přepínačem duhového překreslování"
   caption="Údržba kombinuje bezpečné náhledy s destruktivními a diagnostickými akcemi. Před pokračováním přečti potvrzení a rozsah."
 />
 
@@ -115,16 +133,20 @@ nebo když volání modelu selže, dostaneš i tak přehled.
 
 - **Zobrazit uvítání průvodce** a **Galerie animací průvodce** jsou živé náhledy
   pro vývoj a QA.
-- **Resetovat nápovědu v aplikaci** umožní jednorázovým tipům znovu se zobrazit.
-- **Resetovat dialog nastavení Gemini** zruší jeho odmítnutí pro další test.
+- **Resetovat nápovědy v aplikaci** umožní jednorázovým tipům znovu se zobrazit.
+- **Obnovit dialog nastavení Gemini** zruší jeho odmítnutí pro další test.
+- **Zkontrolovat integritu databáze** ověří, že jsou soubory databáze v
+  pořádku.
 - **Smazat databázi editoru** odstraní koncepty editoru.
 - **Smazat databázi agentů** odstraní databázi a ukončí Lotti, aby aplikace
   mohla nastartovat s čistým úložištěm.
 - **Vyčistit smazané položky** trvale odstraní měkce smazané záznamy přes
   zvláštní potvrzení.
-- **Obnovit fulltextový index** znovu vytvoří místní vyhledávací data bez
-  obnovy záznamů deníku.
-- **Vygenerovat embeddings** se zobrazí, když je úložiště dostupné, a doplní
+- **Znovu vytvořit index plného textu** znovu vytvoří místní vyhledávací data
+  bez obnovy záznamů deníku.
+- **Opravit úložiště snímků obrazovky** přesune snímky obrazovky uložené
+  staršími verzemi do správné složky, aby je mohla číst analýza obrázků AI.
+- **Generovat vektory** se zobrazí, když je úložiště dostupné, a doplní
   vybrané kategorie.
 - **Duhové překreslování** blikáním ukazuje překreslené oblasti pro diagnostiku
   UI. Hodnota je jen v paměti a po restartu se vypne.
@@ -141,7 +163,7 @@ aktuální synchronizaci nebo zápis.
   caption="Deterministická ukázka příručky dosáhla skutečného aha momentu během čtyř aktivních dní po připojení poskytovatele a několika zachyceních."
 />
 
-**Metriky průvodce** jsou vývojová a QA stránka. Odvozují místní cestu z
+**Metriky onboardingu** jsou vývojová a QA stránka. Odvozují místní cestu z
 událostí bez obsahu a ukazují:
 
 - čas prvního výskytu v UTC;
@@ -154,7 +176,7 @@ Stránka zaznamenává názvy událostí a metadata s nízkou kardinalitou, ne t
 deníku, názvy úkolů, přepisy nebo citlivé sardinkové podrobnosti Project
 Waddle.
 
-**Resetovat testovací stav průvodce** po potvrzení vymaže rytmus výzev a místní
+**Resetovat testovací stav onboardingu** po potvrzení vymaže rytmus výzev a místní
 metriky. Nesmaže deník, přepínače ani skutečnou historii plánů Daily OS. Profil,
 který už naplánoval den, proto zůstane nezpůsobilý pro přesnou cestu prvního
 plánu čistého profilu.

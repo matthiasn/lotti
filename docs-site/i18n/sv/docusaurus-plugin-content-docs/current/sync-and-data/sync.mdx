@@ -21,12 +21,12 @@ medan varje enhet behåller sin egen lokala kopia.
 Två detaljer värda att känna till. Allt som synkroniseras är inte loggboksdata: din enhetsprofil och ditt Daily OS-namn färdas som enhetsinställningar och omfattas inte av luckdetektering. Och härledda tal skickas aldrig — ett sparat uppgiftsfilter synkroniseras, men antalen som beräknas ur det räknas om på varje enhet.
 
 Öppna **Inställningar → Synkroniseringsinställningar** för sidorna för
-inställning, status och återställning. Siffran vid **Sync Outbox** är arbete
+inställning, status och återställning. Siffran vid **Synkutkorg** är arbete
 som ännu inte har nått synkroniseringstjänsten.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Lottis synkroniseringsinställningar med Enheter, Den här apparaten, Backfill-synkronisering, Matrisstatistik, Sync Outbox, Synkroniseringskonflikter och Underhåll"
+  alt="Lottis synkroniseringsinställningar med Enheter, Den här apparaten, Synkroniseringsstatus, Matrisstatistik, Sync Outbox, Synkroniseringskonflikter och Underhåll"
   caption="Synkroniseringsinställningarna håller den dagliga statusen nära verktygen för felsökning och återställning. Project Waddle har just nu tre poster i utboxen att titta på."
 />
 
@@ -104,7 +104,7 @@ kontrollera konto- och enhetsnamnen innan du försöker igen.
 
 ## Namnge enheter och annonsera förmågor
 
-**Den här apparaten** — ”Enhetsnamn och funktioner” — presenterar den aktuella
+**Den här enheten** — ”Enhetsnamn och funktioner” — presenterar den aktuella
 enheten för resten av synkgruppen. Ge den ett **Enhetens visningsnamn** som
 skiljer ut den fysiska maskinen, till exempel ”Mission Control Mac” i stället
 för ”Skrivbord”, och välj **Spara**.
@@ -124,19 +124,21 @@ att använda dem.
 ## Förstå ikappkörning och återfyllning
 
 Vanlig synkronisering bearbetar ändringar allteftersom de kommer.
-**Backfill-synkronisering** hittar luckor i sekvensen som tagits emot från kända
+**Synkroniseringsstatus** hittar luckor i sekvensen som tagits emot från kända
 enheter och begär de saknade posterna igen.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Lottis sida Backfill-synkronisering med räknare för inkommande kö, saknade och överhoppade poster, synkstatistik, automatisk återfyllning och avancerad återhämtning"
-  caption="Project Waddle har tagit emot 2 868 sekvensposter och känner just nu till fyra saknade poster fördelade på två enhets-id:n."
+  alt="Lottis sida Synkroniseringsstatus med poster på den här enheten, räknare för inkommande kö och saknade poster, synkstatistik, automatisk återfyllning och avancerad återhämtning"
+  caption="Project Waddle spårar 2 868 sekvensräknare, har tagit emot 2 775 av dem och känner just nu till fyra saknade poster fördelade på två enhets-id:n."
 />
 
+- **Poster på den här enheten** räknar det som den här enheten har,
+  borttagningar inräknade. Enheter som är synkade visar samma siffror här.
 - **Inkommande kö** är arbete som väntar på att tillämpas.
 - **Saknad** är antalet kända luckor i sekvensen.
-- **Hoppade över** är arbete som den inkommande kön gav upp eftersom det inte
-  kunde bearbetas normalt.
+- **Hoppade över**, i **Synkstatistik**, är arbete som den inkommande kön gav
+  upp eftersom det inte kunde bearbetas normalt.
 - **Automatisk återfyllning** begär saknade poster från de senaste 24 timmarna
   och är rätt standardval för vardagsbruk.
 - **Avancerad återhämtning** innehåller manuella åtgärder för en utredning, till
@@ -151,7 +153,7 @@ online.
 
 ## Läs Matrisstatistiken
 
-**Matrisstatistik** skiljer meddelandemängden från hur bearbetningen mår. Det är
+**Matrix-statistik** skiljer meddelandemängden från hur bearbetningen mår. Det är
 användbart när data ser gamla ut men kontot fortfarande visas som anslutet.
 
 <ManualScreenshot
@@ -175,7 +177,7 @@ supportbegäran.
 
 ## Inspektera utboxen
 
-**Sync Outbox** är den lokala kön av ändringar som väntar på att skickas.
+**Synkutkorg** är den lokala kön av ändringar som väntar på att skickas.
 Sammanfattningen överst säger om allt är synkat, hur många poster som väntar
 eller håller på att skickas och hur många som inte kunde skickas.
 
@@ -187,16 +189,16 @@ eller håller på att skickas och hur många som inte kunde skickas.
 
 Filtrera listan efter tillstånd:
 
-- **Väntan** visar poster som väntar på sin tur och poster som håller på att
+- **Väntar** visar poster som väntar på sin tur och poster som håller på att
   skickas.
 - **Misslyckades** visar poster som inte kunde skickas ens efter de automatiska
   nya försöken. De finns kvar sparade på den här enheten men skickas inte igen av
-  sig själva: välj **Omprövning** eller **Försök om alla** när problemet är
+  sig själva: välj **Försök igen** eller **Försök om alla** när problemet är
   löst.
 - **Skickat** visar levererade poster, som sparas en tid för felsökning.
 
 Använd **Försök om alla** när det underliggande anslutnings- eller
-kontoproblemet är löst, eller **Omprövning** på en enskild post. **Ta bort** tar
+kontoproblemet är löst, eller **Försök igen** på en enskild post. **Ta bort** tar
 ut en post ur kön: den stannar på den här enheten men når aldrig dina andra
 enheter, så ta bara bort den om det är precis det du vill. Att ta bort den
 ersätter inte att reparera motsvarande lokala post eller bilaga.

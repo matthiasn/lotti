@@ -33,12 +33,14 @@ nyttig, når flere ansvarsområder deler én stemme og beslutningsstil.
 />
 
 Vælg en instans for at inspicere dens indre. Fanen **Statistik** viser
-modelforbruget, dens skabelon, den aktuelle inferensrute,
-livscykluskontrollerne, antallet af vågninger og planlægningstilstanden.
+tokenforbruget pr. model — **Input**, **Output**, **Tanker**, **Cachet**
+tokens, andelen af **Cache-hits** og **Vækninger** — og derefter dens skabelon,
+den aktuelle agentopsætning, livscykluskontrollerne, antallet af vågninger og
+planlægningstilstanden.
 
 <ManualScreenshot
   caseId="agents/instance-detail"
-  alt="Instansdetaljer for Habitat-seglinspektøren med tokenforbrug, skabelonen Orbital Habitat Sentinel, inferensrute, livscykluskontroller og vågetilstand"
+  alt="Instansdetaljer for Habitat-seglinspektøren med en tabel over tokenforbrug inklusive cachede tokens og cache-hits, skabelonen Orbital Habitat Sentinel, agentopsætning, Pause, Gen-analyser og Ødelæg samt vågetilstand"
   caption="Instansen bevarer nok proveniens til at forklare, hvilken skabelon og rute der producerede dens arbejde, før du sætter den på pause, gen-analyserer eller ødelægger den."
 />
 
@@ -57,7 +59,7 @@ urelaterede instanser.
 
 ## Forstå vågecyklusser
 
-Åbn **Vågencyklusser** for at se arbejde, der kører nu, og arbejde, der
+Åbn **Vækningscyklusser** for at se arbejde, der kører nu, og arbejde, der
 forfalder senere. En våge med status **Afventer** blev anmodet af agenten. En
 **planlagt** våge blev sat i kø af systemet eller planlæggeren. Hver række
 holder den tilknyttede opgave, det tilknyttede projekt eller den tilknyttede

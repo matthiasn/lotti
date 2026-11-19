@@ -6,7 +6,11 @@ description: Kontroller funktionsflag og logning, kør vedligeholdelsesværktøj
 # Brug avancerede indstillinger sikkert
 
 Åbn **Indstillinger → Avancerede indstillinger** for superbruger-kontroller,
-diagnostik og vedligeholdelse. Disse sider ændrer enten, hvordan Lotti kører,
+diagnostik og vedligeholdelse. Siden viser **Konfigurationsflag**,
+**GitHub**, **Sprog**, **Logningsdomæner**, **Systemtilstand**,
+**Vedligeholdelse**, **Onboarding-målinger** og **Om Lotti**; på iOS og
+Android vises **Sundhedsimport** mellem **Systemtilstand** og
+**Vedligeholdelse**. Disse sider ændrer enten, hvordan Lotti kører,
 eller handler direkte på lokale data, så almindelig personalisering hører til
 andre steder i Indstillinger.
 
@@ -16,7 +20,7 @@ værdier bruges i begge layouts.
 
 <ManualScreenshot
   caseId="advanced-settings/hub"
-  alt="Lottis hub for avancerede indstillinger med Konfigurationsflag, Sprog, Logning, Vedligeholdelse, Onboarding-målinger og Om Lotti"
+  alt="Lottis avancerede indstillinger med Konfigurationsflag, GitHub, Sprog, Logningsdomæner, Systemtilstand, Vedligeholdelse, Onboarding-målinger og Om Lotti"
   caption="Avancerede indstillinger holder operationelle kontroller adskilt fra hverdagspræferencer. Nogle punkter varierer efter platform og aktiverede kapaciteter."
 />
 
@@ -33,28 +37,28 @@ Indstillinger og **Hjælp → Manual** på macOS bruger begge denne indstilling.
 
 <ManualScreenshot
   caseId="advanced-settings/flags"
-  alt="Lottis konfigurationsflag-side med søgbare afbrydere for private poster, lokationsregistrering, tooltips og AI-streaming"
+  alt="Lottis konfigurationsflag-side med et søgefelt til flag og afbrydere grupperet under Præferencer, begyndende med private poster, lokationsregistrering, tooltips og sessionsvurderinger, derefter Avanceret og eksperimentelt"
   caption="Søgningen matcher både flagnavne og beskrivelser. Hver afbryder ændrer sin gemte runtime-kapacitet med det samme."
 />
 
-**Konfigurationsflag** er kapacitetscentralen. Den indeholder kontroller for:
+**Konfigurationsflag** er kapacitetscentralen. Rækkerne er grupperet i
+**Præferencer**, som du med rimelighed kan ændre, og **Avanceret og
+eksperimentelt** til diagnostik og ufærdigt arbejde.
 
-- synlighed af private poster, lokationsregistrering og
-  tooltips;
-- AI-svarstreaming og afspilning af resuméer;
-- ledsageren og chatten med den (se [Tal med din ledsager](../getting-started/companion.mdx));
-- logning og Matrix-synkroniseringsadfærd;
-- Hvad er nyt-meddelelser og sessionsvurderinger;
-- embeddings og vektorsøgning; og
-- operationelle indikatorer såsom synkroniseringsaktivitet, ventende
-  agentvågninger og fork-reparation.
+- **Præferencer:** synlighed af private poster, lokationsregistrering,
+  tooltips, sessionsvurderinger, Hvad er nyt, AI-svarstreaming, afspilning af
+  AI-resuméer og Matrix-synkronisering.
+- **Avanceret og eksperimentelt:** den eksperimentelle opgavechat, ledsageren
+  og chatten med den (se [Tal med din ledsager](../getting-started/companion.mdx)),
+  embeddings, synkronisering af embeddings og vektorsøgning, Daily
+  OS-gennemgangen, fork-reparation for agenter, baggrundsarbejderen til
+  synkronisering, logning og genafsendelse af mislykkede vedhæftninger.
 
-Rækkerne er grupperet i **Præferencer**, som du med rimelighed kan ændre,
-og **Avanceret og eksperimentelt** til diagnostik og ufærdigt arbejde.
-Hele dele af appen som Vaner, Projekter og Daily OS findes ikke længere
+Notifikationskontakter findes under **Indstillinger → Notifikationer**. Hele
+dele af appen som Vaner, Projekter og Daily OS findes ikke længere
 her; de ligger under [Sektioner](./settings.mdx).
 
-Brug **Søgeflag** til at indsnævre listen efter titel eller beskrivelse. Vælg
+Brug **Søg i flag** til at indsnævre listen efter titel eller beskrivelse. Vælg
 en række eller dens afbryder for at ændre flaget. Den nye værdi gemmes
 straks; der er ingen separat gem-handling.
 
@@ -68,15 +72,17 @@ af lister og vælgere; det krypterer, eksporterer eller sletter ikke noget og
 
 <ManualScreenshot
   caseId="advanced-settings/logging"
-  alt="Lottis logningsindstillinger med en hovedafbryder for logning, individuelle operationelle domæner og logning af langsomme forespørgsler"
+  alt="Lottis side Logningsdomæner med hovedafbryderen Aktiver logning over afbrydere pr. domæne som Sync, AI, Chat, Tale og lyd, Database samt Opgaver & tjeklister"
   caption="Hovedafbryderen styrer adgangen til domænekontrollerne. Project Waddle-fixturen holder Sync, AI og Opgaver aktiveret til fokuseret diagnostik."
 />
 
-**Logning** starter med den globale **Aktiver logning**-afbryder. Når den er
-tændt, så aktivér kun de domæner, der er nødvendige for en undersøgelse,
-såsom synkronisering, AI, opgaver, etiketter, sundhed, vaner, navigation,
-notifikationer eller Daily OS. **Log langsomme forespørgsler** tilføjer
-diagnostik af databaseydelsen.
+**Logningsdomæner** starter med den globale **Aktiver logning**-afbryder. Når
+den er tændt, så aktivér kun de domæner, der er nødvendige for en
+undersøgelse – blandt dem **Sync**, **AI**, **Chat**, **Tale og lyd**,
+**Database**, **Agentens runtime**, **Opgaver & tjeklister**, **Etiketter**,
+**Helbred**, **Vaner**, **Navigation**, **Notifikationer** og **Daily OS**.
+**Langsomme databaseforespørgsler** skriver langsomme databaseforespørgsler til
+deres egen daglige `slow_queries-*.log`.
 
 At slukke hovedafbryderen deaktiverer domænekontrollerne. Fejl skrives
 stadig til den daglige `error-*.log`; disse afbrydere styrer yderligere
@@ -108,11 +114,24 @@ rapport angiver altid, hvilken periode den analyserede, og hvornår den blev
 oprettet. Uden model, eller hvis modelkaldet mislykkes, får du
 stadig sammendraget.
 
+## Forbind GitHub
+
+**GitHub** rummer det skrivebeskyttede personlige adgangstoken, Lotti bruger
+til at læse de pull requests, du knytter til opgaver. **Opret et token på
+GitHub** åbner GitHubs tokenformular med tilladelserne udfyldt; vælg dine
+repositories, indsæt tokenet i **Personligt adgangstoken**, og vælg
+**Forbind**. Siden viser derefter, hvilken konto der er forbundet, og tilbyder
+**Afbryd forbindelsen**. Tokenet synkroniseres end-to-end-krypteret til dine
+andre enheder og bruges kun til forespørgsler til api.github.com. Når det er
+forbundet, kan ledsageren også besvare spørgsmål om dine pull requests. Se
+[Forbind GitHub](./github.mdx) om sporing af pull requests på opgaver, og hvad
+AI'en gør med dem.
+
 ## Udfør vedligeholdelseshandlinger bevidst
 
 <ManualScreenshot
   caseId="advanced-settings/maintenance"
-  alt="Lottis vedligeholdelsesside med onboarding-forhåndsvisninger, nulstillingshandlinger, databasesletning, rensning, søgeindeks, embeddings og repaint-diagnostik"
+  alt="Lottis vedligeholdelsesside med onboarding-forhåndsvisninger, nulstillingshandlinger, integritetstjek af databasen, databasesletning, rensning, fuldtekstindeks, reparation af skærmbilledlager, embeddings og afbryderen til repaint rainbow overlay"
   caption="Vedligeholdelse kombinerer sikre forhåndsvisninger med destruktive og diagnostiske handlinger. Læs bekræftelsen og omfanget, før du fortsætter."
 />
 
@@ -124,6 +143,7 @@ stadig sammendraget.
   igen.
 - **Nulstil Gemini-opsætningsdialogen** fjerner dens afvisning, så
   udbyderprompten kan testes igen.
+- **Tjek databasens integritet** kontrollerer, at databasefilerne er intakte.
 - **Slet editordatabasen** fjerner editor-udkast.
 - **Slet agentdatabasen** fjerner agentlageret og afslutter Lotti, så appen
   kan genstarte mod et rent lager.
@@ -131,6 +151,8 @@ stadig sammendraget.
   dedikeret bekræftelsesflow.
 - **Genskab fuldtekstindeks** genopbygger lokale søgedata uden at genskabe
   dagbogsposter.
+- **Reparer skærmbilledlager** flytter skærmbilleder, der er gemt af ældre
+  versioner, til den rigtige mappe, så AI-billedanalyse kan læse dem.
 - **Generér embeddings** vises, når embedding-lageret er tilgængeligt, og
   efterfylder udvalgte kategorier.
 - **Repaint rainbow overlay** fremhæver områder, der gentegnes, til

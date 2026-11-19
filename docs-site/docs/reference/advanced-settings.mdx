@@ -6,7 +6,10 @@ description: Control feature flags and logging, run maintenance tools, inspect o
 # Use Advanced Settings safely
 
 Open **Settings → Advanced Settings** for power-user controls, diagnostics, and
-maintenance. These pages either change how Lotti runs or act directly on local
+maintenance. It lists **Config Flags**, **GitHub**, **Language**, **Logging
+Domains**, **System health**, **Maintenance**, **Onboarding Metrics** and
+**About Lotti**; on iOS and Android, **Health Import** appears between **System health** and
+**Maintenance**. These pages either change how Lotti runs or act directly on local
 data, so ordinary personalization belongs elsewhere in Settings.
 
 Desktop keeps the settings tree beside the selected page. Mobile opens one
@@ -15,7 +18,7 @@ values are used in both layouts.
 
 <ManualScreenshot
   caseId="advanced-settings/hub"
-  alt="Lotti Advanced Settings hub with Config Flags, Language, Logging, Maintenance, Onboarding Metrics, and About Lotti"
+  alt="Lotti Advanced Settings listing Config Flags, GitHub, Language, Logging Domains, System health, Maintenance, Onboarding Metrics, and About Lotti"
   caption="Advanced Settings groups operational controls away from everyday preferences. Some entries vary by platform and enabled capabilities."
 />
 
@@ -32,25 +35,24 @@ bottom of Settings and **Help → Manual** on macOS both follow this setting.
 
 <ManualScreenshot
   caseId="advanced-settings/flags"
-  alt="Lotti Config Flags page with searchable switches for private entries, location recording, tooltips, and AI streaming"
+  alt="Lotti Config Flags page with a Search flags field and switches grouped under Preferences, starting with private entries, location recording, tooltips, and session ratings, then Advanced & experimental"
   caption="Search matches both flag names and descriptions. Each switch changes its stored runtime capability immediately."
 />
 
-**Config Flags** is the capability switchboard. It includes controls for:
+**Config Flags** is the capability switchboard. Rows are grouped into
+**Preferences**, the settings you might reasonably want to change, and
+**Advanced & experimental**, which is diagnostics and unfinished work.
 
-- private-entry visibility, location capture, and tooltips;
-- AI response streaming and summary playback;
-- the companion and its chat (see
-  [Talk to your companion](../getting-started/companion.mdx));
-- logging and Matrix sync behavior;
-- What's New announcements and session ratings;
-- embeddings and vector search; and
-- operational indicators such as sync activity, pending agent wakes, and fork
-  healing.
+- **Preferences:** private-entry visibility, location capture, tooltips,
+  session ratings, What's New, AI response streaming, AI summary playback, and
+  Matrix sync.
+- **Advanced & experimental:** the experimental task chat, the companion and
+  its chat (see [Talk to your companion](../getting-started/companion.mdx)),
+  embeddings, syncing embeddings and vector search, the Daily OS walkthrough,
+  agent fork healing, the background sync worker, logging, and resending
+  failed attachments.
 
-Rows are grouped into **Preferences**, the settings you might reasonably
-want to change, and **Advanced & experimental**, which is diagnostics and
-unfinished work. Whole app sections such as Habits, Projects, and Daily OS
+Notification switches live in **Settings → Notifications**. Whole app sections such as Habits, Projects, and Daily OS
 are no longer here; they live in [Sections](./settings.mdx).
 
 Use **Search flags** to narrow the list by title or description. Select a row
@@ -67,14 +69,16 @@ entry.
 
 <ManualScreenshot
   caseId="advanced-settings/logging"
-  alt="Lotti Logging settings with a master logging switch, individual operational domains, and slow-query logging"
+  alt="Lotti Logging Domains page with the Enable Logging master switch above per-domain switches such as Sync, AI, Chat, Speech & audio, Database, and Tasks & checklists"
   caption="The master switch gates the per-domain controls. The Project Waddle fixture keeps Sync, AI, and Tasks enabled for focused diagnostics."
 />
 
-**Logging** starts with the global **Enable Logging** switch. When it is on,
-enable only the domains needed for an investigation, such as Sync, AI, Tasks,
-Labels, Health, Habits, Navigation, Notifications, or Daily OS. **Log slow
-queries** adds database performance diagnostics.
+**Logging Domains** starts with the global **Enable Logging** switch. When it
+is on, enable only the domains needed for an investigation — among them
+**Sync**, **AI**, **Chat**, **Speech & audio**, **Database**, **Agent
+runtime**, **Tasks & checklists**, **Labels**, **Health**, **Habits**,
+**Navigation**, **Notifications** and **Daily OS**. **Slow Database Queries**
+writes slow database queries to their own daily `slow_queries-*.log`.
 
 Turning off the master switch disables the domain controls. Errors are still
 written to the daily `error-*.log`; these switches govern additional diagnostic
@@ -105,11 +109,23 @@ again the next time you open the page, earlier ones are listed under
 analyzed and when it was generated.
 Without a model, or if the model call fails, you still get the digest.
 
+## Connect GitHub
+
+**GitHub** holds the read-only personal access token Lotti uses to read the
+pull requests you link to tasks. **Create a token on GitHub** opens GitHub's
+token form with the permissions filled in; choose your repositories, paste the
+token into **Personal access token** and select **Connect**. The page then
+shows which account is connected and offers **Disconnect**. The token syncs
+end-to-end encrypted to your other devices and is used only for requests to
+api.github.com. With it connected, the companion can also answer questions
+about your pull requests. See [Connect GitHub](./github.mdx) for tracking pull
+requests on tasks and what the AI does with them.
+
 ## Run maintenance actions deliberately
 
 <ManualScreenshot
   caseId="advanced-settings/maintenance"
-  alt="Lotti Maintenance page with onboarding previews, reset actions, database deletion, purge, search index, embeddings, and repaint diagnostics"
+  alt="Lotti Maintenance page with onboarding previews, reset actions, database integrity check, database deletion, purge, full-text index, screenshot storage repair, embeddings, and the repaint rainbow overlay switch"
   caption="Maintenance combines safe previews with destructive and diagnostic actions. Read the confirmation and scope before continuing."
 />
 
@@ -120,6 +136,7 @@ Without a model, or if the model call fails, you still get the digest.
 - **Reset In-App Hints** makes one-time tips eligible to appear again.
 - **Reset Gemini Setup Dialog** clears its dismissal so the provider prompt can
   be tested again.
+- **Check database integrity** verifies that the database files are sound.
 - **Delete Editor Database** removes editor drafts.
 - **Delete Agents Database** removes the agents database and exits Lotti so the
   app can restart against a clean store.
@@ -127,6 +144,8 @@ Without a model, or if the model call fails, you still get the digest.
   dedicated confirmation flow.
 - **Recreate full-text index** rebuilds local search data without recreating
   journal entries.
+- **Repair screenshot storage** moves screenshots saved by older versions into
+  the correct folder so AI image analysis can read them.
 - **Generate Embeddings** appears when the embedding store is available and
   backfills selected categories.
 - **Repaint rainbow overlay** flashes repainting regions for UI diagnostics. It

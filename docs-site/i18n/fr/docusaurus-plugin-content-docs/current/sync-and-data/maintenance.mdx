@@ -13,7 +13,7 @@ récente des données que tu ne peux pas recréer.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Maintenance de la synchronisation Lotti avec Supprimer la base de données de synchronisation, Synchroniser les mesurables, tableaux de bord, habitudes, catégories et paramètres IA, Historique des messages, Remplir le journal de séquence de synchronisation et Purger les anciens éléments envoyés de la boîte d'envoi"
+  alt="Maintenance de la synchronisation Lotti avec Supprimer la base de données de synchronisation, Synchroniser les mesurables, tableaux de bord, habitudes, catégories et paramètres IA, Historique des messages, Remplir le journal de séquence de synchronisation, Rattrapage complet et Purger les anciens éléments envoyés de la boîte d'envoi"
   caption="La maintenance regroupe sur une page les actions destructrices, de relecture et de nettoyage. Le texte de confirmation définit la portée de chaque opération."
 />
 
@@ -34,6 +34,10 @@ récente des données que tu ne peux pas recréer.
 - **Remplir le journal de séquence de synchronisation** indexe les entrées
   existantes pour que le rattrapage puisse répondre aux demandes portant sur
   des entrées créées avant l’existence du suivi de séquence.
+- **Rattrapage complet** envoie à tes autres appareils la liste de tous les
+  enregistrements de cet appareil, suppressions comprises. Chacun demande ce
+  qui lui manque et renvoie ce qui manque à cet appareil. Tes autres appareils
+  doivent être en ligne pour répondre ; confirme avec **Oui, lancer**.
 - **Purger les anciens éléments envoyés de la boîte d'envoi** supprime les
   lignes envoyées de plus de 7 jours et libère de l’espace disque. Les éléments
   en attente ou en échec sont conservés.
@@ -41,11 +45,11 @@ récente des données que tu ne peux pas recréer.
 Commence par la plus petite opération qui correspond au symptôme. Une pièce
 jointe bloquée relève de la
 [boîte d’envoi](./sync.mdx#examiner-la-boîte-denvoi) ; des trous de séquence
-persistants relèvent du Rattrapage de synchronisation ; deux modifications
+persistants relèvent de **Santé de la synchronisation** ; deux modifications
 concurrentes valides relèvent des [conflits](./conflicts.mdx). Supprimer la base
 de données de synchronisation doit rester une réinitialisation locale de dernier
 recours, faite avec un pair fiable et une sauvegarde à disposition.
 
 Après une réparation, reviens à **Statistiques Matrix**, vérifie que le travail
 appliqué progresse et que la file se vide, puis que la boîte d’envoi et le
-nombre d’éléments manquants du rattrapage se stabilisent.
+nombre d’éléments manquants dans **Santé de la synchronisation** se stabilisent.

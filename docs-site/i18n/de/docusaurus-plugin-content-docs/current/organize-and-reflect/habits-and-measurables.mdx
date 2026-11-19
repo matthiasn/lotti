@@ -27,8 +27,8 @@ zu machen.
 
 ### Gewohnheiten erstellen und bearbeiten
 
-1. Öffne **Gewohnheiten** und wähle **+**. Um eine bestehende Gewohnheit zu
-   ändern, halte sie gedrückt oder öffne ihr Erfassungsblatt und wähle den
+1. Öffne **Gewohnheiten** und wähle **+** – auf dem Smartphone sitzt es im
+   Navigationsstarter. Um eine bestehende Gewohnheit zu ändern, halte sie gedrückt oder öffne ihr Erfassungsblatt und wähle den
    Stift. **Einstellungen → Definitionen → Gewohnheiten** listet weiterhin alle
    Definitionen auf und öffnet denselben Editor.
 2. Benenne das Verhalten konkret. Die Beispiel-Chips (**Blutdruck messen**,
@@ -45,7 +45,7 @@ zu machen.
 
 <ManualScreenshot
   caseId="habits/editor-step2"
-  alt="Neue Gewohnheit, Schritt 2 von 2: Woran erkennen wir, dass es erledigt ist? mit der manuellen Zeile, einem Schritte-Signal auf täglich mindestens 6.000, Signal hinzufügen und dem Abschnitt Einstellungen"
+  alt="Neue Gewohnheit, Schritt 2 von 2: Woran erkennen wir, dass es erledigt ist? mit der manuellen Zeile, einem Schritte-Signal auf täglich ≥ 6.000 verglichen mit Heute, Signal hinzufügen, dem Schalter Bei automatischem Abhaken benachrichtigen und dem Abschnitt Einstellungen"
 />
 
 ### Erfasste Daten eine Gewohnheit abhaken lassen
@@ -62,13 +62,17 @@ von Hand erfassen. **Signal hinzufügen** bietet drei Arten:
 - ein **Workout**-Typ, der in deinen Importen vorkommt (beliebiges Workout oder
   Dauer, Distanz oder Energie mindestens / höchstens ein Wert).
 
+Ein Schwellenwert kann mit dem Wert von **Heute**, dem **7-Tage-Durchschnitt**
+oder **Einen der beiden Werte** verglichen werden.
+
 Bei zwei oder mehr Signalen legt **Wann gilt die Gewohnheit als erledigt?**
 fest, ob **ein beliebiges** Signal, **alle** Signale oder **mindestens N**
 davon die Gewohnheit abschließen. Sobald die Daten des Tages die Regel erfüllen, wird die
 Gewohnheit für dich abgehakt, auf der Gewohnheiten-Seite mit Signal und
 Uhrzeit als **auto** markiert und mit einer Benachrichtigung gemeldet – Gewohnheiten, die innerhalb weniger Sekunden abgehakt werden, werden zu einer Benachrichtigung zusammengefasst, jede Gewohnheit wird
 höchstens einmal am Tag gemeldet, und **Bei automatischem Abhaken
-benachrichtigen** schaltet das pro Gewohnheit ab. Was du selbst erfasst, auch ein Überspringen, hat immer Vorrang vor dem
+benachrichtigen** am Fuß der Signalkarte, sichtbar sobald die Gewohnheit ein
+Signal hat, schaltet das pro Gewohnheit ab. Was du selbst erfasst, auch ein Überspringen, hat immer Vorrang vor dem
 automatischen Abhaken.
 
 ### Die Einstellungen des Editors
@@ -81,12 +85,12 @@ automatischen Abhaken.
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Seite Gewohnheit bearbeiten für Kaiserpinguine durchzählen mit der Signalkarte, dem Abschnitt Einstellungen und den Optionen Favorit, Privat und Aktiv"
+  alt="Seite Gewohnheit bearbeiten für Kaiserpinguine durchzählen mit Name, Beschreibung, der Karte Woran erkennen wir, dass es erledigt ist? und dem Abschnitt Einstellungen"
 />
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Der Abschnitt Einstellungen des Editors mit Kategorie, Startdatum, Anzeigen ab, Alarmzeit und dem Schalter für Benachrichtigung bei automatischem Abhaken"
+  alt="Seite Gewohnheit bearbeiten für Kaiserpinguine durchzählen mit dem Abschnitt Einstellungen – Kategorie, Startdatum, Anzeigen ab und Alarm anzeigen um – und Optionen mit Favorit, Privat und Aktiv, dann Löschen"
 />
 
 - **Kategorie** für Filter und visuellen Kontext.
@@ -94,7 +98,6 @@ automatischen Abhaken.
   **angezeigt** wird, und wann Lotti einen **Alarm** zeigen soll. Das
   Datenmodell versteht auch wöchentliche und monatliche Pläne; der Editor
   zeigt diese Zeitoptionen für tägliche Gewohnheiten.
-- **Bei automatischem Abhaken benachrichtigen** (standardmäßig an).
 - Beim Bearbeiten: **Favorit** für höhere Sichtbarkeit, **Privat**, um sie bei
   ausgeblendeten privaten Einträgen zu verstecken, **Aktiv**, um ihre
   Sichtbarkeit ohne Löschen des Verlaufs zu steuern, und **Löschen**.
@@ -117,7 +120,7 @@ Ergebnisse:
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Erfassungsblatt für das Inspizieren der Habitatdichtungen mit den Signalzeilen Krillrationen und Schritte, Schnellerfassungs-Chips, Kurven und den Ergebnissen Erfolg, Überspringen und Verpasst"
+  alt="Erfassungsblatt für das Inspizieren der Habitatdichtungen mit den Signalzeilen Krillrationen, Trinkkontrolle und Schritte, Schnellerfassungs-Chips, Kurven und den Ergebnissen Erfolg, Überspringen und Verpasst"
 />
 
 Nutze den Zustand, der die Realität bewahrt. Ein ehrlicher Verlauf ist
@@ -127,25 +130,31 @@ Gewohnheit und jeden Tag rekonstruieren können.
 
 ## Mit Messgrößen arbeiten
 
-Eine Messgrößendefinition beschreibt die Zahl vor der Erfassung: Name, Einheit,
-Datenschutz und Zusammenfassung mehrerer Beobachtungen.
+Eine Messgrößendefinition beschreibt den Wert vor der Erfassung: Name, ob er
+eine Zahl oder eine Auswahl ist, Einheit, Datenschutz und Zusammenfassung
+mehrerer Beobachtungen.
 
 <ManualScreenshot
   caseId="measurables/settings-list"
-  alt="Messgrößeneinstellungen mit Habitatdruck, Gezählte Pinguine und Verzehrte Sardinen"
+  alt="Messgrößeneinstellungen mit Habitatdruck, Trinkkontrolle, Gezählte Pinguine und Verzehrte Sardinen"
 />
 
 ### Einen Messdatentyp erstellen
 
 1. Öffne **Einstellungen → Definitionen → Messgrößen**.
-2. Wähle Hinzufügen.
-3. Gib Name, optionale Beschreibung und kurze Einheit ein.
-4. Wähle die Standardaggregation für Diagramme.
-5. Entscheide über Favorit und Privat, dann speichere.
+2. Wähle **Messgröße erstellen**.
+3. Gib Name und optionale Beschreibung ein.
+4. Wähle unter **Erfasst als** **Zahl** für einen Wert mit Einheit oder
+   **Auswahl**, um beim Erfassen eine der von dir festgelegten Möglichkeiten
+   zu wählen – etwa die Farben einer Trinkkontrolle.
+5. Gib bei einer Zahl eine kurze Einheit ein und wähle die
+   Standardaggregation für Diagramme. Bei einer Auswahl trägst du stattdessen
+   ihre **Auswahlmöglichkeiten** ein.
+6. Entscheide über Favorit und Privat, dann speichere.
 
 <ManualScreenshot
   caseId="measurables/settings-detail"
-  alt="Editor für Habitatdruck mit kPa und täglicher Mittelwert-Aggregation"
+  alt="Editor für Habitatdruck, erfasst als Zahl in kPa mit Aggregation Tagesdurchschnitt"
 />
 
 Wähle nach der Bedeutung wiederholter Werte:

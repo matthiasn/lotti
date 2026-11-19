@@ -12,18 +12,28 @@ individual task and automation rule.
 
 ## Review saved models
 
-Open **Settings → AI Settings → Models**. The list groups models by provider
-and exposes capability filters for text, vision, audio, and reasoning.
+Open **Settings → AI Settings → Models**. The models form one list. Above
+it, one filter chip per provider and the **Text**, **Vision**, **Audio** and
+**Reasoning** chips narrow it, and the search field finds providers, models
+and profiles by name.
 
 <ManualScreenshot
   caseId="ai/models"
-  alt="Lotti AI model list with Project Waddle text, reasoning, vision, transcription, and image-generation models"
+  alt="Lotti Models page with AI Settings controls on top, provider and capability filter chips, and a list of Project Waddle models tagged Thinking or Image recognition"
   caption="The Project Waddle workspace mixes cloud and local models while keeping every model's capabilities explicit."
 />
 
-The **Concurrent agent wakes** control at the top of AI Settings limits how
-many different agents may run inference at once. A higher value can improve
-throughput, but it also increases simultaneous provider requests and local
+Three controls sit at the top of AI Settings:
+
+- **Concurrent agent wakes** limits how many different agents may run
+  inference at once.
+- **Update cadence** sets how often task agents update on their own when
+  neither the task nor its category sets it. **At most hourly** still updates
+  right away after a recording, a stopped timer or a task marked done.
+- **Default inference profile** is the fallback for agents without a
+  configured inference route on this device.
+
+A higher **Concurrent agent wakes** value can improve throughput, but it also increases simultaneous provider requests and local
 device load. Keep it conservative when a provider has strict rate limits or a
 local model server has limited memory.
 
@@ -63,18 +73,28 @@ routing policy. The overview shows which model serves each configured slot.
 Edit a profile to assign models for the capabilities you use:
 
 - **Thinking** is the required general text model.
+- **Chat model** answers in chats; it uses the thinking model when unset.
 - **Thinking (High-End)** can handle work that explicitly requests the more
   capable reasoning path.
 - **Image Recognition** analyzes images.
 - **Transcription** converts audio to text.
+- **Audio post-processing** corrects a transcript against the speech
+  dictionary and writes the recording's summary; it uses the thinking model
+  when unset.
 - **Image Generation** creates task artwork and other generated images. The
   current built-in image-generation path uses a configured remote provider, so
   choose that provider and the references you send with the same care as any
   other cloud inference route.
+- **Read aloud** is the cloud speech model that reads summaries and answers
+  aloud; it uses the on-device voice when unset.
+
+Under **Automated Skills** at the end of the form, switch on which skills —
+transcription and image analysis — run on their own with this profile. Each
+uses the model of its slot, so the switch needs that slot filled.
 
 <ManualScreenshot
   caseId="ai/profile-editor"
-  alt="Project Waddle Command profile editor assigning thinking, high-end reasoning, image-recognition, transcription, and image-generation models"
+  alt="Project Waddle Command profile editor with name, description, and model slots for Thinking, Chat model, Thinking (High-End), Image Recognition, Transcription, Audio post-processing, and Image Generation"
   caption="One profile routes every Project Waddle modality without repeating model choices across tasks."
 />
 
@@ -99,14 +119,17 @@ for text reasoning.
 ## Set a category default
 
 A category can choose a default inference profile under **Settings →
-Definitions → Categories**. New work in that category can then inherit a
-coherent routing policy. Select the profile whose privacy and capability mix
-matches the category rather than choosing solely by speed.
+Definitions → Categories**. An agent runs on the profile picked for it; without
+one it follows its category's profile on every run, so changing the category's
+profile moves its agents along. Without either, it falls back to the
+**Default inference profile** at the top of AI Settings. Select the profile
+whose privacy and capability mix matches the category rather than choosing
+solely by speed.
 
 <ManualScreenshot
   caseId="ai/profile-picker"
   alt="Penguin Operations category editor with a modal offering Project Waddle Command, Habitat Local-First, and Fish Diplomacy profiles"
-  caption="The desktop-only badge makes platform restrictions visible before a category default is selected."
+  caption="A monitor icon marks a Desktop Only profile before it is selected as a category default."
 />
 
 ## Legacy profile route

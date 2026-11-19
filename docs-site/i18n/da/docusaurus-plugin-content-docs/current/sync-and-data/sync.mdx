@@ -22,12 +22,12 @@ lokale kopi.
 To detaljer værd at kende. Ikke alt, der synkroniseres, er journaldata: din enhedsprofil og dit Daily OS-navn rejser som enhedspræferencer og er undtaget fra hulregistrering. Og afledte tal sendes aldrig — et gemt opgavefilter synkroniseres, men de opgavetal, der beregnes ud fra det, genberegnes på hver enhed.
 
 Åbn **Indstillinger → Synkroniseringsindstillinger** for siderne til
-opsætning, tilstand og genopretning. Tallet ved **Sync Outbox** er arbejde, der
+opsætning, tilstand og genopretning. Tallet ved **Synkroniseringsudbakke** er arbejde, der
 endnu ikke har nået synkroniseringstjenesten.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Lottis synkroniseringsindstillinger med Enheder, Denne enhed, Backfill-synkronisering, Matrixstatistikker, Sync Outbox, Synkroniseringskonflikter og Vedligeholdelse"
+  alt="Lottis synkroniseringsindstillinger med Enheder, Denne enhed, Synkroniseringstilstand, Matrixstatistikker, Sync Outbox, Synkroniseringskonflikter og Vedligeholdelse"
   caption="Synkroniseringsindstillingerne holder den daglige status tæt på værktøjerne til diagnose og genopretning. Project Waddle har lige nu tre elementer i udbakken, der skal ses på."
 />
 
@@ -126,23 +126,25 @@ sat op til at bruge dem.
 ## Forstå indhentning og tilbagefyldning
 
 Almindelig synkronisering behandler ændringer, efterhånden som de kommer.
-**Backfill-synkronisering** finder huller i den sekvens, der er modtaget fra
+**Synkroniseringstilstand** finder huller i den sekvens, der er modtaget fra
 kendte enheder, og beder om de manglende poster igen.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Lottis side Backfill-synkronisering med tællere for indkommende kø, manglende og oversprungne elementer, synkroniseringsstatistikker, automatisk tilbagefyldning og avanceret genopretning"
-  caption="Project Waddle har modtaget 2.868 sekvensposter og kender lige nu til fire manglende poster fordelt på to enheds-id'er."
+  alt="Lottis side Synkroniseringstilstand med poster på denne enhed, tællere for indkommende kø og manglende poster, synkroniseringsstatistikker, automatisk tilbagefyldning og avanceret genopretning"
+  caption="Project Waddle sporer 2.868 sekvenstællere, har modtaget 2.775 af dem og kender lige nu til fire manglende poster fordelt på to enheds-id'er."
 />
 
+- **Poster på denne enhed** tæller, hvad denne enhed rummer, sletninger
+  medregnet. Enheder, der er synkroniserede, viser de samme tal her.
 - **Indkommende kø** er arbejde, der venter på at blive anvendt.
 - **Savnet** er antallet af kendte huller i sekvensen.
-- **Sprunget over** er arbejde, som den indkommende kø opgav, fordi det ikke
-  kunne behandles normalt.
+- **Sprunget over**, i **Synkroniseringsstatistikker**, er arbejde, som den
+  indkommende kø opgav, fordi det ikke kunne behandles normalt.
 - **Automatisk tilbagefyldning** beder om manglende poster fra de seneste
   24 timer og er den rigtige standard til daglig brug.
 - **Avanceret genopretning** rummer manuelle handlinger til en undersøgelse,
-  fx **Følg med nu** og anmodning om ældre manglende poster. Brug den først,
+  fx **Indhent nu** og anmodning om ældre manglende poster. Brug den først,
   når almindelig synkronisering og automatisk tilbagefyldning har haft tid til
   at falde til ro.
 
@@ -176,7 +178,7 @@ udklipsholderen til en supportanmodning.
 
 ## Inspicer Outboxen
 
-**Sync Outbox** er den lokale kø af ændringer, der venter på at blive sendt.
+**Synkroniseringsudbakke** er den lokale kø af ændringer, der venter på at blive sendt.
 Resuméet øverst fortæller, om alt er synkroniseret, hvor mange elementer der
 venter eller er ved at blive sendt, og hvor mange der ikke kunne sendes.
 

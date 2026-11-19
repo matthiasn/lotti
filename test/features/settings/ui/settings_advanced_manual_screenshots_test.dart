@@ -28,6 +28,8 @@ import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart'
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
+import 'package:lotti/features/settings/ui/tree/settings_tree_row.dart';
+import 'package:lotti/features/settings/ui/tree/settings_tree_view.dart';
 import 'package:lotti/features/system_health/ui/pages/logging_settings_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -50,6 +52,11 @@ import '../../../helpers/target_platform.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
+
+/// The release the manual documents, pinned rather than read from
+/// `pubspec.yaml` so a capture never changes with an unrelated version bump.
+const _manualAppVersion = '1.1.106';
+const _manualAppBuild = '4496';
 
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
@@ -142,7 +149,7 @@ typedef _AdvancedCase = ({
   Widget Function() mobilePage,
   String Function(AppLocalizations messages) expectedText,
   String Function(AppLocalizations messages)? desktopExpectedText,
-  String? scrollTo,
+  String Function(AppLocalizations messages)? desktopScrollTo,
 });
 
 final List<_AdvancedCase> _cases = [
@@ -152,7 +159,7 @@ final List<_AdvancedCase> _cases = [
     mobilePage: () => const SettingsMobileBranchPage(branchId: 'advanced'),
     expectedText: (messages) => messages.settingsFlagsTitle,
     desktopExpectedText: null,
-    scrollTo: null,
+    desktopScrollTo: (messages) => messages.settingsAboutTitle,
   ),
   (
     id: 'flags',
@@ -160,7 +167,7 @@ final List<_AdvancedCase> _cases = [
     mobilePage: FlagsPage.new,
     expectedText: (messages) => messages.configFlagPrivate,
     desktopExpectedText: null,
-    scrollTo: null,
+    desktopScrollTo: null,
   ),
   (
     id: 'logging',
@@ -168,7 +175,7 @@ final List<_AdvancedCase> _cases = [
     mobilePage: LoggingSettingsPage.new,
     expectedText: (messages) => messages.settingsLoggingGlobalToggle,
     desktopExpectedText: null,
-    scrollTo: null,
+    desktopScrollTo: null,
   ),
   (
     id: 'health_import',
@@ -176,7 +183,7 @@ final List<_AdvancedCase> _cases = [
     mobilePage: HealthImportPage.new,
     expectedText: (messages) => messages.settingsHealthImportActivity,
     desktopExpectedText: (messages) => messages.settingsFlagsTitle,
-    scrollTo: null,
+    desktopScrollTo: null,
   ),
   (
     id: 'maintenance',
@@ -184,7 +191,7 @@ final List<_AdvancedCase> _cases = [
     mobilePage: MaintenancePage.new,
     expectedText: (messages) => messages.maintenancePurgeDeleted,
     desktopExpectedText: null,
-    scrollTo: null,
+    desktopScrollTo: null,
   ),
   (
     id: 'onboarding_metrics',
@@ -192,7 +199,7 @@ final List<_AdvancedCase> _cases = [
     mobilePage: OnboardingMetricsPage.new,
     expectedText: (messages) => messages.onboardingMetricsReachedRealAha,
     desktopExpectedText: null,
-    scrollTo: null,
+    desktopScrollTo: null,
   ),
   (
     id: 'about',
@@ -200,7 +207,7 @@ final List<_AdvancedCase> _cases = [
     mobilePage: AboutPage.new,
     expectedText: (_) => '2604',
     desktopExpectedText: null,
-    scrollTo: null,
+    desktopScrollTo: null,
   ),
 ];
 
@@ -221,8 +228,8 @@ void main() {
     PackageInfo.setMockInitialValues(
       appName: 'Lotti',
       packageName: 'com.matthiasn.lotti',
-      version: '0.9.1049',
-      buildNumber: '4217',
+      version: _manualAppVersion,
+      buildNumber: _manualAppBuild,
       buildSignature: '',
     );
   });
@@ -348,10 +355,27 @@ void main() {
         await settleFrames(tester, 4);
       }
 
-      final target = scenario.scrollTo;
-      if (target != null) {
-        await tester.ensureVisible(find.text(target).last);
-        await tester.pump(const Duration(milliseconds: 300));
+      // The desktop tree opens scrolled to its top, which cuts an expanded
+      // branch off below the fold. Scroll the branch's last row to the
+      // bottom edge so the whole subtree is on screen.
+      final desktopTarget = scenario.desktopScrollTo;
+      if (!device.isPhone && desktopTarget != null) {
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(SettingsTreeView)),
+        )!;
+        final row = find.ancestor(
+          of: find.descendant(
+            of: find.byType(SettingsTreeView),
+            matching: find.text(desktopTarget(messages)),
+          ),
+          matching: find.byType(SettingsTreeRow),
+        );
+        await Scrollable.ensureVisible(tester.element(row), alignment: 1);
+        await settleFrames(tester, 4);
+        expect(
+          tester.getRect(row).bottom,
+          lessThanOrEqualTo(device.size.height),
+        );
       }
     },
   );

@@ -56,13 +56,25 @@ context van de planner breder en wordt het dagelijkse ritueel rumoeriger.
 
 ## Voeg categoriespecifieke automatiseringscontext toe
 
-Een categorie kan standaardinstellingen bieden voor nieuwe taken: een inferentieprofiel
-en een agentsjabloon. Dit zijn standaardwaarden, geen permanente vergrendelingen; keuzes
-op taakniveau kunnen later nog veranderen.
+Onder **AI standaard** kan een categorie standaardinstellingen bieden voor nieuwe taken:
+een inferentieprofiel en een agentsjabloon. Dit zijn standaardwaarden, geen permanente
+vergrendelingen; keuzes op taakniveau kunnen later nog veranderen.
+
+- **Automatische inferentie** laat Lotti nieuwe audio transcriberen, nieuwe afbeeldingen
+  analyseren en pull requests in deze categorie samenvatten zonder dat je erom vraagt.
+  De optie verschijnt zodra het profiel van de categorie een van deze dingen kan, en
+  blijft zichtbaar zolang ze aan staat.
+- Met een gekozen agentsjabloon bepaalt **De assistent automatisch activeren** of nieuwe
+  taakagenten zichzelf bijwerken wanneer een taak verandert, en stelt **Updateritme**
+  in hoe vaak ze dat doen.
+
+**Kennis over de categorie** is wat elke AI-prompt voor taken in deze categorie zou
+moeten weten – wat het is, waar de code staat, conventies, valkuilen. Het gaat woord
+voor woord de prompt in, tot 4.000 tekens.
 
 <ManualScreenshot
   caseId="categories/automation"
-  alt="Geavanceerde instellingen van Penguin Operations met de categoriekennis en geleerde checklistcorrecties voor Sir Flaps-a-Lot"
+  alt="Categorie-editor van Penguin Operations, gescrold naar een leeg veld Kennis over de categorie en twee geleerde voorbeelden van checklistcorrecties, waaronder Sir Flaps-a-Lot, boven Verwijderen"
   caption="Checklistcorrecties worden geleerd van de bewerkingen en kunnen hier worden herzien of verwijderd."
 />
 

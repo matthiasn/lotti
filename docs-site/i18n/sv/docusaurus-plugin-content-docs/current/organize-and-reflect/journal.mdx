@@ -37,15 +37,13 @@ historik på en gång.
 
 ## Sök efter ord eller betydelse
 
-Använd **Fulltext** för att hitta orden som lagrats i en post. När
-vektorsökning är aktiverad, byt till **Vektor** för att leta efter poster med
-liknande betydelse även när de använder andra formuleringar. Vektorresultat
-returneras som en rankad mängd i stället för som ett oändligt sidindelat
-flöde.
+Skriv i **Sökning** för att först lista posterna vars ord matchar, följda av
+en sektion **Besläktade i betydelse** med poster som säger samma sak med andra
+ord. Betydelsesökningen körs på din enhet när vektorsökning är påslagen och
+dess inbäddningsmodell är tillgänglig.
 
-Om vektorsökning inte är tillgänglig eller senare inaktiveras, återgår Lottis
-dagbok till fulltextläge i stället för att lämna sökningen i ett oanvändbart
-tillstånd.
+När betydelsesökningen inte är tillgänglig visar dagboken helt enkelt
+orduträffarna, så att sökningen aldrig hamnar i ett oanvändbart tillstånd.
 
 ## Filtrera vad som visas
 
@@ -69,7 +67,7 @@ Lotti sparar dessa val för dagboken. Uppgiftsfilter lagras separat, så att en
 
 <ManualScreenshot
   caseId="journal/create"
-  alt="Lägg till-menyn med Evenemang, Uppgift, Ljudinspelning, Textinmatning, Importera bild och Skärmdump ovanpå Project Waddle-dagboken"
+  alt="Lägg till-menyn med Skriv en anteckning, Spela in en röstanteckning, Lägg till en uppgift, Lägg till en händelse, Importera en bild och Ta en skärmbild ovanpå Project Waddle-dagboken"
   caption="Menyn erbjuder bara åtgärder som stöds av den aktuella plattformen och kontexten."
 />
 
@@ -107,7 +105,7 @@ Välj datumet eller varaktigheten i posthuvudet för att öppna **Datum och
 tid**. För en post inom samma dag, välj ett datum och ställ in start- och
 sluttid oberoende av varandra. Varaktighetssammanfattningen uppdateras medan
 hjulen rör sig. Slå på **Välj ett separat slutdatum** för en post över natten
-eller flera dagar, och använd endera **Nu**-åtgärden för att flytta den
+eller flera dagar, och använd endera **nu**-åtgärden för att flytta den
 ändpunkten till aktuellt datum och tid.
 
 <ManualScreenshot
@@ -116,7 +114,7 @@ eller flera dagar, och använd endera **Nu**-åtgärden för att flytta den
 />
 
 Välj datumknappen för att öppna kalendersidan. **Idag** går tillbaka till
-dagens datum, **Klart** går tillbaka till intervallredigeraren, och **Spara**
+dagens datum, **Rensa** går tillbaka till intervallredigeraren, och **Spara**
 tillämpar hela start-/slutintervallet på posten.
 
 <ManualScreenshot
@@ -153,8 +151,9 @@ till loggen.
 
 Öppna sorteringspillret för att förbereda flera synlighetsändringar
 tillsammans. Välj ordningen, om dolda poster ska ingå och om endast flaggade
-poster ska vara kvar. Aktivitetslistan ändras när du väljer bocken för att
-avsluta arket; stängs arket på något annat sätt kastas de förberedda valen.
+poster ska vara kvar. Aktivitetslistan ändras när du väljer **Tillämpa**;
+**Rensa** återställer valen, och stängs arket på något annat sätt kastas de
+förberedda valen.
 
 <ManualScreenshot
   caseId="journal/linked-filter"

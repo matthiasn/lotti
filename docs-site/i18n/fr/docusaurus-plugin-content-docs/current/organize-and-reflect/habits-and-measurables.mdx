@@ -27,9 +27,10 @@ repérer des tendances sans faire d’un jour manqué toute l’histoire.
 
 ### Créer et modifier des habitudes
 
-1. Ouvre **Habitudes** et touche **+**. Pour modifier une habitude existante,
+1. Ouvre **Habitudes** et touche **+** — sur un téléphone, il se trouve dans
+   le lanceur de navigation. Pour modifier une habitude existante,
    fais un appui long dessus, ou ouvre sa feuille de validation et touche le
-   crayon. **Réglages → Définitions → Habitudes** liste toujours toutes les
+   crayon. **Paramètres → Définitions → Habitudes** liste toujours toutes les
    définitions et ouvre le même éditeur.
 2. Nomme le comportement concrètement. Les puces d'exemple (**mesurer la
    tension**, **6 000 pas**, **renforcement musculaire fonctionnel**, **prendre
@@ -46,7 +47,7 @@ repérer des tendances sans faire d’un jour manqué toute l’histoire.
 
 <ManualScreenshot
   caseId="habits/editor-step2"
-  alt="Nouvelle habitude, étape 2 sur 2 : Comment savoir que c'est fait ? avec la ligne manuelle, un signal Pas réglé sur par jour au moins 6 000, Ajouter un signal et la section Réglages"
+  alt="Nouvelle habitude, étape 2 sur 2 : Comment savoir que c’est fait ? avec la ligne manuelle, un signal Pas réglé sur Par jour ≥ 6 000 comparé à Aujourd’hui, Ajouter un signal, l’interrupteur Notifier lors d’une validation automatique et la section Réglages"
 />
 
 ### Laisser les données enregistrées cocher une habitude
@@ -63,12 +64,16 @@ quelle habitude à la main. **Ajouter un signal** propose trois types :
 - un type d'**entraînement** apparu dans tes imports (une séance, ou une durée,
   une distance ou une énergie au moins / au plus une valeur).
 
+Un seuil peut être comparé à la valeur d’**Aujourd’hui**, à la **Moyenne sur 7
+jours** ou à **L’un ou l’autre**.
+
 Avec deux signaux ou plus, **Quand l'habitude compte comme faite** choisit si
 **n'importe quel** signal, **tous** les signaux ou **au moins N** d'entre eux
 la valident. Dès que les données du jour satisfont la règle, l'habitude est
 cochée pour toi, marquée **auto** sur la page Habitudes avec le signal et
 l'heure, et annoncée par une notification — les habitudes validées à quelques secondes d'intervalle sont regroupées en une seule, chaque habitude n'est annoncée qu'une
-fois par jour au plus, et **Notifier lors d'une validation automatique** la
+fois par jour au plus, et **Notifier lors d’une validation automatique**, au
+pied de la carte des signaux et affiché dès que l’habitude a un signal, la
 désactive par habitude. Ce que tu enregistres
 toi-même, y compris un passage, l'emporte toujours sur la validation
 automatique.
@@ -83,12 +88,12 @@ automatique.
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Page Modifier l'habitude pour Appel des manchots empereurs avec la carte des signaux, la section Réglages et les options favori, privé et actif"
+  alt="Page Modifier l'habitude pour Appel des manchots empereurs avec son nom, sa description, la carte Comment savoir que c’est fait ? et la section Réglages"
 />
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="La section Réglages de l'éditeur avec catégorie, date de début, affichée à partir de, heure d'alerte et l'interrupteur de notification lors d'une validation automatique"
+  alt="Page Modifier l'habitude pour Appel des manchots empereurs avec la section Réglages — catégorie, date de début, affichée à partir de et heure d'alerte — puis les options Favori, Privé et Actif, et enfin Supprimer"
 />
 
 - **Catégorie** pour filtrer et situer visuellement.
@@ -97,7 +102,6 @@ automatique.
   alerte**. Le modèle de données comprend aussi les plans hebdomadaires et
   mensuels ; l'éditeur expose ces réglages horaires pour les habitudes
   quotidiennes.
-- **Notifier lors d'une validation automatique** (activé par défaut).
 - En modification : **Favori** pour plus de visibilité, **Privé** pour la
   masquer sauf si les entrées privées sont affichées, **Actif** pour contrôler
   sa présence sur la page Habitudes sans effacer son historique, et
@@ -111,17 +115,17 @@ sur deux semaines, et pour une mesure des puces avec les valeurs que tu
 enregistres le plus (les données de santé et les entraînements viennent des
 imports, donc sans puces). Toucher une puce enregistre la mesure
 immédiatement ; si cela valide
-l'habitude, **Succès** est présélectionné et tu peux encore ajouter un
+l'habitude, **Réussi** est présélectionné et tu peux encore ajouter un
 commentaire avant **Enregistrer**. Sous les signaux, le formulaire propose
 trois résultats :
 
-- **Succès** — le comportement a eu lieu.
+- **Réussi** — le comportement a eu lieu.
 - **Manqué** — c'était attendu et possible, mais ça n'a pas eu lieu.
-- **Passer** — ça ne s'appliquait raisonnablement pas ce jour-là.
+- **Ignoré** — ça ne s'appliquait raisonnablement pas ce jour-là.
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Feuille de validation pour l'inspection des joints de l'habitat, avec les lignes de signal Rations de krill et Pas, des puces d'enregistrement rapide, des courbes et les résultats Succès, Passer et Manqué"
+  alt="Feuille de validation pour l'inspection des joints de l'habitat, avec les lignes de signal Rations de krill, Contrôle d’hydratation et Pas, des puces d'enregistrement rapide, des courbes et les résultats Réussi, Ignoré et Manqué"
 />
 
 Choisis l'état qui préserve la réalité. Un historique sincère est plus utile
@@ -131,26 +135,31 @@ habitude et chaque jour.
 
 ## Travaille avec les mesures
 
-Une définition de mesure décrit le nombre avant que tu ne le consignes : son
-nom, son unité, sa confidentialité et la façon dont plusieurs observations se
-combinent dans les graphiques.
+Une définition de mesure décrit la valeur avant que tu ne la consignes : son
+nom, s’il s’agit d’un nombre ou d’un choix, son unité, sa confidentialité et
+la façon dont plusieurs observations se combinent dans les graphiques.
 
 <ManualScreenshot
   caseId="measurables/settings-list"
-  alt="Paramètres des mesures contenant Pression de l’habitat, Pingouins recensés et Sardines consommées"
+  alt="Paramètres des mesures contenant Pression de l’habitat, Contrôle d’hydratation, Pingouins recensés et Sardines consommées"
 />
 
 ### Crée un type de données mesurable
 
 1. Ouvre **Paramètres → Définitions → Éléments mesurables**.
-2. Sélectionne l’action d’ajout.
-3. Ajoute un nom, une description facultative et une abréviation d’unité concise.
-4. Choisis l’agrégation par défaut utilisée par les graphiques.
-5. Décide si elle doit être favorite ou privée, puis enregistre.
+2. Sélectionne **Créer un élément mesurable**.
+3. Ajoute un nom et une description facultative.
+4. Sous **Enregistré comme**, choisis **Nombre** pour une valeur avec une
+   unité, ou **Choix** pour sélectionner, au moment de l’enregistrement, l’un
+   des choix que tu définis — comme les couleurs d’un contrôle d’hydratation.
+5. Pour un nombre, ajoute une abréviation d’unité concise et choisis
+   l’agrégation par défaut utilisée par les graphiques. Pour un choix, ajoute
+   plutôt ses **Choix possibles**.
+6. Décide si elle doit être favorite ou privée, puis enregistre.
 
 <ManualScreenshot
   caseId="measurables/settings-detail"
-  alt="Éditeur de mesure Pression de l’habitat utilisant kPa et l’agrégation Moyenne quotidienne"
+  alt="Éditeur de mesure Pression de l’habitat enregistrée comme Nombre en kPa avec l’agrégation Moyenne quotidienne"
 />
 
 Choisis l’agrégation selon ce que signifient des relevés répétés :

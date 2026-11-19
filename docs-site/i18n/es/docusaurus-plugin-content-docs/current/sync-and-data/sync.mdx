@@ -28,7 +28,7 @@ sincronización.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Ajustes de sincronización de Lotti con Dispositivos, Este dispositivo, Relleno de sincronización, Estadísticas de Matrix, Bandeja de salida de sincronización, Conflictos de Sincronización y Mantenimiento"
+  alt="Ajustes de sincronización de Lotti con Dispositivos, Este dispositivo, Estado de la sincronización, Estadísticas de Matrix, Bandeja de salida de sincronización, Conflictos de Sincronización y Mantenimiento"
   caption="Los ajustes de sincronización mantienen el estado diario junto a las herramientas de diagnóstico y recuperación. Project Waddle tiene ahora tres elementos en la bandeja de salida por revisar."
 />
 
@@ -131,20 +131,23 @@ usarlas.
 
 ## Entiende la puesta al día y el relleno
 
-La sincronización normal procesa los cambios a medida que llegan. **Relleno de
-sincronización** detecta huecos en la secuencia recibida de los dispositivos
+La sincronización normal procesa los cambios a medida que llegan. **Estado de
+la sincronización** detecta huecos en la secuencia recibida de los dispositivos
 conocidos y vuelve a pedir los registros que faltan.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Página Relleno de sincronización de Lotti con los contadores de cola entrante, faltantes y omitidos, las estadísticas de sincronización, el relleno automático y la recuperación avanzada"
-  caption="Project Waddle ha recibido 2868 registros de secuencia y ahora conoce cuatro registros que faltan en dos identificadores de dispositivo."
+  alt="Página Estado de la sincronización de Lotti con los registros de este dispositivo, los contadores de cola entrante y faltantes, las estadísticas de sincronización, el relleno automático y la recuperación avanzada"
+  caption="Project Waddle sigue 2868 contadores de secuencia, ha recibido 2775 de ellos y ahora conoce cuatro registros que faltan en dos identificadores de dispositivo."
 />
 
+- **Registros en este dispositivo** cuenta lo que guarda este dispositivo,
+  incluidas las eliminaciones. Los dispositivos sincronizados muestran aquí los
+  mismos números.
 - **Cola entrante** es el trabajo que espera a aplicarse.
 - **Faltante** es el número de huecos conocidos en la secuencia.
-- **Omitido** es el trabajo que la cola entrante abandonó porque no pudo
-  procesarlo con normalidad.
+- **Omitido**, en **Estadísticas de sincronización**, es el trabajo que la cola
+  entrante abandonó porque no pudo procesarlo con normalidad.
 - **Relleno automático** pide las entradas que faltan de las últimas 24 horas
   y es la opción predeterminada adecuada para el uso normal.
 - **Recuperación avanzada** contiene acciones manuales para una investigación,

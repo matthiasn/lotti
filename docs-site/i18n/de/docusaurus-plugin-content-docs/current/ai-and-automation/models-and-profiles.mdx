@@ -12,20 +12,31 @@ verarbeitet Audio?“ nicht in jeder Aufgabe und Automatisierungsregel stehen.
 
 ## Gespeicherte Modelle prüfen
 
-Öffne **Einstellungen → KI-Einstellungen → Modelle**. Die Liste gruppiert nach
-Anbieter und lässt sich nach Fähigkeiten für Text, Bild, Audio und
-Schlussfolgern filtern.
+Öffne **Einstellungen → AI-Einstellungen → Modelle**. Die Modelle bilden eine
+einzige Liste. Darüber grenzen ein Filterchip pro Anbieter und die Chips
+**Text**, **Bild**, **Audio** und **Schlussfolgerung** sie ein, und das
+Suchfeld findet Anbieter, Modelle und Profile nach Namen.
 
 <ManualScreenshot
   caseId="ai/models"
-  alt="Lottis KI-Modellliste mit Project-Waddle-Modellen für Text, Schlussfolgern, Bild, Transkription und Bilderzeugung"
+  alt="Lottis Modellseite mit den Steuerelementen der AI-Einstellungen oben, Filterchips für Anbieter und Fähigkeiten und einer Liste von Project-Waddle-Modellen mit den Markierungen Denken oder Bilderkennung"
   caption="Der Arbeitsbereich kombiniert Cloud- und lokale Modelle und hält ihre Fähigkeiten explizit."
 />
 
-**Gleichzeitige Agenten-Aufwachvorgänge** begrenzt, wie viele verschiedene
-Agenten gleichzeitig Inferenz ausführen. Höhere Werte steigern Durchsatz,
-aber auch gleichzeitige Anbieteranfragen und lokale Last. Bleibe bei strengen
-Ratenlimits oder wenig Modellspeicher konservativ.
+Oben in den AI-Einstellungen sitzen drei Steuerelemente:
+
+- **Parallele Agenten-Aktivierungen** begrenzt, wie viele verschiedene Agenten
+  gleichzeitig Inferenz ausführen.
+- **Aktualisierungsrhythmus** legt fest, wie oft sich Aufgabenagenten von
+  selbst aktualisieren, wenn weder die Aufgabe noch ihre Kategorie das
+  festlegt. **Höchstens stündlich** aktualisiert trotzdem sofort nach einer
+  Aufnahme, einem gestoppten Timer oder einer als erledigt markierten Aufgabe.
+- **Standard-Inferenzprofil** ist der Rückfall für Agenten, die auf diesem
+  Gerät keinen eingerichteten Inferenzweg haben.
+
+Ein höherer Wert für **Parallele Agenten-Aktivierungen** steigert den
+Durchsatz, aber auch gleichzeitige Anbieteranfragen und lokale Last. Bleibe
+bei strengen Ratenlimits oder wenig Modellspeicher konservativ.
 
 ## Ein Modell hinzufügen oder bearbeiten
 
@@ -63,18 +74,29 @@ Modell.
 
 Ordne beim Bearbeiten benötigte Fähigkeiten zu:
 
-- **Denken**: erforderliches allgemeines Textmodell.
+- **Gedanken**: erforderliches allgemeines Textmodell.
+- **Chat-Modell**: antwortet in Chats; ohne Auswahl nutzt es das Denkmodell.
 - **Denken (High-End)**: fähigerer Pfad für ausdrücklich angeforderte Aufgaben.
 - **Bilderkennung**: analysiert Bilder.
 - **Transkription**: wandelt Audio in Text.
+- **Audio-Nachbearbeitung**: korrigiert ein Transkript anhand des
+  Sprachwörterbuchs und schreibt die Zusammenfassung der Aufnahme; ohne
+  Auswahl nutzt es das Denkmodell.
 - **Bilderzeugung**: erstellt Aufgabengrafiken und andere Bilder. Der aktuelle
   integrierte Weg für Bilderzeugung verwendet einen eingerichteten entfernten
   Anbieter. Wähle ihn und die übermittelten Referenzen daher mit derselben
   Sorgfalt wie jeden anderen Cloud-Inferenzweg.
+- **Vorlesen**: das Cloud-Sprachmodell, das Zusammenfassungen und Antworten
+  vorliest; ohne Auswahl nutzt es die Stimme auf dem Gerät.
+
+Unter **Automatisierte Fähigkeiten** am Ende des Formulars schaltest du ein,
+welche Fähigkeiten — Transkription und Bildanalyse — mit diesem Profil von
+selbst laufen. Jede nutzt das Modell ihres Platzes, der Schalter braucht also
+einen belegten Platz.
 
 <ManualScreenshot
   caseId="ai/profile-editor"
-  alt="Editor des Project-Waddle-Kommando-Profils mit Modellen für Denken, High-End-Denken, Bilderkennung, Transkription und Bilderzeugung"
+  alt="Editor des Project-Waddle-Kommando-Profils mit Name, Beschreibung und Modellplätzen für Denken, Chat-Modell, Denken (High-End), Bilderkennung, Transkription, Audio-Nachbearbeitung und Bilderzeugung"
   caption="Ein Profil routet jede Project-Waddle-Modalität, ohne Modellwahlen in Aufgaben zu wiederholen."
 />
 
@@ -99,13 +121,16 @@ Modelle. Ein Profilplatz für Textdenken bietet etwa kein reines Audiomodell an.
 ## Einen Kategoriestandard setzen
 
 Eine Kategorie kann unter **Einstellungen → Definitionen → Kategorien** ein
-Standard-Inferenzprofil wählen. Neue Arbeit erbt so eine zusammenhängende
-Routingregel. Entscheide nach Datenschutz und Fähigkeiten, nicht nur nach Tempo.
+Standard-Inferenzprofil wählen. Ein Agent läuft mit dem für ihn gewählten
+Profil; ohne eines folgt er bei jedem Lauf dem Profil seiner Kategorie, sodass
+eine Änderung am Kategorieprofil seine Agenten mitnimmt. Fehlt beides, greift
+das **Standard-Inferenzprofil** oben in den AI-Einstellungen. Entscheide nach
+Datenschutz und Fähigkeiten, nicht nur nach Tempo.
 
 <ManualScreenshot
   caseId="ai/profile-picker"
   alt="Editor für Pinguinbetrieb mit Project-Waddle-Kommando, Habitat zuerst lokal und Fischdiplomatie als Profiloptionen"
-  caption="Das Nur-Desktop-Abzeichen zeigt Plattformgrenzen vor der Auswahl."
+  caption="Ein Monitorsymbol kennzeichnet ein Profil mit Nur Desktop, bevor es als Kategoriestandard gewählt wird."
 />
 
 ## Alte Profilroute

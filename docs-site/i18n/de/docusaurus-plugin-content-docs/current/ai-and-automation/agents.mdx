@@ -30,12 +30,14 @@ wenn mehrere Verantwortungen Stimme und Entscheidungsstil teilen.
   caption="Habitatdichtungs-Inspektor, Project-Waddle-Planer und Sardinenfracht-Koordinator bleiben getrennte Instanzen, auch wenn sie Systemressourcen teilen."
 />
 
-Wähle eine Instanz. Der Tab **Statistik** zeigt Modellnutzung, Vorlage,
-aktuellen Inferenzpfad, Lebenszyklusaktionen, Aufwachzahl und Zeitplanung.
+Wähle eine Instanz. Der Tab **Statistik** zeigt die Token-Nutzung pro Modell —
+**Eingabe**, **Ausgabe**, **Gedanken**, **Gecacht**, den Anteil der
+**Cache-Treffer** und die **Aufwachvorgänge** — dann Vorlage, aktuelles
+Agenten-Setup, Lebenszyklusaktionen, Aufwachzahl und Zeitplanung.
 
 <ManualScreenshot
   caseId="agents/instance-detail"
-  alt="Detail des Habitatdichtungs-Inspektors mit Token-Nutzung, Vorlage Orbitaler Habitatwächter, Inferenzpfad, Lebenszyklus und Aufwachstatus"
+  alt="Detail des Habitatdichtungs-Inspektors mit einer Token-Tabelle samt gecachten Tokens und Cache-Treffern, der Vorlage Orbitaler Habitatwächter, dem Agenten-Setup, Pausieren, Erneut analysieren und Zerstören sowie dem Aufwachstatus"
   caption="Die Instanz bewahrt genug Herkunft, um vor Pausieren, Neuanalyse oder Zerstören zu erklären, welche Vorlage und Route ihre Arbeit erzeugten."
 />
 
@@ -55,7 +57,7 @@ Instanzen zerstören.
 ## Aufwachzyklen verstehen
 
 **Aufwachzyklen** zeigt aktuelle und später fällige Arbeit. **Ausstehend**
-wurde vom Agenten angefordert, **Geplant** vom System oder Planer gesetzt.
+wurde vom Agenten angefordert, **In Warteschlange** vom System oder Planer gesetzt.
 Jede Zeile zeigt Aufgabe, Projekt oder Tag zusammen mit Agent und
 Live-Countdown.
 

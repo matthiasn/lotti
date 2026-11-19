@@ -30,7 +30,7 @@ Gesundheit und Wiederherstellung. Die Zahl bei **Sync-Postausgang** zählt
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Lottis Synchronisierungseinstellungen mit Geräte, Dieses Gerät, Sync-Nachfüllung, Matrix-Statistiken, Sync-Postausgang, Synchronisierungskonflikte und Wartung"
+  alt="Lottis Synchronisierungseinstellungen mit Geräte, Dieses Gerät, Sync-Zustand, Matrix-Statistiken, Sync-Postausgang, Synchronisierungskonflikte und Wartung"
   caption="Alltagsstatus steht neben Diagnose und Wiederherstellung. Project Waddle hat gerade drei Elemente im Postausgang."
 />
 
@@ -132,20 +132,23 @@ so eingerichtet sein, dass es sie nutzt.
 ## Aufholen und Nachfüllung verstehen
 
 Normaler Sync verarbeitet Änderungen, sobald sie eintreffen.
-**Sync-Nachfüllung** erkennt Lücken in der Folge, die von bekannten Geräten
+**Sync-Zustand** erkennt Lücken in der Folge, die von bekannten Geräten
 empfangen wurde, und fordert fehlende Datensätze erneut an.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Lottis Seite Sync-Nachfüllung mit Eingangswarteschlange, fehlenden und übersprungenen Zählern, Synchronisierungsstatistiken, automatischer Nachfüllung und erweiterter Wiederherstellung"
-  caption="Project Waddle hat 2.868 Sequenzeinträge empfangen und kennt derzeit vier fehlende Einträge über zwei Geräte-IDs."
+  alt="Lottis Seite Sync-Zustand mit Einträgen auf diesem Gerät, Zählern für Eingangswarteschlange und fehlende Einträge, Synchronisierungsstatistiken, automatischer Nachfüllung und erweiterter Wiederherstellung"
+  caption="Project Waddle verfolgt 2.868 Sequenzzähler, hat 2.775 davon empfangen und kennt derzeit vier fehlende Einträge über zwei Geräte-IDs."
 />
 
+- **Einträge auf diesem Gerät** zählt, was dieses Gerät hält, Löschungen
+  eingeschlossen. Synchrone Geräte zeigen hier dieselben Zahlen.
 - **Eingangswarteschlange** ist Arbeit, die gerade darauf wartet, angewendet zu
   werden.
 - **Fehlend** ist die Zahl der bekannten Lücken in der Folge.
-- **Übersprungen** ist Arbeit, die die Eingangswarteschlange aufgegeben hat,
-  weil sie nicht normal verarbeitet werden konnte.
+- **Übersprungen** in **Synchronisierungsstatistiken** ist Arbeit, die die
+  Eingangswarteschlange aufgegeben hat, weil sie nicht normal verarbeitet
+  werden konnte.
 - **Automatische Nachfüllung** fordert fehlende Einträge der letzten 24 Stunden
   an und ist die richtige Voreinstellung für den Alltag.
 - **Erweiterte Wiederherstellung** enthält manuelle Aktionen für eine

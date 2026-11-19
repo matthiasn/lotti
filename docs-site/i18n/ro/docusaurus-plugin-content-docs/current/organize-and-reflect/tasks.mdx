@@ -18,7 +18,7 @@ Coperta este opțională, dar poate face un spațiu de lucru dens mult mai ușor
 
 <ManualScreenshot
   caseId="tasks/detail"
-  alt="Pagina de detalii a sarcinii din producție pentru inspectarea habitatului orbital al pinguinilor, cu aceeași copertă folosită în miniaturile sarcinii"
+  alt="Pagina sarcinii pentru inspectarea habitatului orbital al pinguinilor, cu categoria, starea În progres, prioritatea Ridicată, termenul, timpul înregistrat față de estimare, etichetele și rezumatul AI"
 />
 
 Aceeași sarcină poate conține descriere, categorie, etichete, termen, înregistrări de timp, elemente de listă de verificare, imagini, legături și înregistrări audio. De asemenea, poate avea un asistent AI persistent, cu propriul rezumat, propria stare de activare și modificări propuse — consultați [Atribuiți un agent sarcinii](./task-agents.mdx).
@@ -51,7 +51,9 @@ Deschideți filtrele sarcinilor și selectați una sau mai multe priorități. �
   alt="Foaia de filtrare a sarcinilor, cu controale pentru sortare, stare, prioritate, categorie și etichetă"
 />
 
-Ordinea implicită a priorităților este P0–P3. În cadrul aceleiași priorități, sarcinile mai noi apar primele, cu excepția cazului în care o perspectivă sau sortare activă schimbă rezultatul.
+Folosiți **Ștergeți** în foaie sau **Ștergeți tot** lângă filtrele active din listă pentru a reveni la o vizualizare fără restricții, în loc să anulați fiecare alegere în parte.
+
+Ordinea implicită a priorităților este P0–P3. În cadrul aceleiași priorități, sarcinile mai noi apar primele, cu excepția cazului în care o perspectivă sau sortare activă schimbă rezultatul. Căutarea afișează mai întâi sarcinile ale căror cuvinte se potrivesc, cea mai bună potrivire prima, urmate de secțiunea **Înrudite ca sens**, cu sarcini care spun același lucru în alte cuvinte. Cât timp căutați, cipurile de filtrare pe care căutarea nu le aplică sunt estompate.
 
 ## Folosiți liste de verificare pentru nivelul următor de detaliu
 
@@ -59,7 +61,7 @@ Un element al listei de verificare trebuie să fie mai mic și mai concret decâ
 
 ## Adăugați context sarcinii
 
-Folosiți acțiunea **Adăugați** a sarcinii pentru a atașa o listă de verificare, o altă sarcină, o înregistrare audio, un cronometru, o înregistrare text sau o imagine fără a părăsi sarcina. Acțiunile disponibile depind de platforma și contextul curente.
+Folosiți acțiunea **Adăugați** a sarcinii pentru a atașa o notă, o listă de verificare, o notă vocală, o sarcină legată sau o imagine fără a părăsi sarcina; **Înregistrați timpul** din bara de acțiuni a sarcinii pornește un cronometru. Acțiunile disponibile depind de platforma și contextul curente.
 
 <ManualScreenshot
   caseId="entries/create-menu"
@@ -92,11 +94,11 @@ Escape pentru a reveni.
 
 ## Legați sarcini înrudite
 
-Deschideți secțiunea **Legate** a sarcinii și alegeți să legați o sarcină existentă. Căutați în selector, apoi selectați rezultatul înrudit. Lotti exclude sarcina curentă și sarcinile deja legate în acea direcție.
+În secțiunea **Sarcini legate** a sarcinii, selectați **Legați o sarcină…** – sau **Asociați** după ce sarcina are deja legături – pentru a deschide selectorul de sarcini existente (**Asociați**). La **Această sarcină…**, alegeți relația: **Are legătură cu** sau una dintre **Blochează**, **Este blocată de**, **Continuă**, **Are o continuare**, **Duplică**, **Este duplicată de**, **Remediază**, **Este remediată de**, **Înlocuiește** și **Este înlocuită de**. Apoi căutați în selector și selectați sarcina înrudită. Lotti exclude sarcina curentă și sarcinile deja legate în acea direcție.
 
 <ManualScreenshot
   caseId="tasks/link-picker"
-  alt="Selectorul de legături între sarcini din producție, cu sarcini Project Waddle înrudite și contextul lor de stare, prioritate, categorie și termen"
+  alt="Selectorul pentru asocierea unei sarcini existente, deschis peste sarcina de inspectare a habitatului orbital al pinguinilor, cu Această sarcină… setat la Are legătură cu, un câmp de căutare a sarcinilor și două sarcini Operațiuni cu pinguini cu starea lor"
 />
 
 Legăturile dintre sarcini sunt direcționale: sarcina curentă indică spre sarcina aleasă. Ambele părți rămân accesibile prin secțiunile lor de înregistrări legate, iar fiecare sarcină își păstrează starea, programul și atașamentele.

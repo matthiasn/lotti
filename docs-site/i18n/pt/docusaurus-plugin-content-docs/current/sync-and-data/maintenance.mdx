@@ -1,6 +1,6 @@
 ---
 title: Manutenção de sincronização
-description: Use as ações de reparo e limpeza da sincronização Matrix deliberadamente, do reenvio de registros à reconstrução do histórico de sequência.
+description: Usa com intenção as ações de reparação e limpeza da sincronização Matrix, do reenvio de registos à reconstrução do histórico de sequência.
 ---
 
 # Manutenção de sincronização
@@ -13,11 +13,11 @@ dados que não consegues recriar.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Manutenção da sincronização do Lotti com Excluir banco de dados de sincronização, Sincronize mensuráveis, painéis, hábitos, categorias, configurações de IA, Histórico de mensagens, Preencher log de sequência de sincronização e Limpar itens antigos enviados da caixa de saída"
+  alt="Página Manutenção da sincronização do Lotti com Excluir banco de dados de sincronização, Sincronize mensuráveis, painéis, hábitos, categorias, configurações de IA, Histórico de mensagens, Preencher log de sequência de sincronização, Preenchimento completo e Limpar itens antigos enviados da caixa de saída"
   caption="A manutenção junta numa página ações destrutivas, de repetição e de limpeza. O texto de confirmação define o alcance de cada operação."
 />
 
-## Escolha o reparo mais estreito
+## Escolhe a reparação mais limitada
 
 - **Excluir banco de dados de sincronização** apaga a base de dados de
   sincronização local. É uma recuperação local destrutiva, não uma forma normal
@@ -34,17 +34,22 @@ dados que não consegues recriar.
 - **Preencher log de sequência de sincronização** indexa as entradas existentes
   para que o preenchimento consiga responder a pedidos de entradas criadas antes
   de existir o acompanhamento de sequências.
+- **Preenchimento completo** envia aos teus outros dispositivos uma lista de
+  todos os registos deste dispositivo, incluindo eliminações. Cada um pede o que
+  lhe falta e devolve o que falta a este dispositivo. Os teus outros
+  dispositivos precisam de estar online para responder; confirma com **Sim,
+  iniciar**.
 - **Limpar itens antigos enviados da caixa de saída** apaga as linhas já
   enviadas da caixa de saída com mais de 7 dias e liberta espaço em disco. Os
   itens à espera ou com falha são mantidos.
 
 Começa pela operação mais pequena que corresponda ao sintoma. Um anexo preso
-pertence à [caixa de saída](./sync.mdx#inspecione-a-caixa-de-saída); lacunas de
-sequência persistentes pertencem à Sincronização de preenchimento; e duas
-edições simultâneas válidas pertencem aos [conflitos](./conflicts.mdx). Excluir
+pertence à [caixa de saída](./sync.mdx#inspeciona-a-caixa-de-saída); lacunas de
+sequência persistentes pertencem a **Estado da sincronização**; e duas
+edições simultâneas válidas pertencem aos [conflitos](./conflicts.mdx). Eliminar
 a base de dados de sincronização deve ser uma reposição local de último recurso,
 feita com um par de confiança e uma cópia de segurança à mão.
 
-Depois de uma reparação, volta a **Estatísticas da Matriz**, confirma que o
+Depois de uma reparação, volta a **Estatísticas do Matrix**, confirma que o
 trabalho aplicado avança e a fila esvazia, e que a caixa de saída e o número de
-itens em falta do preenchimento estabilizam.
+itens em falta em **Estado da sincronização** estabilizam.

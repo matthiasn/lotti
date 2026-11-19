@@ -1,0 +1,109 @@
+---
+title: Připoj GitHub
+description: Připoj token GitHubu jen pro čtení, aby úkoly mohly sledovat pull requesty, které je implementují, se souhrny, návrhy agenta a odpověďmi společníka.
+---
+
+# Připoj GitHub
+
+Lotti umí sledovat pull requesty na GitHubu, které implementují tvé úkoly:
+jejich stav, kontroly, revize a konflikty sloučení jsou vedle úkolu, souhrn
+říká, co každý z nich mění, a agent úkolu je může použít k návrhu, které
+položky kontrolního seznamu jsou hotové. K tomu všemu je potřeba osobní
+přístupový token jen pro čtení z tvého účtu na GitHubu.
+
+## Vytvoř a připoj token
+
+Otevři **Nastavení → Pokročilá nastavení → GitHub**.
+
+1. Vyber **Vytvořit token na GitHubu**. Prohlížeč otevře formulář tokenu na
+   GitHubu s názvem Lotti, platností jeden rok a předvyplněnými oprávněními
+   jen pro čtení. Pokud prohlížeč nejde otevřít, Lotti ti řekne, kde token
+   vytvořit ručně: na github.com v Settings → Developer settings → Personal
+   access tokens.
+2. Na GitHubu vyber repozitáře, které Lotti smí číst, a token vytvoř.
+3. Vlož token do **Osobní přístupový token**. **Zobrazit token** a **Skrýt
+   token** odhalí a zamaskují, co jsi vložil.
+4. Vyber **Připojit**. Lotti token nejdřív ověří u GitHubu. Oznámení potvrdí
+   **Připojeno ke GitHubu jako @ty** s názvem tvého účtu; token, který GitHub
+   odmítne, se vysvětlí pod polem.
+
+Po připojení stránka ukazuje, který účet je připojený, a nabízí **Odpojit**.
+Odpojení zapomene token na tomto zařízení i na tvých dalších zařízeních a
+potvrdí se zprávou **Odpojeno od GitHubu**.
+
+CI kontroly soukromých repozitářů nemusí být úplné: GitHub těmto tokenům
+nedává přístup ke check runs a stránka to uvádí.
+
+## Kde je token uložený
+
+Token je uložený v klíčence tohoto zařízení a používá se jen pro požadavky na
+api.github.com. Nikdy se neprotokoluje ani neexportuje. Se zapnutou
+synchronizací putuje end-to-end šifrovaně do tvých dalších zařízení, stejně
+jako klíč poskytovatele AI. Token, který dorazí z jiného zařízení, se před
+použitím ověří u GitHubu.
+
+Když je synchronizace nastavená, stránka nabízí také **Poslat na má další
+zařízení**, když je připojeno, nebo **Zkontrolovat má další zařízení**, když
+není – pro případ, že nějaké zařízení token ještě nedostalo.
+
+Lotti nikdy nestahuje webovou stránku pull requestu. Obrázky vložené do popisu
+pull requestu se načítají z jejich vlastních adres jen tehdy, když máš
+otevřené podrobnosti daného pull requestu, a AI je analyzuje teprve tehdy,
+když nějaký přidáš k úkolu.
+
+## Sleduj pull requesty u úkolu
+
+S připojeným GitHubem otevři úkol a v jeho liště akcí zvol pod **+**
+**Sledování pull requestů**. Úkol pak ukazuje sekci **Pull requesty**; volba
+se ukládá u úkolu, takže platí na každém zařízení. Úkol s propojeným pull
+requestem tuto sekci ukazuje vždy.
+
+Vyber **Propojit pull request** a nějaký propoj:
+
+- vlož odkaz nebo krátký odkaz do **URL nebo vlastnik/repo#123** a vyber
+  **Propojit**; nebo
+- vyber ze seznamu pod **Nebo vyber jeden z** repozitáře, který ukazuje
+  otevřené pull requesty tohoto repozitáře, které ještě nedrží žádný úkol, i s
+  jejich velikostí. Klepnutím na řádek ho hned propojíš. Pokud propojit nejde,
+  důvod se objeví pod vybraným řádkem.
+
+Seznam potřebuje repozitář: otevři kategorii úkolu v **Nastavení → Definice →
+Kategorie** a zadej ho pod **GitHub** → **Repozitář** jako `owner/repo` nebo
+odkaz na repozitář. Tato sekce se objeví, jakmile je GitHub připojený. Pull
+request, který už drží jiný úkol, se nejdřív zeptá – **Propojit i sem** nebo
+**Nepropojovat**.
+
+Každý propojený pull request ukazuje svůj stav (**Otevřený**, **Koncept**,
+**Sloučený** nebo **Uzavřený**), kontroly, revize a stav sloučení a
+jednořádkový souhrn. Klepnutím na něj otevřeš podrobnosti: **Ve zkratce**,
+vlastní **Popis** pull requestu a **Otevřít na GitHubu**. Jeho nabídka nabízí
+**Aktualizovat pull request**, **Otevřít na GitHubu** a **Odpojit pull
+request**. Lotti pull requesty úkolu aktualizuje také vždy, když jdou do
+programovacího promptu nebo do aktualizace agenta úkolu. Zařízení bez tokenu
+stále ukazuje, co naposledy vidělo jiné zařízení, i s jeho stářím.
+
+Vlož odkaz na pull request do hledání úkolů a najdeš úkoly, se kterými je
+propojený.
+
+## Nech AI shrnovat a navrhovat
+
+Model agenta úkolu píše každý souhrn v jazyce úkolu: jednořádkový pod názvem
+a **Ve zkratce** v podrobnostech. Souhrny se píšou automaticky, když má
+kategorie úkolu zapnutou **Automatická inference** (viz
+[Kategorie](../organize-and-reflect/categories.mdx)); jinak v podrobnostech
+vyber **Shrnout**, nebo **Shrnout znovu** pro nový souhrn.
+
+Agent úkolu čte otevřené pull requesty, které nedrží žádný úkol, a navrhne
+propojení toho, který jeho úkol implementuje – **Propojit pull request #…** v
+jeho navržených změnách, propojený po tvém potvrzení. Může také navrhnout
+odškrtnutí položek kontrolního seznamu, které aktualizovaný pull request
+dokončil. Viz [Agenti úkolů](../organize-and-reflect/task-agents.mdx).
+
+## Zeptej se společníka na pull requesty
+
+S připojeným GitHubem může [společník](../getting-started/companion.mdx)
+odpovídat na otázky jako „Kolik pull requestů jsem tento týden otevřel?“
+grafy pull requestů, **Přidané řádky** a **Smazané řádky**, po dnech nebo jako
+průběžný součet. Když se ho zeptáš, ve kterém úkolu nějaká práce byla, nebo
+které pull requesty byly největší, ukáže je jako stejné karty pull requestů,
+jaké má úkol. Čte jen pull requesty už uložené na tomto zařízení.

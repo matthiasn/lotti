@@ -13,19 +13,29 @@ règle d’automatisation.
 
 ## Examiner les modèles enregistrés
 
-Ouvre **Paramètres → Paramètres IA → Modèles**. La liste regroupe les modèles par
-fournisseur et propose des filtres de capacité pour le texte, la vision,
-l’audio et le raisonnement.
+Ouvre **Paramètres → Paramètres IA → Modèles**. Les modèles forment une seule
+liste. Au-dessus, une puce de filtre par fournisseur et les puces **Texte**,
+**Vision**, **Audio** et **Raisonnement** la restreignent, et le champ de
+recherche trouve les fournisseurs, modèles et profils par leur nom.
 
 <ManualScreenshot
   caseId="ai/models"
-  alt="Liste des modèles IA Lotti avec les modèles du Projet Waddle de texte, réflexion, vision, transcription et génération d’images"
+  alt="Page Modèles de Lotti avec les contrôles des Paramètres IA en haut, les puces de filtre par fournisseur et par capacité, et une liste de modèles du Projet Waddle marqués Réflexion ou Reconnaissance d’images"
   caption="L’espace du Projet Waddle mélange des modèles cloud et locaux tout en rendant explicites les capacités de chaque modèle."
 />
 
-Le contrôle **Réveils d’agents simultanés**, en haut des Paramètres IA,
-limite le nombre d’agents différents qui peuvent lancer une inférence en même
-temps. Une valeur élevée peut améliorer le débit, mais augmente aussi les
+Trois contrôles se trouvent en haut des Paramètres IA :
+
+- **Réveils d’agents simultanés** limite le nombre d’agents différents qui
+  peuvent lancer une inférence en même temps.
+- **Rythme de mise à jour** définit la fréquence à laquelle les agents de tâche
+  se mettent à jour d’eux-mêmes quand ni la tâche ni sa catégorie ne la
+  définissent. **Au plus toutes les heures** met quand même à jour tout de
+  suite après un enregistrement, un minuteur arrêté ou une tâche terminée.
+- **Profil d’inférence par défaut** sert de repli aux agents qui n’ont pas de
+  route d’inférence configurée sur cet appareil.
+
+Une valeur élevée de **Réveils d’agents simultanés** peut améliorer le débit, mais augmente aussi les
 requêtes simultanées au fournisseur et la charge sur l’appareil local. Reste
 prudent lorsqu’un fournisseur a des limites de débit strictes ou qu’un serveur
 de modèles local a peu de mémoire.
@@ -69,18 +79,30 @@ occupe chaque emplacement configuré.
 Modifie un profil pour assigner les modèles aux capacités que tu utilises :
 
 - **Réflexion** est le modèle de texte général obligatoire.
+- **Modèle de chat** répond dans les chats ; sans réglage, il utilise le
+  modèle de réflexion.
 - **Réflexion (haut de gamme)** peut traiter le travail qui demande
   explicitement le chemin de raisonnement plus puissant.
-- **Reconnaissance d’images** analyse les images.
+- **Reconnaissance d'images** analyse les images.
 - **Transcription** transforme l’audio en texte.
-- **Génération d’images** crée les illustrations des tâches et d’autres images
+- **Post-traitement audio** corrige une transcription à l’aide du
+  dictionnaire vocal et rédige le résumé de l’enregistrement ; sans réglage,
+  il utilise le modèle de réflexion.
+- **Génération d'images** crée les illustrations des tâches et d’autres images
   générées. Le chemin intégré actuel de génération d’images utilise un
   fournisseur distant configuré : choisis donc ce fournisseur et les
   références envoyées avec le même soin que pour toute autre inférence cloud.
+- **Lecture à voix haute** est le modèle vocal cloud qui lit à voix haute les
+  résumés et les réponses ; sans réglage, c’est la voix de l’appareil qui lit.
+
+Sous **Compétences automatisées**, à la fin du formulaire, active les
+compétences — transcription et analyse d’images — qui s’exécutent d’elles-mêmes
+avec ce profil. Chacune utilise le modèle de son emplacement : l’interrupteur
+exige donc que cet emplacement soit rempli.
 
 <ManualScreenshot
   caseId="ai/profile-editor"
-  alt="Éditeur du profil Commandement Projet Waddle assignant les modèles de réflexion, réflexion haut de gamme, reconnaissance d’images, transcription et génération d’images"
+  alt="Éditeur du profil Commandement Projet Waddle avec le nom, la description et les emplacements de modèles Réflexion, Modèle de chat, Réflexion (haut de gamme), Reconnaissance d’images, Transcription, Post-traitement audio et Génération d’images"
   caption="Un seul profil oriente chaque modalité du Projet Waddle sans répéter les choix de modèles dans les tâches."
 />
 
@@ -107,15 +129,18 @@ textuel.
 ## Définir une valeur par défaut de catégorie
 
 Une catégorie peut choisir un profil d’inférence par défaut dans **Paramètres →
-Définitions → Catégories**. Les nouveaux éléments de cette catégorie peuvent
-alors hériter d’une politique d’orientation cohérente. Choisis le profil dont
+Définitions → Catégories**. Un agent s’exécute avec le profil choisi pour lui ;
+sans profil propre, il suit celui de sa catégorie à chaque exécution : changer
+le profil de la catégorie déplace donc ses agents avec lui. Sans l’un ni
+l’autre, il se rabat sur le **Profil d’inférence par défaut** en haut des
+Paramètres IA. Choisis le profil dont
 l’équilibre entre confidentialité et capacités convient à la catégorie, plutôt
 que de te baser uniquement sur la vitesse.
 
 <ManualScreenshot
   caseId="ai/profile-picker"
   alt="Éditeur de la catégorie Opérations pingouins avec une fenêtre proposant les profils Commandement Projet Waddle, Habitat d’abord local et Diplomatie du poisson"
-  caption="Le badge bureau uniquement rend les limites de plateforme visibles avant de choisir une valeur par défaut de catégorie."
+  caption="Une icône d’écran signale un profil Bureau uniquement avant qu’il soit choisi comme valeur par défaut de catégorie."
 />
 
 ## Ancien chemin des profils

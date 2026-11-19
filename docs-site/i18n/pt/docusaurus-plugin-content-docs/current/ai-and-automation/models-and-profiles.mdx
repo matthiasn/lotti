@@ -1,133 +1,157 @@
 ---
-title: Rotear trabalho com modelos e perfis
-description: Descreva os recursos do modelo uma vez e, em seguida, use perfis de inferência para rotear pensamento, visão, áudio e geração de imagens.
+title: Encaminha o trabalho com modelos e perfis
+description: Descreve as capacidades de cada modelo uma vez e usa depois perfis de inferência para encaminhar pensamento, visão, áudio e geração de imagens.
 ---
 
-# Rotear trabalho com modelos e perfis
+# Encaminha o trabalho com modelos e perfis
 
-Um provedor informa ao Lotti onde se conectar. Um modelo registra um ID de
-modelo do provedor e suas capacidades. Um perfil de inferência então atribui
-esses modelos aos trabalhos que o Lotti entende. Isso mantém a pergunta “qual
-modelo lida com áudio?” fora de cada tarefa individual e regra de automação.
+Um fornecedor diz ao Lotti onde se ligar. Um modelo regista um ID de modelo do
+fornecedor e as suas capacidades. Um perfil de inferência atribui depois esses
+modelos aos trabalhos que o Lotti entende. Assim, a pergunta “que modelo trata
+o áudio?” fica fora de cada tarefa e de cada regra de automação.
 
-## Revise os modelos salvos
+## Revê os modelos guardados
 
-Abra **Configurações → Configurações de IA → Modelos**. A lista agrupa os
-modelos por provedor e expõe filtros de capacidade para texto, visão, áudio e
-raciocínio.
+Abre **Configurações → Configurações de IA → Modelos**. Os modelos formam uma
+única lista. Por cima dela, um chip de filtro por fornecedor e os chips
+**Texto**, **Visão**, **Áudio** e **Raciocínio** restringem-na, e o campo de
+pesquisa encontra fornecedores, modelos e perfis pelo nome.
 
 <ManualScreenshot
   caseId="ai/models"
-  alt="Lista de modelos de IA do Lotti com modelos de texto, raciocínio, visão, transcrição e geração de imagens do Project Waddle"
-  caption="O espaço de trabalho do Project Waddle combina modelos locais e de nuvem, mantendo explícitos os recursos de cada modelo."
+  alt="Página Modelos do Lotti com os controlos das Configurações de IA no topo, chips de filtro por fornecedor e capacidade e uma lista de modelos do Project Waddle marcados como Pensando ou Reconhecimento de imagem"
+  caption="O espaço de trabalho do Project Waddle combina modelos locais e na nuvem, mantendo explícitas as capacidades de cada modelo."
 />
 
-O controle **Agente simultâneo é ativado** na parte superior das configurações
-de IA limita quantos agentes diferentes podem executar inferência ao mesmo
-tempo. Um valor mais alto pode melhorar a vazão, mas também aumenta as
-solicitações simultâneas ao provedor e a carga no dispositivo local. Seja
-conservador quando um provedor tiver limites de taxa rígidos ou quando um
-servidor de modelo local tiver memória limitada.
+Há três controlos no topo das Configurações de IA:
 
-## Adicione ou edite um modelo
+- **Ativações simultâneas de agentes** limita quantos agentes diferentes
+  podem executar inferência ao mesmo tempo.
+- **Ritmo de atualização** define com que frequência os agentes de tarefa se
+  atualizam sozinhos quando nem a tarefa nem a sua categoria o definem.
+  **No máximo de hora a hora** continua a atualizar logo a seguir a uma
+  gravação, a um temporizador parado ou a uma tarefa marcada como concluída.
+- **Perfil de inferência padrão** é o recurso para agentes sem uma rota de
+  inferência configurada neste dispositivo.
 
-Selecione um cartão de modelo ou use **+** para adicionar um. Uma definição de
+Um valor mais alto de **Ativações simultâneas de agentes** pode melhorar o
+débito, mas também aumenta os pedidos simultâneos ao fornecedor e a carga no
+dispositivo local. Sê conservador quando um fornecedor tiver limites de taxa
+rígidos ou quando um servidor de modelos local tiver pouca memória.
+
+## Adiciona ou edita um modelo
+
+Seleciona um cartão de modelo ou usa **+** para adicionar um. Uma definição de
 modelo inclui:
 
-- a conexão do provedor;
-- um nome de exibição amigável e uma descrição opcional;
-- o ID exato do modelo no provedor;
+- a ligação ao fornecedor;
+- um nome de apresentação amigável e uma descrição opcional;
+- o ID exato do modelo no fornecedor;
 - o limite máximo de tokens de conclusão;
-- modalidades de entrada e saída; e
-- sinalizadores de capacidade, como raciocínio ou chamada de função.
+- as modalidades de entrada e de saída; e
+- sinalizadores de capacidade, como raciocínio ou chamada de funções.
 
 <ManualScreenshot
   caseId="ai/model-editor"
-  alt="Editor de modelo Lotti para Waddle Command 70B mostrando provedor, ID do modelo do provedor, limite de conclusão, modalidades e capacidade de raciocínio"
-  caption="Os metadados de capacidade são importantes: o Lotti os utiliza para decidir quais modelos são elegíveis para cada slot de perfil e cada seletor avulso."
+  alt="Editor de modelo do Lotti para o Waddle Command 70B com o fornecedor, o ID do modelo no fornecedor, o limite de conclusão, as modalidades e a capacidade de raciocínio"
+  caption="Os metadados de capacidade importam: o Lotti usa-os para decidir que modelos são elegíveis para cada espaço de perfil e cada seletor avulso."
 />
 
-Use o identificador exato esperado pelo provedor. O nome de exibição é apenas
-para pessoas; alterá-lo não altera o que o provedor executa. Não declare
+Usa o identificador exato que o fornecedor espera. O nome de apresentação é
+só para pessoas; alterá-lo não altera o que o fornecedor executa. Não declares
 suporte a imagem, áudio, ferramentas ou raciocínio, a menos que esse modelo e
-endpoint realmente o ofereçam.
+esse endpoint o ofereçam de facto.
 
-## Crie um perfil de inferência
+## Cria um perfil de inferência
 
-Abra **Configurações → Configurações de IA → Perfis de inferência**. Cada
-perfil é uma política de roteamento reutilizável. A visão geral mostra qual
-modelo atende cada slot configurado.
+Abre **Configurações → Configurações de IA → Perfis de inferência**. Cada
+perfil é uma política de encaminhamento reutilizável. A vista geral mostra que
+modelo serve cada espaço configurado.
 
 <ManualScreenshot
   caseId="ai/profiles"
-  alt="Perfis de inferência do Lotti para Project Waddle Command, Habitat Local-First e Fish Diplomacy com seus modelos roteados"
-  caption="Os perfis podem ser otimizados para diferentes limites: um perfil amplo de nuvem, um perfil local somente para desktop ou um perfil de raciocínio especializado."
+  alt="Perfis de inferência do Lotti para Project Waddle Command, Habitat Local-First e Diplomacia dos Peixes com os respetivos modelos encaminhados"
+  caption="Os perfis podem ser otimizados para limites diferentes: um perfil amplo na nuvem, um perfil local só para computador ou um perfil de raciocínio especializado."
 />
 
-Edite um perfil para atribuir modelos aos recursos que você usa:
+Edita um perfil para atribuir modelos às capacidades que usas:
 
-- **Pensar** é o modelo de texto geral necessário.
-- **Thinking (High-End)** pode lidar com trabalhos que solicitam
-  explicitamente o caminho de raciocínio mais capaz.
+- **Pensando** é o modelo de texto geral obrigatório.
+- **Modelo de chat** responde nos chats; sem ele, é usado o modelo de
+  pensamento.
+- **Pensando (sofisticado)** pode tratar trabalhos que pedem explicitamente o
+  caminho de raciocínio mais capaz.
 - **Reconhecimento de imagem** analisa imagens.
 - **Transcrição** converte áudio em texto.
-- **Geração de imagens** cria a arte das tarefas e outras imagens geradas. O
-  caminho integrado atual de geração de imagens usa um provedor remoto
-  configurado; portanto, escolha esse provedor e as referências que você envia
-  com o mesmo cuidado de qualquer outra rota de inferência na nuvem.
+- **Pós-processamento de áudio** corrige uma transcrição com base no
+  dicionário de fala e escreve o resumo da gravação; sem ele, é usado o modelo
+  de pensamento.
+- **Geração de imagem** cria a arte das tarefas e outras imagens geradas. O
+  caminho integrado atual de geração de imagens usa um fornecedor remoto
+  configurado; por isso, escolhe esse fornecedor e as referências que envias
+  com o mesmo cuidado que qualquer outra rota de inferência na nuvem.
+- **Ler em voz alta** é o modelo de voz na nuvem que lê resumos e respostas em
+  voz alta; sem ele, é usada a voz no dispositivo.
+
+Em **Habilidades Automatizadas**, no fim do formulário, ativa as habilidades —
+transcrição e análise de imagens — que correm sozinhas com este perfil. Cada
+uma usa o modelo do seu espaço, por isso o interruptor precisa desse espaço
+preenchido.
 
 <ManualScreenshot
   caseId="ai/profile-editor"
-  alt="Editor de perfil do Project Waddle Command atribuindo modelos de pensamento, raciocínio sofisticado, reconhecimento de imagem, transcrição e geração de imagem"
-  caption="Um perfil roteia cada modalidade do Project Waddle sem repetir escolhas de modelo entre tarefas."
+  alt="Editor do perfil Project Waddle Command com nome, descrição e espaços de modelo para Pensando, Modelo de chat, Pensando (sofisticado), Reconhecimento de imagem, Transcrição, Pós-processamento de áudio e Geração de imagem"
+  caption="Um perfil encaminha todas as modalidades do Project Waddle sem repetir escolhas de modelo entre tarefas."
 />
 
-**Somente desktop** oculta um perfil em plataformas móveis, o que é útil
-quando ele depende de um modelo acessível apenas a partir de uma estação de
-trabalho. A fixação de dispositivo serve para o processamento automatizado de
-áudio sincronizado: fixe somente quando o dispositivo selecionado anunciar os
-provedores de que o perfil precisa. Sem um dispositivo fixado, o áudio
+**Somente área de trabalho** oculta um perfil nas plataformas móveis, o que é
+útil quando depende de um modelo acessível apenas a partir de uma estação de
+trabalho. A fixação de dispositivo serve para o processamento automático do
+áudio sincronizado: fixa só quando o dispositivo selecionado anuncia os
+fornecedores de que o perfil precisa. Sem um dispositivo fixado, o áudio
 sincronizado não é transcrito automaticamente por esse perfil.
 
-## Escolha um modelo sem memorizar IDs
+## Escolhe um modelo sem decorar IDs
 
-Os seletores de modelos começam pelo provedor e mostram apenas modelos salvos
-compatíveis. O seletor em um slot de perfil, por exemplo, não oferecerá um
-modelo somente de áudio para raciocínio de texto.
+Os seletores de modelos começam pelo fornecedor e mostram apenas os modelos
+guardados compatíveis. O seletor num espaço de perfil, por exemplo, não te
+oferece um modelo só de áudio para raciocínio de texto.
 
 <ManualScreenshot
   caseId="ai/model-picker"
-  alt="Modal Escolha um modelo do Lotti listando os provedores OpenRouter, Ollama e Google Gemini sobre o editor de perfil do Project Waddle"
-  caption="Escolha primeiro o provedor; o Lotti então restringe a próxima página aos modelos elegíveis dessa conexão."
+  alt="Janela Escolha um modelo do Lotti com os fornecedores OpenRouter, Ollama e Google Gemini sobre o editor de perfil do Project Waddle"
+  caption="Escolhe primeiro o fornecedor; o Lotti restringe então a página seguinte aos modelos elegíveis dessa ligação."
 />
 
-## Defina um padrão de categoria
+## Define uma predefinição de categoria
 
-Uma categoria pode escolher um perfil de inferência padrão em **Configurações →
-Definições → Categorias**. Novos trabalhos nessa categoria podem então herdar
-uma política de roteamento coerente. Selecione o perfil cuja combinação de
-privacidade e capacidades corresponda à categoria, em vez de escolher apenas
-pela velocidade.
+Uma categoria pode escolher um perfil de inferência predefinido em
+**Configurações → Definições → Categorias**. Um agente corre com o perfil
+escolhido para ele; sem nenhum, segue o perfil da sua categoria em cada
+execução, por isso mudar o perfil da categoria leva os seus agentes consigo.
+Sem nenhum dos dois, recorre ao **Perfil de inferência padrão** no topo das
+Configurações de IA. Seleciona o perfil cuja combinação de privacidade e
+capacidades corresponde à categoria, em vez de escolheres só pela velocidade.
 
 <ManualScreenshot
   caseId="ai/profile-picker"
-  alt="Editor da categoria Penguin Operations com um modal que oferece os perfis Project Waddle Command, Habitat Local-First e Fish Diplomacy"
-  caption="O selo somente para desktop torna as restrições de plataforma visíveis antes que o padrão de uma categoria seja selecionado."
+  alt="Editor da categoria Operações com pinguins com uma janela que oferece os perfis Project Waddle Command, Habitat Local-First e Diplomacia dos Peixes"
+  caption="Um ícone de monitor assinala um perfil Somente área de trabalho antes de ser selecionado como predefinição da categoria."
 />
 
-## Rota do perfil legado
+## Rota de perfis antiga
 
-A rota autônoma mais antiga **Perfis de inferência** permanece disponível para
-compatibilidade e edita os mesmos registros de perfil armazenados. Ela expõe
-IDs internos de modelo e fornece menos contexto de dependência do que as
-configurações de IA; prefira, portanto, a página atual
+A rota autónoma mais antiga **Perfis de inferência** continua disponível por
+compatibilidade e edita os mesmos registos de perfil guardados. Mostra IDs
+internos de modelo e dá menos contexto de dependências do que as
+Configurações de IA; por isso, prefere a página atual
 **Configurações de IA → Perfis de inferência** para a manutenção normal.
 
 <ManualScreenshot
   caseId="ai/legacy-profiles"
-  alt="Página legada de Perfis de inferência do Lotti mostrando slots de perfil do Project Waddle como identificadores internos de modelo"
-  caption="Use esta tela de compatibilidade somente quando um link mais antigo o levar até lá; os cartões de perfil atuais das configurações de IA são mais fáceis de auditar."
+  alt="Página antiga de Perfis de inferência do Lotti com os espaços de perfil do Project Waddle como identificadores internos de modelo"
+  caption="Usa este ecrã de compatibilidade só quando uma ligação antiga te levar até lá; os cartões de perfil atuais das Configurações de IA são mais fáceis de auditar."
 />
 
-Continue com [Habilidades de IA](./skills.mdx) para ver como o perfil selecionado se torna
-uma ação em uma tarefa ou entrada.
+Continua com [Habilidades de IA](./skills.mdx) para veres como o perfil
+selecionado se torna uma ação numa tarefa ou entrada.

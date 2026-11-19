@@ -28,6 +28,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync/sync_node_profile.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/backfill_stats.dart';
 import 'package:lotti/database/database.dart';
@@ -48,6 +49,7 @@ import 'package:lotti/features/sync/services/historical_sync_service.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
+import 'package:lotti/features/sync/state/deep_backfill_controller.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
@@ -132,6 +134,20 @@ final List<SyncNodeProfile> _knownNodes = [
     updatedAt: _syncTime.subtract(const Duration(minutes: 8)),
   ),
 ];
+
+/// What the Project Waddle device holds, by sync payload type.
+const Map<SyncSequencePayloadType, int> _recordCounts = {
+  SyncSequencePayloadType.journalEntity: 2604,
+  SyncSequencePayloadType.entryLink: 1187,
+  SyncSequencePayloadType.agentEntity: 312,
+  SyncSequencePayloadType.agentLink: 298,
+  SyncSequencePayloadType.notification: 41,
+  SyncSequencePayloadType.notificationStateUpdate: 37,
+  SyncSequencePayloadType.consumptionEvent: 956,
+  SyncSequencePayloadType.entityDefinition: 64,
+  SyncSequencePayloadType.aiConfig: 23,
+  SyncSequencePayloadType.embeddingVectors: 2410,
+};
 
 final BackfillStats _backfillStats = BackfillStats.fromHostStats([
   const BackfillHostStats(
@@ -844,6 +860,12 @@ void main() {
       _ManualBackfillStatsController.new,
     ),
     backfillMissingCountProvider.overrideWith((ref) => Stream.value(4)),
+    // Sync health opens with what this device holds; without counts the
+    // card reads "No sync data available".
+    deepBackfillRecordCountsProvider.overrideWith(
+      (ref) => Stream.value(_recordCounts),
+    ),
+    heldEmbeddingVersionsCountProvider.overrideWith((ref) => Stream.value(0)),
     matrixStatsControllerProvider.overrideWith(
       _ManualMatrixStatsController.new,
     ),
@@ -1085,6 +1107,18 @@ void main() {
         for (final device in _manualDevices) {
           expect(find.text(device.displayName!), findsWidgets);
         }
+        // Both devices were seen minutes ago on the demo clock: none reads as
+        // unused, and the header counts them on the demo homeserver.
+        expect(find.text(messages.syncDevicesStaleHint), findsNothing);
+        expect(
+          find.text(
+            messages.syncDevicesCount(
+              _manualDevices.length,
+              Uri.parse(_provisioningBundle.homeServer).host,
+            ),
+          ),
+          findsOneWidget,
+        );
         expect(
           find.text(messages.settingsMatrixDiagnosticShowButton),
           findsOneWidget,
@@ -1109,6 +1143,7 @@ void main() {
       case _SyncSurface.backfill:
         expect(find.text(messages.backfillDevicesMeta(2)), findsOneWidget);
         expect(find.text(formatCount(context, 2868)), findsOneWidget);
+        expect(find.text(messages.backfillRecordsJournal), findsOneWidget);
       case _SyncSurface.stats:
         expect(
           find.textContaining(messages.settingsMatrixMetrics),
@@ -1184,6 +1219,11 @@ void main() {
       when(
         () => matrixService.syncRoomId,
       ).thenReturn(configured ? _provisioningBundle.roomId : null);
+      // The device roster's header reads "N devices on <host>" from the
+      // homeserver the client talks to: the provisioning bundle's host.
+      when(() => matrixService.homeserverHost).thenReturn(
+        configured ? Uri.parse(_provisioningBundle.homeServer).host : null,
+      );
 
       final previousIsDesktop = platform.isDesktop;
       final previousIsMobile = platform.isMobile;
@@ -1228,20 +1268,25 @@ void main() {
       final theme = brightness.name;
       for (final surface in _SyncSurface.values) {
         testWidgets('${surface.id} $viewport manual — $theme', (tester) async {
-          await pumpSurface(
-            tester,
-            surface: surface,
-            device: device,
-            brightness: brightness,
-          );
+          // Pinned through the capture, not only the pump: device staleness
+          // and relative times are measured against clock.now() on every
+          // build.
+          await withClock(Clock.fixed(_syncTime), () async {
+            await pumpSurface(
+              tester,
+              surface: surface,
+              device: device,
+              brightness: brightness,
+            );
 
-          expectSurface(tester, surface);
-          expect(tester.takeException(), isNull);
-          await captureScreenshot(
-            tester,
-            'sync_${surface.id}_${viewport}_$theme',
-            subdir: _subdir,
-          );
+            expectSurface(tester, surface);
+            expect(tester.takeException(), isNull);
+            await captureScreenshot(
+              tester,
+              'sync_${surface.id}_${viewport}_$theme',
+              subdir: _subdir,
+            );
+          });
         });
       }
     }

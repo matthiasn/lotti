@@ -1,81 +1,82 @@
 ---
 title: Resolver conflitos de sincronização
-description: Compare as edições simultâneas campo por campo e mantenha ou combine as informações corretas.
+description: Compara as edições simultâneas campo a campo e mantém ou combina a informação certa.
 ---
 
 # Resolver conflitos de sincronização
 
-Um conflito aparece quando dois dispositivos alteram a mesma entrada de forma
-independente e nenhuma das versões é claramente mais recente. O Lotti preserva
-as duas versões em vez de escolher uma silenciosamente.
+Um conflito aparece quando dois dispositivos alteraram a mesma entrada de
+forma independente e nenhuma das versões é claramente mais recente. O Lotti
+preserva as duas versões em vez de escolher uma às escondidas.
 
-Abra **Configurações → Configurações de sincronização → Conflitos de sincronização**. A lista separa itens não
-resolvidos e resolvidos e identifica o tipo de entidade e o horário de cada
-conflito.
+Abre **Configurações → Configurações de sincronização → Conflitos de
+sincronização**. Os separadores **Não resolvido** e **Resolvido** separam os
+conflitos em aberto das decisões anteriores, e cada linha identifica o tipo de
+entidade e a hora do conflito.
 
 <ManualScreenshot
   caseId="sync/conflicts"
-  alt="Lista de conflitos de sincronização do Lotti com conflitos não resolvidos de uma tarefa do Project Waddle e do manifesto de sardinhas, além de uma tarefa resolvida"
-  caption="Resolva os itens atuais primeiro. Os itens resolvidos permanecem visíveis como uma trilha de auditoria de decisões anteriores."
+  alt="Conflitos de sincronização do Lotti no separador Não resolvido com dois conflitos, uma tarefa do Project Waddle e uma nota sobre sardinhas, ao lado do separador Resolvido"
+  caption="Resolve primeiro os itens atuais. O separador Resolvido guarda as decisões anteriores como registo de auditoria."
 />
 
-Se outra versão da mesma entrada chegar antes de você resolver o conflito
-dela, de um terceiro dispositivo ou de uma alteração que você salvou aqui
-enquanto a entrada mudava em outro lugar, o Lotti a mantém como um conflito
-próprio em vez de substituir o primeiro. A entrada aparece então mais de uma
-vez na lista. Resolva uma versão de cada vez; cada resolução passa a ser a
-versão com a qual a próxima é comparada.
+Se outra versão da mesma entrada chegar antes de resolveres o seu conflito —
+de um terceiro dispositivo ou de uma alteração que guardaste aqui enquanto a
+entrada mudava noutro sítio —, o Lotti mantém-na como um conflito próprio em
+vez de substituir o primeiro. A entrada aparece então mais de uma vez na
+lista. Resolve uma versão de cada vez; cada resolução passa a ser a versão com
+que a seguinte é comparada.
 
-## Compare as duas versões
+## Compara as duas versões
 
-Abra um conflito para ver todos os campos que diferem. As alterações de texto
-incluem destaques no nível de palavra; os campos inalterados são resumidos
-para que a página não esconda o quanto da entrada ainda coincide.
+Abre um conflito para veres todos os campos que diferem. As alterações de
+texto incluem destaques ao nível da palavra; os campos inalterados são
+resumidos para que a página não esconda quanto da entrada ainda coincide.
 
 <ManualScreenshot
   caseId="sync/conflict-detail"
-  alt="Detalhe de conflito do Lotti comparando campo por campo títulos e descrições locais e sincronizados de tarefas do Project Waddle"
-  caption="Este dispositivo manteve o último imperador e o porão de carga; a versão sincronizada liberou todos os 37 pinguins e agendou a liberação das sardinhas. Os dois fatos importam."
+  alt="Detalhe de conflito do Lotti que compara campo a campo os títulos e as descrições locais e sincronizados de tarefas do Project Waddle"
+  caption="Este dispositivo manteve o último imperador e o porão de carga; a versão sincronizada libertou os 37 pinguins e agendou a libertação das sardinhas. Os dois factos importam."
 />
 
 Os três caminhos de resolução são:
 
 - **Use este dispositivo** mantém a versão local completa.
 - **Usar da sincronização** mantém a versão recebida completa.
-- **Combine…** permite escolher um lado inicial e depois selecionar o vencedor
-  de cada campo mesclável de forma independente.
+- **Combine…** deixa-te escolher um lado inicial e depois selecionar o
+  vencedor de cada campo que se pode fundir de forma independente.
 
-Manter um lado completo é apropriado quando o outro está simplesmente
-desatualizado. **Combine…** é a escolha mais segura quando campos separados
-contêm trabalho válido dos dois dispositivos; o Lotti o marca como recomendado
-quando vários campos mescláveis diferem.
+Manter um lado completo é adequado quando o outro está simplesmente
+desatualizado. **Combine…** é a escolha mais segura quando campos diferentes
+contêm trabalho válido dos dois dispositivos; o Lotti marca-a como
+recomendada quando vários campos que se podem fundir diferem.
 
-## Combine campos sem redigitar
+## Combina campos sem voltar a escrever
 
 Seleciona **Combine…**, escolhe a versão de partida em **Começar de** e depois
-alterna campos individuais para o outro lado. Os campos que não podem ser
+muda campos individuais para o outro lado. Os campos que não podem ser
 fundidos de forma independente seguem a versão de partida selecionada.
 
 <ManualScreenshot
   caseId="sync/conflict-combine"
-  alt="Editor de conflitos Combinar do Lotti com controle de versão inicial e escolhas separadas para o título e o corpo da tarefa"
-  caption="Comece com uma entrada estruturalmente completa e, em seguida, pegue o melhor título e corpo deste dispositivo ou da sincronização."
+  alt="Editor Combinar de conflitos do Lotti com o controlo da versão de partida e escolhas separadas para o título e o corpo da tarefa"
+  caption="Começa com uma entrada estruturalmente completa e depois fica com o melhor título e corpo, deste dispositivo ou da sincronização."
 />
 
-Revise todos os campos listados antes de selecionar **Aplicar combinado**. A
-entrada resolvida recebe um histórico de sincronização mesclado para que as
-mesmas duas edições não entrem em conflito de novo imediatamente.
+Revê todos os campos listados antes de selecionares **Aplicar combinado**. A
+entrada resolvida recebe um histórico de sincronização fundido, para que as
+mesmas duas edições não entrem logo de novo em conflito.
 
-:::caution[Uma resolução altera o resultado compartilhado]
+:::caution[Uma resolução altera o resultado partilhado]
 
 Manter um lado ou aplicar uma versão combinada escreve o vencedor localmente e
-permite que ele se sincronize com os outros dispositivos. Lê a diferença
-completa antes de confirmar. Se um lado apagou a entrada enquanto o outro a
-editou, o Lotti mostra **Excluído em um dispositivo** em vez de uma fusão de
-campos normal: nada é removido até escolheres **Mantenha a versão editada** ou
-**Confirmar exclusão**.
+deixa-o sincronizar com os outros dispositivos. Lê a diferença completa antes
+de confirmares. Se um lado apagou a entrada enquanto o outro a editou, o Lotti
+mostra **Excluído em um dispositivo** em vez de uma fusão de campos normal:
+nada é removido até escolheres **Mantenha a versão editada** ou **Confirmar
+exclusão**.
 
 :::
 
-Volte para [Sincronizar dispositivos](./sync.mdx) para inspecionar a
-integridade da entrega e do catch-up.
+Volta a [Sincronizar dispositivos](./sync.mdx) para inspecionares o estado da
+entrega e da recuperação.

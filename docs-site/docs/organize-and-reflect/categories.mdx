@@ -56,13 +56,25 @@ planner's context and makes the daily ritual noisier.
 
 ## Add category-specific automation context
 
-A category can provide defaults for new tasks: an inference profile and an
-agent template. These are defaults, not permanent locks; task-level choices can
-still change later.
+Under **AI defaults**, a category can provide defaults for new tasks: an
+inference profile and an agent template. These are defaults, not permanent
+locks; task-level choices can still change later.
+
+- **Automatic inference** lets Lotti transcribe new audio, analyze new images
+  and summarize pull requests in this category without you asking. It appears
+  once the category's profile can do one of these, and stays visible while it
+  is on.
+- With an agent template chosen, **Wake the assistant automatically** decides
+  whether new task agents update themselves when a task changes, and **Update
+  cadence** sets how often they do.
+
+**Category knowledge** is what every AI prompt for tasks in this category
+should know — what it is, where the code lives, conventions, pitfalls. It goes
+into the prompt word for word, up to 4,000 characters.
 
 <ManualScreenshot
   caseId="categories/automation"
-  alt="Penguin Operations advanced settings with the category knowledge brief and learned checklist corrections for Sir Flaps-a-Lot"
+  alt="Penguin Operations category editor scrolled to an empty Category knowledge field and two learned checklist correction examples, including Sir Flaps-a-Lot, above Delete"
   caption="Checklist corrections are learned from edits and can be reviewed or deleted here."
 />
 

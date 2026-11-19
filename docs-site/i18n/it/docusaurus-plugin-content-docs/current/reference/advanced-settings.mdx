@@ -6,7 +6,11 @@ description: Controlla flag delle funzionalità e logging, esegui gli strumenti 
 # Usa le Impostazioni avanzate in sicurezza
 
 Apri **Impostazioni → Impostazioni avanzate** per i controlli da utente esperto,
-la diagnostica e la manutenzione. Queste pagine cambiano il modo in cui Lotti
+la diagnostica e la manutenzione. Elenca **Flag di configurazione**,
+**GitHub**, **Lingua**, **Domini di logging**, **Stato del sistema**,
+**Manutenzione**, **Metriche dell'onboarding** e **Informazioni su Lotti**; su
+iOS e Android, **Importazione dati salute** compare tra **Stato del sistema** e
+**Manutenzione**. Queste pagine cambiano il modo in cui Lotti
 funziona oppure agiscono direttamente sui dati locali, quindi la
 personalizzazione di tutti i giorni sta altrove nelle Impostazioni.
 
@@ -16,7 +20,7 @@ Entrambi i layout usano gli stessi controlli e gli stessi valori salvati.
 
 <ManualScreenshot
   caseId="advanced-settings/hub"
-  alt="Hub Impostazioni avanzate di Lotti con Flag di configurazione, Lingua, Registrazione di domini, Manutenzione, Metriche di bordo e A proposito di Lotti"
+  alt="Impostazioni avanzate di Lotti che elencano Flag di configurazione, GitHub, Lingua, Domini di logging, Stato del sistema, Manutenzione, Metriche dell'onboarding e Informazioni su Lotti"
   caption="Le Impostazioni avanzate raggruppano i controlli operativi lontano dalle preferenze di tutti i giorni. Alcune voci variano in base alla piattaforma e alle funzionalità abilitate."
 />
 
@@ -35,25 +39,26 @@ impostazione.
 
 <ManualScreenshot
   caseId="advanced-settings/flags"
-  alt="Pagina Flag di configurazione di Lotti con interruttori ricercabili per voci private, registrazione della posizione, tooltip e streaming AI"
+  alt="Pagina Flag di configurazione di Lotti con un campo Cerca flag e interruttori raggruppati sotto Preferenze, a partire da voci private, registrazione della posizione, tooltip e valutazioni di sessione, poi Avanzate e sperimentali"
   caption="La ricerca confronta sia i nomi dei flag sia le descrizioni. Ogni interruttore cambia subito la capacità salvata."
 />
 
-**Flag di configurazione** è il quadro di comando delle funzionalità. Include i
-controlli per:
+**Flag di configurazione** è il quadro di comando delle funzionalità. Le righe
+sono divise tra **Preferenze**, ciò che ha senso modificare, e **Avanzate e
+sperimentali**, cioè diagnostica e lavoro incompiuto.
 
-- visibilità delle voci private, acquisizione della posizione e
-  tooltip;
-- streaming delle risposte AI e riproduzione dei riepiloghi;
-- il compagno e la sua chat (vedi [Parla con il tuo compagno](../getting-started/companion.mdx));
-- logging e comportamento della sincronizzazione Matrix;
-- gli annunci What's New e le valutazioni di sessione;
-- embedding e ricerca vettoriale; e
-- indicatori operativi come l'attività di sincronizzazione, i risvegli agente
-  in attesa e la riparazione dei fork.
+- **Preferenze:** visibilità delle voci private, acquisizione della posizione,
+  tooltip, valutazioni di sessione, What's New, streaming delle risposte AI,
+  riproduzione dei riepiloghi AI e sincronizzazione Matrix.
+- **Avanzate e sperimentali:** la chat sperimentale delle attività, il
+  compagno e la sua chat (vedi
+  [Parla con il tuo compagno](../getting-started/companion.mdx)), gli
+  embedding, la sincronizzazione degli embedding e la ricerca vettoriale, la
+  guida introduttiva del Daily OS, la riparazione dei fork degli agenti, il
+  worker di sincronizzazione in background, il logging e il nuovo invio degli
+  allegati non riusciti.
 
-Le righe sono divise tra **Preferenze**, ciò che ha senso modificare, e
-**Avanzate e sperimentali**, cioè diagnostica e lavoro incompiuto. Le
+Gli interruttori delle notifiche stanno in **Impostazioni → Notifiche**. Le
 sezioni intere come Abitudini, Progetti o Daily OS non sono più qui: si
 trovano in [Sezioni](./settings.mdx).
 
@@ -71,15 +76,18 @@ elimina né cambia la privacy di una voce.
 
 <ManualScreenshot
   caseId="advanced-settings/logging"
-  alt="Impostazioni di logging di Lotti con un interruttore generale, i singoli domini operativi e il log delle query lente"
+  alt="Pagina Domini di logging di Lotti con l'interruttore generale Abilita la registrazione sopra gli interruttori per dominio, come sincronizzazione, AI, chat, voce e audio, database e attività e liste di controllo"
   caption="L'interruttore generale governa i controlli per dominio. Il set dimostrativo di Project Waddle tiene abilitati Sync, AI e Attività per una diagnostica mirata."
 />
 
-La pagina **Registrazione di domini** inizia con l'interruttore globale
+La pagina **Domini di logging** inizia con l'interruttore globale
 **Abilita la registrazione**. Quando è attivo, abilita solo i domini che
-servono a un'indagine, come sincronizzazione, AI, attività, etichette, salute,
-abitudini, navigazione, notifiche o Daily OS. **Lenti quesiti del database**
-aggiunge la diagnostica delle prestazioni del database.
+servono a un'indagine, tra cui **Sincronizzazione**, **IA**, **Conversazione**,
+**Voce e audio**, **Database**, **Runtime dell'agente**, **Compiti e
+liste di controllo**, **Etichette**, **Salute**, **Abitudini**,
+**Navigazione**, **Notifiche** e **Daily OS**. **Query lente del database**
+scrive le query lente del database in un proprio file giornaliero
+`slow_queries-*.log`.
 
 Spegnere l'interruttore generale disabilita i controlli di dominio. Gli errori
 vengono comunque scritti nel file giornaliero `error-*.log`: questi
@@ -112,22 +120,37 @@ elencati in **Report precedenti**, e il report visualizzato indica sempre quale
 periodo ha analizzato e quando è stato generato. Senza modello, o se la
 chiamata al modello fallisce, ottieni comunque il riepilogo.
 
+## Collega GitHub
+
+**GitHub** contiene il token di accesso personale in sola lettura che Lotti
+usa per leggere le pull request che colleghi alle attività. **Crea un token su
+GitHub** apre il modulo dei token di GitHub con i permessi già compilati;
+scegli i tuoi repository, incolla il token in **Token di accesso personale** e
+seleziona **Connetti**. La pagina mostra poi quale account è collegato e offre
+**Disconnetti**. Il token si sincronizza con cifratura end-to-end sugli altri
+tuoi dispositivi ed è usato solo per le richieste ad api.github.com. Una volta
+collegato, il compagno può anche rispondere a domande sulle tue pull request.
+Vedi [Collega GitHub](./github.mdx) per seguire le pull request sulle attività
+e per sapere cosa ne fa l'AI.
+
 ## Esegui le azioni di manutenzione in modo deliberato
 
 <ManualScreenshot
   caseId="advanced-settings/maintenance"
-  alt="Pagina Manutenzione di Lotti con anteprime dell'onboarding, azioni di ripristino, eliminazione dei database, purga, indice di ricerca, embedding e diagnostica di repaint"
+  alt="Pagina Manutenzione di Lotti con anteprime dell'onboarding, azioni di ripristino, controllo dell'integrità del database, eliminazione dei database, purga, indice di testo completo, riparazione dell'archivio degli screenshot, embedding e l'interruttore del repaint rainbow overlay"
   caption="Manutenzione unisce anteprime sicure ad azioni distruttive e diagnostiche. Leggi la conferma e la portata prima di continuare."
 />
 
 **Manutenzione** contiene azioni di natura diversa:
 
-- **Mostra il benvenuto a bordo** e **Galleria di animazione onboarding** sono
+- **Mostra il benvenuto dell'onboarding** e **Galleria di animazione onboarding** sono
   anteprime dal vivo per sviluppo e QA.
 - **Reimposta suggerimenti nell'app** rende di nuovo visibili i consigli
   mostrati una sola volta.
 - **Reimposta finestra di configurazione Gemini** ne cancella la chiusura,
   così il prompt del provider può essere provato di nuovo.
+- **Controlla integrità del database** verifica che i file del database siano
+  integri.
 - **Eliminare il database degli editor** rimuove le bozze dell'editor.
 - **Eliminare il database degli agenti** rimuove il database degli agenti e
   chiude Lotti, così l'app può ripartire da uno store pulito.
@@ -135,6 +158,9 @@ chiamata al modello fallisce, ottieni comunque il riepilogo.
   cancellati in modo soft, tramite un flusso di conferma dedicato.
 - **Ricreare l'indice di testo completo** ricostruisce i dati di ricerca
   locali senza ricreare le voci del diario.
+- **Ripara l’archivio degli screenshot** sposta gli screenshot salvati dalle
+  versioni precedenti nella cartella corretta, così l'analisi AI delle
+  immagini può leggerli.
 - **Generare Embeddings** compare quando lo store degli embedding è
   disponibile e recupera le categorie selezionate.
 - **Repaint rainbow overlay** evidenzia le regioni ridisegnate per la
@@ -154,7 +180,7 @@ sincronizzazione o scrittura in corso.
   caption="Il set dimostrativo deterministico del manuale ha raggiunto il suo vero momento aha in quattro giorni attivi, dopo aver collegato un provider e registrato diverse catture."
 />
 
-**Metriche di bordo** è una superficie per sviluppo e QA. Ricava un funnel
+**Metriche dell'onboarding** è una superficie per sviluppo e QA. Ricava un funnel
 locale da eventi privi di contenuto e mostra:
 
 - il primo avvistamento in UTC;
@@ -167,7 +193,7 @@ La pagina registra nomi di eventi e metadati a bassa cardinalità, non il testo
 del diario, i titoli delle attività, le trascrizioni o i dettagli
 sulle sardine sensibili di Project Waddle.
 
-**Ripristino dello stato del test di bordo** azzera, dopo conferma, la cadenza
+**Reimposta lo stato di test dell'onboarding** azzera, dopo conferma, la cadenza
 dei prompt di onboarding e le metriche del funnel locale. Non elimina i dati
 del diario, i flag di configurazione né la vera cronologia dei piani del Daily
 OS. Un profilo che ha già pianificato una giornata resta quindi escluso dal
@@ -181,7 +207,7 @@ percorso esatto del primo piano su profilo pulito.
   caption="A proposito di Lotti identifica la build in esecuzione e riassume i dati locali. Il set dimostrativo di Project Waddle contiene 2.604 voci e 65 attività in cinque stati."
 />
 
-**A proposito di Lotti** è il posto più rapido per verificare quale build è
+**Informazioni su Lotti** è il posto più rapido per verificare quale build è
 davvero in esecuzione. Mostra la versione dell'app con il numero di build, la
 piattaforma e il tipo di build. Includi questi valori in una segnalazione
 diagnostica, così un comportamento può essere ricondotto al codice e alla

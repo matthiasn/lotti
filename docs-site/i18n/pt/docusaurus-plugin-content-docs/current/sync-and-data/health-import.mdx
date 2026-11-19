@@ -1,58 +1,60 @@
 ---
 title: Importar dados de saúde
-description: Importe um intervalo de datas selecionado do armazenamento de dados de saúde do telefone.
+description: Importa um intervalo de datas à tua escolha do armazenamento de dados de saúde do telemóvel.
 ---
 
 # Importar dados de saúde
 
-A importação de saúde está disponível no iOS e no Android. Abra
-**Configurações → Avançado → Health Import**, escolha uma data de início e uma
-de término e selecione a família de dados que você quer que o Lotti leia do
-armazenamento de dados de saúde do telefone.
+A importação de saúde está disponível no iOS e no Android. Abre
+**Configurações → Configurações avançadas → Importação de Saúde**, escolhe uma
+data de início e uma de fim e seleciona a família de dados que queres que o
+Lotti leia do armazenamento de dados de saúde do telemóvel.
 
 <ManualScreenshot
   caseId="health-import/overview"
-  alt="Importação de saúde com data de início, data de término e ações de importação separadas para atividade, sono, frequência cardíaca, pressão arterial, medidas corporais e treinos"
-  caption="A visualização Mobile mostra a tela de importação. A importação de saúde está intencionalmente ausente da árvore de configurações avançadas do desktop, como a visualização Desktop demonstra."
+  alt="Importação de saúde com data de início, data de fim e ações de importação separadas para atividade, sono, frequência cardíaca, pressão arterial, medidas corporais e treinos"
+  caption="A vista Mobile mostra o ecrã de importação. A importação de saúde está ausente de propósito da árvore de configurações avançadas no computador, como mostra a vista Desktop."
 />
 
 As importações disponíveis são:
 
-- **Atividade** para totais de atividades;
-- **Sono** para amostras de sono;
-- **Frequência cardíaca** para observações de pulso;
-- **Pressão Arterial** para leituras de pressão arterial;
-- **Medida Corporal** para leituras de métricas corporais; e
-- **Treino** para treinos gravados.
+- **Atividade** para os totais de atividade;
+- **Sono** para as amostras de sono;
+- **Frequência cardíaca** para as observações de pulsação;
+- **Pressão arterial** para as leituras de pressão arterial;
+- **Medidas corporais** para as leituras de métricas corporais; e
+- **Treinos** para os treinos registados.
 
-Cada linha importa apenas sua própria família de dados no intervalo de datas
-exibido e, ao terminar, informa abaixo do seu nome o que aconteceu: quantos dados
-chegaram, que não havia nenhum, que o acesso foi negado ou que a importação
-falhou. **Importar tudo** executa cada linha por vez. Os atalhos
-**Últimos 7 / 30 / 90 dias** definem as duas datas de uma vez; a alteração do
-intervalo não inicia uma importação por si só.
+Cada linha importa só a sua própria família de dados no intervalo de datas
+mostrado e, quando termina, indica por baixo do nome o que aconteceu: quantas
+amostras chegaram, que não havia nenhuma, que o acesso foi negado ou que a
+importação falhou. **Importar tudo** executa cada linha à vez. Os atalhos
+**Últimos 7 / 30 / 90 dias** definem as duas datas de uma só vez; mudar o
+intervalo não inicia, por si só, uma importação.
 
 ## Quando uma linha não traz nada
 
-Seu sistema operacional pede permissão para dados de saúde na primeira vez que o
-Lotti lê uma família, e o Lotti só consegue ler os tipos que você concede. Ele
-pergunta **uma vez por família de dados** — pressão arterial é um único pedido que
-cobre a sistólica e a diastólica — e depois não pergunta de novo por conta
-própria. Tocar na linha repete a importação e solicita apenas as permissões ainda
-indefinidas; um tipo que você já respondeu não gera nenhum aviso novo, porque o
-sistema não o exibe uma segunda vez.
+O teu sistema operativo pede autorização para os dados de saúde da primeira
+vez que o Lotti lê uma família, e o Lotti só consegue ler os tipos que
+autorizares. Pergunta **uma vez por família de dados** — a pressão arterial é
+um único pedido que cobre as leituras sistólica e diastólica — e depois não
+volta a perguntar por iniciativa própria. Tocar numa linha repete a
+importação e pede apenas as autorizações ainda por decidir; um tipo a que já
+respondeste não gera nenhum pedido novo, porque o sistema não o apresenta uma
+segunda vez.
 
 Uma linha que não leu nada e nunca trouxe uma única amostra diz **Sem dados —
-verifique o acesso do Lotti no seu app de saúde**, e o botão **Abrir configurações** aparece
-abaixo da lista. Isso é um convite a verificar, não um veredito: a Apple
-deliberadamente não informa a um aplicativo se ele pode ler um tipo, então o Lotti
-não distingue "você não tem leituras desse tipo" de "você desativou isso". Se você
-desativou — no iPhone em **Ajustes → Saúde → Acesso a Dados e Dispositivos → Lotti**, no
-Android no Health Connect — só é possível reativar por lá; o Lotti não consegue
-exibir esse pedido uma segunda vez. Depois, toque na linha novamente para
-importar.
+verifique o acesso do Lotti no seu app de saúde**, e aparece um botão **Abrir
+configurações** por baixo da lista. É um convite a verificar, não um
+veredicto: a Apple não diz de propósito a uma aplicação se ela pode ler um
+tipo, por isso o Lotti não consegue distinguir “não tens leituras deste tipo”
+de “desligaste este acesso”. Se o desligaste, volta a ligá-lo nas próprias
+definições de saúde — no iPhone em **Definições → Saúde → Acesso a dados e
+dispositivos → Lotti**, no Android no Health Connect. É o único caminho de
+volta; o Lotti não consegue voltar a mostrar o pedido por si. Depois, toca na
+linha para importar.
 
-A importação de saúde não é exibida no desktop porque os armazenamentos de
+A importação de saúde não aparece no computador porque os armazenamentos de
 saúde móveis subjacentes não estão disponíveis lá. As observações importadas
-ainda podem ser visualizadas nos painéis relevantes do Lotti depois de
+podem na mesma ser vistas nos painéis relevantes do Lotti depois de
 sincronizadas com outro dispositivo.

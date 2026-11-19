@@ -28,7 +28,7 @@ atteint le service de synchronisation.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Paramètres de synchronisation de Lotti avec Appareils, Cet appareil, Rattrapage de synchronisation, Statistiques Matrix, Boîte d'envoi de synchronisation, Conflits de synchronisation et Maintenance"
+  alt="Paramètres de synchronisation de Lotti avec Appareils, Cet appareil, Santé de la synchronisation, Statistiques Matrix, Boîte d'envoi de synchronisation, Conflits de synchronisation et Maintenance"
   caption="Les paramètres de synchronisation gardent l’état courant près des outils de diagnostic et de récupération. Project Waddle contient actuellement trois éléments de boîte d’envoi à examiner."
 />
 
@@ -132,19 +132,22 @@ concerné doit tout de même être configuré pour les utiliser.
 ## Comprendre le rattrapage et le remplissage
 
 La synchronisation normale traite les changements au fil de leur arrivée.
-**Rattrapage de synchronisation** détecte les trous dans la séquence reçue des
+**Santé de la synchronisation** détecte les trous dans la séquence reçue des
 appareils connus et redemande les enregistrements manquants.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Page Rattrapage de synchronisation de Lotti avec les compteurs de file entrante, d’éléments manquants et ignorés, les statistiques de synchronisation, le rattrapage automatique et la récupération avancée"
-  caption="Project Waddle a reçu 2 868 enregistrements de séquence et connaît actuellement quatre enregistrements manquants répartis sur deux identifiants d’appareil."
+  alt="Page Santé de la synchronisation de Lotti avec les enregistrements sur cet appareil, les compteurs de file entrante et d’éléments manquants, les statistiques de synchronisation, le rattrapage automatique et la récupération avancée"
+  caption="Project Waddle suit 2 868 compteurs de séquence, en a reçu 2 775 et connaît actuellement quatre enregistrements manquants répartis sur deux identifiants d’appareil."
 />
 
+- **Enregistrements sur cet appareil** compte ce que cet appareil contient,
+  suppressions comprises. Des appareils synchronisés affichent ici les mêmes
+  nombres.
 - **File entrante** est le travail qui attend d’être appliqué.
 - **Manquant** est le nombre de trous connus dans la séquence.
-- **Ignoré** est le travail que la file entrante a abandonné faute de pouvoir
-  le traiter normalement.
+- **Ignoré**, dans **Statistiques de synchronisation**, est le travail que la
+  file entrante a abandonné faute de pouvoir le traiter normalement.
 - **Rattrapage automatique** demande les entrées manquantes des dernières
   24 heures et constitue le bon réglage par défaut au quotidien.
 - **Récupération avancée** regroupe des actions manuelles pour une enquête,

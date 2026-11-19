@@ -13,7 +13,7 @@ los datos que no puedas recrear.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Mantenimiento de sincronización de Lotti con Eliminar la base de datos de sincronización, Sincronizar valores medibles, paneles, hábitos, categorías y ajustes de IA, Historial de mensajes, Llenar registro de secuencia de sincronización y Purgar elementos enviados antiguos de la bandeja de salida"
+  alt="Mantenimiento de sincronización de Lotti con Eliminar la base de datos de sincronización, Sincronizar valores medibles, paneles, hábitos, categorías y ajustes de IA, Historial de mensajes, Llenar registro de secuencia de sincronización, Relleno profundo y Purgar elementos enviados antiguos de la bandeja de salida"
   caption="Mantenimiento agrupa en una página acciones destructivas, de reenvío y de limpieza. El texto de confirmación define el alcance de cada operación."
 />
 
@@ -34,6 +34,10 @@ los datos que no puedas recrear.
 - **Llenar registro de secuencia de sincronización** indexa las entradas
   existentes para que el relleno pueda responder a peticiones de entradas
   creadas antes de que existiera el seguimiento de secuencias.
+- **Relleno profundo** envía a tus otros dispositivos una lista de todos los
+  registros de este dispositivo, incluidas las eliminaciones. Cada uno pide lo
+  que le falta y devuelve lo que le falta a este dispositivo. Tus otros
+  dispositivos deben estar en línea para responder; confirma con **Sí, empezar**.
 - **Purgar elementos enviados antiguos de la bandeja de salida** borra las filas
   ya enviadas de la bandeja de salida con más de 7 días y libera espacio en
   disco. Los elementos en espera o fallidos se conservan.
@@ -41,11 +45,11 @@ los datos que no puedas recrear.
 Empieza por la operación más pequeña que encaje con el síntoma. Un adjunto
 atascado corresponde a la
 [bandeja de salida](./sync.mdx#inspecciona-la-bandeja-de-salida); los huecos de
-secuencia persistentes, al Relleno de sincronización; y dos ediciones
+secuencia persistentes, a **Estado de la sincronización**; y dos ediciones
 simultáneas válidas, a los [conflictos](./conflicts.mdx). Eliminar la base de
 datos de sincronización debería ser un reinicio local de último recurso, hecho
 con un par fiable y una copia de seguridad a mano.
 
 Después de una reparación, vuelve a **Estadísticas de Matrix**, comprueba que el
 trabajo aplicado avanza y la cola se vacía, y que la bandeja de salida y el
-número de faltantes del relleno se estabilizan.
+número de faltantes en **Estado de la sincronización** se estabilizan.

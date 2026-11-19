@@ -1,124 +1,134 @@
 ---
-title: Atribuir um agente de tarefa
-description: Dê a uma tarefa seu próprio assistente de IA, com relatório, estado de despertar e propostas que você revisa antes de qualquer alteração.
+title: Atribui um agente de tarefa
+description: Dá a uma tarefa o seu próprio assistente de IA, com relatório, estado de despertar e propostas que revês antes de qualquer alteração.
 ---
 
-# Atribuir um agente de tarefa
+# Atribui um agente de tarefa
 
 Uma tarefa pode ter um agente de tarefa. Atribuir um dá à tarefa um assistente
 de IA persistente, com configuração de inferência, relatório, estado de
-despertar e histórico de propostas próprios. O agente lê a tarefa e seu
-contexto vinculado, destila a situação atual em um relatório curto e pode
-apresentar propostas de alterações na tarefa ou na lista de verificação para
-você confirmar ou rejeitar. Para a visão geral do sistema em todos os agentes
-em execução, consulte [Executar e monitorar agentes](../ai-and-automation/agents.mdx).
+despertar e histórico de propostas próprios. O agente lê a tarefa e o contexto
+ligado, condensa a situação atual num relatório curto e pode apresentar
+propostas de alteração à tarefa ou à lista de verificação para confirmares ou
+rejeitares. Para a vista de todo o sistema com todos os agentes em execução,
+consulta [Executar e monitorizar agentes](../ai-and-automation/agents.mdx).
 
-O agente atribuído aparece abaixo das listas de verificação e das tarefas
-vinculadas da tarefa. Seu cartão mantém o resumo mais recente e as
-eventuais alterações propostas, e nada mais. Seus controles de atualização e a
-configuração de IA ficam atrás de **Abra os internos do agente**, para que a
-página da tarefa se leia como uma tarefa e não como um console de IA.
+O cartão **Resumo de IA** do agente atribuído fica no topo da tarefa, por baixo
+das notas e acima das listas de verificação e das tarefas ligadas. O cartão
+mantém o resumo mais recente, as eventuais alterações propostas e uma ação
+**Atualizar agora**. As definições de atualização e a configuração de IA
+ficam atrás de **Abrir detalhes internos do agente**, para que a página da tarefa se
+leia como uma tarefa e não como uma consola de IA.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
-  alt="Agente de tarefa Habitat Watcher atribuído à tarefa do habitat orbital dos pinguins, mostrando seu resumo atual e o controle Leia mais"
-  caption="O Habitat Watcher está atribuído a esta tarefa; a atribuição e as atualizações automáticas continuam sendo escolhas separadas, e os controles das duas ficam nos internos do agente."
+  alt="Agente de tarefa Habitat Watcher atribuído à tarefa do habitat orbital dos pinguins, com o resumo atual e o controlo Leia mais"
+  caption="O Habitat Watcher está atribuído a esta tarefa; a atribuição e as atualizações automáticas continuam a ser escolhas separadas, e os controlos de ambas estão nos internos do agente."
 />
 
-Em qualquer tamanho de tela o cartão segue uma única ordem de leitura:
-identidade, relatório e, depois, alterações propostas e histórico. Quando o
-resumo fica para trás da tarefa, surgem entre os dois o aviso **Desatualizado**
-e a ação **Atualizar agora**; enquanto o resumo está em dia, o cartão não diz
-nada sobre sua atualidade.
+Em qualquer tamanho de ecrã, o cartão segue uma única ordem de leitura:
+identidade, relatório e, depois, alterações propostas e histórico. Entre o
+relatório e as propostas, uma linha indica há quanto tempo o relatório foi
+escrito e oferece **Atualizar agora**; quando o resumo fica atrás da tarefa,
+essa linha diz antes **Desatualizado**.
 
-Escolha **Leia mais** para expandir o relatório completo ali mesmo. O cartão
-expandido mantém a tarefa visível, adiciona a avaliação de apoio do relatório e
-a próxima etapa recomendada, e oferece **Abra os internos do agente**
-quando você precisar dos controles de atualização e da configuração de IA do
-agente, ou de seus relatórios, conversas, observações e detalhes de
+Escolhe **Ler mais** para expandir o relatório completo ali mesmo. O cartão
+expandido mantém a tarefa visível, acrescenta a avaliação que sustenta o
+relatório e o próximo passo recomendado, e oferece **Abra os internos do
+agente** quando precisares dos controlos de atualização e da configuração de IA
+do agente, ou dos seus relatórios, conversas, observações e detalhes de
 execução.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
-  alt="Cartão expandido do agente de tarefa Habitat Watcher com a avaliação completa do habitat do Project Waddle e a próxima etapa recomendada"
-  caption="O relatório completo se expande dentro da tarefa em vez de enviar você para uma página separada."
+  alt="Cartão expandido do agente de tarefa Habitat Watcher com a avaliação completa do habitat do Project Waddle e o próximo passo recomendado"
+  caption="O relatório completo expande-se dentro da tarefa em vez de te mandar para uma página separada."
 />
 
-## Escolha a configuração de IA do agente
+## Escolhe a configuração de IA do agente
 
-Abra **Abra os internos do agente** — pelo nome do agente no cabeçalho do
-cartão ou pelo link abaixo do relatório expandido: ali a linha **Configuração
-atual** identifica o perfil, o modelo e o provedor usados no próximo
-despertar. Selecione-a para escolher um perfil de
-inferência salvo, substituir apenas o modelo de pensamento, voltar ao padrão
-do perfil, copiar a configuração atual da categoria ou desligar a IA somente
-para este agente. A escolha permanece com esse agente para as próximas
-atualizações; copiar a configuração de uma categoria é um instantâneo, não um
-vínculo que muda em silêncio depois.
+Abre **Abrir detalhes internos do agente** — pelo nome do agente no cabeçalho do
+cartão ou pela ligação por baixo do relatório expandido: aí, a linha
+**Configuração atual** identifica o perfil, o modelo e o fornecedor usados no
+próximo despertar. Seleciona-a para escolher um perfil de inferência guardado,
+substituir apenas o modelo de pensamento, voltar à predefinição do perfil,
+copiar a configuração atual da categoria ou desligar a IA só para este agente.
+A escolha fica com esse agente para as próximas atualizações; copiar a
+configuração de uma categoria é um instantâneo, não uma ligação que muda em
+silêncio mais tarde.
 
 Se um relatório foi produzido por outra rota, o Lotti mantém uma atribuição
 separada **Este relatório** em vez de reetiquetar o histórico com a
 configuração atual. Desligar a IA deixa o relatório existente legível, mas
-impede novos despertares até você selecionar de novo uma configuração
-funcional. As atualizações automáticas não podem ser ativadas enquanto o
-agente não tiver uma configuração de IA funcional.
+impede novos despertares até voltares a selecionar uma configuração que
+funcione. As atualizações automáticas não podem ser ativadas enquanto o
+agente não tiver uma configuração de IA que funcione.
 
-## Revise as alterações propostas
+## Revê as alterações propostas
 
-Um despertar concluído pode atualizar o relatório e adicionar alterações
-propostas. As atualizações automáticas decidem *quando o agente acorda*; elas
-não dão ao agente permissão para editar a tarefa. As propostas permanecem
-pendentes até você agir sobre elas.
+Um despertar concluído pode atualizar o relatório e acrescentar alterações
+propostas. As atualizações automáticas decidem *quando o agente acorda*; não
+dão ao agente permissão para editar a tarefa. As propostas ficam pendentes
+até agires sobre elas.
 
 <ManualScreenshot
   caseId="tasks/agent-suggestions"
-  alt="Cartão do agente de tarefa Habitat Watcher com duas propostas pendentes do Project Waddle, ações individuais de rejeitar e confirmar e uma ação Confirmar todas"
-  caption="O agente propõe um item de lista de verificação para o teste do alimentador e uma estimativa revisada; nenhuma das alterações foi aplicada ainda."
+  alt="Cartão do agente de tarefa Habitat Watcher com duas propostas pendentes do Project Waddle, ações individuais para rejeitar e confirmar e uma ação Confirme tudo"
+  caption="O agente propõe um item de lista de verificação para o teste do alimentador e uma estimativa revista; nenhuma das alterações foi aplicada ainda."
 />
 
-Use o X para **Rejeitar** uma proposta ou a marca de confirmação para
-**Confirmar** e aplicá-la. Você também pode deslizar uma proposta para a
-esquerda para rejeitar ou para a direita para confirmar. Quando várias
-propostas estão pendentes, **Confirme todas** aplica de uma vez as alterações
-listadas no momento. Revise propostas em massa com cuidado, especialmente
-alterações de status, data e lista de verificação.
+Usa o X para **Rejeitar** uma proposta ou o visto para **Confirmar** e
+aplicá-la. Também podes deslizar uma proposta para a esquerda para a rejeitar
+ou para a direita para a confirmar. Quando há várias propostas pendentes,
+**Confirme tudo** aplica de uma vez as alterações listadas nesse momento. Uma
+alteração de estado proposta nunca faz parte disso: fica à espera na sua
+própria faixa **Alterações de estado** até a confirmares ou rejeitares
+individualmente. Revê as propostas em massa com cuidado, sobretudo as
+alterações de datas e de listas de verificação.
 
-Abra o **Histórico** para revisitar os resultados recentes. Ele distingue as
+Abre o **Histórico** para rever os resultados recentes. Distingue as
 alterações confirmadas das rejeitadas. Uma entrada rejeitada pode representar
-tanto uma decisão sua quanto uma proposta que o agente retirou depois que um
-contexto mais novo da tarefa a tornou obsoleta.
+uma decisão tua ou uma proposta que o agente retirou depois de um contexto
+mais recente da tarefa a ter tornado obsoleta.
 
-Uma atualização manual com **Atualizar agora** pode produzir os mesmos tipos de relatório e
-propostas que um despertar automático. Desativar as atualizações automáticas
-interrompe os despertares futuros em segundo plano; isso não aplica, descarta
-nem resolve de outra forma as propostas que já aguardam sua decisão.
+Uma atualização manual com **Atualizar agora** produz os mesmos tipos de
+relatório e de propostas que um despertar automático. Desativar as
+atualizações automáticas interrompe os despertares futuros em segundo plano;
+não aplica, descarta nem resolve de outra forma as propostas que já esperam
+pela tua decisão.
 
-## Escolha atualizações automáticas ou manuais
+## Escolhe atualizações automáticas ou manuais
 
-Novos agentes de tarefa começam com **Atualizações automáticas desativadas**. A
-atribuição por si só não gasta tokens em segundo plano. O botão, a contagem
-regressiva até a próxima atualização e **Ignorar uma vez** ficam todos em
-**Abra os internos do agente**, ao lado do histórico de relatórios e da
-atividade do agente. Enquanto as atualizações estão desativadas, a Lotti
-continua percebendo alterações relevantes na tarefa e em suas entradas
-vinculadas, marca no próprio cartão um resumo mais antigo como desatualizado e
-espera você escolher **Atualizar agora**. Um despertar
+Os novos agentes de tarefa começam com as **Atualizações automáticas**
+desativadas. A atribuição, por si só, não gasta tokens em segundo plano. O
+interruptor, a contagem decrescente até à próxima atualização e
+**Ignorar uma vez** estão todos em **Abrir detalhes internos do agente**, ao lado do
+histórico de relatórios e da atividade do agente. Enquanto as atualizações
+estão desativadas, o Lotti continua a reparar nas alterações relevantes à
+tarefa e às entradas ligadas, marca no próprio cartão um resumo mais antigo
+como desatualizado e espera que escolhas **Atualizar agora**. Um despertar
 manual continua disponível sempre que o agente tiver uma configuração de IA
-funcional.
+que funcione.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
   alt="Cartão do agente de tarefa Habitat Watcher com um aviso de relatório desatualizado e uma ação de atualização manual"
-  caption="O modo manual observa alterações e relata a desatualização sem iniciar a inferência."
+  caption="O modo manual observa as alterações e indica a desatualização sem iniciar a inferência."
 />
 
-Quando as **Atualizações automáticas** estão ativadas, a Lotti agrupa as
-alterações correspondentes da tarefa por cerca de dois minutos antes de agendar
-uma atualização. Esse agrupamento evita um despertar do agente a cada pequena
-edição. **Atualizar agora** continua disponível para uma atualização imediata
-solicitada por você.
+O aviso de desatualização deixa de propósito no lugar o último relatório útil.
+Se uma edição relevante chegar depois de um despertar começar, essa edição
+mais recente mantém o relatório marcado como desatualizado mesmo quando o
+despertar anterior termina. Quando precisares de um relatório que inclua essas
+últimas alterações, acorda o agente outra vez depois de a tarefa assentar.
 
-Desativar as atualizações automáticas limpa a contagem regressiva pendente e as
-atualizações automáticas na fila, mas não cancela um despertar que você
-solicitou explicitamente. Reativá-las vale para alterações futuras; isso não
-reexecuta alterações que chegaram enquanto a automação estava desligada.
+Quando as **Atualizações automáticas** estão ativadas, o Lotti agrupa as
+alterações correspondentes da tarefa durante cerca de dois minutos antes de
+agendar uma atualização. Esse agrupamento evita um despertar do agente a cada
+pequena edição. **Atualizar agora** continua disponível para uma atualização
+imediata pedida por ti.
+
+Desativar as atualizações automáticas limpa a contagem decrescente pendente e
+as atualizações automáticas em fila, mas não cancela um despertar que pediste
+explicitamente. Voltar a ativá-las vale para alterações futuras; não repete
+as alterações que chegaram enquanto a automação estava desligada.

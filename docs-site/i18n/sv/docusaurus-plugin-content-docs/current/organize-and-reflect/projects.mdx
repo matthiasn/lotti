@@ -13,24 +13,33 @@ pingvinhabitatet.
 
 <ManualScreenshot
   caseId="projects/list"
-  alt="Projekt grupperade under Penguin-operationer, Uppdragskontroll, Fiskdiplomati och Mänskligt underhåll, däribland Project Waddle och Europas sardinkylkedja"
+  alt="Projektlistan i omfånget Aktuella, grupperad under Penguin-operationer, Uppdragskontroll och Fiskdiplomati, med Project Waddle, Europas sardinkylkedja och pingvinpassageraravtalet"
   caption="Varje rad kombinerar status, uppgiftsframsteg, måldatum och en kort syftesbeskrivning. Skrivbordet håller plats för ett valt projekt till höger; mobilen använder hela bredden för listan."
 />
 
 ## Hitta projektet du behöver
 
-Sökningen matchar projekttitlar, lagrad projekttext och kategorinamn.
-Filterkontrollen begränsar listan efter projektstatus eller kategori. Ett
+Sökningen matchar projekttitlar, lagrad projekttext och kategorinamn. Under
+sökfältet döljer **Aktuella** slutförda och arkiverade projekt; **Alla** tar
+tillbaka dem. **Sortera projekt** ordnar listan efter **Behöver
+uppmärksamhet**, **Måldatum**, **Nyligen uppdaterade** eller **Namn**.
+
+Filterknappen begränsar listan efter **Status** eller **Kategori**. Två
+reglage lägger till mer: **Endast inaktuella sammanfattningar** behåller
+projekt vars agentsammanfattning ligger efter, och **Visa inferensprofil**
+märker varje projekt som har en agent med namnet på dess inferensprofil. Ett
 filter förblir inaktivt tills du väljer **Tillämpa**.
 
 <ManualScreenshot
   caseId="projects/filters"
-  alt="Projektfilterdialog med status- och kategorikontroller ovanpå projektlistan för Intergalactic Penguin Logistics"
+  alt="Dialogen Filtrera projekt med raderna Status och Kategori, reglagen Endast inaktuella sammanfattningar och Visa inferensprofil samt Rensa och Tillämpa, ovanpå projektlistan"
 />
 
 Projekten förblir grupperade efter kategori efter filtreringen. Det gör
 insatser med liknande namn lättare att skilja åt och håller varje
-operationsområde synligt.
+operationsområde synligt. Varje kategorirubrik kan fällas ihop, och dess
+kartknapp öppnar **Utforska kategori** – kategorins projekt som ett kvarter du
+kan promenera i.
 
 ## Skapa ett projekt
 
@@ -86,26 +95,38 @@ det finns ingen separat sparknapp på den här läs-först-detaljytan.
 
 <ManualScreenshot
   caseId="projects/detail"
-  alt="Project Waddle-detaljer med hälsopoängen 82, fem av åtta uppgifter slutförda, en blockerare och en AI-rapport uppdaterad för två timmar sedan"
+  alt="Project Waddle-detaljer med status Aktiv och måldatum, beskrivningen, ett AI-sammanfattningskort bedömt som På banan med 91 % tillförlitlighet och en blockerad uppgift, och listan över projektuppgifter som leds av den blockerade fiskmataren med nollgravitation"
   caption="Skrivbordet håller projektlistan och detaljerna sida vid sida. Mobilen öppnar samma detaljer som en hel sida."
 />
 
-Hälsopanelen sammanfattar den aktuella projektagentbedömningen:
+Kortet **AI-sammanfattning** samlar bedömningen och rapporten:
 
-- hälsopoängen är en kompakt signal, inte en ersättning för det underliggande
-  arbetet;
-- uppgiftsframstegen visar antal slutförda och blockerade;
-- rapporten ger en aktuell sammanfattning och kan fällas ut till sitt
-  fullständiga innehåll; och
-- rekommendationerna pekar på konkreta nästa åtgärder.
+- **Projekthälsa** sammanfattar agentens bedömning, med motivering och
+  tillförlitlighet när de finns, och hur många uppgifter som är blockerade;
+- rapporten ger en aktuell sammanfattning, och **Läs mer** fäller ut den till
+  sitt fullständiga innehåll; och
+- nästa steg och föreslagna ändringar pekar på konkreta åtgärder.
 
-I Project Waddle är en poäng på 82 och fem slutförda uppgifter uppmuntrande,
-men fiskmataren med nollgravitation är fortfarande en uppskjutningsblockerare.
-Läs förklaringen innan du betraktar en poäng som en dom.
+I Project Waddle är en På banan-bedömning uppmuntrande, men fiskmataren med
+nollgravitation är fortfarande en uppskjutningsblockerare. Läs motiveringen
+innan du betraktar bandet som en dom.
 
-När en projektagent är konfigurerad kan rapportmenyn begära en ny rapport
-eller avboka en planerad vakning. Utan agent visar projektet fortfarande sina
-uppgifter och eventuell lagrad projekttext.
+Själva kortet behåller bara **Öppna agentens interna detaljer**, och
+**Uppdatera nu** medan sammanfattningen är inaktuell. Modellkonfigurationen,
+automatiska uppdateringar och hur ofta agenten uppdaterar finns i agentens
+inre delar. Utan agent erbjuder kortet **Tilldela agent**, och detaljerna
+visar fortfarande projektets uppgifter och beskrivning.
+
+**Utforska projekt**, bredvid projektmenyn, öppnar projektet som ett kvarter
+du kan promenera i, med en byggnad för varje uppgift.
+
+## Lägg till anteckningar, inspelningar och bilder i ett projekt
+
+En list längs projektsidans nederkant lägger till direkt i projektet:
+**Spela in en röstanteckning**, skriv en anteckning, importera en bild, eller
+plusset för menyn **Lägg till** med resten. På en smal skärm ger antecknings-
+och bildknapparna plats åt plusset. Allt som läggs till där länkas till
+projektet, syns i dess tidslinje och läses av dess agent.
 
 ## Behåll projektarbetet i uppgifter
 
@@ -121,7 +142,11 @@ checklistor, bilder, tidsposter och omslagskonst.
 
 Tilldela en uppgift till ett projekt från projektkontrollen i uppgiftshuvudet.
 Projekt avgränsas per kategori, så ge uppgiften en kategori innan du väljer
-ett projekt. En uppgift tillhör högst ett projekt åt gången; att tilldela ett
+ett projekt. Uppgiftens agent kan också föreslå det: nämn projektet i
+uppgiftens anteckningar eller i en inspelning, så föreslår agenten att flytta
+uppgiften dit – eller, när kategorin saknar ett projekt med det namnet, att
+skapa projektet med uppgiften i. Inget ändras förrän du bekräftar. En uppgift
+tillhör högst ett projekt åt gången; att tilldela ett
 annat projekt flyttar länken i stället för att duplicera den.
 
 ## Projekt, kategorier och uppgifter

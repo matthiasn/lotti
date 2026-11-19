@@ -1,0 +1,119 @@
+---
+title: Connecter GitHub
+description: Connecte un jeton GitHub en lecture seule pour que les tâches suivent les pull requests qui les réalisent, avec des résumés, des suggestions de l’agent et les réponses du compagnon.
+---
+
+# Connecter GitHub
+
+Lotti peut suivre les pull requests GitHub qui réalisent tes tâches : leur
+statut, leurs vérifications, leurs revues et leurs conflits de fusion
+s’affichent à côté de la tâche, un résumé dit ce que chacune change, et
+l’agent de la tâche peut s’en servir pour suggérer quels éléments de la liste
+de contrôle sont faits. Tout cela nécessite un jeton d’accès personnel en
+lecture seule de ton compte GitHub.
+
+## Créer et connecter un jeton
+
+Ouvre **Paramètres → Paramètres avancés → GitHub**.
+
+1. Sélectionne **Créer un jeton sur GitHub**. Ton navigateur ouvre le
+   formulaire de jeton de GitHub avec le nom de Lotti, une durée de validité
+   d’un an et les permissions en lecture seule déjà remplis. Si le navigateur
+   ne peut pas s’ouvrir, Lotti t’indique où créer le jeton à la main : sur
+   github.com, sous Settings → Developer settings → Personal access tokens.
+2. Sur GitHub, choisis les dépôts que Lotti peut lire et crée le jeton.
+3. Colle le jeton dans **Jeton d'accès personnel**. **Afficher le jeton** et
+   **Masquer le jeton** révèlent et masquent ce que tu as collé.
+4. Sélectionne **Connecter**. Lotti vérifie d’abord le jeton auprès de GitHub.
+   Une notification confirme **Connecté à GitHub en tant que @toi** avec le nom
+   de ton compte ; un jeton que GitHub refuse est expliqué sous le champ.
+
+Une fois la connexion établie, la page indique quel compte est connecté et
+propose **Déconnecter**. La déconnexion oublie le jeton sur cet appareil et
+sur tes autres appareils, et le confirme avec **Déconnecté de GitHub**.
+
+Les vérifications CI des dépôts privés peuvent être incomplètes : GitHub ne
+donne à ces jetons aucun accès aux exécutions de vérification, et la page le
+signale.
+
+## Où le jeton est conservé
+
+Le jeton est stocké dans le trousseau de cet appareil et n’est utilisé que
+pour les requêtes vers api.github.com. Il n’est jamais journalisé ni exporté.
+Quand la synchronisation est configurée, il voyage avec chiffrement de bout en
+bout vers tes autres appareils, comme une clé de fournisseur d’IA. Un jeton
+venu d’un autre appareil est vérifié auprès de GitHub avant d’être utilisé.
+
+Quand la synchronisation est configurée, la page propose aussi **Envoyer à mes
+autres appareils** lorsque tu es connecté, ou **Vérifier mes autres
+appareils** lorsque tu ne l’es pas, pour le cas où un appareil n’a pas encore
+reçu le jeton.
+
+Lotti ne récupère jamais la page web d’une pull request. Les images intégrées
+dans la description d’une pull request sont chargées depuis leurs propres
+adresses uniquement pendant que les détails de cette pull request sont
+ouverts, et ne sont analysées par l’IA qu’une fois que tu en ajoutes une à la
+tâche.
+
+## Suivre les pull requests d’une tâche
+
+Avec GitHub connecté, ouvre une tâche et choisis **Suivi des pull requests**
+depuis le **+** de sa barre d’actions. La tâche affiche alors une section
+**Pull requests** ; ce choix est enregistré sur la tâche et vaut donc sur tous
+tes appareils. Une tâche avec une pull request liée affiche la section dans
+tous les cas.
+
+Sélectionne **Lier une pull request** pour en lier une :
+
+- colle un lien ou une référence courte dans **URL ou proprietaire/depot#123**
+  et sélectionne **Lier** ; ou
+- choisis-en une dans la liste sous **Ou choisis-en une dans** le dépôt, qui
+  montre les pull requests ouvertes de ce dépôt qu’aucune tâche ne détient
+  encore, avec leur taille. Toucher une ligne la lie aussitôt. Si elle ne peut
+  pas être liée, la raison apparaît sous la ligne choisie.
+
+La liste a besoin d’un dépôt : ouvre la catégorie de la tâche dans
+**Paramètres → Définitions → Catégories** et saisis-le sous **GitHub** →
+**Dépôt** au format `owner/repo` ou comme lien du dépôt. Cette section
+apparaît dès que GitHub est connecté. Pour une pull request qu’une autre tâche
+détient déjà, Lotti demande d’abord — **Lier ici aussi** ou **Ne pas lier**.
+
+Chaque pull request liée affiche son statut (**Ouverte**, **Brouillon**,
+**Fusionnée** ou **Fermée**), ses vérifications, ses revues et son état de
+fusion, ainsi qu’un résumé d’une ligne. Touche-la pour les détails : **En
+bref**, la **Description** de la pull request elle-même et **Ouvrir sur
+GitHub**. Son menu propose **Actualiser la pull request**, **Ouvrir sur
+GitHub** et **Délier la pull request**. Lotti actualise aussi les pull
+requests d’une tâche chaque fois qu’elles entrent dans un prompt de code ou
+une mise à jour de l’agent de tâche. Un appareil sans jeton affiche quand même
+ce qu’un autre appareil a vu en dernier, avec son ancienneté.
+
+Colle le lien d’une pull request dans la recherche de tâches pour trouver les
+tâches auxquelles elle est liée.
+
+## Laisser l’IA résumer et suggérer
+
+Le modèle de l’agent de la tâche rédige chaque résumé dans la langue de la
+tâche : une phrase sous le titre et **En bref** dans les détails. Les résumés
+sont rédigés automatiquement quand la catégorie de la tâche a **Inférence
+automatique** activée (voir [Catégories](../organize-and-reflect/categories.mdx)) ;
+sinon, sélectionne **Résumer** dans les détails, ou **Résumer à nouveau** pour
+en obtenir un nouveau.
+
+L’agent de la tâche lit les pull requests ouvertes qu’aucune tâche ne détient
+et propose de lier celle qui réalise sa tâche — **Lier la pull request #…**
+dans ses modifications proposées, liée une fois que tu confirmes. Il peut
+aussi suggérer de cocher les éléments de la liste de contrôle qu’une pull
+request actualisée a accomplis. Consulte
+[Agents de tâche](../organize-and-reflect/task-agents.mdx).
+
+## Interroger le compagnon sur les pull requests
+
+Avec GitHub connecté, le [compagnon](../getting-started/companion.mdx) peut
+répondre à des questions comme « Combien de pull requests ai-je ouvertes
+cette semaine ? » avec des graphiques des pull requests, des **Lignes
+ajoutées** et des **Lignes supprimées**, par jour ou en total cumulé. Quand tu
+lui demandes dans quelle tâche se trouvait un travail, ou quelles pull
+requests étaient les plus grosses, il les montre sous forme des mêmes cartes
+de pull request qu’une tâche. Il ne lit que les pull requests déjà
+enregistrées sur cet appareil.

@@ -29,6 +29,14 @@ potom zkontroluj modely a profily vytvořené kolem něj.
   kompatibilní proxy nebo bránu. Typ poskytovatele stále řídí chování
   specifické pro protokol.
 
+Lotti umí mluvit s těmito typy poskytovatelů: **Mistral**, **Melious.ai**,
+**Google Gemini**, **Alibaba Cloud (Qwen)**, **OpenAI**, **Anthropic Claude**,
+**OpenRouter**, **Nebius AI Studio**, **ElevenLabs**, jakýkoli koncový bod
+**Kompatibilní s OpenAI** a místní **Ollama**, **oMLX (lokálně)**, **Voxtral
+(lokální)**, **Whisper (lokální)** a **sherpa-onnx (v zařízení)**. Když si
+nejsi jistý, začni s Mistralem — doporučenou výchozí volbou, kterou při výběru
+poskytovatele označuje **DOPORUČENO**.
+
 ## Připoj poskytovatele
 
 1. Otevři **Nastavení → Nastavení AI → Poskytovatelé**.
@@ -60,7 +68,10 @@ připojení upravit, přidat další model nebo poskytovatele odebrat.
 
 Změna základní URL nebo API klíče ovlivní každý model připojený k poskytovateli.
 Po změně některé hodnoty ověř reprezentativní akci AI, než budeš připojení
-považovat za funkční. Odebrání poskytovatele může také ovlivnit profily
+považovat za funkční. Když volání selže, protože účtu u poskytovatele došel
+kredit, Lotti napíše **Kredit vyčerpán**, ocituje vlastní zprávu poskytovatele
+a navrhne účet dobít nebo vybrat model od jiného poskytovatele. Odebrání
+poskytovatele může také ovlivnit profily
 směrující práci přes jeho modely; nejdřív zkontroluj závislosti.
 
 ## Zkontroluj směrování profilů

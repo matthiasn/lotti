@@ -34,12 +34,14 @@ visar agenttyp, livscykel, tilldelad mall och själ. Att gruppera efter själ
 />
 
 Välj en instans för att inspektera dess inre. Fliken **Statistik** visar
-modellanvändning, mallen, aktuell inferensrutt, livscykelkontroller, antal
-vakningar och schemaläggningstillstånd.
+tokenanvändning per modell — **Indata**, **Utdata**, **Tankar**,
+**Cachad**-tokens, andelen **Cacheträffar** och **Väckningar** — och sedan mallen,
+den aktuella agentkonfigurationen, livscykelkontroller, antal vakningar och
+schemaläggningstillstånd.
 
 <ManualScreenshot
   caseId="agents/instance-detail"
-  alt="Instansdetaljer för Habitatsälinspektör med tokenanvändning, mallen Orbital Habitat Sentinel, inferensrutt, livscykelkontroller och vakningstillstånd"
+  alt="Instansdetaljer för Habitatsälinspektör med en tabell över tokenanvändning inklusive cachade tokens och cacheträffar, mallen Orbital Habitat Sentinel, agentkonfiguration, Pausa, Analysera om och Förstör samt vakningstillstånd"
   caption="Instansen behåller tillräcklig proveniens för att förklara vilken mall och rutt som skapade dess arbete innan du pausar, omanalyserar eller förstör den."
 />
 
@@ -48,7 +50,7 @@ De övriga instansflikarna bevarar olika underlag:
 - **Rapporter** innehåller agentens sparade rapportögonblicksbilder.
 - **Samtal** grupperar meddelanden efter vakningscykel.
 - **Observationer** visar infångade fynd utan att blanda in dem i rapporter.
-- **Verksamhet** visar det kronologiska meddelande- och verktygsspåret.
+- **Aktivitet** visar det kronologiska meddelande- och verktygsspåret.
 
 **Paus** behåller instansen men stoppar normalt arbete. **Omanalysera** ber en
 uppgiftsagent att ompröva sitt aktuella ämne. **Förstör** är destruktivt och
@@ -57,7 +59,7 @@ för framtida agenter kräver inte att orelaterade instanser förstörs.
 
 ## Förstå vakningscykler
 
-Öppna **Vakningscykler** för att se arbete som körs nu och arbete som väntar
+Öppna **Väckningscykler** för att se arbete som körs nu och arbete som väntar
 senare. En vakning märkt **Väntar** begärdes av agenten. En vakning märkt
 **Planerade** lades in av systemet eller planeraren. Varje rad håller den länkade
 uppgiften, projektet eller dagen synlig tillsammans med den ansvariga agenten

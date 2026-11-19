@@ -1,0 +1,112 @@
+---
+title: Anslut GitHub
+description: Anslut en skrivskyddad GitHub-token så att uppgifter kan följa de pull requests som genomför dem, med sammanfattningar, agentförslag och svar från följeslagaren.
+---
+
+# Anslut GitHub
+
+Lotti kan följa de GitHub-pull requests som genomför dina uppgifter: deras
+status, kontroller, granskningar och sammanfogningskonflikter står bredvid
+uppgiften, en sammanfattning berättar vad var och en ändrar, och
+uppgiftsagenten kan använda dem för att föreslå vilka checklistpunkter som är
+klara. Allt detta kräver en skrivskyddad personlig åtkomsttoken från ditt
+GitHub-konto.
+
+## Skapa och anslut en token
+
+Öppna **Inställningar → Avancerade inställningar → GitHub**.
+
+1. Välj **Skapa en token på GitHub**. Din webbläsare öppnar GitHubs
+   tokenformulär med Lottis namn, en livslängd på ett år och de skrivskyddade
+   behörigheterna redan ifyllda. Om webbläsaren inte kan öppnas berättar
+   Lotti var du skapar token för hand: på github.com under Settings →
+   Developer settings → Personal access tokens.
+2. Välj på GitHub vilka repon Lotti får läsa och skapa token.
+3. Klistra in token i **Personlig åtkomsttoken**. **Visa token** och **Dölj
+   token** visar och döljer det du klistrade in.
+4. Välj **Anslut**. Lotti kontrollerar först token hos GitHub. En toast
+   bekräftar **Ansluten till GitHub som @du** med ditt kontonamn; en token som
+   GitHub avvisar förklaras under fältet.
+
+När anslutningen är klar visar sidan vilket konto som är anslutet och
+erbjuder **Koppla från**. Att koppla från glömmer token på den här enheten och
+på dina andra enheter, och bekräftas med **Frånkopplad från GitHub**.
+
+CI-kontroller för privata repon kan vara ofullständiga: GitHub ger de här
+tokens ingen åtkomst till check runs, och sidan säger det.
+
+## Var token förvaras
+
+Token lagras i den här enhetens nyckelring och används bara för förfrågningar
+till api.github.com. Den loggas eller exporteras aldrig. Med synk konfigurerad
+färdas den end-to-end-krypterad till dina andra enheter, precis som en
+AI-leverantörsnyckel. En token som kommer från en annan enhet kontrolleras hos
+GitHub innan den används.
+
+När synk är konfigurerad erbjuder sidan också **Skicka till mina andra
+enheter** medan du är ansluten, eller **Kolla mina andra enheter** medan du
+inte är det, för när en enhet ännu inte har fått token.
+
+Lotti hämtar aldrig en pull requests webbsida. Bilder som är inbäddade i en
+pull requests beskrivning läses in från sina egna adresser bara medan du har
+den pull requestens detaljer öppna, och analyseras av AI först när du lägger
+till en av dem i uppgiften.
+
+## Spåra pull requests på en uppgift
+
+Med GitHub anslutet öppnar du en uppgift och väljer **Spårning av pull
+requests** från **+** i dess åtgärdslist. Uppgiften visar sedan ett avsnitt
+**Pull requests**; valet sparas på uppgiften, så det gäller på alla enheter.
+En uppgift med en kopplad pull request visar avsnittet ändå.
+
+Välj **Koppla en pull request** för att koppla en:
+
+- klistra in en länk eller en kort referens i **URL eller ägare/repo#123** och
+  välj **Koppla**; eller
+- välj i listan under **Eller välj en från** repot, som visar repots öppna
+  pull requests som ingen uppgift har ännu, med deras storlek. Ett tryck på en
+  rad kopplar den direkt. Om den inte kan kopplas visas orsaken under raden du
+  valde.
+
+Listan behöver ett repo: öppna uppgiftens kategori under **Inställningar →
+Definitioner → Kategorier** och ange det under **GitHub** → **Repo** som
+`owner/repo` eller repots länk. Det avsnittet visas när GitHub är anslutet.
+En pull request som en annan uppgift redan har frågar först – **Koppla även
+här** eller **Koppla inte**.
+
+Varje kopplad pull request visar sin status (**Öppen**, **Utkast**,
+**Sammanfogad** eller **Stängd**), sina kontroller, granskningar och
+sammanfogningsläge samt en sammanfattning på en rad. Tryck på den för
+detaljerna: **Kort sagt**, pull requestens egen **Beskrivning** och **Öppna på
+GitHub**. Dess meny erbjuder **Uppdatera pull request**, **Öppna på GitHub**
+och **Koppla bort pull request**. Lotti uppdaterar också en uppgifts pull
+requests när de ingår i en kodprompt eller en uppdatering från
+uppgiftsagenten. En enhet utan token visar ändå det som en annan enhet senast
+såg, med dess ålder.
+
+Klistra in en pull request-länk i uppgiftssökningen för att hitta de uppgifter
+den är kopplad till.
+
+## Låt AI sammanfatta och föreslå
+
+Uppgiftsagentens modell skriver varje sammanfattning på uppgiftens språk: en
+rad under titeln och **Kort sagt** i detaljerna. Sammanfattningar skrivs
+automatiskt när uppgiftens kategori har **Automatisk inferens** påslaget (se
+[Kategorier](../organize-and-reflect/categories.mdx)); annars väljer du
+**Sammanfatta** i detaljerna, eller **Sammanfatta igen** för en ny.
+
+Uppgiftsagenten läser de öppna pull requests som ingen uppgift har och
+föreslår att koppla den som genomför dess uppgift – **Koppla pull request #…**
+i dess föreslagna ändringar, kopplad när du bekräftar. Den kan också föreslå
+att bocka av checklistpunkter som en uppdaterad pull request har slutfört. Se
+[Uppgiftsagenter](../organize-and-reflect/task-agents.mdx).
+
+## Fråga följeslagaren om pull requests
+
+Med GitHub anslutet kan [följeslagaren](../getting-started/companion.mdx)
+svara på frågor som "Hur många pull requests öppnade jag den här veckan?" med
+diagram över pull requests, **Tillagda rader** och **Borttagna rader**, per
+dag eller som en löpande summa. Frågar du vilken uppgift visst arbete hörde
+till, eller vilka pull requests som var störst, visar den dem som samma pull
+request-kort som en uppgift har. Den läser bara de pull requests som redan är
+sparade på den här enheten.

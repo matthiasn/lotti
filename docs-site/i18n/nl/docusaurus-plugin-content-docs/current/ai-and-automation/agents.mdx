@@ -32,12 +32,13 @@ wanneer meerdere verantwoordelijkheden één stem en beslissingsstijl delen.
 />
 
 Selecteer een instantie om de interne werking ervan te inspecteren. Het tabblad **Statistieken** toont
-modelgebruik, het sjabloon, de huidige inferentieroute, levenscycluscontroles, het aantal wakkercycli
-en de planningsstatus.
+het tokengebruik per model — tokens voor **Invoer**, **Uitvoer**, **Gedachten** en **In cache**,
+het aandeel **Cachehits** en **Wekmomenten** — en daarna het sjabloon, de huidige agentinstelling,
+levenscycluscontroles, het aantal wakkercycli en de planningsstatus.
 
 <ManualScreenshot
   caseId="agents/instance-detail"
-  alt="Detail van de Habitat Seal Inspector-instantie met tokengebruik, het sjabloon Orbital Habitat Sentinel, de inferentieroute, levenscycluscontroles en de wakkerstatus"
+  alt="Detail van de Habitat Seal Inspector-instantie met een tabel voor tokengebruik inclusief gekachelde tokens en cachehits, het sjabloon Orbital Habitat Sentinel, de agentinstelling, Pauze, Heranalyseren en Vernietigen, en de wakkerstatus"
   caption="De instantie bewaart genoeg herkomst om uit te leggen welk sjabloon en welke route zijn werk hebben geproduceerd voordat je hem pauzeert, opnieuw analyseert of vernietigt."
 />
 
@@ -55,7 +56,7 @@ sjabloon voor toekomstige agenten vereist niet dat niet-gerelateerde instanties 
 
 ## Begrijp wakkercycli
 
-Open **Wake Cycles** om werk te bekijken dat nu wordt uitgevoerd en later gepland staat. Een
+Open **Wekcycli** om werk te bekijken dat nu wordt uitgevoerd en later gepland staat. Een
 wakkercyclus **In afwachting** is door de agent aangevraagd. Een wakkercyclus **Gepland** is ingesteld door
 het systeem of de planner. Elke rij houdt de gekoppelde taak, het project of de dag zichtbaar
 naast de verantwoordelijke agent en een live countdown.

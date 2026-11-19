@@ -29,7 +29,7 @@ utifrån uppgiftens egen kontext och referensbilder.
 
 <ManualScreenshot
   caseId="tasks/detail"
-  alt="Produktionsdetaljsida för uppgiften att inspektera det orbitala pingvinhabitatet, med samma omslagskonst som uppgiftsminiatyrerna använder"
+  alt="Uppgiftssida för inspektionen av det orbitala pingvinhabitatet med kategori, status Pågående, prioritet Högt, slutdatum, loggad tid mot uppskattningen, etiketter och AI-sammanfattningen"
 />
 
 Samma uppgift kan innehålla en beskrivning, kategori, etiketter, slutdatum,
@@ -77,15 +77,17 @@ Valet **Agent** skiljer uppgifter med en tilldelad agent från uppgifter utan.
 
 Val inom ett och samma filter är alternativ: att välja P0 och P1 visar båda
 prioriteterna. Olika filter begränsar resultatet tillsammans: att välja P0
-eller P1 *och* Penguin-operationer visar bara matchande arbete. Använd **Rensa
-allt** för att återgå till en obegränsad vy i stället för att försöka ångra
-varje val för sig.
+eller P1 *och* Penguin-operationer visar bara matchande arbete. Använd
+**Rensa** i arket, eller **Rensa allt** bredvid de aktiva filtren i listan,
+för att återgå till en obegränsad vy i stället för att försöka ångra varje val
+för sig.
 
-Välj **Beräknat datum**, **Skapad** eller **Prioritet** i samma ark för att
+Välj **Förfallodatum**, **Skapad** eller **Prioritet** i samma ark för att
 ändra ordningen. Prioritetsordningen är P0 till P3, med nyare uppgifter först
-inom en prioritet om inte en annan sortering är aktiv. På skrivbordet kan en
-aktiverad vektorsökning också erbjuda semantisk sökning vid sidan av vanlig
-fulltextsökning.
+inom en prioritet om inte en annan sortering är aktiv. Sökningen listar först
+uppgifterna vars ord matchar, bästa träff först, följda av en sektion
+**Besläktade i betydelse** med uppgifter som säger samma sak med andra ord.
+Medan du söker är de filterchips som sökningen inte tillämpar nedtonade.
 
 När du regelbundet återvänder till samma fokuserade vy, spara det aktiva
 filtret från arket och ge det ett tydligt namn. Öppna det sedan från
@@ -100,10 +102,10 @@ konfigurerade AI-färdigheter utifrån uppgiftskontexten.
 
 ## Lägg till uppgiftskontext
 
-Använd uppgiftens **Lägg till**-åtgärd för att bifoga en checklista, en annan
-uppgift, en ljudinspelning, en timer, en textinmatning eller en bild utan att
-lämna uppgiften. De tillgängliga åtgärderna beror på den aktuella plattformen
-och kontexten.
+Använd uppgiftens **Lägg till**-åtgärd för att bifoga en anteckning, en
+checklista, en röstanteckning, en länkad uppgift eller en bild utan att lämna
+uppgiften; **Registrera tid** i uppgiftens åtgärdsfält startar en timer. De
+tillgängliga åtgärderna beror på den aktuella plattformen och kontexten.
 
 <ManualScreenshot
   caseId="entries/create-menu"
@@ -137,13 +139,18 @@ tillbaka.
 
 ## Länka relaterade uppgifter
 
-Öppna uppgiftens **Länkad**-sektion och välj att länka en befintlig uppgift.
-Sök i väljaren och välj sedan det relaterade resultatet. Lotti utesluter den
-aktuella uppgiften och uppgifter som redan är länkade i den riktningen.
+I uppgiftens sektion **Länkade uppgifter** väljer du **Länka en uppgift…** –
+eller **Länka** när uppgiften redan har länkar – för att öppna **Länka
+befintlig uppgift**. Under **Den här uppgiften…** väljer du relationen:
+**Relaterar till**, eller någon av **Blockerar**, **Blockeras av**, **Följer
+upp**, **Har uppföljning**, **Duplicerar**, **Dupliceras av**, **Åtgärdar**,
+**Åtgärdas av**, **Ersätter** och **Ersätts av**. Sök sedan i väljaren och
+välj den relaterade uppgiften. Lotti utesluter den aktuella uppgiften och
+uppgifter som redan är länkade i den riktningen.
 
 <ManualScreenshot
   caseId="tasks/link-picker"
-  alt="Produktionsväljaren för uppgiftslänkar som listar relaterade Project Waddle-uppgifter med status, prioritet, kategori och slutdatumskontext"
+  alt="Väljaren Länka befintlig uppgift ovanpå uppgiften att inspektera det orbitala pingvinhabitatet, med Den här uppgiften… satt till Relaterar till, ett sökfält och två Penguin-operationer-uppgifter med sin status"
 />
 
 Uppgiftslänkar är riktade: den aktuella uppgiften pekar på den uppgift du

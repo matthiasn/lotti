@@ -29,9 +29,9 @@ Le flux se charge par pages : un journal conséquent n’a donc pas besoin d’a
 
 ## Chercher par mots ou par sens
 
-Utilise **Texte intégral** pour retrouver les mots enregistrés dans une entrée. Lorsque la recherche vectorielle est activée, passe à **Vectoriel** pour trouver des entrées de sens voisin, même avec des formulations différentes. Les résultats vectoriels forment un classement unique plutôt qu’un flux paginé sans fin.
+Saisis du texte dans **Rechercher** pour lister d’abord les entrées dont les mots correspondent, suivies d’une section **Proches par le sens** avec des entrées qui disent la même chose en d’autres mots. La recherche par le sens s’exécute sur ton appareil une fois la recherche vectorielle activée et son modèle d’embedding disponible.
 
-Si la recherche vectorielle devient indisponible ou est désactivée, Lotti revient à la recherche plein texte au lieu de laisser la recherche dans un état inutilisable.
+Lorsque la recherche par le sens n’est pas disponible, le Journal affiche simplement les correspondances de mots : la recherche ne se retrouve donc jamais dans un état inutilisable.
 
 ## Filtrer ce qui apparaît
 
@@ -53,7 +53,7 @@ Ces choix sont conservés pour le Journal. Les filtres des tâches sont enregist
 
 <ManualScreenshot
   caseId="journal/create"
-  alt="Menu Ajouter proposant Événement, Tâche, Enregistrement audio, Entrée de texte, Importer une image et Capture d’écran au-dessus du Journal de Project Waddle"
+  alt="Menu Ajouter proposant Écrire une note, Enregistrer une note vocale, Ajouter une tâche, Ajouter un événement, Importer une image et Faire une capture d’écran au-dessus du Journal de Project Waddle"
   caption="Le menu ne propose que les actions prises en charge par la plateforme et le contexte actuels."
 />
 
@@ -108,7 +108,7 @@ Les deux directions n’ont pas le même sens :
 
 Par exemple, le journal de mission de Project Waddle contient sa photo de lancement, sa requête de diagnostic et son minuteur d’appel, tandis que la tâche de revue du lancement apparaît sous **Lié depuis** parce qu’elle référence également le journal.
 
-Ouvre la pastille de tri pour préparer plusieurs changements de visibilité. Choisis l’ordre, l’inclusion des entrées masquées et l’affichage des seules entrées signalées. La liste change lorsque tu sélectionnes la coche pour terminer la feuille ; la fermer autrement annule les choix préparés.
+Ouvre la pastille de tri pour préparer plusieurs changements de visibilité. Choisis l’ordre, l’inclusion des entrées masquées et l’affichage des seules entrées signalées. La liste change lorsque tu sélectionnes **Appliquer** ; **Effacer** réinitialise les choix, et fermer la feuille autrement annule les choix préparés.
 
 <ManualScreenshot
   caseId="journal/linked-filter"

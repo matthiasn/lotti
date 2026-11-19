@@ -12,18 +12,29 @@ tak nemusíš řešit v každém úkolu a pravidle automatizace.
 
 ## Prohlížej uložené modely
 
-Otevři **Nastavení → Nastavení AI → Modely**. Seznam seskupuje modely podle
-poskytovatele a nabízí filtry schopností pro text, obraz, zvuk a uvažování.
+Otevři **Nastavení → Nastavení AI → Modely**. Modely tvoří jeden seznam. Nad
+ním ho zužují filtrační čipy, jeden pro každého poskytovatele, a čipy **Text**,
+**Obraz**, **Audio** a **Uvažování**; vyhledávací pole najde poskytovatele,
+modely i profily podle názvu.
 
 <ManualScreenshot
   caseId="ai/models"
-  alt="Seznam modelů AI v Lotti s textovými, uvažovacími, obrazovými, přepisovacími a generativními modely Project Waddle"
+  alt="Stránka Modely v Lotti s ovládáním Nastavení AI nahoře, filtračními čipy poskytovatelů a schopností a seznamem modelů Project Waddle označených jako Uvažování nebo Rozpoznávání obrázků"
   caption="Prostor Project Waddle kombinuje cloudové a místní modely a schopnosti každého modelu drží výslovně viditelné."
 />
 
-Ovládání **Souběžná probuzení agentů** nahoře v Nastavení AI omezuje počet
-různých agentů, kteří mohou současně spouštět inferenci. Vyšší hodnota může
-zvýšit propustnost, ale také počet souběžných požadavků na poskytovatele a zátěž
+Nahoře v Nastavení AI jsou tři ovládací prvky:
+
+- **Souběžná probuzení agentů** omezuje počet různých agentů, kteří mohou
+  současně spouštět inferenci.
+- **Frekvence aktualizací** určuje, jak často se agenti úkolů aktualizují sami,
+  když ji nenastavuje úkol ani jeho kategorie. **Nejvýše každou hodinu** se
+  přesto aktualizuje hned po nahrávce, zastaveném časovači nebo úkolu
+  označeném jako hotový.
+- **Výchozí inferenční profil** je záloha pro agenty, kteří na tomto zařízení
+  nemají nastavenou trasu inference.
+
+Vyšší hodnota **Souběžná probuzení agentů** může zvýšit propustnost, ale také počet souběžných požadavků na poskytovatele a zátěž
 místního zařízení. Nech ji raději nižší, když má poskytovatel přísné limity nebo
 místní server modelů omezenou paměť.
 
@@ -51,7 +62,7 @@ skutečně neposkytují.
 
 ## Sestav profil inference
 
-Otevři **Nastavení → Nastavení AI → Profily inference**. Každý profil je
+Otevři **Nastavení → Nastavení AI → Inferenční profily**. Každý profil je
 opakovaně použitelné pravidlo směrování. Přehled ukazuje model přiřazený ke
 každé nastavené pozici.
 
@@ -63,19 +74,29 @@ každé nastavené pozici.
 
 Uprav profil a přiřaď modely používaným schopnostem:
 
-- **Přemýšlení** je povinný obecný textový model.
-- **Přemýšlení (špičkové)** může zpracovat práci výslovně žádající schopnější
+- **Uvažování** je povinný obecný textový model.
+- **Model pro chat** odpovídá v chatech; když není nastaven, použije se model
+  uvažování.
+- **Uvažování (pokročilé)** může zpracovat práci výslovně žádající schopnější
   cestu uvažování.
-- **Rozpoznání obrázků** analyzuje obrázky.
+- **Rozpoznávání obrázků** analyzuje obrázky.
 - **Přepis** převádí zvuk na text.
+- **Následné zpracování zvuku** opraví přepis podle slovníku řeči a napíše
+  souhrn nahrávky; když není nastaveno, použije se model uvažování.
 - **Generování obrázků** vytváří grafiku úkolů a další generované obrázky.
   Aktuální vestavěná cesta generování obrázků používá nastaveného vzdáleného
   poskytovatele; poskytovatele i odeslané reference proto vybírej se stejnou
   péčí jako u jiné cloudové inference.
+- **Předčítání** je cloudový model řeči, který nahlas čte souhrny a odpovědi;
+  když není nastaven, použije se hlas v zařízení.
+
+V části **Automatizované dovednosti** na konci formuláře zapni, které
+dovednosti — přepis a analýza obrázků — se s tímto profilem spouštějí samy.
+Každá používá model své pozice, takže přepínač potřebuje tuto pozici vyplněnou.
 
 <ManualScreenshot
   caseId="ai/profile-editor"
-  alt="Editor profilu Velení Project Waddle s přiřazeným modelem přemýšlení, špičkového uvažování, rozpoznání obrázků, přepisu a generování obrázků"
+  alt="Editor profilu Velení Project Waddle s názvem, popisem a pozicemi modelů Uvažování, Model pro chat, Uvažování (pokročilé), Rozpoznávání obrázků, Přepis, Následné zpracování zvuku a Generování obrázků"
   caption="Jeden profil směruje všechny modality Project Waddle bez opakování voleb modelů v jednotlivých úkolech."
 />
 
@@ -100,22 +121,24 @@ Výběr v textové pozici profilu například nenabídne model určený pouze pr
 ## Nastav výchozí profil kategorie
 
 Kategorie může zvolit výchozí profil inference v **Nastavení → Definice →
-Kategorie**. Nová práce v kategorii potom může zdědit ucelené směrování. Vyber
-profil, jehož kombinace soukromí a schopností odpovídá kategorii, ne pouze
+Kategorie**. Agent běží na profilu, který mu byl vybrán; bez něj při každém
+běhu následuje profil své kategorie, takže změna profilu kategorie přesune i
+její agenty. Bez obojího se vrátí k **Výchozí inferenční profil** nahoře v
+Nastavení AI. Vyber profil, jehož kombinace soukromí a schopností odpovídá kategorii, ne pouze
 nejrychlejší možnost.
 
 <ManualScreenshot
   caseId="ai/profile-picker"
   alt="Editor kategorie Tučňáčí provoz s dialogem profilů Velení Project Waddle, Obydlí přednostně místně a Rybí diplomacie"
-  caption="Označení Jen pro počítač zviditelňuje platformní omezení před výběrem výchozího profilu kategorie."
+  caption="Ikona monitoru označuje profil Jen pro počítač ještě předtím, než ho vybereš jako výchozí profil kategorie."
 />
 
 ## Starší cesta profilu
 
-Starší samostatná cesta **Profily inference** zůstává kvůli kompatibilitě a
+Starší samostatná cesta **Inferenční profily** zůstává kvůli kompatibilitě a
 upravuje stejné uložené profily. Ukazuje interní ID modelů a méně kontextu
 závislostí než Nastavení AI, proto pro běžnou údržbu používej aktuální stránku
-**Nastavení AI → Profily inference**.
+**Nastavení AI → Inferenční profily**.
 
 <ManualScreenshot
   caseId="ai/legacy-profiles"

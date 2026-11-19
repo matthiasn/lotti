@@ -6,7 +6,11 @@ description: Kontrollera funktionsflaggor och loggning, kör underhållsverktyg,
 # Använd Avancerade inställningar säkert
 
 Öppna **Inställningar → Avancerade inställningar** för avancerade
-användarkontroller, diagnostik och underhåll. Dessa sidor ändrar antingen hur
+användarkontroller, diagnostik och underhåll. Sidan listar
+**Konfigurationsflaggor**, **GitHub**, **Språk**, **Loggningsdomäner**,
+**Systemstatus**, **Underhåll**, **Onboarding-mått** och **Om Lotti**; på iOS
+och Android visas **Hälsoimport** mellan **Systemstatus** och **Underhåll**.
+Dessa sidor ändrar antingen hur
 Lotti körs eller agerar direkt på lokal data, så vanlig personalisering hör
 hemma någon annanstans i Inställningar.
 
@@ -16,7 +20,7 @@ sparade värden används i båda layouterna.
 
 <ManualScreenshot
   caseId="advanced-settings/hub"
-  alt="Lottis nav för avancerade inställningar med Konfigurationsflaggor, Språk, Loggning, Underhåll, Onboarding-mått och Om Lotti"
+  alt="Lottis avancerade inställningar som listar Konfigurationsflaggor, GitHub, Språk, Loggningsdomäner, Systemstatus, Underhåll, Onboarding-mått och Om Lotti"
   caption="Avancerade inställningar samlar operativa kontroller åtskilda från vardagliga preferenser. Vissa poster varierar efter plattform och aktiverade förmågor."
 />
 
@@ -33,28 +37,28 @@ Inställningar och **Hjälp → Manual** på macOS använder den här inställni
 
 <ManualScreenshot
   caseId="advanced-settings/flags"
-  alt="Lottis sida med konfigurationsflaggor med sökbara omkopplare för privata poster, platsregistrering, verktygstips och AI-strömning"
+  alt="Lottis sida med konfigurationsflaggor med ett sökfält för flaggor och omkopplare grupperade under Preferenser, som börjar med privata poster, platsregistrering, verktygstips och sessionsbetyg, och sedan Avancerat och experimentellt"
   caption="Sökningen matchar både flaggnamn och beskrivningar. Varje omkopplare ändrar sin lagrade körtidsförmåga omedelbart."
 />
 
-**Konfigurationsflaggor** är förmågornas kopplingsbord. Sidan innehåller
-kontroller för:
+**Konfigurationsflaggor** är förmågornas kopplingsbord. Raderna är
+grupperade i **Preferenser**, det du rimligen vill ändra, och **Avancerat och
+experimentellt**, som är diagnostik och ofärdigt arbete.
 
-- synlighet för privata poster, platsfångst och verktygstips;
-- strömning av AI-svar och uppläsning av sammanfattningar;
-- följeslagaren och chatten med den (se [Prata med din följeslagare](../getting-started/companion.mdx));
-- loggning och Matrix-synkbeteende;
-- Vad är nytt-aviseringar och sessionsbetyg;
-- inbäddningar och vektorsökning; och
-- operativa indikatorer som synkaktivitet, väntande agentvakningar och
-  fork-läkning.
+- **Preferenser:** synlighet för privata poster, platsfångst, verktygstips,
+  sessionsbetyg, Vad är nytt, strömning av AI-svar, uppspelning av
+  AI-sammanfattningar och Matrix-synk.
+- **Avancerat och experimentellt:** den experimentella uppgiftschatten,
+  följeslagaren och chatten med den (se [Prata med din följeslagare](../getting-started/companion.mdx)),
+  inbäddningar, synk av inbäddningar och vektorsökning, Daily
+  OS-genomgången, fork-läkning för agenter, bakgrundsarbetaren för synk,
+  loggning och omsändning av misslyckade bilagor.
 
-Raderna är grupperade i **Preferenser**, det du rimligen vill ändra, och
-**Avancerat och experimentellt**, som är diagnostik och ofärdigt arbete.
-Hela delar av appen som Vanor, Projekt och Daily OS finns inte längre
+Aviseringsreglage finns under **Inställningar → Aviseringar**. Hela delar av
+appen som Vanor, Projekt och Daily OS finns inte längre
 här; de ligger under [Sektioner](./settings.mdx).
 
-Använd **Sökflaggor** för att begränsa listan efter titel eller beskrivning.
+Använd **Sök flaggor** för att begränsa listan efter titel eller beskrivning.
 Välj en rad eller dess omkopplare för att ändra flaggan. Det nya värdet
 sparas omedelbart; det finns ingen separat sparåtgärd.
 
@@ -68,14 +72,17 @@ posts sekretess.
 
 <ManualScreenshot
   caseId="advanced-settings/logging"
-  alt="Lottis loggningsinställningar med en huvudströmbrytare för loggning, enskilda operativa domäner och loggning av långsamma frågor"
+  alt="Lottis sida Loggningsdomäner med huvudreglaget Aktivera loggning ovanför reglage per domän som Synk, AI, Chatt, Tal och ljud, Databas samt Uppgifter och checklistor"
   caption="Huvudströmbrytaren styr per-domänkontrollerna. Project Waddle-fixturen håller Synk, AI och Uppgifter aktiverade för fokuserad diagnostik."
 />
 
-**Loggning** börjar med den globala omkopplaren **Aktivera loggning**. När
-den är på, aktivera bara de domäner som behövs för en undersökning, som synk,
-AI, uppgifter, etiketter, hälsa, vanor, navigering, notiser eller Daily OS.
-**Långsamma databasfrågor** lägger till prestandadiagnostik för databasen.
+**Loggningsdomäner** börjar med den globala omkopplaren **Aktivera
+loggning**. När den är på, aktivera bara de domäner som behövs för en
+undersökning – bland dem **Synk**, **AI**, **Chatt**, **Tal och ljud**,
+**Databas**, **Agentens runtime**, **Uppgifter och checklistor**,
+**Etiketter**, **Hälsa**, **Vanor**, **Navigering**, **Notiser** och
+**Daily OS**. **Långsamma databasfrågor** skriver långsamma databasfrågor till
+en egen daglig `slow_queries-*.log`.
 
 Att stänga av huvudströmbrytaren inaktiverar domänkontrollerna. Fel skrivs
 fortfarande till den dagliga `error-*.log`; dessa omkopplare styr extra
@@ -106,22 +113,36 @@ gång du öppnar sidan, äldre listas under **Tidigare rapporter**, och rapporte
 på skärmen anger alltid vilken period den analyserade och när den skapades. Utan modell, eller om modellanropet
 misslyckas, får du ändå sammanfattningen.
 
+## Anslut GitHub
+
+**GitHub** rymmer den skrivskyddade personliga åtkomsttoken som Lotti använder
+för att läsa de pull requests du kopplar till uppgifter. **Skapa en token på
+GitHub** öppnar GitHubs tokenformulär med behörigheterna ifyllda; välj dina
+repon, klistra in token i **Personlig åtkomsttoken** och välj **Anslut**.
+Sidan visar sedan vilket konto som är anslutet och erbjuder **Koppla från**.
+Token synkas end-to-end-krypterad till dina andra enheter och används bara
+för förfrågningar till api.github.com. När den är ansluten kan följeslagaren
+också svara på frågor om dina pull requests. Se [Anslut GitHub](./github.mdx)
+för spårning av pull requests på uppgifter och vad AI:n gör med dem.
+
 ## Utför underhållsåtgärder medvetet
 
 <ManualScreenshot
   caseId="advanced-settings/maintenance"
-  alt="Lottis underhållssida med onboardingförhandsvisningar, återställningsåtgärder, databasradering, rensning, sökindex, inbäddningar och ommålningsdiagnostik"
+  alt="Lottis underhållssida med onboardingförhandsvisningar, återställningsåtgärder, integritetskontroll av databasen, databasradering, rensning, fulltextindex, reparation av skärmbildslagring, inbäddningar och reglaget för regnbågsöverlägg vid ommålning"
   caption="Underhåll kombinerar säkra förhandsvisningar med destruktiva och diagnostiska åtgärder. Läs bekräftelsen och omfånget innan du fortsätter."
 />
 
 **Underhåll** innehåller flera olika slags åtgärder:
 
-- **Välkommen för introduktion av programmet** och
+- **Visa onboarding-välkomst** och
   **Introduktionsanimationsgalleri** är liveförhandsvisningar för utveckling
   och QA.
 - **Återställ tips i appen** gör engångstips berättigade att visas igen.
 - **Återställ Gemini-inställningsdialogen** rensar dess avvisning så att
   leverantörsprompten kan testas igen.
+- **Kontrollera databasens integritet** verifierar att databasfilerna är
+  felfria.
 - **Ta bort editordatabasen** tar bort redigerarutkast.
 - **Databas för borttagningsagenter** tar bort agentdatabasen och avslutar
   Lotti så att appen kan starta om mot ett rent lager.
@@ -129,6 +150,8 @@ misslyckas, får du ändå sammanfattningen.
   ett dedikerat bekräftelseflöde.
 - **Återskapa fulltextindex** bygger om lokal sökdata utan att återskapa
   dagboksposter.
+- **Reparera lagring av skärmbilder** flyttar skärmbilder som sparats av äldre
+  versioner till rätt mapp så att AI-bildanalys kan läsa dem.
 - **Generera inbäddningar** visas när inbäddningslagret är tillgängligt och
   fyller på valda kategorier.
 - **Regnbågsöverlägg för ommålning** blinkar regioner som målas om för

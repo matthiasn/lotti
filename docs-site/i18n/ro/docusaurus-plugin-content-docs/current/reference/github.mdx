@@ -1,0 +1,117 @@
+---
+title: Conectați GitHub
+description: Conectați un token GitHub doar pentru citire, pentru ca sarcinile să poată urmări pull request-urile care le implementează, cu rezumate, sugestii ale agentului și răspunsuri ale însoțitorului.
+---
+
+# Conectați GitHub
+
+Lotti poate urmări pull request-urile GitHub care vă implementează sarcinile:
+starea, verificările, revizuirile și conflictele de îmbinare ale acestora stau
+lângă sarcină, un rezumat spune ce schimbă fiecare, iar agentul sarcinii le
+poate folosi pentru a sugera ce elemente din lista de verificare sunt gata.
+Pentru toate acestea este nevoie de un token de acces personal, doar pentru
+citire, din contul dvs. GitHub.
+
+## Creați și conectați un token
+
+Deschideți **Setări → Setări avansate → GitHub**.
+
+1. Selectați **Creați un token pe GitHub**. Browserul deschide formularul de
+   token al GitHub, cu numele Lotti, o valabilitate de un an și permisiunile
+   doar pentru citire deja completate. Dacă browserul nu poate fi deschis,
+   Lotti vă spune unde să creați manual tokenul: pe github.com, la Settings →
+   Developer settings → Personal access tokens.
+2. Pe GitHub, alegeți depozitele pe care Lotti le poate citi și creați
+   tokenul.
+3. Lipiți tokenul în **Token de acces personal**. **Afișați tokenul** și
+   **Ascundeți tokenul** dezvăluie și maschează ce ați lipit.
+4. Selectați **Conectați**. Lotti verifică mai întâi tokenul la GitHub. O
+   notificare confirmă **Conectat la GitHub ca @dvs.** cu numele contului
+   dvs.; un token refuzat de GitHub este explicat sub câmp.
+
+Odată conectat, pagina arată ce cont este conectat și oferă **Deconectați**.
+Deconectarea uită tokenul pe acest dispozitiv și pe celelalte dispozitive ale
+dvs. și confirmă cu **Deconectat de la GitHub**.
+
+Verificările CI ale depozitelor private pot fi incomplete: GitHub nu le oferă
+acestor tokenuri acces la rulările de verificare, iar pagina vă spune acest
+lucru.
+
+## Unde este păstrat tokenul
+
+Tokenul este stocat în keychain-ul acestui dispozitiv și este folosit numai
+pentru cereri către api.github.com. Nu este niciodată jurnalizat sau exportat.
+Cu sincronizarea configurată, ajunge criptat end-to-end pe celelalte
+dispozitive ale dvs., la fel ca o cheie de furnizor AI. Un token sosit de pe
+alt dispozitiv este verificat la GitHub înainte de a fi folosit.
+
+Când sincronizarea este configurată, pagina oferă și **Trimiteți pe celelalte
+dispozitive ale mele** cât timp sunteți conectat sau **Verificați celelalte
+dispozitive ale mele** cât timp nu sunteți, pentru cazul în care un dispozitiv
+nu a primit încă tokenul.
+
+Lotti nu descarcă niciodată pagina web a unui pull request. Imaginile
+încorporate în descrierea unui pull request sunt încărcate de la propriile
+adrese numai cât timp aveți deschise detaliile acelui pull request și sunt
+analizate de AI numai după ce adăugați una la sarcină.
+
+## Urmăriți pull request-uri într-o sarcină
+
+Cu GitHub conectat, deschideți o sarcină și alegeți **Urmărirea pull
+request-urilor** din **+** din bara ei de acțiuni. Sarcina afișează apoi o
+secțiune **Pull request-uri**; alegerea este stocată în sarcină, deci este
+valabilă pe fiecare dispozitiv. O sarcină cu un pull request legat afișează
+secțiunea oricum.
+
+Selectați **Legați un pull request** pentru a lega unul:
+
+- lipiți un link sau o referință scurtă în **URL sau proprietar/repo#123** și
+  selectați **Legați**; sau
+- alegeți din lista de la **Sau alegeți unul din** depozit, care arată
+  pull request-urile deschise ale acelui depozit pe care nu le deține încă
+  nicio sarcină, cu dimensiunile lor. Atingerea unui rând îl leagă imediat.
+  Dacă nu poate fi legat, motivul apare sub rândul ales.
+
+Lista are nevoie de un depozit: deschideți categoria sarcinii în **Setări →
+Definiții → Categorii** și introduceți-l la **GitHub** → **Depozit** ca
+`proprietar/repo` sau ca link al depozitului. Secțiunea apare de îndată ce
+GitHub este conectat. Pentru un pull request deținut deja de altă sarcină vi
+se cere mai întâi confirmarea – **Legați și aici** sau **Nu legați**.
+
+Fiecare pull request legat își arată starea (**Deschis**, **Ciornă**,
+**Îmbinat** sau **Închis**), verificările, revizuirile și starea îmbinării,
+precum și un rezumat de un rând. Atingeți-l pentru detalii: **Pe scurt**,
+**Descriere** proprie a pull request-ului și **Deschideți pe GitHub**. Meniul
+său oferă **Actualizați pull request-ul**, **Deschideți pe GitHub** și
+**Dezlegați pull request-ul**. Lotti actualizează pull request-urile unei
+sarcini și ori de câte ori acestea intră într-un prompt de programare sau
+într-o actualizare a agentului sarcinii. Un dispozitiv fără token arată în
+continuare ce a văzut ultima dată alt dispozitiv, cu vechimea informației.
+
+Lipiți linkul unui pull request în căutarea de sarcini pentru a găsi sarcinile
+de care este legat.
+
+## Lăsați AI să rezume și să sugereze
+
+Modelul agentului sarcinii scrie fiecare rezumat în limba sarcinii: un rând
+sub titlu și **Pe scurt** în detalii. Rezumatele sunt scrise automat când
+categoria sarcinii are **Inferență automată** activată (consultați
+[Categorii](../organize-and-reflect/categories.mdx)); altfel, selectați
+**Rezumați** în detalii sau **Rezumați din nou** pentru unul nou.
+
+Agentul sarcinii citește pull request-urile deschise pe care nu le deține
+nicio sarcină și propune legarea celui care implementează sarcina sa –
+**Legați pull request-ul #…** în modificările sale propuse, legat după ce
+confirmați. Poate sugera și bifarea elementelor din lista de verificare pe
+care un pull request actualizat le-a finalizat. Consultați
+[Agenți de sarcină](../organize-and-reflect/task-agents.mdx).
+
+## Întrebați însoțitorul despre pull request-uri
+
+Cu GitHub conectat, [însoțitorul](../getting-started/companion.mdx) poate
+răspunde la întrebări precum „Câte pull request-uri am deschis săptămâna
+aceasta?” cu grafice ale pull request-urilor, **Linii adăugate** și **Linii
+șterse**, pe zi sau ca total cumulat. Întrebat în ce sarcină a fost o anumită
+muncă sau care pull request-uri au fost cele mai mari, le arată ca aceleași
+carduri de pull request pe care le are o sarcină. Citește numai pull
+request-urile deja stocate pe acest dispozitiv.

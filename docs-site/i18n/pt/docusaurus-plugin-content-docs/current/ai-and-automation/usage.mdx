@@ -1,63 +1,62 @@
 ---
-title: Revise o uso e o impacto da IA
-description: Compare solicitações de IA por período, categoria e modelo, incluindo custo estimado, energia, emissões e uso de tokens.
+title: Revê o uso e o impacto da IA
+description: Compara os pedidos de IA por período, categoria e modelo, incluindo custo estimado, energia, emissões e uso de tokens.
 ---
 
-# Revise o uso e o impacto da IA
+# Revê o uso e o impacto da IA
 
-Abra **Configurações → Configurações de IA → Uso e impacto** para entender
-como os modelos de nuvem configurados estão sendo usados. A mesma análise
-também pode ser acessada pela rota do painel de impacto de IA.
+Abre **Configurações → Configurações de IA → Uso e impacto** para perceberes
+como estão a ser usados os modelos de nuvem configurados. A mesma análise
+também está acessível pela rota do painel de impacto da IA.
 
 <ManualScreenshot
   caseId="ai/usage"
-  alt="Painel de impacto de IA do Lotti para julho de 2026 mostrando custo, energia, equivalente de dióxido de carbono, tokens, solicitações e barras de categoria"
-  caption="O mês de exemplo do Project Waddle separa Mission Control e Penguin Operations, mantendo visível a pegada total de solicitações."
+  alt="Painel de impacto da IA do Lotti para julho de 2026 a mostrar custo, energia, equivalente de dióxido de carbono, tokens, pedidos e barras por categoria"
+  caption="O mês de exemplo do Project Waddle separa Controle da Missão e Operações com pinguins, mantendo visível a pegada total de pedidos."
 />
 
-## Leia os cartões de resumo
+## Lê os cartões de resumo
 
-Os cartões superiores resumem o período selecionado:
+Os cartões no topo resumem o período selecionado:
 
-- **Custo** estima os gastos do provedor.
+- **Custo** estima os gastos com o provedor.
 - **Energia** estima a eletricidade atribuível à inferência medida na nuvem.
-- **CO₂e** expressa a estimativa de emissões associadas.
-- **Tokens** conta tokens de modelo processados.
-- **Solicitações** conta chamadas de inferência.
+- **CO₂e** exprime a estimativa das emissões associadas.
+- **Tokens** conta os tokens de modelo processados.
+- **Solicitações** conta as chamadas de inferência.
 
-O indicador de comparação utiliza o período equivalente anterior quando ele
-está disponível. Um aumento percentual é contexto, não automaticamente um
-problema: uma semana de revisão de lançamento não deve ser comparada às cegas
-com uma semana ociosa na colônia.
+O indicador de comparação usa o período equivalente anterior quando está
+disponível. Um aumento percentual é contexto, não um problema automático: uma
+semana de revisão de lançamento não deve ser comparada às cegas com uma semana
+parada na colónia.
 
 Energia, CO₂e e custo são medidos apenas para modelos de nuvem. A inferência
-local pode consumir bastante energia do dispositivo sem aparecer nessas
-estimativas de nuvem; portanto, esta página não é um medidor de energia
+local pode gastar bastante energia do dispositivo sem aparecer nestas
+estimativas de nuvem; por isso, esta página não é um medidor de energia
 completo para o sistema inteiro.
 
-## Alterar a análise
+## Altera a análise
 
-Use o controle de período e os botões de seta para percorrer o tempo ou pule
-para **Este mês** e **Este ano**. Em seguida, escolha **Ambos**,
-**Por categoria** ou **Por modelo**. Dentro de um gráfico, alterne entre
-valores por dia, totais acumulados e participação, quando disponível.
+Usa o controlo de período e os botões de seta para avançar ou recuar no tempo,
+ou salta para **Este mês** e **Este ano**. Depois, escolhe **Ambos**,
+**Por categoria** ou **Por modelo**. Dentro de um gráfico, alterna entre
+valores por dia, totais acumulados e percentagem, quando disponível.
 
-As visualizações por categoria respondem “qual área de trabalho impulsionou o
-uso?”; as visualizações por modelo respondem “qual modelo configurado
-impulsionou o uso?”. Use ambas antes de alterar um perfil: um modelo de alto
-custo pode ser justificado para uma categoria especializada, mas um
-desperdício como padrão geral.
+As vistas por categoria respondem a «que área de trabalho fez subir o uso?»;
+as vistas por modelo respondem a «que modelo configurado fez subir o uso?».
+Usa ambas antes de alterar um perfil: um modelo caro pode justificar-se para
+uma categoria especializada e ser um desperdício como predefinição geral.
 
-## Agir com base em um resultado surpreendente
+## Age perante um resultado surpreendente
 
-Se o uso aumentar inesperadamente:
+Se o uso subir inesperadamente:
 
-1. restringir o período ao primeiro dia afetado;
-2. comparar categorias e modelos;
-3. revisar a automação e a simultaneidade dos agentes;
-4. inspecionar o perfil de inferência atribuído à categoria afetada; e
-5. verificar o faturamento no provedor antes de tratar a estimativa do Lotti
+1. restringe o período ao primeiro dia afetado;
+2. compara categorias e modelos;
+3. revê a automação e a simultaneidade dos agentes;
+4. inspeciona o perfil de inferência atribuído à categoria afetada; e
+5. verifica a faturação no provedor antes de tratares a estimativa do Lotti
    como uma fatura.
 
-Para alterar a rota responsável pelas chamadas futuras, volte para
+Para alterar a rota responsável pelas chamadas futuras, volta a
 [Modelos e perfis de inferência](./models-and-profiles.mdx).

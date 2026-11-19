@@ -12,23 +12,32 @@ bereiden.
 
 <ManualScreenshot
   caseId="projects/list"
-  alt="Projecten gegroepeerd onder Penguin Operations, Mission Control, Fish Diplomacy en Human Maintenance, waaronder Project Waddle en de Europa-sardinekoudeketen"
+  alt="Projectenlijst in het bereik Actueel, gegroepeerd onder Penguin Operations, Mission Control en Fish Diplomacy, met Project Waddle, de Europa-sardinekoudeketen en het pinguïnpassagiersverdrag"
   caption="Elke rij combineert status, taakvoortgang, streefdatum en een korte doelverklaring. Desktop houdt rechts ruimte voor een geselecteerd project; mobiel gebruikt de volledige breedte voor de lijst."
 />
 
 ## Vind het project dat je nodig hebt
 
-Zoeken matcht projecttitels, opgeslagen projecttekst en categorienamen. Het
-filterbesturingselement beperkt de lijst op projectstatus of categorie. Een filter
-blijft inactief totdat je **Toepassen** selecteert.
+Zoeken matcht projecttitels, opgeslagen projecttekst en categorienamen. Onder het
+zoekveld verbergt **Actueel** voltooide en gearchiveerde projecten; **Alles** brengt
+ze terug. **Projecten sorteren** ordent de lijst op **Aandacht nodig**,
+**Streefdatum**, **Recent bijgewerkt** of **Naam**.
+
+De filterknop beperkt de lijst op **Status** of **Categorie**. Twee schakelaars voegen
+meer toe: **Alleen verouderde samenvattingen** houdt projecten over waarvan de
+agentsamenvatting achterloopt, en **Inferentieprofiel tonen** zet bij elk project met
+een agent de naam van zijn inferentieprofiel. Een filter blijft inactief totdat je
+**Toepassen** selecteert.
 
 <ManualScreenshot
   caseId="projects/filters"
-  alt="Projectfilterdialoog met status- en categoriebesturing boven de projectlijst van Intergalactic Penguin Logistics"
+  alt="Dialoog Projecten filteren met de rijen Status en Categorie, de schakelaars Alleen verouderde samenvattingen en Inferentieprofiel tonen, en Wissen en Toepassen, boven de projectlijst"
 />
 
 Projecten blijven na filtering gegroepeerd op categorie. Zo zijn gelijknamige
 inspanningen gemakkelijker te onderscheiden en blijft elk operationeel gebied zichtbaar.
+Elke categoriekop kan inklappen, en de kaartknop ervan opent **Categorie verkennen** –
+de projecten van de categorie als een wijk waar je doorheen kunt lopen.
 
 ## Maak een project
 
@@ -44,7 +53,7 @@ Selecteer de knop **+** in Projecten en voer vervolgens in:
   caption="Het aanmaakformulier is een onderblad op mobiel en een gecentreerd dialoogvenster op desktop."
 />
 
-Een nieuw project start met de status **Openen**. Als de categorie een
+Een nieuw project start met de status **Open**. Als de categorie een
 projectagentsjabloon heeft, zet Lotti die agent ook klaar nadat het project is
 opgeslagen. Het project werkt normaal wanneer er geen passend sjabloon bestaat.
 
@@ -83,25 +92,39 @@ opslaanknop op dit leesgerichte detailoppervlak.
 
 <ManualScreenshot
   caseId="projects/detail"
-  alt="Project Waddle-detail met een gezondheidsscore van 82, vijf van de acht voltooide taken, één blocker en een AI-verslag dat twee uur geleden is bijgewerkt"
+  alt="Project Waddle-detail met status Actief en streefdatum, de beschrijving, een kaart Samenvatting van de AI met de beoordeling Op spoor met 91% zekerheid en één geblokkeerde taak, en de lijst Projecttaken met bovenaan de geblokkeerde gewichtloze visvoeder"
   caption="Desktop houdt de projectlijst en het detail naast elkaar. Mobiel opent hetzelfde detail als een volledige pagina."
 />
 
-Het gezondheidspaneel vat de huidige beoordeling van de projectagent samen:
+De kaart **Samenvatting van de AI** brengt de beoordeling en het verslag samen:
 
-- de gezondheidsscore is een compact signaal en geen vervanging voor het onderliggende
-  werk;
-- de taakvoortgang toont het aantal voltooide en geblokkeerde taken;
-- het verslag geeft een actuele samenvatting en kan worden uitgevouwen naar de volledige inhoud; en
-- aanbevelingen vestigen de aandacht op concrete vervolgacties.
+- **Gezondheid van projecten** vat de beoordeling van de agent samen, met uitleg en
+  zekerheid wanneer beschikbaar, en hoeveel taken geblokkeerd zijn;
+- het verslag geeft een actuele samenvatting, en **Lees meer** vouwt het uit naar de
+  volledige inhoud; en
+- volgende stappen en voorgestelde wijzigingen vestigen de aandacht op concrete acties.
 
-In Project Waddle zijn een score van 82 en vijf voltooide taken bemoedigend, maar
-de gewichtloze visvoeder is nog steeds een lanceringsblocker. Lees de uitleg
-voordat je een score als een oordeel behandelt.
+In Project Waddle is de beoordeling Op spoor bemoedigend, maar de gewichtloze
+visvoeder is nog steeds een lanceringsblocker. Lees de uitleg voordat je de band als
+een oordeel behandelt.
 
-Wanneer een projectagent is geconfigureerd, kan het verslagmenu een nieuw verslag
-aanvragen of een geplande wakkercyclus annuleren. Zonder agent toont het project nog
-steeds zijn taken en eventuele opgeslagen projecttekst.
+De kaart zelf houdt alleen **Interne details van agent openen**, en **Nu bijwerken** zolang de
+samenvatting verouderd is. De modelinstelling, automatische updates en hoe vaak de
+agent bijwerkt staan in de agent internals. Zonder agent biedt de kaart
+**Agent toewijzen** en toont het detail nog steeds de taken en de beschrijving van
+het project.
+
+**Project verkennen**, naast het projectmenu, opent het project als een wijk waar je
+doorheen kunt lopen, met een gebouw voor elke taak.
+
+## Voeg notities, opnames en afbeeldingen toe aan een project
+
+Een balk langs de onderrand van de projectpagina voegt rechtstreeks iets aan het
+project toe: **Een spraaknotitie opnemen**, een notitie schrijven, een afbeelding
+importeren, of de plus voor het menu **Toevoegen** met de rest. Op een smal scherm
+maken de notitie- en afbeeldingsknoppen plaats voor de plus. Alles wat je daar
+toevoegt, wordt aan het project gekoppeld, verschijnt in de tijdlijn en wordt door
+de agent gelezen.
 
 ## Houd projectwerk in taken
 
@@ -117,7 +140,10 @@ omslagafbeeldingen.
 
 Wijs een taak toe aan een project via het projectbesturingselement in de taakkop.
 Projecten zijn per categorie ingedeeld, dus geef de taak een categorie voordat je een
-project kiest. Een taak behoort tot maximaal één project tegelijk; een ander project
+project kiest. De agent van de taak kan het ook voorstellen: noem het project in de
+notities van de taak of in een opname, en de agent stelt voor de taak erheen te
+verplaatsen – of, als de categorie geen project met die naam heeft, het project aan
+te maken met de taak erin. Er verandert niets totdat je bevestigt. Een taak behoort tot maximaal één project tegelijk; een ander project
 toewijzen verplaatst de koppeling in plaats van deze te dupliceren.
 
 ## Projecten, categorieën en taken

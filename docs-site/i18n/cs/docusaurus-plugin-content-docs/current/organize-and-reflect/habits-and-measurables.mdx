@@ -26,7 +26,8 @@ den vyprávěl celý příběh.
 
 ### Vytváření a úprava návyků
 
-1. Otevři **Zvyky** a klepni na **+**. Existující návyk upravíš dlouhým
+1. Otevři **Zvyky** a klepni na **+** – na telefonu je v navigačním
+   spouštěči. Existující návyk upravíš dlouhým
    stiskem nebo tak, že otevřeš jeho záznamový list a klepneš na tužku.
    **Nastavení → Definice → Návyky** dál zobrazuje všechny definice a otevírá
    stejný editor.
@@ -44,7 +45,7 @@ den vyprávěl celý příběh.
 
 <ManualScreenshot
   caseId="habits/editor-step2"
-  alt="Nový návyk, krok 2 ze 2: Jak poznáme, že je hotovo? s ručním řádkem, signálem Kroky nastaveným na denně alespoň 6 000, Přidat signál a sekcí Nastavení"
+  alt="Nový návyk, krok 2 ze 2: Jak poznáme, že je hotovo? s ručním řádkem, signálem Kroky nastaveným na denně ≥ 6 000 porovnávaným s dnešní hodnotou, Přidat signál, přepínačem Upozornit při automatickém odškrtnutí a sekcí Nastavení"
 />
 
 ### Nech zaznamenaná data odškrtnout návyk
@@ -61,11 +62,15 @@ signál** nabízí tři druhy:
 - typ **tréninku**, který se objevil v tvých importech (jakýkoli trénink, nebo
   doba, vzdálenost či energie alespoň / nejvýše hodnota).
 
+Prahovou hodnotu lze porovnat s **Dnešní hodnotou**, se **7denním průměrem**
+nebo s **Kteroukoli hodnotou** z obou.
+
 U dvou a více signálů rozhoduje **Kdy se návyk počítá jako splněný**, zda ho
 splní **libovolný** signál, **všechny** signály nebo **alespoň N** z nich.
 Jakmile data dne splní pravidlo, návyk se za tebe odškrtne, na stránce Návyky
 se označí **auto** se signálem a časem a oznámí se upozorněním – návyky splněné během několika sekund po sobě se sloučí do jednoho, každý návyk se oznámí nejvýše jednou denně a **Upozornit
-při automatickém odškrtnutí** to vypne pro jednotlivý návyk. Co zaznamenáš
+při automatickém odškrtnutí** na konci karty signálů, zobrazené, jakmile má
+návyk signál, to vypne pro jednotlivý návyk. Co zaznamenáš
 sám/sama, včetně přeskočení, má vždy přednost před automatickým odškrtnutím.
 
 ### Nastavení editoru
@@ -78,19 +83,18 @@ sám/sama, včetně přeskočení, má vždy přednost před automatickým odšk
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Stránka Upravit návyk pro Sčítání tučňáků císařských s kartou signálů, sekcí Nastavení a volbami oblíbený, soukromý a aktivní"
+  alt="Stránka Upravit návyk pro Sčítání tučňáků císařských s názvem, popisem, kartou Jak poznáme, že je hotovo? a sekcí Nastavení"
 />
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Sekce Nastavení editoru s kategorií, datem začátku, zobrazit od, časem upozornění a přepínačem upozornění při automatickém odškrtnutí"
+  alt="Stránka Upravit návyk pro Sčítání tučňáků císařských se sekcí Nastavení – kategorie, datum začátku, zobrazit od a zobrazit upozornění v – a Možnosti s volbami Oblíbené, Soukromé a Aktivní, pak Smazat"
 />
 
 - **Kategorie** pro filtrování a vizuální kontext.
 - **Datum začátku** a u denního návyku čas, od kdy se **zobrazuje**, a kdy má
   Lotti **zobrazit upozornění**. Datový model rozumí i týdenním a měsíčním
   plánům; editor tyto časové volby nabízí u denních návyků.
-- **Upozornit při automatickém odškrtnutí** (ve výchozím stavu zapnuto).
 - Při úpravě: **Oblíbený** pro větší důraz, **Soukromý** pro skrytí, pokud se
   nezobrazují soukromé záznamy, **Aktivní** pro řízení, zda se zobrazí na
   stránce Návyky, aniž by se smazala historie, a **Smazat**.
@@ -111,7 +115,7 @@ výsledky:
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Záznamový list pro kontrolu těsnění habitatu s řádky signálů Krillové příděly a Kroky, čipy rychlého záznamu, grafy a výsledky Úspěch, Přeskočit a Nesplněno"
+  alt="Záznamový list pro kontrolu těsnění habitatu s řádky signálů Krillové příděly, Kontrola hydratace a Kroky, čipy rychlého záznamu, grafy a výsledky Úspěch, Přeskočit a Nesplněno"
 />
 
 Použij stav, který zachová realitu. Upřímná historie je užitečnější než
@@ -120,25 +124,30 @@ dokážou zrekonstruovat skutečný výsledek pro každý návyk a den.
 
 ## Práce s měřitelnými veličinami
 
-Definice měřitelné veličiny popisuje číslo před jeho zaznamenáním: název,
-jednotku, soukromí a způsob kombinování více pozorování v grafech.
+Definice měřitelné veličiny popisuje hodnotu před jejím zaznamenáním: název,
+zda jde o číslo, nebo volbu, jednotku, soukromí a způsob kombinování více
+pozorování v grafech.
 
 <ManualScreenshot
   caseId="measurables/settings-list"
-  alt="Nastavení měřitelných veličin s Tlakem obydlí, Počtem tučňáků a Spotřebovanými sardinkami"
+  alt="Nastavení měřitelných veličin s Tlakem obydlí, Kontrolou hydratace, Počtem tučňáků a Spotřebovanými sardinkami"
 />
 
 ### Vytvoř typ měřitelných dat
 
 1. Otevři **Nastavení → Definice → Měřitelné typy**.
-2. Vyber akci přidání.
-3. Přidej název, volitelný popis a stručnou zkratku jednotky.
-4. Vyber výchozí agregaci používanou grafy.
-5. Rozhodni o oblíbeném a soukromém stavu a ulož.
+2. Vyber **Vytvořit měřitelný typ**.
+3. Přidej název a volitelný popis.
+4. V části **Zaznamenává se jako** zvol **Číslo** pro hodnotu s jednotkou,
+   nebo **Volba**, abys při záznamu vybíral jednu z voleb, které definuješ –
+   například barvy kontroly hydratace.
+5. U čísla přidej stručnou zkratku jednotky a vyber výchozí agregaci
+   používanou grafy. U volby místo toho přidej její **Volby**.
+6. Rozhodni o oblíbeném a soukromém stavu a ulož.
 
 <ManualScreenshot
   caseId="measurables/settings-detail"
-  alt="Editor veličiny Tlak obydlí s jednotkou kPa a agregací Denní průměr"
+  alt="Editor veličiny Tlak obydlí zaznamenávané jako Číslo v kPa s agregací Denní průměr"
 />
 
 Agregaci vybírej podle významu opakovaných hodnot:

@@ -18,7 +18,7 @@ La ilustración de portada es opcional, pero puede hacer que un espacio de traba
 
 <ManualScreenshot
   caseId="tasks/detail"
-  alt="Página de detalle de tarea de producción para inspeccionar el hábitat orbital de pingüinos, con la misma ilustración de portada que usan las miniaturas de tareas"
+  alt="Página de la tarea para inspeccionar el hábitat orbital de pingüinos con su categoría, el estado En curso, prioridad Alta, fecha de vencimiento, tiempo registrado frente a la estimación, etiquetas y el resumen de IA"
 />
 
 Una misma tarea puede contener una descripción, categoría, etiquetas, fecha de vencimiento, registros de tiempo, elementos de lista de verificación, imágenes, enlaces y grabaciones de audio. También puede llevar un asistente de IA persistente con su propio resumen, estado de activación y cambios propuestos: consulta [Asigna un agente de tarea](./task-agents.mdx).
@@ -53,13 +53,17 @@ Abre los filtros de tareas y selecciona una o más prioridades. Borra la selecci
 
 El orden de prioridad predeterminado va de P0 a P3. Dentro de una prioridad, las tareas más recientes aparecen primero, salvo que otra vista o criterio de ordenación activo cambie el resultado.
 
+Usa **Borrar** en la hoja, o **Borrar todo** junto a los filtros activos en la lista, para volver a una vista sin restricciones en lugar de deshacer cada elección por separado.
+
+La búsqueda muestra primero las tareas cuyas palabras coinciden, de mejor a peor coincidencia, seguidas de una sección **Relacionados por significado** con tareas que dicen lo mismo con otras palabras. Mientras buscas, las fichas de filtro que la búsqueda no aplica se atenúan.
+
 ## Usa listas de verificación para el siguiente nivel de detalle
 
 Un elemento de una lista de verificación debe ser más pequeño y concreto que su tarea. «Publicar el manual» es una tarea; «verificar cada enlace de navegación» es un elemento de lista de verificación. Las listas se pueden editar directamente y las habilidades de IA configuradas también pueden proponerlas a partir del contexto de la tarea.
 
 ## Añade contexto a una tarea
 
-Usa la acción **Añadir** de la tarea para adjuntar una lista de verificación, otra tarea, una grabación de audio, un temporizador, una entrada de texto o una imagen sin salir de la tarea. Las acciones disponibles dependen de la plataforma y del contexto actuales.
+Usa la acción **Añadir** de la tarea para adjuntar una nota, una lista de verificación, una nota de voz, una tarea vinculada o una imagen sin salir de la tarea; **Registrar tiempo**, en la barra de acciones de la tarea, inicia un temporizador. Las acciones disponibles dependen de la plataforma y del contexto actuales.
 
 <ManualScreenshot
   caseId="entries/create-menu"
@@ -92,11 +96,11 @@ y Escape para volver atrás.
 
 ## Vincula tareas relacionadas
 
-Abre la sección **Vinculado** de la tarea y elige vincular una tarea existente. Busca en el selector y selecciona el resultado relacionado. Lotti excluye la tarea actual y las tareas que ya están vinculadas en esa dirección.
+En la sección **Tareas vinculadas** de la tarea, selecciona **Vincular una tarea…** —o **Vincular** cuando la tarea ya tiene vínculos— para abrir **Vincular**. En **Esta tarea…**, elige la relación: **Se relaciona con**, o una de **Bloquea**, **Está bloqueada por**, **Da seguimiento a**, **Tiene como seguimiento**, **Duplica**, **Está duplicada por**, **Corrige**, **Está corregida por**, **Reemplaza** y **Está reemplazada por**. Después busca en el selector y selecciona la tarea relacionada. Lotti excluye la tarea actual y las tareas que ya están vinculadas en esa dirección.
 
 <ManualScreenshot
   caseId="tasks/link-picker"
-  alt="Selector de vínculos de tareas de producción con tareas relacionadas de Project Waddle y su contexto de estado, prioridad, categoría y fecha de vencimiento"
+  alt="Selector para vincular una tarea existente sobre la tarea Inspeccionar el hábitat orbital de pingüinos, con Esta tarea… en Se relaciona con, un campo de búsqueda de tareas y dos tareas de Operaciones de pingüinos con su estado"
 />
 
 Los vínculos de tareas son direccionales: la tarea actual apunta a la tarea que elijas. Ambos lados siguen siendo accesibles mediante sus secciones de entradas vinculadas, mientras cada tarea conserva su propio estado, calendario y adjuntos.

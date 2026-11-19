@@ -30,6 +30,14 @@ skapats kring den.
   proxy eller gateway. Leverantörstypen styr fortfarande protokollspecifikt
   beteende.
 
+Lotti talar med dessa leverantörstyper: **Mistral**, **Melious.ai**, **Googla
+Gemini**, **Alibaba Cloud (Qwen)**, **OpenAI**, **Anthropic Claude**,
+**OpenRouter**, **Nebius AI Studio**, **ElevenLabs**, valfri
+**OpenAI-kompatibel** slutpunkt och de lokala **Ollama**, **oMLX (lokal)**,
+**Voxtral (lokal)**, **Whisper (lokal)** och **sherpa-onnx (på enheten)**.
+Om du är osäker, börja med Mistral — den rekommenderade standarden, märkt
+**REKOMMENDERAT** när du väljer en leverantör.
+
 ## Koppla en leverantör
 
 1. Öppna **Inställningar → AI-inställningar → Leverantörer**.
@@ -62,7 +70,10 @@ en modell till eller ta bort leverantören.
 
 Att ändra en bas-URL eller API-nyckel påverkar varje modell som är kopplad
 till den leverantören. Efter att du ändrat något av värdena, verifiera en
-representativ AI-åtgärd innan du utgår från att anslutningen är frisk. Att ta
+representativ AI-åtgärd innan du utgår från att anslutningen är frisk. När
+ett anrop misslyckas för att leverantörskontot saknar kredit säger Lotti
+**Slut på kredit**, citerar leverantörens eget meddelande och föreslår att du
+fyller på kontot eller väljer en modell från en annan leverantör. Att ta
 bort en leverantör kan också påverka profiler som ruttar arbete genom dess
 modeller; gå igenom beroendeinformationen först.
 

@@ -1,93 +1,103 @@
 ---
-title: Conecte um provedor de IA
-description: Conecte inferência na nuvem ou local, inspecione seus modelos e mantenha credenciais e endpoints sob controle.
+title: Liga um provedor de IA
+description: Liga inferência na nuvem ou local, inspeciona os teus modelos e mantém credenciais e endpoints sob controlo.
 ---
 
-# Conecte um provedor de IA
+# Liga um provedor de IA
 
 O Lotti separa uma configuração de IA em três camadas: um **provedor** é o
-serviço ao qual ele se conecta, um **modelo** é um modelo exposto por meio
-desse serviço e um **perfil de inferência** roteia cada tipo de trabalho para
-um modelo. Comece pelo provedor e, em seguida, revise os modelos e perfis
-criados em torno dele.
+serviço a que se liga, um **modelo** é um modelo exposto através desse serviço
+e um **perfil de inferência** encaminha cada tipo de trabalho para um modelo.
+Começa pelo provedor e, depois, revê os modelos e perfis criados à volta dele.
 
 <ManualScreenshot
   caseId="ai/providers"
-  alt="Configurações de IA do Lotti mostrando os provedores Mission Control Router, Habitat Local Lab, Orbital Vision e Penguin Audio Bay"
-  caption="As configurações de IA mantêm as conexões locais e na nuvem juntas. Cada cartão mostra o estado da conexão e quantos modelos salvos a utilizam."
+  alt="Configurações de IA do Lotti com os provedores Roteador de controle de missão, Habitat Local Lab, Orbital Vision e Penguin Audio Bay"
+  caption="As configurações de IA mantêm juntas as ligações locais e na nuvem. Cada cartão mostra o estado da ligação e quantos modelos guardados a usam."
 />
 
-## Escolha local ou remoto
+## Escolhe local ou remoto
 
-- Um provedor de nuvem costuma ser a configuração mais rápida e geralmente
-  exige uma chave de API. Texto, áudio ou imagens enviados por meio dele saem
+- Um provedor na nuvem costuma ser a configuração mais rápida e normalmente
+  exige uma chave de API. Texto, áudio ou imagens enviados através dele saem
   do dispositivo.
-- Um provedor local pode manter a inferência na sua própria máquina ou em um
-  endpoint local que você controla, mas seu serviço deve estar em execução e
+- Um provedor local pode manter a inferência na tua própria máquina ou num
+  endpoint local que controlas, mas o serviço tem de estar em execução e
   acessível a partir do dispositivo onde o Lotti o invoca. Um endereço de LAN
-  ainda pode mover um prompt entre os seus dispositivos; “local” significa que
-  nada é enviado a um provedor de modelo hospedado, não que não exista nenhum
-  salto de rede.
-- Uma URL base personalizada pode apontar um tipo de provedor compatível para
-  um proxy ou gateway compatível. O tipo de provedor ainda controla o
+  pode ainda assim mover um prompt entre os teus dispositivos; “local”
+  significa que nada é enviado a um provedor de modelos alojado, não que não
+  exista nenhum salto de rede.
+- Um URL base personalizado pode apontar um tipo de provedor suportado para um
+  proxy ou gateway compatível. O tipo de provedor continua a controlar o
   comportamento específico do protocolo.
 
-## Conecte um provedor
+O Lotti fala com estes tipos de provedor: **Mistral**, **Melious.ai**,
+**Google Gemini**, **Alibaba Cloud (Qwen)**, **OpenAI**, **Anthropic Claude**,
+**OpenRouter**, **Nebius AI Studio**, **ElevenLabs**, qualquer endpoint
+**Compatível com OpenAI** e os locais **Ollama**, **oMLX (local)**,
+**Voxtral (local)**, **Whisper (local)** e **sherpa-onnx (no dispositivo)**.
+Se não tiveres a certeza, começa pelo Mistral — a predefinição recomendada,
+marcada como **RECOMENDADO** quando escolhes um provedor.
 
-1. Abra **Configurações → Configurações de IA → Provedores**.
-2. Selecione o botão **+**.
-3. Escolha um provedor compatível.
-4. Insira o nome de exibição, o endpoint e a chave de API, quando necessário.
-5. Adicione os modelos sugeridos que quiser e salve.
+## Liga um provedor
 
-Para provedores com suporte, na primeira execução o Lotti pré-cria modelos
-úteis e um ou mais perfis de inferência. A tela de resultados resume o que foi
+1. Abre **Configurações → Configurações de IA → Provedores**.
+2. Seleciona o botão **+**.
+3. Escolhe um provedor suportado.
+4. Introduz o nome a mostrar, o endpoint e a chave de API, quando necessário.
+5. Adiciona os modelos sugeridos que quiseres e guarda.
+
+Para os provedores suportados na primeira execução, o Lotti cria logo modelos
+úteis e um ou mais perfis de inferência. O ecrã de resultados resume o que foi
 criado.
 
 <ManualScreenshot
   caseId="ai/provider-editor"
-  alt="Editor de provedor do Lotti para Mission Control Router com OpenRouter selecionado, URL base, chave de API mascarada e modelos sugeridos"
-  caption="As credenciais permanecem mascaradas. Os modelos sugeridos são atalhos, não um requisito. Você pode adicionar IDs de modelo específicos do provedor posteriormente."
+  alt="Editor de provedor do Lotti para o Roteador de controle de missão com OpenRouter selecionado, um URL base, a chave de API mascarada e modelos sugeridos"
+  caption="As credenciais ficam mascaradas. Os modelos sugeridos são atalhos, não um requisito — podes adicionar mais tarde IDs de modelo específicos do provedor."
 />
 
-## Inspecione e mantenha uma conexão
+## Inspeciona e mantém uma ligação
 
-Abra um cartão de provedor para inspecionar a credencial mascarada, a URL
-base, os modelos salvos e qualquer perfil ativo que dependa desses modelos. A
-partir daí você pode editar a conexão, adicionar outro modelo ou remover o
+Abre o cartão de um provedor para inspecionar a credencial mascarada, o URL
+base, os modelos guardados e qualquer perfil ativo que dependa desses modelos.
+A partir daí podes editar a ligação, adicionar outro modelo ou remover o
 provedor.
 
 <ManualScreenshot
   caseId="ai/provider-detail"
-  alt="Detalhe do provedor do Mission Control Router mostrando sua conexão, modelos do Waddle Command e perfil ativo do Project Waddle"
-  caption="O resumo de dependências torna o raio de impacto visível antes de você alterar ou remover um provedor."
+  alt="Detalhe do provedor Roteador de controle de missão com a sua ligação, os modelos do Waddle Command e o perfil ativo do Project Waddle"
+  caption="O resumo de dependências torna visível o raio de impacto antes de alterares ou removeres um provedor."
 />
 
-Alterar uma URL base ou uma chave de API afeta todos os modelos anexados a
-esse provedor. Depois de alterar qualquer um desses valores, verifique uma
-ação de IA representativa antes de presumir que a conexão está saudável.
-Remover um provedor também pode afetar perfis que roteiam trabalho por meio de
-seus modelos; revise as informações de dependência primeiro.
+Alterar um URL base ou uma chave de API afeta todos os modelos associados a
+esse provedor. Depois de alterares qualquer um destes valores, verifica uma
+ação de IA representativa antes de assumires que a ligação está em bom estado.
+Quando uma chamada falha porque a conta do provedor ficou sem crédito, o
+Lotti diz **Sem crédito**, cita a mensagem do próprio provedor e sugere
+carregar a conta ou escolher um modelo de outro provedor. Remover um provedor
+também pode afetar perfis que encaminham trabalho através dos seus modelos;
+revê primeiro as informações de dependência.
 
-## Revise o roteamento do perfil
+## Revê o encaminhamento dos perfis
 
-Abra [Modelos e perfis de inferência](./models-and-profiles.mdx) para
-verificar o que o provedor expõe e como o Lotti roteia cada recurso. As
-categorias podem definir um perfil padrão para o seu trabalho, enquanto
-automações individuais podem selecionar ou substituir um modelo quando o fluxo
-de trabalho oferece essa escolha.
+Abre [Modelos e perfis de inferência](./models-and-profiles.mdx) para
+verificares o que o provedor expõe e como o Lotti encaminha cada capacidade.
+As categorias podem definir um perfil predefinido para o seu trabalho,
+enquanto automações individuais podem selecionar ou substituir um modelo
+quando o fluxo de trabalho oferece essa escolha.
 
 ## Limite de privacidade
 
-Antes de enviar texto, áudio ou imagens sensíveis, confirme se o endpoint
-configurado é local ou remoto. Um nome amigável como “Habitat Local Lab” não é
-o limite de segurança — a URL base, o caminho de rede e a máquina que o atende
-é que são. O Lotti armazena o diário de bordo localmente de qualquer forma;
-essa decisão controla a chamada de inferência em si.
+Antes de enviares texto, áudio ou imagens sensíveis, confirma se o endpoint
+configurado é local ou remoto. Um nome simpático como “Habitat Local Lab” não
+é o limite de segurança — o URL base, o caminho de rede e a máquina que o
+serve é que são. O Lotti guarda o diário de bordo localmente em qualquer caso;
+esta decisão controla a própria chamada de inferência.
 
 :::warning[Chaves de API]
 
-Trate as chaves do provedor como segredos. Nunca as cole em documentação,
-issues ou capturas de tela.
+Trata as chaves do provedor como segredos. Nunca as coles em documentação,
+issues ou capturas de ecrã.
 
 :::

@@ -9,20 +9,22 @@ Proiectele se află între categorii și sarcini. O categorie precum **Operațiu
 
 <ManualScreenshot
   caseId="projects/list"
-  alt="Proiecte grupate în Operațiuni cu pinguini, Centrul de comandă, Diplomația peștilor și Întreținerea oamenilor, inclusiv Project Waddle și lanțul frigorific pentru sardine Europa"
+  alt="Lista de proiecte în vizualizarea Curente, grupate în Operațiuni cu pinguini, Centrul de comandă și Diplomația peștilor, cu Project Waddle, lanțul frigorific pentru sardine Europa și tratatul privind pasagerii pinguini"
   caption="Fiecare rând combină starea, progresul sarcinilor, data-țintă și o scurtă declarație de scop. Desktopul păstrează spațiu pentru proiectul selectat în dreapta; mobilul folosește lățimea completă pentru listă."
 />
 
 ## Găsiți proiectul necesar
 
-Căutarea acoperă titlurile proiectelor, textul stocat și numele categoriilor. Controlul de filtrare restrânge lista după starea proiectului sau categorie. Un filtru rămâne inactiv până când selectați **Aplicați**.
+Căutarea acoperă titlurile proiectelor, textul stocat și numele categoriilor. Sub câmpul de căutare, **Curente** ascunde proiectele finalizate și arhivate; **Toate** le readuce. **Sortați proiectele** ordonează lista după **Necesită atenție**, **Data țintă**, **Actualizate recent** sau **Nume**.
+
+Butonul de filtrare restrânge lista după **Stare** sau **Categorie**. Două comutatoare adaugă mai mult: **Doar rezumatele neactualizate** păstrează proiectele al căror rezumat de agent a rămas în urmă, iar **Afișați profilul de inferență** marchează fiecare proiect care are un agent cu numele profilului său de inferență. Un filtru rămâne inactiv până când selectați **Aplicați**.
 
 <ManualScreenshot
   caseId="projects/filters"
-  alt="Dialogul de filtrare a proiectelor, cu controale pentru stare și categorie peste lista de proiecte Intergalactic Penguin Logistics"
+  alt="Dialogul Filtrați proiectele, cu rândurile Stare și Categorie, comutatoarele Doar rezumatele neactualizate și Afișați profilul de inferență și butoanele Ștergeți și Aplicați, peste lista de proiecte"
 />
 
-Proiectele rămân grupate pe categorii după filtrare. Aceasta face inițiativele cu nume similare mai ușor de distins și păstrează vizibil fiecare domeniu operațional.
+Proiectele rămân grupate pe categorii după filtrare. Aceasta face inițiativele cu nume similare mai ușor de distins și păstrează vizibil fiecare domeniu operațional. Fiecare antet de categorie se poate restrânge, iar butonul său de hartă deschide **Explorați categoria** – proiectele categoriei ca un cartier prin care vă puteți plimba.
 
 ## Creați un proiect
 
@@ -69,20 +71,25 @@ Selectați pastila stării din pagina de detalii a proiectului pentru a o schimb
 
 <ManualScreenshot
   caseId="projects/detail"
-  alt="Detaliul Project Waddle, cu un scor de sănătate 82, cinci din opt sarcini finalizate, un blocaj și un raport AI actualizat acum două ore"
+  alt="Detaliul Project Waddle, cu starea Activ și data țintă, descrierea, un card Rezumat AI evaluat Pe drumul bun cu încredere 91% și o sarcină blocată, precum și lista Sarcinile proiectului, condusă de alimentatorul de pești în imponderabilitate blocat"
   caption="Desktopul păstrează lista de proiecte și detaliul alături. Mobilul deschide același detaliu pe o pagină întreagă."
 />
 
-Panoul de sănătate rezumă evaluarea curentă a agentului de proiect:
+Cardul **Rezumat AI** reunește evaluarea și raportul:
 
-- scorul de sănătate este un semnal compact, nu un substitut pentru munca de bază;
-- progresul sarcinilor arată numărul de sarcini finalizate și blocate;
-- raportul oferă un rezumat actual și poate fi extins la conținutul complet; iar
-- recomandările atrag atenția asupra următoarelor acțiuni concrete.
+- **Starea proiectului** rezumă evaluarea agentului, cu justificarea și încrederea atunci când sunt disponibile, precum și numărul de sarcini blocate;
+- raportul oferă un rezumat actual, iar **Citiți mai mult** îl extinde la conținutul complet; iar
+- pașii următori și modificările propuse atrag atenția asupra acțiunilor concrete.
 
-În Project Waddle, un scor de 82 și cinci sarcini finalizate sunt încurajatoare, însă alimentatorul de pești în imponderabilitate rămâne un blocaj de lansare. Citiți explicația înainte de a trata un scor ca pe un verdict.
+În Project Waddle, o evaluare Pe drumul bun este încurajatoare, însă alimentatorul de pești în imponderabilitate rămâne un blocaj de lansare. Citiți justificarea înainte de a trata banda ca pe un verdict.
 
-Când este configurat un agent de proiect, meniul raportului poate solicita un raport proaspăt sau poate anula o activare programată. Fără agent, proiectul își arată în continuare sarcinile și orice text de proiect stocat.
+Cardul păstrează doar **Deschideți componentele interne ale agentului** și, cât timp rezumatul nu este actualizat, **Actualizați acum**. Configurarea modelului, actualizările automate și frecvența cu care se actualizează agentul se află în componentele interne ale agentului. Fără agent, cardul oferă **Atribuiți agent**, iar detaliul arată în continuare sarcinile și descrierea proiectului.
+
+**Explorați proiectul**, lângă meniul proiectului, deschide proiectul ca un cartier prin care vă puteți plimba, cu o clădire pentru fiecare sarcină.
+
+## Adăugați note, înregistrări și imagini la un proiect
+
+O bară de-a lungul marginii de jos a paginii proiectului adaugă direct la proiect: **Înregistrați o notă vocală**, scrieți o notă, importați o imagine sau folosiți plusul pentru meniul **Adăugați** cu restul opțiunilor. Pe un ecran îngust, butoanele pentru notă și imagine fac loc plusului. Tot ce adăugați acolo este legat de proiect, apare în cronologia lui și este citit de agentul său.
 
 ## Păstrați munca proiectului în sarcini
 
@@ -93,7 +100,7 @@ Când este configurat un agent de proiect, meniul raportului poate solicita un r
 
 Rândurile de sarcini ale proiectului arată titlul, rezumatul scurt, estimarea și starea curentă a fiecărei sarcini. Selectați un rând pentru a deschide sarcina. Detaliile sarcinii rămân sursa adevărului pentru descrieri, înregistrări, liste de verificare, imagini, înregistrări de timp și coperți.
 
-Asociați o sarcină unui proiect din controlul proiectului din antetul sarcinii. Proiectele sunt delimitate de categorie, deci dați sarcinii o categorie înainte de a alege proiectul. O sarcină aparține cel mult unui proiect la un moment dat; alegerea altui proiect mută legătura, nu o dublează.
+Asociați o sarcină unui proiect din controlul proiectului din antetul sarcinii. Proiectele sunt delimitate de categorie, deci dați sarcinii o categorie înainte de a alege proiectul. Agentul sarcinii poate și el să propună asta: menționați proiectul în notele sarcinii sau într-o înregistrare, iar agentul sugerează mutarea sarcinii în el – sau, dacă categoria nu are un proiect cu acel nume, crearea proiectului cu sarcina în el. Nimic nu se schimbă până nu confirmați. O sarcină aparține cel mult unui proiect la un moment dat; alegerea altui proiect mută legătura, nu o dublează.
 
 ## Proiecte, categorii și sarcini
 

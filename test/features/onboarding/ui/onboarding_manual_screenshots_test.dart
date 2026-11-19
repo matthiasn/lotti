@@ -25,7 +25,6 @@ import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
@@ -147,7 +146,6 @@ enum _OnboardingCase {
   settings,
   welcome,
   providers,
-  otherProviders,
   apiKey,
   categories,
   firstTask,
@@ -159,7 +157,6 @@ extension on _OnboardingCase {
     _OnboardingCase.settings => 'settings',
     _OnboardingCase.welcome => 'welcome',
     _OnboardingCase.providers => 'providers',
-    _OnboardingCase.otherProviders => 'other_providers',
     _OnboardingCase.apiKey => 'api_key',
     _OnboardingCase.categories => 'categories',
     _OnboardingCase.firstTask => 'first_task',
@@ -265,35 +262,6 @@ void main() {
     );
 
     captureController = FakeCaptureController();
-    captureController.onToggle = () {
-      captureController.emit(
-        const CaptureState(
-          phase: CapturePhase.listening,
-          transcript: '',
-          amplitudes: [
-            0.08,
-            0.16,
-            0.29,
-            0.52,
-            0.74,
-            0.61,
-            0.38,
-            0.22,
-            0.43,
-            0.69,
-            0.84,
-            0.57,
-            0.31,
-            0.18,
-            0.36,
-            0.63,
-            0.77,
-            0.48,
-          ],
-          dbfs: -8,
-        ),
-      );
-    };
 
     navService = NavService(
       tabDelegates: appTabDelegates,
@@ -451,20 +419,6 @@ void main() {
     );
   }
 
-  Future<void> driveToFirstTaskListening(WidgetTester tester) async {
-    await driveToFirstTaskPrompt(tester);
-    await tapText(
-      tester,
-      _messages(tester).dailyOsNextCaptureIdleTalk,
-      frames: 6,
-    );
-    expect(
-      find.text(_messages(tester).onboardingCaptureListening),
-      findsOneWidget,
-    );
-    expect(find.byType(AiVoiceInputShader), findsOneWidget);
-  }
-
   Future<void> driveToCreatedTask(WidgetTester tester) async {
     await driveToFirstTaskPrompt(tester);
     await tapText(
@@ -530,14 +484,24 @@ void main() {
           );
         case _OnboardingCase.providers:
           await driveToProviders(tester);
-        case _OnboardingCase.otherProviders:
-          await driveToOtherProviders(tester);
         case _OnboardingCase.apiKey:
           await driveToApiKey(tester);
         case _OnboardingCase.categories:
           await driveToCategories(tester);
         case _OnboardingCase.firstTask:
-          await driveToFirstTaskListening(tester);
+          // The prompt, not the open mic: the manual shows the destination
+          // picker, the starter suggestions and "Rather type?", which only
+          // the prompt carries.
+          await driveToFirstTaskPrompt(tester);
+          final messages = _messages(tester);
+          expect(
+            find.text(messages.onboardingFirstTaskSuggestionsLabel),
+            findsOneWidget,
+          );
+          expect(
+            find.text(messages.onboardingCaptureRatherType),
+            findsOneWidget,
+          );
         case _OnboardingCase.taskCreated:
           await driveToCreatedTask(tester);
       }
@@ -566,7 +530,6 @@ void main() {
             if (const {
               _OnboardingCase.welcome,
               _OnboardingCase.providers,
-              _OnboardingCase.otherProviders,
               _OnboardingCase.categories,
               _OnboardingCase.firstTask,
               _OnboardingCase.taskCreated,

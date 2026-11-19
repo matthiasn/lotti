@@ -6,26 +6,38 @@ description: Configureer de stem, het model en de afspeelsnelheid op het apparaa
 # Kies de voorleesstem
 
 Wanneer voorlezen beschikbaar is, open je **Instellingen → Voorkeuren →
-Toespraak**. Deze bedieningselementen gelden voor AI-taaksamenvattingen; ze
-veranderen niets aan de microfoonopname of aan welke AI-provider een opname
-transcribeert.
+Spraak**. Deze bedieningselementen gelden voor wat Lotti voorleest – AI-samenvattingen
+en chatantwoorden; ze veranderen niets aan de microfoonopname of aan welke
+AI-provider een opname transcribeert. Met de metgezel aan is de aparte pagina Spraak
+verborgen en staan dezelfde instellingen onder **Instellingen → Voorkeuren →
+Metgezel → Stem**.
+
+De pagina begint met **Chataudio**: **Chataudio automatisch voorbereiden** bereidt
+nieuwe chatantwoorden op dit apparaat voor, zodat het afspelen sneller begint. Audio
+speelt nog steeds alleen af wanneer je op afspelen tikt.
 
 <ManualScreenshot
   caseId="speech/settings"
-  alt="Lotti-spraakinstellingen met Man 3 geselecteerd, het Supertonic 3-model op het apparaat en leessnelheid 1,25"
+  alt="Lotti-spraakinstellingen met Chataudio, Cloudstemmen, de Stem op het apparaat met Man 3 geselecteerd, het Supertonic 3-model en leessnelheid 1,25"
   caption="De voorbeeldsetup van Mission Control gebruikt Man 3 op 1,25× voor vlotte Project Waddle-briefings."
 />
 
 ## Kies een stem
 
-Gebruik de schakelaar **Vrouwen / Man** om door de twee groepen te bladeren en
+**Cloudstemmen** toont voor elk van je talen de stem waarin een cloudvoorleesmodel
+die taal spreekt; tik op een stem om die te beluisteren of te wijzigen. De sectie
+blijft leeg totdat een inferentieprofiel een model voor **Voorlezen** heeft – tot
+dan gebruikt voorlezen de stem op het apparaat.
+
+De **Stem op het apparaat** leest voor bij profielen zonder cloudstem. Gebruik de
+schakelaar **Vrouwen / Man** om door de twee groepen te bladeren en
 selecteer vervolgens een van de vijf genummerde stemmen in die groep. Van groep
 wisselen verandert alleen de zichtbare lijst; selecteer een genummerde stem om die
 actief te maken.
 
 <ManualScreenshot
   caseId="speech/voice-options"
-  alt="Lotti-spraakinstellingen tonen de vijf vrouwelijke stemopties op het apparaat"
+  alt="Lotti-spraakinstellingen tonen de vijf vrouwelijke opties van de Stem op het apparaat, onder Chataudio en Cloudstemmen"
   caption="Tien gebundelde stemstijlen zijn beschikbaar: Vrouw 1–5 en Man 1–5."
 />
 
@@ -35,10 +47,13 @@ op je andere apparaten te veranderen.
 
 ## Modeldownload en privacy
 
-Lotti gebruikt momenteel **Supertonic 3** om voor te lezen. De synthese draait op het
-apparaat in plaats van de samenvatting naar een cloudspraakdienst te sturen. Het model
-is groot en wordt gedownload wanneer het voor het eerst nodig is, dus reken op tijd,
-netwerkbandbreedte en opslag voor die eerste installatie.
+De **Stem op het apparaat** gebruikt **Supertonic 3**. De synthese draait op het
+apparaat, dus er wordt niets naar een cloudspraakdienst gestuurd. Heeft een
+inferentieprofiel een cloudmodel om voor te lezen, dan toont **Cloudstemmen** in plaats
+daarvan de stem voor elk van je talen, en wordt de voorgelezen tekst naar die provider
+gestuurd. Het model op het apparaat is groot en wordt gedownload wanneer het voor het
+eerst nodig is, dus reken op tijd, netwerkbandbreedte en opslag voor die eerste
+installatie.
 
 ## Stel de leessnelheid in
 

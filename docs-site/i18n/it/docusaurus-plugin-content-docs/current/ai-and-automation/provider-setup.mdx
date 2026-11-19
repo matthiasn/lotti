@@ -32,9 +32,17 @@ esso.
   verso un proxy o gateway compatibile. Il tipo di provider controlla comunque
   il comportamento specifico del protocollo.
 
+Lotti parla con questi tipi di provider: **Mistral**, **Melious.ai**, **Google
+Gemini**, **Alibaba Cloud (Qwen)**, **OpenAI**, **Anthropic Claude**,
+**OpenRouter**, **Nebius AI Studio**, **ElevenLabs**, qualsiasi endpoint
+**Compatibile con OpenAI** e i locali **Ollama**, **oMLX (locale)**,
+**Voxtral (locale)**, **Whisper (locale)** e **sherpa-onnx (sul dispositivo)**.
+Se non sei sicuro, parti da Mistral: è il predefinito consigliato, contrassegnato
+con **RACCOMANDATO** quando scegli un provider.
+
 ## Collega un provider
 
-1. Apri **Impostazioni → Impostazioni dell'intelligenza → Fornitori**.
+1. Apri **Impostazioni → Impostazioni AI → Fornitori**.
 2. Seleziona il pulsante **+**.
 3. Scegli un provider supportato.
 4. Inserisci nome visualizzato, endpoint e chiave API quando richiesti.
@@ -65,8 +73,11 @@ il provider.
 
 Cambiare un URL di base o una chiave API influisce su ogni modello collegato a
 quel provider. Dopo aver cambiato uno dei due valori, verifica un'azione AI
-rappresentativa prima di dare per sana la connessione. Rimuovere un provider
-può anche toccare i profili che instradano lavoro attraverso i suoi modelli;
+rappresentativa prima di dare per sana la connessione. Quando una chiamata
+fallisce perché l'account del provider non ha più credito, Lotti dice
+**Credito esaurito**, cita il messaggio del provider stesso e suggerisce di
+ricaricare l'account o di scegliere un modello di un altro provider. Rimuovere
+un provider può anche toccare i profili che instradano lavoro attraverso i suoi modelli;
 rivedi prima le informazioni sulle dipendenze.
 
 ## Rivedi l'instradamento dei profili

@@ -1,21 +1,21 @@
 {
   "manual.screenshot.allScreenshots": {
-    "message": "Todas as capturas de tela",
+    "message": "Todas as capturas de ecrã",
     "description": "Label for the global screenshot viewport preference"
   },
   "manual.screenshot.close": {"message": "Fechar"},
   "manual.screenshot.desktop": {"message": "Computador"},
-  "manual.screenshot.desktopView": {"message": "Visualização para computador"},
+  "manual.screenshot.desktopView": {"message": "Vista para computador"},
   "manual.screenshot.expand": {"message": "Ampliar"},
-  "manual.screenshot.expandedViewer": {"message": "Visualização ampliada da captura de tela"},
-  "manual.screenshot.fullscreen": {"message": "Tela cheia"},
-  "manual.screenshot.layoutLabel": {"message": "Layout das capturas de tela para todas as imagens"},
-  "manual.screenshot.mobile": {"message": "Celular"},
-  "manual.screenshot.mobileView": {"message": "Visualização para celular"},
-  "manual.screenshot.openViewer": {"message": "Abrir visualizador de capturas de tela"},
-  "manual.screenshot.screenshot": {"message": "Captura de tela"},
+  "manual.screenshot.expandedViewer": {"message": "Vista ampliada da captura de ecrã"},
+  "manual.screenshot.fullscreen": {"message": "Ecrã inteiro"},
+  "manual.screenshot.layoutLabel": {"message": "Disposição das capturas de ecrã para todas as imagens"},
+  "manual.screenshot.mobile": {"message": "Telemóvel"},
+  "manual.screenshot.mobileView": {"message": "Vista para telemóvel"},
+  "manual.screenshot.openViewer": {"message": "Abrir visualizador de capturas de ecrã"},
+  "manual.screenshot.screenshot": {"message": "Captura de ecrã"},
   "manual.translationNotice.disclosure": {
-    "message": "Esta tradução foi gerada automaticamente e ainda não foi revisada."
+    "message": "Esta tradução foi gerada automaticamente e ainda não foi revista."
   },
   "manual.translationNotice.invitation": {
     "message": "Correções e melhorias são muito bem-vindas por meio de uma"
@@ -24,12 +24,12 @@
   "manual.translationNotice.or": {"message": "ou de um"},
   "manual.translationNotice.pullRequest": {"message": "pull request"},
   "manual.translationNotice.title": {
-    "message": "Tradução automática — suas sugestões são bem-vindas"
+    "message": "Tradução automática — as tuas sugestões são bem-vindas"
   },
   "manual.version.development": {"message": "Desenvolvimento"},
   "theme.colorToggle.ariaLabel.mode.system": {"message": "modo do sistema"},
   "theme.docs.sidebar.navAriaLabel": {"message": "Navegação lateral da documentação"},
-  "theme.IconExternalLink.ariaLabel": {"message": "(abre em uma nova aba)"},
+  "theme.IconExternalLink.ariaLabel": {"message": "(abre num novo separador)"},
   "theme.NavBar.navAriaLabel": {"message": "Navegação principal"},
   "theme.SearchBar.label": {"message": "Pesquisar"},
   "theme.SearchBar.noResultsText": {"message": "Nenhum resultado"},
@@ -40,5 +40,5 @@
   "theme.SearchPage.emptyResultsTitle": {"message": "Pesquisar na documentação"},
   "theme.SearchPage.documentsFound.plurals": {"message": "Um documento encontrado|{count} documentos encontrados"},
   "theme.SearchPage.noResultsText": {"message": "Nenhum resultado encontrado"},
-  "theme.SearchPage.searchContext.everywhere": {"message": "Em todo lugar"}
+  "theme.SearchPage.searchContext.everywhere": {"message": "Em todo o lado"}
 }

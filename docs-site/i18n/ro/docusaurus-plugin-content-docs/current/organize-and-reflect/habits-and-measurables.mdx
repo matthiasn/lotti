@@ -20,8 +20,8 @@ Pagina Obiceiuri organizează definițiile active în ceea ce este scadent acum,
 
 ### Crearea și editarea obiceiurilor
 
-1. Deschideți **Obiceiuri** și atingeți **+**. Pentru a modifica un obicei
-   existent, țineți-l apăsat sau deschideți fișa sa de înregistrare și atingeți
+1. Deschideți **Obiceiuri** și atingeți **+** – pe telefon se află în
+   lansatorul de navigare. Pentru a modifica un obicei existent, țineți-l apăsat sau deschideți fișa sa de înregistrare și atingeți
    creionul. **Setări → Definiții → Obiceiuri** listează în continuare toate
    definițiile și deschide același editor.
 2. Denumiți comportamentul concret. Cipurile-exemplu (**măsurarea tensiunii**,
@@ -38,7 +38,7 @@ Pagina Obiceiuri organizează definițiile active în ceea ce este scadent acum,
 
 <ManualScreenshot
   caseId="habits/editor-step2"
-  alt="Obicei nou, pasul 2 din 2: Cum știm că este îndeplinit? cu rândul manual, un semnal Pași setat la zilnic cel puțin 6.000, Adăugați un semnal și secțiunea Setări"
+  alt="Obicei nou, pasul 2 din 2: Cum știm că este îndeplinit? cu rândul manual, un semnal Pași setat la zilnic ≥ 6.000 comparat cu Astăzi, Adăugați un semnal, comutatorul Notificare la completarea automată și secțiunea Setări"
 />
 
 ### Lăsați datele înregistrate să bifeze un obicei
@@ -55,13 +55,17 @@ bifez eu** este mereu activ – orice obicei poate fi înregistrat manual.
 - un tip de **antrenament** apărut în importurile dvs. (orice antrenament sau
   durată, distanță ori energie cel puțin / cel mult o valoare).
 
+Un prag poate fi comparat cu valoarea de **Astăzi**, cu **Media pe 7 zile**
+sau cu **Oricare dintre ele**.
+
 Cu două sau mai multe semnale, **Când obiceiul contează ca îndeplinit** alege
 dacă îl completează **orice** semnal, **toate** semnalele sau **cel puțin N**
 dintre ele. Când datele zilei îndeplinesc regula, obiceiul este bifat pentru
 dvs., marcat **auto** pe pagina Obiceiuri cu semnalul și ora, și anunțat cu o
 notificare – obiceiurile completate la câteva secunde distanță sunt grupate într-una,
 fiecare obicei este anunțat cel mult o dată pe zi, iar **Notificare la
-completarea automată** o dezactivează per obicei. Ce înregistrați dvs., inclusiv o omitere, are întotdeauna prioritate
+completarea automată**, la baza cardului de semnale, afișat de îndată ce
+obiceiul are un semnal, o dezactivează per obicei. Ce înregistrați dvs., inclusiv o omitere, are întotdeauna prioritate
 față de bifarea automată.
 
 ### Setările editorului
@@ -74,12 +78,12 @@ față de bifarea automată.
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Pagina Editați obiceiul pentru Apelul pinguinilor imperiali cu cardul de semnale, secțiunea Setări și opțiunile favorit, privat și activ"
+  alt="Pagina Editați obiceiul pentru Apelul pinguinilor imperiali, cu numele, descrierea, cardul Cum știm că este îndeplinit? și secțiunea Setări"
 />
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Secțiunea Setări a editorului cu categorie, dată de început, afișare de la, ora alertei și comutatorul de notificare la completarea automată"
+  alt="Pagina Editați obiceiul pentru Apelul pinguinilor imperiali, cu secțiunea Setări – categorie, dată de început, afișare de la și ora alertei – și Opțiuni cu Favorit, Privat și Activ, apoi Ștergeți"
 />
 
 - **Categorie** pentru filtrare și context vizual.
@@ -87,7 +91,6 @@ față de bifarea automată.
   **afișat** și când Lotti trebuie să **afișeze o alertă**. Modelul de date
   înțelege și planuri săptămânale și lunare; editorul expune aceste controale
   de timp pentru obiceiurile zilnice.
-- **Notificare la completarea automată** (activată implicit).
 - La editare: **Favorit** pentru mai multă vizibilitate, **Privat** pentru a-l
   ascunde dacă nu sunt afișate intrările private, **Activ** pentru a controla
   dacă apare pe pagina Obiceiuri fără a-i șterge istoricul, și **Ștergeți**.
@@ -110,7 +113,7 @@ rezultate:
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Fișa de înregistrare pentru inspectarea garniturilor habitatului, cu rândurile de semnal Rații de krill și Pași, cipuri de înregistrare rapidă, grafice și rezultatele Succes, Omiteți și Ratat"
+  alt="Fișa de înregistrare pentru inspectarea garniturilor habitatului, cu rândurile de semnal Rații de krill, Verificarea hidratării și Pași, cipuri de înregistrare rapidă, grafice și rezultatele Succes, Omiteți și Ratat"
 />
 
 Folosiți starea care păstrează realitatea. Un istoric sincer este mai util
@@ -120,24 +123,25 @@ obicei și zi.
 
 ## Lucrați cu măsurători
 
-O definiție de măsurătoare descrie numărul înainte de a-l înregistra: numele, unitatea, confidențialitatea și modul în care observațiile multiple se combină în grafice.
+O definiție de măsurătoare descrie valoarea înainte de a o înregistra: numele, dacă este un număr sau o opțiune, unitatea, confidențialitatea și modul în care observațiile multiple se combină în grafice.
 
 <ManualScreenshot
   caseId="measurables/settings-list"
-  alt="Setările măsurătorilor, cu Presiunea habitatului, Pinguini numărați și Sardine consumate"
+  alt="Setările măsurătorilor, cu Presiunea habitatului, Verificarea hidratării, Pinguini numărați și Sardine consumate"
 />
 
 ### Creați un tip de date măsurabile
 
 1. Deschideți **Setări → Definiții → Măsurători**.
-2. Selectați acțiunea de adăugare.
-3. Adăugați un nume, o descriere opțională și abrevierea concisă a unității.
-4. Alegeți agregarea implicită folosită de grafice.
-5. Decideți dacă trebuie să fie favorită sau privată, apoi salvați.
+2. Selectați **Creare măsurătoare**.
+3. Adăugați un nume și o descriere opțională.
+4. La **Se înregistrează ca**, alegeți **Număr** pentru o valoare cu unitate sau **Opțiune** pentru a alege, la înregistrare, una dintre variantele pe care le definiți – de exemplu culorile unei verificări a hidratării.
+5. Pentru un număr, adăugați abrevierea concisă a unității și alegeți agregarea implicită folosită de grafice. Pentru o opțiune, adăugați în schimb **Variante de răspuns**.
+6. Decideți dacă trebuie să fie favorită sau privată, apoi salvați.
 
 <ManualScreenshot
   caseId="measurables/settings-detail"
-  alt="Editorul măsurătorii Presiunea habitatului, care folosește kPa și agregarea Medie zilnică"
+  alt="Editorul măsurătorii Presiunea habitatului, înregistrată ca Număr în kPa, cu agregarea Medie zilnică"
 />
 
 Alegeți agregarea pe baza sensului citirilor repetate:

@@ -5,21 +5,25 @@ description: Configurați vocea de pe dispozitiv, modelul și viteza de redare f
 
 # Alegeți vocea de citire
 
-Când citirea cu voce tare este disponibilă, deschideți **Setări → Preferințe → Vorbire**. Aceste controale se aplică rezumatelor AI ale sarcinilor; ele nu schimbă capturarea prin microfon și nici furnizorul AI care transcrie o înregistrare.
+Când citirea cu voce tare este disponibilă, deschideți **Setări → Preferințe → Vorbire**. Aceste controale se aplică celor citite cu voce tare de Lotti – rezumatele AI și răspunsurile din chat; ele nu schimbă capturarea prin microfon și nici furnizorul AI care transcrie o înregistrare. Cu însoțitorul activat, pagina separată Vorbire este ascunsă, iar aceleași setări se află în **Setări → Preferințe → Însoțitor → Voce**.
 
-<ManualScreenshot caseId="speech/settings" alt="Setările Vorbire Lotti, cu Masculin 3 selectat, modelul Supertonic 3 pe dispozitiv și viteza de citire 1,25" caption="Configurația exemplu din Centrul de comandă folosește Masculin 3 la 1,25× pentru briefinguri Project Waddle concise." />
+Pagina începe cu **Audio pentru chat**: **Pregătiți automat sunetul pentru chat** pregătește pe acest dispozitiv răspunsurile noi din chat, astfel încât redarea să înceapă mai repede. Sunetul se redă totuși numai când atingeți butonul de redare.
+
+<ManualScreenshot caseId="speech/settings" alt="Setările Vorbire Lotti, cu Audio pentru chat, Voci în cloud, Voce pe dispozitiv cu Masculin 3 selectat, modelul Supertonic 3 și viteza de citire 1,25" caption="Configurația exemplu din Centrul de comandă folosește Masculin 3 la 1,25× pentru briefinguri Project Waddle concise." />
 
 ## Alegeți o voce
 
-Folosiți comutatorul **Feminin / Masculin** pentru a parcurge cele două grupuri, apoi selectați una dintre cele cinci voci numerotate ale grupului. Schimbarea grupurilor modifică numai lista vizibilă; selectați o voce numerotată pentru a o activa.
+**Voci în cloud** listează, pentru fiecare dintre limbile dvs., vocea în care o rostește un model cloud de citire cu voce tare; atingeți una pentru a o asculta sau schimba. Secțiunea rămâne goală până când un profil de inferență are un model **Citire cu voce tare** – până atunci, citirea cu voce tare folosește vocea de pe dispozitiv.
 
-<ManualScreenshot caseId="speech/voice-options" alt="Setările Vorbire Lotti, cu cele cinci opțiuni de voce feminină pe dispozitiv" caption="Sunt disponibile zece stiluri de voce incluse: Feminin 1–5 și Masculin 1–5." />
+**Voce pe dispozitiv** citește pentru profilurile fără voce în cloud. Folosiți comutatorul **Feminină / Masculină** pentru a parcurge cele două grupuri, apoi selectați una dintre cele cinci voci numerotate ale grupului. Schimbarea grupurilor modifică numai lista vizibilă; selectați o voce numerotată pentru a o activa.
+
+<ManualScreenshot caseId="speech/voice-options" alt="Setările Vorbire Lotti, cu cele cinci opțiuni feminine ale Vocii pe dispozitiv, sub Audio pentru chat și Voci în cloud" caption="Sunt disponibile zece stiluri de voce incluse: Feminin 1–5 și Masculin 1–5." />
 
 Vocea selectată este o preferință locală a dispozitivului. Astfel, fiecare dispozitiv poate folosi vocea potrivită pentru difuzoarele și mediul său de ascultare, fără a schimba alegerea de pe celelalte dispozitive.
 
 ## Descărcarea modelului și confidențialitatea
 
-Lotti folosește în prezent **Supertonic 3** pentru citirea cu voce tare. Sinteza rulează pe dispozitiv, în loc să trimită rezumatul la un serviciu vocal cloud. Modelul este mare și se descarcă la prima utilizare, așadar acordați timp, lățime de bandă și spațiu de stocare pentru configurarea inițială.
+**Voce pe dispozitiv** folosește **Supertonic 3**. Sinteza rulează pe dispozitiv, așa că nimic nu este trimis la un serviciu vocal cloud. Când un profil de inferență are un model cloud de citire cu voce tare, **Voci în cloud** afișează în schimb vocea pentru fiecare dintre limbile dvs., iar textul citit cu voce tare este trimis acelui furnizor. Modelul de pe dispozitiv este mare și se descarcă la prima utilizare, așadar acordați timp, lățime de bandă și spațiu de stocare pentru configurarea inițială.
 
 ## Setați viteza de citire
 

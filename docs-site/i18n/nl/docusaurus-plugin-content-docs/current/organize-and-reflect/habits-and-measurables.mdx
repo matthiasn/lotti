@@ -26,7 +26,8 @@ patronen op te merken zonder één gemiste dag als het hele verhaal te behandele
 
 ### Gewoontes aanmaken en bewerken
 
-1. Open **Gewoontes** en tik op **+**. Om een bestaande gewoonte te wijzigen,
+1. Open **Gewoontes** en tik op **+** – op een telefoon zit die in de
+   navigatielauncher. Om een bestaande gewoonte te wijzigen,
    houd je haar ingedrukt of open je haar registratieblad en tik je op het
    potlood. **Instellingen → Definities → Gewoontes** toont nog steeds alle
    definities en opent dezelfde editor.
@@ -44,7 +45,7 @@ patronen op te merken zonder één gemiste dag als het hele verhaal te behandele
 
 <ManualScreenshot
   caseId="habits/editor-step2"
-  alt="Nieuwe gewoonte, stap 2 van 2: Hoe weten we dat het gedaan is? met de handmatige rij, een Stappen-signaal op per dag minstens 6.000, Signaal toevoegen en de sectie Instellingen"
+  alt="Nieuwe gewoonte, stap 2 van 2: Hoe weten we dat het gedaan is? met de handmatige rij, een Stappen-signaal op per dag ≥ 6.000 vergeleken met Vandaag, Signaal toevoegen, de schakelaar Melding bij automatisch afvinken en de sectie Instellingen"
 />
 
 ### Vastgelegde gegevens een gewoonte laten afvinken
@@ -61,13 +62,16 @@ vastleggen. **Signaal toevoegen** biedt drie soorten:
 - een **workout**-type dat in je imports voorkomt (elke sessie, of duur,
   afstand of energie minstens / hoogstens een waarde).
 
+Een drempel kan worden vergeleken met de waarde van **Vandaag**, het
+**7-daags gemiddelde** of **Een van beide**.
+
 Bij twee of meer signalen bepaalt **Wanneer de gewoonte als gedaan telt** of
 **één van de** signalen, **alle** signalen of **minstens N** ervan haar
 afronden. Zodra de gegevens van de dag aan de regel voldoen, wordt de gewoonte
 voor je afgevinkt, op de Gewoontes-pagina als **auto** gemarkeerd met signaal
 en tijd, en met een melding aangekondigd: gewoontes die binnen enkele seconden na elkaar worden afgevinkt, worden gebundeld tot één melding, elke gewoonte wordt hoogstens één keer per dag
-aangekondigd, en **Melding bij automatisch afvinken** zet dat per gewoonte
-uit. Wat je zelf vastlegt, ook een overslaan, gaat altijd voor
+aangekondigd, en **Melding bij automatisch afvinken** onderaan de signaalkaart,
+zichtbaar zodra de gewoonte een signaal heeft, zet dat per gewoonte uit. Wat je zelf vastlegt, ook een overslaan, gaat altijd voor
 op het automatisch afvinken.
 
 ### De instellingen van de editor
@@ -80,12 +84,12 @@ op het automatisch afvinken.
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Pagina Gewoonte bewerken voor Keizerspinguïns tellen met de signaalkaart, de sectie Instellingen en de opties favoriet, privé en actief"
+  alt="Pagina Gewoonte bewerken voor Keizerspinguïns tellen met naam, beschrijving, de kaart Hoe weten we dat het gedaan is? en de sectie Instellingen"
 />
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="De sectie Instellingen van de editor met categorie, startdatum, tonen vanaf, meldingstijd en de schakelaar voor melding bij automatisch afvinken"
+  alt="Pagina Gewoonte bewerken voor Keizerspinguïns tellen met de sectie Instellingen – categorie, begindatum, tonen van en alert tonen op – en Opties met Favoriet, Privé en Actief, daarna Verwijderen"
 />
 
 - **Categorie** om te filteren en visueel te plaatsen.
@@ -93,7 +97,6 @@ op het automatisch afvinken.
   **getoond** wordt en wanneer Lotti een **melding** moet tonen. Het datamodel
   kent ook wekelijkse en maandelijkse schema's; de editor toont deze
   tijdinstellingen voor dagelijkse gewoontes.
-- **Melding bij automatisch afvinken** (standaard aan).
 - Bij bewerken: **Favoriet** voor meer nadruk, **Privé** om haar te verbergen
   tenzij privé-items getoond worden, **Actief** om te bepalen of ze op de
   Gewoontes-pagina verschijnt zonder de geschiedenis te wissen, en
@@ -116,7 +119,7 @@ formulier drie uitkomsten:
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Registratieblad voor het inspecteren van de habitatafdichtingen, met de signaalrijen Krillrantsoenen en Stappen, snelle-registratiechips, grafiekjes en de uitkomsten Succes, Overslaan en Gemist"
+  alt="Registratieblad voor het inspecteren van de habitatafdichtingen, met de signaalrijen Krillrantsoenen, Hydratatiecontrole en Stappen, snelle-registratiechips, grafiekjes en de uitkomsten Succes, Overslaan en Gemist"
 />
 
 Kies de staat die de werkelijkheid bewaart. Een eerlijke geschiedenis is
@@ -126,25 +129,31 @@ reconstrueren.
 
 ## Werk met meetbare waarden
 
-Een meetbare definitie beschrijft het getal voordat je het vastlegt: de naam,
-eenheid, privacy en hoe meerdere waarnemingen in grafieken worden gecombineerd.
+Een meetbare definitie beschrijft de waarde voordat je die vastlegt: de naam,
+of het een getal of een keuze is, eenheid, privacy en hoe meerdere waarnemingen
+in grafieken worden gecombineerd.
 
 <ManualScreenshot
   caseId="measurables/settings-list"
-  alt="Meetbare instellingen met Habitatdruk, Getelde pinguïns en Gevreten Sardines"
+  alt="Meetbare instellingen met Habitatdruk, Hydratatiecontrole, Getelde pinguïns en Gevreten Sardines"
 />
 
 ### Creëer een meetbaar gegevenstype
 
 1. Open **Instellingen → Definities → Meetbare**.
-2. Selecteer de toevoegactie.
-3. Voeg een naam, optionele beschrijving en een beknopte afkorting van de eenheid toe.
-4. Kies de standaardaggregatie die grafieken gebruiken.
-5. Bepaal of het favoriet of privé moet zijn en sla dan op.
+2. Selecteer **Meetbare waarde aanmaken**.
+3. Voeg een naam en optionele beschrijving toe.
+4. Kies onder **Vastgelegd als** **Getal** voor een waarde met een eenheid, of
+   **Keuze** om bij het vastleggen een van de keuzes te kiezen die je definieert –
+   zoals de kleuren van een hydratatiecontrole.
+5. Voeg bij een getal een beknopte afkorting van de eenheid toe en kies de
+   standaardaggregatie die grafieken gebruiken. Voeg bij een keuze in plaats
+   daarvan de **Keuzes** toe.
+6. Bepaal of het favoriet of privé moet zijn en sla dan op.
 
 <ManualScreenshot
   caseId="measurables/settings-detail"
-  alt="Meetbare-editor voor Habitatdruk met kPa en aggregatie op dagelijks gemiddelde"
+  alt="Meetbare-editor voor Habitatdruk, vastgelegd als Getal in kPa met aggregatie op dagelijks gemiddelde"
 />
 
 Kies aggregatie op basis van wat herhaalde metingen betekenen:

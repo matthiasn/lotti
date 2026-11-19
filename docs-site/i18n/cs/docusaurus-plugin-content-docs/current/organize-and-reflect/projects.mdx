@@ -11,23 +11,32 @@ Projekty propojují široké kategorie s konkrétními úkoly. Kategorie jako
 
 <ManualScreenshot
   caseId="projects/list"
-  alt="Projekty seskupené pod Tučňáčím provozem, Řízením mise, Rybí diplomacií a Péčí o posádku, včetně Project Waddle a chladicího řetězce sardinek u Europy"
+  alt="Seznam projektů v rozsahu Aktuální, seskupený pod Tučňáčím provozem, Řízením mise a Rybí diplomacií, s Project Waddle, chladicím řetězcem sardinek u Europy a smlouvou o tučňáčích pasažérech"
   caption="Každý řádek kombinuje stav, průběh úkolů, cílové datum a krátký popis účelu. Počítač nechává vpravo prostor pro vybraný projekt; mobil používá celou šířku pro seznam."
 />
 
 ## Najdi potřebný projekt
 
 Vyhledávání porovnává názvy projektů, uložený text projektů a názvy kategorií.
-Filtr zužuje seznam podle stavu projektu nebo kategorie. Aktivuje se až po
-volbě **Použít**.
+Pod vyhledávacím polem **Aktuální** skryje dokončené a archivované projekty;
+**Vše** je vrátí zpět. **Seřadit projekty** řadí seznam podle **Vyžaduje
+pozornost**, **Cílové datum**, **Nedávno aktualizované** nebo **Název**.
+
+Tlačítko filtru zužuje seznam podle **Stav** nebo **Kategorie**. Dva přepínače
+přidávají další možnosti: **Jen neaktuální souhrny** ponechá projekty, jejichž
+souhrn agenta zaostává, a **Zobrazit profil inference** označí každý projekt s
+agentem názvem jeho profilu inference. Filtr se aktivuje až po volbě
+**Použít**.
 
 <ManualScreenshot
   caseId="projects/filters"
-  alt="Dialog filtru projektů s ovládáním stavu a kategorie nad seznamem projektů Intergalactic Penguin Logistics"
+  alt="Dialog Filtrovat projekty s řádky Stav a Kategorie, přepínači Jen neaktuální souhrny a Zobrazit profil inference a tlačítky Vymazat a Použít nad seznamem projektů"
 />
 
 Projekty zůstávají po filtrování seskupené podle kategorie. Podobně pojmenované
 aktivity se tak snáze rozlišují a každá provozní oblast zůstává viditelná.
+Záhlaví každé kategorie lze sbalit a jeho tlačítko mapy otevře **Prozkoumat
+kategorii** – projekty kategorie jako čtvrť, kterou můžeš projít.
 
 ## Vytvoř projekt
 
@@ -52,15 +61,16 @@ sardinek“ říká víc než „Sardinky“.
 
 ## Uprav nastavení projektu
 
-Nastavení projektu nabízí úplný editor stavu, názvu, cílového data, zdraví,
-přiřazení agenta, navržených změn agenta a propojených úkolů. Akce **Zrušit** a
-**Uložit** zůstávají připnuté dole, takže čekající změny formuláře jsou
-výslovné.
+V podrobnostech projektu zvol **Upravit projekt** a v pracovním prostoru
+Projekty se otevře úplný editor formuláře. Obsahuje název, popis, kategorii,
+stav a cílové datum. Zdraví, akce agenta, navržené změny a propojené úkoly
+zůstávají na podrobnostech projektu určených ke čtení. **Zrušit** a **Uložit**
+jsou přímo pod formulářem a obě akce tě vrátí k projektu.
 
 <ManualScreenshot
   caseId="projects/editor"
-  alt="Editor nastavení Project Waddle s aktivním stavem, názvem, cílovým datem, zdravím, přiřazením agenta a propojenými úkoly"
-  caption="Toto je produkční editor nastavení. Je oddělený od pracovního prostoru zaměřeného na čtení níže."
+  alt="Editor Project Waddle s názvem, popisem, kategorií, aktivním stavem a cílovým datem"
+  caption="Editor formuláře se otevírá z pracovního prostoru projektu určeného ke čtení a po uložení nebo zrušení se tam vrací."
 />
 
 ## Rozuměj stavu projektu
@@ -82,24 +92,38 @@ samostatné tlačítko uložení.
 
 <ManualScreenshot
   caseId="projects/detail"
-  alt="Podrobnosti Project Waddle se zdravím 82, pěti z osmi dokončených úkolů, jedním blokujícím problémem a zprávou AI aktualizovanou před dvěma hodinami"
+  alt="Podrobnosti Project Waddle se stavem Aktivní a cílovým datem, popisem, kartou Souhrn AI hodnocenou jako Na dobré cestě s 91% jistotou a jedním blokovaným úkolem a seznamem Projektové úkoly v čele s blokovaným krmítkem pro ryby v beztíži"
   caption="Počítač zobrazuje seznam projektů a podrobnosti vedle sebe. Mobil otevírá stejné podrobnosti jako celou stránku."
 />
 
-Panel zdraví shrnuje aktuální vyhodnocení agenta projektu:
+Karta **Souhrn AI** spojuje vyhodnocení a zprávu:
 
-- skóre zdraví je stručný signál, ne náhrada za základní práci;
-- průběh úkolů ukazuje počet dokončených a blokovaných položek;
-- zpráva nabízí aktuální shrnutí a lze ji rozbalit do úplného obsahu; a
-- doporučení upozorňují na konkrétní další kroky.
+- **Stav projektu** shrnuje vyhodnocení agenta, se zdůvodněním a jistotou,
+  pokud jsou k dispozici, a počtem blokovaných úkolů;
+- zpráva nabízí aktuální shrnutí a **Číst více** ji rozbalí do úplného
+  obsahu; a
+- další kroky a navržené změny upozorňují na konkrétní akce.
 
-V Project Waddle jsou skóre 82 a pět dokončených úkolů povzbudivé, ale krmítko
-pro ryby v beztíži stále blokuje spuštění. Než skóre přijmeš jako verdikt,
-přečti si vysvětlení.
+V Project Waddle je hodnocení Na dobré cestě povzbudivé, ale krmítko pro ryby
+v beztíži stále blokuje spuštění. Než pásmo přijmeš jako verdikt, přečti si
+zdůvodnění.
 
-Když je nastavený agent projektu, nabídka zprávy může vyžádat novou zprávu nebo
-zrušit naplánované probuzení. Bez agenta projekt dál zobrazuje své úkoly a
-uložený text projektu.
+Samotná karta ponechává jen **Otevřít interní informace agenta** a
+**Aktualizovat nyní**, dokud je souhrn neaktuální. Nastavení modelu,
+automatické aktualizace a to, jak často se agent aktualizuje, najdeš v
+interních informacích agenta. Bez agenta karta nabízí **Přiřadit agenta** a
+podrobnosti dál zobrazují úkoly a popis projektu.
+
+**Prozkoumat projekt** vedle nabídky projektu otevře projekt jako čtvrť, kterou
+můžeš projít, s budovou pro každý úkol.
+
+## Přidávej do projektu poznámky, nahrávky a obrázky
+
+Lišta podél spodního okraje stránky projektu přidává přímo do projektu:
+**Nahrát hlasovou poznámku**, napsat poznámku, importovat obrázek, nebo plus
+pro nabídku **Přidat** se zbytkem. Na úzké obrazovce tlačítka poznámky a
+obrázku ustoupí plusu. Vše, co tam přidáš, je propojené s projektem, objeví se
+na jeho časové ose a čte to jeho agent.
 
 ## Udržuj práci projektu v úkolech
 
@@ -113,9 +137,16 @@ Výběrem řádku otevřeš samotný úkol. Jeho podrobnosti jsou hlavním míst
 popis, nahrávky, kontrolní seznamy, obrázky, časové záznamy a titulní obrázek.
 
 Úkol přiřaď projektu pomocí ovládání projektu v záhlaví úkolu. Projekty jsou
-omezené kategorií, proto úkolu nejdřív kategorii nastav. Úkol patří nejvýše do
-jednoho projektu; přiřazení jiného projektu propojení přesune, místo aby ho
-duplikovalo.
+omezené kategorií, proto úkolu nejdřív kategorii nastav. Navrhnout to může i
+agent úkolu: zmiň projekt v poznámkách úkolu nebo v nahrávce a agent navrhne
+úkol do něj přesunout – nebo, když kategorie projekt s tímto názvem nemá,
+vytvořit projekt i s úkolem. Nic se nezmění, dokud to nepotvrdíš. Úkol patří
+nejvýše do jednoho projektu; přiřazení jiného projektu propojení přesune, místo
+aby ho duplikovalo.
+
+Kategorii projektu nelze změnit, dokud má propojené úkoly nebo živého agenta
+projektu. Chrání to členství i oprávnění agenta před tichým přesunem do jiných
+kategorií.
 
 ## Projekty, kategorie a úkoly
 

@@ -1,34 +1,39 @@
 ---
-title: Sincronizar dispositivos
-description: Emparelhe dispositivos, verifique sua identidade, monitore a entrega e recupere dados perdidos sem adivinhar.
+title: Sincroniza dispositivos
+description: Emparelha dispositivos, verifica a sua identidade, acompanha a entrega e recupera dados em falta sem adivinhar.
 ---
 
-# Sincronizar dispositivos
+# Sincroniza dispositivos
 
-O Lotti Sync mantém os dados suportados alinhados entre os seus dispositivos.
-Cada dispositivo tem seu próprio banco de dados local; a sincronização move as
-alterações pela conta de sincronização configurada e atualiza um dispositivo
-depois que ele ficou off-line. A sincronização não move o sistema de registro
-para uma nuvem do Lotti: o serviço Matrix configurado retransmite cargas
-criptografadas de ponta a ponta entre os seus dispositivos, enquanto cada
-dispositivo mantém sua própria cópia local.
+O Lotti Sync mantém os dados suportados alinhados entre os teus dispositivos.
+Cada dispositivo tem a sua própria base de dados local; a sincronização faz
+passar as alterações pela conta de sincronização configurada e põe um
+dispositivo em dia depois de ele ter estado offline. A sincronização não muda
+o sistema de registo para uma nuvem do Lotti: o serviço Matrix configurado
+retransmite conteúdos cifrados de ponta a ponta entre os teus dispositivos,
+enquanto cada dispositivo mantém a sua própria cópia local.
 
 ## O que sincroniza e o que fica
 
-| Sincroniza entre os seus dispositivos | Fica em um único dispositivo |
+| Sincroniza entre os teus dispositivos | Fica num único dispositivo |
 | --- | --- |
-| Entradas do diário e tarefas, e os vínculos entre elas · categorias, etiquetas, hábitos, painéis e mensuráveis · provedores, modelos e perfis de IA (incluindo exclusões) · filtros de tarefas salvos · sinalizadores de configuração · escolha de tema claro/escuro · perfis de dispositivo · seu nome no Daily OS · notificações e seu estado de leitura · agentes de tarefas e seus vínculos · registros de uso de IA (tokens, custo, energia) | Voz e velocidade de texto para fala · larguras dos painéis · limites de concorrência de IA · temporizadores dos agentes · exclusões do planejamento diário |
+| Entradas do diário e tarefas, e as ligações entre elas · categorias, etiquetas, hábitos, painéis e mensuráveis · fornecedores, modelos e perfis de IA (incluindo eliminações) · filtros de tarefas guardados · sinalizadores de configuração · escolha do tema claro/escuro · perfis de dispositivo · o teu nome no Daily OS · notificações e o respetivo estado de leitura · agentes de tarefas e as suas ligações · registos de utilização de IA (tokens, custo, energia) | Voz e velocidade da leitura em voz alta · larguras dos painéis · limites de concorrência de IA · temporizadores de limitação dos agentes · exclusões do planeamento diário |
 
-Dois detalhes que valem saber. Nem tudo o que sincroniza é dado do diário: o perfil do dispositivo e o nome no Daily OS viajam como preferências do dispositivo e ficam fora da detecção de lacunas. E números derivados nunca são enviados — um filtro de tarefas salvo sincroniza, mas as contagens dele são recalculadas em cada dispositivo.
+Há dois detalhes que vale a pena saber. Nem tudo o que sincroniza são dados do
+diário: o perfil do dispositivo e o nome no Daily OS viajam como preferências
+do dispositivo e ficam de fora da deteção de lacunas. E os números derivados
+nunca são enviados — um filtro de tarefas guardado sincroniza, mas as
+contagens de tarefas calculadas a partir dele são recalculadas em cada
+dispositivo.
 
-Abre **Configurações → Configurações de sincronização** para veres as páginas de
-configuração, estado e recuperação. O número ao lado de **Sincronizar caixa de
-saída** é trabalho que ainda não chegou ao serviço de sincronização.
+Abre **Configurações → Configurações de sincronização** para veres as páginas
+de configuração, estado e recuperação. O número ao lado de **Caixa de saída da
+sincronização** é trabalho que ainda não chegou ao serviço de sincronização.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Configurações de sincronização do Lotti com Dispositivos, Este dispositivo, Sincronização de preenchimento, Estatísticas da Matriz, Sincronizar caixa de saída, Conflitos de sincronização e Manutenção"
-  caption="As configurações de sincronização mantêm o estado do dia a dia junto das ferramentas de diagnóstico e recuperação. O Project Waddle tem neste momento três itens na caixa de saída para inspecionar."
+  alt="Configurações de sincronização do Lotti com Dispositivos, Este dispositivo, Estado da sincronização, Estatísticas do Matrix, Caixa de saída da sincronização, Conflitos de sincronização e Manutenção"
+  caption="As definições de sincronização mantêm o estado do dia a dia junto das ferramentas de diagnóstico e recuperação. O Project Waddle tem neste momento três itens na caixa de saída para inspecionar."
 />
 
 ## Vê os teus dispositivos
@@ -40,17 +45,18 @@ dispositivo** inicia o [emparelhamento de outro](./add-device.mdx).
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="Página Dispositivos do Lotti com cartões para Mission Control Mac e Admiral Pebble's Phone, as etiquetas de verificação, a última atividade e a ação Parar de sincronizar este dispositivo"
+  alt="Página Dispositivos do Lotti com cartões para Mac de controle de missão e Admiral Pebble's Phone, as etiquetas de verificação, a última atividade e a ação Parar de sincronizar este dispositivo"
   caption="Cada cartão mostra se o dispositivo está verificado e quando o servidor o viu pela última vez. Um dispositivo que não dá sinal há muito tempo é marcado como provavelmente fora de uso."
 />
 
 Cada cartão tem a etiqueta **Este dispositivo** no que tens na mão, e
 **Verificado** ou **Não verificado** nos restantes. Um dispositivo não
 verificado não consegue ler as entradas novas: uma faixa por cima da lista diz
-quantos há, e cada um oferece **Verifique**. Se um dispositivo não dá sinal há
+quantos há, e cada um oferece **Verificar**. Se um dispositivo não dá sinal há
 algum tempo, a verificação avisa primeiro que ele pode estar offline — a
 comparação dos emojis só funciona enquanto esse dispositivo está ligado e a
-mostrar o Lotti. Escolhe **Verificar mesmo assim** só se souberes que é o caso.
+mostrar o Lotti. Escolhe **Verificar mesmo assim** só se souberes que é o
+caso.
 
 Para retirar um dispositivo, escolhe **Remover da sincronização** no cartão
 dele. A sessão é terminada e ele precisa de um código de emparelhamento novo
@@ -58,28 +64,28 @@ antes de voltar a sincronizar. Se o servidor de sincronização já não aceitar
 palavra-passe guardada neste dispositivo, o Lotti pede-te para confirmares que
 és tu com a palavra-passe atual da conta de sincronização antes de remover
 alguma coisa. Um dispositivo que nunca terminou o emparelhamento só pode ser
-removido. Não podes remover assim o dispositivo em que estás, e os dispositivos
-emparelhados à maneira antiga — cada um com a sua própria conta — podem ser
-verificados, mas não removidos.
+removido. Não podes remover assim o dispositivo em que estás, e os
+dispositivos emparelhados à maneira antiga — cada um com a sua própria conta —
+podem ser verificados, mas não removidos.
 
-Quando um dispositivo que acabaste de adicionar conclui a verificação, uma faixa
-anuncia a chegada dele e oferece **Enviar configurações** e **Enviar histórico
-de mensagens** nesta mesma página, para o dispositivo novo se encher sem
-desvios.
+Quando um dispositivo que acabaste de adicionar conclui a verificação, uma
+faixa anuncia a chegada dele e oferece **Enviar configurações** e **Enviar
+histórico de mensagens** nesta mesma página, para o dispositivo novo se encher
+sem desvios.
 
-**Parar de sincronizar este dispositivo**, por baixo da lista, termina a sessão
-deste dispositivo na conta de sincronização. As tuas entradas ficam nele e os
-outros dispositivos não são afetados; voltar a sincronizar exige um código de
-emparelhamento novo. **Detalhes técnicos** mostra informação de diagnóstico que
-podes copiar para um pedido de suporte.
+**Parar de sincronizar este dispositivo**, por baixo da lista, termina a
+sessão deste dispositivo na conta de sincronização. As tuas entradas ficam
+nele e os outros dispositivos não são afetados; voltar a sincronizar exige um
+código de emparelhamento novo. **Detalhes técnicos** mostra informação de
+diagnóstico que podes copiar para um pedido de suporte.
 
 Antes de a sincronização estar configurada, esta página mostra em vez disso
-**Sincroniza os teus dispositivos** com **Configurar sincronização** — vê
+**Sincroniza os teus dispositivos**, com **Configurar sincronização** — vê
 [Adicionar um dispositivo](./add-device.mdx), ou
 [O teu primeiro dispositivo](./first-device.mdx) se ainda não houver nenhum
 dispositivo ligado.
 
-## Parear outro dispositivo
+## Emparelha outro dispositivo
 
 O emparelhamento é um fluxo próprio, com um código para comparar e dois passos
 depois de ligar. Tem uma página só para ele:
@@ -92,14 +98,14 @@ lê o código. Compara o código de verificação nos dois ecrãs antes de ligar
 código QR leva as credenciais da tua conta de sincronização, por isso vai para
 o teu próprio dispositivo e para mais lado nenhum.
 
-## Verifique o novo dispositivo
+## Verifica o novo dispositivo
 
 O emparelhamento liga o dispositivo; a verificação confirma que os dois
 dispositivos falam entre si sem um dispositivo desconhecido pelo meio.
 
 <ManualScreenshot
   caseId="sync/verification"
-  alt="Verificação de dispositivo do Lotti comparando uma sequência de emojis de pinguim, peixe, foguete, gelo, Terra, lua e estrela"
+  alt="Verificação de dispositivo do Lotti a comparar uma sequência de emojis de pinguim, peixe, foguetão, gelo, Terra, lua e estrela"
   caption="Compara a sequência completa de emojis nos dois dispositivos. Aceita só quando cada imagem e a sua ordem coincidirem exatamente."
 />
 
@@ -109,16 +115,16 @@ completa coincidir pela mesma ordem. Se nem que seja um emoji for diferente,
 escolhe **São diferentes — cancelar** e confere os nomes da conta e dos
 dispositivos antes de tentares de novo.
 
-## Nomeie dispositivos e anuncie recursos
+## Dá nomes aos dispositivos e anuncia capacidades
 
 **Este dispositivo** — «Nome e capacidades do dispositivo» — apresenta o
 dispositivo atual ao resto do grupo de sincronização. Dá-lhe um **Nome de
-exibição do dispositivo** que distinga a máquina física, como «Mission Control
-Mac» em vez de «Computador», e escolhe **Salvar**.
+exibição do dispositivo** que distinga a máquina física, como «Mac de controle de
+missão» em vez de «Computador», e escolhe **Guardar**.
 
 <ManualScreenshot
   caseId="sync/node-profile"
-  alt="Página Este dispositivo do Lotti para Mission Control Mac com o nome de exibição, as capacidades de IA detectadas e os dispositivos de sincronização conhecidos"
+  alt="Página Este dispositivo do Lotti para Mac de controle de missão com o nome de exibição, as capacidades de IA detetadas e os dispositivos de sincronização conhecidos"
   caption="Nomes de dispositivo claros tornam muito mais fácil acompanhar a verificação, o diagnóstico e a inferência local associada a um dispositivo."
 />
 
@@ -129,87 +135,90 @@ dispositivos publicaram mais recentemente. As capacidades listadas são
 descritivas; o perfil de IA respetivo tem mesmo assim de ser configurado para
 as usar.
 
-## Entenda o catch-up e o backfill
+## Percebe o pôr em dia e o preenchimento
 
 A sincronização normal processa as alterações à medida que chegam.
-**Sincronização de preenchimento** deteta lacunas na sequência recebida dos
+**Estado da sincronização** deteta lacunas na sequência recebida dos
 dispositivos conhecidos e volta a pedir os registos em falta.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Página Sincronização de preenchimento do Lotti com os contadores da fila de entrada, dos itens em falta e ignorados, as estatísticas de sincronização, o preenchimento automático e a recuperação avançada"
-  caption="O Project Waddle recebeu 2868 registos de sequência e conhece neste momento quatro registos em falta em dois IDs de dispositivo."
+  alt="Página Estado da sincronização do Lotti com os registos neste dispositivo, os contadores da fila de entrada e dos itens em falta, as estatísticas de sincronização, o preenchimento automático e a recuperação avançada"
+  caption="O Project Waddle acompanha 2868 contadores de sequência, recebeu 2775 deles e conhece neste momento quatro registos em falta em dois IDs de dispositivo."
 />
 
+- **Registos neste dispositivo** conta o que este dispositivo guarda,
+  incluindo eliminações. Dispositivos sincronizados mostram aqui os mesmos
+  números.
 - **Fila de entrada** é trabalho à espera de ser aplicado.
 - **Desaparecido** é o número de lacunas conhecidas na sequência.
-- **Ignorado** é trabalho que a fila de entrada abandonou por não o conseguir
-  processar normalmente.
+- **Ignorado**, em **Estatísticas de sincronização**, é trabalho que a fila de
+  entrada abandonou por não o conseguir processar normalmente.
 - **Preenchimento automático** pede as entradas em falta das últimas 24 horas e
   é a predefinição certa para o uso normal.
 - **Recuperação avançada** contém ações manuais para uma investigação, como
-  **Acompanhe agora** e o pedido de entradas em falta mais antigas. Usa-a só
+  **Pôr em dia agora** e o pedido de entradas em falta mais antigas. Usa-a só
   depois de dares tempo à sincronização normal e ao preenchimento automático
   para estabilizarem.
 
 Um número de itens em falta diferente de zero não é automaticamente perda de
-dados: outro dispositivo pode ainda estar offline, ou o pedido já está a
+dados: outro dispositivo pode ainda estar offline, ou o pedido já pode estar a
 caminho. Investiga quando o número não muda apesar de todos os dispositivos
 esperados estarem online.
 
-## Ler as Estatísticas da Matriz
+## Lê as Estatísticas do Matrix
 
-**Estatísticas da Matriz** separa o volume de mensagens da saúde do
-processamento. É útil quando os dados parecem antigos, mas a conta continua a
-aparecer como ligada.
+**Estatísticas do Matrix** separa o volume de mensagens da saúde do
+processamento. É útil quando os dados parecem desatualizados, mas a conta
+continua a aparecer como ligada.
 
 <ManualScreenshot
   caseId="sync/stats"
-  alt="Estatísticas da Matriz do Lotti com mensagens enviadas por tipo de evento, ações das métricas de sincronização, principais KPIs, contadores de aplicação à base de dados e sinais"
+  alt="Estatísticas do Matrix do Lotti com mensagens enviadas por tipo de evento, ações das métricas de sincronização, principais KPIs, contadores de aplicação à base de dados e sinais"
   caption="As contagens de envio mostram se as mensagens se movem; os contadores de aplicação à base de dados mostram o que o trabalho recebido fez de facto."
 />
 
 **Mensagens enviadas:** conta o que este dispositivo enviou, agrupado por tipo
 de evento Matrix. Em **Métricas de sincronização**, **Principais KPIs** mostra
-as linhas escritas na base de dados, os conflitos criados e os eventos recebidos
-que ainda esperam na fila. O grupo **Aplicar BD** acrescenta o que foi ignorado
-por ser um dado mais antigo, saltado à espera de uma linha base em falta ou
-descartado depois de novas tentativas.
+as linhas aplicadas à base de dados, os conflitos criados e os eventos
+recebidos que ainda esperam na fila. O grupo **Aplicar BD** acrescenta o que
+foi ignorado por ser um dado mais antigo, saltado enquanto faltava uma linha
+base ou descartado depois de novas tentativas.
 
-Um contador **BD aplicado** que cresce e uma fila que esvazia são bom sinal. Se
-a fila continuar alta ou os descartes não pararem de aparecer, usa **Tentar
+Um contador **BD aplicado** que cresce e uma fila que esvazia são bom sinal.
+Se a fila continuar alta ou os descartes não pararem de aparecer, usa **Tentar
 novamente agora** ou **Forçar nova verificação** e depois confere a caixa de
 saída e a ligação do outro dispositivo. **Copiar diagnósticos** põe os números
 na área de transferência para um pedido de suporte.
 
-## Inspecione a caixa de saída
+## Inspeciona a caixa de saída
 
-**Sincronizar caixa de saída** é a fila local de alterações à espera de envio.
-O resumo no topo diz se está tudo sincronizado, quantos itens esperam ou estão a
-ser enviados e quantos não puderam ser enviados.
+A **Caixa de saída da sincronização** é a fila local de alterações à espera de
+envio. O resumo no topo diz se está tudo sincronizado, quantos itens esperam
+ou estão a ser enviados e quantos não puderam ser enviados.
 
 <ManualScreenshot
   caseId="sync/outbox"
-  alt="Caixa de saída de sincronização do Lotti filtrada para uma entrada do diário que não pôde ser enviada, com os detalhes do anexo, Tentar novamente, Remover e Tentar tudo novamente"
+  alt="Caixa de saída da sincronização do Lotti filtrada para uma entrada do diário que não pôde ser enviada, com os detalhes do anexo, Tentar novamente, Remover e Tentar tudo novamente"
   caption="Um item que não pôde ser enviado guarda os detalhes do conteúdo, quantas vezes foi tentado e o seu anexo local, para que a recuperação seja concreta e não às cegas."
 />
 
 Filtra a lista por estado:
 
-- **Esperando** mostra os itens que esperam a sua vez e os que estão a ser
+- **Em espera** mostra os itens que esperam a sua vez e os que estão a ser
   enviados.
 - **Falha** mostra os itens que não puderam ser enviados mesmo depois das
   novas tentativas automáticas. Continuam guardados neste dispositivo, mas não
-  voltam a ser enviados sozinhos: depois de resolver o problema, escolhe
+  voltam a ser enviados sozinhos: depois de resolveres o problema, escolhe
   **Tentar novamente** ou **Tentar tudo novamente**.
 - **Enviado** mostra os itens entregues, guardados durante algum tempo para
   diagnóstico.
 
-Usa **Tentar tudo novamente** depois de resolver o problema de ligação ou de
-conta, ou **Tentar novamente** num único item. **Remover** tira um item da fila:
-fica neste dispositivo, mas nunca chegará aos teus outros dispositivos, por isso
-remove-o só se for mesmo isso que queres. Remover não substitui a reparação da
-entrada ou do anexo local correspondente.
+Usa **Tentar tudo novamente** depois de resolveres o problema de ligação ou de
+conta, ou **Tentar novamente** num único item. **Remover** tira um item da
+fila: fica neste dispositivo, mas nunca chegará aos teus outros dispositivos,
+por isso remove-o só se for mesmo isso que queres. Remover não substitui a
+reparação da entrada ou do anexo local correspondente.
 
 Continua com [Resolver conflitos de sincronização](./conflicts.mdx) quando dois
 dispositivos editaram a mesma entrada de forma independente, ou com

@@ -12,19 +12,30 @@ gestisce l'audio?” fuori da ogni singola attività e regola di automazione.
 
 ## Rivedi i modelli salvati
 
-Apri **Impostazioni → Impostazioni dell'intelligenza → Modelli**. L'elenco
-raggruppa i modelli per provider ed espone filtri di capacità per testo,
-visione, audio e ragionamento.
+Apri **Impostazioni → Impostazioni AI → Modelli**. I modelli formano un unico
+elenco. Sopra di esso, un chip di filtro per ogni provider e i chip **Testo**,
+**Visione**, **Audio** e **Ragionamento** lo restringono, e il campo di
+ricerca trova provider, modelli e profili per nome.
 
 <ManualScreenshot
   caseId="ai/models"
-  alt="Elenco dei modelli AI di Lotti con i modelli di testo, ragionamento, visione, trascrizione e generazione di immagini di Project Waddle"
+  alt="Pagina Modelli di Lotti con i controlli delle impostazioni AI in alto, i chip di filtro per provider e capacità e un elenco di modelli di Project Waddle contrassegnati come Pensare o Riconoscimento dell'immagine"
   caption="Lo spazio di lavoro di Project Waddle mescola modelli cloud e locali mantenendo esplicite le capacità di ogni modello."
 />
 
-Il controllo **L'agente corrente si sveglia** in cima alle impostazioni AI
-limita quanti agenti diversi possono eseguire inferenza contemporaneamente. Un
-valore più alto può migliorare il throughput, ma aumenta anche le richieste
+In cima alle impostazioni AI ci sono tre controlli:
+
+- **Risvegli simultanei degli agenti** limita quanti agenti diversi possono
+  eseguire inferenza contemporaneamente.
+- **Frequenza di aggiornamento** stabilisce ogni quanto gli agenti delle
+  attività si aggiornano da soli quando né l'attività né la sua categoria lo
+  impostano. **Al massimo ogni ora** si aggiorna comunque subito dopo una
+  registrazione, un timer fermato o un'attività segnata come fatta.
+- **Profilo di inferenza predefinito** è il ripiego per gli agenti senza un
+  percorso di inferenza configurato su questo dispositivo.
+
+Un valore più alto di **Risvegli simultanei degli agenti** può migliorare il
+throughput, ma aumenta anche le richieste
 simultanee ai provider e il carico del dispositivo locale. Tienilo prudente
 quando un provider ha limiti di frequenza severi o un server di modelli locale
 ha memoria limitata.
@@ -54,7 +65,7 @@ e quell'endpoint lo forniscano davvero.
 
 ## Costruisci un profilo di inferenza
 
-Apri **Impostazioni → Impostazioni dell'intelligenza → Profili di inferenza**.
+Apri **Impostazioni → Impostazioni AI → Profili di inferenza**.
 Ogni profilo è una politica di instradamento riutilizzabile. La panoramica
 mostra quale modello serve ogni slot configurato.
 
@@ -67,19 +78,31 @@ mostra quale modello serve ogni slot configurato.
 Modifica un profilo per assegnare i modelli alle capacità che usi:
 
 - **Pensare** è il modello di testo generale obbligatorio.
+- **Modello di chat** risponde nelle chat; se non è impostato usa il modello
+  di pensiero.
 - **Pensare (High-End)** può gestire il lavoro che richiede esplicitamente il
   percorso di ragionamento più capace.
 - **Riconoscimento delle immagini** analizza le immagini.
 - **Trascrizione** converte l'audio in testo.
+- **Post-elaborazione audio** corregge una trascrizione in base al dizionario
+  vocale e scrive il riepilogo della registrazione; se non è impostata usa il
+  modello di pensiero.
 - **Generazione di immagini** crea le copertine delle attività e altre
   immagini generate. L'attuale percorso integrato di generazione di immagini
   usa un provider remoto configurato, quindi scegli quel provider e i
   riferimenti che invii con la stessa cura di ogni altro percorso di inferenza
   cloud.
+- **Lettura ad alta voce** è il modello vocale cloud che legge ad alta voce
+  riepiloghi e risposte; se non è impostato usa la voce sul dispositivo.
+
+In **Abilità automatizzate**, alla fine del modulo, attiva quali abilità —
+trascrizione e analisi delle immagini — vengono eseguite da sole con questo
+profilo. Ciascuna usa il modello del suo slot, quindi l'interruttore richiede
+che quello slot sia compilato.
 
 <ManualScreenshot
   caseId="ai/profile-editor"
-  alt="Editor del profilo Comando del progetto Waddle che assegna i modelli di pensiero, ragionamento di fascia alta, riconoscimento delle immagini, trascrizione e generazione di immagini"
+  alt="Editor del profilo Comando del progetto Waddle con nome, descrizione e gli slot dei modelli Pensare, Modello di chat, Pensare (High-End), Riconoscimento delle immagini, Trascrizione, Post-elaborazione audio e Generazione di immagini"
   caption="Un solo profilo instrada ogni modalità di Project Waddle senza ripetere le scelte dei modelli tra le attività."
 />
 
@@ -105,15 +128,18 @@ modello solo audio per il ragionamento sul testo.
 ## Imposta un predefinito di categoria
 
 Una categoria può scegliere un profilo di inferenza predefinito in
-**Impostazioni → Definizioni → Categorie**. Il nuovo lavoro in quella categoria
-può così ereditare una politica di instradamento coerente. Seleziona il profilo
+**Impostazioni → Definizioni → Categorie**. Un agente funziona con il profilo
+scelto per lui; senza, segue a ogni esecuzione il profilo della sua categoria,
+quindi cambiare il profilo della categoria sposta anche i suoi agenti. Senza
+nessuno dei due, ricade sul **Profilo di inferenza predefinito** in cima alle
+impostazioni AI. Seleziona il profilo
 il cui mix di privacy e capacità corrisponde alla categoria, invece di
 scegliere solo in base alla velocità.
 
 <ManualScreenshot
   caseId="ai/profile-picker"
   alt="Editor della categoria Operazioni del Pinguino con una finestra che offre i profili Comando del progetto Waddle, Habitat Local-First e Diplomazia di pesce"
-  caption="Il badge solo desktop rende visibili le restrizioni di piattaforma prima che venga selezionato un predefinito di categoria."
+  caption="Un'icona a forma di monitor contrassegna un profilo Solo Desktop prima che venga selezionato come predefinito di categoria."
 />
 
 ## Percorso dei profili legacy
@@ -122,7 +148,7 @@ Il vecchio percorso autonomo **Profili di inferenza** resta disponibile per
 compatibilità e modifica gli stessi record di profilo memorizzati. Espone gli
 ID interni dei modelli e fornisce meno contesto sulle dipendenze rispetto alle
 impostazioni AI, quindi per la manutenzione normale preferisci l'attuale pagina
-**Impostazioni dell'intelligenza → Profili di inferenza**.
+**Impostazioni AI → Profili di inferenza**.
 
 <ManualScreenshot
   caseId="ai/legacy-profiles"

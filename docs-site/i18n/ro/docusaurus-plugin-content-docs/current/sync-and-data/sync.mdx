@@ -21,7 +21,7 @@ reprezintă munca ce nu a ajuns încă la serviciul de sincronizare.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Setările de sincronizare Lotti cu Dispozitive, Acest dispozitiv, Completare sincronizare, Statistici Matrix, Coadă de ieșire pentru sincronizare, Sync cu conflicte și Întreținere"
+  alt="Setările de sincronizare Lotti cu Dispozitive, Acest dispozitiv, Starea sincronizării, Statistici Matrix, Coadă de ieșire pentru sincronizare, Sync cu conflicte și Întreținere"
   caption="Setările de sincronizare păstrează starea de zi cu zi aproape de instrumentele de diagnostic și recuperare. Project Waddle are în prezent trei elemente de inspectat în coada de ieșire."
 />
 
@@ -123,19 +123,21 @@ corespunzător trebuie totuși configurat să le folosească.
 ## Înțelegeți recuperarea și completarea lipsurilor
 
 Sincronizarea obișnuită procesează modificările pe măsură ce sosesc.
-**Completare sincronizare** detectează golurile din secvența primită de la
+**Starea sincronizării** detectează golurile din secvența primită de la
 dispozitivele cunoscute și solicită din nou înregistrările lipsă.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Pagina Completare sincronizare din Lotti cu contoarele cozii de intrare, ale elementelor lipsă și omise, statisticile de sincronizare, completarea automată și recuperarea avansată"
-  caption="Project Waddle a primit 2.868 de înregistrări de secvență și cunoaște în prezent patru înregistrări lipsă de pe două ID-uri de dispozitiv."
+  alt="Pagina Starea sincronizării din Lotti cu înregistrările de pe acest dispozitiv, contoarele cozii de intrare și ale elementelor lipsă, statisticile de sincronizare, completarea automată și recuperarea avansată"
+  caption="Project Waddle urmărește 2.868 de contoare de secvență, a primit 2.775 dintre ele și cunoaște în prezent patru înregistrări lipsă de pe două ID-uri de dispozitiv."
 />
 
+- **Înregistrări pe acest dispozitiv** numără ce deține acest dispozitiv,
+  inclusiv ștergerile. Dispozitivele sincronizate afișează aici aceleași numere.
 - **Coadă de intrare** este munca ce așteaptă să fie aplicată.
 - **Lipsă** este numărul golurilor cunoscute din secvență.
-- **Omis** este munca pe care coada de intrare a abandonat-o pentru că nu a
-  putut fi procesată normal.
+- **Omis**, în **Statistici de sincronizare**, este munca pe care coada de
+  intrare a abandonat-o pentru că nu a putut fi procesată normal.
 - **Completare automată** solicită înregistrările lipsă din ultimele 24 de ore
   și este setarea implicită potrivită pentru utilizarea obișnuită.
 - **Recuperare avansată** conține acțiuni manuale pentru o investigație, cum ar

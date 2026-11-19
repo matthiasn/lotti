@@ -1,0 +1,109 @@
+---
+title: Connect GitHub
+description: Connect a read-only GitHub token so tasks can follow the pull requests that implement them, with summaries, agent suggestions and companion answers.
+---
+
+# Connect GitHub
+
+Lotti can follow the GitHub pull requests that implement your tasks: their
+status, checks, reviews and merge conflicts sit beside the task, a summary
+says what each one changes, and the task agent can use them to suggest which
+checklist items are done. All of this needs a read-only personal access token
+from your GitHub account.
+
+## Create and connect a token
+
+Open **Settings → Advanced Settings → GitHub**.
+
+1. Select **Create a token on GitHub**. Your browser opens GitHub's token form
+   with Lotti's name, a one-year lifetime and the read-only permissions
+   already filled in. If the browser cannot be opened, Lotti tells you where
+   to create the token by hand: on github.com under Settings → Developer
+   settings → Personal access tokens.
+2. On GitHub, choose the repositories Lotti may read and create the token.
+3. Paste the token into **Personal access token**. **Show token** and **Hide
+   token** reveal and mask what you pasted.
+4. Select **Connect**. Lotti checks the token with GitHub first. A toast
+   confirms **Connected to GitHub as @you** with your account name; a token
+   GitHub refuses is explained under the field.
+
+Once connected, the page shows which account is connected and offers
+**Disconnect**. Disconnecting forgets the token on this device and on your
+other devices, and confirms with **Disconnected from GitHub**.
+
+CI checks of private repositories may be incomplete: GitHub gives these
+tokens no access to check runs, and the page says so.
+
+## Where the token is kept
+
+The token is stored in this device's keychain and is used only for requests
+to api.github.com. It is never logged or exported. With sync set up, it
+travels end-to-end encrypted to your other devices, like an AI provider key.
+A token that arrives from another device is checked with GitHub before it is
+used.
+
+When sync is set up, the page also offers **Send to my other devices** while
+connected, or **Check my other devices** while not, for when a device has not
+received the token yet.
+
+Lotti never fetches a pull request's web page. Images embedded in a pull
+request's description are loaded from their own addresses only while you
+have that pull request's details open, and are analysed by AI only once you
+add one to the task.
+
+## Track pull requests on a task
+
+With GitHub connected, open a task and choose **Pull request tracking** from the **+** in its action
+bar. The task then shows a **Pull requests** section; the choice is stored on
+the task, so it holds on every device. A task with a linked pull request
+shows the section anyway.
+
+Select **Link a pull request** to link one:
+
+- paste a link or a short reference into **URL or owner/repo#123** and
+  select **Link**; or
+- pick from the list under **Or pick one from** the repository, which shows
+  that repository's open pull requests that no task holds yet, with their
+  sizes. Tapping a row links it at once. If it cannot be linked, the reason
+  appears under the row you picked.
+
+The list needs a repository: open the task's category in **Settings →
+Definitions → Categories** and enter it under **GitHub** → **Repository** as
+`owner/repo` or the repository's link. That section appears once GitHub is
+connected. A pull request another task already holds asks
+first — **Link here too** or **Don't link**.
+
+Each linked pull request shows its status (**Open**, **Draft**, **Merged** or
+**Closed**), its checks, reviews and merge state, and a one-line summary. Tap
+it for the details: the **TL;DR**, the pull request's own **Description** and
+**Open on GitHub**. Its menu offers **Refresh pull request**, **Open on
+GitHub** and **Unlink pull request**. Lotti also refreshes a task's pull
+requests whenever they go into a coding prompt or a task-agent update. A
+device without a token still shows what another device last saw, with its
+age.
+
+Paste a pull request link into the task search to find the tasks it is
+linked to.
+
+## Let AI summarize and suggest
+
+The task agent's model writes each summary in the task's language: a
+one-liner under the title and the **TL;DR** in the details. Summaries are
+written automatically when the task's category has **Automatic inference** on
+(see [Categories](../organize-and-reflect/categories.mdx)); otherwise select
+**Summarize** in the details, or **Summarize again** for a fresh one.
+
+The task agent reads the open pull requests no task holds and proposes
+linking the one that implements its task — **Link pull request #…** in its
+proposed changes, linked once you confirm. It can also suggest checking off
+checklist items that a refreshed pull request completed. See
+[Task agents](../organize-and-reflect/task-agents.mdx).
+
+## Ask the companion about pull requests
+
+With GitHub connected, the [companion](../getting-started/companion.mdx) can
+answer questions such as "How many pull requests did I open this week?" with
+charts of pull requests, **Lines added** and **Lines deleted**, per day or as
+a running total. Asked which task some work was in, or which pull requests
+were the biggest, she shows them as the same pull request cards a task has.
+She reads only the pull requests already stored on this device.

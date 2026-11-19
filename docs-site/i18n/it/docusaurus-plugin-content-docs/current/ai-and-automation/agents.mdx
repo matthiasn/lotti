@@ -36,13 +36,15 @@ uno stile decisionale.
 />
 
 Seleziona un'istanza per ispezionarne gli interni. La scheda **Statistiche**
-mostra l'uso del modello, il suo modello di agente, il percorso di inferenza
-corrente, i controlli del ciclo di vita, il conteggio delle sveglie e lo stato
-di pianificazione.
+mostra l'uso dei token per modello — token **Dati in ingresso**, **Output**,
+**Pensieri**, **In cache**, la quota di **Hit della cache** e le **Risvegli** —
+poi il suo modello di agente, la configurazione corrente dell'agente, i
+controlli del ciclo di vita, il conteggio delle sveglie e lo stato di
+pianificazione.
 
 <ManualScreenshot
   caseId="agents/instance-detail"
-  alt="Dettaglio dell'istanza Ispettore del sigillo di Habitat con uso dei token, modello Sentinella dell'habitat orbitale, percorso di inferenza, controlli del ciclo di vita e stato di sveglia"
+  alt="Dettaglio dell'istanza Ispettore del sigillo di Habitat con una tabella dell'uso dei token che include token in cache e hit della cache, il modello Sentinella dell'habitat orbitale, la configurazione dell'agente, Pausa, Rianalizzare e Distruggere, e lo stato di sveglia"
   caption="L'istanza conserva abbastanza provenienza da spiegare quale modello e percorso ha prodotto il suo lavoro, prima che tu la metta in pausa, la rianalizzi o la distrugga."
 />
 
@@ -53,7 +55,7 @@ Le altre schede dell'istanza conservano prove diverse:
 - **Osservazioni** espone i risultati catturati senza mescolarli nei rapporti.
 - **Attività** mostra la traccia cronologica di messaggi e strumenti.
 
-**Pausa.** mantiene l'istanza ma ferma il lavoro normale. **Rianalizzare**
+**Pausa** mantiene l'istanza ma ferma il lavoro normale. **Rianalizzare**
 chiede a un agente di attività di riconsiderare il suo soggetto corrente.
 **Distruggere** è distruttivo e va usato solo quando l'istanza stessa non serve
 più; cambiare il modello per gli agenti futuri non richiede di distruggere
@@ -61,8 +63,8 @@ istanze non correlate.
 
 ## Capisci i cicli di sveglia
 
-Apri **Cicli di sveglia** per vedere il lavoro in esecuzione ora e quello in
-scadenza più tardi. Una sveglia **Finanziamenti** è stata richiesta
+Apri **Cicli di risveglio** per vedere il lavoro in esecuzione ora e quello in
+scadenza più tardi. Una sveglia **In sospeso** è stata richiesta
 dall'agente. Una sveglia **Programmato** è stata inserita dal sistema o dal
 pianificatore. Ogni riga tiene visibili l'attività, il progetto o il giorno
 collegati, accanto all'agente responsabile e a un conto alla rovescia dal vivo.

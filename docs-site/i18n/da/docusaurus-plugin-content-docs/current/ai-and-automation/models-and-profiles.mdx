@@ -13,18 +13,30 @@ automatiseringsregel.
 
 ## Gennemgå gemte modeller
 
-Åbn **Indstillinger → AI-indstillinger → Modeller**. Listen grupperer modeller
-efter udbyder og viser kapacitetsfiltre for tekst, vision, lyd og ræsonnement.
+Åbn **Indstillinger → AI-indstillinger → Modeller**. Modellerne udgør én
+liste. Over den indsnævrer én filterchip pr. udbyder og chipsene **Tekst**,
+**Vision**, **Lyd** og **Ræsonnering** listen, og søgefeltet finder udbydere,
+modeller og profiler efter navn.
 
 <ManualScreenshot
   caseId="ai/models"
-  alt="Lottis AI-modelliste med Project Waddle-modeller til tekst, ræsonnement, vision, transskription og billedgenerering"
+  alt="Lottis Modeller-side med AI-indstillingernes kontroller øverst, filterchips for udbydere og kapaciteter og en liste over Project Waddle-modeller mærket Tænkning eller Billedgenkendelse"
   caption="Project Waddle-arbejdsområdet blander cloud- og lokale modeller og holder samtidig hver models kapaciteter eksplicitte."
 />
 
-Kontrollen **Samtidig agent vågner** øverst i AI-indstillinger begrænser, hvor
-mange forskellige agenter der må køre inferens på én gang. En højere værdi kan
-forbedre gennemløbet, men den øger også antallet af samtidige
+Tre kontroller sidder øverst i AI-indstillinger:
+
+- **Samtidige agent-vækninger** begrænser, hvor mange forskellige agenter der
+  må køre inferens på én gang.
+- **Opdateringsrytme** angiver, hvor ofte opgaveagenter opdaterer sig selv, når
+  hverken opgaven eller dens kategori angiver det. **Højst hver time**
+  opdaterer stadig med det samme efter en optagelse, en stoppet timer eller en
+  opgave, der er markeret som færdig.
+- **Standard inferensprofil** er reserven for agenter uden en konfigureret
+  inferensrute på denne enhed.
+
+En højere værdi for **Samtidige agent-vækninger** kan forbedre gennemløbet,
+men den øger også antallet af samtidige
 udbyderforespørgsler og belastningen på den lokale enhed. Hold den
 konservativ, når en udbyder har strenge hastighedsgrænser, eller en lokal
 modelserver har begrænset hukommelse.
@@ -67,18 +79,30 @@ konfigureret slot.
 Rediger en profil for at tildele modeller til de kapaciteter, du bruger:
 
 - **Tænkning** er den påkrævede generelle tekstmodel.
+- **Chatmodel** svarer i chats; den bruger tænkemodellen, når den ikke er
+  angivet.
 - **Tænkning (High-End)** kan håndtere arbejde, der eksplicit beder om den
   mere kapable ræsonnementsvej.
 - **Billedgenkendelse** analyserer billeder.
 - **Udskrift** konverterer lyd til tekst.
+- **Efterbehandling af lyd** retter en transskription ud fra taleordbogen og
+  skriver optagelsens resumé; den bruger tænkemodellen, når den ikke er
+  angivet.
 - **Billedgenerering** skaber opgavekunst og andre genererede billeder. Den
   nuværende indbyggede billedgenereringsvej bruger en konfigureret
   fjernudbyder, så vælg den udbyder og de referencer, du sender, med samme
   omhu som enhver anden cloud-inferensrute.
+- **Læs højt** er den cloud-talemodel, der læser resuméer og svar højt; den
+  bruger stemmen på enheden, når den ikke er angivet.
+
+Under **Automatiserede færdigheder** nederst i formularen slår du til, hvilke
+færdigheder — transskription og billedanalyse — der kører af sig selv med
+denne profil. Hver bruger modellen fra sin slot, så kontakten kræver, at den
+slot er udfyldt.
 
 <ManualScreenshot
   caseId="ai/profile-editor"
-  alt="Profilredigering for Projekt Waddle-kommando, der tildeler modeller til tænkning, high-end-ræsonnement, billedgenkendelse, transskription og billedgenerering"
+  alt="Profilredigering for Projekt Waddle-kommando med navn, beskrivelse og modelslots til Tænkning, Chatmodel, Tænkning (High-End), Billedgenkendelse, Udskrift, Efterbehandling af lyd og Billedgenerering"
   caption="Én profil ruter alle Project Waddle-modaliteter uden at gentage modelvalg på tværs af opgaver."
 />
 
@@ -104,14 +128,17 @@ tekstræsonnement.
 ## Sæt en kategoristandard
 
 En kategori kan vælge en standard-inferensprofil under **Indstillinger →
-Definitioner → Kategorier**. Nyt arbejde i den kategori kan derefter arve en
-sammenhængende rutingpolitik. Vælg den profil, hvis blanding af privatliv og
-kapacitet matcher kategorien, i stedet for kun at vælge efter hastighed.
+Definitioner → Kategorier**. En agent kører på den profil, der er valgt til
+den; uden en sådan følger den sin kategoris profil ved hver kørsel, så når du
+ændrer kategoriens profil, flytter dens agenter med. Uden nogen af delene
+falder den tilbage til **Standard inferensprofil** øverst i AI-indstillinger.
+Vælg den profil, hvis blanding af privatliv og kapacitet matcher kategorien, i
+stedet for kun at vælge efter hastighed.
 
 <ManualScreenshot
   caseId="ai/profile-picker"
   alt="Kategoriredigering for Penguin-operationer med en dialog, der tilbyder profilerne Projekt Waddle-kommando, Habitat lokal-først og Fiskediplomati"
-  caption="Kun skrivebord-mærket gør platformsbegrænsninger synlige, før en kategoristandard vælges."
+  caption="Et skærmikon markerer en Kun skrivebord-profil, før den vælges som kategoristandard."
 />
 
 ## Legacy-profilrute

@@ -1,0 +1,122 @@
+---
+title: GitHub verbinden
+description: Verbinde ein schreibgeschütztes GitHub-Token, damit Aufgaben den Pull-Requests folgen, die sie umsetzen – mit Zusammenfassungen, Agentenvorschlägen und Antworten der Begleitung.
+---
+
+# GitHub verbinden
+
+Lotti kann den GitHub-Pull-Requests folgen, die deine Aufgaben umsetzen: Ihr
+Status, ihre Checks, Reviews und Merge-Konflikte stehen neben der Aufgabe,
+eine Zusammenfassung sagt, was jeder ändert, und der Aufgabenagent kann sie
+nutzen, um vorzuschlagen, welche Checklistenpunkte erledigt sind. Dafür
+braucht es ein schreibgeschütztes Personal Access Token aus deinem
+GitHub-Konto.
+
+## Ein Token erstellen und verbinden
+
+Öffne **Einstellungen → Erweiterte Einstellungen → GitHub**.
+
+1. Wähle **Token auf GitHub erstellen**. Dein Browser öffnet GitHubs
+   Token-Formular mit Lottis Namen, einer Laufzeit von einem Jahr und den
+   schreibgeschützten Berechtigungen bereits ausgefüllt. Lässt sich der
+   Browser nicht öffnen, sagt dir Lotti, wo du das Token von Hand erstellst:
+   auf github.com unter Settings → Developer settings → Personal access
+   tokens.
+2. Wähle auf GitHub die Repositories, die Lotti lesen darf, und erstelle das
+   Token.
+3. Füge das Token in **Personal Access Token** ein. **Token anzeigen** und
+   **Token verbergen** zeigen und maskieren, was du eingefügt hast.
+4. Wähle **Verbinden**. Lotti prüft das Token zuerst bei GitHub. Ein Hinweis
+   bestätigt **Mit GitHub verbunden als @du** mit deinem Kontonamen; ein
+   Token, das GitHub ablehnt, wird unter dem Feld erklärt.
+
+Nach dem Verbinden zeigt die Seite, welches Konto verbunden ist, und bietet
+**Trennen** an. Trennen vergisst das Token auf diesem Gerät und auf deinen
+anderen Geräten und bestätigt mit **Von GitHub getrennt**.
+
+CI-Checks privater Repositories können unvollständig sein: GitHub gibt diesen
+Tokens keinen Zugriff auf Check-Runs, und die Seite sagt das.
+
+## Wo das Token liegt
+
+Das Token wird im Schlüsselbund dieses Geräts gespeichert und nur für
+Anfragen an api.github.com verwendet. Es wird nie protokolliert oder
+exportiert. Mit eingerichteter Synchronisierung reist es Ende-zu-Ende
+verschlüsselt zu deinen anderen Geräten, wie ein Schlüssel für einen
+KI-Anbieter. Ein Token, das von einem anderen Gerät ankommt, wird vor der
+Verwendung bei GitHub geprüft.
+
+Ist die Synchronisierung eingerichtet, bietet die Seite außerdem **An meine
+anderen Geräte senden**, solange verbunden ist, oder **Meine anderen Geräte
+prüfen**, solange nicht – für den Fall, dass ein Gerät das Token noch nicht
+erhalten hat.
+
+Lotti ruft nie die Webseite eines Pull-Requests ab. Bilder in der
+Beschreibung eines Pull-Requests werden nur von ihren eigenen Adressen
+geladen, solange du die Details dieses Pull-Requests geöffnet hast, und erst
+von der KI analysiert, wenn du eines davon zur Aufgabe hinzufügst.
+
+## Pull-Requests an einer Aufgabe verfolgen
+
+Öffne bei verbundenem GitHub eine Aufgabe und wähle **Pull-Request-Tracking**
+über das **+** in ihrer Aktionsleiste. Die Aufgabe zeigt dann einen Abschnitt
+**Pull-Requests**; die Wahl wird an der Aufgabe gespeichert und gilt so auf
+jedem Gerät. Eine Aufgabe mit verknüpftem Pull-Request zeigt den Abschnitt
+ohnehin.
+
+Wähle **Pull-Request verknüpfen**, um einen zu verknüpfen:
+
+- füge einen Link oder eine Kurzreferenz in **URL oder besitzer/repo#123** ein
+  und wähle **Verknüpfen**; oder
+- wähle aus der Liste unter **Oder wähl einen aus** dem Repository, die die
+  offenen Pull-Requests dieses Repositorys zeigt, die noch keine Aufgabe hält,
+  samt ihrer Größe. Ein Tipp auf eine Zeile verknüpft sie sofort. Lässt sie
+  sich nicht verknüpfen, erscheint der Grund unter der gewählten Zeile.
+
+Die Liste braucht ein Repository: Öffne die Kategorie der Aufgabe unter
+**Einstellungen → Definitionen → Kategorien** und trage es unter **GitHub** →
+**Repository** als `owner/repo` oder als Link des Repositorys ein. Dieser
+Abschnitt erscheint, sobald GitHub verbunden ist. Ein Pull-Request, den schon
+eine andere Aufgabe hält, fragt zuerst – **Auch hier verknüpfen** oder
+**Nicht verknüpfen**.
+
+Jeder verknüpfte Pull-Request zeigt seinen Status (**Offen**, **Entwurf**,
+**Gemergt** oder **Geschlossen**), seine Checks, Reviews und den
+Merge-Zustand sowie eine einzeilige Zusammenfassung. Tippe darauf für die
+Details: **Kurz gesagt**, die eigene **Beschreibung** des Pull-Requests und
+**Auf GitHub öffnen**. Sein Menü bietet **Pull-Request aktualisieren**, **Auf
+GitHub öffnen** und **Pull-Request lösen**. Lotti aktualisiert die
+Pull-Requests einer Aufgabe außerdem, wann immer sie in einen Coding-Prompt
+oder eine Aktualisierung des Aufgabenagenten eingehen. Ein Gerät ohne Token
+zeigt weiterhin, was ein anderes Gerät zuletzt gesehen hat, samt dessen
+Alter.
+
+Füge einen Pull-Request-Link in die Aufgabensuche ein, um die Aufgaben zu
+finden, mit denen er verknüpft ist.
+
+## Die KI zusammenfassen und vorschlagen lassen
+
+Das Modell des Aufgabenagenten schreibt jede Zusammenfassung in der Sprache
+der Aufgabe: einen Einzeiler unter dem Titel und **Kurz gesagt** in den
+Details. Zusammenfassungen entstehen automatisch, wenn in der Kategorie der
+Aufgabe **Automatische Inferenz** an ist (siehe
+[Kategorien](../organize-and-reflect/categories.mdx)); sonst wähle
+**Zusammenfassen** in den Details oder **Neu zusammenfassen** für eine
+frische.
+
+Der Aufgabenagent liest die offenen Pull-Requests, die keine Aufgabe hält,
+und schlägt vor, den zu verknüpfen, der seine Aufgabe umsetzt – **Pull-Request
+#… verknüpfen** in seinen vorgeschlagenen Änderungen, verknüpft, sobald du
+bestätigst. Er kann auch vorschlagen, Checklistenpunkte abzuhaken, die ein
+aktualisierter Pull-Request erledigt hat. Siehe
+[Aufgabenagenten](../organize-and-reflect/task-agents.mdx).
+
+## Die Begleitung nach Pull-Requests fragen
+
+Bei verbundenem GitHub kann die [Begleitung](../getting-started/companion.mdx)
+Fragen wie „Wie viele Pull-Requests habe ich diese Woche eröffnet?“
+beantworten, mit Diagrammen zu Pull-Requests, **Hinzugefügte Zeilen** und
+**Gelöschte Zeilen**, pro Tag oder als laufende Summe. Fragst du, in welcher
+Aufgabe eine Arbeit steckte oder welche Pull-Requests die größten waren,
+zeigt sie sie als dieselben Pull-Request-Karten, die eine Aufgabe hat. Sie
+liest nur die Pull-Requests, die schon auf diesem Gerät gespeichert sind.

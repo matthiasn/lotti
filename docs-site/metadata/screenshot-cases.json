@@ -28,24 +28,24 @@
     },
     {
       "id": "daily-os/capture-review",
-      "title": "Daily OS transcript review",
-      "sourceTest": "test/features/daily_os_next/ui/pages/day_planning_modal_screenshots_test.dart",
+      "title": "Daily OS check-in in the composer",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
       "variants": {
-        "mobile-light": "mini_10_captured_light.png",
-        "mobile-dark": "mini_05_captured_dark.png",
-        "desktop-light": "desktop_10_captured_light.png",
-        "desktop-dark": "desktop_05_captured_dark.png"
+        "mobile-light": "daily_os_check_in_transcript_mobile_light.png",
+        "mobile-dark": "daily_os_check_in_transcript_mobile_dark.png",
+        "desktop-light": "daily_os_check_in_transcript_desktop_light.png",
+        "desktop-dark": "daily_os_check_in_transcript_desktop_dark.png"
       }
     },
     {
       "id": "daily-os/reconcile",
       "title": "Daily OS reconciliation",
-      "sourceTest": "test/features/daily_os_next/ui/pages/day_planning_modal_screenshots_test.dart",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
       "variants": {
-        "mobile-light": "mini_15_reconcile_light.png",
-        "mobile-dark": "mini_07_reconcile_dark.png",
-        "desktop-light": "desktop_15_reconcile_light.png",
-        "desktop-dark": "desktop_07_reconcile_dark.png"
+        "mobile-light": "daily_os_reconcile_mobile_light.png",
+        "mobile-dark": "daily_os_reconcile_mobile_dark.png",
+        "desktop-light": "daily_os_reconcile_desktop_light.png",
+        "desktop-dark": "daily_os_reconcile_desktop_dark.png"
       }
     },
     {

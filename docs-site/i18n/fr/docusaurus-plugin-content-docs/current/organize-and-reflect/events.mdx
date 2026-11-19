@@ -13,7 +13,7 @@ pour le travail de préparation et de suivi qui l’entoure.
 Les événements sont pour l’instant une fonctionnalité facultative. Ouvre
 **Paramètres → Sections** et active **Événements**. La
 destination **Événements** apparaît alors dans la barre latérale sur ordinateur
-et sous **Plus** sur mobile.
+et dans le lanceur de navigation sur mobile.
 
 <ManualScreenshot
   caseId="events/overview"
@@ -29,10 +29,13 @@ la section phare **À venir**. Les événements passés sont regroupés par ann�
 du plus récent au plus ancien.
 
 Utilise **Rechercher des événements** pour trouver un événement à partir de son
-texte. Sélectionne une puce de catégorie — par exemple **Opérations Pingouins**,
-**Contrôle de mission** ou **Diplomatie des poissons** — pour restreindre
-l’ensemble des archives. Le filtre s’applique à la collection d’événements
-enregistrée, pas seulement aux cartes visibles à l’écran.
+texte. **Filtrer les événements**, le bouton à côté du champ de recherche,
+ouvre un filtre par catégorie : choisis une ou plusieurs catégories — ou
+**Non attribué** — et applique-les pour restreindre l’ensemble des archives.
+Le filtre s’applique à la collection d’événements enregistrée, pas seulement
+aux cartes visibles à l’écran. Chaque carte affiche sa catégorie, pour que tu
+distingues d’un coup d’œil **Opérations Pingouins** de **Diplomatie des
+poissons**.
 
 Lotti charge les archives volumineuses par pages et n’affiche que les lignes
 proches. Même des centaines d’événements riches en photos restent donc
@@ -52,7 +55,7 @@ distributeur de poissons en apesanteur** est une tâche liée.
 
 <ManualScreenshot
   caseId="events/detail"
-  alt="Événement Gala de lancement de Project Waddle avec photo principale, statut terminé, note de cinq étoiles, résumé, trois photos et deux tâches liées"
+  alt="Événement Gala de lancement de Project Waddle avec une photo principale portant la catégorie, le statut Terminé, une pastille de langue anglaise, une note de cinq étoiles et un récapitulatif d’une ligne, au-dessus de la carte de résumé IA avec deux modifications proposées et de la barre avec l’ajout d’une tâche"
   caption="La même page de détail de production devient une mise en page à deux colonnes sur ordinateur et s’empile dans un seul défilement sur mobile."
 />
 
@@ -60,6 +63,8 @@ Le bandeau principal réunit l’identité de l’événement et ses commandes e
 
 - sélectionne le titre pour le modifier ;
 - sélectionne la puce de catégorie ou de statut pour la modifier ;
+- sélectionne la puce de langue pour choisir la langue dans laquelle sont
+  rédigés le récapitulatif IA de l’événement et ses propositions ;
 - sélectionne la date et l’heure pour reprogrammer l’événement ;
 - sélectionne une étoile pour modifier la note d’un événement terminé ;
 - ouvre le menu de débordement pour changer la couverture ou supprimer l’événement.
@@ -68,10 +73,22 @@ Les changements sont enregistrés depuis la page de détail ; il n’y a pas de
 formulaire distinct à rouvrir. Une note apparaît après qu’un événement est
 terminé, ou dès lors que l’événement possède déjà une note.
 
-Le résumé utilise la réponse IA liée la plus récente lorsqu’il y en a une.
-Sinon, il affiche la note propre à l’événement. Considère-le comme un rappel
-rapide, puis utilise les photos et la chronologie pour retrouver la trace
-sous-jacente.
+Sous le bandeau, l’agent de l’événement tient une carte **Résumé IA** — la même
+carte que celle de l’agent d’une tâche. Elle affiche la version courte du
+récapitulatif avec **Lire plus** pour le reste, **Ouvrir les détails internes
+de l'agent**, la date de la dernière mise à jour et **Mettre à jour**. En
+dessous, **Modifications proposées** liste ce que l’agent suggère, par exemple
+une personne qui était présente ou une note à ajouter ; accepte ou refuse
+chaque proposition, ou utilise **Tout confirmer**. Un événement sans agent
+affiche sa propre note à la place, avec **Assigner un agent** pour lui en
+donner un.
+
+## Indique qui était là
+
+La section **Personnes** affiche une puce par personne liée à l’événement ;
+sélectionne une puce pour ouvrir la page de cette personne. **Modifier les
+personnes** — **Ajouter des personnes** tant que personne n’est encore lié —
+ouvre **Qui était là ?** pour changer la liste.
 
 ## Construis une trace photographique
 
@@ -94,7 +111,7 @@ aussi ajouter une nouvelle photo.
 
 <ManualScreenshot
   caseId="events/timeline"
-  alt="Chronologie de l’événement Project Waddle avec photos de contrôle de mission, note sur un joint de pression, images de fret de sardines et deux tâches associées"
+  alt="Chronologie du gala de lancement de Project Waddle avec une note de contrôle de pression et des photos légendées de l’habitat orbital et des capsules de fret givrées"
   caption="Photos, notes, enregistrements et tâches de suivi restent liés à l’événement, sans transformer l’événement lui-même en tâche."
 />
 

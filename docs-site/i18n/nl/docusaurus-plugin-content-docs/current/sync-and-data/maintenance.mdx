@@ -12,7 +12,7 @@ een actuele back-up bij van gegevens die je niet opnieuw kunt maken.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lotti-synchronisatieonderhoud met Synchronisatiedatabase verwijderen, Meetbare gegevens synchroniseren, dashboards, gewoonten, categorieën, AI-instellingen, Berichtgeschiedenis, Sync-sequentielogboek populeren en Oude verzonden postvak UIT verwijderen"
+  alt="Lotti-synchronisatieonderhoud met Synchronisatiedatabase verwijderen, Meetbare gegevens synchroniseren, dashboards, gewoonten, categorieën, AI-instellingen, Berichtgeschiedenis, Sync-sequentielogboek populeren, Diep terugvullen en Oude verzonden postvak UIT verwijderen"
   caption="Onderhoud bundelt destructieve, herhalende en opschoonacties op één pagina. De bevestigingstekst bepaalt de reikwijdte van elke bewerking."
 />
 
@@ -28,22 +28,26 @@ een actuele back-up bij van gegevens die je niet opnieuw kunt maken.
 - **Berichtgeschiedenis** zet items opnieuw in de wachtrij voor je andere
   apparaten. Kies een periode — **Alles**, **Afgelopen 30 dagen** of
   **Aangepast** met een begin en een einde — en de entiteitstypen die meegaan,
-  en daarna **Begin**. Mislukken er items, dan herhaalt **Mislukte items opnieuw
+  en daarna **Home**. Mislukken er items, dan herhaalt **Mislukte items opnieuw
   proberen** alleen die.
 - **Sync-sequentielogboek populeren** indexeert bestaande items, zodat backfill
   ook verzoeken kan beantwoorden voor items die zijn gemaakt voordat er
   sequentietracking bestond.
+- **Diep terugvullen** stuurt een lijst van alle records op dit apparaat,
+  verwijderingen inbegrepen, naar je andere apparaten. Elk daarvan vraagt om
+  wat het mist en stuurt terug wat dit apparaat mist. Je andere apparaten moeten
+  online zijn om te antwoorden; bevestig met **Ja, starten**.
 - **Oude verzonden postvak UIT verwijderen** verwijdert verzonden rijen uit de
   uitbox die ouder zijn dan 7 dagen en maakt schijfruimte vrij. Items die nog
   wachten of mislukt zijn, blijven bewaard.
 
 Begin met de kleinste bewerking die bij het symptoom past. Een vastgelopen
 bijlage hoort in de [Outbox](./sync.mdx#inspecteer-de-outbox), aanhoudende gaten
-in de reeks horen bij Synchronisatie van backfill en twee geldige gelijktijdige
+in de reeks horen bij **Synchronisatiestatus** en twee geldige gelijktijdige
 bewerkingen horen bij [conflicten](./conflicts.mdx). De synchronisatiedatabase
 verwijderen hoort een lokale reset in laatste instantie te zijn, uitgevoerd met
 een bekend goed peer-apparaat en een back-up bij de hand.
 
 Ga na een reparatie terug naar **Matrix Stats**, controleer dat toegepast werk
 doorloopt en de wachtrij leegloopt, en dat de uitbox en het aantal ontbrekende
-items in de backfill tot rust komen.
+items in **Synchronisatiestatus** tot rust komen.

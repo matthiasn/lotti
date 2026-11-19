@@ -1,0 +1,109 @@
+---
+title: GitHub verbinden
+description: Verbind een alleen-lezen GitHub-token zodat taken de pull requests kunnen volgen die ze uitvoeren, met samenvattingen, voorstellen van de agent en antwoorden van de metgezel.
+---
+
+# GitHub verbinden
+
+Lotti kan de GitHub-pull requests volgen die je taken uitvoeren: hun status,
+checks, reviews en mergeconflicten staan naast de taak, een samenvatting zegt wat
+elk ervan verandert, en de taakagent kan ze gebruiken om voor te stellen welke
+checklistpunten klaar zijn. Daarvoor is een alleen-lezen persoonlijk toegangstoken
+van je GitHub-account nodig.
+
+## Maak en verbind een token
+
+Open **Instellingen → Geavanceerde instellingen → GitHub**.
+
+1. Selecteer **Token aanmaken op GitHub**. Je browser opent het tokenformulier van
+   GitHub met de naam van Lotti, een looptijd van één jaar en de alleen-lezen
+   rechten al ingevuld. Kan de browser niet worden geopend, dan vertelt Lotti je
+   waar je het token met de hand aanmaakt: op github.com onder Settings → Developer
+   settings → Personal access tokens.
+2. Kies op GitHub de repository's die Lotti mag lezen en maak het token aan.
+3. Plak het token in **Persoonlijk toegangstoken**. **Token tonen** en **Token
+   verbergen** laten zien of maskeren wat je hebt geplakt.
+4. Selecteer **Verbinden**. Lotti controleert het token eerst bij GitHub. Een
+   melding bevestigt **Verbonden met GitHub als @jij** met je accountnaam; een token
+   dat GitHub weigert, wordt onder het veld uitgelegd.
+
+Eenmaal verbonden toont de pagina welk account verbonden is en biedt ze
+**Verbinding verbreken**. Verbinding verbreken vergeet het token op dit apparaat en
+op je andere apparaten, en bevestigt dat met **Verbinding met GitHub verbroken**.
+
+CI-checks van privérepository's kunnen onvolledig zijn: GitHub geeft deze tokens
+geen toegang tot check runs, en de pagina meldt dat.
+
+## Waar het token wordt bewaard
+
+Het token wordt opgeslagen in de sleutelhanger van dit apparaat en alleen gebruikt
+voor verzoeken aan api.github.com. Het wordt nooit gelogd of geëxporteerd. Met
+synchronisatie ingesteld reist het end-to-end versleuteld naar je andere apparaten,
+net als een sleutel van een AI-provider. Een token dat van een ander apparaat
+binnenkomt, wordt bij GitHub gecontroleerd voordat het wordt gebruikt.
+
+Is synchronisatie ingesteld, dan biedt de pagina ook **Naar mijn andere apparaten
+sturen** zolang je verbonden bent, of **Mijn andere apparaten controleren** zolang je
+dat niet bent, voor wanneer een apparaat het token nog niet heeft ontvangen.
+
+Lotti haalt nooit de webpagina van een pull request op. Afbeeldingen in de
+beschrijving van een pull request worden alleen van hun eigen adressen geladen
+zolang je de details van die pull request open hebt, en worden pas door AI
+geanalyseerd zodra je er een aan de taak toevoegt.
+
+## Volg pull requests op een taak
+
+Met GitHub verbonden open je een taak en kies je **Pull requests volgen** via de
+**+** in de actiebalk. De taak toont dan een sectie **Pull requests**; de keuze wordt
+op de taak opgeslagen, dus ze geldt op elk apparaat. Een taak met een gekoppelde
+pull request toont de sectie sowieso.
+
+Selecteer **Pull request koppelen** om er een te koppelen:
+
+- plak een link of een korte verwijzing in **URL of eigenaar/repo#123** en
+  selecteer **Koppelen**; of
+- kies uit de lijst onder **Of kies er een uit** de repository, die de open pull
+  requests van die repository toont die nog bij geen enkele taak horen, met hun
+  omvang. Een tik op een rij koppelt die meteen. Lukt het koppelen niet, dan
+  verschijnt de reden onder de rij die je koos.
+
+De lijst heeft een repository nodig: open de categorie van de taak in **Instellingen
+→ Definities → Categorieën** en vul die in onder **GitHub** → **Repository** als
+`owner/repo` of als link naar de repository. Die sectie verschijnt zodra GitHub
+verbonden is. Een pull request die al bij een andere taak hoort, vraagt eerst –
+**Ook hier koppelen** of **Niet koppelen**.
+
+Elke gekoppelde pull request toont haar status (**Open**, **Concept**,
+**Samengevoegd** of **Gesloten**), haar checks, reviews en mergestatus, en een
+samenvatting van één regel. Tik erop voor de details: **In het kort**, de eigen
+**Beschrijving** van de pull request en **Openen op GitHub**. Het menu biedt **Pull
+request vernieuwen**, **Openen op GitHub** en **Pull request ontkoppelen**. Lotti
+vernieuwt de pull requests van een taak ook wanneer ze in een codeerprompt of een
+update van de taakagent terechtkomen. Een apparaat zonder token toont nog wat een
+ander apparaat het laatst zag, met de ouderdom ervan.
+
+Plak een pull-requestlink in de taakzoekfunctie om de taken te vinden waaraan die
+gekoppeld is.
+
+## Laat AI samenvatten en voorstellen
+
+Het model van de taakagent schrijft elke samenvatting in de taal van de taak: een
+regel onder de titel en **In het kort** in de details. Samenvattingen worden
+automatisch geschreven wanneer de categorie van de taak **Automatische inferentie**
+aan heeft (zie [Categorieën](../organize-and-reflect/categories.mdx)); selecteer
+anders **Samenvatten** in de details, of **Opnieuw samenvatten** voor een nieuwe.
+
+De taakagent leest de open pull requests die bij geen enkele taak horen en stelt voor
+de pull request te koppelen die zijn taak uitvoert – **Pull request #… koppelen** in
+zijn voorgestelde wijzigingen, gekoppeld zodra je bevestigt. Hij kan ook voorstellen
+checklistpunten af te vinken die een vernieuwde pull request heeft afgerond. Zie
+[Taakagenten](../organize-and-reflect/task-agents.mdx).
+
+## Vraag de metgezel naar pull requests
+
+Met GitHub verbonden kan de [metgezel](../getting-started/companion.mdx) vragen
+beantwoorden zoals "Hoeveel pull requests heb ik deze week geopend?" met grafieken
+van pull requests, **Toegevoegde regels** en **Verwijderde regels**, per dag of als
+lopend totaal. Vraag je in welke taak bepaald werk zat, of welke pull requests het
+grootst waren, dan toont ze ze als dezelfde pull-requestkaarten die een taak heeft.
+Ze leest alleen de pull requests die al op dit apparaat zijn opgeslagen.
