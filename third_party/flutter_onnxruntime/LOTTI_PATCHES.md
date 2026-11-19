@@ -81,6 +81,23 @@ system-search-then-download behaviour is preserved. The Flathub manifest sets
 `ONNXRUNTIME_ROOT_DIR=/app` and vendors the runtime there; see
 `flatpak/README.md` → "ONNX Runtime (on-device TTS)".
 
+### Linux: runtime download from NuGet
+
+**File:** `linux/CMakeLists.txt` (search for `LOTTI FORK PATCH: fetch the
+runtime`).
+
+Upstream downloads `onnxruntime-linux-<arch>-<version>.tgz` from the
+`microsoft/onnxruntime` GitHub releases, which stopped being served (404) in
+November 2026 and broke every Linux release build. The patch downloads
+Microsoft's NuGet package `Microsoft.ML.OnnxRuntime` of the same version
+instead, which carries the headers (`build/native/include`) and both Linux
+architectures (`runtimes/linux-{x64,arm64}/native`), and lays them out as the
+tarball's `include/` + `lib/` under the same directory name — including the
+`libonnxruntime.so.1` link the tarball shipped, which the linker needs because
+that is the library's SONAME — so the rest of the file is untouched. A failed download stops the configure with its cause,
+and when the parent project sets `ONNXRUNTIME_NUPKG_SHA256` (Lotti's
+`linux/CMakeLists.txt` does) a package with another hash is rejected.
+
 ## Upgrading
 
 When bumping `flutter_onnxruntime`, re-vendor the new version and re-apply the
@@ -96,7 +113,8 @@ When bumping `flutter_onnxruntime`, re-vendor the new version and re-apply the
   raise the real floor above it, which would force `ios/Podfile` up too.
 - **Linux** (`linux/CMakeLists.txt`): the `ONNXRUNTIME_ROOT_DIR` env seeding
   and separate `SYSTEM_ONNXRUNTIME` pkg-config prefix, which prevents a failed
-  lookup from clearing the application's pinned download version.
+  lookup from clearing the application's pinned download version; and the
+  NuGet download with its optional `ONNXRUNTIME_NUPKG_SHA256` check.
 - **Linux** (`linux/src/flutter_onnxruntime_plugin.cc`): the `work_pool`
   worker, `run_method_call` / `respond_on_main_thread`, and the
   `handle_method_call` → `build_response` split. Rerun the embedder parity test

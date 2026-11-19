@@ -81,22 +81,26 @@ This is handled directly in the manifest template
 overlay — that overlay targets pub.dev packages (objectbox, sqlite3), whereas
 this is a path-dependency fork we own:
 
-- An `onnxruntime` module vendors the official prebuilt runtime as declared
-  per-arch `archive` sources (fetched in the networked download phase) and
-  installs `lib/` + `include/` into `/app`.
+- An `onnxruntime` module vendors the official prebuilt runtime as one
+  declared `archive` source — Microsoft's NuGet package
+  `Microsoft.ML.OnnxRuntime`, fetched in the networked download phase — and
+  installs the build architecture's libraries into `/app/lib` (plus the
+  `libonnxruntime.so.1` SONAME link) and the headers into `/app/include`.
+  The GitHub release tarballs it used before stopped being served in
+  November 2026.
 - The `lotti` module exports `ONNXRUNTIME_ROOT_DIR=/app` (and
   `CMAKE_PREFIX_PATH=/app`); the fork's CMake seeds `ONNXRUNTIME_ROOT_DIR` from
   that env (a `LOTTI FORK PATCH`) and finds the pre-provided runtime instead of
   downloading.
 
-**When bumping the ONNX Runtime version** (must match what the fork's CMake
-expects — currently `1.22.0`): update both the URL and the `sha256` for each
-arch in the `onnxruntime` module. Get the hashes with:
+**When bumping the ONNX Runtime version**, three places move together: the
+`ONNXRUNTIME_VERSION` and `ONNXRUNTIME_NUPKG_SHA256` pins in
+`linux/CMakeLists.txt` (which the non-Flatpak Linux builds download), and the
+URL and `sha256` of the `onnxruntime` module here. One package serves both
+architectures, so there is one hash:
 
 ```bash
-for a in x64 aarch64; do
-  curl -sL "https://github.com/microsoft/onnxruntime/releases/download/v<VER>/onnxruntime-linux-$a-<VER>.tgz" | sha256sum
-done
+curl -sL "https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntime/<VER>/microsoft.ml.onnxruntime.<VER>.nupkg" | sha256sum
 ```
 
 ## Release Workflow
