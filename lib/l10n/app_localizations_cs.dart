@@ -18205,6 +18205,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskHistoryTitle => 'Historie';
 
   @override
+  String taskLabelsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count štítků',
+      few: '$count štítky',
+      one: '1 štítek',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }

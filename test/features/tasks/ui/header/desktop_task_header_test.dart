@@ -18,6 +18,7 @@ import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
+import 'package:lotti/features/tasks/ui/header/desktop_task_header_meta.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -246,6 +247,36 @@ void main() {
         // No ellipsis in the header — lives in the app bar.
         expect(find.byIcon(LottiIcons.moreVertical), findsNothing);
         expect(find.byIcon(LottiIcons.more), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'on a phone the summary splits into the decision facts, then the '
+      'bookkeeping with the labels counted',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
+            onTitleSaved: (_) {},
+            onOpenDetails: () {},
+          ),
+          size: const Size(390, 844),
+        );
+
+        final lanes = find.descendant(
+          of: find.byType(TaskMetaSummaryLine),
+          matching: find.byType(Wrap),
+        );
+        expect(lanes, findsNWidgets(2));
+        Finder inLane(int index, String text) =>
+            find.descendant(of: lanes.at(index), matching: find.text(text));
+        expect(inLane(0, 'Open'), findsOneWidget);
+        expect(inLane(0, 'High'), findsOneWidget);
+        expect(inLane(0, 'Due: Apr 1, 2026'), findsOneWidget);
+        expect(inLane(1, '2 labels'), findsOneWidget);
+        expect(inLane(1, 'Details'), findsOneWidget);
+        expect(find.text('Bug fix, Release blocker'), findsNothing);
       },
     );
 

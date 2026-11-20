@@ -16,7 +16,8 @@ import 'package:material_ui/material_ui.dart';
 /// Expandable app bar for tasks with cover art.
 ///
 /// Displays a SliverAppBar with a 16:9 aspect ratio cover image capped at the
-/// shared detail reading measure, plus glass-styled navigation and actions.
+/// shared detail reading measure and at [kTaskCoverMaxHeight] tall, plus
+/// glass-styled navigation and actions.
 /// Once the cover has scrolled past the pinned toolbar, the bar surfaces the
 /// task title in `subtitle2` so it stays on screen — matching the title
 /// typography used by the task list cards.
@@ -49,7 +50,9 @@ class TaskExpandableAppBar extends ConsumerWidget {
         final coverWidth = availableWidth
             .clamp(0, kDetailContentMaxWidth)
             .toDouble();
-        final expandedHeight = coverWidth * 9 / 16;
+        final expandedHeight = (coverWidth * 9 / 16)
+            .clamp(0, kTaskCoverMaxHeight)
+            .toDouble();
         // Show the title once the cover is mostly out of view — ~85% of
         // the expanded height — so it appears as the compact collapsed
         // toolbar takes over.

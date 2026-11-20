@@ -6870,6 +6870,14 @@
   "taskFirstRunWriteNote": "Escribir una nota",
   "taskFirstRunWriteNoteHint": "Añade una nota vinculada para detalles e ideas.",
   "taskHistoryTitle": "Historial",
+  "taskLabelsCount": "{count, plural, =1{1 etiqueta} other{{count} etiquetas}}",
+  "@taskLabelsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {
