@@ -335,11 +335,15 @@ void main() {
       final due = DateTime(2026, 7, 17);
       final task = buildTask(due: due);
 
-      await tester.pumpWidget(
-        pumpConnector(task: task, locale: const Locale('de')),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      // Pinned, so the date stays further out than tomorrow and keeps its
+      // numeric form whatever day the suite runs on.
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          pumpConnector(task: task, locale: const Locale('de')),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+      });
 
       expect(
         // German UI, US phone: the label is translated, the date order is
@@ -899,10 +903,31 @@ void main() {
           await tester.pump(const Duration(milliseconds: 300));
         });
 
-        // Either the urgency label or the date string is visible.
-        expect(find.byType(DesktopTaskHeader), findsOneWidget);
+        // The list's own words for the day, not the numeric date.
+        expect(find.text('Due Today'), findsOneWidget);
+        expect(find.textContaining('/2026'), findsNothing);
       },
     );
+
+    for (final (offset, label) in [
+      (-1, 'Due Yesterday'),
+      (1, 'Due Tomorrow'),
+    ]) {
+      testWidgets('a task due $offset day(s) from today says "$label"', (
+        tester,
+      ) async {
+        final task = buildTask(due: now.add(Duration(days: offset)));
+
+        await withClock(Clock.fixed(now), () async {
+          await tester.pumpWidget(pumpConnector(task: task));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+        });
+
+        expect(find.text(label), findsOneWidget);
+        expect(find.textContaining('/2026'), findsNothing);
+      });
+    }
 
     testWidgets(
       'tasks due in the future fall through to the normal urgency branch',

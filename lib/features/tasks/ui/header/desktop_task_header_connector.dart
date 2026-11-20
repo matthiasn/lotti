@@ -147,9 +147,20 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     final dueDate = due == null
         ? null
         : DesktopTaskHeaderDueDate(
-            label: context.messages.taskDueDateWithDate(
-              deviceDateLabel(context, due),
-            ),
+            // The same words the task list's due sections use for the days
+            // either side of today, so list and header never name one due
+            // date two ways; further out, the device's numeric date.
+            label: switch (getDueDateStatus(
+              dueDate: due,
+              referenceDate: clock.now(),
+            ).daysUntilDue) {
+              -1 => context.messages.taskDueYesterday,
+              0 => context.messages.taskDueToday,
+              1 => context.messages.taskDueTomorrow,
+              _ => context.messages.taskDueDateWithDate(
+                deviceDateLabel(context, due),
+              ),
+            },
             urgency: _dueUrgency(task.data),
           );
 
