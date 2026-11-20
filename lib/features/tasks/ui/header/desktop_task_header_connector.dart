@@ -48,11 +48,12 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Rebuild when label definitions change (names, colours, visibility).
-    ref.watch(labelsStreamProvider);
-    // Rebuild at local midnight: "Due Tomorrow" becomes "Due Today", and the
-    // urgency with it, without the task changing.
-    ref.watch(taskDueDayProvider);
+    // Rebuild when label definitions change (names, colours, visibility), and
+    // at local midnight: "Due Tomorrow" becomes "Due Today", and the urgency
+    // with it, without the task changing.
+    ref
+      ..watch(labelsStreamProvider)
+      ..watch(taskDueDayProvider);
 
     final entryState = ref.watch(entryControllerProvider(taskId)).value;
     final task = entryState?.entry;
