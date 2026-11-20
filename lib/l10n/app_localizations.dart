@@ -29771,6 +29771,12 @@ abstract class AppLocalizations {
   /// **'History'**
   String get taskHistoryTitle;
 
+  /// How many labels a task carries, on the task header's compact metadata lane where the label names do not fit.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 label} other{{count} labels}}'**
+  String taskLabelsCount(int count);
+
   /// No description provided for @taskLabelsMoreCount.
   ///
   /// In en, this message translates to:

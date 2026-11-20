@@ -7519,6 +7519,14 @@
   "taskFirstRunWriteNote": "Een notitie schrijven",
   "taskFirstRunWriteNoteHint": "Voegt een gekoppelde notitie toe voor details en gedachten.",
   "taskHistoryTitle": "Geschiedenis",
+  "taskLabelsCount": "{count, plural, =1{1 label} other{{count} labels}}",
+  "@taskLabelsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

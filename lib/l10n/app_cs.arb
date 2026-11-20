@@ -6877,6 +6877,14 @@
   "taskFirstRunWriteNote": "Napsat poznámku",
   "taskFirstRunWriteNoteHint": "Přidá propojenou poznámku na podrobnosti a myšlenky.",
   "taskHistoryTitle": "Historie",
+  "taskLabelsCount": "{count, plural, =1{1 štítek} few{{count} štítky} other{{count} štítků}}",
+  "@taskLabelsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

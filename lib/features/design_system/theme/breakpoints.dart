@@ -19,6 +19,13 @@ bool isDesktopLayout(BuildContext context) =>
 /// unbalanced two-row layout.
 const kDetailContentMaxWidth = 960.0;
 
+/// The tallest a task's cover art may stand above its title. The cover is a
+/// 16:9 picture of the column's width, which on a phone is ~220 but at the
+/// full [kDetailContentMaxWidth] reaches 540 — 60% of a laptop window, so the
+/// title, metadata and agent summary all started at or below the fold. Above
+/// this height the cover becomes a banner cropped from its top.
+const kTaskCoverMaxHeight = 320.0;
+
 /// The reading measure for running prose inside a wide column — a timeline
 /// row's words, a note: about 70 characters of body text, where the eye
 /// still finds the start of the next line — 600 sets bodyMedium at about

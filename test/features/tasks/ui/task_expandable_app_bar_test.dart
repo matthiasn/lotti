@@ -365,7 +365,8 @@ void main() {
       expect(appBar.expandedHeight, 225);
     });
 
-    testWidgets('caps desktop cover art at the shared reading measure', (
+    testWidgets('caps desktop cover art at the reading measure and the '
+        'cover height, so the title is not pushed below the fold', (
       tester,
     ) async {
       final task = buildTask();
@@ -374,7 +375,9 @@ void main() {
       await tester.pump();
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
-      expect(appBar.expandedHeight, kDetailContentMaxWidth * 9 / 16);
+      // 16:9 of the 960 measure would stand 540 tall.
+      expect(kDetailContentMaxWidth * 9 / 16, greaterThan(kTaskCoverMaxHeight));
+      expect(appBar.expandedHeight, kTaskCoverMaxHeight);
       expect(
         tester
             .widgetList<SizedBox>(find.byType(SizedBox))

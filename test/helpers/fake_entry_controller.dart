@@ -6,6 +6,7 @@
 
 import 'dart:async';
 
+import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 
 export 'package:lotti/features/journal/state/entry_controller.dart'
     show entryControllerProvider;
@@ -61,6 +63,15 @@ class FakeEntryController extends EntryController {
     );
     // Set state immediately so it's available synchronously for widget builds
     state = AsyncData(value);
+    // Open the editor on the entry's text, as production `setController`
+    // does. Without it a task's description rendered as an empty "Enter
+    // notes…" field in every capture built on this fake.
+    if (_entity.entryText case final text?) {
+      controller = makeController(
+        serializedQuill:
+            text.quill ?? markdownToDelta(text.markdown ?? text.plainText),
+      );
+    }
     return SynchronousFuture(value);
   }
 

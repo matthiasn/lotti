@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/tasks/state/task_blockers_controller.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_column.dart';
@@ -47,8 +48,12 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Rebuild when label definitions change (names, colours, visibility).
-    ref.watch(labelsStreamProvider);
+    // Rebuild when label definitions change (names, colours, visibility), and
+    // at local midnight: "Due Tomorrow" becomes "Due Today", and the urgency
+    // with it, without the task changing.
+    ref
+      ..watch(labelsStreamProvider)
+      ..watch(taskDueDayProvider);
 
     final entryState = ref.watch(entryControllerProvider(taskId)).value;
     final task = entryState?.entry;
@@ -147,9 +152,20 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     final dueDate = due == null
         ? null
         : DesktopTaskHeaderDueDate(
-            label: context.messages.taskDueDateWithDate(
-              deviceDateLabel(context, due),
-            ),
+            // The same words the task list's due sections use for the days
+            // either side of today, so list and header never name one due
+            // date two ways; further out, the device's numeric date.
+            label: switch (getDueDateStatus(
+              dueDate: due,
+              referenceDate: clock.now(),
+            ).daysUntilDue) {
+              -1 => context.messages.taskDueYesterday,
+              0 => context.messages.taskDueToday,
+              1 => context.messages.taskDueTomorrow,
+              _ => context.messages.taskDueDateWithDate(
+                deviceDateLabel(context, due),
+              ),
+            },
             urgency: _dueUrgency(task.data),
           );
 

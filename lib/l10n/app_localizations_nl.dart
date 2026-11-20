@@ -18034,6 +18034,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskHistoryTitle => 'Geschiedenis';
 
   @override
+  String taskLabelsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count labels',
+      one: '1 label',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }

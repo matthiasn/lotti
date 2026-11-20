@@ -327,6 +327,15 @@ always-visible button-styled chrome.** The summary lane is read-outs only:
 `[status] → [blocked-by?] → [priority] → [due?] → [estimate?] → [labels?] →
 [AI cost?] → [Set category?] → Details`.
 
+**Narrower than `kActionListContentMaxWidth` (520), the lane is two lines, not
+one wrapped lane.** One lane wrapped into three uneven rows on a phone, with
+Details stranded alone on the last. The decision facts — status, blocked-by,
+priority, due — take the first line; the rest the second, where two or more
+labels read as their count (`2 labels`) so the line fits in English and German.
+A due date within a day of today reads as the list's own section words (`Due
+Today`, `Due Tomorrow`, `Due Yesterday`); further out, the device's numeric
+date.
+
 **The estimate is a read-out in the lane, not only a fly-out row.** "How big
 is this, and how far along?" is answered at the same glance as "when is it
 due?": the tag reads tracked-of-estimated as compact units (`45m of 1h 30m`)

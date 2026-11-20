@@ -1,8 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
+import 'package:lotti/features/design_system/components/task_list_items/design_system_priority_glyph.dart';
+import 'package:lotti/features/design_system/components/task_list_items/design_system_task_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -385,7 +386,16 @@ void main() {
         );
 
         expect(find.text('Apply'), findsOneWidget);
-        expect(find.byIcon(LottiIcons.verified), findsOneWidget);
+        // One mark per level, the row's and header's own: four different
+        // priorities, not one signal icon in four colours.
+        expect(
+          tester
+              .widgetList<DesignSystemPriorityGlyph>(
+                find.byType(DesignSystemPriorityGlyph),
+              )
+              .map((glyph) => glyph.priority),
+          DesignSystemTaskPriority.values,
+        );
 
         await tester.tap(
           find.byKey(
@@ -479,7 +489,7 @@ void main() {
         );
 
         expect(find.text('All'), findsNWidgets(4));
-        expect(find.byIcon(LottiIcons.verified), findsOneWidget);
+        expect(find.byType(DesignSystemPriorityGlyph), findsNWidgets(4));
 
         await tester.tap(
           find.byKey(

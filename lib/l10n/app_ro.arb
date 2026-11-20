@@ -6870,6 +6870,14 @@
   "taskFirstRunWriteNote": "Scrieți o notă",
   "taskFirstRunWriteNoteHint": "Adaugă o notă legată pentru detalii și gânduri.",
   "taskHistoryTitle": "Istoric",
+  "taskLabelsCount": "{count, plural, =1{1 etichetă} few{{count} etichete} other{{count} de etichete}}",
+  "@taskLabelsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {
