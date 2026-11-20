@@ -209,7 +209,12 @@ class TaskRowContent extends ConsumerWidget {
         categoryNameOverride ??
         category?.name ??
         context.messages.tasksQuickFilterUnassignedLabel;
-    final coverArtId = showCoverArt ? liveTask.data.coverArtId : null;
+    // On large text the thumbnail steps aside so the title keeps its measure.
+    final largeText =
+        MediaQuery.textScalerOf(context).scale(1) >= TextScales.large;
+    final coverArtId = showCoverArt && !largeText
+        ? liveTask.data.coverArtId
+        : null;
     // One quiet meta line under the title: every fact at the caption tier, so
     // the title is the one thing that leads the row. Tracked time comes last
     // because it renders nothing until time has been tracked.

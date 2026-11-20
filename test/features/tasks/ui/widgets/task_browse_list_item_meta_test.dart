@@ -58,6 +58,29 @@ void main() {
     );
 
     testWidgets(
+      'on large text the thumbnail steps aside so the title keeps its width',
+      (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = TextScales.large;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final task =
+            TestTaskFactory.create(
+              id: 'task-cover-art-large-text',
+              title: 'Task With Cover Art',
+              dateFrom: DateTime(2026, 4, 8),
+            ).copyWith(
+              data: TestTaskDataFactory.create(
+                title: 'Task With Cover Art',
+              ).copyWith(coverArtId: 'cover-img-1'),
+            );
+
+        await pumpTaskBrowseItem(tester, task, showCoverArt: true);
+
+        expect(find.text('Task With Cover Art'), findsOneWidget);
+        expect(find.byType(CoverArtThumbnail), findsNothing);
+      },
+    );
+
+    testWidgets(
       'does not render CoverArtThumbnail when showCoverArt is false',
       (
         tester,
