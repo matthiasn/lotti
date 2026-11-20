@@ -1277,7 +1277,14 @@ Future<void> _pumpTaskSurface(
       tester,
       documentsDirectory: getIt<Directory>(),
       world: world,
-      extents: const [48, 96, 144, 216],
+      extents: [
+        48,
+        96,
+        144,
+        216,
+        // The task row's cover thumbnail, at this device's pixel ratio.
+        (ControlSizes.mediaThumbnail * device.devicePixelRatio).round(),
+      ],
     );
     await primeManualDemoCoverArt(
       tester,

@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/classes/task_search_hit.dart';
+import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/time_recording_icon.dart';
@@ -54,7 +55,7 @@ void main() {
       find.text('refill the krill tubs', findRichText: true),
       findsOneWidget,
     );
-    expect(find.text('P1'), findsOneWidget);
+    expect(find.text('High'), findsOneWidget);
 
     await pumpTaskBrowseItem(
       tester,
@@ -64,7 +65,7 @@ void main() {
 
     expect(find.byType(TaskSearchSnippet), findsNothing);
     expect(
-      find.text('P1'),
+      find.text('High'),
       findsNothing,
       reason: 'a priority section states it already',
     );
@@ -389,14 +390,9 @@ void main() {
           showCreationDate: true,
         );
 
-        // TaskShowcaseMetaChip with calendar icon represents the creation date
-        final chips = tester.widgetList<TaskShowcaseMetaChip>(
-          find.byType(TaskShowcaseMetaChip),
-        );
-        final dateChips = chips
-            .where((c) => c.icon == LottiIcons.today)
-            .toList();
-        expect(dateChips, hasLength(1));
+        // The creation date rides the meta line with the calendar-day glyph.
+        expect(find.byIcon(LottiIcons.today), findsOneWidget);
+        expect(find.text('Wed, Apr 8'), findsOneWidget);
       },
     );
 
@@ -416,11 +412,7 @@ void main() {
         showCreationDate: true,
       );
 
-      final chips = tester.widgetList<TaskShowcaseMetaChip>(
-        find.byType(TaskShowcaseMetaChip),
-      );
-      final dateChips = chips.where((c) => c.icon == LottiIcons.today).toList();
-      expect(dateChips, isEmpty);
+      expect(find.byIcon(LottiIcons.today), findsNothing);
     });
 
     testWidgets(
@@ -559,9 +551,7 @@ void main() {
         utcOffset: 0,
       );
 
-      Iterable<TaskShowcaseMetaChip> noDueChips(WidgetTester tester) => tester
-          .widgetList<TaskShowcaseMetaChip>(find.byType(TaskShowcaseMetaChip))
-          .where((chip) => chip.label == 'No due date');
+      Finder noDueChips() => find.text('No due date');
 
       testWidgets('says so in the quiet meta-chip grey', (tester) async {
         await pumpTaskBrowseItem(
@@ -571,7 +561,8 @@ void main() {
           showDueDate: true,
         );
 
-        expect(noDueChips(tester).single.icon, LottiIcons.calendar);
+        expect(noDueChips(), findsOneWidget);
+        expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
         // Never the urgent read-out: no DueDateText for an undated task.
         expect(find.byType(DueDateText), findsNothing);
       });
@@ -584,7 +575,7 @@ void main() {
           showDueDate: false,
         );
 
-        expect(noDueChips(tester), isEmpty);
+        expect(noDueChips(), findsNothing);
       });
 
       testWidgets('stays quiet when the No due date section header says it', (
@@ -597,7 +588,7 @@ void main() {
           showDueDate: true,
         );
 
-        expect(noDueChips(tester), isEmpty);
+        expect(noDueChips(), findsNothing);
       });
 
       testWidgets('stays quiet once the task is closed', (tester) async {
@@ -614,7 +605,7 @@ void main() {
           showDueDate: true,
         );
 
-        expect(noDueChips(tester), isEmpty);
+        expect(noDueChips(), findsNothing);
       });
     });
 
@@ -629,14 +620,9 @@ void main() {
 
       await pumpTaskBrowseItem(tester, task, vectorDistance: 0.42);
 
-      // TaskShowcaseMetaChip with hub icon for vector distance
-      final chips = tester.widgetList<TaskShowcaseMetaChip>(
-        find.byType(TaskShowcaseMetaChip),
-      );
-      final vectorChips = chips.where((c) => c.icon == LottiIcons.hub).toList();
-      expect(vectorChips, hasLength(1));
-      // The label is distance.toStringAsFixed(2) = "0.42"
-      expect(vectorChips.first.label, '0.42');
+      // The hub glyph and distance.toStringAsFixed(2) on the meta line.
+      expect(find.byIcon(LottiIcons.hub), findsOneWidget);
+      expect(find.text('0.42'), findsOneWidget);
     });
 
     testWidgets('hides vector distance chip when not provided', (tester) async {
@@ -648,11 +634,7 @@ void main() {
 
       await pumpTaskBrowseItem(tester, task, vectorDistance: null);
 
-      final chips = tester.widgetList<TaskShowcaseMetaChip>(
-        find.byType(TaskShowcaseMetaChip),
-      );
-      final vectorChips = chips.where((c) => c.icon == LottiIcons.hub).toList();
-      expect(vectorChips, isEmpty);
+      expect(find.byIcon(LottiIcons.hub), findsNothing);
     });
   });
 
@@ -676,7 +658,7 @@ void main() {
         expect(find.text('Compact row task'), findsOneWidget);
         // Everything else the expanded card carries is dropped.
         expect(find.byType(TaskRowContent), findsNothing);
-        expect(find.byType(TaskShowcaseCategoryChip), findsNothing);
+        expect(find.byType(ColorIcon), findsNothing);
         expect(find.byType(TaskShowcaseStatusLabel), findsNothing);
         expect(find.byType(TimeRecordingIcon), findsNothing);
         expect(find.text('0h 0m'), findsNothing);
@@ -697,8 +679,8 @@ void main() {
 
         expect(find.byType(TaskRowContent), findsOneWidget);
         expect(find.byType(TaskCompactRowContent), findsNothing);
-        expect(find.byType(TaskShowcaseCategoryChip), findsOneWidget);
-        expect(find.text('0h 0m'), findsOneWidget);
+        expect(find.byType(ColorIcon), findsOneWidget);
+        expect(find.byType(TaskShowcaseStatusLabel), findsOneWidget);
       },
     );
 

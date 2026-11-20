@@ -53,7 +53,7 @@ void main() {
           find.byType(CoverArtThumbnail),
         );
         expect(thumbnail.imageId, coverArtImageId);
-        expect(thumbnail.size, 72);
+        expect(thumbnail.size, ControlSizes.mediaThumbnail);
       },
     );
 
@@ -260,8 +260,9 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // null state → Duration.zero → "0h 0m"
-      expect(find.text('0h 0m'), findsOneWidget);
+      // Nothing tracked yet: the row says nothing rather than "0h 0m".
+      expect(find.text('0h 0m'), findsNothing);
+      expect(find.byIcon(LottiIcons.timelapse), findsNothing);
     });
   });
 

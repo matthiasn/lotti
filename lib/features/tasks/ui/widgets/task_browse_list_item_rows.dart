@@ -3,6 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/classes/task_search_hit.dart';
+import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/time_recording_icon.dart';
@@ -24,7 +25,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/task_progress_controller.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Tappable grouped-card surface that wraps a task row's [child] content.
@@ -138,10 +138,10 @@ class TaskBrowseRowShell extends StatelessWidget {
   }
 }
 
-/// The inner layout of a task row: optional cover art, title, AI one-liner
-/// subtitle, a metadata wrap (priority, tracked duration, category chip), the
-/// trailing status pill, and a footer of created-date/due-date/vector-distance
-/// chips. Watches `taskLiveDataProvider` and `taskOneLinerProvider` (using
+/// The inner layout of a task row, in three tiers so the title leads: optional
+/// cover art, the title, the agent's one-liner on one line, then one quiet meta
+/// line (status, priority word, created and due dates, search distance, the
+/// category swatch and name, and tracked time once there is any). Watches `taskLiveDataProvider` and `taskOneLinerProvider` (using
 /// `.value` to keep stale data during reloads) so the row updates in place.
 class TaskRowContent extends ConsumerWidget {
   const TaskRowContent({
@@ -155,7 +155,6 @@ class TaskRowContent extends ConsumerWidget {
     this.searchHit,
     this.vectorDistance,
     this.categoryNameOverride,
-    this.categoryIconOverride,
     this.categoryColorHexOverride,
     this.trackedDurationLabelOverride,
     super.key,
@@ -177,7 +176,6 @@ class TaskRowContent extends ConsumerWidget {
   final TaskSearchHit? searchHit;
   final double? vectorDistance;
   final String? categoryNameOverride;
-  final IconData? categoryIconOverride;
   final String? categoryColorHexOverride;
   final String? trackedDurationLabelOverride;
 
@@ -202,9 +200,7 @@ class TaskRowContent extends ConsumerWidget {
     final oneLiner = ref.watch(taskOneLinerProvider(liveTask.meta.id)).value;
 
     final category =
-        categoryNameOverride == null ||
-            categoryIconOverride == null ||
-            categoryColorHexOverride == null
+        categoryNameOverride == null || categoryColorHexOverride == null
         ? getIt<EntitiesCacheService>().getCategoryById(
             liveTask.meta.categoryId,
           )
@@ -213,23 +209,26 @@ class TaskRowContent extends ConsumerWidget {
         categoryNameOverride ??
         category?.name ??
         context.messages.tasksQuickFilterUnassignedLabel;
-    final categoryIcon =
-        categoryIconOverride ?? category?.icon?.iconData ?? LottiIcons.label;
     final coverArtId = showCoverArt ? liveTask.data.coverArtId : null;
+    // One quiet meta line under the title: every fact at the caption tier, so
+    // the title is the one thing that leads the row. Tracked time comes last
+    // because it renders nothing until time has been tracked.
     final metadata = <Widget>[
+      if (showStatus) TaskShowcaseStatusLabel(status: liveTask.data.status),
       if (!groupedBySort || sortOption != TaskSortOption.byPriority)
         _PriorityMeta(priority: liveTask.data.priority),
+      ..._dateAndSearchMeta(context, liveTask),
+      _CategoryMeta(
+        label: categoryName,
+        color: colorFromCssHex(
+          categoryColorHexOverride ??
+              category?.color ??
+              defaultCategoryColorHex,
+        ),
+      ),
       _TrackedDurationMeta(
         taskId: liveTask.meta.id,
         labelOverride: trackedDurationLabelOverride,
-      ),
-      TaskShowcaseCategoryChip(
-        label: categoryName,
-        icon: categoryIcon,
-        colorHex:
-            categoryColorHexOverride ??
-            category?.color ??
-            defaultCategoryColorHex,
       ),
     ];
 
@@ -238,12 +237,12 @@ class TaskRowContent extends ConsumerWidget {
       children: [
         if (coverArtId != null) ...[
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: EdgeInsetsDirectional.only(end: tokens.spacing.step4),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(tokens.radii.s),
               child: CoverArtThumbnail(
                 imageId: coverArtId,
-                size: 72,
+                size: ControlSizes.mediaThumbnail,
                 cropX: liveTask.data.coverArtCropX,
               ),
             ),
@@ -253,15 +252,12 @@ class TaskRowContent extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _TaskBrowseTitle(
-                title: liveTask.data.title,
-                maxLines: coverArtId == null ? 2 : 3,
-              ),
+              _TaskBrowseTitle(title: liveTask.data.title, maxLines: 2),
               if (oneLiner != null && oneLiner.isNotEmpty) ...[
                 SizedBox(height: tokens.spacing.step1),
                 Text(
                   oneLiner,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: tokens.typography.styles.others.caption.copyWith(
                     color: tokens.colors.aiCard.accent,
@@ -273,31 +269,12 @@ class TaskRowContent extends ConsumerWidget {
                 TaskSearchSnippet(hit: hit),
               ],
               SizedBox(height: tokens.spacing.step3),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Wrap(
-                      spacing: tokens.spacing.step3,
-                      runSpacing: tokens.spacing.step3,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: metadata,
-                    ),
-                  ),
-                  if (showStatus) ...[
-                    SizedBox(width: tokens.spacing.step4),
-                    TaskShowcaseStatusLabel(status: liveTask.data.status),
-                  ],
-                ],
+              Wrap(
+                spacing: tokens.spacing.step4,
+                runSpacing: tokens.spacing.step2,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: metadata,
               ),
-              if (_footerChildren(context, liveTask).isNotEmpty) ...[
-                SizedBox(height: tokens.spacing.step3),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _footerChildren(context, liveTask),
-                ),
-              ],
             ],
           ),
         ),
@@ -306,14 +283,15 @@ class TaskRowContent extends ConsumerWidget {
     );
   }
 
-  List<Widget> _footerChildren(BuildContext context, Task liveTask) {
+  /// Created date, due date and search distance, as meta-line items.
+  List<Widget> _dateAndSearchMeta(BuildContext context, Task liveTask) {
     final localizations = MaterialLocalizations.of(context);
     final widgets = <Widget>[];
 
     if (showCreationDate &&
         (!groupedBySort || sortOption != TaskSortOption.byDate)) {
       widgets.add(
-        TaskShowcaseMetaChip(
+        _MetaText(
           icon: LottiIcons.today,
           label: localizations.formatMediumDate(liveTask.meta.dateFrom),
         ),
@@ -335,7 +313,7 @@ class TaskRowContent extends ConsumerWidget {
             // An open task with no due date says so, in the quiet meta-chip
             // grey: a missing deadline is information too, but it must never
             // compete with the orange and red of a deadline due or passed.
-            : TaskShowcaseMetaChip(
+            : _MetaText(
                 icon: LottiIcons.calendar,
                 label: context.messages.taskNoDueDateLabel,
               ),
@@ -344,10 +322,7 @@ class TaskRowContent extends ConsumerWidget {
 
     if (vectorDistance case final distance?) {
       widgets.add(
-        TaskShowcaseMetaChip(
-          icon: LottiIcons.hub,
-          label: distance.toStringAsFixed(2),
-        ),
+        _MetaText(icon: LottiIcons.hub, label: distance.toStringAsFixed(2)),
       );
     }
 
@@ -402,7 +377,7 @@ class _TaskBrowseTitle extends StatelessWidget {
       isEmpty ? context.messages.taskUntitled : trimmed,
       maxLines: maxLines,
       overflow: TextOverflow.ellipsis,
-      style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+      style: tokens.typography.styles.subtitle.subtitle1.copyWith(
         color: isEmpty
             ? TaskShowcasePalette.error(context)
             : TaskShowcasePalette.highText(context),
@@ -427,8 +402,76 @@ class _PriorityMeta extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         TaskShowcasePriorityGlyph(priority: priority),
-        const SizedBox(width: 6),
-        Text(priority.short, style: textStyle),
+        SizedBox(width: context.designTokens.spacing.step2),
+        Text(priorityLabel(context, priority), style: textStyle),
+      ],
+    );
+  }
+}
+
+/// The localized word for [priority] ("High"), the one vocabulary the row,
+/// the section header and the detail chip share.
+String priorityLabel(BuildContext context, TaskPriority priority) =>
+    switch (priority) {
+      TaskPriority.p0Urgent => context.messages.tasksPriorityP0,
+      TaskPriority.p1High => context.messages.tasksPriorityP1,
+      TaskPriority.p2Medium => context.messages.tasksPriorityP2,
+      TaskPriority.p3Low => context.messages.tasksPriorityP3,
+    };
+
+/// A glyph and a caption in medium ink: one quiet item of the row's meta line.
+class _MetaText extends StatelessWidget {
+  const _MetaText({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final color = TaskShowcasePalette.mediumText(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: IconSizes.xs, color: color),
+        SizedBox(width: tokens.spacing.step2),
+        Text(
+          label,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The task's category as its colour swatch and name: colour marks the
+/// category without becoming the loudest fill on the row.
+class _CategoryMeta extends StatelessWidget {
+  const _CategoryMeta({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ColorIcon(color, size: IconSizes.xs),
+        SizedBox(width: tokens.spacing.step2),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: TaskShowcasePalette.mediumText(context),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -454,6 +497,8 @@ class _TrackedDurationMeta extends ConsumerWidget {
       AsyncData(:final value) => value?.progress ?? Duration.zero,
       _ => Duration.zero,
     };
+    // "0h 0m" on every untouched task is noise, not information.
+    if (progress == Duration.zero) return const SizedBox.shrink();
     final hours = progress.inHours;
     final minutes = progress.inMinutes.remainder(60);
     final label = context.messages
@@ -553,13 +598,5 @@ String _sectionTitle(BuildContext context, TaskBrowseSectionKey sectionKey) {
   };
 }
 
-String _prioritySectionTitle(BuildContext context, TaskPriority priority) {
-  final label = switch (priority) {
-    TaskPriority.p0Urgent => context.messages.tasksPriorityP0,
-    TaskPriority.p1High => context.messages.tasksPriorityP1,
-    TaskPriority.p2Medium => context.messages.tasksPriorityP2,
-    TaskPriority.p3Low => context.messages.tasksPriorityP3,
-  };
-
-  return '${priority.short} $label';
-}
+String _prioritySectionTitle(BuildContext context, TaskPriority priority) =>
+    '${priority.short} ${priorityLabel(context, priority)}';
