@@ -42,11 +42,14 @@ record is trustworthy and up to date and keeping it costs little effort.
   record live in separate databases, and agent changes reach the record only
   through an approval path (the pre-approved exceptions are listed in
   `docs/adr/0102-pre-approved-agent-changes.md`).
-- **No server ever holds your data in readable form.** Data is local-first and
-  synced end-to-end encrypted over a Matrix relay that holds only ciphertext,
-  and not forever. There is no telemetry.
-- **The sync protocol and agent runtime are formally verified** (TLA+, in
-  `specs/tla/`).
+- **The sync relay never holds your data in readable form.** Data is
+  local-first and synced end-to-end encrypted over a Matrix relay that holds
+  only ciphertext, for as long as its operator's retention settings keep it.
+  There is no telemetry. AI requests are the exception: the provider a
+  category routes to reads what is sent and keeps it under its own terms.
+- **The sync protocol and agent runtime designs are model-checked.** TLA+
+  models in `specs/tla/` are checked nightly under crashes, injected failures
+  and reordered messages; they cover the design, not every line of code.
 - **Inference runs on the user's own key, routed per category.** AI is
   optional. The recommended route is open-weight models on European
   infrastructure. Speech recognition can run fully offline.
