@@ -1,0 +1,335 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-20T17:48:21+00:00",
+  "title": "Design System: Lotti",
+  "extensions": {
+    "colorMeta": {
+      "interactive-light": {
+        "role": "primary",
+        "displayName": "Logbook Teal",
+        "tonalRamp": [
+          "#103A30",
+          "#165042",
+          "#1F7963"
+        ]
+      },
+      "interactive-dark": {
+        "role": "primary",
+        "displayName": "Logbook Teal (dark)",
+        "tonalRamp": [
+          "#5ED4B7",
+          "#86DFC9",
+          "#AFEAD8"
+        ]
+      },
+      "ai-accent-light": {
+        "role": "secondary",
+        "displayName": "Agent Violet"
+      },
+      "ai-accent-dark": {
+        "role": "secondary",
+        "displayName": "Agent Violet (dark)"
+      },
+      "error-light": {
+        "role": "tertiary",
+        "displayName": "Ember Red",
+        "tonalRamp": [
+          "#7A1F1F",
+          "#A32B29",
+          "#CC3633"
+        ]
+      },
+      "error-dark": {
+        "role": "tertiary",
+        "displayName": "Ember Red (dark)",
+        "tonalRamp": [
+          "#D65E5C",
+          "#E08684",
+          "#EBB0AE"
+        ]
+      },
+      "success-light": {
+        "role": "tertiary",
+        "displayName": "Field Green",
+        "tonalRamp": [
+          "#366340",
+          "#478556"
+        ]
+      },
+      "success-dark": {
+        "role": "tertiary",
+        "displayName": "Field Green (dark)",
+        "tonalRamp": [
+          "#7AB889",
+          "#9CC9A6",
+          "#BDDBC4"
+        ]
+      },
+      "warning-light": {
+        "role": "tertiary",
+        "displayName": "Amber",
+        "tonalRamp": [
+          "#965402",
+          "#C87005"
+        ]
+      },
+      "warning-dark": {
+        "role": "tertiary",
+        "displayName": "Amber (dark)",
+        "tonalRamp": [
+          "#FBA336",
+          "#FCBA69",
+          "#FDD19B"
+        ]
+      },
+      "info-light": {
+        "role": "tertiary",
+        "displayName": "Harbour Blue",
+        "tonalRamp": [
+          "#116288",
+          "#1783B5"
+        ]
+      },
+      "info-dark": {
+        "role": "tertiary",
+        "displayName": "Harbour Blue (dark)",
+        "tonalRamp": [
+          "#4AB6E8",
+          "#77C8EE",
+          "#A4DAF4"
+        ]
+      },
+      "background-01-dark": {
+        "role": "neutral",
+        "displayName": "Canvas 01 (dark)",
+        "tonalRamp": [
+          "#181818",
+          "#222222",
+          "#535353"
+        ]
+      },
+      "background-01-light": {
+        "role": "neutral",
+        "displayName": "Canvas 01 (light)",
+        "tonalRamp": [
+          "#E3E8E7",
+          "#F1F4F3",
+          "#FFFFFF"
+        ]
+      },
+      "background-alternative-light": {
+        "role": "neutral",
+        "displayName": "Cool Paper"
+      },
+      "background-alternative-dark": {
+        "role": "neutral",
+        "displayName": "Cool Paper (dark)"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display 2",
+        "purpose": "Rare hero numbers and celebration moments."
+      },
+      "headline": {
+        "displayName": "Heading 1",
+        "purpose": "Detail-page title."
+      },
+      "heading-2": {
+        "displayName": "Heading 2",
+        "purpose": "Section heads within a page."
+      },
+      "title": {
+        "displayName": "Heading 3",
+        "purpose": "Card and sheet titles."
+      },
+      "subtitle-1": {
+        "displayName": "Subtitle 1",
+        "purpose": "Row titles; large button labels."
+      },
+      "subtitle-2": {
+        "displayName": "Subtitle 2",
+        "purpose": "Medium/small button labels; list section labels."
+      },
+      "body": {
+        "displayName": "Body Medium",
+        "purpose": "Running prose at ~70ch (600px)."
+      },
+      "body-small": {
+        "displayName": "Body Small",
+        "purpose": "Dense rows, metadata, tags."
+      },
+      "label": {
+        "displayName": "Caption",
+        "purpose": "Meta lines, timestamps, dense buttons."
+      }
+    },
+    "shadows": [
+      {
+        "name": "glass-chrome",
+        "value": "backdrop-filter: blur(20px); background: linear-gradient(rgba(24,24,24,0.72), rgba(24,24,24,0.9))",
+        "purpose": "Floating chrome over scrolling content only (task action bar, top bars over cover art, glass modal footers)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "standard",
+        "value": "cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "Default state transitions."
+      },
+      {
+        "name": "emphasized-decelerate",
+        "value": "cubic-bezier(0.05, 0.7, 0.1, 1)",
+        "purpose": "Things settling: proposal collapse."
+      },
+      {
+        "name": "ease-out-quart",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "Quick reveals."
+      },
+      {
+        "name": "durations",
+        "value": "100 / 150 / 200 / 250 / 300 / 400 / 500ms",
+        "purpose": "short2…long2; proposal resolve hold 200ms, collapse 250ms, stagger 55ms."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "page-header-fold",
+        "value": "520px"
+      },
+      {
+        "name": "desktop",
+        "value": "960px"
+      },
+      {
+        "name": "day-view-column",
+        "value": "1200px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one primary action on a surface (Track time).",
+      "html": "<button class=\"ds-btn-primary\">Track time</button>",
+      "css": ".ds-btn-primary{background:#5ED4B7;color:#0D0D0D;font:600 14px/20px Inter,sans-serif;letter-spacing:.25px;padding:12px 20px;border:none;border-radius:24px;transition:background .15s cubic-bezier(.2,0,0,1)}.ds-btn-primary:hover,.ds-btn-primary:focus-visible{background:#86DFC9;outline:none}.ds-btn-primary:active{background:#AFEAD8}"
+    },
+    {
+      "name": "Dense Text Action",
+      "kind": "button",
+      "refersTo": "button-dense",
+      "description": "Caption-tier action inside metadata rows (Update now).",
+      "html": "<button class=\"ds-btn-dense\">Update now</button>",
+      "css": ".ds-btn-dense{background:transparent;color:#5ED4B7;font:400 12px/16px Inter,sans-serif;letter-spacing:.25px;padding:4px;border:none;border-radius:8px}.ds-btn-dense:hover,.ds-btn-dense:focus-visible{background:rgba(255,255,255,.12);outline:none}"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "pill",
+      "description": "Interactive choice; selected owns the teal-tinted surface.",
+      "html": "<button class=\"ds-chip\" aria-pressed=\"true\">Due today <span class=\"ds-chip-count\">2</span></button>",
+      "css": ".ds-chip{background:rgba(255,255,255,.06);color:#fff;font:400 14px/20px Inter,sans-serif;padding:4px 12px;border:1px solid rgba(255,255,255,.12);border-radius:24px}.ds-chip:hover{background:rgba(255,255,255,.12)}.ds-chip[aria-pressed=true]{background:rgba(94,212,183,.16);border-color:#5ED4B7}.ds-chip-count{margin-left:4px;color:rgba(255,255,255,.8)}"
+    },
+    {
+      "name": "Fact Tag",
+      "kind": "chip",
+      "refersTo": "tag",
+      "description": "Informational read-out; 4px corners so it never reads as a button.",
+      "html": "<span class=\"ds-tag\">Due: 7/17/2026</span>",
+      "css": ".ds-tag{display:inline-block;background:rgba(251,163,54,.16);color:#FBA336;font:400 14px/20px Inter,sans-serif;padding:4px 8px;border-radius:4px}"
+    },
+    {
+      "name": "Rows Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A short list of rows on one card, a tonal step above the page.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-row\">Inspect orbital penguin habitat</div><div class=\"ds-row\">Recalibrate the fish feeder</div></div>",
+      "css": ".ds-card{background:#222222;border-radius:16px;overflow:hidden;color:#fff;font:600 16px/24px Inter,sans-serif}.ds-row{padding:12px 16px}.ds-row+.ds-row{border-top:1px solid rgba(255,255,255,.12)}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "text-input",
+      "description": "Filled field; one border function: teal on focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Search tasks…\">",
+      "css": ".ds-input{background:#222222;color:#fff;font:400 16px/24px Inter,sans-serif;padding:12px 16px;border:1px solid rgba(255,255,255,.12);border-radius:16px;outline:none}.ds-input::placeholder{color:rgba(255,255,255,.64)}.ds-input:hover{border-color:rgba(255,255,255,.8)}.ds-input:focus-visible{border-color:#5ED4B7}"
+    },
+    {
+      "name": "AI Summary Card",
+      "kind": "custom",
+      "refersTo": "ai-card",
+      "description": "The agent's voice: violet wash, report prose, proposals with dismiss/confirm.",
+      "html": "<div class=\"ds-ai\"><div class=\"ds-ai-title\">AI summary</div><p class=\"ds-ai-body\">All 37 penguins are accounted for.</p><div class=\"ds-ai-row\">Estimate · Set estimate to 75 minutes<span><button class=\"ds-ai-x\">×</button><button class=\"ds-ai-ok\">✓</button></span></div></div>",
+      "css": ".ds-ai{background:#15132A;border:1px solid rgba(169,155,255,.14);border-radius:16px;padding:16px;color:#fff;font-family:Inter,sans-serif}.ds-ai-title{font:700 20px/28px Inter,sans-serif}.ds-ai-body{font:400 16px/24px Inter,sans-serif;color:rgba(255,255,255,.85)}.ds-ai-row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#1D1A36;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px 16px;font:400 14px/20px Inter,sans-serif}.ds-ai-x,.ds-ai-ok{width:32px;height:32px;border-radius:50%;border:none;margin-left:8px;cursor:pointer}.ds-ai-x{background:rgba(255,255,255,.06);color:#fff}.ds-ai-ok{background:rgba(169,155,255,.16);color:#A99BFF}.ds-ai-x:hover{background:rgba(255,255,255,.12)}.ds-ai-ok:hover{background:rgba(169,155,255,.28)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Honest Logbook",
+    "overview": "**Creative North Star: \"The Honest Logbook\"**\n\nLotti looks like a working record, not a showroom. Pages are quiet neutral\ngreys, and facts are set plainly, the way entries in a well-kept ledger are.\nColour is a signal rather than decoration: teal means *you can act here*,\nviolet means *an agent is speaking*, and the four alert hues mean exactly\nwhat they say. Everything else stays in the ink ramp of the neutral greys. The one\nindulgence is imagery. A task's or entry's cover art can be lush and\nfull-bleed, because it is the user's own picture of the work, and the chrome\naround it stays out of its way.\n\nThe system is dark-first and equally finished in light. Density is that of a\ntool people keep open all day: compact rows, clear type steps, and\ngenerous reading measures for prose. Its ambition shows as precision and\nrestraint, in the gap between a fact and a choice, the exact type tier of a\ncaption button, and a footer that measures its translated labels before\ndeciding whether they fit on one line.\n\nIt rejects two looks by name. One is the **generic SaaS dashboard**: gradient\nhero cards, KPI tiles as wallpaper, purple-blue gradients. The other is the\n**Material default look**: stock Material 3 components and tonal palettes\nshowing through unstyled.\n\nThe source of truth is Figma → `assets/design_system/tokens.json` →\ngenerated Dart (`tokens.colors.background.level02` and so on). This file\nmirrors those tokens. If they disagree, the token export wins and this file is\nthe defect.",
+    "keyCharacteristics": [
+      "Neutral canvas, with meaning-bearing colour only: teal for action, violet for agent voice, alert hues for state.",
+      "One typeface (Inter) and a strict tiered scale, always in sentence case.",
+      "Depth comes from tonal layers, and frosted glass is used only for floating chrome.",
+      "Fully rounded pills mean a choice or an action. Near-square tags mean a fact.",
+      "Cover art is the only rich imagery, and everything around it stays quiet.",
+      "Light and dark are both first-class, and every colour token is paired."
+    ],
+    "rules": [
+      {
+        "name": "The Two Voices Rule",
+        "body": "Teal is the user's hand and violet is the agent's voice. A teal control on an agent card is the user's decision (confirm). A violet glyph outside agent-owned UI is a bug.",
+        "section": "colors"
+      },
+      {
+        "name": "The Meaning-Only Rule",
+        "body": "Every non-neutral pixel must answer \"what does this colour tell me?\" If the answer is \"it looks nice\", use the neutral ramp.",
+        "section": "colors"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "No uppercase labels, ever. No `toUpperCase`, no all-caps ARB values, and no small-caps headers, including on Overline.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Live Value Rule",
+        "body": "Any label whose digits change while visible (timers, countdowns) uses tabular figures, so the layout never jitters.",
+        "section": "typography"
+      },
+      {
+        "name": "The Measured Fit Rule",
+        "body": "Whether something fits is decided by measuring rendered content, never by a width threshold. German and Romanian labels are the test.",
+        "section": "layout"
+      },
+      {
+        "name": "The Tone-Before-Shadow Rule",
+        "body": "Before reaching for a shadow, step the background level. Before reaching for blur, check whether anything actually scrolls underneath.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Calm Refresh Rule",
+        "body": "Depth never flickers. Background sync and database refreshes keep the last rendered surface, and full loading shells are only for initial loads and deliberate navigation.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** read every visual value from the tokens: `tokens.spacing.stepN`, `tokens.typography.styles.*`, `tokens.colors.*` and `tokens.radii.*`. `make token_check` ratchets raw values down per file.",
+      "**Do** keep teal for the user's actions and violet for agent-authored surfaces (The Two Voices Rule).",
+      "**Do** use a 4px tag for a fact and a full pill for a choice, and a dashed outline for a slot not yet filled.",
+      "**Do** put cards one tonal step lighter than the page, via `dsPageSurface` / `dsCardSurface`.",
+      "**Do** cap prose at ~600px and detail pages at 960px. Measure translated footers instead of trusting breakpoints.",
+      "**Do** design every surface in both light and dark before calling it done."
+    ],
+    "donts": [
+      "**Don't** let it read like a generic SaaS dashboard: no gradient hero cards, no KPI-tile wallpaper, no purple-blue gradients.",
+      "**Don't** let stock Material 3 components or tonal palettes show through. Use the `DesignSystem*` / `Ds*` component instead.",
+      "**Don't** uppercase any label, including Overline.",
+      "**Don't** fade text with extra alpha. Pick the high, medium or low ink step.",
+      "**Don't** borrow `spacing.stepN` for icon, control or stroke sizes.",
+      "**Don't** flash a loading or empty shell when sync or the database refreshes underneath an established surface.",
+      "**Don't** add a shadow or a blur where a tonal step does the job."
+    ]
+  }
+}
