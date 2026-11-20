@@ -135,10 +135,8 @@ close it and use Lotti without AI.
 
 **What leaves your device:** ciphertext to the sync homeserver you chose, which
 stores and relays it without ever being able to read it; requests to the AI
-provider you configured for a category; calls to `api.github.com`, only if you
-link pull requests to tasks; and, only if you subscribe to hosted Lotti Sync,
-the subscription and checkout requests that set it up. None of your record goes
-to Lotti.
+provider you configured for a category; and calls to `api.github.com`, only if
+you link pull requests to tasks. None of your record goes to Lotti.
 
 **How sync works:** each change is an event in a private, non-federated,
 Megolm-encrypted Matrix room ([Vodozemac](https://github.com/matrix-org/vodozemac)
