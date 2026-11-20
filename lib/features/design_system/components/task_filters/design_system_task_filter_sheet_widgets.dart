@@ -74,30 +74,18 @@ class _TaskFilterPriorityGlyph extends StatelessWidget {
 
   final DesignSystemTaskFilterGlyph glyph;
 
+  // The same mark the task row and header draw, so a priority picked here
+  // looks like the priority it filters for.
   @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final glyphAppearance = {
-      DesignSystemTaskFilterGlyph.priorityP0: (
-        LottiIcons.verified,
-        tokens.colors.alert.error.defaultColor,
-      ),
-      DesignSystemTaskFilterGlyph.priorityP1: (
-        LottiIcons.signal,
-        tokens.colors.alert.warning.defaultColor,
-      ),
-      DesignSystemTaskFilterGlyph.priorityP2: (
-        LottiIcons.signal,
-        tokens.colors.alert.info.defaultColor,
-      ),
-      DesignSystemTaskFilterGlyph.priorityP3: (
-        LottiIcons.signal,
-        tokens.colors.alert.success.defaultColor,
-      ),
-    };
-    final (icon, color) = glyphAppearance[glyph]!;
-    return Icon(icon, color: color, size: tokens.spacing.step5);
-  }
+  Widget build(BuildContext context) => DesignSystemPriorityGlyph(
+    priority: switch (glyph) {
+      DesignSystemTaskFilterGlyph.priorityP0 => DesignSystemTaskPriority.p0,
+      DesignSystemTaskFilterGlyph.priorityP1 => DesignSystemTaskPriority.p1,
+      DesignSystemTaskFilterGlyph.priorityP2 => DesignSystemTaskPriority.p2,
+      DesignSystemTaskFilterGlyph.priorityP3 => DesignSystemTaskPriority.p3,
+      DesignSystemTaskFilterGlyph.none => throw StateError('no glyph'),
+    },
+  );
 }
 
 class _TaskFilterSectionLabel extends StatelessWidget {

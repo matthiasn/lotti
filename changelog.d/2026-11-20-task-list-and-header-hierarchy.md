@@ -13,5 +13,8 @@
   under the title take two tidy lines: status, priority and due date first,
   then time, labels and *Details*. A task due today, tomorrow or yesterday
   says so in words in the header as well as in the list.
+- **The priority filter shows the real priority marks.** High, Medium and
+  Low used to share one signal icon in three colours, and Urgent wore a
+  checkmark badge. Each now shows the same mark the task itself carries.
 - **Task rows are announced as buttons** by screen readers, in the task and
   project lists.

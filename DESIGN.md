@@ -302,7 +302,7 @@ Circular icon buttons (back, overflow, mic) are 48dp targets. Rows inside a card
 ### Task Row (reference)
 Three tiers, so one thing leads: the title (Subtitle 1, 600), the agent one-liner on one line in Agent Violet (caption), then one caption-tier meta line in medium ink (status glyph and word, priority glyph and word, dates, the category as a colour swatch and name, tracked time once there is any). There are no filled colour blocks and no "0h 0m". A cover thumbnail (64, `ControlSizes.mediaThumbnail`) leads the row and steps aside on large text. The row is one button to assistive tech.
 
-**The One Vocabulary Rule.** A fact reads the same wherever it appears. Priority is its word (*High*) on the row, the header chip and the filter, and the P-code is only a sort key. A due date within a day of today reads as the list's own section words (*Due Today*) in the header too.
+**The One Vocabulary Rule.** A fact reads the same wherever it appears. Priority is its word (*High*) on the row, the header chip and the filter, and the P-code is only a sort key. Its mark is always `DesignSystemPriorityGlyph`: a badge for Urgent and one to three bars below it, coloured only for Urgent and High. A due date within a day of today reads as the list's own section words (*Due Today*) in the header too.
 
 ### Task Metadata Lane
 Status, priority, due date, estimate and labels are read-out tags (4px), followed by a dashed *Details* lever. Below 520 wide, the lane is two lines rather than one wrapped lane: the decision facts (status, blocked-by, priority, due) come first, then the rest, with several labels shown as their count.
