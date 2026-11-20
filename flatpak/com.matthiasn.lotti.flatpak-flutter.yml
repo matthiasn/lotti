@@ -94,23 +94,29 @@ modules:
   # offline build sandbox. Vendor the official prebuilt runtime as a declared
   # source (fetched during the networked download phase) and install it into
   # /app so the plugin links it via ONNXRUNTIME_ROOT_DIR / CMAKE_PREFIX_PATH.
+  # The source is Microsoft's NuGet package, which holds the headers and both
+  # Linux architectures; the GitHub release tarballs stopped being served in
+  # November 2026. The package's SONAME is libonnxruntime.so.1, so that name
+  # is provided beside the plain one.
   - name: onnxruntime
     buildsystem: simple
     build-commands:
       - install -d /app/lib /app/include
-      - cp -a lib/. /app/lib/
-      - cp -a include/. /app/include/
+      - |
+        case "$FLATPAK_ARCH" in
+          x86_64) arch=x64 ;;
+          aarch64) arch=arm64 ;;
+          *) echo "unsupported arch $FLATPAK_ARCH" >&2; exit 1 ;;
+        esac
+        cp -a "runtimes/linux-$arch/native/." /app/lib/
+      - ln -sf libonnxruntime.so /app/lib/libonnxruntime.so.1
+      - cp -a build/native/include/. /app/include/
     sources:
       - type: archive
-        only-arches:
-          - x86_64
-        url: https://github.com/microsoft/onnxruntime/releases/download/v1.27.0/onnxruntime-linux-x64-1.27.0.tgz
-        sha256: 547e40a48f1fe73e3f812d7c88a948612c23f896b91e4e2ee1e232d7b468246f
-      - type: archive
-        only-arches:
-          - aarch64
-        url: https://github.com/microsoft/onnxruntime/releases/download/v1.27.0/onnxruntime-linux-aarch64-1.27.0.tgz
-        sha256: 3e4d83ac06924a32a07b6d7f91ce6f852876153fc0bbdf931bf517a140bfbe48
+        archive-type: zip
+        strip-components: 0
+        url: https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntime/1.27.0/microsoft.ml.onnxruntime.1.27.0.nupkg
+        sha256: c725e8cefdfe4de08befb9f79b3f218c162439cdcdb97cbbb5192888d58ea669
   # NOTE: No separate flutter-sdk module - Flutter is included in lotti sources for flatpak-flutter
   - name: lotti
     buildsystem: simple
