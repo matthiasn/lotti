@@ -4,15 +4,15 @@
     "description": "The label for version current"
   },
   "sidebar.manualSidebar.category.Start here": {
-    "message": "Comece aqui",
+    "message": "Começa aqui",
     "description": "The label for category 'Start here' in sidebar 'manualSidebar'"
   },
   "sidebar.manualSidebar.category.Plan & capture": {
-    "message": "Planeje e registre",
+    "message": "Planeia e regista",
     "description": "The label for category 'Plan & capture' in sidebar 'manualSidebar'"
   },
   "sidebar.manualSidebar.category.Organize & reflect": {
-    "message": "Organize e reflita",
+    "message": "Organiza e reflete",
     "description": "The label for category 'Organize & reflect' in sidebar 'manualSidebar'"
   },
   "sidebar.manualSidebar.category.AI & automation": {

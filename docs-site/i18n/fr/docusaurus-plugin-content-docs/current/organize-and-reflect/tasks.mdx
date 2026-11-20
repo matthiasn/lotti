@@ -18,7 +18,7 @@ L’illustration de couverture est facultative, mais elle peut rendre un espace 
 
 <ManualScreenshot
   caseId="tasks/detail"
-  alt="Page de détail de tâche de production pour inspecter l’habitat orbital des manchots, avec la même illustration de couverture utilisée par les vignettes de tâche"
+  alt="Page de tâche pour l’inspection de l’habitat orbital des manchots avec sa catégorie, le statut En cours, la priorité Haute, l’échéance, le temps enregistré face à l’estimation, les étiquettes et le résumé IA"
 />
 
 Une même tâche peut contenir une description, une catégorie, des étiquettes, une date d’échéance, des relevés de temps, des éléments de liste de contrôle, des images, des liens et des enregistrements audio. Elle peut aussi porter un assistant IA persistant avec son propre résumé, son état de réveil et ses modifications proposées — consulte [Affecter un agent de tâche](./task-agents.mdx).
@@ -51,7 +51,9 @@ Ouvre les filtres de tâches et sélectionne une ou plusieurs priorités. Efface
   alt="Feuille de filtre des tâches avec commandes de tri, état, priorité, catégorie et étiquette"
 />
 
-L’ordre de priorité par défaut va de P0 à P3. Au sein d’une priorité, les tâches les plus récentes apparaissent d’abord, sauf si une autre vue ou un autre tri actif modifie le résultat.
+Utilise **Effacer** dans la feuille, ou **Tout effacer** à côté des filtres actifs dans la liste, pour revenir à une vue sans contrainte plutôt que d’annuler chaque choix un par un.
+
+L’ordre de priorité par défaut va de P0 à P3. Au sein d’une priorité, les tâches les plus récentes apparaissent d’abord, sauf si une autre vue ou un autre tri actif modifie le résultat. La recherche liste d’abord les tâches dont les mots correspondent, la meilleure correspondance en tête, suivies d’une section **Proches par le sens** avec des tâches qui disent la même chose en d’autres mots. Pendant la recherche, les puces de filtre que la recherche n’applique pas sont estompées.
 
 ## Utiliser des listes de contrôle pour l’étape suivante
 
@@ -59,7 +61,7 @@ Un élément de liste de contrôle doit être plus petit et plus concret que sa 
 
 ## Ajouter du contexte à une tâche
 
-Utilise l’action **Ajouter** de la tâche pour joindre une liste de contrôle, une autre tâche, un enregistrement audio, un minuteur, une entrée de texte ou une image sans quitter la tâche. Les actions disponibles dépendent de la plateforme et du contexte actuels.
+Utilise l’action **Ajouter** de la tâche pour joindre une note, une liste de contrôle, une note vocale, une tâche liée ou une image sans quitter la tâche ; **Suivre le temps**, dans la barre d’actions de la tâche, démarre un minuteur. Les actions disponibles dépendent de la plateforme et du contexte actuels.
 
 <ManualScreenshot
   caseId="entries/create-menu"
@@ -92,11 +94,11 @@ pour la suivre et Échap pour revenir.
 
 ## Relier des tâches apparentées
 
-Ouvre la section **Lié** de la tâche et choisis de relier une tâche existante. Recherche-la dans le sélecteur, puis sélectionne le résultat associé. Lotti exclut la tâche actuelle et les tâches déjà liées dans cette direction.
+Dans la section **Tâches liées** de la tâche, sélectionne **Lier une tâche…** — ou **Lier** une fois que la tâche a déjà des liens — pour ouvrir la fenêtre **Lier**. Sous **Cette tâche…**, choisis la relation : **Est liée à**, ou l’une de **Bloque**, **Est bloquée par**, **Fait suite à**, **A un suivi**, **Duplique**, **Est dupliquée par**, **Corrige**, **Est corrigée par**, **Remplace** et **Est remplacée par**. Recherche ensuite dans le sélecteur et sélectionne la tâche associée. Lotti exclut la tâche actuelle et les tâches déjà liées dans cette direction.
 
 <ManualScreenshot
   caseId="tasks/link-picker"
-  alt="Sélecteur de liens de tâche de production listant des tâches apparentées de Project Waddle avec leur contexte d’état, de priorité, de catégorie et de date d’échéance"
+  alt="Sélecteur Lier une tâche existante au-dessus de la tâche d’inspection de l’habitat orbital des manchots, avec Cette tâche… réglé sur Est liée à, un champ Rechercher des tâches et deux tâches Opérations Pingouins avec leur statut"
 />
 
 Les liens de tâche sont directionnels : la tâche actuelle pointe vers celle que tu choisis. Les deux côtés restent accessibles via leurs sections d’entrées liées, tandis que chaque tâche conserve son propre état, calendrier et pièces jointes.

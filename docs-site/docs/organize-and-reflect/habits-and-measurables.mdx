@@ -29,7 +29,8 @@ as the entire story.
 
 ### Create and edit habits
 
-1. Open **Habits** and select **+**. To change an existing habit, press and
+1. Open **Habits** and select **+** — on a phone it sits in the navigation
+   launcher. To change an existing habit, press and
    hold it, or open its completion sheet and select the pencil. **Settings →
    Definitions → Habits** still lists every definition and opens the same
    editor.
@@ -47,7 +48,7 @@ as the entire story.
 
 <ManualScreenshot
   caseId="habits/editor-step2"
-  alt="New habit, step 2 of 2: How do we know it's done? with the manual row, a Steps signal set to daily at least 6,000, Add a signal, and the Settings section"
+  alt="New habit, step 2 of 2: How do we know it's done? with the manual row, a Steps signal set to Daily ≥ 6,000 compared with Today, Add a signal, the Notify on auto-completion switch, and the Settings section"
 />
 
 ### Let recorded data check a habit off
@@ -64,13 +65,17 @@ offers three kinds:
 - a **workout** type that has appeared in your imports (any session, or a
   duration, distance, or energy at least / at most a value).
 
+A threshold can be compared with **Today**'s value, the **7-day average**, or
+**Either** of the two.
+
 With two or more signals, **How this habit counts as done** chooses whether
 **any** signal, **all** signals, or **at least N** of them complete it. Once
 the day's data satisfies the rule, the habit is checked off for you, marked
 **auto** on the Habits page with the signal and time, and announced with a
 notification — habits completed within a few seconds of each other are grouped into one, each
-habit is announced at most once a day, and **Notify on auto-completion**
-switches it off per habit.
+habit is announced at most once a day, and **Notify on auto-completion** at
+the foot of the signals card, shown once the habit has a signal, switches it
+off per habit.
 Anything you record yourself, including a skip, always wins over the automatic
 check-off.
 
@@ -84,19 +89,18 @@ check-off.
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Edit habit page for Emperor penguin roll call with the signals card, the Settings section, and the favorite, private, and active options"
+  alt="Edit habit page for Emperor penguin roll call with its name, description, the How do we know it's done? card, and the Settings section"
 />
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="The editor's Settings section with category, start date, show from, alert time, and the notify-on-auto-completion switch"
+  alt="Edit habit page for Emperor penguin roll call with the Settings section — category, start date, show from and show alert at — and Options with Favorite, Private and Active, then Delete"
 />
 
 - **Category** for filtering and visual context.
 - **Start date**, and for a daily habit the time it is **shown from** and when
   Lotti should **show an alert**. The data model also understands weekly and
   monthly schedules; the editor exposes these time controls for daily habits.
-- **Notify on auto-completion** (on by default).
 - When editing: **Favorite** for higher prominence, **Private** to hide it
   unless private entries are shown, **Active** to control whether it appears on
   the Habits page without deleting its history, and **Delete**.
@@ -117,7 +121,7 @@ signals, the form supports three outcomes:
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Completion sheet for inspecting the habitat seals, with Krill rations and Steps signal rows, quick-record chips, sparklines, and the Success, Skip, and Missed outcomes"
+  alt="Completion sheet for inspecting the habitat seals, with Krill rations, Hydration check, and Steps signal rows, quick-record chips, sparklines, and the Success, Skip, and Missed outcomes"
 />
 
 Use the state that preserves reality. A candid history is more useful than a
@@ -126,25 +130,30 @@ can reconstruct the effective result for each habit and day.
 
 ## Work with measurables
 
-A measurable definition describes the number before you record it: its name,
-unit, privacy, and how multiple observations combine on charts.
+A measurable definition describes the value before you record it: its name,
+whether it is a number or a choice, unit, privacy, and how multiple
+observations combine on charts.
 
 <ManualScreenshot
   caseId="measurables/settings-list"
-  alt="Measurable settings containing Habitat pressure, Penguins accounted for, and Sardines consumed"
+  alt="Measurable settings containing Habitat pressure, Hydration check, Penguins accounted for, and Sardines consumed"
 />
 
 ### Create a measurable data type
 
 1. Open **Settings → Definitions → Measurables**.
-2. Select the add action.
-3. Add a name, optional description, and concise unit abbreviation.
-4. Choose the default aggregation used by charts.
-5. Decide whether it should be favorite or private, then save.
+2. Select **Create measurable**.
+3. Add a name and optional description.
+4. Under **Recorded as**, choose **Number** for a value with a unit, or
+   **Choice** to pick one of the choices you define — such as the colors of a
+   hydration check — when recording.
+5. For a number, add a concise unit abbreviation and choose the default
+   aggregation used by charts. For a choice, add its **Choices** instead.
+6. Decide whether it should be favorite or private, then save.
 
 <ManualScreenshot
   caseId="measurables/settings-detail"
-  alt="Habitat pressure measurable editor using kPa and Daily average aggregation"
+  alt="Habitat pressure measurable editor recorded as a Number in kPa with Daily average aggregation"
 />
 
 Choose aggregation based on what repeated readings mean:

@@ -37,13 +37,13 @@ history at once.
 
 ## Search by words or meaning
 
-Use **Full Text** to find the words stored in an entry. When vector search is
-enabled, switch to **Vector** to look for entries with a similar meaning even
-when they use different wording. Vector results are returned as one ranked set
-rather than as an endlessly paged feed.
+Type in **Search** to list the entries whose words match first, followed by a
+**Related by meaning** section with entries that say the same thing in other
+words. Meaning search runs on your device once vector search is switched on
+and its embedding model is available.
 
-If vector search is unavailable or later disabled, Lotti returns the Logbook
-to full-text mode instead of leaving search in an unusable state.
+When meaning search is unavailable, the Logbook simply shows the word
+matches, so search never ends up in an unusable state.
 
 ## Filter what appears
 
@@ -68,7 +68,7 @@ Tasks page.
 
 <ManualScreenshot
   caseId="journal/create"
-  alt="Add menu offering Event, Task, Audio Recording, Text Entry, Import Image, and Screenshot over the Project Waddle journal"
+  alt="Add menu offering Write a note, Record a voice note, Add a task, Add an event, Import an image, and Capture a screenshot over the Project Waddle journal"
   caption="The menu only offers actions supported by the current platform and context."
 />
 
@@ -150,9 +150,9 @@ under **Linked from** because that task also references the log.
 
 Open the sort pill to stage several visibility changes together. Choose the
 order, whether hidden entries should be included, and whether only flagged
-entries should remain. The activity list changes when you select the checkmark
-to finish the sheet; closing the sheet any other way discards the staged
-choices.
+entries should remain. The activity list changes when you select **Apply**;
+**Clear** resets the choices, and closing the sheet any other way discards the
+staged choices.
 
 <ManualScreenshot
   caseId="journal/linked-filter"

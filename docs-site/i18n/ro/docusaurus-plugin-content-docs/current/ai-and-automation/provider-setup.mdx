@@ -15,6 +15,8 @@ Lotti separă configurarea AI în trei straturi: un **furnizor** este serviciul 
 - Un furnizor local poate păstra inferența pe propriul calculator sau pe un punct final local pe care îl controlați, însă serviciul trebuie să ruleze și să fie accesibil de pe dispozitivul unde Lotti îl invocă. O adresă LAN poate totuși muta un prompt între dispozitive; „local” înseamnă că nu este trimis unui furnizor găzduit de modele, nu că nu există niciun salt prin rețea.
 - Un URL de bază personalizat poate direcționa un tip de furnizor acceptat către un proxy sau gateway compatibil. Tipul furnizorului controlează în continuare comportamentul specific protocolului.
 
+Lotti comunică cu aceste tipuri de furnizori: **Mistral**, **Melious.ai**, **Google Gemini**, **Alibaba Cloud (Qwen)**, **OpenAI**, **Anthropic Claude**, **OpenRouter**, **Nebius AI Studio**, **ElevenLabs**, orice punct final **Compatibil OpenAI**, precum și furnizorii locali **Ollama**, **oMLX (local)**, **Voxtral (local)**, **Whisper (local)** și **sherpa-onnx (pe dispozitiv)**. Dacă nu sunteți sigur, începeți cu Mistral — opțiunea implicită recomandată, marcată **RECOMANDAT** când alegeți un furnizor.
+
 ## Conectați un furnizor
 
 1. Deschideți **Setări → Setări AI → Furnizori**.
@@ -33,7 +35,7 @@ Deschideți un card de furnizor pentru a inspecta acreditarea mascată, URL-ul d
 
 <ManualScreenshot caseId="ai/provider-detail" alt="Detaliul furnizorului Mission Control Router, cu conexiunea, modelele Waddle Command și profilul Project Waddle activ" caption="Rezumatul dependențelor face vizibilă aria de impact înainte de modificarea sau eliminarea unui furnizor." />
 
-Schimbarea URL-ului de bază sau a cheii API afectează fiecare model atașat acelui furnizor. După schimbarea uneia dintre valori, verificați o acțiune AI reprezentativă înainte de a considera conexiunea sănătoasă. Eliminarea unui furnizor poate afecta și profilurile care direcționează munca prin modelele lui; examinați mai întâi informațiile despre dependențe.
+Schimbarea URL-ului de bază sau a cheii API afectează fiecare model atașat acelui furnizor. După schimbarea uneia dintre valori, verificați o acțiune AI reprezentativă înainte de a considera conexiunea sănătoasă. Când un apel eșuează pentru că în contul furnizorului nu a mai rămas credit, Lotti afișează **Credit epuizat**, citează mesajul furnizorului și sugerează să reîncărcați contul sau să alegeți un model de la alt furnizor. Eliminarea unui furnizor poate afecta și profilurile care direcționează munca prin modelele lui; examinați mai întâi informațiile despre dependențe.
 
 ## Revizuiți rutarea profilului
 

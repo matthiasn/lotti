@@ -1,80 +1,85 @@
 ---
-title: Executar e monitorar agentes
-description: Monitore a atividade do agente, inspecione instâncias em execução e controle ciclos de ativação agendados sem perder a trilha de auditoria.
+title: Executar e acompanhar agentes
+description: Acompanha a atividade dos agentes, inspeciona as instâncias em execução e controla os ciclos de despertar agendados sem perderes o registo de auditoria.
 ---
 
-# Executar e monitorar agentes
+# Executar e acompanhar agentes
 
-Os agentes permitem que o Lotti mantenha uma responsabilidade definida ao
-longo de vários ciclos de ativação. Cada instância em execução vem de um
-modelo de agente, usa uma configuração de inferência e mantém seu próprio
-estado, relatórios, observações e histórico de atividades. Abra
-**Configurações → Agentes** para ver o sistema como um todo.
+Os agentes permitem ao Lotti manter uma responsabilidade definida ao longo de
+vários ciclos de despertar. Cada instância em execução vem de um modelo de
+agente, usa uma configuração de inferência e mantém o seu próprio estado,
+relatórios, observações e histórico de atividade. Abre
+**Configurações → Agentes** para veres o sistema como um todo.
 
-Relatórios do agente, observações e despertares na fila descrevem o estado de
-trabalho do agente; eles não reescrevem silenciosamente o diário pessoal.
+Os relatórios, as observações e os despertares em fila de um agente descrevem
+o seu estado de trabalho; não reescrevem às escondidas o diário pessoal.
 Quando um agente de tarefa quer alterar os dados da tarefa, o Lotti apresenta
-uma proposta para sua revisão. Veja
-[Revise as alterações propostas](../organize-and-reflect/task-agents.mdx#revise-as-alterações-propostas)
-para conhecer os controles de aprovação por tarefa e suas exceções restritas
-de título inicial e de idioma.
+uma proposta para reveres. Vê
+[Revê as alterações propostas](../organize-and-reflect/task-agents.mdx#revê-as-alterações-propostas)
+para conheceres os controlos de aprovação por tarefa e as suas exceções
+restritas para o título inicial e o idioma.
 
-O uso de tokens dos agentes é registado junto com todo o restante trabalho de IA em [Revise o uso e o impacto da IA](./usage.mdx).
+O uso de tokens dos agentes é registado junto com todo o restante trabalho de
+IA em [Revê o uso e o impacto da IA](./usage.mdx).
 
-## Inspecione as instâncias em execução
+## Inspeciona as instâncias em execução
 
-Abra **Instâncias** para ver todas as sessões de agente e evolução. As linhas expõem o
-tipo de agente, ciclo de vida, modelo atribuído e alma. Agrupar por alma é útil
-quando diversas responsabilidades compartilham uma voz e um estilo de decisão.
+Abre **Instâncias** para veres todas as sessões de agente e de evolução. As
+linhas mostram o tipo de agente, o ciclo de vida, o modelo atribuído e a alma.
+Agrupar por alma é útil quando várias responsabilidades partilham uma voz e um
+estilo de decisão.
 
 <ManualScreenshot
   caseId="agents/instances"
-  alt="Instâncias do agente Lotti agrupadas pelo Almirante Pebble, Dr. Flipper, Capitão Sardina e uma sessão de evolução"
-  caption="O Inspetor de Vedações do Habitat, o Planejador do Project Waddle e o Coordenador de Carga de Sardinha permanecem instâncias separadas, mesmo quando compartilham recursos no nível do sistema."
+  alt="Instâncias de agentes do Lotti agrupadas pelo Almirante Pebble, pelo Dr. Flipper, pelo Capitão Sardina e por uma sessão de evolução"
+  caption="O Inspetor de Vedações do Habitat, o Planeador do Project Waddle e o Coordenador de Carga de Sardinhas continuam a ser instâncias separadas, mesmo quando partilham recursos ao nível do sistema."
 />
 
-Selecione uma instância para inspecionar seus componentes internos. A guia
-**Estatísticas** mostra o uso do modelo, o modelo de agente da instância, a
-rota de inferência atual, os controles de ciclo de vida, a contagem de
-despertares e o estado de agendamento.
+Seleciona uma instância para inspecionares o seu funcionamento interno. O
+separador **Estatísticas** mostra o uso de tokens por modelo — tokens de
+**Entrada**, **Saída**, **Pensamentos** e **Em cache**, a percentagem de
+**Acertos de cache** e **Ativações** — e depois o modelo de agente, a
+configuração atual do agente, os controlos de ciclo de vida, a contagem de
+despertares e o estado do agendamento.
 
 <ManualScreenshot
   caseId="agents/instance-detail"
-  alt="Detalhe da instância do Habitat Seal Inspector com uso de token, modelo Orbital Habitat Sentinel, rota de inferência, controles de ciclo de vida e estado de ativação"
-  caption="A instância mantém procedência suficiente para explicar qual modelo e qual rota produziram seu trabalho antes de você pausá-la, reanalisá-la ou destruí-la."
+  alt="Detalhe da instância Habitat Seal Inspector com uma tabela de uso de tokens que inclui tokens em cache e acertos de cache, o modelo Orbital Habitat Sentinel, a configuração do agente, Pausa, Reanalisar e Destruir, e o estado de despertar"
+  caption="A instância guarda proveniência suficiente para explicar que modelo e que rota produziram o seu trabalho antes de a pausares, reanalisares ou destruíres."
 />
 
-As guias de instância restantes preservam evidências diferentes:
+Os restantes separadores da instância preservam provas diferentes:
 
-- **Relatórios** contém os instantâneos de relatórios salvos do agente.
-- **Conversas** agrupa mensagens por ciclo de ativação.
-- **Observações** expõe as descobertas capturadas sem misturá-las em relatórios.
-- **Atividade** mostra a mensagem cronológica e a trilha da ferramenta.
+- **Relatórios** contém os instantâneos de relatório guardados pelo agente.
+- **Conversas** agrupa as mensagens por ciclo de despertar.
+- **Observações** mostra as descobertas registadas sem as misturar nos
+  relatórios.
+- **Atividade** mostra o rasto cronológico de mensagens e ferramentas.
 
-**Pause** mantém a instância, mas interrompe o trabalho normal. **Reanalisar**
-pede que um agente de tarefa reconsidere seu assunto atual. **Destruir** é
-destrutivo e deve ser usado somente quando a própria instância não for mais
-desejada; mudar o modelo para agentes futuros não exige destruir instâncias
-não relacionadas.
+**Pausa** mantém a instância, mas interrompe o trabalho normal. **Reanalisar**
+pede a um agente de tarefa que reconsidere o seu assunto atual. **Destruir** é
+destrutivo e só deve ser usado quando já não quiseres a própria instância;
+mudar o modelo para agentes futuros não exige destruir instâncias não
+relacionadas.
 
-## Entenda os ciclos de despertar
+## Entende os ciclos de despertar
 
-Abra **Ciclos de ativação** para ver o trabalho em execução agora e o trabalho
-previsto para depois. Um despertar **Pendente** foi solicitado pelo agente. Um
-despertar **Programado** foi agendado pelo sistema ou pelo planejador. Cada
-linha mantém visível a tarefa, o projeto ou o dia vinculado, ao lado do agente
-responsável e de uma contagem regressiva ao vivo.
+Abre **Ciclos de despertar** para veres o trabalho em execução agora e o
+trabalho previsto para mais tarde. Um despertar **Pendente** foi pedido pelo
+agente. Um despertar **Agendado** foi marcado pelo sistema ou pelo planeador.
+Cada linha mantém visível a tarefa, o projeto ou o dia associado, ao lado do
+agente responsável e de uma contagem decrescente ao vivo.
 
 <ManualScreenshot
   caseId="agents/pending-wakes"
-  alt="Ciclos de ativação do Lotti mostrando a inspeção de habitat em execução e os despertares programados do Project Waddle e da logística de sardinhas"
-  caption="A fila distingue um acompanhamento de habitat solicitado pelo agente dos cronogramas do dia de lançamento e de carga, de modo que uma contagem regressiva sempre tem um motivo e um responsável."
+  alt="Ciclos de despertar do Lotti com a inspeção do habitat em execução e os despertares agendados do Project Waddle e da logística de sardinhas"
+  caption="A fila distingue um acompanhamento do habitat pedido pelo agente dos horários do dia de lançamento e da carga, para que uma contagem decrescente tenha sempre um motivo e um responsável."
 />
 
-Excluir uma ativação na fila remove esse cronômetro; isso não exclui o agente
-nem sua tarefa vinculada. Se uma ativação retornar imediatamente, inspecione o
-estado do agente ou a automação que a solicitou, em vez de excluir o sintoma
-repetidamente.
+Eliminar um despertar em fila remove esse temporizador; não elimina o agente
+nem a tarefa associada. Se um despertar voltar de imediato, inspeciona o
+estado do agente ou a automação que o pediu, em vez de eliminares o sintoma
+vezes sem conta.
 
-Continue com [Modelos de agente e almas](./agent-blueprints.mdx) para definir
-o que essas instâncias fazem e como elas se comunicam.
+Continua com [Modelos de agente e almas](./agent-blueprints.mdx) para
+definires o que estas instâncias fazem e como comunicam.

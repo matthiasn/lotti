@@ -54,13 +54,25 @@ kontext plánovače a přidává každodennímu rituálu šum.
 
 ## Přidej automatizační kontext kategorie
 
-Kategorie může poskytnout výchozí hodnoty pro nové úkoly: profil inference a
-šablonu agenta. Jde o výchozí volby, ne trvalé zámky; na úrovni úkolu je lze
-později změnit.
+V části **Výchozí hodnoty AI** může kategorie poskytnout výchozí hodnoty pro
+nové úkoly: profil inference a šablonu agenta. Jde o výchozí volby, ne trvalé
+zámky; na úrovni úkolu je lze později změnit.
+
+- **Automatická inference** nechá Lotti v této kategorii přepisovat nový zvuk,
+  analyzovat nové obrázky a shrnovat pull requesty, aniž bys o to žádal.
+  Objeví se, jakmile profil kategorie něco z toho umí, a zůstává viditelná,
+  dokud je zapnutá.
+- Se zvolenou šablonou agenta rozhoduje **Probouzet asistenta automaticky**
+  o tom, zda se noví agenti úkolů sami aktualizují, když se úkol změní, a
+  **Frekvence aktualizací** určuje, jak často.
+
+**Znalosti o kategorii** jsou to, co by měl vědět každý AI prompt pro úkoly v
+této kategorii – o co jde, kde je kód, konvence, úskalí. Do promptu jdou slovo
+od slova, až do 4 000 znaků.
 
 <ManualScreenshot
   caseId="categories/automation"
-  alt="Pokročilé nastavení Tučňáčího provozu se znalostmi kategorie a naučenými opravami kontrolního seznamu pro Sir Flaps-a-Lot"
+  alt="Editor kategorie Tučňáčí provoz posunutý k prázdnému poli Znalosti o kategorii a dvěma naučeným příkladům oprav kontrolního seznamu, včetně Sir Flaps-a-Lot, nad tlačítkem Smazat"
   caption="Opravy kontrolních seznamů se učí z úprav a zde je lze kontrolovat nebo mazat."
 />
 

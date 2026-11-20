@@ -12,7 +12,7 @@ follow-up che gli sta intorno.
 
 Gli eventi sono al momento una funzionalità opzionale. Apri
 **Impostazioni → Sezioni** e attiva **Eventi**. La destinazione **Eventi** appare quindi nella barra laterale del
-desktop e sotto **Altro** su mobile.
+desktop e nel launcher di navigazione su mobile.
 
 <ManualScreenshot
   caseId="events/overview"
@@ -27,11 +27,13 @@ di leggerne il titolo. L'evento futuro più vicino appare nell'area in evidenza
 **Prossimo**. Gli eventi passati sono raggruppati per anno, i più recenti
 prima.
 
-Usa **Eventi di ricerca** per trovare un evento dal suo testo. Seleziona un
-chip di categoria — come **Penguin Operations**, **Mission Control** o **Fish
-Diplomacy** — per restringere l'archivio completo. Il filtro si applica alla
-collezione di eventi memorizzata, non solo alle schede visibili sullo schermo
-in quel momento.
+Usa **Cerca eventi** per trovare un evento dal suo testo. **Filtra eventi**, il
+pulsante accanto al campo di ricerca, apre un filtro per categoria: scegli una
+o più categorie — oppure **Non assegnata** — e applicale per restringere
+l'archivio completo. Il filtro si applica alla collezione di eventi
+memorizzata, non solo alle schede visibili sullo schermo in quel momento. Ogni
+scheda mostra la sua categoria, così distingui **Penguin Operations** da
+**Fish Diplomacy** a colpo d'occhio.
 
 Lotti carica un archivio lungo a pagine e disegna solo le righe vicine, così
 centinaia di eventi ricchi di foto restano pratici senza caricare ogni
@@ -51,7 +53,7 @@ di pesce a gravità zero** è un'attività collegata.
 
 <ManualScreenshot
   caseId="events/detail"
-  alt="Evento Progetto Waddle lancio gala con un'immagine in evidenza, stato completato, valutazione a cinque stelle, riepilogo, tre foto e due attività collegate"
+  alt="Evento Gala di lancio di Project Waddle con un'immagine fotografica in evidenza che porta categoria, stato Completo, pillola della lingua Inglese, valutazione a cinque stelle e una sintesi di una riga, sopra la scheda del riepilogo AI con due modifiche proposte e la barra con Aggiungi un'attività"
   caption="La stessa pagina di dettaglio di produzione diventa un layout a due colonne sul desktop e si impila in un unico scorrimento su mobile."
 />
 
@@ -60,6 +62,8 @@ principali:
 
 - seleziona il titolo per modificarlo;
 - seleziona la pillola della categoria o dello stato per cambiarla;
+- seleziona la pillola della lingua per scegliere la lingua in cui vengono
+  tenuti la sintesi e le proposte scritte dall'AI per l'evento;
 - seleziona data e ora per riprogrammare l'evento;
 - seleziona una stella per cambiare la valutazione di un evento completato; e
 - apri il menu aggiuntivo per cambiare la copertina o eliminare l'evento.
@@ -68,9 +72,21 @@ Le modifiche si salvano attraverso la pagina di dettaglio; non c'è un modulo
 separato da riaprire. La valutazione appare dopo che un evento è completato, o
 quando l'evento ha già una valutazione.
 
-Il riepilogo usa la risposta AI collegata più recente quando ne esiste una.
-Altrimenti mostra la nota dell'evento stesso. Trattalo come una sintesi rapida,
-poi usa le foto e la timeline per il record sottostante.
+Sotto l'area in evidenza, l'agente dell'evento tiene una scheda **Riepilogo
+dell'AI**, la stessa scheda usata dall'agente di un'attività. Mostra la
+versione breve della sintesi con **Leggi tutto** per il resto, **Interni di
+agente aperto**, quando è stata aggiornata l'ultima volta e **Aggiorna ora**.
+Sotto, **Modifiche proposte** elenca ciò che l'agente suggerisce, come una
+persona che era presente o una nota da aggiungere; accetta o rifiuta ciascuna
+proposta, oppure usa **Confermare tutto**. Un evento senza agente mostra invece
+la propria nota, con **Assegna agente** per dargliene uno.
+
+## Di' chi c'era
+
+La sezione **Persone** mostra un chip per ogni persona collegata all'evento;
+seleziona un chip per aprire la pagina di quella persona. **Modifica persone**
+— **Aggiungi persone** finché nessuno è ancora collegato — apre **Chi c'era?**
+per cambiare l'elenco.
 
 ## Costruisci un archivio fotografico
 
@@ -92,7 +108,7 @@ stesso selettore, dove puoi anche aggiungere una nuova foto.
 
 <ManualScreenshot
   caseId="events/timeline"
-  alt="Timeline dell'evento di Project Waddle con foto di Mission Control, una nota sulla tenuta di pressione, immagini del carico di sardine e due attività correlate"
+  alt="Timeline del gala di lancio di Project Waddle con una nota sul controllo della pressione e foto con didascalia dell'habitat orbitale e delle capsule di carico ghiacciate"
   caption="Foto, note, registrazioni e attività di follow-up restano collegate all'evento senza trasformare l'evento stesso in un'attività."
 />
 
@@ -112,7 +128,7 @@ cattura una nota vocale per l'evento, e il più apre il menu **Aggiungi** per
 una nota, una foto, una voce audio o un'altra voce supportata — tutte collegate
 automaticamente a questo evento.
 
-La sezione **Compiti** compare non appena è collegata la prima attività ed
+La sezione **Attività** compare non appena è collegata la prima attività ed
 elenca la preparazione e il follow-up dell'evento. Seleziona un'attività per
 aprirla. Sul desktop, le attività restano visibili in una colonna a destra
 mentre leggi l'evento; su mobile, seguono la timeline nello stesso scorrimento.

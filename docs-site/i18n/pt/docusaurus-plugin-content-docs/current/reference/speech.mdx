@@ -1,55 +1,69 @@
 ---
-title: Escolha a voz de leitura
-description: Configure a voz no dispositivo, o modelo e a velocidade de reprodução usados para ler resumos de tarefas em voz alta.
+title: Escolhe a voz de leitura
+description: Configura a voz do dispositivo, o modelo e a velocidade de reprodução usados para ler os resumos das tarefas em voz alta.
 ---
 
-# Escolha a voz de leitura
+# Escolhe a voz de leitura
 
-Quando a leitura em voz alta estiver disponível, abra **Configurações →
-Preferências → Fala**. Esses controles se aplicam aos resumos de IA das tarefas;
-eles não alteram a captura do microfone nem qual provedor de IA transcreve uma
-gravação.
+Quando a leitura em voz alta estiver disponível, abre **Configurações →
+Preferências → Fala**. Estes controlos aplicam-se ao que o Lotti lê em voz
+alta — resumos de IA e respostas do chat; não alteram a captura do microfone
+nem o fornecedor de IA que transcreve uma gravação. Com o acompanhante ligado,
+a página Fala separada fica oculta e as mesmas definições passam para
+**Configurações → Preferências → Acompanhante → Voz**.
+
+A página começa com **Áudio do chat**: **Preparar o áudio do chat
+automaticamente** prepara as novas respostas do chat neste dispositivo para
+que a reprodução comece mais depressa. O áudio só é reproduzido quando tocas
+em reproduzir.
 
 <ManualScreenshot
   caseId="speech/settings"
-  alt="Configurações de Lotti Speech com Masculino 3 selecionado, modelo Supertonic 3 no dispositivo e velocidade de leitura de 1,25"
-  caption="O exemplo de configuração de controle de missão usa Masculino 3 a 1,25× para briefings rápidos do Project Waddle."
+  alt="Definições de Fala do Lotti com Áudio do chat, Vozes na nuvem, a Voz do dispositivo com Masculino 3 selecionado, o modelo Supertonic 3 e velocidade de leitura de 1,25"
+  caption="O exemplo de configuração do controlo de missão usa Masculino 3 a 1,25× para resumos rápidos do Project Waddle."
 />
 
-## Escolha uma voz
+## Escolhe uma voz
 
-Use a opção **Female / Male** para navegar pelos dois grupos e então selecione
-uma das cinco vozes numeradas desse grupo. Mudar de grupo altera apenas a
-lista visível; selecione uma voz numerada para torná-la ativa.
+**Vozes na nuvem** lista, para cada um dos teus idiomas, a voz em que um
+modelo de leitura em voz alta na nuvem o fala; toca numa para a ouvir ou
+mudar. A secção fica vazia até um perfil de inferência ter um modelo em
+**Ler em voz alta** — até lá, a leitura em voz alta usa a voz do dispositivo.
+
+A **Voz do dispositivo** lê para os perfis sem voz na nuvem. Usa o seletor
+**Feminino / Masculino** para percorrer os dois grupos e depois seleciona uma
+das cinco vozes numeradas desse grupo. Mudar de grupo altera apenas a lista
+visível; seleciona uma voz numerada para a ativares.
 
 <ManualScreenshot
   caseId="speech/voice-options"
-  alt="Configurações de Lotti Speech mostrando as cinco opções de voz feminina no dispositivo"
+  alt="Definições de Fala do Lotti a mostrar as cinco opções femininas da Voz do dispositivo, por baixo de Áudio do chat e Vozes na nuvem"
   caption="Estão disponíveis dez estilos de voz incluídos: Feminino 1–5 e Masculino 1–5."
 />
 
-A voz selecionada é uma preferência local do dispositivo. Isso permite que
-cada dispositivo use uma voz adequada aos seus alto-falantes e ao ambiente de
-escuta sem alterar a escolha nos seus outros dispositivos.
+A voz selecionada é uma preferência local do dispositivo. Assim, cada
+dispositivo pode usar uma voz adequada às suas colunas e ao ambiente de
+escuta sem alterar a escolha nos teus outros dispositivos.
 
-## Download do modelo e privacidade
+## Transferência do modelo e privacidade
 
-O Lotti usa atualmente o **Supertonic 3** para leitura em voz alta. A síntese
-roda no dispositivo, em vez de enviar o resumo para um serviço de fala na
-nuvem. O modelo é grande e é baixado na primeira vez em que for necessário,
-então reserve tempo, largura de banda de rede e armazenamento para essa
-configuração inicial.
+A **Voz do dispositivo** usa o **Supertonic 3**. A síntese corre no
+dispositivo, por isso nada é enviado para um serviço de fala na nuvem. Quando
+um perfil de inferência tem um modelo de leitura em voz alta na nuvem, **Vozes
+na nuvem** lista em vez disso a voz para cada um dos teus idiomas, e o texto
+lido em voz alta é enviado para esse fornecedor. O modelo no dispositivo é
+grande e é transferido na primeira vez que for necessário, por isso reserva
+tempo, largura de banda de rede e armazenamento para essa configuração inicial.
 
-## Defina a velocidade de leitura
+## Define a velocidade de leitura
 
-Escolha uma velocidade de **0,5×** a **2×**. A configuração **1×** é o ritmo
-natural; valores mais baixos deixam o briefing mais lento e valores mais altos
-o encurtam. A velocidade selecionada também é armazenada apenas no dispositivo
-atual.
+Escolhe uma velocidade de **0,5×** a **2×**. A definição **1×** é o ritmo
+natural; valores mais baixos tornam o resumo mais lento e valores mais altos
+encurtam-no. A velocidade selecionada também fica guardada apenas no
+dispositivo atual.
 
-O botão de leitura em voz alta aparece apenas quando o recurso está
-habilitado, a plataforma oferece suporte ao mecanismo de fala e a tarefa tem
-um resumo de IA não vazio.
+O botão de leitura em voz alta só aparece quando a funcionalidade está ativa,
+a plataforma suporta o motor de fala e a tarefa tem um resumo de IA não vazio.
 
-Para entrada falada e resultados de reconhecimento salvos, consulte
+Para a entrada falada e os resultados de reconhecimento guardados, consulta
 [Gravar áudio](../plan-and-capture/recordings.mdx).

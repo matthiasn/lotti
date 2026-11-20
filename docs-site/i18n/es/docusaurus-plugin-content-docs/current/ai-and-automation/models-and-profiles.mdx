@@ -12,22 +12,32 @@ asigna esos modelos a las tareas que Lotti conoce. Así no tienes que decidir
 
 ## Revisa los modelos guardados
 
-Abre **Ajustes → Ajustes de IA → Modelos**. La lista agrupa modelos por
-proveedor y muestra filtros de capacidades para texto, visión, audio y
-razonamiento.
+Abre **Ajustes → Ajustes de IA → Modelos**. Los modelos forman una sola lista.
+Encima, un chip de filtro por proveedor y los chips **Texto**, **Visión**,
+**Audio** y **Razonamiento** la acotan, y el campo de búsqueda encuentra
+proveedores, modelos y perfiles por su nombre.
 
 <ManualScreenshot
   caseId="ai/models"
-  alt="Lista de modelos de IA de Lotti con modelos de texto, razonamiento, visión, transcripción y generación de imágenes de Project Waddle"
+  alt="Página Modelos de Lotti con los controles de Ajustes de IA arriba, chips de filtro por proveedor y capacidad, y una lista de modelos de Project Waddle etiquetados como de razonamiento o de reconocimiento de imágenes"
   caption="El espacio de trabajo de Project Waddle combina modelos en la nube y locales, manteniendo explícitas las capacidades de cada modelo."
 />
 
-El control **Activaciones de agentes simultáneas**, situado en la parte superior
-de Ajustes de IA, limita cuántos agentes distintos pueden ejecutar inferencia a
-la vez. Un valor mayor puede mejorar el rendimiento, pero también aumenta las
-solicitudes simultáneas al proveedor y la carga del dispositivo local. Sé
-prudente cuando un proveedor tenga límites de frecuencia estrictos o un servidor
-de modelos local disponga de poca memoria.
+En la parte superior de Ajustes de IA hay tres controles:
+
+- **Activaciones simultáneas de agentes** limita cuántos agentes distintos
+  pueden ejecutar inferencia a la vez.
+- **Frecuencia de actualización** fija cada cuánto se actualizan solos los
+  agentes de tarea cuando ni la tarea ni su categoría lo establecen. **Como
+  mucho cada hora** sigue actualizando enseguida tras una grabación, un
+  temporizador detenido o una tarea marcada como hecha.
+- **Perfil de inferencia predeterminado** es el perfil de reserva para los
+  agentes sin una ruta de inferencia configurada en este dispositivo.
+
+Un valor mayor de **Activaciones simultáneas de agentes** puede mejorar el
+rendimiento, pero también aumenta las solicitudes simultáneas al proveedor y la
+carga del dispositivo local. Sé prudente cuando un proveedor tenga límites de
+frecuencia estrictos o un servidor de modelos local disponga de poca memoria.
 
 ## Añade o edita un modelo
 
@@ -66,20 +76,32 @@ cada espacio configurado.
 
 Edita un perfil para asignar modelos a las capacidades que usas:
 
-- **Razonamiento** es el modelo general de texto obligatorio.
-- **Razonamiento (avanzado)** puede encargarse de trabajo que solicita
+- **Pensamiento** es el modelo general de texto obligatorio.
+- **Modelo de chat** responde en los chats; si no se asigna, usa el modelo de
+  pensamiento.
+- **Pensamiento (alta gama)** puede encargarse de trabajo que solicita
   explícitamente la ruta de razonamiento más potente.
 - **Reconocimiento de imágenes** analiza imágenes.
 - **Transcripción** convierte audio en texto.
+- **Posprocesamiento de audio** corrige una transcripción con el diccionario de
+  voz y escribe el resumen de la grabación; si no se asigna, usa el modelo de
+  pensamiento.
 - **Generación de imágenes** crea ilustraciones de tareas y otras imágenes
   generadas. La ruta integrada actual de generación de imágenes usa un
   proveedor remoto configurado, así que elige ese proveedor y las referencias
   que envías con el mismo cuidado que aplicarías a cualquier otra ruta de
   inferencia en la nube.
+- **Leer en voz alta** es el modelo de voz en la nube que lee en voz alta los
+  resúmenes y las respuestas; si no se asigna, usa la voz del dispositivo.
+
+En **Habilidades automatizadas**, al final del formulario, activa qué
+habilidades —transcripción y análisis de imágenes— se ejecutan solas con este
+perfil. Cada una usa el modelo de su espacio, así que el interruptor necesita
+ese espacio asignado.
 
 <ManualScreenshot
   caseId="ai/profile-editor"
-  alt="Editor del perfil Project Waddle Command que asigna modelos de razonamiento, razonamiento avanzado, reconocimiento de imágenes, transcripción y generación de imágenes"
+  alt="Editor del perfil Project Waddle Command con nombre, descripción y espacios de modelo para pensamiento, modelo de chat, pensamiento de alta gama, reconocimiento de imágenes, transcripción, posprocesamiento de audio y generación de imágenes"
   caption="Un perfil dirige todas las modalidades de Project Waddle sin repetir elecciones de modelo en cada tarea."
 />
 
@@ -105,15 +127,17 @@ ofrecerá un modelo solo de audio para el razonamiento de texto.
 ## Establece un valor predeterminado para una categoría
 
 Una categoría puede elegir un perfil de inferencia predeterminado en
-**Ajustes → Definiciones → Categorías**. El trabajo nuevo de esa categoría puede
-heredar entonces una política de enrutamiento coherente. Elige el perfil cuya
-combinación de privacidad y capacidades se ajuste a la categoría, en vez de
-elegir solo por velocidad.
+**Ajustes → Definiciones → Categorías**. Un agente se ejecuta con el perfil
+elegido para él; si no tiene ninguno, sigue en cada ejecución el perfil de su
+categoría, de modo que cambiar el perfil de la categoría arrastra a sus agentes.
+Sin ninguno de los dos, recurre al **Perfil de inferencia predeterminado** de la
+parte superior de Ajustes de IA. Elige el perfil cuya combinación de privacidad
+y capacidades se ajuste a la categoría, en vez de elegir solo por velocidad.
 
 <ManualScreenshot
   caseId="ai/profile-picker"
   alt="Editor de la categoría Penguin Operations con una ventana que ofrece los perfiles Project Waddle Command, Habitat Local-First y Fish Diplomacy"
-  caption="La insignia de solo escritorio hace visibles las restricciones de plataforma antes de seleccionar el valor predeterminado de una categoría."
+  caption="Un icono de monitor marca un perfil Solo escritorio antes de seleccionarlo como valor predeterminado de una categoría."
 />
 
 ## Ruta de perfiles heredada

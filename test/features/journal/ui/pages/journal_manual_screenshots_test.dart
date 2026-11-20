@@ -33,6 +33,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -626,6 +627,12 @@ void main() {
   });
 
   List<Override> overrides() => withServiceOverrides([
+    // The demo world records no AI attribution; without this the captions
+    // under AI output read "AI attribution is unavailable." (a lookup error)
+    // instead of rendering nothing, as the app does for unrecorded output.
+    aiAttributionForArtifactProvider.overrideWith(
+      (ref, artifact) async => null,
+    ),
     // The entry page's action bar watches the recorder controller; the real
     // one boots the platform recorder, which a widget test cannot host.
     audioRecorderControllerProvider.overrideWith(

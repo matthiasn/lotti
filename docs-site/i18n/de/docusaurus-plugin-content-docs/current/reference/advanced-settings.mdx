@@ -6,8 +6,12 @@ description: Steuere Funktionsschalter und Protokollierung, führe Wartung aus, 
 # Erweiterte Einstellungen sicher verwenden
 
 Öffne **Einstellungen → Erweiterte Einstellungen** für Power-User-Steuerung,
-Diagnose und Wartung. Diese Seiten verändern Lottis Laufzeit oder lokale Daten;
-normale Personalisierung gehört an andere Stellen.
+Diagnose und Wartung. Die Seite listet **Konfigurationsflags**, **GitHub**,
+**Sprache**, **Protokoll-Bereiche**, **Systemzustand**, **Wartung**,
+**Onboarding-Metriken** und **Über Lotti**; auf iOS und Android erscheint
+**Gesundheitsdatenimport** zwischen **Systemzustand** und **Wartung**. Diese
+Seiten verändern Lottis Laufzeit oder lokale Daten; normale Personalisierung
+gehört an andere Stellen.
 
 Auf dem Desktop bleibt der Einstellungsbaum neben der gewählten Seite sichtbar;
 mobil öffnet sich jede Seite einzeln. Bedienelemente und gespeicherte Werte
@@ -15,7 +19,7 @@ sind identisch.
 
 <ManualScreenshot
   caseId="advanced-settings/hub"
-  alt="Lottis erweiterte Einstellungen mit Funktionsschaltern, Sprache, Protokollierung, Wartung, Onboarding-Metriken und Über Lotti"
+  alt="Lottis erweiterte Einstellungen mit Konfigurationsflags, GitHub, Sprache, Protokoll-Bereiche, Systemzustand, Wartung, Onboarding-Metriken und Über Lotti"
   caption="Operative Steuerung bleibt von alltäglichen Vorlieben getrennt. Manche Einträge hängen von Plattform und Fähigkeiten ab."
 />
 
@@ -34,27 +38,29 @@ macOS verwenden beide diese Einstellung.
 
 <ManualScreenshot
   caseId="advanced-settings/flags"
-  alt="Lottis Funktionsschalter mit Suche und Optionen für private Einträge, Standort, Tooltips und KI-Streaming"
+  alt="Lottis Konfigurationsflags mit einem Suchfeld und Schaltern, gruppiert unter Persönliche Einstellungen – beginnend mit privaten Einträgen, Standorterfassung, Tooltips und Sitzungsbewertungen –, danach Erweitert & experimentell"
   caption="Die Suche durchsucht Namen und Beschreibungen. Jeder Schalter ändert die gespeicherte Laufzeitfähigkeit sofort."
 />
 
-**Funktionsschalter** enthält unter anderem:
+**Konfigurationsflags** ist die Schaltzentrale für Fähigkeiten. Die Zeilen
+sind in **Persönliche Einstellungen** – was du sinnvoll ändern kannst – und
+**Erweitert & experimentell** für Diagnose und unfertige Arbeit gruppiert.
 
-- private Einträge, Standorterfassung und Tooltips;
-- KI-Antwortstreaming und Zusammenfassungswiedergabe;
-- die Begleitung und ihren Chat (siehe [Mit deiner Begleitung sprechen](../getting-started/companion.mdx));
-- Protokollierung und Matrix-Sync-Verhalten;
-- Neuigkeiten-Hinweise und Sitzungsbewertungen;
-- Embeddings und Vektorsuche; und
-- operative Anzeigen wie Sync-Aktivität, ausstehende Agenten und Fork-Heilung.
+- **Persönliche Einstellungen:** Sichtbarkeit privater Einträge,
+  Standorterfassung, Tooltips, Sitzungsbewertungen, Neuigkeiten,
+  KI-Antwortstreaming, Vorlesen von KI-Zusammenfassungen und Matrix-Sync.
+- **Erweitert & experimentell:** der experimentelle Aufgabenchat, die
+  Begleitung und ihr Chat (siehe
+  [Mit deiner Begleitung sprechen](../getting-started/companion.mdx)),
+  Embeddings, Sync von Embeddings und Vektorsuche, die Daily-OS-Einführung,
+  Fork-Heilung von Agenten, der Sync-Hintergrunddienst, Protokollierung und
+  das erneute Senden fehlgeschlagener Anhänge.
 
-Die Zeilen sind in **Persönliche Einstellungen** – was du sinnvoll ändern
-kannst – und **Erweitert & experimentell** für Diagnose und unfertige
-Arbeit gruppiert. Ganze App-Bereiche wie Gewohnheiten, Projekte oder
-Daily OS findest du nicht mehr hier, sondern unter
-[Bereiche](./settings.mdx).
+Benachrichtigungsschalter liegen unter **Einstellungen → Benachrichtigungen**.
+Ganze App-Bereiche wie Gewohnheiten, Projekte oder Daily OS findest du nicht
+mehr hier, sondern unter [Bereiche](./settings.mdx).
 
-**Schalter suchen** filtert nach Titel oder Beschreibung. Ein Tipp auf Zeile
+**Flags durchsuchen** filtert nach Titel oder Beschreibung. Ein Tipp auf Zeile
 oder Schalter ändert den Wert sofort, ohne zu speichern.
 
 Schalter können experimentelles oder diagnostisches Verhalten freischalten.
@@ -67,14 +73,17 @@ Datenschutzstatus.
 
 <ManualScreenshot
   caseId="advanced-settings/logging"
-  alt="Lottis Protokollierung mit Hauptschalter, einzelnen Betriebsbereichen und langsamen Abfragen"
+  alt="Lottis Seite Protokoll-Bereiche mit dem Hauptschalter Protokollierung aktivieren über Schaltern pro Bereich wie Sync, KI, Chat, Sprache & Audio, Datenbank und Aufgaben & Checklisten"
   caption="Der Hauptschalter steuert die Bereiche. Die Project-Waddle-Fixture aktiviert gezielt Sync, KI und Aufgaben."
 />
 
-**Protokollierung aktivieren** ist der Hauptschalter. Aktiviere nur benötigte
-Bereiche wie Sync, KI, Aufgaben, Labels, Gesundheit, Gewohnheiten, Navigation,
-Benachrichtigungen oder Daily OS. **Langsame Abfragen protokollieren** ergänzt
-Datenbankdiagnose.
+**Protokoll-Bereiche** beginnt mit dem globalen Schalter **Protokollierung
+aktivieren**. Ist er an, aktiviere nur die Bereiche, die eine Untersuchung
+braucht – darunter **Sync**, **KI**, **Chat**, **Sprache & Audio**,
+**Datenbank**, **Agent-Runtime**, **Aufgaben & Checklisten**, **Labels**,
+**Gesundheit**, **Gewohnheiten**, **Navigation**, **Benachrichtigungen** und
+**Daily OS**. **Langsame Datenbankabfragen** schreibt langsame
+Datenbankabfragen in ein eigenes tägliches `slow_queries-*.log`.
 
 Ohne Hauptschalter sind Bereichsregler deaktiviert. Fehler landen weiterhin in
 der täglichen `error-*.log`; diese Optionen steuern zusätzliche Diagnose, nicht
@@ -106,11 +115,25 @@ beim nächsten Öffnen der Seite wieder angezeigt, ältere stehen unter
 er analysiert hat und wann er erstellt wurde. Ohne Modell – oder wenn der Modellaufruf fehlschlägt –
 bekommst du trotzdem die Zusammenfassung.
 
+## GitHub verbinden
+
+**GitHub** hält das schreibgeschützte Personal Access Token, mit dem Lotti die
+Pull Requests liest, die du mit Aufgaben verknüpfst. **Token auf GitHub
+erstellen** öffnet GitHubs Token-Formular mit bereits eingetragenen
+Berechtigungen; wähle deine Repositories, füge das Token in **Personal Access
+Token** ein und wähle **Verbinden**. Die Seite zeigt dann, welches Konto
+verbunden ist, und bietet **Trennen** an. Das Token wird Ende-zu-Ende
+verschlüsselt zu deinen anderen Geräten synchronisiert und nur für Anfragen an
+api.github.com verwendet. Ist es verbunden, kann die Begleitung auch Fragen zu
+deinen Pull Requests beantworten. Unter [GitHub verbinden](./github.mdx)
+erfährst du, wie du Pull Requests an Aufgaben verfolgst und was die KI damit
+macht.
+
 ## Wartungsaktionen bewusst ausführen
 
 <ManualScreenshot
   caseId="advanced-settings/maintenance"
-  alt="Lottis Wartungsseite mit Onboarding-Vorschauen, Resets, Datenbanklöschung, Bereinigung, Suchindex, Embeddings und Repaint-Diagnose"
+  alt="Lottis Wartungsseite mit Onboarding-Vorschauen, Resets, Integritätsprüfung der Datenbank, Datenbanklöschung, Bereinigung, Volltextindex, Reparatur des Screenshot-Speichers, Embeddings und dem Schalter für den Repaint-Regenbogen"
   caption="Sichere Vorschauen stehen neben destruktiven und diagnostischen Aktionen. Lies Bestätigung und Umfang."
 />
 
@@ -120,13 +143,17 @@ bekommst du trotzdem die Zusammenfassung.
   Live-Vorschauen für Entwicklung und QA.
 - **In-App-Hinweise zurücksetzen** lässt einmalige Tipps erneut erscheinen.
 - **Gemini-Einrichtungsdialog zurücksetzen** löscht seine Ablehnung zum Testen.
-- **Editor-Datenbank löschen** entfernt Entwürfe.
+- **Datenbank-Integrität prüfen** prüft, ob die Datenbankdateien intakt sind.
+- **Entwürfe-Datenbank löschen** entfernt Entwürfe.
 - **Agenten-Datenbank löschen** entfernt sie und beendet Lotti für einen
   sauberen Neustart.
 - **Gelöschte Elemente bereinigen** entfernt Soft-Deletes nach Bestätigung endgültig.
 - **Volltextindex neu erstellen** baut die lokalen Suchdaten neu auf, ohne
   Journaleinträge neu zu erstellen.
-- **Embeddings erzeugen** erscheint bei verfügbarem Embedding-Speicher und
+- **Screenshot-Speicher reparieren** verschiebt von älteren Versionen
+  gespeicherte Screenshots in den richtigen Ordner, damit die KI-Bildanalyse
+  sie lesen kann.
+- **Embeddings generieren** erscheint bei verfügbarem Embedding-Speicher und
   füllt ausgewählte Kategorien nach.
 - **Repaint-Regenbogen** markiert neu gezeichnete UI-Bereiche und ist nach
   Neustart wieder aus.

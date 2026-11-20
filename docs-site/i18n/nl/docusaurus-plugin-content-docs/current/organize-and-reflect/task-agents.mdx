@@ -13,11 +13,12 @@ checklistwijzigingen naar voren brengen die je kunt bevestigen of afwijzen. Voor
 het systeembrede overzicht van alle actieve agenten, zie [Agenten uitvoeren en
 monitoren](../ai-and-automation/agents.mdx).
 
-De toegewezen agent wordt weergegeven onder de checklists en gekoppelde taken van
-de taak. De kaart houdt de laatste samenvatting en eventuele
-voorgestelde wijzigingen, en verder niets. De updatecontroles en de
-AI-installatie zitten achter **Open agent internals**, zodat de taakpagina
-leest als een taak en niet als een AI-console.
+De kaart **Samenvatting van de AI** van de toegewezen agent staat bovenaan de
+taak, onder de notities en boven de checklists en gekoppelde taken. De kaart
+houdt de laatste samenvatting, eventuele voorgestelde wijzigingen en een actie
+**Nu bijwerken**. De update-instellingen en de AI-installatie zitten achter
+**Interne details van agent openen**, zodat de taakpagina leest als een taak en niet als
+een AI-console.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
@@ -26,14 +27,14 @@ leest als een taak en niet als een AI-console.
 />
 
 Op elk schermformaat volgt de kaart één leesvolgorde: identiteit, rapport, en
-dan pas voorgestelde wijzigingen en geschiedenis. Is de samenvatting achterop
-geraakt bij de taak, dan verschijnen daartussen de melding **Verouderd** en de
-actie **Nu bijwerken**; zolang de samenvatting bij is, zegt de kaart niets over
-haar actualiteit.
+dan pas voorgestelde wijzigingen en geschiedenis. Tussen het rapport en de
+voorstellen zegt één regel hoe lang geleden het rapport is geschreven en biedt
+**Nu bijwerken** aan; is de samenvatting achterop geraakt bij de taak, dan zegt
+die regel in plaats daarvan **Verouderd**.
 
 Kies **Lees meer** om het volledige rapport uit te vouwen. De uitgebreide kaart
 houdt de taak zichtbaar, voegt de ondersteunende beoordeling en aanbevolen
-volgende stap van het rapport toe, en biedt **Open agent internals** wanneer je de
+volgende stap van het rapport toe, en biedt **Interne details van agent openen** wanneer je de
 updatecontroles en AI-installatie van de agent nodig hebt, of zijn rapporten,
 gesprekken, observaties en runtimedetails.
 
@@ -45,7 +46,7 @@ gesprekken, observaties en runtimedetails.
 
 ## Kies de AI-instellingen van de agent
 
-Open **Open agent internals** — via de naam van de agent in de kaartkop of via
+Open **Interne details van agent openen** — via de naam van de agent in de kaartkop of via
 de link onder het uitgeklapte rapport: daar toont de rij **Huidige setup** het
 profiel, het model en de provider die voor de volgende wake worden gebruikt. Selecteer deze rij om een
 opgeslagen inferentieprofiel te kiezen, alleen het denkmodel te
@@ -79,8 +80,10 @@ Gebruik het kruisje om een voorstel te **Weigeren**, of het vinkje om het te
 **Bevestigen** en toe te passen. Je kunt een voorstel ook naar links vegen om
 het af te wijzen, of naar rechts om het te bevestigen. Wanneer er meerdere
 voorstellen in behandeling zijn, past **Alles bevestigen** de op dat moment
-weergegeven wijzigingen gezamenlijk toe. Beoordeel bulkvoorstellen zorgvuldig,
-vooral status-, datum- en checklistwijzigingen.
+weergegeven wijzigingen gezamenlijk toe. Een voorgestelde statuswijziging hoort
+daar nooit bij: die wacht in een eigen band **Statuswijzigingen** tot je haar
+afzonderlijk bevestigt of afwijst. Beoordeel bulkvoorstellen zorgvuldig, vooral
+datum- en checklistwijzigingen.
 
 Open **Geschiedenis** om recente resultaten opnieuw te bekijken. Dat maakt
 onderscheid tussen bevestigde en afgewezen wijzigingen. Een afgewezen item kan
@@ -98,7 +101,7 @@ anderszins op.
 Nieuwe taakagenten beginnen met **Automatische updates** uitgeschakeld.
 Toewijzing alleen verbruikt geen tokens op de achtergrond. De schakelaar, het
 aftellen tot de volgende update en **Eén keer overslaan** zitten allemaal in
-**Open agent internals**, naast de rapportgeschiedenis en de activiteit van de
+**Interne details van agent openen**, naast de rapportgeschiedenis en de activiteit van de
 agent. Terwijl automatische updates uit staan, blijft Lotti relevante
 wijzigingen in de taak en de daaraan gekoppelde items opmerken, markeert een
 oudere samenvatting op de kaart zelf als verouderd en wacht tot je **Nu

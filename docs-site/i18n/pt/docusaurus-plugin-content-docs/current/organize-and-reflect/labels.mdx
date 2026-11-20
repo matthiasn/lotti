@@ -1,91 +1,93 @@
 ---
-title: Marque o trabalho com rótulos
-description: Use rótulos para contexto transversal que abrange categorias e tarefas.
+title: Marca o trabalho com etiquetas
+description: Usa etiquetas para contexto transversal que atravessa categorias e tarefas.
 ---
 
-# Marque o trabalho com rótulos
+# Marca o trabalho com etiquetas
 
-Os rótulos adicionam uma segunda camada flexível de organização. Uma tarefa tem
-uma única categoria principal, mas pode carregar vários rótulos para
-iniciativas, urgência, estados de espera ou outra propriedade que atravesse os
-limites das categorias.
+As etiquetas acrescentam uma segunda camada flexível de organização. Uma tarefa
+tem uma única categoria principal, mas pode levar várias etiquetas para
+iniciativas, urgência, estados de espera ou qualquer outra propriedade que
+atravesse os limites das categorias.
 
 <ManualScreenshot
   caseId="labels/list"
-  alt="Configurações de rótulos contendo Aguardando Controle da Missão, Habitat crítico, Project Waddle e Sardinha sensível ao mercado, com contagens de uso em tarefas"
-  caption="As contagens de uso revelam quais rótulos estão ativos no espaço de trabalho; o cadeado marca um rótulo privado."
+  alt="Definições de etiquetas com Aguardando Controle da Missão, Habitat crítico, Project Waddle e Mercado de sardinha sensível, com as contagens de uso em tarefas"
+  caption="As contagens de uso mostram que etiquetas estão ativas no espaço de trabalho; o cadeado marca uma etiqueta privada."
 />
 
-O espaço de trabalho Intergalactic Penguin Logistics usa rótulos deliberadamente:
+O espaço de trabalho Intergalactic Penguin Logistics usa etiquetas de forma
+deliberada:
 
-- **Project Waddle** conecta o trabalho de lançamento entre Operações Penguin,
-  Controle de Missão e Diplomacia dos Peixes.
-- **Habitat crítico** identifica o trabalho que precisa terminar antes de a
+- **Project Waddle** liga o trabalho de lançamento entre Operações com
+  pinguins, Controle da Missão e Diplomacia dos Peixes.
+- **Habitat crítico** identifica o trabalho que tem de terminar antes de a
   expedição entrar no habitat orbital.
-- **Aguardando Controle da Missão** registra um estado de bloqueio real.
-- **Sardinha sensível ao mercado** mantém identificável o trabalho privado de
+- **Aguardando Controle da Missão** regista um estado de bloqueio real.
+- **Mercado de sardinha sensível** mantém identificável o trabalho privado de
   negociação.
 
-## Crie e edite um rótulo
+## Cria e edita uma etiqueta
 
-1. Abra **Configurações → Definições → Etiquetas**.
-2. Selecione **Criar etiqueta**.
-3. Adicione um nome conciso e uma descrição opcional.
-4. Escolha uma cor que continue distinguível ao lado dos outros rótulos.
-5. Decida se o rótulo é privado e quais categorias podem usá-lo.
-6. Salve.
+1. Abre **Configurações → Definições → Etiquetas**.
+2. Seleciona **Criar etiqueta**.
+3. Acrescenta um nome conciso e uma descrição opcional.
+4. Escolhe uma cor que continue fácil de distinguir ao lado das outras
+   etiquetas.
+5. Decide se a etiqueta é privada e que categorias a podem usar.
+6. Guarda.
 
 <ManualScreenshot
   caseId="labels/detail"
-  alt="Editor do rótulo Project Waddle mostrando sua descrição de item crítico para o lançamento, cor azul, opção de privacidade e três categorias aplicáveis"
+  alt="Editor da etiqueta Project Waddle a mostrar a descrição de item crítico para o lançamento, a cor azul, a opção de privacidade e três categorias aplicáveis"
 />
 
-Vale a pena escrever descrições quando um rótulo pode ser interpretado de mais
-de uma maneira. Elas fornecem o significado operacional sem forçar essa
+Vale a pena escrever descrições quando uma etiqueta pode ser interpretada de
+mais de uma maneira. Dão o significado operacional sem obrigar a pôr essa
 explicação em cada título de tarefa.
 
-**Categorias aplicáveis** restringem onde o rótulo pode ser selecionado. O
-Project Waddle está disponível nas três partes da expedição envolvidas no
-lançamento, enquanto um rótulo especializado pode ficar limitado a uma
-categoria. Isso mantém os seletores relevantes, em vez de apresentar todos os
-rótulos em todos os lugares.
+**Categorias aplicáveis** limitam onde a etiqueta pode ser selecionada. O
+Project Waddle está disponível nas três áreas da expedição envolvidas no
+lançamento, enquanto uma etiqueta especializada pode ficar limitada a uma só
+categoria. Assim, os seletores mantêm-se relevantes, em vez de mostrarem todas
+as etiquetas em todo o lado.
 
-## Aplicar rótulos às tarefas
+## Aplica etiquetas às tarefas
 
-Abra uma tarefa e use o controle de rótulos dela para adicionar ou remover
-rótulos. Os rótulos funcionam junto com os filtros de status, prioridade e
-categoria da tarefa, então você pode fazer perguntas focadas como “mostrar o
-trabalho aberto P1 crítico para o habitat” sem inventar uma nova categoria para
-essa visão temporária.
+Abre uma tarefa e usa o controlo de etiquetas para adicionar ou remover
+etiquetas. As etiquetas funcionam em conjunto com os filtros de estado,
+prioridade e categoria da tarefa, por isso podes fazer perguntas focadas como
+«mostrar o trabalho aberto P1 crítico para o habitat» sem inventar uma nova
+categoria para essa vista temporária.
 
-## Deixe um agente de tarefa sugerir rótulos
+## Deixa um agente de tarefa sugerir etiquetas
 
-Quando um agente de tarefa configurado tem contexto suficiente da tarefa, ele
-pode sugerir rótulos adequados junto com outras alterações da tarefa. A Lotti
-só disponibiliza rótulos ativos válidos para a categoria da tarefa e rejeita
-sugestões excluídas, fora de escopo, duplicadas ou de baixa confiança. O agente
-nunca recebe um caminho livre para criar marcadores arbitrários a partir de um
-prompt.
+Quando um agente de tarefa configurado tem contexto suficiente sobre a tarefa,
+pode sugerir etiquetas adequadas juntamente com outras alterações à tarefa. O
+Lotti só disponibiliza etiquetas ativas válidas para a categoria da tarefa e
+rejeita sugestões eliminadas, fora de âmbito, duplicadas ou de baixa
+confiança. O agente nunca tem caminho livre para criar marcadores arbitrários
+a partir de um prompt.
 
-Revise um rótulo originado pelo agente na área de alterações propostas da
-tarefa, exatamente como revisaria uma alteração de lista de verificação, data
-ou status. Confirme-o quando o rótulo melhorar a filtragem futura; rejeite-o
-quando não melhorar. Assim, a organização visível da tarefa permanece sob seu
-controle, em vez de tratar um palpite do modelo como fonte de verdade.
+Revê uma etiqueta sugerida pelo agente na área de alterações propostas da
+tarefa, tal como revês uma alteração à checklist, à data ou ao estado.
+Confirma-a quando a etiqueta melhorar a filtragem futura; rejeita-a quando não
+melhorar. Assim, a organização visível da tarefa continua sob o teu controlo,
+em vez de tratares um palpite do modelo como fonte de verdade.
 
-Remover um rótulo de uma tarefa é tratado como uma rejeição intencional quando
-as sugestões automáticas de rótulos estão ativadas. A Lotti registra essa
-escolha para que a mesma sugestão não seja reaplicada imediatamente sem um novo
-motivo.
+Remover uma etiqueta de uma tarefa é tratado como uma rejeição intencional
+quando as sugestões automáticas de etiquetas estão ativas. O Lotti regista
+essa escolha para que a mesma sugestão não volte a ser aplicada logo a seguir
+sem um novo motivo.
 
-## Mantenha os rótulos úteis
+## Mantém as etiquetas úteis
 
-- Prefira rótulos que mudem uma decisão, um filtro ou uma revisão.
-- Reutilize um rótulo estável em vez de criar variantes de grafia.
-- Verifique as contagens de uso antes de excluir ou consolidar rótulos.
-- Use a privacidade quando o próprio nome do rótulo revelar um contexto
+- Prefere etiquetas que mudem uma decisão, um filtro ou uma revisão.
+- Reutiliza uma etiqueta estável em vez de criares variantes de grafia.
+- Verifica as contagens de uso antes de eliminar ou fundir etiquetas.
+- Usa a privacidade quando o próprio nome da etiqueta revelar um contexto
   confidencial.
-- Aposente rótulos que já não descrevem trabalho em andamento.
+- Retira as etiquetas que já não descrevem trabalho em curso.
 
-Se algo for o lar principal e duradouro do trabalho, transforme-o em uma
+Se algo for a casa principal e duradoura do trabalho, transforma-o numa
 [categoria](./categories.mdx).

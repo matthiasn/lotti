@@ -6,25 +6,39 @@ description: Configura la voz en el dispositivo, el modelo y la velocidad de rep
 # Elige la voz de lectura
 
 Cuando la lectura en voz alta esté disponible, abre **Ajustes → Preferencias →
-Voz**. Estos controles se aplican a los resúmenes de IA de las tareas; no
-cambian la captura del micrófono ni qué proveedor de IA transcribe una
-grabación.
+Voz**. Estos controles se aplican a lo que Lotti lee en voz alta —resúmenes de
+IA y respuestas del chat—; no cambian la captura del micrófono ni qué proveedor
+de IA transcribe una grabación. Con el acompañante activado, la página Voz
+independiente se oculta y los mismos ajustes están en **Ajustes → Preferencias
+→ Acompañante → Voz**.
+
+La página empieza con **Audio del chat**: **Preparar el audio del chat
+automáticamente** prepara en este dispositivo las nuevas respuestas del chat
+para que la reproducción empiece antes. El audio solo se reproduce cuando
+tocas reproducir.
 
 <ManualScreenshot
   caseId="speech/settings"
-  alt="Ajustes de voz de Lotti con Masculina 3 seleccionada, el modelo en dispositivo Supertonic 3 y velocidad de lectura 1,25"
+  alt="Ajustes de voz de Lotti con Audio del chat, Voces en la nube, la Voz del dispositivo con Masculina 3 seleccionada, el modelo Supertonic 3 y velocidad de lectura 1,25"
   caption="La configuración de ejemplo de control de misión usa Masculina 3 a 1,25× para informes ágiles de Project Waddle."
 />
 
 ## Elige una voz
 
-Usa el selector **Femenina / Masculina** para explorar los dos grupos y, después,
+**Voces en la nube** muestra, para cada uno de tus idiomas, la voz con la que lo
+habla un modelo de lectura en voz alta en la nube; toca una para escucharla o
+cambiarla. La sección queda vacía hasta que un perfil de inferencia tiene un
+modelo de **Leer en voz alta**; hasta entonces, la lectura en voz alta usa la
+voz del dispositivo.
+
+La **Voz del dispositivo** lee para los perfiles sin voz en la nube. Usa el
+selector **Femenina / Masculina** para explorar los dos grupos y, después,
 selecciona una de las cinco voces numeradas de ese grupo. Cambiar de grupo solo
 modifica la lista visible; selecciona una voz numerada para activarla.
 
 <ManualScreenshot
   caseId="speech/voice-options"
-  alt="Ajustes de voz de Lotti con las cinco opciones de voces femeninas en el dispositivo"
+  alt="Ajustes de voz de Lotti con las cinco opciones femeninas de la Voz del dispositivo, bajo Audio del chat y Voces en la nube"
   caption="Hay diez estilos de voz incluidos: Femenina 1–5 y Masculina 1–5."
 />
 
@@ -34,11 +48,13 @@ sin cambiar la elección de tus otros dispositivos.
 
 ## Descarga del modelo y privacidad
 
-Lotti usa actualmente **Supertonic 3** para leer en voz alta. La síntesis se
-ejecuta en el dispositivo en vez de enviar el resumen a un servicio de voz en la
-nube. El modelo es grande y se descarga la primera vez que se necesita, así que
-prevé tiempo, ancho de banda de red y almacenamiento para esa configuración
-inicial.
+La **Voz del dispositivo** usa **Supertonic 3**. La síntesis se ejecuta en el
+dispositivo, así que no se envía nada a un servicio de voz en la nube. Cuando un
+perfil de inferencia tiene un modelo de lectura en voz alta en la nube, **Voces
+en la nube** muestra en su lugar la voz para cada uno de tus idiomas, y el texto
+leído en voz alta se envía a ese proveedor. El modelo en el dispositivo es grande
+y se descarga la primera vez que se necesita, así que prevé tiempo, ancho de
+banda de red y almacenamiento para esa configuración inicial.
 
 ## Establece la velocidad de lectura
 

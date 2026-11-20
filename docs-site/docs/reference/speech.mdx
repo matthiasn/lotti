@@ -6,24 +6,36 @@ description: Configure the on-device voice, model, and playback speed used to re
 # Choose the reading voice
 
 When reading aloud is available, open **Settings → Preferences → Speech**. These
-controls apply to task AI summaries; they do not change microphone capture or
-which AI provider transcribes a recording.
+controls apply to what Lotti reads aloud — AI summaries and chat replies; they
+do not change microphone capture or which AI provider transcribes a recording.
+With the companion switched on, the separate Speech page is hidden and the same
+settings live under **Settings → Preferences → Companion → Voice**.
+
+The page starts with **Chat audio**: **Prepare chat audio automatically**
+prepares new chat replies on this device so playback starts sooner. Audio
+still plays only when you tap play.
 
 <ManualScreenshot
   caseId="speech/settings"
-  alt="Lotti Speech settings with Male 3 selected, the Supertonic 3 on-device model, and 1.25 reading speed"
+  alt="Lotti Speech settings with Chat audio, Cloud voices, the On-device voice with Male 3 selected, the Supertonic 3 model, and 1.25 reading speed"
   caption="The example mission-control setup uses Male 3 at 1.25× for brisk Project Waddle briefings."
 />
 
 ## Choose a voice
 
-Use the **Female / Male** switch to browse the two groups, then select one of
+**Cloud voices** lists, for each of your languages, the voice a cloud
+read-aloud model speaks it in; tap one to hear or change it. The section stays
+empty until an inference profile has a **Read aloud** model — until then
+read-aloud uses the on-device voice.
+
+The **On-device voice** reads for profiles without a cloud voice. Use the
+**Female / Male** switch to browse the two groups, then select one of
 the five numbered voices in that group. Switching groups only changes the
 visible list; select a numbered voice to make it active.
 
 <ManualScreenshot
   caseId="speech/voice-options"
-  alt="Lotti Speech settings showing the five female on-device voice options"
+  alt="Lotti Speech settings showing the five female options of the On-device voice, under Chat audio and Cloud voices"
   caption="Ten bundled voice styles are available: Female 1–5 and Male 1–5."
 />
 
@@ -33,10 +45,12 @@ choice on your other devices.
 
 ## Model download and privacy
 
-Lotti currently uses **Supertonic 3** for reading aloud. Synthesis runs on the
-device rather than sending the summary to a cloud speech service. The model is
-large and is downloaded the first time it is needed, so allow time, network
-bandwidth, and storage for that initial setup.
+The **On-device voice** uses **Supertonic 3**. Synthesis runs on the device, so
+nothing is sent to a cloud speech service. When an inference profile has a
+cloud read-aloud model, **Cloud voices** lists the voice for each of your
+languages instead, and the text read aloud is sent to that provider. The
+on-device model is large and is downloaded the first time it is needed, so
+allow time, network bandwidth, and storage for that initial setup.
 
 ## Set the reading speed
 

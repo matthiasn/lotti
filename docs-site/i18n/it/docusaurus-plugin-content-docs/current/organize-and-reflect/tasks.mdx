@@ -30,7 +30,7 @@ contesto e dalle immagini di riferimento dell'attività stessa.
 
 <ManualScreenshot
   caseId="tasks/detail"
-  alt="Pagina di dettaglio dell'attività di produzione per ispezionare l'habitat orbitale dei pinguini, con la stessa copertina usata dalle miniature delle attività"
+  alt="Pagina dell'attività per ispezionare l'habitat orbitale dei pinguini con categoria, stato In corso, priorità Alta, data di scadenza, tempo registrato rispetto alla stima, etichette e riepilogo AI"
 />
 
 La stessa attività può contenere una descrizione, categoria, etichette, data di
@@ -70,7 +70,7 @@ mai essere l'unico segnale su cui fai affidamento.
 Usa il controllo dei filtri accanto al campo di ricerca delle attività per
 mettere a fuoco l'elenco. Scegli uno o più stati, priorità, categorie,
 etichette e — quando i Progetti sono abilitati — progetti. I selettori di
-categoria ed etichetta offrono anche **Non firmata** per il lavoro a cui manca
+categoria ed etichetta offrono anche **Non assegnata** per il lavoro a cui manca
 ancora quel dettaglio organizzativo. La scelta **Agente** distingue le attività
 con un agente assegnato da quelle senza.
 
@@ -82,14 +82,18 @@ con un agente assegnato da quelle senza.
 Le scelte dentro un singolo filtro sono alternative: selezionare P0 e P1 mostra
 entrambe le priorità. Filtri diversi restringono il risultato insieme:
 selezionare P0 o P1 *e* Penguin Operations mostra solo il lavoro che
-corrisponde a entrambi. Usa **Cancella tutto** per tornare a una vista senza
-vincoli invece di annullare ogni scelta una per una.
+corrisponde a entrambi. Usa **Cancella** nel foglio,
+oppure **Cancella tutto** accanto ai filtri attivi nell'elenco, per tornare a
+una vista senza vincoli invece di annullare ogni scelta una per una.
 
 Scegli **Data di scadenza**, **Creato** o **Priorità** nello stesso foglio per
 cambiare l'ordinamento. L'ordine di priorità va da P0 a P3, con le attività più
 recenti prima all'interno di una priorità, a meno che non sia attivo un altro
-ordinamento. Sul desktop, una configurazione con ricerca vettoriale abilitata
-può offrire anche la ricerca semantica accanto alla normale ricerca nel testo.
+ordinamento. La ricerca elenca prima le
+attività le cui parole corrispondono, a partire dalla corrispondenza migliore,
+seguite da una sezione **Correlati per significato** con attività che dicono la
+stessa cosa con altre parole. Mentre cerchi, i chip di filtro che la ricerca
+non applica vengono attenuati.
 
 Quando torni regolarmente alla stessa vista mirata, salva il filtro attivo dal
 foglio e dagli un nome chiaro. Riaprilo dall'elenco delle attività, poi
@@ -105,9 +109,10 @@ proposte dalle competenze AI configurate a partire dal contesto dell'attività.
 
 ## Aggiungi contesto all'attività
 
-Usa l'azione **Aggiungi** dell'attività per allegare una lista di controllo,
-un'altra attività, una registrazione audio, un timer, una voce di testo o
-un'immagine senza lasciare l'attività. Le azioni disponibili dipendono dalla
+Usa l'azione **Aggiungi** dell'attività per allegare una nota, una lista di
+controllo, una nota vocale, un'attività collegata o un'immagine senza lasciare
+l'attività; **Registra tempo** nella barra delle azioni dell'attività
+avvia un timer. Le azioni disponibili dipendono dalla
 piattaforma e dal contesto correnti.
 
 <ManualScreenshot
@@ -142,14 +147,18 @@ seguirla ed Esc per tornare indietro.
 
 ## Collega attività correlate
 
-Apri la sezione **Collegamento** dell'attività e scegli di collegare
-un'attività esistente. Cerca nel selettore, poi seleziona il risultato
-correlato. Lotti esclude l'attività corrente e le attività già collegate in
+Nella sezione **Compiti collegati** dell'attività, seleziona **Collega
+un'attività…** – oppure **Collega** quando l'attività ha già dei collegamenti –
+per aprire **Collega attività esistente**. In **Questa attività…** scegli la
+relazione: **È correlata a**, oppure una tra **Blocca**, **È bloccata da**,
+**È il seguito di**, **Ha un seguito**, **Duplica**, **È duplicata da**,
+**Risolve**, **È risolta da**, **Sostituisce** ed **È sostituita da**. Poi
+cerca nel selettore e seleziona l'attività correlata. Lotti esclude l'attività corrente e le attività già collegate in
 quella direzione.
 
 <ManualScreenshot
   caseId="tasks/link-picker"
-  alt="Selettore di collegamento attività di produzione che elenca attività correlate di Project Waddle con stato, priorità, categoria e contesto della data di scadenza"
+  alt="Selettore Collega attività esistente sopra l'attività di ispezione dell'habitat orbitale dei pinguini, con Questa attività… impostato su È correlata a, un campo di ricerca delle attività e due attività di Operazioni del Pinguino con il loro stato"
 />
 
 I collegamenti tra attività sono direzionali: l'attività corrente punta

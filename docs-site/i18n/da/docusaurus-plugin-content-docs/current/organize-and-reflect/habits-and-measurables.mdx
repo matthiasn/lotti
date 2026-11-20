@@ -26,8 +26,8 @@ at behandle én overset dag som hele historien.
 
 ### Opret og rediger vaner
 
-1. Åbn **Vaner** og tryk på **+**. For at ændre en eksisterende vane holder du
-   den nede eller åbner dens registreringsark og trykker på blyanten.
+1. Åbn **Vaner** og tryk på **+** – på en telefon sidder den i
+   navigationsstarteren. For at ændre en eksisterende vane holder du den nede eller åbner dens registreringsark og trykker på blyanten.
    **Indstillinger → Definitioner → Vaner** viser stadig alle definitioner og
    åbner den samme editor.
 2. Giv adfærden et konkret navn. Eksempelchipsene (**måle blodtryk**, **6.000
@@ -44,7 +44,7 @@ at behandle én overset dag som hele historien.
 
 <ManualScreenshot
   caseId="habits/editor-step2"
-  alt="Ny vane, trin 2 af 2: Hvordan ved vi, at det er gjort? med den manuelle række, et Skridt-signal sat til dagligt mindst 6.000, Tilføj et signal og afsnittet Indstillinger"
+  alt="Ny vane, trin 2 af 2: Hvordan ved vi, at det er gjort? med den manuelle række, et Skridt-signal sat til dagligt ≥ 6.000 sammenlignet med I dag, Tilføj et signal, kontakten Giv besked ved automatisk afkrydsning og afsnittet Indstillinger"
 />
 
 ### Lad registrerede data krydse en vane af
@@ -61,13 +61,17 @@ krydser selv af** er altid slået til – enhver vane kan registreres i hånden.
 - en **træningstype**, der er dukket op i dine importer (enhver træning, eller
   varighed, distance eller energi mindst / højst en værdi).
 
+En tærskel kan sammenlignes med værdien for **I dag**, **7-dages
+gennemsnittet** eller **En af delene**.
+
 Med to eller flere signaler vælger **Hvornår vanen tæller som gjort**, om **et
 hvilket som helst** signal, **alle** signaler eller **mindst N** af dem
 fuldfører den. Når dagens data opfylder reglen, krydses vanen af for dig,
 markeres **auto** på Vaner-siden med signal og tidspunkt og meldes med en
 besked – vaner fuldført med få sekunders mellemrum samles i én besked, hver vane meldes
-højst én gang om dagen, og **Giv besked ved automatisk afkrydsning** slår det
-fra pr. vane. Det, du selv
+højst én gang om dagen, og **Giv besked ved automatisk afkrydsning** nederst
+på signalkortet, som vises, så snart vanen har et signal, slår det fra pr.
+vane. Det, du selv
 registrerer, også et spring, vinder altid over den automatiske afkrydsning.
 
 ### Editorens indstillinger
@@ -80,19 +84,18 @@ registrerer, også et spring, vinder altid over den automatiske afkrydsning.
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Siden Rediger vane for Navneopråb af kejserpingviner med signalkortet, afsnittet Indstillinger og valgene favorit, privat og aktiv"
+  alt="Siden Rediger vane for Navneopråb af kejserpingviner med navn, beskrivelse, kortet Hvordan ved vi, at det er gjort? og afsnittet Indstillinger"
 />
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Editorens afsnit Indstillinger med kategori, startdato, vis fra, alarmtidspunkt og kontakten for besked ved automatisk afkrydsning"
+  alt="Siden Rediger vane for Navneopråb af kejserpingviner med afsnittet Indstillinger – kategori, startdato, vis fra og vis alarm kl. – og Valg med Favorit, Privat og Aktiv, derefter Slet"
 />
 
 - **Kategori** til filtrering og visuel sammenhæng.
 - **Startdato**, og for en daglig vane tidspunktet den **vises fra**, og hvornår
   Lotti skal **vise en alarm**. Datamodellen forstår også uge- og månedsplaner;
   editoren viser disse tidsindstillinger for daglige vaner.
-- **Giv besked ved automatisk afkrydsning** (slået til som standard).
 - Ved redigering: **Favorit** for større synlighed, **Privat** for at skjule
   den, medmindre private poster vises, **Aktiv** til at styre, om den vises på
   Vaner-siden uden at slette historikken, og **Slet**.
@@ -113,7 +116,7 @@ signalerne tilbyder formularen tre udfald:
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Registreringsark for at efterse habitatets tætninger, med signalrækkerne Krillrationer og Skridt, hurtigregistreringschips, kurver og udfaldene Succes, Spring over og Misset"
+  alt="Registreringsark for at efterse habitatets tætninger, med signalrækkerne Krillrationer, Væsketjek og Skridt, hurtigregistreringschips, kurver og udfaldene Succes, Spring over og Misset"
 />
 
 Brug den tilstand, der bevarer virkeligheden. En ærlig historik er mere nyttig
@@ -122,25 +125,31 @@ kan genskabe det faktiske resultat for hver vane og dag.
 
 ## Arbejd med målbare værdier
 
-En målbar definition beskriver tallet, før du registrerer det: dets navn,
-enhed, privatliv, og hvordan flere observationer kombineres på diagrammer.
+En målbar definition beskriver værdien, før du registrerer den: dens navn, om
+den er et tal eller et valg, enhed, privatliv, og hvordan flere observationer
+kombineres på diagrammer.
 
 <ManualScreenshot
   caseId="measurables/settings-list"
-  alt="Indstillinger for målbare værdier med Habitattryk, Pingviner gjort rede for og Spiste sardiner"
+  alt="Indstillinger for målbare værdier med Habitattryk, Væsketjek, Pingviner gjort rede for og Spiste sardiner"
 />
 
 ### Opret en målbar datatype
 
 1. Åbn **Indstillinger → Definitioner → Målbare ting**.
-2. Vælg tilføjelseshandlingen.
-3. Tilføj et navn, en valgfri beskrivelse og en kortfattet enhedsforkortelse.
-4. Vælg den standardaggregering, som diagrammer bruger.
-5. Beslut, om den skal være favorit eller privat, og gem så.
+2. Vælg **Opret målbar**.
+3. Tilføj et navn og en valgfri beskrivelse.
+4. Under **Registreres som** vælger du **Tal** for en værdi med en enhed eller
+   **Valg** for at vælge en af de valgmuligheder, du definerer – for eksempel
+   farverne i et væsketjek – når du registrerer.
+5. For et tal tilføjer du en kortfattet enhedsforkortelse og vælger den
+   standardaggregering, som diagrammer bruger. For et valg tilføjer du i
+   stedet dets **Valgmuligheder**.
+6. Beslut, om den skal være favorit eller privat, og gem så.
 
 <ManualScreenshot
   caseId="measurables/settings-detail"
-  alt="Editor for den målbare værdi Habitattryk med kPa og aggregeringen Dagligt gennemsnit"
+  alt="Editor for den målbare værdi Habitattryk registreret som Tal i kPa med aggregeringen Dagligt gennemsnit"
 />
 
 Vælg aggregering ud fra, hvad gentagne aflæsninger betyder:
@@ -179,7 +188,7 @@ vælger kalenderdatoen. **I dag** vender direkte tilbage til den aktuelle dato.
   alt="Observeret ved-kalender, der vælger fredag den 17. juli 2026 til sardinmålingen"
 />
 
-Rul til tidssektionen for at indstille time og minut. **Nu** gendanner det
+Rul til tidssektionen for at indstille time og minut. **nu** gendanner det
 aktuelle tidspunkt. Vælg **Færdig** for at vende tilbage til det stadig
 udfyldte måleudkast, og derefter **Gem** for at oprette journalposten.
 

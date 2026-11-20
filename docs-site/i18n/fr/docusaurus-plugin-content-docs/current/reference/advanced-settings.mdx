@@ -6,7 +6,11 @@ description: Contrôle les flags et la journalisation, exécute les outils de ma
 # Utiliser les paramètres avancés avec précaution
 
 Ouvre **Paramètres → Paramètres avancés** pour les contrôles avancés, les
-diagnostics et la maintenance. Ces pages modifient le fonctionnement de Lotti
+diagnostics et la maintenance. La page liste **Flags**, **GitHub**, **Langue**,
+**Domaines de journalisation**, **État du système**, **Maintenance**,
+**Métriques d'intégration** et **À propos de Lotti** ; sur iOS et Android,
+**Importation de données de santé** apparaît entre **État du système** et
+**Maintenance**. Ces pages modifient le fonctionnement de Lotti
 ou agissent directement sur des données locales ; la personnalisation ordinaire
 a donc sa place ailleurs dans les Paramètres.
 
@@ -16,7 +20,7 @@ mêmes contrôles et valeurs enregistrées sont utilisés dans les deux présent
 
 <ManualScreenshot
   caseId="advanced-settings/hub"
-  alt="Centre des paramètres avancés Lotti avec Flags, Langue, Journalisation, Maintenance, Métriques d’intégration et À propos de Lotti"
+  alt="Paramètres avancés de Lotti listant Flags, GitHub, Langue, Domaines de journalisation, État du système, Maintenance, Métriques d’intégration et À propos de Lotti"
   caption="Les paramètres avancés séparent les contrôles opérationnels des préférences quotidiennes. Certaines entrées varient selon la plateforme et les capacités activées."
 />
 
@@ -34,25 +38,26 @@ et **Aide → Manuel** sur macOS utilisent toutes deux ce réglage.
 
 <ManualScreenshot
   caseId="advanced-settings/flags"
-  alt="Page Flags de Lotti avec des interrupteurs recherchables pour les entrées privées, l’enregistrement de la localisation, les info-bulles et le streaming IA"
+  alt="Page Flags de Lotti avec un champ Rechercher des indicateurs et des interrupteurs regroupés sous Préférences, en commençant par les entrées privées, l’enregistrement de la localisation, les info-bulles et les évaluations de session, puis Avancé et expérimental"
   caption="La recherche porte sur le nom et la description des flags. Chaque interrupteur modifie immédiatement le réglage enregistré."
 />
 
-Les **flags** servent d’interrupteurs pour les fonctionnalités. Ils contrôlent :
+Les **flags** servent d’interrupteurs pour les fonctionnalités. Les lignes sont
+réparties entre **Préférences**, ce que tu peux raisonnablement modifier, et
+**Avancé et expérimental**, qui relève du diagnostic et du travail en cours.
 
-- la visibilité des entrées privées, la capture de position
-  et les info-bulles ;
-- le streaming des réponses IA et la lecture des résumés ;
-- le compagnon et son chat (voir [Parle à ton compagnon](../getting-started/companion.mdx)) ;
-- la journalisation et le comportement de synchronisation Matrix ;
-- les annonces Quoi de neuf et les évaluations de session ;
-- les embeddings et la recherche vectorielle ;
-- l’activité de synchronisation, les activations d’agents en attente et la
-  réparation de bifurcations.
+- **Préférences :** la visibilité des entrées privées, la capture de position,
+  les info-bulles, les évaluations de session, Quoi de neuf, le streaming des
+  réponses IA, la lecture des résumés IA et la synchronisation Matrix.
+- **Avancé et expérimental :** le chat de tâche expérimental, le compagnon et
+  son chat (voir [Parle à ton compagnon](../getting-started/companion.mdx)),
+  les embeddings, la synchronisation des embeddings et la recherche
+  vectorielle, la visite guidée de Daily OS, la réparation de bifurcations des
+  agents, le processus de synchronisation en arrière-plan, la journalisation
+  et le renvoi des pièces jointes en échec.
 
-Les lignes sont réparties entre **Préférences**, ce que tu peux
-raisonnablement modifier, et **Avancé et expérimental**, qui relève du
-diagnostic et du travail en cours. Les sections entières comme Habitudes,
+Les interrupteurs de notification se trouvent dans **Paramètres →
+Notifications**. Les sections entières comme Habitudes,
 Projets ou Daily OS ne sont plus ici : elles se trouvent dans
 [Sections](./settings.mdx).
 
@@ -71,15 +76,17 @@ supprime ni ne modifie le niveau de confidentialité d’une entrée.
 
 <ManualScreenshot
   caseId="advanced-settings/logging"
-  alt="Paramètres de journalisation Lotti avec un interrupteur maître, des domaines opérationnels individuels et la journalisation des requêtes lentes"
+  alt="Page Domaines de journalisation de Lotti avec l’interrupteur maître Activer la journalisation au-dessus d’interrupteurs par domaine comme Synchronisation, IA, Chat, Voix et audio, Base de données et Tâches et listes"
   caption="L’interrupteur maître contrôle les domaines individuels. Le jeu de données Project Waddle laisse la synchronisation, l’IA et les tâches activées pour des diagnostics ciblés."
 />
 
-La **journalisation** commence avec **Activer la journalisation**. Lorsqu’il est
-actif, n’active que les domaines nécessaires à ton enquête : synchronisation,
-IA, tâches, étiquettes, santé, habitudes, navigation, notifications ou Daily OS.
-**Requêtes lentes de la base** ajoute des diagnostics de performance de la
-base de données.
+**Domaines de journalisation** commence avec l’interrupteur global **Activer la
+journalisation**. Lorsqu’il est actif, n’active que les domaines nécessaires à
+ton enquête — parmi eux **Synchronisation**, **IA**, **Chat**, **Voix et
+audio**, **Base de données**, **Exécution des agents**, **Tâches et listes**,
+**Étiquettes**, **Santé**, **Habitudes**, **Navigation**, **Notifications** et
+**Daily OS**. **Requêtes lentes de la base** écrit les requêtes lentes de la
+base de données dans leur propre journal quotidien `slow_queries-*.log`.
 
 Désactiver l’interrupteur maître désactive les contrôles par domaine. Les erreurs
 continuent d’être écrites dans le journal quotidien `error-*.log` ; ces
@@ -113,11 +120,24 @@ sont listés sous **Rapports précédents**, et le rapport affiché indique
 toujours la période analysée et le moment de sa génération. Sans modèle, ou si l'appel au modèle échoue, tu obtiens
 tout de même le résumé.
 
+## Connecter GitHub
+
+**GitHub** contient le jeton d’accès personnel en lecture seule que Lotti
+utilise pour lire les pull requests que tu lies à des tâches. **Créer un jeton
+sur GitHub** ouvre le formulaire de jeton de GitHub avec les permissions déjà
+remplies ; choisis tes dépôts, colle le jeton dans **Jeton d'accès personnel**
+et sélectionne **Connecter**. La page indique ensuite quel compte est connecté
+et propose **Déconnecter**. Le jeton est synchronisé avec chiffrement de bout
+en bout vers tes autres appareils et n’est utilisé que pour les requêtes vers
+api.github.com. Une fois connecté, le compagnon peut aussi répondre aux
+questions sur tes pull requests. Consulte [Connecter GitHub](./github.mdx)
+pour suivre les pull requests sur les tâches et voir ce que l’IA en fait.
+
 ## Exécuter les actions de maintenance délibérément
 
 <ManualScreenshot
   caseId="advanced-settings/maintenance"
-  alt="Page Maintenance Lotti avec aperçus d’intégration, actions de réinitialisation, suppression de base de données, purge, index de recherche, embeddings et diagnostic de repeint"
+  alt="Page Maintenance Lotti avec aperçus d’intégration, actions de réinitialisation, vérification de l’intégrité de la base de données, suppression de base de données, purge, index de texte intégral, réparation du stockage des captures d’écran, embeddings et l’interrupteur de superposition arc-en-ciel de repeint"
   caption="La maintenance combine aperçus sûrs, actions destructives et diagnostics. Lis la confirmation et la portée avant de continuer."
 />
 
@@ -129,6 +149,8 @@ La **maintenance** contient plusieurs types d’actions :
   de nouveau éligibles à l’affichage.
 - **Réinitialiser le dialogue de configuration Gemini** annule sa
   fermeture afin de pouvoir tester à nouveau l’invite du fournisseur.
+- **Vérifier l'intégrité de la base de données** vérifie que les fichiers de
+  la base de données sont sains.
 - **Supprimer la base de données des brouillons** supprime les brouillons de
   l’éditeur.
 - **Supprimer la base de données des agents** supprime cette base et quitte
@@ -137,6 +159,9 @@ La **maintenance** contient plusieurs types d’actions :
   supprimés logiquement à travers un flux de confirmation dédié.
 - **Recréer l’index de texte intégral** reconstruit les données de recherche
   locales sans recréer les entrées du journal.
+- **Réparer le stockage des captures d’écran** déplace les captures d’écran
+  enregistrées par d’anciennes versions dans le bon dossier, afin que l’analyse
+  d’images par l’IA puisse les lire.
 - **Générer les embeddings** apparaît lorsque le stockage d’embeddings est
   disponible et remplit les catégories sélectionnées.
 - **Superposition arc-en-ciel de repeint** fait clignoter les régions repeintes

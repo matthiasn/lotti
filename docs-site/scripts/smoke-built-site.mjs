@@ -86,14 +86,14 @@ const localeExpectations = {
     openViewer: 'Deschideți vizualizatorul capturilor de ecran',
   },
   pt: {
-    allScreenshots: 'Todas as capturas de tela',
+    allScreenshots: 'Todas as capturas de ecrã',
     desktop: 'Computador',
-    firstTaskTitle: 'Crie sua primeira tarefa',
-    layoutLabel: 'Layout das capturas de tela para todas as imagens',
-    mobile: 'Celular',
-    openViewer: 'Abrir visualizador de capturas de tela',
+    firstTaskTitle: 'Cria a tua primeira tarefa',
+    layoutLabel: 'Disposição das capturas de ecrã para todas as imagens',
+    mobile: 'Telemóvel',
+    openViewer: 'Abrir visualizador de capturas de ecrã',
     translationDisclosure:
-      'Esta tradução foi gerada automaticamente e ainda não foi revisada.',
+      'Esta tradução foi gerada automaticamente e ainda não foi revista.',
   },
   sv: {
     allScreenshots: 'Alla skärmdumpar',

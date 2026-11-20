@@ -28,6 +28,14 @@ provider en bekijk vervolgens de modellen en profielen die eromheen zijn gemaakt
 - Een aangepaste basis-URL kan een ondersteund providertype naar een compatibele proxy
   of gateway laten wijzen. Het providertype bepaalt nog steeds het protocolspecifieke gedrag.
 
+Lotti spreekt deze providertypen aan: **Mistral**, **Melious.ai**, **Google
+Gemini**, **Alibaba Cloud (Qwen)**, **OpenAI**, **Anthropic Claude**,
+**OpenRouter**, **Nebius AI Studio**, **ElevenLabs**, elk **OpenAI
+Compatible**-eindpunt, en de lokale **Ollama**, **oMLX (lokaal)**,
+**Voxtral (lokaal)**, **Whisper (lokaal)** en **sherpa-onnx (op dit apparaat)**.
+Twijfel je, begin dan met Mistral — de aanbevolen standaard, gemarkeerd met
+**AANBEVOLEN** wanneer je een provider kiest.
+
 ## Sluit een provider aan
 
 1. Open **Instellingen → AI-instellingen → Aanbieders**.
@@ -59,7 +67,10 @@ kun je de verbinding bewerken, een ander model toevoegen of de provider verwijde
 
 Het wijzigen van een basis-URL of API-sleutel is van invloed op elk model dat aan die
 provider is gekoppeld. Verifieer na het wijzigen van een van beide waarden een
-representatieve AI-actie voordat je ervan uitgaat dat de verbinding gezond is. Het
+representatieve AI-actie voordat je ervan uitgaat dat de verbinding gezond is. Mislukt een aanroep
+omdat het provideraccount geen tegoed meer heeft, dan meldt Lotti **Tegoed op**, citeert
+het de eigen melding van de provider en stelt het voor om het account op te waarderen of
+een model van een andere provider te kiezen. Het
 verwijderen van een provider kan ook profielen raken die werk via zijn modellen
 routeren; bekijk eerst de afhankelijkheidsinformatie.
 

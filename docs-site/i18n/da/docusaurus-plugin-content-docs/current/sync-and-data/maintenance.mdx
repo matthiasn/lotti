@@ -13,7 +13,7 @@ du ikke kan genskabe.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lottis synkroniseringsvedligeholdelse med Slet synkroniseringsdatabase, Synkroniser målbare ting, dashboards, vaner, kategorier, AI-indstillinger, Beskedhistorik, Udfyld synkroniseringssekvenslogen og Rens gamle udsendte udbakke-varer"
+  alt="Lottis synkroniseringsvedligeholdelse med Slet synkroniseringsdatabase, Synkroniser målbare ting, dashboards, vaner, kategorier, AI-indstillinger, Beskedhistorik, Udfyld synkroniseringssekvenslogen, Dyb tilbagefyldning og Rens gamle udsendte udbakke-varer"
   caption="Vedligeholdelse samler destruktive, gentagende og oprydende handlinger på én side. Bekræftelsesteksten afgrænser hver handlings omfang."
 />
 
@@ -33,17 +33,21 @@ du ikke kan genskabe.
 - **Udfyld synkroniseringssekvenslogen** indekserer eksisterende poster, så
   tilbagefyldningen også kan svare på anmodninger om poster, der blev oprettet,
   før sekvenssporingen fandtes.
+- **Dyb tilbagefyldning** sender en liste over alle poster på denne enhed,
+  sletninger medregnet, til dine andre enheder. Hver af dem beder om det, den
+  mangler, og sender det tilbage, som denne enhed mangler. Dine andre enheder
+  skal være online for at svare; bekræft med **Ja, start**.
 - **Rens gamle udsendte udbakke-varer** sletter sendte rækker i udbakken, der er
   ældre end 7 dage, og frigør diskplads. Elementer, der venter eller er
   mislykkedes, bevares.
 
 Start med den mindste handling, der passer til symptomet. En vedhæftning, der
 sidder fast, hører til i [udbakken](./sync.mdx#inspicer-outboxen), vedvarende
-huller i sekvensen hører til Backfill-synkronisering, og to gyldige samtidige
+huller i sekvensen hører til i **Synkroniseringstilstand**, og to gyldige samtidige
 redigeringer hører til [konflikterne](./conflicts.mdx). At slette
 synkroniseringsdatabasen bør være en lokal nulstilling som sidste udvej, udført
 med en kendt pålidelig enhed og en sikkerhedskopi ved hånden.
 
 Gå efter en reparation tilbage til **Matrixstatistikker**, tjek at anvendt
 arbejde bevæger sig fremad og køen tømmes, og at udbakken og antallet af
-manglende poster i tilbagefyldningen falder til ro.
+manglende poster i **Synkroniseringstilstand** falder til ro.

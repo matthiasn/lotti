@@ -26,7 +26,7 @@ dat de synchronisatiedienst nog niet heeft bereikt.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Lotti-synchronisatie-instellingen met Apparaten, Dit apparaat, Synchronisatie van backfill, Matrix Stats, Synchronisatie-uitbox, Conflicten synchroniseren en Onderhoud"
+  alt="Lotti-synchronisatie-instellingen met Apparaten, Dit apparaat, Synchronisatiestatus, Matrix Stats, Synchronisatie-uitbox, Conflicten synchroniseren en Onderhoud"
   caption="De synchronisatie-instellingen houden de dagelijkse status naast de diagnose- en hersteltools. Project Waddle heeft nu drie items in de uitbox om te bekijken."
 />
 
@@ -129,23 +129,25 @@ AI-profiel moet nog steeds zo zijn ingesteld dat het ze gebruikt.
 ## Begrijp inhalen en backfill
 
 Gewone synchronisatie verwerkt wijzigingen zodra ze binnenkomen.
-**Synchronisatie van backfill** spoort gaten op in de reeks die van bekende
+**Synchronisatiestatus** spoort gaten op in de reeks die van bekende
 apparaten is ontvangen en vraagt ontbrekende records opnieuw op.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Lotti-pagina Synchronisatie van backfill met de tellers voor inkomende wachtrij, ontbrekend en overgeslagen, synchronisatiestatistieken, automatische backfill en geavanceerd herstel"
-  caption="Project Waddle heeft 2.868 sequentierecords ontvangen en kent nu vier ontbrekende records verdeeld over twee apparaat-ID's."
+  alt="Lotti-pagina Synchronisatiestatus met records op dit apparaat, de tellers voor inkomende wachtrij en ontbrekend, synchronisatiestatistieken, automatische backfill en geavanceerd herstel"
+  caption="Project Waddle houdt 2.868 sequentietellers bij, heeft er 2.775 van ontvangen en kent nu vier ontbrekende records verdeeld over twee apparaat-ID's."
 />
 
+- **Records op dit apparaat** telt wat dit apparaat bevat, verwijderingen
+  inbegrepen. Apparaten die synchroon zijn, tonen hier dezelfde getallen.
 - **Inkomende wachtrij** is werk dat wacht om te worden toegepast.
 - **Ontbrekend** is het aantal bekende gaten in de reeks.
-- **Overgeslagen** is werk dat de inkomende wachtrij heeft opgegeven omdat het
-  niet normaal verwerkt kon worden.
+- **Overgeslagen**, in **Synchronisatiestatistieken**, is werk dat de inkomende
+  wachtrij heeft opgegeven omdat het niet normaal verwerkt kon worden.
 - **Automatische backfill** vraagt ontbrekende items van de afgelopen 24 uur op
   en is de juiste standaard voor dagelijks gebruik.
 - **Geavanceerd herstel** bevat handmatige acties voor een onderzoek, zoals
-  **Inhalen nu** en het opvragen van oudere ontbrekende items. Gebruik het pas
+  **Nu inhalen** en het opvragen van oudere ontbrekende items. Gebruik het pas
   als gewone synchronisatie en automatische backfill tijd hebben gehad om tot
   rust te komen.
 
@@ -193,7 +195,7 @@ worden.
 
 Filter de lijst op status:
 
-- **Wachten** toont items die op hun beurt wachten en items die nu worden
+- **Wachtend** toont items die op hun beurt wachten en items die nu worden
   verzonden.
 - **Fout** toont items die ook na de automatische nieuwe pogingen niet
   verzonden konden worden. Ze blijven op dit apparaat opgeslagen, maar worden

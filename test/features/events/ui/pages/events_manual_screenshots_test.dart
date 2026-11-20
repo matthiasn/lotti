@@ -719,12 +719,22 @@ void main() {
     });
   }
 
+  // Every scenario runs under the demo clock, not only its first pump: the
+  // overview splits Upcoming from past on each build, and a search or filter
+  // rebuild outside the zone would fall back to the capture day.
+  void pinnedTestWidgets(String description, WidgetTesterCallback callback) =>
+      testWidgets(
+        description,
+        (tester) =>
+            withClock(Clock.fixed(manualDemoNow), () => callback(tester)),
+      );
+
   for (final device in [proDevice, desktopDevice]) {
     final viewport = device.isPhone ? 'mobile' : 'desktop';
     for (final brightness in [Brightness.light, Brightness.dark]) {
       final theme = brightness.name;
 
-      testWidgets('$viewport events overview — $theme', (tester) async {
+      pinnedTestWidgets('$viewport events overview — $theme', (tester) async {
         await pumpSurface(
           tester,
           device: device,
@@ -755,7 +765,7 @@ void main() {
         );
       });
 
-      testWidgets('$viewport events search — $theme', (tester) async {
+      pinnedTestWidgets('$viewport events search — $theme', (tester) async {
         await pumpSurface(
           tester,
           device: device,
@@ -805,7 +815,7 @@ void main() {
         );
       });
 
-      testWidgets('$viewport events filtered — $theme', (tester) async {
+      pinnedTestWidgets('$viewport events filtered — $theme', (tester) async {
         await pumpSurface(
           tester,
           device: device,
@@ -828,7 +838,9 @@ void main() {
         );
       });
 
-      testWidgets('$viewport events filter modal — $theme', (tester) async {
+      pinnedTestWidgets('$viewport events filter modal — $theme', (
+        tester,
+      ) async {
         await pumpSurface(
           tester,
           device: device,
@@ -846,7 +858,7 @@ void main() {
         );
       });
 
-      testWidgets('$viewport event detail — $theme', (tester) async {
+      pinnedTestWidgets('$viewport event detail — $theme', (tester) async {
         await pumpSurface(
           tester,
           device: device,
@@ -886,7 +898,7 @@ void main() {
         );
       });
 
-      testWidgets('$viewport event timeline — $theme', (tester) async {
+      pinnedTestWidgets('$viewport event timeline — $theme', (tester) async {
         await pumpSurface(
           tester,
           device: device,
@@ -899,13 +911,24 @@ void main() {
           of: detail,
           matching: find.byType(Scrollable),
         );
+        // On a phone the linked tasks follow the timeline, so scrolling to a
+        // task title lands on the timeline rows. On desktop the tasks sit in
+        // the right rail and are already on screen; scroll the main column to
+        // the last timeline row's caption instead so the rows are in view.
         await tester.scrollUntilVisible(
-          find.text(
-            _t(
-              'Recalibrate the zero-gravity fish feeder',
-              'Schwerelosen Fischfütterer neu kalibrieren',
-            ),
-          ),
+          device.isPhone
+              ? find.text(
+                  _t(
+                    'Recalibrate the zero-gravity fish feeder',
+                    'Schwerelosen Fischfütterer neu kalibrieren',
+                  ),
+                )
+              : find.text(
+                  _t(
+                    'Frosted cargo pods stacked in the docking bay.',
+                    'Bereifte Frachtkapseln, gestapelt in der Andockbucht.',
+                  ),
+                ),
           360,
           scrollable: scrollable.first,
         );
@@ -950,7 +973,9 @@ void main() {
       });
 
       if (brightness == Brightness.light) {
-        testWidgets('$viewport event photo analysis — light', (tester) async {
+        pinnedTestWidgets('$viewport event photo analysis — light', (
+          tester,
+        ) async {
           await pumpSurface(
             tester,
             device: device,
@@ -986,7 +1011,7 @@ void main() {
       }
 
       if (device.isPhone && brightness == Brightness.light) {
-        testWidgets('mobile event photo viewer — light', (tester) async {
+        pinnedTestWidgets('mobile event photo viewer — light', (tester) async {
           await pumpSurface(
             tester,
             device: device,

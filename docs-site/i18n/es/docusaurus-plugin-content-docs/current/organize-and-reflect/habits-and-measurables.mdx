@@ -20,7 +20,8 @@ La página Hábitos organiza las definiciones activas entre lo que corresponde h
 
 ### Crear y editar hábitos
 
-1. Abre **Hábitos** y pulsa **+**. Para cambiar un hábito existente, mantenlo
+1. Abre **Hábitos** y pulsa **+**; en un teléfono está en el lanzador de
+   navegación. Para cambiar un hábito existente, mantenlo
    pulsado o abre su hoja de registro y pulsa el lápiz. **Ajustes →
    Definiciones → Hábitos** sigue listando todas las definiciones y abre el
    mismo editor.
@@ -39,7 +40,7 @@ La página Hábitos organiza las definiciones activas entre lo que corresponde h
 
 <ManualScreenshot
   caseId="habits/editor-step2"
-  alt="Nuevo hábito, paso 2 de 2: ¿Cómo sabemos que está hecho? con la fila manual, una señal de Pasos en diario al menos 6.000, Añadir una señal y la sección Ajustes"
+  alt="Nuevo hábito, paso 2 de 2: ¿Cómo sabemos que está hecho? con la fila manual, una señal de Pasos fijada en diario ≥ 6.000 comparada con Hoy, Añadir una señal, el interruptor Avisar al completarse automáticamente y la sección Ajustes"
 />
 
 ### Dejar que los datos registrados marquen un hábito
@@ -57,12 +58,16 @@ mano. **Añadir una señal** ofrece tres tipos:
   (cualquier sesión, o duración, distancia o energía al menos / como máximo un
   valor).
 
+Un umbral se puede comparar con el valor de **Hoy**, con la **Media de 7
+días** o con **Cualquiera** de los dos.
+
 Con dos o más señales, **Cuándo cuenta el hábito como hecho** decide si lo
 completa **cualquier** señal, **todas** las señales o **al menos N** de ellas.
 Cuando los datos del día cumplen la regla, el hábito se marca por ti, aparece
 como **auto** en la página de Hábitos con la señal y la hora, y se anuncia con
 una notificación: los hábitos completados con pocos segundos de diferencia se agrupan en una, cada hábito se anuncia como máximo una vez al día, y **Avisar al
-completarse automáticamente** la desactiva por hábito. Lo que registres tú, incluso una omisión, siempre prevalece
+completarse automáticamente**, al pie de la tarjeta de señales y visible en
+cuanto el hábito tiene una señal, la desactiva por hábito. Lo que registres tú, incluso una omisión, siempre prevalece
 sobre el marcado automático.
 
 ### Los ajustes del editor
@@ -75,12 +80,12 @@ sobre el marcado automático.
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Página Editar hábito de Pasar lista a los pingüinos emperador con la tarjeta de señales, la sección Ajustes y las opciones favorito, privado y activo"
+  alt="Página Editar hábito de Pasar lista a los pingüinos emperador con su nombre, su descripción, la tarjeta ¿Cómo sabemos que está hecho? y la sección Ajustes"
 />
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="La sección Ajustes del editor con categoría, fecha de inicio, mostrar desde, hora de aviso y el interruptor de avisar al completarse automáticamente"
+  alt="Página Editar hábito de Pasar lista a los pingüinos emperador con la sección Ajustes —categoría, fecha de inicio, mostrar desde y mostrar alerta a las— y Opciones con Favorito, Privado y Activo, y después Eliminar"
 />
 
 - **Categoría** para filtrar y dar contexto visual.
@@ -88,7 +93,6 @@ sobre el marcado automático.
   **muestra** y cuándo Lotti debe **mostrar un aviso**. El modelo de datos
   también entiende planes semanales y mensuales; el editor expone estos
   controles horarios para hábitos diarios.
-- **Avisar al completarse automáticamente** (activado por defecto).
 - Al editar: **Favorito** para más relevancia, **Privado** para ocultarlo salvo
   que se muestren las entradas privadas, **Activo** para controlar si aparece
   en la página de Hábitos sin borrar su historial, y **Eliminar**.
@@ -104,12 +108,12 @@ preseleccionado y aún puedes añadir un comentario antes de **Registrar**. Bajo
 las señales, el formulario admite tres resultados:
 
 - **Éxito**: el comportamiento ocurrió.
-- **Fallado**: era esperado y posible, pero no ocurrió.
-- **Saltar**: ese día no aplicaba razonablemente.
+- **No hecho**: era esperado y posible, pero no ocurrió.
+- **Omitir**: ese día no aplicaba razonablemente.
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Hoja de registro para inspeccionar los sellos del hábitat, con las filas de señal Raciones de krill y Pasos, chips de registro rápido, gráficas y los resultados Éxito, Saltar y Fallado"
+  alt="Hoja de registro para inspeccionar los sellos del hábitat, con las filas de señal Raciones de krill, Control de hidratación y Pasos, chips de registro rápido, gráficas y los resultados Éxito, Omitir y No hecho"
 />
 
 Elige el estado que conserve la realidad. Un historial sincero es más útil que
@@ -118,24 +122,29 @@ posteriores pueden reconstruir el resultado efectivo de cada hábito y día.
 
 ## Trabaja con mediciones
 
-Una definición de medición describe el número antes de registrarlo: su nombre, unidad, privacidad y cómo se combinan varias observaciones en los gráficos.
+Una definición de medición describe el valor antes de registrarlo: su nombre, si es un número o una opción, la unidad, la privacidad y cómo se combinan varias observaciones en los gráficos.
 
 <ManualScreenshot
   caseId="measurables/settings-list"
-  alt="Ajustes de mediciones con Presión del hábitat, Pingüinos contabilizados y Sardinas consumidas"
+  alt="Ajustes de mediciones con Presión del hábitat, Control de hidratación, Pingüinos contabilizados y Sardinas consumidas"
 />
 
 ### Crea un valor medible
 
 1. Abre **Ajustes → Definiciones → Valores medibles**.
-2. Selecciona la acción de añadir.
-3. Añade un nombre, descripción opcional y abreviatura de unidad concisa.
-4. Elige la agregación predeterminada que usarán los gráficos.
-5. Decide si debe ser favorito o privado y guarda.
+2. Selecciona **Crear valor medible**.
+3. Añade un nombre y una descripción opcional.
+4. En **Se registra como**, elige **Número** para un valor con unidad, u
+   **Opción** para elegir al registrar una de las opciones que definas, como
+   los colores de un control de hidratación.
+5. Para un número, añade una abreviatura de unidad concisa y elige la
+   agregación predeterminada que usarán los gráficos. Para una opción, añade en
+   su lugar sus **Opciones de respuesta**.
+6. Decide si debe ser favorito o privado y guarda.
 
 <ManualScreenshot
   caseId="measurables/settings-detail"
-  alt="Editor de la medición Presión del hábitat que usa kPa y agregación Promedio diario"
+  alt="Editor de la medición Presión del hábitat registrada como Número en kPa con agregación Promedio diario"
 />
 
 Elige la agregación según lo que signifiquen las lecturas repetidas:

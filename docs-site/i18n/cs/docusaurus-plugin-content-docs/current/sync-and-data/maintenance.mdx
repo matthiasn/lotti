@@ -12,7 +12,7 @@ aktuální zálohu dat, která nedokážeš znovu vytvořit.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Údržba synchronizace v Lotti se Smazat synchronizační databázi, Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie, AI nastavení, Historie zpráv, Naplnit protokol synchronizační sekvence a Vyčistit staré odeslané položky odchozí pošty"
+  alt="Údržba synchronizace v Lotti se Smazat synchronizační databázi, Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie, AI nastavení, Historie zpráv, Naplnit protokol synchronizační sekvence, Hloubkové doplnění a Vyčistit staré odeslané položky odchozí pošty"
   caption="Údržba sdružuje na jedné stránce destruktivní, opakovací a úklidové akce. Text potvrzení vymezuje rozsah každé operace."
 />
 
@@ -31,16 +31,20 @@ aktuální zálohu dat, která nedokážeš znovu vytvořit.
 - **Naplnit protokol synchronizační sekvence** zaindexuje existující záznamy,
   aby doplňování dokázalo odpovídat i na žádosti o záznamy vytvořené dřív, než
   existovalo sledování posloupnosti.
+- **Hloubkové doplnění** pošle tvým ostatním zařízením seznam všech záznamů na
+  tomto zařízení, včetně smazaných. Každé z nich si vyžádá, co mu chybí, a pošle
+  zpět, co chybí tomuto zařízení. Tvoje ostatní zařízení musí být online, aby
+  mohla odpovědět; potvrď volbou **Ano, spustit**.
 - **Vyčistit staré odeslané položky odchozí pošty** smaže už odeslané řádky
   odchozí fronty starší než 7 dní a uvolní místo na disku. Čekající a neúspěšné
   položky zůstanou zachované.
 
 Začni nejmenší operací, která odpovídá příznaku. Zaseknutá příloha patří do
 [odchozí fronty](./sync.mdx#kontroluj-odchozí-frontu), trvalé mezery v
-posloupnosti do Synchronizace doplnění a dvě platné souběžné úpravy do
+posloupnosti na stránku **Stav synchronizace** a dvě platné souběžné úpravy do
 [konfliktů](./conflicts.mdx). Smazání synchronizační databáze by mělo být
 místním resetem až v krajním případě, s ověřeným protějškem a zálohou po ruce.
 
 Po opravě se vrať do **Statistiky Matrix**, ověř, že aplikovaná práce postupuje a
 fronta se vyprazdňuje, a že se odchozí fronta i počet chybějících záznamů
-v doplňování ustálí.
+na stránce **Stav synchronizace** ustálí.

@@ -9,20 +9,22 @@ Los proyectos se sitúan entre las categorías y las tareas. Una categoría como
 
 <ManualScreenshot
   caseId="projects/list"
-  alt="Proyectos agrupados bajo Operaciones de pingüinos, Control de misión, Diplomacia de los peces y Mantenimiento humano, incluidos Project Waddle y la cadena de frío de sardinas de Europa"
+  alt="Lista de proyectos en el ámbito Actuales, agrupada bajo Operaciones de pingüinos, Control de misión y Diplomacia de los peces, con Project Waddle, la cadena de frío de sardinas de Europa y el tratado de pasajeros pingüinos"
   caption="Cada fila combina el estado, el avance de las tareas, la fecha objetivo y una breve declaración de propósito. El escritorio reserva espacio a la derecha para un proyecto seleccionado; el móvil usa todo el ancho para la lista."
 />
 
 ## Encuentra el proyecto que necesitas
 
-La búsqueda coincide con títulos de proyectos, texto de proyecto almacenado y nombres de categorías. El control de filtro limita la lista por estado o categoría del proyecto. Un filtro permanece inactivo hasta que selecciones **Aplicar**.
+La búsqueda coincide con títulos de proyectos, texto de proyecto almacenado y nombres de categorías. Bajo el campo de búsqueda, **Actuales** oculta los proyectos completados y archivados; **Todos** los vuelve a mostrar. **Ordenar proyectos** ordena la lista por **Requiere atención**, **Fecha objetivo**, **Actualizados recientemente** o **Nombre**.
+
+El botón de filtro limita la lista por **Estado** o **Categoría**. Dos interruptores añaden más: **Solo resúmenes desactualizados** conserva los proyectos cuyo resumen del agente está atrasado, y **Mostrar perfil de inferencia** etiqueta cada proyecto que tiene un agente con el nombre de su perfil de inferencia. Un filtro permanece inactivo hasta que selecciones **Aplicar**.
 
 <ManualScreenshot
   caseId="projects/filters"
-  alt="Diálogo de filtro de proyectos con controles de estado y categoría sobre la lista de proyectos de Intergalactic Penguin Logistics"
+  alt="Diálogo Filtrar proyectos con las filas Estado y Categoría, los interruptores Solo resúmenes desactualizados y Mostrar perfil de inferencia, y Borrar y Aplicar, sobre la lista de proyectos"
 />
 
-Los proyectos permanecen agrupados por categoría después de filtrar. Así es más fácil distinguir iniciativas con nombres similares y cada área operativa sigue visible.
+Los proyectos permanecen agrupados por categoría después de filtrar. Así es más fácil distinguir iniciativas con nombres similares y cada área operativa sigue visible. Cada encabezado de categoría se puede contraer, y su botón de mapa abre **Explorar categoría**: los proyectos de la categoría como un barrio que puedes recorrer.
 
 ## Crea un proyecto
 
@@ -69,20 +71,25 @@ Selecciona la píldora de estado en la página de detalle del proyecto para camb
 
 <ManualScreenshot
   caseId="projects/detail"
-  alt="Detalle de Project Waddle con una puntuación de salud de 82, cinco de ocho tareas completadas, un bloqueo y un informe de IA actualizado hace dos horas"
+  alt="Detalle de Project Waddle con estado Activo y fecha objetivo, su descripción, una tarjeta de resumen de IA valorada En marcha con un 91 % de confianza y una tarea bloqueada, y la lista Tareas del proyecto encabezada por el comedero de peces en gravedad cero bloqueado"
   caption="El escritorio mantiene la lista de proyectos y el detalle uno junto a otro. El móvil abre el mismo detalle como una página completa."
 />
 
-El panel de salud resume la evaluación actual del agente del proyecto:
+La tarjeta **Resumen de IA** reúne la evaluación y el informe:
 
-- la puntuación de salud es una señal compacta, no un sustituto del trabajo subyacente;
-- el progreso de tareas muestra los recuentos de completadas y bloqueadas;
-- el informe ofrece un resumen actual y puede ampliarse para ver su contenido completo; y
-- las recomendaciones llaman la atención sobre los siguientes pasos concretos.
+- **Salud del proyecto** resume la evaluación del agente, con la explicación y la confianza cuando están disponibles, y cuántas tareas están bloqueadas;
+- el informe ofrece un resumen actual, y **Leer más** lo amplía hasta su contenido completo; y
+- los siguientes pasos y los cambios propuestos llaman la atención sobre acciones concretas.
 
-En Project Waddle, una puntuación de 82 y cinco tareas completadas son alentadoras, pero el comedero de peces en gravedad cero sigue bloqueando el lanzamiento. Lee la explicación antes de tratar una puntuación como un veredicto.
+En Project Waddle, una evaluación En marcha es alentadora, pero el comedero de peces en gravedad cero sigue bloqueando el lanzamiento. Lee la explicación antes de tratar la banda como un veredicto.
 
-Cuando hay configurado un agente de proyecto, el menú del informe puede solicitar un informe nuevo o cancelar una ejecución programada. Sin agente, el proyecto sigue mostrando sus tareas y cualquier texto de proyecto almacenado.
+La tarjeta en sí solo conserva **Abrir interior del agente**, y **Actualizar ahora** mientras el resumen está desactualizado. La configuración del modelo, las actualizaciones automáticas y la frecuencia con la que se actualiza el agente están en el interior del agente. Sin agente, la tarjeta ofrece **Asignar agente** y el detalle sigue mostrando las tareas y la descripción del proyecto.
+
+**Explorar proyecto**, junto al menú del proyecto, abre el proyecto como un barrio que puedes recorrer, con un edificio por cada tarea.
+
+## Añade notas, grabaciones e imágenes a un proyecto
+
+Una barra a lo largo del borde inferior de la página del proyecto añade contenido directamente al proyecto: **Grabar una nota de voz**, escribir una nota, importar una imagen o el más para el menú **Añadir** con el resto. En una pantalla estrecha, los botones de nota e imagen dejan paso al más. Todo lo que se añade ahí queda vinculado al proyecto, aparece en su cronología y lo lee su agente.
 
 ## Mantén el trabajo del proyecto en tareas
 
@@ -93,7 +100,7 @@ Cuando hay configurado un agente de proyecto, el menú del informe puede solicit
 
 Las filas de tareas del proyecto muestran el título de cada tarea, un resumen breve, la estimación y el estado actual. Selecciona una fila para abrir la tarea. Los detalles de la tarea siguen siendo la referencia principal para las descripciones, grabaciones, listas de verificación, imágenes, registros de tiempo e ilustración de portada.
 
-Asigna una tarea a un proyecto desde el control de proyecto en el encabezado de la tarea. Los proyectos tienen ámbito de categoría, así que asigna primero una categoría a la tarea antes de elegir un proyecto. Una tarea pertenece como máximo a un proyecto a la vez; asignar otro proyecto mueve el vínculo en lugar de duplicarlo.
+Asigna una tarea a un proyecto desde el control de proyecto en el encabezado de la tarea. Los proyectos tienen ámbito de categoría, así que asigna primero una categoría a la tarea antes de elegir un proyecto. El agente de la tarea también puede proponerlo: menciona el proyecto en las notas de la tarea o en una grabación, y el agente sugiere mover la tarea a él o, si la categoría no tiene ningún proyecto con ese nombre, crear el proyecto con la tarea dentro. No cambia nada hasta que lo confirmes. Una tarea pertenece como máximo a un proyecto a la vez; asignar otro proyecto mueve el vínculo en lugar de duplicarlo.
 
 ## Proyectos, categorías y tareas
 

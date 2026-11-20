@@ -56,13 +56,25 @@ udvider planlæggerens kontekst og gør det daglige ritual mere støjende.
 
 ## Tilføj kategorispecifik automatiseringskontekst
 
-En kategori kan give standardindstillinger for nye opgaver: en inferensprofil
-og en agentskabelon. Det er standarder, ikke permanente låse; valg på
-opgaveniveau kan stadig ændres senere.
+Under **AI-standardindstillinger** kan en kategori give standardindstillinger
+for nye opgaver: en inferensprofil og en agentskabelon. Det er standarder, ikke
+permanente låse; valg på opgaveniveau kan stadig ændres senere.
+
+- **Automatisk inferens** lader Lotti transskribere ny lyd, analysere nye
+  billeder og opsummere pull requests i denne kategori, uden at du beder om
+  det. Den vises, så snart kategoriens profil kan gøre en af disse ting, og
+  forbliver synlig, mens den er slået til.
+- Med en agentskabelon valgt afgør **Væk assistenten automatisk**, om nye
+  opgaveagenter opdaterer sig selv, når en opgave ændres, og
+  **Opdateringsrytme** angiver, hvor ofte de gør det.
+
+**Viden om kategorien** er det, som enhver AI-prompt for opgaver i denne
+kategori bør vide – hvad den handler om, hvor koden ligger, konventioner,
+faldgruber. Den indsættes ordret i prompten, op til 4.000 tegn.
 
 <ManualScreenshot
   caseId="categories/automation"
-  alt="Avancerede indstillinger for Penguin-operationer med kategorividen og indlærte tjeklisterettelser for Sir Flaps-a-Lot"
+  alt="Kategoriredigering for Penguin-operationer rullet ned til et tomt felt Viden om kategorien og to indlærte eksempler på tjeklisterettelser, blandt andet Sir Flaps-a-Lot, over Slet"
   caption="Tjeklisterettelser læres af ændringer og kan gennemgås eller slettes her."
 />
 

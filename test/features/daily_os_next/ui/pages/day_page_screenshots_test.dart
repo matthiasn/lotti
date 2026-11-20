@@ -5,7 +5,11 @@
 /// Renders a realistic "plan vs reality" day: a full day of planned blocks
 /// and a full day of recorded sessions that diverge the way real days do
 /// (late starts, an unplanned incident, a skipped block, one session still
-/// running). PNGs land in `screenshots/daily_os_next/` (gitignored) for
+/// running). The page is mounted through the real `DailyOsNextRoot` inside
+/// the shell's sidebar or launcher, so every capture carries the root's
+/// masthead and week strip; the manual's check-in, Reconcile and Refine
+/// captures drive the footer composer and the planning sheet it opens over
+/// the day. PNGs land in `screenshots/daily_os_next/` (gitignored) for
 /// design review. Not a golden test — assertions only guard that each
 /// scenario renders.
 ///
@@ -26,6 +30,7 @@ import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
@@ -35,9 +40,9 @@ import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
-import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
-import 'package:lotti/features/daily_os_next/ui/pages/day_page_header.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
@@ -45,7 +50,10 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_agenda_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_week_strip.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_chat_input.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -56,8 +64,11 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/device_region.dart';
+import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:material_ui/material_ui.dart';
@@ -657,7 +668,8 @@ class _ScreenshotPreferencesController extends DailyOsPreferencesController {
   DailyOsPreferences build() => DailyOsPreferences();
 }
 
-/// Production-page data source for the manual's Refine and Shutdown routes.
+/// The day's agent behind every capture: Reconcile's reading of a check-in,
+/// Refine's proposed change and the Shutdown's numbers.
 ///
 /// The pages and controllers are real; only the durable backend responses are
 /// deterministic so every capture tells the same connected Project Waddle
@@ -811,9 +823,115 @@ class _ManualDailyOsAgent extends MockDayAgent {
           'danach die Pinguin-Passagierfrage, bevor sich das Startfenster öffnet.',
     ),
   );
+
+  /// What Reconcile reads out of [_checkInTranscript]: the two tasks it
+  /// names, matched to the demo world's, and the walk as something new.
+  @override
+  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => [
+    ParsedItem(
+      id: 'parsed-fish-feeder',
+      kind: ParsedItemKind.matched,
+      title: _t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat'),
+      category: _deepWork,
+      confidence: ParsedItemConfidence.high,
+      spokenPhrase: _t(
+        'finish the zero-gravity fish feeder',
+        'den Schwerelos-Futterautomaten fertig bauen',
+      ),
+      matchedTaskId: manualFishFeederTaskId,
+      matchedTaskTitle: _liveTaskTitle(manualFishFeederTaskId),
+      matchedTaskState: _t('In progress · 1 session', 'In Arbeit · 1 Sitzung'),
+      estimateMinutes: 90,
+    ),
+    ParsedItem(
+      id: 'parsed-penguin-passenger',
+      kind: ParsedItemKind.matched,
+      title: _t(
+        'Legal: Is a penguin a passenger?',
+        'Rechtsfrage: Ist ein Pinguin ein Passagier?',
+      ),
+      category: _admin,
+      confidence: ParsedItemConfidence.high,
+      spokenPhrase: _t(
+        'ask Legal whether a penguin is a passenger',
+        'die Rechtsabteilung fragen, ob ein Pinguin ein Passagier ist',
+      ),
+      matchedTaskId: manualPenguinPassengerTaskId,
+      matchedTaskTitle: _liveTaskTitle(manualPenguinPassengerTaskId),
+      matchedTaskState: _t('Open', 'Offen'),
+      estimateMinutes: 45,
+    ),
+    ParsedItem(
+      id: 'parsed-walk',
+      kind: ParsedItemKind.newTask,
+      title: _t('Walk without a headset', 'Spaziergang ohne Headset'),
+      category: _health,
+      confidence: ParsedItemConfidence.medium,
+      estimateMinutes: 30,
+      timeAnchor: _t('before six', 'vor sechs'),
+    ),
+  ];
+
+  @override
+  Future<List<PendingItem>> surfacePendingDecisions({
+    DateTime? forDate,
+  }) async => [
+    PendingItem(
+      taskId: manualSardineFuturesTaskId,
+      title: _t('Negotiate sardine futures', 'Sardinen-Futures verhandeln'),
+      category: _client,
+      reason: PendingItemReason.inProgress,
+      note: _t(
+        'Started this morning, Reykjavik still thinking',
+        'Heute Morgen begonnen, Reykjavík denkt noch nach',
+      ),
+      sessionCount: 1,
+    ),
+  ];
 }
 
-enum _ManualDailyOsSurface { refine, shutdown }
+/// What the manual's check-in says into the empty day's composer — the
+/// afternoon the recorded lane is already in.
+String get _checkInTranscript => _t(
+  'For the rest of today: finish the zero-gravity fish feeder, ask Legal '
+      'whether a penguin is a passenger, and keep thirty minutes for a walk '
+      'without a headset before six.',
+  'Für den Rest des Tages: den Schwerelos-Futterautomaten fertig bauen, die '
+      'Rechtsabteilung fragen, ob ein Pinguin ein Passagier ist, und vor sechs '
+      'dreißig Minuten für einen Spaziergang ohne Headset freihalten.',
+);
+
+/// The manual's request in the planned day's "What should change?" field.
+String get _refineRequest => _t(
+  'Protect the launch review, move sardine negotiations later, and keep the '
+      'fish-feeder demo clear.',
+  'Schütze die Startprüfung, verschiebe die Sardinenverhandlung nach hinten '
+      'und halte die Futterautomaten-Demo frei.',
+);
+
+/// The Daily OS recorder with the take already spoken: the composer's mic
+/// starts it and it lands as [_checkInTranscript], so the words reach the
+/// field through the composer's own capture path rather than being typed.
+class _SpokenCheckInCapture extends CaptureController {
+  @override
+  CaptureState build() => const CaptureState.idle();
+
+  @override
+  Future<void> toggle({
+    DateTime? forDate,
+    AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
+  }) async {
+    state = CaptureState(
+      phase: CapturePhase.captured,
+      transcript: _checkInTranscript,
+      amplitudes: const [],
+      audioId: 'audio-check-in',
+    );
+  }
+
+  @override
+  void reset() => state = const CaptureState.idle();
+}
 
 /// The day page states the redesign is reviewed on.
 enum _RedesignSurface { agenda, agendaNoPlan, day, activity }
@@ -853,86 +971,66 @@ Widget _app({
   );
 }
 
-Widget _dayShell(
-  ScreenshotDevice device, {
-  required DraftPlan draft,
-  bool hasPlan = true,
-  bool rootChrome = false,
-}) {
-  final dayPage = DayPage(
-    draft: draft,
-    hasPlan: hasPlan,
-    // What the root wires for a day without a plan, so its composer is live
-    // (not drawn disabled) in the capture.
-    onSubmitCheckIn: hasPlan ? null : (words, {audioId}) async {},
-    onCheckIn: hasPlan ? null : () {},
-    // What `DailyOsNextRoot` hands the page in production: the day's own
-    // navigation as the header title.
-    navigation: rootChrome
-        ? DayNavigation(
-            today: _day,
-            onSelect: (_) {},
-            onPick: () {},
-            onToday: () {},
-          )
-        : null,
-  );
+/// The Daily OS tab as the app shell hosts it: the real [DailyOsNextRoot]
+/// (which hands the [DayPage] its masthead and seven-day week strip, and on
+/// an empty day the composer's check-in) inside the shell's desktop sidebar
+/// or the phone's navigation launcher.
+Widget _dayShell(ScreenshotDevice device) {
+  const root = DailyOsNextRoot();
   if (!device.isPhone) {
-    DesktopSidebarDestination destination(
-      String label,
-      IconData icon,
-      IconData activeIcon,
-    ) => DesktopSidebarDestination(
-      label: label,
-      iconBuilder: ({required active}) => Icon(active ? activeIcon : icon),
-    );
+    // The shell's sidebar with the always-on destinations, labelled and
+    // drawn as `beamer_app_layout_part.dart` builds them: the active Daily
+    // OS row expands its month calendar and Time Analysis entry, and the
+    // contact row (Manual among it) closes the rail.
+    return Builder(
+      builder: (context) {
+        final messages = context.messages;
+        DesktopSidebarDestination destination(
+          String label,
+          IconData icon, {
+          Widget Function()? expandedChildBuilder,
+        }) => DesktopSidebarDestination(
+          label: label,
+          iconBuilder: ({required active}) => Icon(icon),
+          expandedChildBuilder: expandedChildBuilder,
+        );
 
-    return Row(
-      children: [
-        DesktopNavigationSidebar(
-          destinations: [
-            destination(
-              _t('Tasks', 'Aufgaben'),
-              LottiIcons.confirmCircled,
-              LottiIcons.confirmCircled,
-            ),
-            destination('Daily OS', LottiIcons.today, LottiIcons.today),
-            destination(
-              _t('Logbook', 'Logbuch'),
-              LottiIcons.book,
-              LottiIcons.book,
-            ),
-          ],
-          activeIndex: 1,
-          onDestinationSelected: (_) {},
-          settingsDestination: destination(
-            _t('Settings', 'Einstellungen'),
-            LottiIcons.settings,
-            LottiIcons.settings,
+        // The shell's own scaffold, which the sidebar's rows draw on.
+        return Scaffold(
+          backgroundColor: context.designTokens.colors.background.level01,
+          body: Row(
+            children: [
+              DesktopNavigationSidebar(
+                destinations: [
+                  destination(messages.navTabTitleTasks, LottiIcons.list),
+                  destination(
+                    messages.navTabTitleCalendar,
+                    LottiIcons.today,
+                    expandedChildBuilder: () => const DailyOsSidebarSection(),
+                  ),
+                  destination(messages.navTabTitleJournal, LottiIcons.book),
+                ],
+                activeIndex: 1,
+                onDestinationSelected: (_) {},
+                settingsDestination: destination(
+                  messages.navTabTitleSettings,
+                  LottiIcons.settings,
+                ),
+                onSettingsSelected: () {},
+                onToggleCollapsed: () {},
+                footerBand: const ContactSupportRow(),
+              ),
+              const Expanded(child: root),
+            ],
           ),
-          onSettingsSelected: () {},
-          utilityDestination: DesktopSidebarDestination(
-            label: _t('Manual', 'Handbuch'),
-            iconBuilder: ({required active}) => const Icon(LottiIcons.help),
-            trailingBuilder: ({required active}) =>
-                const Icon(LottiIcons.openExternal),
-            isLink: true,
-            semanticsHint: _t(
-              'Opens in your browser',
-              'Wird im Browser geöffnet',
-            ),
-          ),
-          onUtilitySelected: () {},
-          onToggleCollapsed: () {},
-        ),
-        Expanded(child: dayPage),
-      ],
+        );
+      },
     );
   }
 
   return Stack(
     children: [
-      dayPage,
+      root,
       Positioned(
         left: 0,
         right: 0,
@@ -955,7 +1053,7 @@ Future<void> _pumpDayPage(
   List<TimeBlock>? actualBlocks,
   bool companion = false,
   bool hasPlan = true,
-  bool rootChrome = false,
+  CaptureController Function()? capture,
 }) async {
   applyScreenshotDevice(tester, device);
   final actuals = actualBlocks ?? _actuals();
@@ -981,6 +1079,23 @@ Future<void> _pumpDayPage(
         size: device.size,
         textScale: textScale,
         overrides: [
+          // The root shows the day's plan, or the empty day without one.
+          currentDraftPlanProvider.overrideWith(
+            (ref, date) async => hasPlan ? draft : null,
+          ),
+          // The sidebar calendar's plan-day dots.
+          dailyOsPlanDaysProvider.overrideWith(
+            (ref, month) async => hasPlan ? {_day} : const <DateTime>{},
+          ),
+          firstDayOfWeekIndexProvider.overrideWith(
+            (ref) async => DateTime.monday % 7,
+          ),
+          // The day's agent, answering Refine and Reconcile with the
+          // manual's Project Waddle story.
+          dayAgentProvider.overrideWithValue(_ManualDailyOsAgent()),
+          agentIsRunningProvider.overrideWith(
+            (ref, agentId) => Stream.value(false),
+          ),
           capturesForDateProvider.overrideWith((ref, date) async => const []),
           dayActivityProvider.overrideWith(
             (ref, date) async => activityEntries,
@@ -988,7 +1103,7 @@ Future<void> _pumpDayPage(
           dailyOsActualTimeBlocksProvider.overrideWith(
             (ref, date) async => actuals,
           ),
-          captureControllerProvider.overrideWith(_stubCapture),
+          captureControllerProvider.overrideWith(capture ?? _stubCapture),
           agentKnowledgeProvider(dailyOsPlannerAgentId).overrideWith(
             (ref) async {
               final view = _knowledgeView();
@@ -1028,16 +1143,11 @@ Future<void> _pumpDayPage(
         // DayPage lives inside the app shell in production. Reuse the real
         // design-system mobile bar / desktop sidebar so the captures reflect
         // each breakpoint instead of showing a hollow reserved band.
-        home: _dayShell(
-          device,
-          draft: draft,
-          hasPlan: hasPlan,
-          rootChrome: rootChrome,
-        ),
+        home: _dayShell(device),
       ),
     );
     final container = ProviderScope.containerOf(
-      tester.element(find.byType(DayPage)),
+      tester.element(find.byType(DailyOsNextRoot)),
     );
     await Future.wait(
       _manualWorld.coverImages.map(
@@ -1047,22 +1157,17 @@ Future<void> _pumpDayPage(
     );
     await settleFrames(tester);
   });
+  // The root's day navigation: the masthead's seven-day week strip.
+  expect(find.byType(DayWeekStrip), findsOneWidget);
 }
 
-Future<void> _pumpManualDailyOsSurface(
+/// The end-of-day shutdown, a page of its own: "Wrap up" beams to its route.
+Future<void> _pumpShutdownPage(
   WidgetTester tester, {
-  required _ManualDailyOsSurface surface,
   required ScreenshotDevice device,
   required Brightness brightness,
 }) async {
   applyScreenshotDevice(tester, device);
-  final draft = _plan();
-  final agent = _ManualDailyOsAgent();
-  final home = switch (surface) {
-    _ManualDailyOsSurface.refine => RefinePage(draft: draft),
-    _ManualDailyOsSurface.shutdown => ShutdownPage(forDate: _day),
-  };
-
   await withClock(Clock.fixed(_now), () async {
     await tester.pumpWidget(
       _app(
@@ -1070,7 +1175,7 @@ Future<void> _pumpManualDailyOsSurface(
         size: device.size,
         overrides: [
           captureControllerProvider.overrideWith(_stubCapture),
-          dayAgentProvider.overrideWithValue(agent),
+          dayAgentProvider.overrideWithValue(_ManualDailyOsAgent()),
           agentKnowledgeProvider(dailyOsPlannerAgentId).overrideWith(
             (ref) async => _knowledgeView(),
           ),
@@ -1078,31 +1183,44 @@ Future<void> _pumpManualDailyOsSurface(
             _ScreenshotPreferencesController.new,
           ),
         ],
-        home: home,
+        home: ShutdownPage(forDate: _day),
       ),
     );
     await settleFrames(tester, 6);
-
-    if (surface == _ManualDailyOsSurface.refine) {
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(RefinePage)),
-      );
-      final notifier = container.read(
-        refineControllerProvider(draft).notifier,
-      );
-      await (notifier..reviewTranscript(
-            _t(
-              'Protect the launch review, move sardine negotiations later, '
-                  'and keep the fish-feeder demo clear.',
-              'Schütze die Startprüfung, verschiebe die Sardinenverhandlung '
-                  'nach hinten und halte die Futterautomaten-Demo frei.',
-            ),
-          ))
-          .submitReviewedTranscript();
-      await settleFrames(tester, 6);
-    }
   });
 }
+
+/// Taps the composer's mic, as the user does to speak a check-in; the
+/// recorder's finished take lands in the field.
+Future<void> _speakIntoComposer(WidgetTester tester) async {
+  await withClock(Clock.fixed(_now), () async {
+    await tester.tap(find.byKey(DesignSystemChatInputKeys.mic));
+    await settleFrames(tester);
+  });
+}
+
+/// Types [words] into the Day footer's composer and sends them.
+Future<void> _typeAndSend(WidgetTester tester, String words) async {
+  await withClock(Clock.fixed(_now), () async {
+    await tester.enterText(find.byKey(DesignSystemChatInputKeys.field), words);
+    await settleFrames(tester);
+    await _send(tester);
+  });
+}
+
+/// Sends what the Day footer's composer holds.
+Future<void> _send(WidgetTester tester) async {
+  await withClock(Clock.fixed(_now), () async {
+    await tester.tap(find.byKey(DesignSystemChatInputKeys.send));
+    await settleFrames(tester);
+  });
+}
+
+/// The composer's field text.
+String _composerText(WidgetTester tester) => tester
+    .widget<TextField>(find.byKey(DesignSystemChatInputKeys.field))
+    .controller!
+    .text;
 
 AppLocalizations _messages(WidgetTester tester) =>
     tester.element(find.byType(DayPage)).messages;
@@ -1228,11 +1346,19 @@ void main() {
     );
     _manualDocumentsDirectory = documentsDirectory;
     await installManualDemoMedia(_manualWorld, documentsDirectory);
+    // The sidebar's Time Analysis entry follows the nav service.
+    final navService = MockNavService();
+    final showTimeAnalysis = ValueNotifier<bool>(false);
+    addTearDown(showTimeAnalysis.dispose);
+    when(
+      () => navService.desktopShowTimeAnalysis,
+    ).thenReturn(showTimeAnalysis);
     final mocks = await setUpTestGetIt(
       additionalSetup: () {
         getIt
           ..registerSingleton<Directory>(documentsDirectory)
-          ..registerSingleton<EditorStateService>(MockEditorStateService());
+          ..registerSingleton<EditorStateService>(MockEditorStateService())
+          ..registerSingleton<NavService>(navService);
       },
     );
     when(
@@ -1514,49 +1640,124 @@ void main() {
     for (final brightness in [Brightness.light, Brightness.dark]) {
       final theme = brightness.name;
 
-      for (final surface in _ManualDailyOsSurface.values) {
-        testWidgets(
-          'manual daily OS ${surface.name} ${deviceCase.viewport} — $theme',
-          (tester) async {
-            await _pumpManualDailyOsSurface(
-              tester,
-              surface: surface,
-              device: deviceCase.device,
-              brightness: brightness,
-            );
+      // A check-in spoken into the empty day's composer: the transcript
+      // lands in the field, read before it is sent.
+      testWidgets(
+        'manual daily OS check-in transcript ${deviceCase.viewport} — $theme',
+        (tester) async {
+          await _pumpDayPage(
+            tester,
+            device: deviceCase.device,
+            brightness: brightness,
+            hasPlan: false,
+            capture: _SpokenCheckInCapture.new,
+          );
+          await _speakIntoComposer(tester);
+          expect(_composerText(tester), _checkInTranscript);
+          // Ready to send: send leads, and the words took the start
+          // button's place.
+          expect(find.byKey(DesignSystemChatInputKeys.send), findsOneWidget);
+          expect(
+            find.byKey(const Key('daily_os_day_start_check_in')),
+            findsNothing,
+          );
+          await captureScreenshot(
+            tester,
+            'daily_os_check_in_transcript_${deviceCase.viewport}_$theme',
+          );
+        },
+      );
 
-            switch (surface) {
-              case _ManualDailyOsSurface.refine:
-                expect(find.byType(RefinePage), findsOneWidget);
-                expect(
-                  find.text(
-                    _t(
-                      'Move sardine negotiations 30 minutes later',
-                      'Sardinenverhandlung um 30 Minuten verschieben',
-                    ),
-                  ),
-                  findsOneWidget,
-                );
-              case _ManualDailyOsSurface.shutdown:
-                expect(find.byType(ShutdownPage), findsOneWidget);
-                expect(
-                  find.text(
-                    _t(
-                      'Zero-gravity fish feeder',
-                      'Schwerelos-Futterautomat',
-                    ),
-                  ),
-                  findsOneWidget,
-                );
-            }
+      // Sending that check-in opens the planning sheet at Reconcile, over
+      // the day it was spoken on.
+      testWidgets(
+        'manual daily OS reconcile ${deviceCase.viewport} — $theme',
+        (tester) async {
+          await _pumpDayPage(
+            tester,
+            device: deviceCase.device,
+            brightness: brightness,
+            hasPlan: false,
+            capture: _SpokenCheckInCapture.new,
+          );
+          await _speakIntoComposer(tester);
+          await _send(tester);
+          expect(find.byType(ReconcileModalContent), findsOneWidget);
+          expect(
+            find.text(_liveTaskTitle(manualFishFeederTaskId)),
+            findsWidgets,
+          );
+          expect(find.byType(DayPage), findsOneWidget);
+          await captureScreenshot(
+            tester,
+            'daily_os_reconcile_${deviceCase.viewport}_$theme',
+          );
+        },
+      );
 
-            await captureScreenshot(
-              tester,
-              'daily_os_${surface.name}_${deviceCase.viewport}_$theme',
+      // "What should change?" on a planned day opens the planning sheet's
+      // Refine step, where the proposed change waits for a decision.
+      testWidgets(
+        'manual daily OS refine ${deviceCase.viewport} — $theme',
+        (tester) async {
+          await _pumpDayPage(
+            tester,
+            device: deviceCase.device,
+            brightness: brightness,
+          );
+          await _typeAndSend(tester, _refineRequest);
+          final messages = _messages(tester);
+          expect(find.byType(RefineModalContent), findsOneWidget);
+          // The step rests scrolled to its orb; scroll back up to the
+          // headline so the proposal reads from its first change.
+          await withClock(Clock.fixed(_now), () async {
+            await tester.ensureVisible(
+              find.text(messages.dailyOsNextRefineHeadlineDiffReady),
             );
-          },
-        );
-      }
+            await settleFrames(tester);
+          });
+          expect(
+            find.text(
+              _t(
+                'Move sardine negotiations 30 minutes later',
+                'Sardinenverhandlung um 30 Minuten verschieben',
+              ),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.text(messages.dailyOsNextRefineKeepChanges),
+            findsOneWidget,
+          );
+          expect(find.text(messages.dailyOsNextRefineRevert), findsOneWidget);
+          await captureScreenshot(
+            tester,
+            'daily_os_refine_${deviceCase.viewport}_$theme',
+          );
+        },
+      );
+
+      testWidgets(
+        'manual daily OS shutdown ${deviceCase.viewport} — $theme',
+        (tester) async {
+          await _pumpShutdownPage(
+            tester,
+            device: deviceCase.device,
+            brightness: brightness,
+          );
+          expect(find.byType(ShutdownPage), findsOneWidget);
+          expect(
+            find.text(
+              _t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat'),
+            ),
+            findsOneWidget,
+          );
+          await captureScreenshot(
+            tester,
+            'daily_os_shutdown_${deviceCase.viewport}_$theme',
+          );
+        },
+      );
 
       testWidgets(
         'manual daily OS block editor ${deviceCase.viewport} — $theme',
@@ -1604,7 +1805,6 @@ void main() {
             tester,
             device: deviceCase.device,
             brightness: brightness,
-            rootChrome: true,
             hasPlan: surface != _RedesignSurface.agendaNoPlan,
             activityEntries: surface == _RedesignSurface.activity
                 ? _activityEntries()

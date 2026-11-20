@@ -12,25 +12,35 @@ pinguini.
 
 <ManualScreenshot
   caseId="projects/list"
-  alt="Progetti raggruppati sotto Operazioni del Pinguino, Controllo delle missioni, Diplomazia di pesce e Manutenzione umana, tra cui Project Waddle e la catena del freddo delle sardine di Europa"
+  alt="Elenco dei progetti nell'ambito Attuali, raggruppati sotto Operazioni del Pinguino, Controllo delle missioni e Diplomazia di pesce, con Project Waddle, la catena del freddo delle sardine di Europa e il trattato sui passeggeri pinguini"
   caption="Ogni riga combina stato, avanzamento delle attività, data obiettivo e una breve dichiarazione di scopo. Il desktop riserva spazio per un progetto selezionato a destra; il mobile usa l'intera larghezza per l'elenco."
 />
 
 ## Trova il progetto che ti serve
 
 La ricerca corrisponde a titoli dei progetti, testo memorizzato dei progetti e
-nomi delle categorie. Il controllo dei filtri restringe l'elenco per stato del
-progetto o categoria. Un filtro resta inattivo finché non selezioni
-**Applicare**.
+nomi delle categorie. Sotto il campo di ricerca, **Attuali** nasconde i
+progetti completati e archiviati; **Tutti** li riporta. **Ordina progetti**
+ordina l'elenco per **Richiede attenzione**, **Data obiettivo**, **Aggiornati
+di recente** o **Nome**.
+
+Il pulsante dei filtri restringe l'elenco per **Stato** o **Categoria**. Due
+interruttori aggiungono altro: **Solo riassunti non aggiornati** tiene i
+progetti il cui riepilogo dell'agente è indietro, e **Mostra profilo di
+inferenza** etichetta ogni progetto che ha un agente con il nome del suo
+profilo di inferenza. Un filtro resta inattivo finché non selezioni
+**Applica**.
 
 <ManualScreenshot
   caseId="projects/filters"
-  alt="Finestra dei filtri di progetto con i controlli di stato e categoria sopra l'elenco dei progetti di Intergalactic Penguin Logistics"
+  alt="Finestra di filtro dei progetti con le righe Stato e Categoria, gli interruttori Solo riassunti non aggiornati e Mostra profilo di inferenza, e i pulsanti per cancellare e applicare, sopra l'elenco dei progetti"
 />
 
 I progetti restano raggruppati per categoria dopo il filtraggio. Questo rende
 più facili da distinguere gli sforzi con nomi simili e mantiene visibile ogni
-area operativa.
+area operativa. Ogni intestazione di categoria può comprimersi, e il suo
+pulsante della mappa apre **Esplora categoria**: i progetti della categoria
+come un quartiere da percorrere a piedi.
 
 ## Crea un progetto
 
@@ -46,7 +56,7 @@ Seleziona il pulsante **+** in Progetti, poi inserisci:
   caption="Il modulo di creazione è un foglio inferiore su mobile e una finestra centrata sul desktop."
 />
 
-Un nuovo progetto parte in **Aprire**. Se la sua categoria ha un modello di
+Un nuovo progetto parte in **Aperto**. Se la sua categoria ha un modello di
 agente di progetto, Lotti fornisce anche quell'agente dopo il salvataggio del
 progetto. Il progetto funziona comunque normalmente quando non esiste un
 modello corrispondente.
@@ -59,7 +69,7 @@ riserva lunare di sardine” dice più di “Sardine”.
 Il percorso delle impostazioni del progetto offre l'editor completo del modulo
 per stato, titolo, data obiettivo, salute, assegnazione dell'agente, modifiche
 proposte dall'agente e attività collegate. Tiene anche le azioni
-**Annullamento** e **Salva** fissate in basso, così le modifiche in sospeso al
+**Annulla** e **Salva** fissate in basso, così le modifiche in sospeso al
 modulo restano esplicite.
 
 <ManualScreenshot
@@ -72,12 +82,12 @@ modulo restano esplicite.
 
 | Stato | Usalo quando |
 | --- | --- |
-| Aprire | Il progetto esiste ma l'esecuzione attiva non è iniziata. |
+| Aperto | Il progetto esiste ma l'esecuzione attiva non è iniziata. |
 | Attivo | Il lavoro si sta muovendo e appartiene alla pianificazione del giorno. |
 | Monitoraggio | Nessun lavoro è pianificato, ma il risultato ha ancora bisogno di osservazione. |
-| Aspetta. | Il lavoro è in pausa per una ragione nota. |
-| Completo | Il risultato previsto è stato raggiunto. |
-| Archivio | Il progetto è conservato per la storia ma non è più operativo. |
+| In pausa | Il lavoro è in pausa per una ragione nota. |
+| Completato | Il risultato previsto è stato raggiunto. |
+| Archiviato | Il progetto è conservato per la storia ma non è più operativo. |
 
 Seleziona la pillola dello stato nella pagina di dettaglio del progetto per
 cambiarlo. Le modifiche di stato, categoria e data obiettivo si salvano
@@ -88,29 +98,41 @@ superficie di dettaglio orientata alla lettura.
 
 <ManualScreenshot
   caseId="projects/detail"
-  alt="Dettaglio di Project Waddle con un punteggio di salute di 82, cinque attività su otto completate, un blocco e una relazione AI aggiornata due ore fa"
+  alt="Dettaglio di Project Waddle con stato Attivo e data obiettivo, la sua descrizione, una scheda di riepilogo AI valutata In pista con il 91% di confidenza e un'attività bloccata, e l'elenco delle attività del progetto guidato dal distributore di pesce a gravità zero bloccato"
   caption="Il desktop tiene elenco e dettaglio dei progetti fianco a fianco. Il mobile apre lo stesso dettaglio come pagina intera."
 />
 
-Il pannello della salute riassume la valutazione corrente dell'agente di
-progetto:
+La scheda **Riepilogo IA** riunisce valutazione e relazione:
 
-- il punteggio di salute è un segnale compatto, non un sostituto del lavoro
-  sottostante;
-- l'avanzamento delle attività mostra i conteggi di completate e bloccate;
-- la relazione fornisce un riepilogo aggiornato e può espandersi al contenuto
-  completo; e
-- le raccomandazioni richiamano l'attenzione su azioni concrete successive.
+- **Salute del progetto** riassume la valutazione dell'agente, con
+  motivazione e confidenza quando disponibili, e quante attività sono
+  bloccate;
+- la relazione fornisce un riepilogo aggiornato, e **Leggi tutto** la espande
+  al contenuto completo; e
+- i prossimi passi e le modifiche proposte richiamano l'attenzione su azioni
+  concrete.
 
-In Project Waddle, un punteggio di 82 e cinque attività completate sono
-incoraggianti, ma il distributore di pesce a gravità zero è ancora un blocco
-per il lancio. Leggi la spiegazione prima di trattare un punteggio come un
-verdetto.
+In Project Waddle, una valutazione In pista è incoraggiante, ma il
+distributore di pesce a gravità zero è ancora un blocco per il lancio. Leggi
+la motivazione prima di trattare la fascia come un verdetto.
 
-Quando è configurato un agente di progetto, il menu della relazione può
-richiederne una nuova o annullare una sveglia pianificata. Senza un agente, il
-progetto mostra comunque le sue attività e qualsiasi testo di progetto
-memorizzato.
+La scheda stessa tiene solo **Apri i dettagli interni dell'agente**, e **Aggiorna ora**
+mentre il riepilogo non è aggiornato. La configurazione del modello, gli
+aggiornamenti automatici e la frequenza con cui l'agente si aggiorna stanno
+negli interni dell'agente. Senza un agente, la scheda offre **Assegna agente**
+e il dettaglio mostra comunque le attività e la descrizione del progetto.
+
+**Esplora progetto**, accanto al menu del progetto, apre il progetto come un
+quartiere da percorrere a piedi, con un edificio per ogni attività.
+
+## Aggiungi note, registrazioni e immagini a un progetto
+
+Una barra lungo il bordo inferiore della pagina del progetto aggiunge
+direttamente al progetto: **Registra una nota vocale**, scrivi una nota,
+importa un'immagine, oppure il più per il menu **Aggiungi** con il resto. Su
+uno schermo stretto i pulsanti della nota e dell'immagine lasciano il posto al
+più. Tutto ciò che aggiungi lì è collegato al progetto, compare nella sua
+timeline ed è letto dal suo agente.
 
 ## Tieni il lavoro di progetto nelle attività
 
@@ -127,7 +149,11 @@ copertine.
 
 Assegna un'attività a un progetto dal controllo del progetto nell'intestazione
 dell'attività. I progetti hanno l'ambito della categoria, quindi dai una
-categoria all'attività prima di scegliere un progetto. Un'attività appartiene
+categoria all'attività prima di scegliere un progetto. Anche l'agente
+dell'attività può proporlo: menziona il progetto nelle note dell'attività o in
+una registrazione, e l'agente suggerisce di spostarvi l'attività oppure, se la
+categoria non ha un progetto con quel nome, di creare il progetto con
+l'attività dentro. Non cambia nulla finché non confermi. Un'attività appartiene
 al massimo a un progetto alla volta; assegnare un altro progetto sposta il
 collegamento invece di duplicarlo.
 

@@ -6,24 +6,36 @@ description: Nastav místní hlas, model a rychlost přehrávání pro hlasité 
 # Volba hlasu pro čtení
 
 Když je hlasité čtení dostupné, otevři **Nastavení → Předvolby → Řeč**. Ovládání
-platí pro AI shrnutí úkolů; nemění zachycení mikrofonu ani poskytovatele AI,
-který přepisuje nahrávku.
+platí pro to, co Lotti čte nahlas – AI shrnutí a odpovědi v chatu; nemění
+zachycení mikrofonu ani poskytovatele AI, který přepisuje nahrávku. Když je
+zapnutý společník, samostatná stránka Řeč je skrytá a stejná nastavení najdeš
+v **Nastavení → Předvolby → Společník → Hlas**.
+
+Stránka začíná sekcí **Zvuk chatu**: **Automaticky připravovat zvuk chatu**
+připraví nové odpovědi chatu na tomto zařízení, aby přehrávání začalo dřív.
+Zvuk se přesto přehraje, jen když klepneš na přehrát.
 
 <ManualScreenshot
   caseId="speech/settings"
-  alt="Nastavení Řeči Lotti s vybraným Mužským hlasem 3, místním modelem Supertonic 3 a rychlostí čtení 1,25"
+  alt="Nastavení Řeči Lotti se sekcemi Zvuk chatu a Cloudové hlasy, Hlasem v zařízení s vybraným Mužským hlasem 3, modelem Supertonic 3 a rychlostí čtení 1,25"
   caption="Ukázkové nastavení Mission Control používá Mužský hlas 3 při 1,25× pro svižné briefingy Project Waddle."
 />
 
 ## Vyber hlas
 
-Pomocí přepínače **Ženský / Mužský** procházej dvě skupiny a potom vyber jeden
+**Cloudové hlasy** uvádějí pro každý z tvých jazyků hlas, kterým ho mluví
+cloudový model předčítání; klepnutím na něj ho poslechneš nebo změníš. Sekce
+zůstává prázdná, dokud nějaký profil inference nemá model **Předčítání** – do
+té doby předčítání používá hlas v zařízení.
+
+**Hlas v zařízení** čte pro profily bez cloudového hlasu. Pomocí přepínače
+**Ženský / Mužský** procházej dvě skupiny a potom vyber jeden
 z pěti číslovaných hlasů. Přepnutí skupiny mění jen viditelný seznam; aktivní
 hlas nastavíš výběrem konkrétního čísla.
 
 <ManualScreenshot
   caseId="speech/voice-options"
-  alt="Nastavení Řeči Lotti zobrazující pět místních ženských hlasů"
+  alt="Nastavení Řeči Lotti zobrazující pět ženských možností Hlasu v zařízení pod sekcemi Zvuk chatu a Cloudové hlasy"
   caption="K dispozici je deset vestavěných stylů hlasu: Ženský 1–5 a Mužský 1–5."
 />
 
@@ -33,9 +45,12 @@ zařízení.
 
 ## Stažení modelu a soukromí
 
-Lotti nyní používá pro hlasité čtení **Supertonic 3**. Syntéza běží na zařízení
-a neposílá shrnutí cloudové hlasové službě. Model je velký a stáhne se při
-prvním použití, proto pro úvodní nastavení počítej s časem, sítí a úložištěm.
+**Hlas v zařízení** používá **Supertonic 3**. Syntéza běží na zařízení, takže
+se nic neposílá cloudové hlasové službě. Když má profil inference cloudový model
+pro hlasité čtení, **Cloudové hlasy** místo toho uvádí hlas pro každý z tvých
+jazyků a předčítaný text se posílá tomuto poskytovateli. Model v zařízení je
+velký a stáhne se při prvním použití, proto pro úvodní nastavení počítej s
+časem, sítí a úložištěm.
 
 ## Nastav rychlost čtení
 

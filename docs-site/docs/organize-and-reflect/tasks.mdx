@@ -28,7 +28,7 @@ the task's own context and reference images.
 
 <ManualScreenshot
   caseId="tasks/detail"
-  alt="Production task detail page for inspecting the orbital penguin habitat, with the same cover art used by task thumbnails"
+  alt="Task page for inspecting the orbital penguin habitat with its category, In Progress status, High priority, due date, logged time against the estimate, labels, and the AI summary"
 />
 
 The same task can hold a description, category, labels, due date, time records,
@@ -75,13 +75,16 @@ tasks with an assigned agent from tasks without one.
 
 Choices within one filter are alternatives: selecting P0 and P1 shows either
 priority. Different filters narrow the result together: selecting P0 or P1
-*and* Penguin Operations shows only matching work. Use **Clear all** to return
-to an unconstrained view rather than trying to undo each choice individually.
+*and* Penguin Operations shows only matching work. Use **Clear** in the sheet,
+or **Clear all** beside the active filters in the list, to return to an
+unconstrained view rather than trying to undo each choice individually.
 
 Choose **Due Date**, **Created**, or **Priority** in the same sheet to change
 the ordering. Priority order is P0 through P3, with newer tasks first within a
-priority unless another sort is active. On desktop, an enabled vector-search
-setup can also offer semantic search alongside normal full-text search.
+priority unless another sort is active. Search lists the tasks whose words
+match first, best match first, followed by a **Related by meaning** section
+with tasks that say the same thing in other words. While you search, the
+filter chips the search does not apply are dimmed.
 
 When you regularly return to the same focused view, save the active filter
 from the sheet and give it a clear name. Reopen it from the task list, then
@@ -96,9 +99,10 @@ skills from task context.
 
 ## Add task context
 
-Use the task's **Add** action to attach a checklist, another task, an audio
-recording, a timer, a text entry, or an image without leaving the task. The
-available actions depend on the current platform and context.
+Use the task's **Add** action to attach a note, a checklist, a voice note, a
+linked task, or an image without leaving the task; **Track time** on the
+task's action bar starts a timer. The available actions depend on the current
+platform and context.
 
 <ManualScreenshot
   caseId="entries/create-menu"
@@ -130,13 +134,18 @@ Escape to go back.
 
 ## Link related tasks
 
-Open the task's **Linked** section and choose to link an existing task. Search
-the picker, then select the related outcome. Lotti excludes the current task
-and tasks that are already linked in that direction.
+In the task's **Linked Tasks** section, select **Link a task…** — or **Link**
+once the task already has links — to open **Link existing task**. Under **This
+task…**, choose the relationship: **Relates to**, or one of **Blocks**, **Is
+blocked by**, **Follows up on**, **Has follow-up**, **Duplicates**, **Is
+duplicated by**, **Fixes**, **Is fixed by**, **Supersedes** and **Is
+superseded by**. Then search the picker and select the related task. Lotti
+excludes the current task and tasks that are already linked in that
+direction.
 
 <ManualScreenshot
   caseId="tasks/link-picker"
-  alt="Production task-link picker listing related Project Waddle tasks and their status, priority, category, and due-date context"
+  alt="Link existing task picker over the Inspect orbital penguin habitat task, with This task… set to Relates to, a Search tasks field, and two Penguin Operations tasks with their status"
 />
 
 Task links are directional: the current task points to the task you choose.

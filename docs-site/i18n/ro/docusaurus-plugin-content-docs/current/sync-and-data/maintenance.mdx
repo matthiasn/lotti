@@ -13,7 +13,7 @@ pe care nu le puteți recrea.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Întreținerea sincronizării în Lotti cu Ștergeți baza de date de sincronizare, Sincronizați măsurabilele, tablourile de bord, obiceiurile, categoriile și setările AI, Istoricul mesajelor, Completați jurnalul de secvență de sincronizare și Eliminați elementele vechi trimise din coada de ieșire"
+  alt="Întreținerea sincronizării în Lotti cu Ștergeți baza de date de sincronizare, Sincronizați măsurabilele, tablourile de bord, obiceiurile, categoriile și setările AI, Istoricul mesajelor, Completați jurnalul de secvență de sincronizare, Completare aprofundată și Eliminați elementele vechi trimise din coada de ieșire"
   caption="Întreținerea grupează pe o singură pagină acțiuni distructive, de reluare și de curățare. Textul de confirmare definește domeniul fiecărei operațiuni."
 />
 
@@ -34,17 +34,22 @@ pe care nu le puteți recrea.
 - **Completați jurnalul de secvență de sincronizare** indexează înregistrările
   existente, astfel încât completarea să poată răspunde și cererilor pentru
   înregistrări create înainte de existența urmăririi secvențelor.
+- **Completare aprofundată** trimite celorlalte dispozitive ale dvs. o listă cu
+  toate înregistrările de pe acest dispozitiv, inclusiv ștergerile. Fiecare
+  dispozitiv cere ce îi lipsește și trimite înapoi ce îi lipsește acestui
+  dispozitiv. Celelalte dispozitive trebuie să fie online pentru a răspunde;
+  confirmați cu **Da, porniți**.
 - **Eliminați elementele vechi trimise din coada de ieșire** șterge rândurile
   deja trimise din coada de ieșire mai vechi de 7 zile și eliberează spațiu pe
   disc. Elementele în așteptare sau eșuate sunt păstrate.
 
 Începeți cu cea mai mică operațiune care se potrivește simptomului. Un atașament
 blocat ține de [cutia de ieșire](./sync.mdx#inspectați-cutia-de-ieșire),
-golurile persistente din secvență țin de Completare sincronizare, iar două
+golurile persistente din secvență țin de **Starea sincronizării**, iar două
 editări concurente valide țin de [conflicte](./conflicts.mdx). Ștergerea bazei de
 date de sincronizare ar trebui să rămână o resetare locală de ultimă instanță,
 făcută cu un dispozitiv pereche de încredere și o copie de rezervă la îndemână.
 
 După o reparație, reveniți la **Statistici Matrix**, verificați că munca aplicată
 avansează și coada se golește, apoi că coada de ieșire și numărul de elemente
-lipsă din completare se stabilizează.
+lipsă din **Starea sincronizării** se stabilizează.

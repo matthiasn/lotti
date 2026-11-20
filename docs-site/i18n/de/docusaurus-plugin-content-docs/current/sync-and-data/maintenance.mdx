@@ -13,7 +13,7 @@ Daten bereit.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lottis Sync-Wartung mit Synchronisierungsdatenbank löschen, Messgrößen, Dashboards, Gewohnheiten, Kategorien, AI-Einstellungen synchronisieren, Nachrichtenverlauf, Sync-Sequenzprotokoll befüllen und Alte gesendete Outbox-Einträge löschen"
+  alt="Lottis Sync-Wartung mit Synchronisierungsdatenbank löschen, Messgrößen, Dashboards, Gewohnheiten, Kategorien, AI-Einstellungen synchronisieren, Nachrichtenverlauf, Sync-Sequenzprotokoll befüllen, Tiefes Nachfüllen und Alte gesendete Outbox-Einträge löschen"
   caption="Wartung bündelt destruktive, wiederholende und bereinigende Aktionen. Der Bestätigungstext beschreibt jeweils ihren Umfang."
 />
 
@@ -34,17 +34,21 @@ Daten bereit.
 - **Sync-Sequenzprotokoll befüllen** indiziert vorhandene Einträge, damit die
   Nachfüllung auch Anfragen nach Einträgen beantworten kann, die entstanden
   sind, bevor es die Sequenzverfolgung gab.
+- **Tiefes Nachfüllen** sendet eine Liste aller Datensätze auf diesem Gerät,
+  Löschungen eingeschlossen, an deine anderen Geräte. Jedes fragt nach dem,
+  was ihm fehlt, und schickt zurück, was diesem Gerät fehlt. Deine anderen
+  Geräte müssen online sein, um zu antworten; bestätige mit **Ja, starten**.
 - **Alte gesendete Outbox-Einträge löschen** entfernt gesendete Einträge im
   Postausgang, die älter als 7 Tage sind, und gibt Speicherplatz frei.
   Wartende oder fehlgeschlagene Einträge bleiben erhalten.
 
 Beginne mit der kleinsten Aktion, die zum Symptom passt. Ein festhängender
 Anhang gehört in den [Postausgang](./sync.mdx#den-ausgang-prüfen), dauerhafte
-Sequenzlücken zur Sync-Nachfüllung und zwei gültige gleichzeitige Änderungen in
+Sequenzlücken zu **Sync-Zustand** und zwei gültige gleichzeitige Änderungen in
 die [Konflikte](./conflicts.mdx). Das Löschen der Sync-Datenbank ist der letzte
 Ausweg und sollte nur mit einem bekannten, vollständigen Peer und einer
 Sicherung erfolgen.
 
 Kehre danach zu **Matrix-Statistiken** zurück. Prüfe, ob angewendete Arbeit
 weiterläuft und die Warteschlange sich leert, und ob sich Sync-Postausgang und
-die Zahl fehlender Einträge in der Nachfüllung beruhigen.
+die Zahl fehlender Einträge in **Sync-Zustand** beruhigen.

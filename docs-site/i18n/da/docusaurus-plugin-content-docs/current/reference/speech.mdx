@@ -6,24 +6,37 @@ description: Konfigurer den on-device stemme, model og afspilningshastighed, der
 # Vælg læsestemmen
 
 Når højlæsning er tilgængelig, så åbn **Indstillinger → Præferencer → Tale**.
-Disse kontroller gælder for AI-resuméer på opgaver; de ændrer ikke
-mikrofonoptagelsen eller hvilken AI-udbyder der transskriberer en optagelse.
+Disse kontroller gælder for det, Lotti læser højt – AI-resuméer og
+chatsvar; de ændrer ikke mikrofonoptagelsen eller hvilken AI-udbyder der
+transskriberer en optagelse. Når følgesvenden er slået til, er den separate
+side Tale skjult, og de samme indstillinger findes under **Indstillinger →
+Præferencer → Følgesvend → Stemme**.
+
+Siden starter med **Chatlyd**: **Klargør chatlyd automatisk** klargør nye
+chatsvar på denne enhed, så afspilningen starter hurtigere. Lyden afspilles
+stadig kun, når du trykker på afspil.
 
 <ManualScreenshot
   caseId="speech/settings"
-  alt="Lottis taleindstillinger med Mand 3 valgt, on-device-modellen Supertonic 3 og læsehastigheden 1,25"
+  alt="Lottis taleindstillinger med Chatlyd, Cloud-stemmer, Stemme på enheden med Mand 3 valgt, modellen Supertonic 3 og læsehastigheden 1,25"
   caption="Eksempelopsætningen fra missionskontrollen bruger Mand 3 ved 1,25× til kvikke Project Waddle-briefinger."
 />
 
 ## Vælg en stemme
 
-Brug **Kvinde / Mand**-omskifteren til at gennemse de to grupper, og vælg
+**Cloud-stemmer** viser for hvert af dine sprog den stemme, en
+cloud-oplæsningsmodel taler det med; tryk på en for at høre eller ændre den.
+Sektionen forbliver tom, indtil en inferensprofil har en **Læs højt**-model –
+indtil da bruger oplæsningen stemmen på enheden.
+
+**Stemme på enheden** læser op for profiler uden en cloud-stemme. Brug
+**Kvinde / Mand**-omskifteren til at gennemse de to grupper, og vælg
 derefter en af de fem nummererede stemmer i den gruppe. At skifte gruppe
 ændrer kun den synlige liste; vælg en nummereret stemme for at gøre den aktiv.
 
 <ManualScreenshot
   caseId="speech/voice-options"
-  alt="Lottis taleindstillinger med de fem kvindelige on-device-stemmemuligheder"
+  alt="Lottis taleindstillinger med de fem kvindelige muligheder for Stemme på enheden, under Chatlyd og Cloud-stemmer"
   caption="Ti medfølgende stemmestile er tilgængelige: Kvinde 1–5 og Mand 1–5."
 />
 
@@ -33,10 +46,12 @@ dine andre enheder.
 
 ## Modeldownload og privatliv
 
-Lotti bruger i øjeblikket **Supertonic 3** til højlæsning. Syntesen kører på
-enheden i stedet for at sende resuméet til en cloud-taletjeneste. Modellen er
-stor og downloades, første gang der er brug for den, så afsæt tid,
-netværksbåndbredde og lagerplads til den indledende opsætning.
+**Stemme på enheden** bruger **Supertonic 3**. Syntesen kører på enheden, så
+intet sendes til en cloud-taletjeneste. Når en inferensprofil har en
+cloud-model til højlæsning, viser **Cloud-stemmer** i stedet stemmen for hvert
+af dine sprog, og den tekst, der læses højt, sendes til den udbyder. Modellen
+på enheden er stor og downloades, første gang der er brug for den, så afsæt
+tid, netværksbåndbredde og lagerplads til den indledende opsætning.
 
 ## Indstil læsehastigheden
 

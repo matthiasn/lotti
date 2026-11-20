@@ -11,23 +11,32 @@ the concrete tasks required to prepare the orbital penguin habitat.
 
 <ManualScreenshot
   caseId="projects/list"
-  alt="Projects grouped under Penguin Operations, Mission Control, Fish Diplomacy, and Human Maintenance, including Project Waddle and the Europa sardine cold chain"
+  alt="Projects list in the Current scope, grouped under Penguin Operations, Mission Control, and Fish Diplomacy, with Project Waddle, the Europa sardine cold chain, and the Penguin passenger treaty"
   caption="Each row combines status, task progress, target date, and a short purpose statement. Desktop keeps space for a selected project on the right; mobile uses the full width for the list."
 />
 
 ## Find the project you need
 
-Search matches project titles, stored project text, and category names. The
-filter control narrows the list by project status or category. A filter stays
-inactive until you select **Apply**.
+Search matches project titles, stored project text, and category names. Under
+the search field, **Current** hides completed and archived projects; **All**
+brings them back. **Sort projects** orders the list by **Needs attention**,
+**Target date**, **Recently updated** or **Name**.
+
+The filter button narrows the list by **Status** or **Category**. Two
+switches add more: **Only out-of-date summaries** keeps projects whose agent
+summary is behind, and **Show inference profile** tags every project that has
+an agent with the name of its inference profile. A filter stays inactive until
+you select **Apply**.
 
 <ManualScreenshot
   caseId="projects/filters"
-  alt="Project filter dialog with status and category controls over the Intergalactic Penguin Logistics project list"
+  alt="Filter projects dialog with Status and Category rows, the Only out-of-date summaries and Show inference profile switches, and Clear and Apply, over the project list"
 />
 
 Projects remain grouped by category after filtering. This makes similarly
 named efforts easier to distinguish and keeps each operational area visible.
+Each category header can collapse, and its map button opens **Explore
+category** — the category's projects as a walkable district.
 
 ## Create a project
 
@@ -83,26 +92,38 @@ save button on this read-first detail surface.
 
 <ManualScreenshot
   caseId="projects/detail"
-  alt="Project Waddle detail showing an On Track health assessment, five of eight tasks completed, one blocker, and an expandable AI report"
+  alt="Project Waddle detail with Active status and target date, its description, an AI summary card rated On Track with 91% confidence and one task blocked, and the Project Tasks list led by the blocked zero-gravity fish feeder"
   caption="Desktop keeps the project list and detail side by side. Mobile opens the same detail as a full page."
 />
 
-The project-agent card brings the assessment and report together:
+The **AI summary** card brings the assessment and report together:
 
-- the health band summarizes the agent's assessment, with rationale and
-  confidence when available;
-- task progress shows completed and blocked counts;
-- the report gives a current summary and can expand to its full content; and
-- recommendations call attention to concrete next actions.
+- **Project health** summarizes the agent's assessment, with rationale and
+  confidence when available, and how many tasks are blocked;
+- the report gives a current summary, and **Read more** expands it to its full
+  content; and
+- next steps and proposed changes call attention to concrete actions.
 
-In Project Waddle, an On Track assessment and five completed tasks are
-encouraging, but the zero-gravity fish feeder is still a launch blocker. Read
-the rationale before treating the band as a verdict.
+In Project Waddle, an On Track assessment is encouraging, but the
+zero-gravity fish feeder is still a launch blocker. Read the rationale before
+treating the band as a verdict.
 
-When a project agent is configured, its controls let you choose a model setup,
-toggle automatic updates, run a report now, or cancel a scheduled wake. Without
-an agent, the detail offers assignment and still shows the project's tasks and
+The card itself keeps only **Open agent internals**, and **Update now** while
+the summary is out of date. The model setup, automatic updates and how often
+the agent updates live in the agent internals. Without an agent, the card
+offers **Assign Agent** and the detail still shows the project's tasks and
 description.
+
+**Explore project**, beside the project menu, opens the project as a walkable
+district with a building for each task.
+
+## Add notes, recordings and images to a project
+
+A bar along the bottom of the project page adds to the project directly:
+**Record a voice note**, write a note, import an image, or the plus for the
+**Add** menu with the rest. On a narrow screen the note and image buttons give
+way to the plus. Everything added there is linked to the project, shows up in
+its timeline, and is read by its agent.
 
 ## Keep project work in tasks
 
@@ -118,6 +139,10 @@ cover art.
 
 Assign a task to a project from the project control in the task header. Projects
 are scoped by category, so give the task a category before choosing a project.
+The task's agent can also propose it: mention the project in the task's notes or
+a recording, and the agent suggests moving the task into it — or, when the
+category has no project of that name, creating the project with the task in
+it. Nothing changes until you confirm.
 A task belongs to at most one project at a time; assigning another project
 moves the link instead of duplicating it.
 

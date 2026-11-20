@@ -313,7 +313,6 @@ manual_screenshots_manifest: docs-site/node_modules
 manual_screenshots_locale:
 	mkdir -p "$(MANUAL_CAPTURE_DIR)"
 	LOTTI_MANUAL_LOCALE="$(MANUAL_LOCALE)" LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/settings/ui/settings_home_screenshots_test.dart
-	LOTTI_MANUAL_LOCALE="$(MANUAL_LOCALE)" LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/daily_os_next/ui/pages/day_planning_modal_screenshots_test.dart --name '^(mini|desktop) (capture captured|captured|reconcile) — (dark|light)$$'
 	LOTTI_MANUAL_LOCALE="$(MANUAL_LOCALE)" LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart --name '^((mini|desktop) (agenda|timeline)|(pro|desktop) timeline arrange mode) — (dark|light)$$'
 	LOTTI_MANUAL_LOCALE="$(MANUAL_LOCALE)" LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart --name '^manual daily OS'
 	LOTTI_MANUAL_LOCALE="$(MANUAL_LOCALE)" LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/daily_os_next/ui/pages/daily_os_settings_manual_screenshots_test.dart

@@ -28,7 +28,7 @@ een te maken op basis van de context en referentieafbeeldingen van de taak zelf.
 
 <ManualScreenshot
   caseId="tasks/detail"
-  alt="Productietaakdetailpagina voor het inspecteren van het orbitale pinguïnverblijf, met dezelfde omslagafbeelding als de taakminiaturen"
+  alt="Taakpagina voor het inspecteren van het orbitale pinguïnverblijf met categorie, status In behandeling, prioriteit Hoog, vervaldatum, geregistreerde tijd tegenover de schatting, labels en de AI-samenvatting"
 />
 
 Dezelfde taak kan een beschrijving, categorie, labels, vervaldatum, tijdregistraties,
@@ -76,15 +76,16 @@ taken met een toegewezen agent van taken zonder.
 
 Keuzes binnen één filter zijn alternatieven: P0 en P1 selecteren toont taken met een van
 beide prioriteiten. Verschillende filters verfijnen het resultaat samen: P0 of P1
-*en* Penguin Operations selecteren toont alleen passend werk. Gebruik **Alles wissen**
-om terug te keren naar een onbeperkte weergave in plaats van elke keuze afzonderlijk
-ongedaan te maken.
+*en* Penguin Operations selecteren toont alleen passend werk. Gebruik **Wissen** in
+het blad, of **Alles wissen** naast de actieve filters in de lijst, om terug te keren
+naar een onbeperkte weergave in plaats van elke keuze afzonderlijk ongedaan te maken.
 
-Kies **Verloopdatum**, **Aangemaakt** of **Prioriteit** in hetzelfde blad om de
+Kies **Vervaldatum**, **Aangemaakt** of **Prioriteit** in hetzelfde blad om de
 volgorde te wijzigen. De prioriteitsvolgorde is P0 tot en met P3, met nieuwere taken
-eerst binnen een prioriteit, tenzij een andere sortering actief is. Op desktop kan een
-ingeschakelde vectorzoek-setup naast normaal zoeken in volledige tekst ook semantisch
-zoeken aanbieden.
+eerst binnen een prioriteit, tenzij een andere sortering actief is. Zoeken toont eerst
+de taken waarvan de woorden overeenkomen, de beste treffer bovenaan, gevolgd door een
+sectie **Verwant qua betekenis** met taken die hetzelfde in andere woorden zeggen.
+Terwijl je zoekt, worden de filterchips die het zoeken niet toepast gedimd.
 
 Keer je regelmatig terug naar dezelfde gerichte weergave, sla dan het actieve filter op
 vanuit het blad en geef het een duidelijke naam. Open het daarna opnieuw vanuit de
@@ -99,10 +100,10 @@ geconfigureerde AI-vaardigheden op basis van de taakcontext.
 
 ## Taakcontext toevoegen
 
-Gebruik de actie **Toevoegen** van de taak om een checklist, een andere taak, een
-audio-opname, een timer, een tekstinvoer of een afbeelding toe te voegen zonder de taak
-te verlaten. De beschikbare acties zijn afhankelijk van het huidige platform en de
-huidige context.
+Gebruik de actie **Toevoegen** van de taak om een notitie, een checklist, een
+spraaknotitie, een gekoppelde taak of een afbeelding toe te voegen zonder de taak te
+verlaten; **Tijd registreren** in de actiebalk van de taak start een timer. De beschikbare
+acties zijn afhankelijk van het huidige platform en de huidige context.
 
 <ManualScreenshot
   caseId="entries/create-menu"
@@ -136,13 +137,18 @@ gaan.
 
 ## Koppel gerelateerde taken
 
-Open de sectie **Gekoppeld** van de taak en kies ervoor een bestaande taak te koppelen.
-Zoek in de kiezer en selecteer vervolgens de gerelateerde uitkomst. Lotti sluit de
-huidige taak uit, evenals taken die al in die richting gekoppeld zijn.
+Selecteer in de sectie **Gekoppelde taken** van de taak **Een taak koppelen…** – of
+**Koppelen** zodra de taak al koppelingen heeft – om **Bestaande taak koppelen** te
+openen. Kies onder **Deze taak…** de relatie: **Hangt samen met**, of een van
+**Blokkeert**, **Wordt geblokkeerd door**, **Is een vervolg op**, **Heeft een vervolg**,
+**Dupliceert**, **Wordt gedupliceerd door**, **Lost op**, **Wordt opgelost door**,
+**Vervangt** en **Wordt vervangen door**. Zoek daarna in de kiezer en selecteer de
+gerelateerde taak. Lotti sluit de huidige taak uit, evenals taken die al in die
+richting gekoppeld zijn.
 
 <ManualScreenshot
   caseId="tasks/link-picker"
-  alt="Productietaak-linkkiezer met gerelateerde Project Waddle-taken en hun status, prioriteit, categorie en vervaldatumcontext"
+  alt="Kiezer Bestaande taak koppelen boven de taak Inspect orbital penguin habitat, met Deze taak… ingesteld op Hangt samen met, een veld Zoeken taken… en twee Penguin Operations-taken met hun status"
 />
 
 Taaklinks zijn richtinggevend: de huidige taak verwijst naar de taak die je kiest.

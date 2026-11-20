@@ -13,10 +13,11 @@ breve rapporto e può proporre modifiche all'attività o alla lista di controllo
 che tu puoi confermare o rifiutare. Per la vista a livello di sistema su tutti
 gli agenti in esecuzione, vedi [Eseguire e monitorare gli agenti](../ai-and-automation/agents.mdx).
 
-L'agente assegnato appare sotto le liste di controllo dell'attività e le
-attività collegate. La sua scheda mantiene l'ultimo riassunto e le
-eventuali modifiche proposte, e nient'altro. I suoi controlli di aggiornamento
-e la configurazione IA vivono dietro **Interni di agente aperto**, così la
+La scheda **Riepilogo IA** dell'agente assegnato sta in cima all'attività,
+sotto le sue note e sopra le sue liste di controllo e le attività collegate. La
+scheda mantiene l'ultimo riassunto, le eventuali modifiche proposte e
+un'azione **Aggiorna ora**. Le sue impostazioni di aggiornamento e la
+configurazione IA vivono dietro **Apri i dettagli interni dell'agente**, così la
 pagina dell'attività si legge come un'attività e non come una console IA.
 
 <ManualScreenshot
@@ -26,15 +27,15 @@ pagina dell'attività si legge come un'attività e non come una console IA.
 />
 
 A ogni dimensione di schermo la scheda segue un unico ordine di lettura:
-identità, rapporto, quindi modifiche proposte e storia. Quando il riassunto è
-rimasto indietro rispetto all'attività, fra i due compaiono l'avviso **Non
-aggiornato** e l'azione **Aggiorna ora**; finché il riassunto è attuale, la
-scheda non dice nulla sulla propria freschezza.
+identità, rapporto, quindi modifiche proposte e storia. Fra il rapporto e le
+proposte, una riga dice quanto tempo fa è stato scritto il rapporto e offre
+**Aggiorna ora**; quando il riassunto è rimasto indietro rispetto
+all'attività, quella riga dice invece **Non aggiornato**.
 
 Scegli **Leggi tutto** per espandere il rapporto completo senza lasciare la
 pagina. La scheda ampliata mantiene l'attività visibile, aggiunge la
 valutazione di supporto del rapporto e il prossimo passo raccomandato, e
-offre **Interni di agente aperto** quando ti servono i controlli di
+offre **Apri i dettagli interni dell'agente** quando ti servono i controlli di
 aggiornamento e la configurazione IA dell'agente, oppure i suoi rapporti,
 conversazioni, osservazioni e dettagli di runtime.
 
@@ -46,7 +47,7 @@ conversazioni, osservazioni e dettagli di runtime.
 
 ## Scegli la configurazione IA dell'agente
 
-Apri **Interni di agente aperto** — dal nome dell'agente in cima alla scheda
+Apri **Apri i dettagli interni dell'agente** — dal nome dell'agente in cima alla scheda
 o dal collegamento sotto il rapporto ampliato: lì la riga **Configurazione
 attuale** identifica il profilo, il modello e il provider usati per la
 prossima sveglia. Selezionala per scegliere un
@@ -82,8 +83,10 @@ Usa la croce per **Scarta** una proposta o il segno di spunta per
 **Conferma** e applicarla. Puoi anche scorrere una proposta verso sinistra
 per scartarla o verso destra per confermarla. Quando sono in sospeso più
 proposte, **Confermare tutto** applica insieme le modifiche attualmente
-elencate. Rivedi con attenzione le proposte multiple, in particolare i
-cambiamenti di stato, data e lista di controllo.
+elencate. Un cambio di stato proposto non ne fa mai parte: attende nella sua
+fascia **Cambi di stato** finché non lo confermi o lo scarti da solo. Rivedi
+con attenzione le proposte multiple, in particolare i cambiamenti di data e
+lista di controllo.
 
 Apri **Storia** per rivedere i risultati recenti. Distingue le modifiche
 confermate da quelle scartate. Una voce scartata può rappresentare sia una
@@ -100,7 +103,7 @@ risolve le proposte già in attesa della tua decisione.
 I nuovi agenti di attività iniziano con **Aggiornamenti automatici
 disattivati**. La sola assegnazione non consuma token in background.
 L'interruttore, il conto alla rovescia fino al prossimo aggiornamento e
-**Salta una volta** vivono tutti in **Interni di agente aperto**, accanto allo
+**Salta una volta** vivono tutti in **Apri i dettagli interni dell'agente**, accanto allo
 storico dei rapporti e all'attività dell'agente. Quando gli aggiornamenti sono
 disattivati, Lotti continua a notare le modifiche rilevanti all'attività e alle
 voci collegate, contrassegna sulla scheda stessa un riassunto precedente come

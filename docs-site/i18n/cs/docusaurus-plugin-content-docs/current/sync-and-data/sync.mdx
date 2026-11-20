@@ -20,12 +20,12 @@ data a každé zařízení si ponechává vlastní místní kopii.
 Dvě věci stojí za zmínku. Ne všechno, co se synchronizuje, jsou data deníku: profil zařízení a jméno v Daily OS putují jako předvolby zařízení a nepodléhají detekci mezer. A odvozená čísla se nikdy neodesílají — uložený filtr úkolů se synchronizuje, ale počty úkolů z něj se na každém zařízení počítají znovu.
 
 Otevři **Nastavení → Nastavení synchronizace** a uvidíš stránky pro
-nastavení, stav a obnovu. Číslo u **Synchronizace odeslané pošty** je práce,
+nastavení, stav a obnovu. Číslo u **Odchozí fronta synchronizace** je práce,
 která se ještě nedostala ke službě synchronizace.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Nastavení synchronizace v Lotti se Zařízení, Toto zařízení, Synchronizace doplnění, Statistiky Matrix, Synchronizace odeslané pošty, Konflikty synchronizace a Údržba"
+  alt="Nastavení synchronizace v Lotti se Zařízení, Toto zařízení, Stav synchronizace, Statistiky Matrix, Synchronizace odeslané pošty, Konflikty synchronizace a Údržba"
   caption="Nastavení synchronizace drží každodenní stav vedle nástrojů pro diagnostiku a obnovu. Project Waddle má teď v odchozí frontě tři položky ke kontrole."
 />
 
@@ -122,20 +122,22 @@ nastavený tak, aby je používal.
 
 ## Rozuměj doplnění a dohánění
 
-Běžná synchronizace zpracovává změny tak, jak přicházejí. **Synchronizace
-doplnění** hledá mezery v posloupnosti přijaté od známých zařízení a chybějící
+Běžná synchronizace zpracovává změny tak, jak přicházejí. **Stav
+synchronizace** hledá mezery v posloupnosti přijaté od známých zařízení a chybějící
 záznamy si vyžádá znovu.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Stránka Synchronizace doplnění v Lotti s počty příchozí fronty, chybějících a přeskočených položek, statistikami synchronizace, automatickým doplňováním a pokročilým obnovením"
-  caption="Project Waddle přijal 2 868 záznamů posloupnosti a teď ví o čtyřech chybějících záznamech ze dvou ID zařízení."
+  alt="Stránka Stav synchronizace v Lotti se záznamy na tomto zařízení, počty příchozí fronty a chybějících položek, statistikami synchronizace, automatickým doplňováním a pokročilým obnovením"
+  caption="Project Waddle sleduje 2 868 čítačů posloupnosti, z nich 2 775 přijal, a teď ví o čtyřech chybějících záznamech ze dvou ID zařízení."
 />
 
+- **Záznamy na tomto zařízení** počítají, co toto zařízení drží, včetně
+  smazaných. Synchronizovaná zařízení tu ukazují stejná čísla.
 - **Příchozí fronta** je práce, která čeká na použití.
 - **Chybí** je počet známých mezer v posloupnosti.
-- **Přeskočeno** je práce, kterou příchozí fronta vzdala, protože ji nešlo
-  normálně zpracovat.
+- **Přeskočeno** v sekci **Statistiky synchronizace** je práce, kterou
+  příchozí fronta vzdala, protože ji nešlo normálně zpracovat.
 - **Automatické zpětné doplňování** si vyžádá chybějící záznamy za posledních
   24 hodin a pro běžné používání je to správné výchozí nastavení.
 - **Pokročilé obnovení** obsahuje ruční akce pro vyšetřování, například
@@ -172,7 +174,7 @@ schránky pro žádost o podporu.
 
 ## Kontroluj odchozí frontu
 
-**Synchronizace odeslané pošty** je místní fronta změn, které čekají na
+**Odchozí fronta synchronizace** je místní fronta změn, které čekají na
 odeslání. Souhrn nahoře řekne, jestli je všechno synchronizované, kolik položek
 čeká nebo se právě odesílá a kolik se nepodařilo odeslat.
 

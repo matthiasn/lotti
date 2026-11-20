@@ -1,0 +1,110 @@
+---
+title: Forbind GitHub
+description: Forbind et skrivebeskyttet GitHub-token, så opgaver kan følge de pull requests, der gennemfører dem, med opsummeringer, agentforslag og svar fra følgesvenden.
+---
+
+# Forbind GitHub
+
+Lotti kan følge de GitHub-pull requests, der gennemfører dine opgaver: deres
+status, tjek, reviews og flettekonflikter står ved siden af opgaven, en
+opsummering fortæller, hvad hver enkelt ændrer, og opgaveagenten kan bruge dem
+til at foreslå, hvilke tjeklistepunkter der er færdige. Alt dette kræver et
+skrivebeskyttet personligt adgangstoken fra din GitHub-konto.
+
+## Opret og forbind et token
+
+Åbn **Indstillinger → Avancerede indstillinger → GitHub**.
+
+1. Vælg **Opret et token på GitHub**. Din browser åbner GitHubs tokenformular
+   med Lottis navn, en levetid på et år og de skrivebeskyttede tilladelser
+   allerede udfyldt. Hvis browseren ikke kan åbnes, fortæller Lotti dig, hvor
+   du opretter tokenet i hånden: på github.com under Settings → Developer
+   settings → Personal access tokens.
+2. Vælg på GitHub de repositories, Lotti må læse, og opret tokenet.
+3. Indsæt tokenet i **Personligt adgangstoken**. **Vis token** og **Skjul
+   token** viser og skjuler det, du har indsat.
+4. Vælg **Forbind**. Lotti tjekker først tokenet hos GitHub. En toast
+   bekræfter **Forbundet til GitHub som @dig** med dit kontonavn; et token,
+   som GitHub afviser, forklares under feltet.
+
+Når forbindelsen er oprettet, viser siden, hvilken konto der er forbundet, og
+tilbyder **Afbryd forbindelsen**. Når du afbryder, glemmes tokenet på denne
+enhed og på dine andre enheder, og det bekræftes med **Afbrudt fra GitHub**.
+
+CI-tjek i private repositories kan være ufuldstændige: GitHub giver disse
+tokens ingen adgang til check runs, og siden siger det.
+
+## Hvor tokenet opbevares
+
+Tokenet gemmes i denne enheds nøglering og bruges kun til forespørgsler til
+api.github.com. Det bliver aldrig logget eller eksporteret. Med
+synkronisering sat op rejser det end-to-end-krypteret til dine andre enheder,
+ligesom en AI-udbydernøgle. Et token, der ankommer fra en anden enhed, tjekkes
+hos GitHub, før det bruges.
+
+Når synkronisering er sat op, tilbyder siden også **Send til mine andre
+enheder**, mens der er forbindelse, eller **Tjek mine andre enheder**, mens der
+ikke er, til når en enhed endnu ikke har modtaget tokenet.
+
+Lotti henter aldrig en pull requests webside. Billeder indlejret i en pull
+requests beskrivelse indlæses fra deres egne adresser, kun mens du har den
+pull requests detaljer åbne, og analyseres kun af AI, når du føjer et af dem
+til opgaven.
+
+## Spor pull requests på en opgave
+
+Med GitHub forbundet åbner du en opgave og vælger **Sporing af pull requests**
+fra **+** i dens handlingsbjælke. Opgaven viser derefter en sektion **Pull
+requests**; valget gemmes på opgaven, så det gælder på alle enheder. En opgave
+med en tilknyttet pull request viser sektionen under alle omstændigheder.
+
+Vælg **Knyt en pull request** for at knytte en:
+
+- indsæt et link eller en kort reference i **URL eller ejer/repo#123**, og
+  vælg **Knyt**; eller
+- vælg fra listen under **Eller vælg en fra** repositoryet, som viser det
+  repositorys åbne pull requests, som ingen opgave har endnu, med deres
+  størrelse. Et tryk på en række knytter den med det samme. Hvis den ikke kan
+  knyttes, vises årsagen under den række, du valgte.
+
+Listen kræver et repository: åbn opgavens kategori under **Indstillinger →
+Definitioner → Kategorier**, og angiv det under **GitHub** → **Repository**
+som `owner/repo` eller repositoryets link. Den sektion vises, når GitHub er
+forbundet. En pull request, som en anden opgave allerede har, spørger først –
+**Knyt også her** eller **Knyt ikke**.
+
+Hver tilknyttet pull request viser sin status (**Åben**, **Kladde**,
+**Flettet** eller **Lukket**), sine tjek, reviews og flettetilstand samt en
+opsummering på én linje. Tryk på den for at se detaljerne: **Kort fortalt**,
+pull requestens egen **Beskrivelse** og **Åbn på GitHub**. Dens menu tilbyder
+**Opdater pull request**, **Åbn på GitHub** og **Fjern pull request**. Lotti
+opdaterer også en opgaves pull requests, når de indgår i en kodeprompt eller
+en opdatering fra opgaveagenten. En enhed uden token viser stadig det, en
+anden enhed sidst så, med dets alder.
+
+Indsæt et pull request-link i opgavesøgningen for at finde de opgaver, det er
+knyttet til.
+
+## Lad AI opsummere og foreslå
+
+Opgaveagentens model skriver hver opsummering på opgavens sprog: en
+one-liner under titlen og **Kort fortalt** i detaljerne. Opsummeringer
+skrives automatisk, når opgavens kategori har **Automatisk inferens** slået
+til (se [Kategorier](../organize-and-reflect/categories.mdx)); ellers vælger
+du **Opsummér** i detaljerne eller **Opsummér igen** for en ny.
+
+Opgaveagenten læser de åbne pull requests, som ingen opgave har, og foreslår
+at knytte den, der gennemfører dens opgave – **Knyt pull request #…** i dens
+foreslåede ændringer, knyttet, når du bekræfter. Den kan også foreslå at
+krydse tjeklistepunkter af, som en opdateret pull request har gennemført. Se
+[Opgaveagenter](../organize-and-reflect/task-agents.mdx).
+
+## Spørg følgesvenden om pull requests
+
+Med GitHub forbundet kan [følgesvenden](../getting-started/companion.mdx)
+besvare spørgsmål som "Hvor mange pull requests åbnede jeg i denne uge?" med
+diagrammer over pull requests, **Tilføjede linjer** og **Slettede linjer**,
+pr. dag eller som en løbende total. Spørger du, hvilken opgave noget arbejde
+hørte til, eller hvilke pull requests der var størst, viser den dem som de
+samme pull request-kort, som en opgave har. Den læser kun de pull requests,
+der allerede er gemt på denne enhed.

@@ -12,24 +12,33 @@ pingvinhabitat.
 
 <ManualScreenshot
   caseId="projects/list"
-  alt="Projekter grupperet under Penguin-operationer, Mission Control, Fiskediplomati og Menneskelig vedligeholdelse, herunder Project Waddle og Europa-sardinkoldkæden"
+  alt="Projektlisten i omfanget Aktuelle, grupperet under Penguin-operationer, Mission Control og Fiskediplomati, med Project Waddle, Europa-sardinkoldkæden og pingvinpassageraftalen"
   caption="Hver række kombinerer status, opgavefremskridt, måldato og en kort formålsbeskrivelse. Desktop holder plads til et valgt projekt til højre; mobil bruger hele bredden til listen."
 />
 
 ## Find det projekt, du har brug for
 
-Søgningen matcher projekttitler, gemt projekttekst og kategorinavne.
-Filterkontrollen indsnævrer listen efter projektstatus eller kategori. Et
-filter træder først i kraft, når du vælger **Anvend**.
+Søgningen matcher projekttitler, gemt projekttekst og kategorinavne. Under
+søgefeltet skjuler **Aktuelle** fuldførte og arkiverede projekter; **Alle**
+henter dem tilbage. **Sortér projekter** sorterer listen efter **Kræver
+opmærksomhed**, **Måldato**, **Senest opdateret** eller **Navn**.
+
+Filterknappen indsnævrer listen efter **Status** eller **Kategori**. To
+kontakter tilføjer mere: **Kun forældede resuméer** beholder projekter, hvis
+agentresumé er bagud, og **Vis inferensprofil** mærker hvert projekt, der har
+en agent, med navnet på dets inferensprofil. Et filter træder først i kraft,
+når du vælger **Anvend**.
 
 <ManualScreenshot
   caseId="projects/filters"
-  alt="Projektfilterdialog med status- og kategorikontroller over Intergalactic Penguin Logistics-projektlisten"
+  alt="Dialogen Filtrér projekter med rækkerne Status og Kategori, kontakterne Kun forældede resuméer og Vis inferensprofil samt Ryd og Anvend over projektlisten"
 />
 
 Projekter forbliver grupperet efter kategori efter filtrering. Det gør
 indsatser med samme navn lettere at skelne og holder hvert operationsområde
-synligt.
+synligt. Hver kategorioverskrift kan foldes sammen, og dens kortknap åbner
+**Udforsk kategori** – kategoriens projekter som et bykvarter, du kan gå rundt
+i.
 
 ## Opret et projekt
 
@@ -85,25 +94,38 @@ på denne læs-først-detaljeside.
 
 <ManualScreenshot
   caseId="projects/detail"
-  alt="Project Waddle-detaljer med en sundhedsscore på 82, fem af otte opgaver fuldført, én blokering og en AI-rapport opdateret for to timer siden"
+  alt="Project Waddle-detaljer med status Aktiv og måldato, beskrivelsen, et AI-oversigtskort vurderet til På banen med 91 % sikkerhed og én blokeret opgave samt listen over projektopgaver anført af den blokerede fiskefoder uden tyngdekraft"
   caption="Desktop holder projektlisten og detaljerne side om side. Mobil åbner de samme detaljer som en hel side."
 />
 
-Sundhedspanelet opsummerer projektagentens aktuelle vurdering:
+Kortet **AI-oversigt** samler vurderingen og rapporten:
 
-- sundhedsscoren er et kompakt signal, ikke en erstatning for det
-  underliggende arbejde;
-- opgavefremskridt viser antal fuldførte og blokerede;
-- rapporten giver et aktuelt resumé og kan udvides til sit fulde indhold; og
-- anbefalinger fremhæver konkrete næste tiltag.
+- **Projektets sundhed** opsummerer agentens vurdering, med begrundelse og
+  sikkerhed, når de findes, og hvor mange opgaver der er blokeret;
+- rapporten giver et aktuelt resumé, og **Læs mere** udvider den til sit
+  fulde indhold; og
+- næste skridt og foreslåede ændringer fremhæver konkrete handlinger.
 
-I Project Waddle er en score på 82 og fem fuldførte opgaver opmuntrende, men
-fiskefoderen uden tyngdekraft er stadig en opsendelsesblokering. Læs
-forklaringen, før du betragter en score som en dom.
+I Project Waddle er en På banen-vurdering opmuntrende, men fiskefoderen uden
+tyngdekraft er stadig en opsendelsesblokering. Læs begrundelsen, før du
+betragter båndet som en dom.
 
-Når en projektagent er konfigureret, kan rapportmenuen anmode om en frisk
-rapport eller aflyse en planlagt våge. Uden en agent viser projektet stadig
-sine opgaver og eventuel gemt projekttekst.
+Selve kortet beholder kun **Åbn agentens interne detaljer** og **Opdater nu**, mens
+resuméet er forældet. Modelopsætningen, automatiske opdateringer og hvor ofte
+agenten opdaterer, ligger i agentens interne dele. Uden en agent tilbyder
+kortet **Tildel agent**, og detaljerne viser stadig projektets opgaver og
+beskrivelse.
+
+**Udforsk projekt**, ved siden af projektmenuen, åbner projektet som et
+bykvarter, du kan gå rundt i, med en bygning for hver opgave.
+
+## Tilføj noter, optagelser og billeder til et projekt
+
+En bjælke langs bunden af projektsiden føjer direkte til projektet: **Optag en
+talenote**, skriv en note, importér et billede, eller brug plusset til
+**Tilføj**-menuen med resten. På en smal skærm viger note- og billedknapperne
+for plusset. Alt, der tilføjes dér, knyttes til projektet, vises i dets
+tidslinje og læses af dets agent.
 
 ## Hold projektarbejdet i opgaverne
 
@@ -119,7 +141,11 @@ tidsregistreringer og coverkunst.
 
 Tildel en opgave til et projekt fra projektkontrollen i opgavens header.
 Projekter er afgrænset efter kategori, så giv opgaven en kategori, før du
-vælger et projekt. En opgave tilhører højst ét projekt ad gangen; at tildele
+vælger et projekt. Opgavens agent kan også foreslå det: nævn projektet i
+opgavens noter eller i en optagelse, så foreslår agenten at flytte opgaven ind
+i det – eller, når kategorien ikke har et projekt med det navn, at oprette
+projektet med opgaven i. Intet ændres, før du bekræfter. En opgave tilhører
+højst ét projekt ad gangen; at tildele
 et andet projekt flytter linket i stedet for at duplikere det.
 
 ## Projekter, kategorier og opgaver

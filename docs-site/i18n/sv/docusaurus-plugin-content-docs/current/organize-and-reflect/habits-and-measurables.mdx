@@ -10,7 +10,7 @@ svarar på **vilket numeriskt värde observerade jag?** De kan stödja samma må
 utan att vara utbytbara: ”Kejsarpingvinens uppräkning” är en vana, medan
 ”Pingviner räknade” är ett mätvärde.
 
-Vanor är för närvarande en valfri funktion och levereras avstängda. Öppna **Inställningar → Sektioner** och slå på **Habiter**. Destinationen **Habiter** och posten **Habiter** under **Inställningar → Definitioner** visas sedan. Mätbara egenskaper kräver ingen flagga.
+Vanor är för närvarande en valfri funktion och levereras avstängda. Öppna **Inställningar → Sektioner** och slå på **Vanor**. Destinationen **Vanor** och posten **Vanor** under **Inställningar → Definitioner** visas sedan. Mätbara egenskaper kräver ingen flagga.
 
 ## Arbeta med vanor
 
@@ -26,9 +26,10 @@ upptäcka mönster utan att en missad dag behandlas som hela historien.
 
 ### Skapa och redigera vanor
 
-1. Öppna **Habiter** och tryck på **+**. För att ändra en befintlig vana håller
-   du den intryckt eller öppnar dess registreringsblad och trycker på pennan.
-   **Inställningar → Definitioner → Habiter** listar fortfarande alla
+1. Öppna **Vanor** och tryck på **+** – på en telefon finns den i
+   navigeringsstartaren. För att ändra en befintlig vana håller du den
+   intryckt eller öppnar dess registreringsblad och trycker på pennan.
+   **Inställningar → Definitioner → Vanor** listar fortfarande alla
    definitioner och öppnar samma redigerare.
 2. Ge beteendet ett konkret namn. Exempelchipen (**mäta blodtrycket**,
    **6 000 steg**, **funktionell styrketräning**, **ta medicin**) fyller i ett
@@ -44,7 +45,7 @@ upptäcka mönster utan att en missad dag behandlas som hela historien.
 
 <ManualScreenshot
   caseId="habits/editor-step2"
-  alt="Ny vana, steg 2 av 2: Hur vet vi att det är gjort? med den manuella raden, en Steg-signal inställd på per dag minst 6 000, Lägg till en signal och avsnittet Inställningar"
+  alt="Ny vana, steg 2 av 2: Hur vet vi att det är gjort? med den manuella raden, en Steg-signal inställd på per dag ≥ 6 000 jämfört med I dag, Lägg till en signal, reglaget Meddela vid automatisk avbockning och avsnittet Inställningar"
 />
 
 ### Låta registrerad data bocka av en vana
@@ -61,11 +62,16 @@ signal** erbjuder tre slag:
 - en **träningspass**-typ som förekommit i dina importer (valfritt pass, eller
   tid, sträcka eller energi minst / högst ett värde).
 
+En tröskel kan jämföras med värdet för **I dag**, **7-dagarsgenomsnittet**
+eller **Endera värdet**.
+
 Med två eller fler signaler väljer **När vanan räknas som gjord** om **valfri**
 signal, **alla** signaler eller **minst N** av dem fullbordar den. När dagens
 data uppfyller regeln bockas vanan av åt dig, markeras **auto** på sidan
-Habiter med signal och tid, och meddelas med en avisering – vanor som fullbordas inom några sekunder slås ihop till en, varje vana meddelas högst en gång per dag, och
-**Meddela vid automatisk avbockning** stänger av det per vana. Det du registrerar själv, även
+Vanor med signal och tid, och meddelas med en avisering – vanor som fullbordas
+inom några sekunder slås ihop till en, varje vana meddelas högst en gång per
+dag, och **Meddela vid automatisk avbockning** längst ned på signalkortet, som
+visas så snart vanan har en signal, stänger av det per vana. Det du registrerar själv, även
 ett överhopp, vinner alltid över den automatiska avbockningen.
 
 ### Redigerarens inställningar
@@ -78,19 +84,18 @@ ett överhopp, vinner alltid över den automatiska avbockningen.
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Sidan Redigera vana för Upprop av kejsarpingviner med signalkortet, avsnittet Inställningar och alternativen favorit, privat och aktiv"
+  alt="Sidan Redigera vana för Upprop av kejsarpingviner med namn, beskrivning, kortet Hur vet vi att det är gjort? och avsnittet Inställningar"
 />
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="Redigerarens avsnitt Inställningar med kategori, startdatum, visa från, aviseringstid och reglaget för meddelande vid automatisk avbockning"
+  alt="Sidan Redigera vana för Upprop av kejsarpingviner med avsnittet Inställningar – kategori, startdatum, visa från och visa avisering kl. – och Alternativ med Favorit, Privat och Aktiv, sedan Radera"
 />
 
 - **Kategori** för filtrering och visuell inramning.
 - **Startdatum**, och för en daglig vana tiden den **visas från** och när Lotti
   ska **visa en avisering**. Datamodellen förstår även vecko- och månadsplaner;
   redigeraren visar dessa tidsinställningar för dagliga vanor.
-- **Meddela vid automatisk avbockning** (på som standard).
 - Vid redigering: **Favorit** för större synlighet, **Privat** för att dölja
   den om inte privata poster visas, **Aktiv** för att styra om den syns på
   sidan Habiter utan att radera historiken, och **Radera**.
@@ -111,7 +116,7 @@ inga chip). Ett tryck på ett chip registrerar mätningen direkt; om det fullbor
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Registreringsblad för att inspektera habitatets tätningar, med signalraderna Krillransoner och Steg, snabbregistreringschip, kurvor och utfallen Lyckades, Hoppa över och Missade"
+  alt="Registreringsblad för att inspektera habitatets tätningar, med signalraderna Krillransoner, Vätskekontroll och Steg, snabbregistreringschip, kurvor och utfallen Lyckades, Hoppa över och Missade"
 />
 
 Använd det tillstånd som bevarar verkligheten. En ärlig historik är mer
@@ -120,26 +125,31 @@ vyer kan återskapa det faktiska resultatet för varje vana och dag.
 
 ## Arbeta med mätvärden
 
-En mätvärdesdefinition beskriver siffran innan du registrerar den: dess namn,
-enhet, sekretess och hur flera observationer kombineras i diagram.
+En mätvärdesdefinition beskriver värdet innan du registrerar det: dess namn,
+om det är ett tal eller ett val, enhet, sekretess och hur flera observationer
+kombineras i diagram.
 
 <ManualScreenshot
   caseId="measurables/settings-list"
-  alt="Mätvärdesinställningar med Habitattryck, Pingviner räknade och Konsumerade sardiner"
+  alt="Mätvärdesinställningar med Habitattryck, Vätskekontroll, Pingviner räknade och Konsumerade sardiner"
 />
 
 ### Skapa en mätbar datatyp
 
 1. Öppna **Inställningar → Definitioner → Mätbara egenskaper**.
-2. Välj lägg till-åtgärden.
-3. Lägg till ett namn, en valfri beskrivning och en kortfattad
-   enhetsförkortning.
-4. Välj standardaggregeringen som diagram använder.
-5. Bestäm om den ska vara favorit eller privat, och spara sedan.
+2. Välj **Skapa mätbart**.
+3. Lägg till ett namn och en valfri beskrivning.
+4. Under **Registreras som** väljer du **Tal** för ett värde med en enhet,
+   eller **Val** för att välja ett av de val du definierar – till exempel
+   färgerna i en vätskekontroll – när du registrerar.
+5. För ett tal lägger du till en kortfattad enhetsförkortning och väljer
+   standardaggregeringen som diagram använder. För ett val lägger du i stället
+   till dess **Valmöjligheter**.
+6. Bestäm om den ska vara favorit eller privat, och spara sedan.
 
 <ManualScreenshot
   caseId="measurables/settings-detail"
-  alt="Mätvärdesredigeraren för Habitattryck med kPa och aggregeringen Dagligt genomsnitt"
+  alt="Mätvärdesredigeraren för Habitattryck registrerat som Tal i kPa med aggregeringen Dagligt genomsnitt"
 />
 
 Välj aggregering utifrån vad upprepade avläsningar betyder:
@@ -178,8 +188,8 @@ kalenderdatumet. **Idag** går direkt tillbaka till dagens datum.
   alt="Kalendern för Observerad vid som väljer fredag 17 juli 2026 för sardinmätningen"
 />
 
-Rulla till tidsdelen för att ställa in timme och minut. **Nu** återställer
-den aktuella tiden. Välj **Klart** för att gå tillbaka till det fortfarande
+Rulla till tidsdelen för att ställa in timme och minut. **nu** återställer
+den aktuella tiden. Välj **Rensa** för att gå tillbaka till det fortfarande
 ifyllda mätutkastet, och sedan **Spara** för att skapa journalposten.
 
 <ManualScreenshot

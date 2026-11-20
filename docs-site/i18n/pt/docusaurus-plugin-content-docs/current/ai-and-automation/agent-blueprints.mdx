@@ -1,121 +1,122 @@
 ---
-title: Projete modelos e almas de agentes
-description: Defina responsabilidades reutilizáveis de agentes, separe a personalidade das instruções e melhore ambas por meio de revisões 1 a 1 versionadas.
+title: Desenha modelos e almas de agentes
+description: Define responsabilidades reutilizáveis de agentes, separa a personalidade das instruções e melhora ambas com revisões 1:1 com versões.
 ---
 
-# Crie modelos e almas de agentes
+# Cria modelos e almas de agentes
 
-Um **modelo de agente** define uma responsabilidade reutilizável: o tipo de agente,
-seu perfil de inferência, diretivas operacionais, formato de relatório e personalidade
-opcional. Uma **alma** reúne a voz reutilizável, os limites de tom, o estilo de
-coaching e a política anti-bajulação. Manter esses conceitos separados permite que
-uma personalidade melhore de forma consistente em vários modelos sem copiar
-instruções entre eles.
+Um **modelo de agente** define uma responsabilidade reutilizável: o tipo de
+agente, o seu perfil de inferência, as diretivas operacionais, o formato do
+relatório e uma personalidade opcional. Uma **alma** reúne a voz reutilizável,
+os limites de tom, o estilo de acompanhamento e a política anti-bajulação.
+Manter estes conceitos separados permite que uma personalidade melhore de
+forma consistente em vários modelos sem copiar instruções entre eles.
 
-## Revise o catálogo de modelos
+## Revê o catálogo de modelos
 
-Abra **Configurações → Agentes → Modelos de agente**. O catálogo mostra o tipo
+Abre **Configurações → Agentes → Modelos de agente**. O catálogo mostra o tipo
 do modelo, a identidade do modelo, a versão ativa e se alguma revisão precisa
 de atenção.
 
 <ManualScreenshot
   caseId="agents/templates"
-  alt="Modelos de agente do Lotti para segurança do habitat orbital, planejamento do dia do Project Waddle, monitoramento do suprimento de sardinhas e coaching em diplomacia de peixes"
-  caption="Cada modelo do Project Waddle tem uma responsabilidade restrita e uma versão visível, em vez de um agente multifuncional com um prompt impossível de revisar."
+  alt="Modelos de agente do Lotti para a segurança do habitat orbital, o planeamento do dia do Project Waddle, a vigilância do abastecimento de sardinhas e o acompanhamento em diplomacia de peixes"
+  caption="Cada modelo do Project Waddle tem uma responsabilidade restrita e uma versão visível, em vez de um agente para tudo com um prompt impossível de rever."
 />
 
-Os tipos integrados atendem a diferentes escopos:
+Os tipos integrados servem âmbitos diferentes:
 
-- **Agente de Tarefas** trabalha em uma tarefa e em suas evidências vinculadas.
-- **Agente diurno** planeja e revisa um dia.
+- **Agente de Tarefas** trabalha sobre uma tarefa e as provas ligadas a ela.
+- **Agente diurno** planeia e revê um dia.
 - **Agente de Projeto** acompanha um projeto ao longo do tempo.
 - **Agente de Eventos** segue um espaço de trabalho de eventos.
-- **Template Improver** oferece suporte ao processo de revisão individual de versão.
+- **Melhorador de modelo** apoia o processo de revisão 1:1 com versões.
 
-## Edite um modelo
+## Edita um modelo
 
-Selecione um modelo para editar sua configuração atual. Escolha um perfil de
-inferência padrão com as ferramentas e modalidades que a responsabilidade
-exige e, opcionalmente, atribua uma alma.
+Seleciona um modelo para editares a sua configuração atual. Escolhe um perfil
+de inferência predefinido com as ferramentas e modalidades de que a
+responsabilidade precisa e, opcionalmente, atribui-lhe uma alma.
 
 <ManualScreenshot
   caseId="agents/template-editor"
-  alt="Editor de modelo Orbital Habitat Sentinel usando Project Waddle Command e Admiral Pebble com segurança de habitat e diretivas de relatório"
-  caption="A diretriz operacional da sentinela descreve o que inspecionar; Admiral Pebble contribui com o estilo de comunicação e desafio."
+  alt="Editor do modelo Orbital Habitat Sentinel a usar Project Waddle Command e Admiral Pebble, com diretivas de segurança do habitat e de relatório"
+  caption="A diretiva operacional da sentinela descreve o que inspecionar; Admiral Pebble contribui com o estilo de comunicação e de desafio."
 />
 
-Use os dois campos de diretiva deliberadamente:
+Usa os dois campos de diretiva de forma deliberada:
 
-- **Diretriz Geral** define a responsabilidade, os limites e as regras de
+- **Diretiva Geral** define a responsabilidade, os limites e as regras de
   decisão.
-- **Diretiva de Relatórios** define o que um relatório salvo útil deve conter.
+- **Diretiva de Relatório** define o que um relatório guardado útil tem de
+  conter.
 
-Salvar um modelo editado cria uma nova versão. O histórico existente permanece
-disponível para auditoria e reversão; evite esconder responsabilidades não
-relacionadas em uma única diretiva longa só para reduzir o número de modelos.
+Guardar um modelo editado cria uma nova versão. O histórico existente continua
+disponível para auditoria e reversão; evita esconder responsabilidades sem
+relação numa única diretiva longa só para reduzir o número de modelos.
 
-## Execute um modelo individualmente
+## Faz o 1:1 de um modelo
 
-A página **1 a 1** do modelo apresenta as alterações propostas com base na
-atividade real de despertar, no feedback, no desempenho e nas sessões
+A página **Conversa 1:1** do modelo apresenta as alterações propostas com base
+na atividade real de despertar, no feedback, no desempenho e nas sessões
 anteriores. Uma sessão pendente é uma proposta, não uma reescrita automática.
 
 <ManualScreenshot
   caseId="agents/template-review"
-  alt="Conversa 1 a 1 do Orbital Habitat Sentinel mostrando uma proposta para destacar a decisão de lançamento e métricas de desempenho recentes"
-  caption="A proposta de exemplo responde a uma falha concreta: a conclusão de segurança estava correta, mas a decisão de avançar/não avançar foi enterrada sob trivialidades sobre peixes."
+  alt="Conversa 1:1 do Orbital Habitat Sentinel a mostrar uma proposta para destacar a decisão de lançamento e as métricas de desempenho recentes"
+  caption="A proposta de exemplo responde a uma falha concreta: a conclusão de segurança estava certa, mas a decisão de avançar ou não ficou enterrada sob trivialidades sobre peixes."
 />
 
-Inicie a conversa, inspecione as evidências e aprove apenas as alterações
-que melhoram a responsabilidade. O resultado aprovado passa a ser mais um
-registro de modelo versionado.
+Inicia a conversa, inspeciona as provas e aprova apenas as alterações que
+melhoram a responsabilidade. O resultado aprovado passa a ser mais um registo
+de modelo com versão.
 
-## Mantenha a personalidade reutilizável com almas
+## Mantém a personalidade reutilizável com almas
 
-Abra **Souls** para ver as personalidades que os modelos podem compartilhar.
-Uma alma não é mais um prompt de tarefa; ela controla como um agente se
+Abre **Almas** para veres as personalidades que os modelos podem partilhar.
+Uma alma não é mais um prompt de tarefa; controla a forma como um agente
 comunica, orienta e questiona.
 
 <ManualScreenshot
   caseId="agents/souls"
-  alt="Catálogo de almas Lotti contendo Almirante Pebble, Dr. Flipper e Capitão Sardina"
-  caption="O Project Waddle separa um diretor de voo calmo, um cientista curioso e um coordenador de carga prático das tarefas que os utilizam."
+  alt="Catálogo de almas do Lotti com Almirante Pebble, Dr. Flipper e Capitão Sardina"
+  caption="O Project Waddle separa um diretor de voo calmo, um cientista curioso e um coordenador de carga prático das tarefas que os usam."
 />
 
-O editor de almas mantém quatro aspectos explícitos:
+O editor de almas mantém quatro aspetos explícitos:
 
 <ManualScreenshot
   caseId="agents/soul-editor"
-  alt="Editor da alma Admiral Pebble com voz, limites de tom, estilo de coaching e política anti-bajulação"
-  caption="O Almirante Pebble pode permanecer caloroso e decisivo enquanto desafia as suposições otimistas de lançamento com evidências."
+  alt="Editor da alma Admiral Pebble com voz, limites de tom, estilo de acompanhamento e política anti-bajulação"
+  caption="O Almirante Pebble pode continuar caloroso e decidido enquanto contesta com provas as suposições otimistas de lançamento."
 />
 
 - **Diretiva de Voz** descreve a voz reconhecível e as prioridades de
   comunicação.
-- **Tom Bounds** indica o que a voz deve evitar.
-- **Estilo de Coaching** descreve como ajuda alguém a tomar uma decisão.
+- **Limites de tom** indica o que a voz deve evitar.
+- **Estilo de orientação** descreve como ajuda alguém a chegar a uma decisão.
 - **Política Anti-Bajulação** explica quando e como deve discordar.
 
-Use limites comportamentais concretos. “Seja útil” é difícil de revisar;
-“desafie suposições otimistas de lançamento e cite a observação que mudou sua
-conclusão” pode ser verificado em relação à saída real.
+Usa limites de comportamento concretos. «Sê útil» é difícil de rever;
+«contesta as suposições otimistas de lançamento e cita a observação que mudou
+a tua conclusão» pode ser verificado em relação ao resultado real.
 
-## Evolua uma alma compartilhada com cuidado
+## Faz evoluir uma alma partilhada com cuidado
 
-O **1 a 1** de uma alma reúne feedback de todos os modelos que usam essa
+O **Conversa 1:1** de uma alma reúne feedback de todos os modelos que usam essa
 personalidade. Isso torna a mudança poderosa: aprová-la pode melhorar vários
-agentes, mas uma mudança ruim também pode afetar todos eles.
+agentes, mas uma má alteração também os pode afetar a todos.
 
 <ManualScreenshot
   caseId="agents/soul-review"
-  alt="Conversa 1 a 1 da alma Admiral Pebble com uma proposta, um modelo que a compartilha e o histórico de sessões concluídas"
-  caption="A contagem de compartilhamentos e o histórico de sessões tornam o raio de impacto visível antes que as alterações de personalidade sejam aprovadas."
+  alt="Conversa 1:1 da alma Admiral Pebble com uma proposta, um modelo que a partilha e o histórico de sessões concluídas"
+  caption="A contagem de partilhas e o histórico de sessões tornam visível o raio de impacto antes de as alterações de personalidade serem aprovadas."
 />
 
-Leia a contagem de compartilhamentos, o resumo do feedback proposto e a
-recapitulação anterior antes de iniciar uma revisão de personalidade. Se o
-feedback se aplicar apenas a uma responsabilidade, mude esse modelo em vez de
-ensinar à alma compartilhada uma regra específica de uma tarefa.
+Lê a contagem de partilhas, o resumo do feedback proposto e o resumo anterior
+antes de iniciares uma revisão de personalidade. Se o feedback só se aplicar a
+uma responsabilidade, altera esse modelo em vez de ensinares à alma partilhada
+uma regra específica de uma tarefa.
 
-Volte para [Executar e monitorar agentes](./agents.mdx) para inspecionar as
-instâncias e os ciclos de despertar produzidos a partir desses modelos.
+Volta a [Executar e monitorizar agentes](./agents.mdx) para inspecionares as
+instâncias e os ciclos de despertar produzidos a partir destes modelos.

@@ -7,7 +7,7 @@ description: Donne à une tâche son propre assistant IA, avec un rapport, un é
 
 Une tâche peut avoir un agent de tâche. Lui en affecter un donne à cette tâche un assistant IA persistant, avec sa propre configuration d’inférence, son rapport, son état de réveil et son historique de propositions. L’agent lit la tâche et son contexte lié, distille la situation actuelle dans un bref rapport et peut faire apparaître des modifications proposées de la tâche ou de sa liste de contrôle, que tu confirmes ou refuses. Pour une vue d’ensemble de tous les agents en cours d’exécution, consulte [Exécuter et surveiller les agents](../ai-and-automation/agents.mdx).
 
-L’agent affecté apparaît sous les listes de contrôle et les tâches liées. Sa carte garde le dernier résumé et les éventuelles modifications proposées, et rien d’autre. Ses contrôles de mise à jour et sa configuration IA vivent derrière **Ouvrir les détails internes de l’agent**, pour que la page de tâche se lise comme une tâche plutôt que comme une console IA.
+La carte **Résumé IA** de l’agent affecté se trouve en haut de la tâche, sous ses notes et au-dessus de ses listes de contrôle et de ses tâches liées. Elle garde le dernier résumé, les éventuelles modifications proposées et une action **Mettre à jour**. Ses réglages de mise à jour et sa configuration IA vivent derrière **Ouvrir les détails internes de l’agent**, pour que la page de tâche se lise comme une tâche plutôt que comme une console IA.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
@@ -15,7 +15,7 @@ L’agent affecté apparaît sous les listes de contrôle et les tâches liées.
   caption="Habitat Watcher est affecté à cette tâche ; l’affectation et les mises à jour automatiques restent deux choix distincts, et leurs contrôles se trouvent dans les détails internes de l’agent."
 />
 
-À toutes les tailles d’écran, la carte suit un seul ordre de lecture : identité, rapport, puis modifications proposées et historique. Lorsque le résumé a pris du retard sur la tâche, la mention **Obsolète** et l’action **Mettre à jour** apparaissent entre les deux ; tant que le résumé est à jour, la carte ne dit rien de sa fraîcheur.
+À toutes les tailles d’écran, la carte suit un seul ordre de lecture : identité, rapport, puis modifications proposées et historique. Entre le rapport et les propositions, une ligne indique depuis combien de temps le rapport a été rédigé et propose **Mettre à jour** ; lorsque le résumé a pris du retard sur la tâche, cette ligne affiche **Obsolète** à la place.
 
 Choisis **Lire la suite** pour développer le rapport complet sur place. La carte développée conserve la tâche visible, ajoute l’évaluation étayant le rapport et l’étape suivante recommandée, et propose **Ouvrir les détails internes de l’agent** lorsque tu as besoin des contrôles de mise à jour et de la configuration IA de l’agent, ou de ses rapports, conversations, observations et détails d’exécution.
 
@@ -41,7 +41,7 @@ Un réveil terminé peut mettre à jour le rapport et ajouter des modifications 
   caption="L’agent propose une étape de liste de contrôle pour tester le distributeur et une estimation révisée ; aucune des deux modifications n’a encore été appliquée."
 />
 
-Utilise la croix pour **Ignorer** une proposition ou la coche pour **Confirmer** et l’appliquer. Tu peux aussi balayer une proposition vers la gauche pour l’ignorer ou vers la droite pour la confirmer. Lorsque plusieurs propositions sont en attente, **Tout confirmer** applique ensemble les modifications actuellement listées. Examine attentivement les propositions groupées, surtout les modifications d’état, de date et de liste de contrôle.
+Utilise la croix pour **Ignorer** une proposition ou la coche pour **Confirmer** et l’appliquer. Tu peux aussi balayer une proposition vers la gauche pour l’ignorer ou vers la droite pour la confirmer. Lorsque plusieurs propositions sont en attente, **Tout confirmer** applique ensemble les modifications actuellement listées. Un changement de statut proposé n’en fait jamais partie : il attend dans sa propre bande **Changements de statut** jusqu’à ce que tu le confirmes ou l’ignores séparément. Examine attentivement les propositions groupées, surtout les modifications de date et de liste de contrôle.
 
 Ouvre **Historique** pour revoir les résultats récents. Il distingue les modifications confirmées de celles qui ont été ignorées. Une entrée ignorée peut représenter ta décision ou une proposition que l’agent a retirée après qu’un contexte de tâche plus récent l’a rendue obsolète.
 

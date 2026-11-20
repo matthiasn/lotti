@@ -6,26 +6,40 @@ description: Configura la voce on-device, il modello e la velocità di riproduzi
 # Scegli la voce di lettura
 
 Quando la lettura ad alta voce è disponibile, apri **Impostazioni → Preferenze →
-Discorso**. Questi controlli si applicano ai riepiloghi AI delle attività; non
-cambiano la cattura dal microfono né quale provider AI trascrive una
-registrazione.
+Voce**. Questi controlli si applicano a ciò che Lotti legge ad alta voce –
+riepiloghi AI e risposte in chat; non cambiano la cattura dal microfono né
+quale provider AI trascrive una registrazione. Con il compagno attivo, la
+pagina Voce separata è nascosta e le stesse impostazioni si trovano in
+**Impostazioni → Preferenze → Compagno → Voce**.
+
+La pagina inizia con **Audio della chat**: **Prepara automaticamente l’audio
+della chat** prepara le nuove risposte della chat su questo dispositivo, così
+la riproduzione parte prima. L'audio viene comunque riprodotto solo quando
+tocchi play.
 
 <ManualScreenshot
   caseId="speech/settings"
-  alt="Impostazioni Discorso di Lotti con Uomo 3 selezionato, il modello on-device Supertonic 3 e velocità di lettura 1.25"
-  caption="La configurazione di esempio del controllo missione usa Uomo 3 a 1.25× per briefing spediti di Project Waddle."
+  alt="Impostazioni Voce di Lotti con Audio della chat, Voci cloud, la Voce sul dispositivo con Maschio 3 selezionato, il modello Supertonic 3 e velocità di lettura 1.25"
+  caption="La configurazione di esempio del controllo missione usa Maschio 3 a 1.25× per briefing spediti di Project Waddle."
 />
 
 ## Scegli una voce
 
-Usa l'interruttore **Femmina / Maschio** per sfogliare i due gruppi, poi
+**Voci cloud** elenca, per ciascuna delle tue lingue, la voce con cui la
+parla un modello cloud di lettura ad alta voce; toccane una per ascoltarla o
+cambiarla. La sezione resta vuota finché un profilo di inferenza non ha un
+modello **Lettura ad alta voce**: fino ad allora la lettura usa la voce sul
+dispositivo.
+
+La **Voce sul dispositivo** legge per i profili senza una voce cloud. Usa
+l'interruttore **Femmina / Maschio** per sfogliare i due gruppi, poi
 seleziona una delle cinque voci numerate del gruppo. Cambiare gruppo modifica
 solo l'elenco visibile; seleziona una voce numerata per renderla attiva.
 
 <ManualScreenshot
   caseId="speech/voice-options"
-  alt="Impostazioni Discorso di Lotti che mostrano le cinque opzioni di voce femminile on-device"
-  caption="Sono disponibili dieci stili di voce inclusi: Femmina 1–5 e Uomo 1–5."
+  alt="Impostazioni Voce di Lotti che mostrano le cinque opzioni femminili della Voce sul dispositivo, sotto Audio della chat e Voci cloud"
+  caption="Sono disponibili dieci stili di voce inclusi: Femmina 1–5 e Maschio 1–5."
 />
 
 La voce selezionata è una preferenza locale del dispositivo. Così ogni
@@ -34,11 +48,13 @@ di ascolto senza cambiare la scelta sugli altri tuoi dispositivi.
 
 ## Download del modello e privacy
 
-Per la lettura ad alta voce Lotti usa attualmente **Supertonic 3**. La sintesi
-avviene sul dispositivo, invece di inviare il riepilogo a un servizio vocale
-cloud. Il modello è grande e viene scaricato la prima volta che serve, quindi
-metti in conto tempo, banda di rete e spazio per quella configurazione
-iniziale.
+La **Voce sul dispositivo** usa **Supertonic 3**. La sintesi avviene sul
+dispositivo, quindi nulla viene inviato a un servizio vocale cloud. Quando un
+profilo di inferenza ha un modello cloud per la lettura ad alta voce,
+**Voci cloud** elenca invece la voce per ciascuna delle tue lingue, e il testo
+letto ad alta voce viene inviato a quel provider. Il modello sul dispositivo è
+grande e viene scaricato la prima volta che serve, quindi metti in conto
+tempo, banda di rete e spazio per quella configurazione iniziale.
 
 ## Imposta la velocità di lettura
 

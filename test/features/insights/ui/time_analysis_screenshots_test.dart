@@ -17,7 +17,6 @@ import 'dart:ui' as ui;
 import 'package:clock/clock.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
@@ -348,48 +347,10 @@ void main() {
     return;
   }
 
-  setUpAll(() async {
-    // Widget tests render the blocky FlutterTest font unless the bundled
-    // families are loaded explicitly — the screenshots are for design
-    // review, so real type matters. Read straight from the repo files
-    // (tests run with the package root as cwd).
-    TestWidgetsFlutterBinding.ensureInitialized();
-    Future<ByteData> fontBytes(String path) async {
-      final bytes = await File(path).readAsBytes();
-      return ByteData.view(bytes.buffer);
-    }
-
-    final inter = FontLoader('Inter')
-      ..addFont(
-        fontBytes('assets/fonts/Inter/Inter-VariableFont_opsz,wght.ttf'),
-      );
-    final inconsolata = FontLoader('Inconsolata')
-      ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Regular.ttf'))
-      ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Medium.ttf'))
-      ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Light.ttf'));
-    await inter.load();
-    await inconsolata.load();
-
-    // Icon glyphs: load MaterialIcons from the Flutter SDK when available
-    // so buttons don't render as tofu boxes in the review screenshots.
-    final flutterRoot =
-        Platform.environment['FLUTTER_ROOT'] ?? '.fvm/flutter_sdk';
-    final iconFont = File(
-      p.join(
-        flutterRoot,
-        'bin',
-        'cache',
-        'artifacts',
-        'material_fonts',
-        'MaterialIcons-Regular.otf',
-      ),
-    );
-    if (iconFont.existsSync()) {
-      final icons = FontLoader('MaterialIcons')
-        ..addFont(fontBytes(iconFont.path));
-      await icons.load();
-    }
-  });
+  // The shared loader reads FontManifest.json, so every icon-font package
+  // (Lucide behind LottiIcons included) renders; a hand-picked list here
+  // drew the period stepper's chevrons as tofu.
+  setUpAll(loadScreenshotFonts);
 
   testWidgets('week default — dark', (tester) async {
     await _pumpDashboard(

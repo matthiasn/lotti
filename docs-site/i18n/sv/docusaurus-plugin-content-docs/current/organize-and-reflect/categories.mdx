@@ -56,13 +56,25 @@ breddar planerarens kontext och gör den dagliga ritualen brusigare.
 
 ## Lägg till kategorispecifik automationskontext
 
-En kategori kan tillhandahålla standardval för nya uppgifter: en
-inferensprofil och en agentmall. Det är standardval, inte permanenta lås; val
-på uppgiftsnivå kan fortfarande ändras senare.
+Under **AI-standardinställningar** kan en kategori tillhandahålla standardval
+för nya uppgifter: en inferensprofil och en agentmall. Det är standardval, inte
+permanenta lås; val på uppgiftsnivå kan fortfarande ändras senare.
+
+- **Automatisk inferens** låter Lotti transkribera nytt ljud, analysera nya
+  bilder och sammanfatta pull requests i den här kategorin utan att du ber om
+  det. Det visas så snart kategorins profil kan göra något av detta och
+  förblir synligt medan det är påslaget.
+- Med en agentmall vald avgör **Väck assistenten automatiskt** om nya
+  uppgiftsagenter uppdaterar sig själva när en uppgift ändras, och
+  **Uppdateringsrytm** anger hur ofta de gör det.
+
+**Kunskap om kategorin** är det som varje AI-prompt för uppgifter i den här
+kategorin bör veta – vad den handlar om, var koden finns, konventioner,
+fallgropar. Den läggs in ordagrant i prompten, upp till 4 000 tecken.
 
 <ManualScreenshot
   caseId="categories/automation"
-  alt="Avancerade inställningar för Penguin-operationer med kategorikunskap och inlärda checklisterättelser för Sir Flaps-a-Lot"
+  alt="Kategoriredigeraren för Penguin-operationer rullad ned till ett tomt fält Kunskap om kategorin och två inlärda exempel på checklisterättelser, bland annat Sir Flaps-a-Lot, ovanför Ta bort"
   caption="Checklisterättelser lärs in från redigeringar och kan granskas eller tas bort här."
 />
 

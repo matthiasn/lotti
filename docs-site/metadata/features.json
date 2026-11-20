@@ -460,6 +460,27 @@
       "screenshotCases": [
         "sync/maintenance"
       ]
+    },
+    {
+      "id": "goals",
+      "title": "Goals",
+      "page": "organize-and-reflect/goals",
+      "status": "draft",
+      "screenshotCases": []
+    },
+    {
+      "id": "people",
+      "title": "People and check-ins",
+      "page": "organize-and-reflect/people",
+      "status": "draft",
+      "screenshotCases": []
+    },
+    {
+      "id": "github",
+      "title": "GitHub connection",
+      "page": "reference/github",
+      "status": "draft",
+      "screenshotCases": []
     }
   ]
 }

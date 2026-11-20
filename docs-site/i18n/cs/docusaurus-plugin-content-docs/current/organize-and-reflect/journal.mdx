@@ -36,13 +36,13 @@ najednou.
 
 ## Hledej podle slov nebo významu
 
-Pomocí **Celý text** najdi slova uložená v záznamu. Když je zapnuté vektorové
-vyhledávání, přepni na **Vektor** a hledej záznamy s podobným významem, i když
-používají jiná slova. Vektorové výsledky se vracejí jako jedna seřazená sada,
-ne jako nekonečně stránkovaný tok.
+Piš do pole **Hledat** a nejdřív uvidíš záznamy, jejichž slova odpovídají, a
+pod nimi sekci **Významově související** se záznamy, které říkají totéž jinými
+slovy. Vyhledávání podle významu běží ve tvém zařízení, jakmile zapneš
+vektorové vyhledávání a jeho model embeddingů je dostupný.
 
-Pokud vektorové vyhledávání není dostupné nebo se později vypne, Lotti vrátí
-Deník do režimu celého textu, místo aby vyhledávání nechalo nepoužitelné.
+Když vyhledávání podle významu dostupné není, Deník jednoduše ukáže shody slov,
+takže vyhledávání nikdy neskončí v nepoužitelném stavu.
 
 ## Filtruj zobrazený obsah
 
@@ -66,7 +66,7 @@ změna pohledu Deníku neočekávaně nepřeskupí stránku Úkoly.
 
 <ManualScreenshot
   caseId="journal/create"
-  alt="Nabídka Přidat s událostí, úkolem, zvukovou nahrávkou, textovým záznamem, importem obrázku a snímkem obrazovky nad deníkem Project Waddle"
+  alt="Nabídka Přidat s akcemi Napsat poznámku, Nahrát hlasovou poznámku, Přidat úkol, Přidat událost, Importovat obrázek a Pořídit snímek obrazovky nad deníkem Project Waddle"
   caption="Nabídka ukazuje jen akce podporované aktuální platformou a kontextem."
 />
 
@@ -148,8 +148,8 @@ se objeví pod **Propojeno z**, protože na záznam také odkazuje.
 
 Otevřením štítku řazení připrav několik změn viditelnosti společně. Zvol pořadí,
 zahrnutí skrytých záznamů a případné omezení na označenou aktivitu. Seznam se
-změní, až panel dokončíš zaškrtnutím; při jiném zavření se připravené volby
-zahodí.
+změní, až vybereš **Použít**; **Vymazat** volby vrátí do výchozího stavu a při
+jiném zavření panelu se připravené volby zahodí.
 
 <ManualScreenshot
   caseId="journal/linked-filter"

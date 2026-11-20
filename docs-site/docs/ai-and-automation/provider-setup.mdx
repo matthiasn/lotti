@@ -28,6 +28,14 @@ provider, then review the models and profiles created around it.
 - A custom base URL can point a supported provider type at a compatible proxy
   or gateway. The provider type still controls protocol-specific behavior.
 
+Lotti speaks to these provider types: **Mistral**, **Melious.ai**, **Google
+Gemini**, **Alibaba Cloud (Qwen)**, **OpenAI**, **Anthropic Claude**,
+**OpenRouter**, **Nebius AI Studio**, **ElevenLabs**, any **OpenAI
+Compatible** endpoint, and the local **Ollama**, **oMLX (local)**,
+**Voxtral (local)**, **Whisper (local)** and **sherpa-onnx (on device)**.
+When you are not sure, start with Mistral — the recommended default, marked
+**RECOMMENDED** when you pick a provider.
+
 ## Connect a provider
 
 1. Open **Settings → AI Settings → Providers**.
@@ -59,7 +67,10 @@ connection, add another model, or remove the provider.
 
 Changing a base URL or API key affects every model attached to that provider.
 After changing either value, verify a representative AI action before assuming
-the connection is healthy. Removing a provider can also affect profiles that
+the connection is healthy. When a call fails because the provider account has
+no credit left, Lotti says **Out of credit**, quotes the provider's own
+message, and suggests topping up the account or picking a model from another
+provider. Removing a provider can also affect profiles that
 route work through its models; review the dependency information first.
 
 ## Review profile routing

@@ -47,11 +47,16 @@ Usa **Plan del día** de forma selectiva. Activarlo para todas las categorías a
 
 ## Añade contexto de automatización específico de la categoría
 
-Una categoría puede proporcionar valores predeterminados para nuevas tareas: un perfil de inferencia y una plantilla de agente. Son valores predeterminados, no bloqueos permanentes; las opciones de cada tarea aún pueden cambiarse después.
+En **Valores predeterminados de IA**, una categoría puede proporcionar valores predeterminados para nuevas tareas: un perfil de inferencia y una plantilla de agente. Son valores predeterminados, no bloqueos permanentes; las opciones de cada tarea aún pueden cambiarse después.
+
+- **Inferencia automática** permite que Lotti transcriba audio nuevo, analice imágenes nuevas y resuma pull requests de esta categoría sin que se lo pidas. Aparece en cuanto el perfil de la categoría puede hacer alguna de estas cosas y sigue visible mientras está activada.
+- Con una plantilla de agente elegida, **Despierta al asistente automáticamente** decide si los nuevos agentes de tarea se actualizan solos cuando cambia una tarea, y **Frecuencia de actualización** fija con qué frecuencia lo hacen.
+
+**Conocimiento de la categoría** es lo que todo prompt de IA para las tareas de esta categoría debe saber: qué es, dónde vive el código, convenciones, trampas. Entra en el prompt palabra por palabra, hasta 4000 caracteres.
 
 <ManualScreenshot
   caseId="categories/automation"
-  alt="Ajustes avanzados de Operaciones de pingüinos con el conocimiento de la categoría y correcciones aprendidas de listas de verificación para Sir Flaps-a-Lot"
+  alt="Editor de la categoría Operaciones de pingüinos desplazado hasta un campo Conocimiento de la categoría vacío y dos ejemplos aprendidos de corrección de listas de verificación, incluido Sir Flaps-a-Lot, encima de Eliminar"
   caption="Lotti aprende de las correcciones de listas de verificación y aquí puedes revisarlas o eliminarlas."
 />
 

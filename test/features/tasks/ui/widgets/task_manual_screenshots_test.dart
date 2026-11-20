@@ -6,8 +6,10 @@ library;
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:clock/clock.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -33,6 +35,8 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
+import 'package:lotti/features/ai/ui/image_generation/reference_image_selection_widget.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -1053,6 +1057,7 @@ void main() {
           world: world,
           pageController: pageController,
           journalRepository: journalRepository,
+          imageGenerationRunning: true,
           surface: Consumer(
             builder: (context, ref, child) {
               parentRef = ref;
@@ -1064,31 +1069,19 @@ void main() {
         );
 
         final context = tester.element(find.byType(TaskDetailsPage));
-        await primeManualDemoCoverArt(
-          tester,
-          documentsDirectory: getIt<Directory>(),
-          world: world,
-          extents: const [],
-          imageIds: world.coverImages.take(5).map((image) => image.id).toSet(),
-          includeRawFileImage: true,
-        );
-        unawaited(
-          CoverArtSkillModal.show(
-            context: context,
-            entityId: world.orbitalHabitatTask.id,
-            skillId: 'skill-waddle-cover-art',
-            linkedTaskId: world.orbitalHabitatTask.id,
-            ref: parentRef,
-          ),
-        );
-        await settleFrames(tester, 10);
-        final messages = AppLocalizations.of(
-          tester.element(find.byType(TaskDetailsPage)),
-        )!;
-        expect(
-          find.text(messages.referenceImageSelectionTitle),
-          findsOneWidget,
-        );
+        Future<void> openCoverArtModal() async {
+          unawaited(
+            CoverArtSkillModal.show(
+              context: context,
+              entityId: world.orbitalHabitatTask.id,
+              skillId: 'skill-waddle-cover-art',
+              linkedTaskId: world.orbitalHabitatTask.id,
+              ref: parentRef,
+            ),
+          );
+          await settleFrames(tester, 10);
+        }
+
         final modalImages = find.descendant(
           of: find.byType(CoverArtSkillModal),
           matching: find.byType(Image),
@@ -1097,9 +1090,39 @@ void main() {
           of: find.byType(CoverArtSkillModal),
           matching: find.byType(GridView),
         );
+
+        // Each tile decodes through a CoverResizeImage sized by its own
+        // layout, and the headless engine never finishes that resized decode
+        // on its own. Open the modal once to learn the exact providers, seed
+        // the image cache with them, then reopen so the tiles resolve from
+        // the cache and the five thumbnails paint.
+        await openCoverArtModal();
+        expect(modalImages, findsNWidgets(5));
+        await _seedCoverResizeImages(tester, modalImages);
+        Navigator.of(tester.element(find.byType(CoverArtSkillModal))).pop();
+        await settleFrames(tester, 10);
+        expect(find.byType(CoverArtSkillModal), findsNothing);
+        await openCoverArtModal();
+
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(TaskDetailsPage)),
+        )!;
+        expect(
+          find.text(messages.referenceImageSelectionTitle),
+          findsOneWidget,
+        );
         expect(modalImages, findsNWidgets(5));
         expect(referenceGrid, findsOneWidget);
         expect(tester.getSize(referenceGrid).height, greaterThan(200));
+        final decodedThumbnails = tester
+            .widgetList<RawImage>(
+              find.descendant(
+                of: referenceGrid,
+                matching: find.byType(RawImage),
+              ),
+            )
+            .where((rawImage) => rawImage.image != null);
+        expect(decodedThumbnails, hasLength(5));
         await captureScreenshot(
           tester,
           'task_cover_references_${viewport}_$theme',
@@ -1218,6 +1241,7 @@ Future<void> _pumpTaskSurface(
   bool automaticUpdates = true,
   bool showAgentSuggestions = false,
   bool clipboardHasImage = false,
+  bool imageGenerationRunning = false,
 }) async {
   applyScreenshotDevice(tester, device);
   final tasksById = {
@@ -1361,10 +1385,19 @@ Future<void> _pumpTaskSurface(
               overrideModelId: null,
               geminiThinkingMode: null,
             )).overrideWith((ref) async {}),
-            inferenceStatusControllerProvider((
-              id: world.orbitalHabitatTask.id,
-              aiResponseType: AiResponseType.imageGeneration,
-            )).overrideWith(_ManualRunningInferenceController.new),
+            // The demo world records no AI attribution; without this the
+            // captions under AI output read "AI attribution is unavailable."
+            aiAttributionForArtifactProvider.overrideWith(
+              (ref, artifact) async => null,
+            ),
+            // Only the cover-art capture shows a generation in flight: the
+            // running status also draws the AI activity bars above the task
+            // action bar, which every other capture must not show.
+            if (imageGenerationRunning)
+              inferenceStatusControllerProvider((
+                id: world.orbitalHabitatTask.id,
+                aiResponseType: AiResponseType.imageGeneration,
+              )).overrideWith(_ManualRunningInferenceController.new),
             // The habitat task's below-card list: one time record, resolved
             // from memory rather than through the Drift link graph.
             linkedEntriesControllerProvider(
@@ -1471,7 +1504,8 @@ Future<void> _focusTaskAgentCard(
 
   final position = tester.state<ScrollableState>(scrollable).position;
   final targetTop = tester.getTopLeft(summary).dy;
-  final desiredTop = device.isPhone ? 112.0 : 24.0;
+  // Desktop: below the collapsed cover header, so the card title shows.
+  final desiredTop = device.isPhone ? 112.0 : 88.0;
   position.jumpTo(
     (position.pixels + targetTop - desiredTop).clamp(
       position.minScrollExtent,
@@ -1499,7 +1533,9 @@ Future<void> _focusTaskAgentSuggestions(
 
   final position = tester.state<ScrollableState>(scrollable).position;
   final targetTop = tester.getTopLeft(proposals).dy;
-  final desiredTop = device.isPhone ? 560.0 : 740.0;
+  // Desktop: high enough that the proposal rows and Confirm all clear the
+  // action bar instead of the heading sitting at the fold.
+  final desiredTop = device.isPhone ? 560.0 : 300.0;
   position.jumpTo(
     (position.pixels + targetTop - desiredTop).clamp(
       position.minScrollExtent,
@@ -1507,4 +1543,54 @@ Future<void> _focusTaskAgentSuggestions(
     ),
   );
   await settleFrames(tester, 4);
+}
+
+/// Seeds the image cache with a decoded bitmap under the exact key of every
+/// [CoverResizeImage] found by [images].
+///
+/// The reference-image grid sizes each tile's decode from its own layout, and
+/// the headless test engine leaves that resized decode pending indefinitely.
+/// Decoding the file with [ui.instantiateImageCodec] at the same
+/// [coverDecodeDimensions] and caching it under the production key lets the
+/// real widgets paint the same thumbnails the app shows.
+Future<void> _seedCoverResizeImages(WidgetTester tester, Finder images) async {
+  final providers = [
+    for (final image in tester.widgetList<Image>(images))
+      image.image as CoverResizeImage,
+  ];
+  await tester.runAsync(() async {
+    final cache = PaintingBinding.instance.imageCache;
+    for (final provider in providers) {
+      final bytes = await (provider.imageProvider as FileImage).file
+          .readAsBytes();
+      final probeCodec = await ui.instantiateImageCodec(bytes);
+      final probe = await probeCodec.getNextFrame();
+      final dimensions = coverDecodeDimensions(
+        intrinsicWidth: probe.image.width,
+        intrinsicHeight: probe.image.height,
+        targetWidth: provider.width,
+        targetHeight: provider.height,
+      );
+      probe.image.dispose();
+      probeCodec.dispose();
+
+      final codec = await ui.instantiateImageCodec(
+        bytes,
+        targetWidth: dimensions.width,
+        targetHeight: dimensions.height,
+      );
+      final frame = await codec.getNextFrame();
+      final key = await provider.obtainKey(ImageConfiguration.empty);
+      cache
+        ..evict(key)
+        ..putIfAbsent(
+          key,
+          () => OneFrameImageStreamCompleter(
+            SynchronousFuture(ImageInfo(image: frame.image.clone())),
+          ),
+        );
+      frame.image.dispose();
+      codec.dispose();
+    }
+  });
 }

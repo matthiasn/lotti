@@ -31,6 +31,14 @@ omkring den.
   kompatibel proxy eller gateway. Udbydertypen styrer stadig
   protokolspecifik adfærd.
 
+Lotti taler med disse udbydertyper: **Mistral**, **Melious.ai**, **Google
+Gemini**, **Alibaba Cloud (Qwen)**, **OpenAI**, **Anthropic Claude**,
+**OpenRouter**, **Nebius AI Studio**, **ElevenLabs**, ethvert
+**OpenAI-kompatibel** endpoint og de lokale **Ollama**, **oMLX (lokal)**,
+**Voxtral (lokal)**, **Whisper (lokal)** og **sherpa-onnx (på enheden)**.
+Hvis du er i tvivl, så start med Mistral — den anbefalede standard, markeret
+**ANBEFALET**, når du vælger en udbyder.
+
 ## Forbind en udbyder
 
 1. Åbn **Indstillinger → AI-indstillinger → Udbydere**.
@@ -64,7 +72,10 @@ fjerne udbyderen.
 
 Ændring af en basis-URL eller API-nøgle påvirker alle modeller, der er knyttet
 til den pågældende udbyder. Når du har ændret en af værdierne, så verificér en
-repræsentativ AI-handling, før du antager, at forbindelsen er sund. At fjerne
+repræsentativ AI-handling, før du antager, at forbindelsen er sund. Når et
+kald mislykkes, fordi udbyderkontoen ikke har mere kredit, siger Lotti
+**Ingen kredit tilbage**, citerer udbyderens egen besked og foreslår, at du
+fylder kontoen op eller vælger en model fra en anden udbyder. At fjerne
 en udbyder kan også påvirke profiler, der ruter arbejde gennem dens modeller;
 gennemgå afhængighedsoplysningerne først.
 

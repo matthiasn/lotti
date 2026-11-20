@@ -1,0 +1,118 @@
+---
+title: Collega GitHub
+description: Collega un token GitHub in sola lettura perché le attività possano seguire le pull request che le realizzano, con riepiloghi, suggerimenti dell'agente e risposte del compagno.
+---
+
+# Collega GitHub
+
+Lotti può seguire le pull request di GitHub che realizzano le tue attività: il
+loro stato, i controlli, le revisioni e i conflitti di merge stanno accanto
+all'attività, un riepilogo dice cosa cambia ciascuna, e l'agente
+dell'attività può usarle per suggerire quali voci della lista di controllo
+sono fatte. Per tutto questo serve un token di accesso personale in sola
+lettura del tuo account GitHub.
+
+## Crea e collega un token
+
+Apri **Impostazioni → Impostazioni avanzate → GitHub**.
+
+1. Seleziona **Crea un token su GitHub**. Il browser apre il modulo dei token
+   di GitHub con il nome di Lotti, una durata di un anno e i permessi in sola
+   lettura già compilati. Se il browser non si può aprire, Lotti ti dice dove
+   creare il token a mano: su github.com in Settings → Developer settings →
+   Personal access tokens.
+2. Su GitHub, scegli i repository che Lotti può leggere e crea il token.
+3. Incolla il token in **Token di accesso personale**. **Mostra token** e
+   **Nascondi token** rivelano e mascherano ciò che hai incollato.
+4. Seleziona **Connetti**. Lotti verifica prima il token con GitHub. Un
+   avviso conferma **Connesso a GitHub come @tuonome** con il nome del tuo
+   account; se GitHub rifiuta il token, il motivo viene spiegato sotto il
+   campo.
+
+Una volta collegato, la pagina mostra quale account è collegato e offre
+**Disconnetti**. Disconnettere dimentica il token su questo dispositivo e sugli
+altri tuoi dispositivi, e lo conferma con **Disconnesso da GitHub**.
+
+I controlli CI dei repository privati possono essere incompleti: GitHub non dà
+a questi token accesso ai check run, e la pagina lo dice.
+
+## Dove viene conservato il token
+
+Il token è salvato nel portachiavi di questo dispositivo ed è usato solo per le
+richieste ad api.github.com. Non viene mai registrato nei log né esportato.
+Con la sincronizzazione configurata, arriva con cifratura end-to-end sugli
+altri tuoi dispositivi, come una chiave di un provider AI. Un token che arriva
+da un altro dispositivo viene verificato con GitHub prima di essere usato.
+
+Quando la sincronizzazione è configurata, la pagina offre anche **Invia ai miei
+altri dispositivi** mentre sei collegato, oppure **Controlla i miei altri
+dispositivi** quando non lo sei, per quando un dispositivo non ha ancora
+ricevuto il token.
+
+Lotti non scarica mai la pagina web di una pull request. Le immagini incluse
+nella descrizione di una pull request vengono caricate dai loro indirizzi solo
+mentre hai aperti i dettagli di quella pull request, e vengono analizzate
+dall'AI solo quando ne aggiungi una all'attività.
+
+## Segui le pull request su un'attività
+
+Con GitHub collegato, apri un'attività e scegli **Monitoraggio delle pull
+request** dal **+** nella sua barra delle azioni. L'attività mostra allora una
+sezione **Pull request**; la scelta è salvata sull'attività, quindi vale su
+ogni dispositivo. Un'attività con una pull request collegata mostra comunque
+la sezione.
+
+Seleziona **Collega una pull request** per collegarne una:
+
+- incolla un link o un riferimento breve in **URL o proprietario/repo#123** e
+  seleziona **Collega**; oppure
+- scegli dall'elenco sotto **Oppure scegline una da** seguito dal repository,
+  che mostra le pull request aperte di quel repository non ancora collegate a
+  nessuna attività, con le loro dimensioni. Toccare una riga la collega
+  subito. Se non si può collegare, il motivo compare sotto la riga scelta.
+
+L'elenco ha bisogno di un repository: apri la categoria dell'attività in
+**Impostazioni → Definizioni → Categorie** e inseriscilo in **GitHub** →
+**Repository** come `owner/repo` o come link del repository. Quella sezione
+compare una volta collegato GitHub. Una pull request che un'altra attività ha
+già collegato chiede prima conferma – **Collega anche qui** o **Non
+collegare**.
+
+Ogni pull request collegata mostra il suo stato (**Aperta**, **Bozza**,
+**Unita** o **Chiusa**), i controlli, le revisioni e lo stato del merge, e un
+riepilogo di una riga. Toccala per i dettagli: **In breve**, la
+**Descrizione** della pull request stessa e **Apri su GitHub**. Il suo menu
+offre **Aggiorna pull request**, **Apri su GitHub** e **Scollega pull
+request**. Lotti aggiorna anche le pull request di un'attività ogni volta che
+entrano in un prompt di programmazione o in un aggiornamento dell'agente
+dell'attività. Un dispositivo senza token mostra comunque ciò che un altro
+dispositivo ha visto per ultimo, con la sua età.
+
+Incolla il link di una pull request nella ricerca delle attività per trovare
+le attività a cui è collegata.
+
+## Lascia che l'AI riassuma e suggerisca
+
+Il modello dell'agente dell'attività scrive ogni riepilogo nella lingua
+dell'attività: una riga sotto il titolo e **In breve** nei dettagli. I
+riepiloghi vengono scritti automaticamente quando la categoria dell'attività
+ha **Inferenza automatica** attiva (vedi
+[Categorie](../organize-and-reflect/categories.mdx)); altrimenti seleziona
+**Riassumi** nei dettagli, oppure **Riassumi di nuovo** per uno nuovo.
+
+L'agente dell'attività legge le pull request aperte non collegate a nessuna
+attività e propone di collegare quella che realizza la sua attività –
+**Collega la pull request #…** nelle sue modifiche proposte, collegata quando
+confermi. Può anche suggerire di spuntare le voci della lista di controllo che
+una pull request aggiornata ha completato. Vedi
+[Agenti delle attività](../organize-and-reflect/task-agents.mdx).
+
+## Chiedi al compagno delle pull request
+
+Con GitHub collegato, il [compagno](../getting-started/companion.mdx) può
+rispondere a domande come «Quante pull request ho aperto questa settimana?»
+con grafici delle pull request, di **Righe aggiunte** e **Righe eliminate**,
+per giorno o come totale progressivo. Se gli chiedi in quale attività si
+trovava un certo lavoro, o quali pull request erano le più grandi, te le
+mostra come le stesse schede delle pull request che ha un'attività. Legge solo
+le pull request già salvate su questo dispositivo.

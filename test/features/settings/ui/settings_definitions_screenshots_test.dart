@@ -52,6 +52,7 @@ import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.
 import 'package:lotti/features/speech_dictionary/state/speech_dictionary_controller.dart';
 import 'package:lotti/features/speech_dictionary/ui/pages/speech_dictionary_details_page.dart';
 import 'package:lotti/features/speech_dictionary/ui/pages/speech_dictionary_list_page.dart';
+import 'package:lotti/features/surveys/definitions/panas_survey.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -474,6 +475,44 @@ List<JournalEntity> _dashboardMeasurements({
   ];
 }
 
+/// Weekly PANAS check-ins across the requested window, so the Colony
+/// operations survey chart plots a populated range instead of "No data".
+/// Scores stay inside PANAS's 10–50 bucket range.
+List<JournalEntity> _panasCompletions({
+  required String type,
+  required DateTime rangeStart,
+  required DateTime rangeEnd,
+}) {
+  if (type != 'panasSurveyTask') return const [];
+  final start = DateTime(rangeStart.year, rangeStart.month, rangeStart.day, 9);
+  final weeks = rangeEnd.difference(start).inDays ~/ 7;
+  return [
+    for (var week = 0; week <= weeks; week++)
+      () {
+        final at = start.add(Duration(days: week * 7));
+        final scores = {
+          'Positive Affect Score': (34 + math.sin(week / 2) * 6).round(),
+          'Negative Affect Score': (17 + math.cos(week / 3) * 4).round(),
+        };
+        return JournalEntity.survey(
+          meta: Metadata(
+            id: 'panas-$week',
+            createdAt: at,
+            updatedAt: at,
+            dateFrom: at,
+            dateTo: at.add(const Duration(minutes: 4)),
+            private: false,
+          ),
+          data: SurveyData(
+            taskResult: RPTaskResult(identifier: 'panasSurveyTask'),
+            scoreDefinitions: panasScoreDefinitions,
+            calculatedScores: scores,
+          ),
+        );
+      }(),
+  ];
+}
+
 // ---------------------------------------------------------------------------
 // Harness plumbing.
 // ---------------------------------------------------------------------------
@@ -735,7 +774,13 @@ void main() {
         rangeStart: any(named: 'rangeStart'),
         rangeEnd: any(named: 'rangeEnd'),
       ),
-    ).thenAnswer((_) async => []);
+    ).thenAnswer((invocation) async {
+      return _panasCompletions(
+        type: invocation.namedArguments[#type] as String,
+        rangeStart: invocation.namedArguments[#rangeStart] as DateTime,
+        rangeEnd: invocation.namedArguments[#rangeEnd] as DateTime,
+      );
+    });
 
     // Row taps and back affordances route through the top-level
     // `beamToNamed`; no NavService is registered here.
@@ -1442,16 +1487,20 @@ void main() {
       });
 
       testWidgets('$viewport dashboards route list — $theme', (tester) async {
-        navService
-          ..isDesktopMode = !device.isPhone
-          // Desktop is a master/detail surface, so keep the coherent Colony
-          // operations example selected instead of publishing an empty detail
-          // pane beside the populated list. Mobile remains the list-only
-          // route and opens a dashboard on navigation.
-          ..desktopSelectedDashboardId.value = device.isPhone
-              ? null
-              : _colonyOperations.id;
+        // Pin the clock across the whole scenario, not only the first pump:
+        // DashboardPage derives its chart window from clock.now() on every
+        // build, so a later rebuild (scroll, survey sheet) outside the zone
+        // would re-key the charts onto the capture day.
         await withClock(Clock.fixed(manualDemoNow), () async {
+          navService
+            ..isDesktopMode = !device.isPhone
+            // Desktop is a master/detail surface, so keep the coherent Colony
+            // operations example selected instead of publishing an empty detail
+            // pane beside the populated list. Mobile remains the list-only
+            // route and opens a dashboard on navigation.
+            ..desktopSelectedDashboardId.value = device.isPhone
+                ? null
+                : _colonyOperations.id;
           await _pumpScreen(
             tester,
             device: device,
@@ -1466,16 +1515,62 @@ void main() {
             ],
             home: const DashboardsListPage(),
           );
+          expect(
+            find.text(_t('Colony operations', 'Koloniebetrieb')),
+            device.isPhone ? findsOneWidget : findsNWidgets(2),
+          );
+          expect(
+            find.text(_t('Mission readiness', 'Missionsbereitschaft')),
+            findsOneWidget,
+          );
+          if (!device.isPhone) {
+            expect(
+              find.text(_t('Habitat pressure', 'Habitatdruck')),
+              findsOneWidget,
+            );
+            expect(
+              find.text(_t('Sardines consumed', 'Verzehrte Sardinen')),
+              findsOneWidget,
+            );
+          }
+          await captureScreenshot(
+            tester,
+            'dashboard_list_${viewport}_$theme',
+            subdir: _subdir,
+          );
         });
-        expect(
-          find.text(_t('Colony operations', 'Koloniebetrieb')),
-          device.isPhone ? findsOneWidget : findsNWidgets(2),
-        );
-        expect(
-          find.text(_t('Mission readiness', 'Missionsbereitschaft')),
-          findsOneWidget,
-        );
-        if (!device.isPhone) {
+      });
+
+      testWidgets('$viewport dashboard route view — $theme', (tester) async {
+        // Pin the clock across the whole scenario, not only the first pump:
+        // DashboardPage derives its chart window from clock.now() on every
+        // build, so a later rebuild (scroll, survey sheet) outside the zone
+        // would re-key the charts onto the capture day.
+        await withClock(Clock.fixed(manualDemoNow), () async {
+          navService
+            ..isDesktopMode = !device.isPhone
+            ..desktopSelectedDashboardId.value = _colonyOperations.id;
+          await _pumpScreen(
+            tester,
+            device: device,
+            brightness: brightness,
+            overrides: [
+              dashboardsProvider.overrideWith(
+                (ref) => Stream.value(_allDashboards),
+              ),
+              dashboardCategoriesProvider.overrideWith(
+                (ref) => Stream.value(_allCategories),
+              ),
+            ],
+            home: device.isPhone
+                ? const DashboardPage(dashboardId: 'dash-colony-operations')
+                : const DashboardsListPage(),
+          );
+          await settleFrames(tester, 12);
+          expect(
+            find.text(_t('Colony operations', 'Koloniebetrieb')),
+            findsWidgets,
+          );
           expect(
             find.text(_t('Habitat pressure', 'Habitatdruck')),
             findsOneWidget,
@@ -1484,77 +1579,39 @@ void main() {
             find.text(_t('Sardines consumed', 'Verzehrte Sardinen')),
             findsOneWidget,
           );
-        }
-        await captureScreenshot(
-          tester,
-          'dashboard_list_${viewport}_$theme',
-          subdir: _subdir,
-        );
-      });
-
-      testWidgets('$viewport dashboard route view — $theme', (tester) async {
-        navService
-          ..isDesktopMode = !device.isPhone
-          ..desktopSelectedDashboardId.value = _colonyOperations.id;
-        await withClock(Clock.fixed(manualDemoNow), () async {
-          await _pumpScreen(
+          await captureScreenshot(
             tester,
-            device: device,
-            brightness: brightness,
-            overrides: [
-              dashboardsProvider.overrideWith(
-                (ref) => Stream.value(_allDashboards),
-              ),
-              dashboardCategoriesProvider.overrideWith(
-                (ref) => Stream.value(_allCategories),
-              ),
-            ],
-            home: device.isPhone
-                ? const DashboardPage(dashboardId: 'dash-colony-operations')
-                : const DashboardsListPage(),
+            'dashboard_view_${viewport}_$theme',
+            subdir: _subdir,
           );
-          await settleFrames(tester, 12);
-        });
-        expect(
-          find.text(_t('Colony operations', 'Koloniebetrieb')),
-          findsWidgets,
-        );
-        expect(
-          find.text(_t('Habitat pressure', 'Habitatdruck')),
-          findsOneWidget,
-        );
-        expect(
-          find.text(_t('Sardines consumed', 'Verzehrte Sardinen')),
-          findsOneWidget,
-        );
-        await captureScreenshot(
-          tester,
-          'dashboard_view_${viewport}_$theme',
-          subdir: _subdir,
-        );
 
-        await tester.scrollUntilVisible(
-          find.text(_t('Penguins accounted for', 'Gezählte Pinguine')),
-          350,
-          scrollable: find.byType(Scrollable).last,
-        );
-        await settleFrames(tester, 8);
-        expect(
-          find.text(_t('Penguins accounted for', 'Gezählte Pinguine')),
-          findsOneWidget,
-        );
-        await captureScreenshot(
-          tester,
-          'dashboard_view_crew_${viewport}_$theme',
-          subdir: _subdir,
-        );
+          await tester.scrollUntilVisible(
+            find.text(_t('Penguins accounted for', 'Gezählte Pinguine')),
+            350,
+            scrollable: find.byType(Scrollable).last,
+          );
+          await settleFrames(tester, 8);
+          expect(
+            find.text(_t('Penguins accounted for', 'Gezählte Pinguine')),
+            findsOneWidget,
+          );
+          await captureScreenshot(
+            tester,
+            'dashboard_view_crew_${viewport}_$theme',
+            subdir: _subdir,
+          );
+        });
       });
 
       testWidgets('$viewport PANAS survey — $theme', (tester) async {
-        navService
-          ..isDesktopMode = !device.isPhone
-          ..desktopSelectedDashboardId.value = _colonyOperations.id;
+        // Pin the clock across the whole scenario, not only the first pump:
+        // DashboardPage derives its chart window from clock.now() on every
+        // build, so a later rebuild (scroll, survey sheet) outside the zone
+        // would re-key the charts onto the capture day.
         await withClock(Clock.fixed(manualDemoNow), () async {
+          navService
+            ..isDesktopMode = !device.isPhone
+            ..desktopSelectedDashboardId.value = _colonyOperations.id;
           await _pumpScreen(
             tester,
             device: device,
@@ -1572,50 +1629,50 @@ void main() {
                 : const DashboardsListPage(),
           );
           await settleFrames(tester, 12);
+
+          await tester.scrollUntilVisible(
+            find.text('PANAS'),
+            350,
+            scrollable: find.byType(Scrollable).last,
+          );
+          await settleFrames(tester, 6);
+          final surveyChart = find.byType(DashboardSurveyChart);
+          expect(surveyChart, findsOneWidget);
+          await tester.tap(
+            find.descendant(
+              of: surveyChart,
+              matching: find.byIcon(LottiIcons.add),
+            ),
+          );
+          await settleFrames(tester, 8);
+
+          final task = tester.widget<RPUITask>(find.byType(RPUITask));
+          final messages = AppLocalizations.of(
+            tester.element(find.byType(RPUITask)),
+          )!;
+          expect(task.task.identifier, 'panasSurveyTask');
+          expect(find.text(messages.panasInstructionText), findsOneWidget);
+          expect(find.text(messages.surveyNextButton), findsOneWidget);
+          await captureScreenshot(
+            tester,
+            'survey_panas_intro_${viewport}_$theme',
+            subdir: _subdir,
+          );
+
+          await tester.tap(find.text(messages.surveyNextButton));
+          await settleFrames(tester, 8);
+          expect(find.text(messages.panasEmotionInterested), findsOneWidget);
+          expect(
+            find.text(messages.panasScaleVerySlightlyOrNotAtAll),
+            findsOneWidget,
+          );
+          expect(find.text(messages.panasScaleExtremely), findsOneWidget);
+          await captureScreenshot(
+            tester,
+            'survey_panas_question_${viewport}_$theme',
+            subdir: _subdir,
+          );
         });
-
-        await tester.scrollUntilVisible(
-          find.text('PANAS'),
-          350,
-          scrollable: find.byType(Scrollable).last,
-        );
-        await settleFrames(tester, 6);
-        final surveyChart = find.byType(DashboardSurveyChart);
-        expect(surveyChart, findsOneWidget);
-        await tester.tap(
-          find.descendant(
-            of: surveyChart,
-            matching: find.byIcon(LottiIcons.add),
-          ),
-        );
-        await settleFrames(tester, 8);
-
-        final task = tester.widget<RPUITask>(find.byType(RPUITask));
-        final messages = AppLocalizations.of(
-          tester.element(find.byType(RPUITask)),
-        )!;
-        expect(task.task.identifier, 'panasSurveyTask');
-        expect(find.text(messages.panasInstructionText), findsOneWidget);
-        expect(find.text(messages.surveyNextButton), findsOneWidget);
-        await captureScreenshot(
-          tester,
-          'survey_panas_intro_${viewport}_$theme',
-          subdir: _subdir,
-        );
-
-        await tester.tap(find.text(messages.surveyNextButton));
-        await settleFrames(tester, 8);
-        expect(find.text(messages.panasEmotionInterested), findsOneWidget);
-        expect(
-          find.text(messages.panasScaleVerySlightlyOrNotAtAll),
-          findsOneWidget,
-        );
-        expect(find.text(messages.panasScaleExtremely), findsOneWidget);
-        await captureScreenshot(
-          tester,
-          'survey_panas_question_${viewport}_$theme',
-          subdir: _subdir,
-        );
       });
     }
   }

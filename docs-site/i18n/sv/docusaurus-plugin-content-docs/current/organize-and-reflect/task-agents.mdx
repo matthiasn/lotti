@@ -12,11 +12,12 @@ aktuella läget till en kort rapport och kan lyfta fram föreslagna ändringar a
 uppgiften eller checklistan som du kan bekräfta eller avvisa. För den systemomfattande
 vyn över alla aktiva agenter, se [Driv och övervaka agenter](../ai-and-automation/agents.mdx).
 
-Den tilldelade agenten visas under uppgiftens checklistor och länkade uppgifter. Kortet
-håller den senaste sammanfattningen och eventuella föreslagna ändringar, och
-inget annat. Uppdateringskontrollerna och AI-uppsättningen ligger bakom **Öppna
-agent-interna funktioner**, så att uppgiftssidan läses som en uppgift och inte
-som en AI-konsol.
+Den tilldelade agentens **AI-sammanfattning**-kort sitter högst upp i
+uppgiften, under dess anteckningar och ovanför dess checklistor och länkade
+uppgifter. Kortet håller den senaste sammanfattningen, eventuella föreslagna
+ändringar och åtgärden **Uppdatera nu**. Uppdateringsinställningarna och
+AI-uppsättningen ligger bakom **Öppna agentens interna detaljer**, så att
+uppgiftssidan läses som en uppgift och inte som en AI-konsol.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
@@ -25,14 +26,13 @@ som en AI-konsol.
 />
 
 Oavsett skärmstorlek följer kortet en enda läsordning: identitet, rapport och
-sedan föreslagna ändringar och historik. Har sammanfattningen hamnat efter
-uppgiften dyker meddelandet **Inaktuell** och åtgärden **Uppdatera nu** upp
-mellan de två; så länge sammanfattningen är aktuell säger kortet ingenting om
-sin färskhet.
+sedan föreslagna ändringar och historik. Mellan rapporten och förslagen säger
+en rad hur länge sedan rapporten skrevs och erbjuder **Uppdatera nu**; har
+sammanfattningen hamnat efter uppgiften säger raden **Inaktuell** i stället.
 
 Välj **Läs mer** för att expandera hela rapporten på plats. Det expanderade kortet
 håller uppgiften synlig, lägger till rapportens underliggande bedömning och
-rekommenderade nästa steg, och erbjuder **Öppna agent-interna funktioner** när du
+rekommenderade nästa steg, och erbjuder **Öppna agentens interna detaljer** när du
 behöver agentens uppdateringskontroller och AI-uppsättning, eller dess
 rapporter, konversationer, observationer och detaljer om körningen.
 
@@ -44,7 +44,7 @@ rapporter, konversationer, observationer och detaljer om körningen.
 
 ## Välj agentens AI-uppsättning
 
-Öppna **Öppna agent-interna funktioner** — från agentens namn högst upp på
+Öppna **Öppna agentens interna detaljer** — från agentens namn högst upp på
 kortet eller från länken under den expanderade rapporten: där anger raden
 **Nuvarande upplägg** profilen, modellen och leverantören som används vid nästa
 vakning. Välj den för att välja en sparad inferensprofil,
@@ -74,8 +74,10 @@ att redigera uppgiften. Förslag förblir väntande tills du agerar på dem.
 Använd krysset för att **Avvisa** ett förslag eller bocken för att **Bekräfta** och
 tillämpa det. Du kan också svepa ett förslag åt vänster för att avvisa eller åt höger
 för att bekräfta. När flera förslag väntar tillämpar **Bekräfta allt** de aktuellt
-listade ändringarna tillsammans. Granska massförslag noggrant, särskilt ändringar av
-status, datum och checklistor.
+listade ändringarna tillsammans. En föreslagen statusändring ingår aldrig i det:
+den väntar i sitt eget band **Statusändringar** tills du bekräftar eller avvisar
+den för sig. Granska massförslag noggrant, särskilt ändringar av datum och
+checklistor.
 
 Öppna **Historia** för att gå tillbaka till senaste resultat. Den skiljer på
 bekräftade ändringar och avvisade sådana. En avvisad post kan antingen representera

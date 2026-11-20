@@ -17,14 +17,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/domain/palette_jump.dart';
+import 'package:lotti/features/keyboard/service/palette_jumps.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/keyboard/ui/command_catalog_view.dart';
 import 'package:lotti/features/keyboard/ui/command_palette.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/onboarding/ui/recording_style_settings_page.dart';
@@ -46,6 +51,7 @@ import 'package:lotti/utils/theming_settings_keys.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/manual_demo_world.dart';
 import '../../../helpers/service_overrides.dart';
 import '../../../helpers/target_platform.dart';
 import '../../../mocks/mocks.dart';
@@ -85,6 +91,7 @@ Widget _app({
   required Brightness brightness,
   required Size size,
   required List<Override> overrides,
+  PaletteJumpSearch? jumpSearch,
 }) {
   return RepaintBoundary(
     key: screenshotBoundaryKey,
@@ -107,7 +114,7 @@ Widget _app({
           locale: manualScreenshotLocale,
           home: AppCommandHost(
             platform: TargetPlatform.linux,
-            handlers: _manualCommandHandlers(),
+            handlers: _manualCommandHandlers(jumpSearch: jumpSearch),
             child: home,
           ),
         ),
@@ -116,10 +123,17 @@ Widget _app({
   );
 }
 
-Map<AppCommandId, AppCommandHandler> _manualCommandHandlers() => {
+/// The app's command handlers, with the palette opened the way the app opens
+/// it: searching titles through [jumpSearch] as well as commands.
+Map<AppCommandId, AppCommandHandler> _manualCommandHandlers({
+  PaletteJumpSearch? jumpSearch,
+}) => {
   AppCommandId.openCommandPalette: AppCommandHandler(
-    invoke: (invocation) =>
-        showAppCommandPalette(invocation.context, invocation.snapshot),
+    invoke: (invocation) => showAppCommandPalette(
+      invocation.context,
+      invocation.snapshot,
+      jumpSearch: jumpSearch,
+    ),
   ),
   for (final id in [
     AppCommandId.openShortcutHelp,
@@ -153,6 +167,7 @@ Future<void> _pumpSurface(
   required Brightness brightness,
   required FakeSettingsNavService navService,
   required List<Override> overrides,
+  PaletteJumpSearch? jumpSearch,
 }) async {
   applyScreenshotDevice(tester, device);
   await tester.pumpWidget(
@@ -161,6 +176,7 @@ Future<void> _pumpSurface(
       brightness: brightness,
       size: device.size,
       overrides: withServiceOverrides(overrides),
+      jumpSearch: jumpSearch,
     ),
   );
   await settleFrames(tester);
@@ -173,6 +189,23 @@ Future<void> _pumpSurface(
     );
     await settleFrames(tester);
   }
+}
+
+/// A query for the palette capture that finds both a command and a demo
+/// task: the longest leading part (at least three letters) of a word in one
+/// of [commandLabels] that also occurs in one of [titles], or else the first
+/// word of the first title, so the capture works in every manual locale.
+String _paletteQuery(List<String> commandLabels, List<String> titles) {
+  final lowerTitles = titles.map((title) => title.toLowerCase()).toList();
+  for (final label in commandLabels) {
+    for (final word in label.toLowerCase().split(' ')) {
+      for (var length = word.length; length >= 3; length--) {
+        final prefix = word.substring(0, length);
+        if (lowerTitles.any((title) => title.contains(prefix))) return prefix;
+      }
+    }
+  }
+  return titles.first.split(' ').first;
 }
 
 Future<void> _withDevicePlatform(
@@ -410,6 +443,15 @@ void main() {
       testWidgets(
         '$viewport shortcut catalog — $theme',
         (tester) => _withDevicePlatform(device, () async {
+          // The palette searches the penguin demo world's task titles through
+          // the production title search, over a real in-memory index.
+          final world = ManualDemoWorld.penguinLogistics();
+          final index = Fts5Db(inMemoryDatabase: true);
+          addTearDown(index.close);
+          await index.indexEntities(world.tasks);
+          when(
+            () => mocks.journalDb.getConfigFlag(privateFlag),
+          ).thenAnswer((_) async => false);
           await _pumpSurface(
             tester,
             surface: _PreferenceSurface.keyboardShortcuts,
@@ -417,6 +459,11 @@ void main() {
             brightness: brightness,
             navService: navService,
             overrides: withServiceOverrides(overrides()),
+            jumpSearch: paletteJumpSearch(
+              fts5Db: () => index,
+              journalDb: mocks.journalDb,
+              categoryIds: () => null,
+            ),
           );
           final messages = _messages(tester);
           expect(
@@ -445,13 +492,56 @@ void main() {
             find.text(messages.commandPaletteTitle),
             findsOneWidget,
           );
-          expect(find.text(messages.fileMenuNewTask), findsWidgets);
-          expect(
-            find.text(
-              messages.keyboardCommandNavigate(messages.navTabTitleTasks),
-            ),
-            findsWidgets,
+          final paletteSearch = find.descendant(
+            of: find.byType(Dialog),
+            matching: find.byType(TextField),
           );
+          // The hint the app's palette shows, which names what it can find.
+          expect(
+            tester
+                .widget<DesignSystemSearch>(
+                  find.descendant(
+                    of: find.byType(Dialog),
+                    matching: find.byType(DesignSystemSearch),
+                  ),
+                )
+                .hintText,
+            messages.commandPaletteSearchEverythingHint,
+          );
+
+          final titles = [for (final task in world.tasks) task.data.title];
+          final creationLabels = [
+            messages.fileMenuNewEntry,
+            messages.fileMenuNewTask,
+          ];
+          final query = _paletteQuery(creationLabels, titles);
+          await tester.enterText(paletteSearch, query);
+          await tester.pump(CommandCatalogView.jumpSearchDebounce);
+          await settleFrames(tester, 4);
+          final jumpRows = find.descendant(
+            of: find.byType(Dialog),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget.key is ValueKey<String> &&
+                  (widget.key! as ValueKey<String>).value.startsWith(
+                    'jump-task-',
+                  ),
+            ),
+          );
+          expect(jumpRows, findsWidgets);
+          // Where the query came from a command, that command is listed
+          // above the titles it found.
+          for (final label in creationLabels) {
+            if (label.toLowerCase().contains(query)) {
+              expect(
+                find.descendant(
+                  of: find.byType(Dialog),
+                  matching: find.text(label),
+                ),
+                findsOneWidget,
+              );
+            }
+          }
           await captureScreenshot(
             tester,
             'command_palette_${viewport}_$theme',

@@ -58,14 +58,28 @@ bruyant.
 
 ## Ajoute un contexte d’automatisation propre à la catégorie
 
-Une catégorie peut fournir des valeurs par défaut pour les nouvelles tâches : un
-profil d’inférence et un modèle d’agent. Ce sont des valeurs par défaut, pas des
-verrous permanents ; les choix au niveau de la tâche peuvent encore changer
-plus tard.
+Sous **Paramètres IA par défaut**, une catégorie peut fournir des valeurs par
+défaut pour les nouvelles tâches : un profil d’inférence et un modèle d’agent.
+Ce sont des valeurs par défaut, pas des verrous permanents ; les choix au
+niveau de la tâche peuvent encore changer plus tard.
+
+- **Inférence automatique** permet à Lotti de transcrire les nouveaux audios,
+  d’analyser les nouvelles images et de résumer les pull requests de cette
+  catégorie sans que tu le demandes. L’option apparaît dès que le profil de la
+  catégorie sait faire l’une de ces choses, et reste visible tant qu’elle est
+  activée.
+- Quand un modèle d’agent est choisi, **Réveille l'assistant automatiquement**
+  décide si les nouveaux agents de tâche se mettent à jour d’eux-mêmes quand une
+  tâche change, et **Rythme de mise à jour** définit à quelle fréquence.
+
+**Connaissances de la catégorie** contient ce que chaque prompt IA pour les
+tâches de cette catégorie doit savoir — de quoi il s’agit, où se trouve le
+code, les conventions, les pièges. Le texte entre mot pour mot dans le prompt,
+jusqu’à 4 000 caractères.
 
 <ManualScreenshot
   caseId="categories/automation"
-  alt="Paramètres avancés d’Opérations Pingouins avec les connaissances de la catégorie et les corrections de liste de contrôle apprises pour Sir Flaps-a-Lot"
+  alt="Éditeur de la catégorie Opérations Pingouins défilé jusqu’à un champ Connaissances de la catégorie vide et deux exemples de corrections de liste de contrôle apprises, dont Sir Flaps-a-Lot, au-dessus de Supprimer"
   caption="Les corrections de liste de contrôle sont apprises à partir des modifications ; tu peux les examiner ou les supprimer ici."
 />
 

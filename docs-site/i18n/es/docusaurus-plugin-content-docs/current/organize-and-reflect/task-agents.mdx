@@ -7,7 +7,7 @@ description: Dale a una tarea su propio asistente de IA con un informe, un estad
 
 Una tarea puede tener un agente de tarea. Al asignarlo, esa tarea obtiene un asistente de IA persistente con su propia configuración de inferencia, informe, estado de activación e historial de propuestas. El agente lee la tarea y su contexto vinculado, sintetiza la situación actual en un informe breve y puede mostrar cambios propuestos para la tarea o la lista de verificación que puedes confirmar o rechazar. Para tener una vista de todo el sistema con todos los agentes en ejecución, consulta [Ejecuta y supervisa agentes](../ai-and-automation/agents.mdx).
 
-El agente asignado aparece debajo de las listas de verificación y las tareas vinculadas. Su tarjeta mantiene el último resumen y los cambios propuestos, y nada más. Sus controles de actualización y su configuración de IA viven detrás de **Abrir interior del agente**, de modo que la página de tareas se lee como una tarea y no como una consola de IA.
+La tarjeta **Resumen de IA** del agente asignado está en la parte superior de la tarea, bajo sus notas y por encima de sus listas de verificación y tareas vinculadas. La tarjeta mantiene el último resumen, los cambios propuestos y una acción **Actualizar ahora**. Sus ajustes de actualización y su configuración de IA viven detrás de **Abrir interior del agente**, de modo que la página de tareas se lee como una tarea y no como una consola de IA.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
@@ -15,7 +15,7 @@ El agente asignado aparece debajo de las listas de verificación y las tareas vi
   caption="Vigilante del hábitat está asignado a esta tarea; la asignación y las actualizaciones automáticas siguen siendo decisiones independientes, y los controles de ambas están en los detalles internos del agente."
 />
 
-En cualquier tamaño de pantalla, la tarjeta sigue un único orden de lectura: identidad, informe y, después, cambios propuestos e historial. Cuando el resumen se ha quedado atrás respecto a la tarea, entre ambos aparecen el aviso **Desactualizado** y la acción **Actualizar ahora**; mientras el resumen está al día, la tarjeta no dice nada sobre su vigencia.
+En cualquier tamaño de pantalla, la tarjeta sigue un único orden de lectura: identidad, informe y, después, cambios propuestos e historial. Entre el informe y las propuestas, una línea indica hace cuánto se escribió el informe y ofrece **Actualizar ahora**; cuando el resumen se ha quedado atrás respecto a la tarea, esa línea dice **Desactualizado** en su lugar.
 
 Elige **Leer más** para desplegar el informe completo en el mismo lugar. La tarjeta ampliada mantiene la tarea a la vista, añade la evaluación que sustenta el informe y el siguiente paso recomendado, y ofrece **Abrir interior del agente** cuando necesitas los controles de actualización y la configuración de IA del agente, o sus informes, conversaciones, observaciones y detalles de ejecución.
 
@@ -41,7 +41,7 @@ Una ejecución terminada puede actualizar el informe y añadir cambios propuesto
   caption="El agente propone un elemento de lista de verificación para probar el comedero y una estimación revisada; todavía no se ha aplicado ninguno de los dos cambios."
 />
 
-Usa la cruz para **Descartar** una propuesta o la marca de verificación para **Confirmarla** y aplicarla. También puedes deslizar una propuesta a la izquierda para descartarla o a la derecha para confirmarla. Cuando hay varias propuestas pendientes, **Confirmar todo** aplica juntas las modificaciones que se muestran. Revisa las propuestas en bloque con cuidado, sobre todo los cambios de estado, fecha y lista de verificación.
+Usa la cruz para **Descartar** una propuesta o la marca de verificación para **Confirmarla** y aplicarla. También puedes deslizar una propuesta a la izquierda para descartarla o a la derecha para confirmarla. Cuando hay varias propuestas pendientes, **Confirmar todos** aplica juntas las modificaciones que se muestran. Un cambio de estado propuesto nunca forma parte de ello: espera en su propia franja **Cambios de estado** hasta que lo confirmes o descartes por separado. Revisa las propuestas en bloque con cuidado, sobre todo los cambios de fecha y de lista de verificación.
 
 Abre **Historial** para volver a consultar resultados recientes. Distingue los cambios confirmados de los descartados. Una entrada descartada puede representar tu decisión o una propuesta que el agente retiró porque un contexto más reciente de la tarea la dejó obsoleta.
 

@@ -10,7 +10,7 @@ misurabile risponde a **che valore numerico ho osservato?** Possono sostenere
 lo stesso obiettivo senza essere intercambiabili: “Appello dei pinguini
 imperatore” è un'abitudine, mentre “Pinguini contati” è un valore misurabile.
 
-Le abitudini sono attualmente una funzionalità opzionale e arrivano disattivate. Apri **Impostazioni → Sezioni** e attiva **Abitazioni**. Compaiono quindi la destinazione **Abitazioni** e la voce **Abitazioni** in **Impostazioni → Definizioni**. I misurabili non richiedono alcun flag.
+Le abitudini sono attualmente una funzionalità opzionale e arrivano disattivate. Apri **Impostazioni → Sezioni** e attiva **Abitudini**. Compaiono quindi la destinazione **Abitudini** e la voce **Abitudini** in **Impostazioni → Definizioni**. I misurabili non richiedono alcun flag.
 
 ## Lavora con le abitudini
 
@@ -27,7 +27,8 @@ storia.
 
 ### Creare e modificare abitudini
 
-1. Apri **Abitazioni** e tocca **+**. Per cambiare un'abitudine esistente,
+1. Apri **Abitudini** e tocca **+** – sul telefono si trova nel launcher di
+   navigazione. Per cambiare un'abitudine esistente,
    tienila premuta oppure apri la sua scheda di registrazione e tocca la
    matita. **Impostazioni → Definizioni → Abitudini** elenca ancora tutte le
    definizioni e apre lo stesso editor.
@@ -46,7 +47,7 @@ storia.
 
 <ManualScreenshot
   caseId="habits/editor-step2"
-  alt="Nuova abitudine, passo 2 di 2: Come capiamo che è fatta? con la riga manuale, un segnale Passi impostato su al giorno almeno 6.000, Aggiungi un segnale e la sezione Impostazioni"
+  alt="Nuova abitudine, passo 2 di 2: Come capiamo che è fatta? con la riga manuale, un segnale Passi impostato su Giornaliero ≥ 6.000 confrontato con Oggi, Aggiungi un segnale, l'interruttore Notifica al completamento automatico e la sezione Impostazioni"
 />
 
 ### Lasciare che i dati registrati spuntino un'abitudine
@@ -63,12 +64,17 @@ spunto io** è sempre attivo: puoi registrare qualsiasi abitudine a mano.
 - un tipo di **allenamento** comparso nelle tue importazioni (qualsiasi
   sessione, oppure durata, distanza o energia almeno / al massimo un valore).
 
+Una soglia può essere confrontata con il valore di **Oggi**, con la **Media di
+7 giorni** oppure con **Uno dei due**.
+
 Con due o più segnali, **Quando l'abitudine conta come fatta** decide se la
 completa **un segnale qualsiasi**, **tutti** i segnali o **almeno N** di essi.
 Quando i dati del giorno soddisfano la regola, l'abitudine viene spuntata per
 te, segnata **auto** nella pagina Abitudini con segnale e ora, e annunciata con
 una notifica: le abitudini completate a pochi secondi di distanza sono raggruppate in una, ogni abitudine è annunciata al massimo una volta al
-giorno, e **Notifica al completamento automatico** la disattiva per abitudine. Ciò che registri tu, anche un salto, prevale sempre
+giorno, e **Notifica al completamento automatico**, in fondo alla scheda dei
+segnali e mostrato non appena l'abitudine ha un segnale, la disattiva per
+abitudine. Ciò che registri tu, anche un salto, prevale sempre
 sulla spunta automatica.
 
 ### Le impostazioni dell'editor
@@ -81,12 +87,12 @@ sulla spunta automatica.
 
 <ManualScreenshot
   caseId="habits/settings-detail"
-  alt="Pagina Modifica abitudine per Appello dei pinguini imperatore con la scheda dei segnali, la sezione Impostazioni e le opzioni preferito, privato e attivo"
+  alt="Pagina Modifica abitudine per Appello dei pinguini imperatore con nome, descrizione, la scheda Come capiamo che è fatta? e la sezione Impostazioni"
 />
 
 <ManualScreenshot
   caseId="habits/schedule"
-  alt="La sezione Impostazioni dell'editor con categoria, data di inizio, mostra da, ora dell'avviso e l'interruttore di notifica al completamento automatico"
+  alt="Pagina Modifica abitudine per Appello dei pinguini imperatore con la sezione Impostazioni — categoria, data di inizio, mostra da e ora dell'avviso — e le Opzioni con Preferito, Privato e Attivo, poi Elimina"
 />
 
 - **Categoria** per filtrare e dare contesto visivo.
@@ -94,8 +100,6 @@ sulla spunta automatica.
   **mostrata** e quando Lotti deve **mostrare un avviso**. Il modello dati
   capisce anche piani settimanali e mensili; l'editor espone questi controlli
   orari per le abitudini giornaliere.
-- **Notifica al completamento automatico** (attiva per impostazione
-  predefinita).
 - In modifica: **Preferita** per maggiore rilievo, **Privata** per nasconderla
   a meno che non siano mostrate le voci private, **Attiva** per controllare se
   compare nella pagina Abitudini senza cancellarne la cronologia, ed
@@ -118,7 +122,7 @@ prima di **Registra**. Sotto i segnali, il modulo offre tre esiti:
 
 <ManualScreenshot
   caseId="habits/record"
-  alt="Scheda di registrazione per l'ispezione delle guarnizioni dell'habitat, con le righe di segnale Razioni di krill e Passi, chip di registrazione rapida, grafici e gli esiti Successo, Salta e Mancato"
+  alt="Scheda di registrazione per l'ispezione delle guarnizioni dell'habitat, con le righe di segnale Razioni di krill, Controllo dell'idratazione e Passi, chip di registrazione rapida, grafici e gli esiti Successo, Salta e Mancato"
 />
 
 Usa lo stato che preserva la realtà. Una cronologia sincera è più utile di un
@@ -128,26 +132,31 @@ giorno.
 
 ## Lavora con i misurabili
 
-La definizione di un misurabile descrive il numero prima che tu lo registri:
-nome, unità, privacy e come più osservazioni si combinano sui grafici.
+La definizione di un misurabile descrive il valore prima che tu lo registri:
+nome, se è un numero o una scelta, unità, privacy e come più osservazioni si
+combinano sui grafici.
 
 <ManualScreenshot
   caseId="measurables/settings-list"
-  alt="Impostazioni dei misurabili con Pressione dell'habitat, Pinguini rappresentato per e Sardine consumate"
+  alt="Impostazioni dei misurabili con Pressione dell'habitat, Controllo dell'idratazione, Pinguini rappresentato per e Sardine consumate"
 />
 
 ### Crea un tipo di dato misurabile
 
 1. Apri **Impostazioni → Definizioni → Misurabili**.
-2. Seleziona l'azione di aggiunta.
-3. Aggiungi un nome, una descrizione facoltativa e un'abbreviazione concisa
-   dell'unità.
-4. Scegli l'aggregazione predefinita usata dai grafici.
-5. Decidi se deve essere preferito o privato, poi salva.
+2. Seleziona **Creare misurabili**.
+3. Aggiungi un nome e una descrizione facoltativa.
+4. In **Registrato come**, scegli **Numero** per un valore con un'unità,
+   oppure **Scelta** per scegliere, al momento della registrazione, una delle
+   scelte che definisci, come i colori di un controllo dell'idratazione.
+5. Per un numero, aggiungi un'abbreviazione concisa dell'unità e scegli
+   l'aggregazione predefinita usata dai grafici. Per una scelta, aggiungi
+   invece le sue **Scelte**.
+6. Decidi se deve essere preferito o privato, poi salva.
 
 <ManualScreenshot
   caseId="measurables/settings-detail"
-  alt="Editor del misurabile Pressione dell'habitat con kPa e aggregazione a media giornaliera"
+  alt="Editor del misurabile Pressione dell'habitat registrato come Numero in kPa con aggregazione a media giornaliera"
 />
 
 Scegli l'aggregazione in base a cosa significano le letture ripetute:
@@ -170,7 +179,7 @@ diversa.
 Apri una dashboard che contiene il misurabile e seleziona l'azione di aggiunta
 sul suo grafico. Inserisci il valore osservato; Lotti tiene l'unità accanto al
 numero, così è chiaro cosa verrà salvato. I valori recenti distinti appaiono
-come azioni di **Diario rapido** quando ripeterne uno è utile.
+come azioni di **Registrazione rapida** quando ripeterne uno è utile.
 
 <ManualScreenshot
   caseId="measurements/capture"
@@ -186,7 +195,7 @@ data dal calendario. **Oggi** torna direttamente alla data corrente.
   alt="Calendario di Osservato a che seleziona venerdì 17 luglio 2026 per la misurazione delle sardine"
 />
 
-Scorri fino alla sezione dell'orario per impostare ora e minuti. **Ora.**
+Scorri fino alla sezione dell'orario per impostare ora e minuti. **Ora**
 ripristina l'orario corrente. Seleziona **Fatto** per tornare alla bozza di
 misurazione ancora compilata, poi **Salva** per creare la voce di diario.
 

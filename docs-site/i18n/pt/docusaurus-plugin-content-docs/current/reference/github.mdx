@@ -1,0 +1,115 @@
+---
+title: Liga o GitHub
+description: Liga um token do GitHub só de leitura para que as tarefas acompanhem as pull requests que as implementam, com resumos, sugestões do agente e respostas do acompanhante.
+---
+
+# Liga o GitHub
+
+O Lotti pode acompanhar as pull requests do GitHub que implementam as tuas
+tarefas: o estado, as verificações, as revisões e os conflitos de merge ficam
+ao lado da tarefa, um resumo diz o que cada uma altera, e o agente da tarefa
+pode usá-las para sugerir que itens da checklist estão concluídos. Tudo isto
+precisa de um token de acesso pessoal só de leitura da tua conta do GitHub.
+
+## Cria e liga um token
+
+Abre **Configurações → Configurações avançadas → GitHub**.
+
+1. Seleciona **Criar um token no GitHub**. O navegador abre o formulário de
+   tokens do GitHub com o nome do Lotti, uma validade de um ano e as
+   permissões só de leitura já preenchidas. Se não for possível abrir o
+   navegador, o Lotti diz-te onde criar o token à mão: no github.com, em
+   Settings → Developer settings → Personal access tokens.
+2. No GitHub, escolhe os repositórios que o Lotti pode ler e cria o token.
+3. Cola o token em **Token de acesso pessoal**. **Mostrar token** e
+   **Ocultar token** revelam e escondem o que colaste.
+4. Seleciona **Conectar**. O Lotti verifica primeiro o token junto do GitHub.
+   Uma notificação confirma **Ligado ao GitHub como @tu** com o nome da tua
+   conta; um token que o GitHub recuse é explicado por baixo do campo.
+
+Depois de ligado, a página mostra que conta está ligada e oferece
+**Desconectar**. Desligar esquece o token neste dispositivo e nos teus outros
+dispositivos, e confirma com **Desligado do GitHub**.
+
+As verificações de CI de repositórios privados podem estar incompletas: o
+GitHub não dá a estes tokens acesso às execuções de verificações, e a página
+indica-o.
+
+## Onde o token fica guardado
+
+O token é guardado no porta-chaves deste dispositivo e só é usado para
+pedidos a api.github.com. Nunca é registado em log nem exportado. Com a
+sincronização configurada, viaja cifrado ponto a ponto para os teus outros
+dispositivos, como uma chave de fornecedor de IA. Um token que chegue de outro
+dispositivo é verificado junto do GitHub antes de ser usado.
+
+Com a sincronização configurada, a página oferece também **Enviar para meus
+outros dispositivos** quando estás ligado, ou **Verificar meus outros
+dispositivos** quando não estás, para quando um dispositivo ainda não recebeu
+o token.
+
+O Lotti nunca obtém a página web de uma pull request. As imagens incorporadas
+na descrição de uma pull request são carregadas a partir dos seus próprios
+endereços apenas enquanto tens os detalhes dessa pull request abertos, e só
+são analisadas pela IA depois de adicionares uma delas à tarefa.
+
+## Acompanha pull requests numa tarefa
+
+Com o GitHub ligado, abre uma tarefa e escolhe **Acompanhamento de pull
+requests** no **+** da barra de ações. A tarefa mostra então uma secção
+**Pull requests**; a escolha fica guardada na tarefa, por isso mantém-se em
+todos os dispositivos. Uma tarefa com uma pull request ligada mostra a secção
+de qualquer forma.
+
+Seleciona **Vincular uma pull request** para ligar uma:
+
+- cola um link ou uma referência curta em **URL ou dono/repo#123** e
+  seleciona **Vincular**; ou
+- escolhe na lista **Ou escolhe uma de** seguida do nome do repositório, que mostra as pull
+  requests abertas desse repositório que nenhuma tarefa tem ainda, com os seus
+  tamanhos. Tocar numa linha liga-a de imediato. Se não for possível ligá-la,
+  o motivo aparece por baixo da linha que escolheste.
+
+A lista precisa de um repositório: abre a categoria da tarefa em
+**Configurações → Definições → Categorias** e indica-o em **GitHub** →
+**Repositório** como `owner/repo` ou como link do repositório. Essa secção
+aparece depois de o GitHub estar ligado. Uma pull request que outra tarefa já
+tenha pergunta primeiro — **Vincular aqui também** ou **Não vincular**.
+
+Cada pull request ligada mostra o seu estado (**Aberta**, **Rascunho**,
+**Mesclada** ou **Fechada**), as verificações, as revisões e o estado do
+merge, e um resumo numa linha. Toca nela para veres os detalhes: o **Em
+resumo**, a **Descrição** da própria pull request e **Abrir no GitHub**. O
+menu oferece **Atualizar pull request**, **Abrir no GitHub** e **Desvincular
+pull request**. O Lotti também atualiza as pull requests de uma tarefa sempre
+que entram num prompt de programação ou numa atualização do agente da tarefa.
+Um dispositivo sem token continua a mostrar o que outro dispositivo viu da
+última vez, com a respetiva idade.
+
+Cola o link de uma pull request na pesquisa de tarefas para encontrares as
+tarefas a que está ligada.
+
+## Deixa a IA resumir e sugerir
+
+O modelo do agente da tarefa escreve cada resumo no idioma da tarefa: uma
+linha por baixo do título e o **Em resumo** nos detalhes. Os resumos são
+escritos automaticamente quando a categoria da tarefa tem a **Inferência
+automática** ativa (vê [Categorias](../organize-and-reflect/categories.mdx));
+caso contrário, seleciona **Resumir** nos detalhes, ou **Resumir de novo**
+para um resumo novo.
+
+O agente da tarefa lê as pull requests abertas que nenhuma tarefa tem e propõe
+ligar a que implementa a sua tarefa — **Vincular a pull request #…** nas
+alterações propostas, ligada assim que confirmares. Também pode sugerir marcar
+itens da checklist que uma pull request atualizada concluiu. Vê
+[Agentes de tarefa](../organize-and-reflect/task-agents.mdx).
+
+## Pergunta ao acompanhante sobre pull requests
+
+Com o GitHub ligado, o [acompanhante](../getting-started/companion.mdx) pode
+responder a perguntas como «Quantas pull requests abri esta semana?» com
+gráficos de pull requests, **Linhas adicionadas** e **Linhas removidas**, por
+dia ou em total acumulado. Quando lhe perguntas em que tarefa esteve algum
+trabalho, ou quais foram as maiores pull requests, mostra-as com os mesmos
+cartões de pull request que uma tarefa tem. Só lê as pull requests já
+guardadas neste dispositivo.

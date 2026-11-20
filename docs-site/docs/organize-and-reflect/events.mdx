@@ -11,7 +11,7 @@ tasks for the preparation and follow-up work around it.
 
 Events are currently an optional feature. Open **Settings → Sections** and turn
 on **Events**. The **Events** destination then appears in the
-desktop sidebar and under **More** on mobile.
+desktop sidebar and in the navigation launcher on mobile.
 
 <ManualScreenshot
   caseId="events/overview"
@@ -25,10 +25,12 @@ The overview is photo-led so that an event is recognizable before you read its
 title. The nearest future event appears in the **Upcoming** hero. Past events
 are grouped by year, newest first.
 
-Use **Search events** to find an event by its text. Select a category chip—such
-as **Penguin Operations**, **Mission Control**, or **Fish Diplomacy**—to narrow
-the complete archive. Filtering is applied to the stored event collection, not
-only to the cards currently visible on screen.
+Use **Search events** to find an event by its text. **Filter events**, the
+button beside the search field, opens a category filter: pick one or more
+categories — or **Unassigned** — and apply them to narrow the complete
+archive. Filtering is applied to the stored event collection, not only to the
+cards currently visible on screen. Each card shows its category, so you can
+tell **Penguin Operations** from **Fish Diplomacy** at a glance.
 
 Lotti loads a long archive in pages and renders only nearby rows, so hundreds
 of photo-rich events stay practical without loading every cover at once.
@@ -46,7 +48,7 @@ feeder** is a linked task.
 
 <ManualScreenshot
   caseId="events/detail"
-  alt="Project Waddle launch gala event with a photographic hero, completed status, five-star rating, summary, three photos, and two linked tasks"
+  alt="Project Waddle launch gala event with a photographic hero carrying category, Completed status, English language pill, five-star rating and a one-line recap, above the AI summary card with two proposed changes and the bar with Add a task"
   caption="The same production detail page becomes a two-column layout on desktop and stacks into one scroll on mobile."
 />
 
@@ -54,6 +56,8 @@ The hero keeps the event's identity and main controls together:
 
 - select the title to edit it;
 - select the category or status pill to change it;
+- select the language pill to choose the language the event's AI-written
+  recap and proposals are kept in;
 - select the date and time to reschedule the event;
 - select a star to change the rating of a completed event; and
 - open the overflow menu to change the cover or delete the event.
@@ -62,9 +66,19 @@ Changes save through the detail page; there is no separate form to reopen. A
 rating appears after an event is completed, or whenever the event already has a
 rating.
 
-The summary uses the newest linked AI response when one exists. Otherwise it
-shows the event's own note. Treat it as a quick recap, then use the photos and
-timeline for the underlying record.
+Under the hero, the event agent keeps an **AI summary** card — the same card a
+task's agent uses. It shows the recap's short version with **Read more** for
+the rest, **Open agent internals**, when it was last updated and **Update
+now**. Below, **Proposed changes** lists what the agent suggests, such as
+someone who was there or a note to add; accept or reject each one, or use
+**Confirm all**. An event without an agent shows its own note instead, with
+**Assign Agent** to give it one.
+
+## Say who was there
+
+The **People** section shows one chip per person linked to the event; select a
+chip to open that person's page. **Edit people** — **Add people** while no one
+is linked yet — opens **Who was there?** to change the list.
 
 ## Build a photographic record
 
@@ -84,7 +98,7 @@ menu opens the same picker, where you can also add a new photo.
 
 <ManualScreenshot
   caseId="events/timeline"
-  alt="Project Waddle event timeline with mission-control photos, a pressure-seal note, sardine cargo imagery, and two related tasks"
+  alt="Project Waddle launch gala timeline with a pressure-check note and captioned photos of the orbital habitat and the frosted cargo pods"
   caption="Photos, notes, recordings, and follow-up tasks stay connected to the event without turning the event itself into a task."
 />
 

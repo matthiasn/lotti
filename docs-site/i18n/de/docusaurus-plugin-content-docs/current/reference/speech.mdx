@@ -6,24 +6,38 @@ description: Konfiguriere lokale Stimme, Modell und Wiedergabetempo für vorgele
 # Vorlesestimme wählen
 
 Wenn Vorlesen verfügbar ist, öffne **Einstellungen → Persönliche Einstellungen →
-Sprachausgabe**. Diese Optionen gelten für KI-Zusammenfassungen von Aufgaben.
-Sie ändern weder die Mikrofonaufnahme noch den KI-Anbieter für Transkriptionen.
+Sprache**. Diese Optionen gelten für alles, was Lotti vorliest –
+KI-Zusammenfassungen und Chat-Antworten. Sie ändern weder die Mikrofonaufnahme
+noch den KI-Anbieter für Transkriptionen. Ist die Begleitung eingeschaltet,
+ist die eigene Seite Sprache ausgeblendet, und dieselben Einstellungen liegen
+unter **Einstellungen → Persönliche Einstellungen → Begleitung → Stimme**.
+
+Die Seite beginnt mit **Chat-Audio**: **Chat-Audio automatisch vorbereiten**
+bereitet neue Chat-Antworten auf diesem Gerät vor, damit die Wiedergabe
+schneller startet. Abgespielt wird trotzdem erst, wenn du auf Wiedergabe
+tippst.
 
 <ManualScreenshot
   caseId="speech/settings"
-  alt="Lottis Sprachausgabe-Einstellungen mit Männlich 3, lokalem Supertonic-3-Modell und 1,25-fachem Tempo"
+  alt="Lottis Sprach-Einstellungen mit Chat-Audio, Cloud-Stimmen, der Stimme auf dem Gerät mit gewähltem Männlich 3, dem Supertonic-3-Modell und 1,25-fachem Tempo"
   caption="Das Beispiel verwendet Männlich 3 bei 1,25× für flotte Project-Waddle-Briefings."
 />
 
 ## Eine Stimme wählen
 
-Wechsle mit **Weiblich / Männlich** zwischen beiden Gruppen und wähle dann eine
+**Cloud-Stimmen** listet für jede deiner Sprachen die Stimme, in der ein
+Cloud-Vorlesemodell sie spricht; tippe auf eine, um sie anzuhören oder zu
+ändern. Der Abschnitt bleibt leer, bis ein Inferenzprofil ein Modell für
+**Vorlesen** hat – bis dahin nutzt das Vorlesen die Stimme auf dem Gerät.
+
+Die **Stimme auf dem Gerät** liest für Profile ohne Cloud-Stimme. Wechsle mit
+**Weiblich / Männlich** zwischen beiden Gruppen und wähle dann eine
 der fünf nummerierten Stimmen. Der Gruppenwechsel zeigt zunächst nur die andere
 Liste; erst die Wahl einer Nummer aktiviert die Stimme.
 
 <ManualScreenshot
   caseId="speech/voice-options"
-  alt="Lottis Sprachausgabe-Einstellungen mit fünf lokalen weiblichen Stimmen"
+  alt="Lottis Sprach-Einstellungen mit den fünf weiblichen Optionen der Stimme auf dem Gerät, unter Chat-Audio und Cloud-Stimmen"
   caption="Zehn gebündelte Stimmstile sind verfügbar: Weiblich 1–5 und Männlich 1–5."
 />
 
@@ -33,10 +47,12 @@ Geräte zu verändern.
 
 ## Modelldownload und Datenschutz
 
-Lotti verwendet derzeit **Supertonic 3** zum Vorlesen. Die Synthese läuft auf
-dem Gerät; die Zusammenfassung wird nicht an einen Cloud-Sprachdienst gesendet.
-Das große Modell wird beim ersten Bedarf heruntergeladen. Plane dafür Zeit,
-Netzwerkvolumen und Speicherplatz ein.
+Die **Stimme auf dem Gerät** nutzt **Supertonic 3**. Die Synthese läuft auf dem
+Gerät, es wird also nichts an einen Cloud-Sprachdienst gesendet. Hat ein
+Inferenzprofil ein Cloud-Vorlesemodell, listet **Cloud-Stimmen** stattdessen die
+Stimme für jede deiner Sprachen, und der vorgelesene Text wird an diesen Anbieter
+gesendet. Das große Modell auf dem Gerät wird beim ersten Bedarf
+heruntergeladen. Plane dafür Zeit, Netzwerkvolumen und Speicherplatz ein.
 
 ## Lesetempo einstellen
 

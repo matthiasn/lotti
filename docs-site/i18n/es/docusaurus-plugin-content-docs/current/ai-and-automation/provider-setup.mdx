@@ -31,6 +31,14 @@ por el proveedor y revisa después los modelos y perfiles creados a su alrededor
   proxy o gateway compatible. El tipo de proveedor sigue controlando el
   comportamiento específico del protocolo.
 
+Lotti habla con estos tipos de proveedor: **Mistral**, **Melious.ai**,
+**Google Gemini**, **Alibaba Cloud (Qwen)**, **OpenAI**, **Anthropic Claude**,
+**OpenRouter**, **Nebius AI Studio**, **ElevenLabs**, cualquier endpoint
+**Compatible con OpenAI**, y los locales **Ollama**, **oMLX (local)**,
+**Voxtral (local)**, **Whisper (local)** y **sherpa-onnx (en el dispositivo)**. Si no
+lo tienes claro, empieza con Mistral: es la opción predeterminada recomendada y
+aparece marcada como **RECOMENDADO** al elegir un proveedor.
+
 ## Conecta un proveedor
 
 1. Abre **Ajustes → Ajustes de IA → Proveedores**.
@@ -63,7 +71,10 @@ Desde ahí puedes editar la conexión, añadir otro modelo o eliminar el proveed
 
 Cambiar una URL base o una clave de API afecta a todos los modelos vinculados a
 ese proveedor. Después de cambiar cualquiera de esos valores, verifica una
-acción de IA representativa antes de dar la conexión por buena. Eliminar un
+acción de IA representativa antes de dar la conexión por buena. Cuando una
+llamada falla porque la cuenta del proveedor se ha quedado sin crédito, Lotti
+muestra **Sin saldo**, cita el mensaje del propio proveedor y te sugiere
+recargar la cuenta o elegir un modelo de otro proveedor. Eliminar un
 proveedor también puede afectar a perfiles que dirigen trabajo mediante sus
 modelos; revisa primero la información de dependencias.
 

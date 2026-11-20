@@ -36,15 +36,13 @@ De feed laadt in pagina's, zodat een lang logboek niet zijn hele geschiedenis in
 
 ## Zoek op woorden of betekenis
 
-Gebruik **Volledige tekst** om de woorden te vinden die in een invoer zijn opgeslagen.
-Wanneer vectorzoeken is ingeschakeld, schakel je over naar **Vector** om te zoeken naar
-invoer met een vergelijkbare betekenis, zelfs als die andere bewoordingen gebruikt.
-Vectorresultaten worden geretourneerd als één gerangschikte set in plaats van als een
-eindeloos gepagineerde feed.
+Typ in **Zoeken** om eerst de invoer te zien waarvan de woorden overeenkomen,
+gevolgd door een sectie **Verwant qua betekenis** met invoer die hetzelfde in
+andere woorden zegt. Zoeken op betekenis draait op je apparaat zodra
+vectorzoeken is ingeschakeld en het embeddingmodel ervan beschikbaar is.
 
-Als vectorzoeken niet beschikbaar is of later wordt uitgeschakeld, zet Lotti het logboek
-terug naar de volledige-tekstmodus in plaats van het zoeken in een onbruikbare staat
-achter te laten.
+Als zoeken op betekenis niet beschikbaar is, toont het logboek gewoon de
+woordtreffers, zodat zoeken nooit in een onbruikbare staat terechtkomt.
 
 ## Filter wat verschijnt
 
@@ -69,7 +67,7 @@ van de pagina Taken verandert.
 
 <ManualScreenshot
   caseId="journal/create"
-  alt="Toevoegmenu met Gebeurtenis, Taak, Audio-opname, Tekstinvoer, Afbeelding importeren en Schermafdruk boven het Project Waddle-logboek"
+  alt="Toevoegmenu met Een notitie schrijven, Een spraaknotitie opnemen, Taak toevoegen, Evenement toevoegen, Afbeelding importeren en Schermafbeelding maken boven het Project Waddle-logboek"
   caption="Het menu biedt alleen acties die ondersteund worden door het huidige platform en de huidige context."
 />
 
@@ -139,24 +137,24 @@ niet.
 
 Invoer kan linken naar foto's, timers, audio, AI-resultaten, notities en andere
 ondersteunende records. Met de activiteitspillen toon of verberg je invoer van het type
-**Timer**, **Audio**, **Afbeeldingen** en **Rubriek** (code). Open het
+**Timer**, **Audio**, **Afbeeldingen** en **Code** (code). Open het
 sorteerbesturingselement om te schakelen tussen nieuwste-eerst en oudste-eerst,
 verborgen links op te nemen of alleen gemarkeerde activiteit te tonen.
 
 De twee richtingen betekenen verschillende dingen:
 
 - activiteit onder de invoer is gekoppeld **vanuit deze invoer**; en
-- **Verbonden met:** toont invoer die **naar deze invoer** verwijst.
+- **Gekoppeld vanuit:** toont invoer die **naar deze invoer** verwijst.
 
 Het missielogboek van Project Waddle bevat bijvoorbeeld zijn lanceringsfoto,
 diagnostische prompt en appèltimer, terwijl de lanceringsbeoordelingstaak onder
-**Verbonden met:** verschijnt omdat die taak ook naar het logboek verwijst.
+**Gekoppeld vanuit:** verschijnt omdat die taak ook naar het logboek verwijst.
 
 Open de sorteerpil om meerdere zichtbaarheidswijzigingen samen klaar te zetten. Kies de
 volgorde, of verborgen invoer moet worden opgenomen en of alleen gemarkeerde invoer
-moet overblijven. De activiteitenlijst verandert wanneer je het vinkje selecteert om
-het blad af te ronden; sluit je het blad op een andere manier, dan worden de
-klaargezette keuzes weggegooid.
+moet overblijven. De activiteitenlijst verandert wanneer je **Toepassen** selecteert;
+**Wissen** zet de keuzes terug, en sluit je het blad op een andere manier, dan
+worden de klaargezette keuzes weggegooid.
 
 <ManualScreenshot
   caseId="journal/linked-filter"

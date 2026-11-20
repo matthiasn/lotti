@@ -28,7 +28,7 @@ den Referenzbildern der Aufgabe.
 
 <ManualScreenshot
   caseId="tasks/detail"
-  alt="Produktive Aufgabendetailseite zur Inspektion des orbitalen Pinguin-Habitats mit demselben Titelbild wie in der Vorschau"
+  alt="Aufgabenseite zur Inspektion des orbitalen Pinguin-Habitats mit Kategorie, Status In Bearbeitung, Priorität Hoch, Fälligkeit, erfasster Zeit gegenüber der Schätzung, Labels und KI-Zusammenfassung"
 />
 
 Eine Aufgabe kann Beschreibung, Kategorie, Labels, Fälligkeit, Zeiteinträge,
@@ -68,8 +68,16 @@ kombinieren.
   alt="Aufgabenfilter mit Sortierung, Status, Priorität, Kategorie und Labels"
 />
 
+Mit **Löschen** im Dialog oder **Alles löschen** neben den aktiven Filtern in
+der Liste kehrst du zu einer uneingeschränkten Ansicht zurück, statt jede
+Auswahl einzeln rückgängig zu machen.
+
 Standardmäßig sortiert Lotti P0 bis P3. Innerhalb einer Stufe stehen neuere
-Aufgaben zuerst, sofern keine andere Ansicht oder Sortierung gilt.
+Aufgaben zuerst, sofern keine andere Ansicht oder Sortierung gilt. Die Suche
+listet zuerst die Aufgaben, deren Wörter passen, die beste Übereinstimmung
+zuerst, gefolgt von einem Abschnitt **Inhaltlich verwandt** mit Aufgaben, die
+dasselbe mit anderen Worten sagen. Während du suchst, sind die Filterchips, die
+die Suche nicht anwendet, abgeblendet.
 
 ## Checklisten für die nächste Ebene verwenden
 
@@ -80,9 +88,10 @@ KI-Fähigkeiten können sie außerdem aus dem Kontext vorschlagen.
 
 ## Aufgabenkontext hinzufügen
 
-Über **Hinzufügen** hängst du Checkliste, weitere Aufgabe, Audioaufnahme, Timer,
-Texteintrag oder Bild an, ohne die Aufgabe zu verlassen. Aktionen hängen von
-Plattform und Kontext ab.
+Über **Hinzufügen** hängst du Notiz, Checkliste, Sprachnotiz, verknüpfte Aufgabe
+oder Bild an, ohne die Aufgabe zu verlassen; **Zeit erfassen** in der
+Aktionsleiste der Aufgabe startet einen Timer. Aktionen hängen von Plattform
+und Kontext ab.
 
 <ManualScreenshot
   caseId="entries/create-menu"
@@ -116,13 +125,18 @@ mit Escape gehst du zurück.
 
 ## Verwandte Aufgaben verknüpfen
 
-Öffne **Verknüpft** und wähle eine vorhandene Aufgabe. Durchsuche den Dialog
-und wähle das verwandte Ergebnis. Aktuelle und bereits in dieser Richtung
-verknüpfte Aufgaben werden ausgeschlossen.
+Wähle im Abschnitt **Verknüpfte Aufgaben** der Aufgabe **Aufgabe verknüpfen…**
+– oder **Verknüpfen**, sobald die Aufgabe schon Verknüpfungen hat –, um den
+Dialog **Verknüpfen** zu öffnen. Wähle unter **Diese Aufgabe…** die Beziehung:
+**Bezieht sich auf** oder eine von **Blockiert**, **Wird blockiert von**,
+**Folgt auf**, **Hat Folgeaufgabe**, **Dupliziert**, **Wird dupliziert von**,
+**Behebt**, **Wird behoben durch**, **Ersetzt** und **Wird ersetzt durch**.
+Durchsuche dann den Dialog und wähle die verwandte Aufgabe. Die aktuelle und
+bereits in dieser Richtung verknüpfte Aufgaben werden ausgeschlossen.
 
 <ManualScreenshot
   caseId="tasks/link-picker"
-  alt="Produktive Aufgabenverknüpfung mit verwandten Project-Waddle-Aufgaben samt Status, Priorität, Kategorie und Fälligkeit"
+  alt="Verknüpfungsdialog über der Aufgabe zur Inspektion des orbitalen Pinguin-Habitats, mit Diese Aufgabe… auf Bezieht sich auf, einem Suchfeld für Aufgaben und zwei Pinguinbetrieb-Aufgaben samt Status"
 />
 
 Links sind gerichtet: Die aktuelle Aufgabe zeigt zur gewählten. Beide Seiten

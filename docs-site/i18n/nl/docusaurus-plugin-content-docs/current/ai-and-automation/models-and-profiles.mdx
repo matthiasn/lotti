@@ -12,17 +12,27 @@ afzonderlijke taak en automatiseringsregel.
 
 ## Bekijk opgeslagen modellen
 
-Open **Instellingen → AI-instellingen → Modellen**. De lijst groepeert modellen per provider
-en toont mogelijkheidsfilters voor tekst, beeld, audio en redeneren.
+Open **Instellingen → AI-instellingen → Modellen**. De modellen vormen één lijst. Daarboven
+beperken één filterchip per provider en de chips **Tekst**, **Beeld**, **Audio** en
+**Redenering** de lijst, en het zoekveld vindt providers, modellen en profielen op naam.
 
 <ManualScreenshot
   caseId="ai/models"
-  alt="Lotti AI-modellenlijst met Project Waddle-modellen voor tekst, redeneren, beeld, transcriptie en afbeeldingsgeneratie"
+  alt="Lotti-pagina Modellen met de besturingselementen van de AI-instellingen bovenaan, filterchips voor providers en mogelijkheden, en een lijst Project Waddle-modellen met het label Denken of Beeldherkenning"
   caption="De Project Waddle-werkruimte mixt cloud- en lokale modellen en houdt de mogelijkheden van elk model expliciet."
 />
 
-Het besturingselement **Gelijktijdige toediening van het middel** bovenaan de AI-instellingen
-beperkt hoeveel verschillende agenten tegelijk inferentie mogen draaien. Een hogere waarde kan de
+Bovenaan de AI-instellingen staan drie besturingselementen:
+
+- **Gelijktijdige wekmomenten van agents** beperkt hoeveel verschillende agenten tegelijk
+  inferentie mogen draaien.
+- **Updateritme** bepaalt hoe vaak taakagenten zichzelf bijwerken wanneer noch de taak
+  noch haar categorie dit instelt. **Hooguit elk uur** werkt nog steeds meteen bij na een
+  opname, een gestopte timer of een taak die als klaar is gemarkeerd.
+- **Standaard inferentieprofiel** is de terugvaloptie voor agenten zonder geconfigureerde
+  inferentieroute op dit apparaat.
+
+Een hogere waarde voor **Gelijktijdige wekmomenten van agents** kan de
 doorvoer verbeteren, maar verhoogt ook het aantal gelijktijdige providerverzoeken en de lokale
 apparaatbelasting. Houd de waarde conservatief als een provider strikte rate limits hanteert of
 een lokale modelserver weinig geheugen heeft.
@@ -63,18 +73,28 @@ routeringsbeleid. Het overzicht toont welk model elk geconfigureerd slot bedient
 Bewerk een profiel om modellen toe te wijzen voor de mogelijkheden die je gebruikt:
 
 - **Denken** is het vereiste algemene tekstmodel.
+- **Chatmodel** antwoordt in chats; zonder instelling gebruikt het het denkmodel.
 - **Denken (High-End)** kan werk aan dat expliciet om het krachtigere
   redeneerpad vraagt.
 - **Beeldherkenning** analyseert afbeeldingen.
-- **Omschrijving** (het transcriptieslot) zet audio om in tekst.
+- **Transcriptie** (het transcriptieslot) zet audio om in tekst.
+- **Audio-nabewerking** corrigeert een transcript aan de hand van het spraakwoordenboek
+  en schrijft de samenvatting van de opname; zonder instelling gebruikt het het
+  denkmodel.
 - **Afbeeldingsgeneratie** maakt taakillustraties en andere gegenereerde afbeeldingen. Het
   huidige ingebouwde pad voor afbeeldingsgeneratie gebruikt een geconfigureerde externe provider, dus
   kies die provider en de referenties die je meestuurt met dezelfde zorg als elke
   andere cloud-inferentieroute.
+- **Voorlezen** is het cloudspraakmodel dat samenvattingen en antwoorden hardop
+  voorleest; zonder instelling gebruikt het de stem op het apparaat.
+
+Onder **Geautomatiseerde vaardigheden** aan het einde van het formulier zet je aan welke
+vaardigheden — transcriptie en beeldanalyse — vanzelf draaien met dit profiel. Elke
+vaardigheid gebruikt het model van haar slot, dus de schakelaar heeft dat slot gevuld nodig.
 
 <ManualScreenshot
   caseId="ai/profile-editor"
-  alt="Project Waddle Command-profieleditor die modellen toewijst voor denken, high-end redeneren, beeldherkenning, transcriptie en afbeeldingsgeneratie"
+  alt="Project Waddle Command-profieleditor met naam, beschrijving en modelslots voor Denken, Chatmodel, Denken (High-End), Beeldherkenning, Omschrijving, Audio-nabewerking en Afbeeldingsgeneratie"
   caption="Eén profiel routeert elke Project Waddle-modaliteit zonder modelkeuzes per taak te herhalen."
 />
 
@@ -99,14 +119,16 @@ voor tekstredenering.
 ## Stel een categoriestandaard in
 
 Een categorie kan een standaardinferentieprofiel kiezen onder **Instellingen →
-Definities → Categorieën**. Nieuw werk in die categorie kan dan een coherent
-routeringsbeleid erven. Selecteer het profiel waarvan de privacy en mogelijkheden
+Definities → Categorieën**. Een agent draait op het profiel dat voor hem is gekozen;
+zonder dat volgt hij bij elke run het profiel van zijn categorie, dus als je het profiel
+van de categorie wijzigt, gaan de agenten mee. Zonder beide valt hij terug op het
+**Standaard inferentieprofiel** bovenaan de AI-instellingen. Selecteer het profiel waarvan de privacy en mogelijkheden
 bij de categorie passen, in plaats van puur op snelheid te kiezen.
 
 <ManualScreenshot
   caseId="ai/profile-picker"
   alt="Penguin Operations-categorie-editor met een modal die de profielen Project Waddle Command, Habitat Local-First en Fish Diplomacy aanbiedt"
-  caption="De badge voor alleen-desktop maakt platformbeperkingen zichtbaar voordat een categoriestandaard wordt geselecteerd."
+  caption="Een monitorpictogram markeert een profiel dat Alleen bureaublad is, voordat het als categoriestandaard wordt geselecteerd."
 />
 
 ## Verouderde profielroute

@@ -27,7 +27,7 @@ lavoro che non ha ancora raggiunto il servizio di sincronizzazione.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Impostazioni di sincronizzazione di Lotti con Dispositivi, Questo dispositivo, Sincronizzazione di backup, Statistiche Matrix, Posta in uscita, Conflitti di sincronizzazione e Manutenzione"
+  alt="Impostazioni di sincronizzazione di Lotti con Dispositivi, Questo dispositivo, Stato della sincronizzazione, Statistiche Matrix, Posta in uscita, Conflitti di sincronizzazione e Manutenzione"
   caption="Le impostazioni di sincronizzazione tengono lo stato quotidiano accanto agli strumenti di diagnosi e recupero. Project Waddle ha al momento tre elementi in uscita da controllare."
 />
 
@@ -132,23 +132,26 @@ pertinente deve comunque essere configurato per usarle.
 ## Capisci il recupero e il backfill
 
 La sincronizzazione normale elabora le modifiche man mano che arrivano.
-**Sincronizzazione di backup** individua i buchi nella sequenza ricevuta dai
+**Stato della sincronizzazione** individua i buchi nella sequenza ricevuta dai
 dispositivi noti e richiede di nuovo i record mancanti.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Pagina Sincronizzazione di backup di Lotti con i contatori della coda in entrata, dei mancanti e dei saltati, le statistiche di sincronizzazione, il recupero automatico e il recupero avanzato"
-  caption="Project Waddle ha ricevuto 2.868 record di sequenza e al momento conosce quattro record mancanti su due ID dispositivo."
+  alt="Pagina Stato della sincronizzazione di Lotti con i record su questo dispositivo, i contatori della coda in entrata e dei mancanti, le statistiche di sincronizzazione, il recupero automatico e il recupero avanzato"
+  caption="Project Waddle tiene traccia di 2.868 contatori di sequenza, ne ha ricevuti 2.775 e al momento conosce quattro record mancanti su due ID dispositivo."
 />
 
+- **Record su questo dispositivo** conta ciò che questo dispositivo contiene,
+  eliminazioni comprese. I dispositivi sincronizzati mostrano qui gli stessi
+  numeri.
 - **La coda in entrata** è il lavoro in attesa di essere applicato.
 - **Mancato** è il numero di buchi noti nella sequenza.
-- **Abilitato** è il lavoro che la coda in entrata ha abbandonato perché non
-  poteva elaborarlo normalmente.
+- **Saltati**, in **Statistiche di Sync**, è il lavoro che la coda in entrata
+  ha abbandonato perché non poteva elaborarlo normalmente.
 - **Ricarica automatica** richiede le voci mancanti delle ultime 24 ore ed è
   l'impostazione giusta per l'uso quotidiano.
 - **Recupero avanzato** contiene azioni manuali per un'indagine, come
-  **Prenditi ora** e la richiesta di voci mancanti più vecchie. Usalo solo dopo
+  **Recupera ora** e la richiesta di voci mancanti più vecchie. Usalo solo dopo
   che la sincronizzazione ordinaria e il recupero automatico hanno avuto il tempo
   di assestarsi.
 
@@ -178,7 +181,7 @@ dopo i tentativi.
 
 Un contatore **DB applicata** che cresce e una coda che si svuota sono segni di
 salute. Se la coda resta alta o gli scarti continuano a comparire, usa
-**Recuperare ora** o **Forza Rescan**, poi controlla la posta in uscita e la
+**Riprova ora** o **Forza Rescan**, poi controlla la posta in uscita e la
 connessione dell'altro dispositivo. **Diagnostica di copia** mette i numeri
 negli appunti per una richiesta di assistenza.
 
@@ -196,16 +199,16 @@ o in invio e quanti non è stato possibile inviare.
 
 Filtra l'elenco per stato:
 
-- **Aspettare** mostra gli elementi in attesa del loro turno e quelli in invio.
-- **Fatta.** mostra gli elementi che non è stato possibile inviare nemmeno
+- **In attesa** mostra gli elementi in attesa del loro turno e quelli in invio.
+- **Non riuscito** mostra gli elementi che non è stato possibile inviare nemmeno
   dopo i tentativi automatici. Restano salvati su questo dispositivo ma non
   vengono reinviati da soli: una volta risolto il problema, scegli
-  **Recuperare** o **Recuperare tutti**.
+  **Riprova** o **Recuperare tutti**.
 - **Inviato** mostra gli elementi consegnati, conservati per un po' per la
   diagnosi.
 
 Usa **Recuperare tutti** dopo aver risolto il problema di connessione o
-dell'account, oppure **Recuperare** su un singolo elemento. **Rimuovi** toglie
+dell'account, oppure **Riprova** su un singolo elemento. **Rimuovi** toglie
 un elemento dalla coda: resta su questo dispositivo ma non raggiungerà mai gli
 altri tuoi dispositivi, quindi rimuovilo solo se è proprio questo che vuoi.
 Rimuoverlo non sostituisce la riparazione della voce o dell'allegato locale
