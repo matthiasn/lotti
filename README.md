@@ -157,9 +157,9 @@ anything sensitive:**
   can see the account, which device synced when, from which IP, and how much.
 - **A compromised device.** The local databases are not encrypted by Lotti
   today; rely on your operating system's full-disk encryption. Passwords, API
-  keys and the GitHub token are kept in the OS keystore; an AI provider key
-  waiting to sync to your other devices also sits in the local sync outbox
-  until it is sent.
+  keys and the GitHub token are kept in the OS keystore; an AI provider key or
+  GitHub token syncing to your other devices is also written to the local
+  sync outbox, where it stays for about a week after it is sent.
 - **Losing every device.** There is no server-side backup and no account
   recovery. A second paired device is your replica — after you send it your
   history from the first — and an ordinary backup of the database plus the
