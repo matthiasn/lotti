@@ -125,9 +125,10 @@ void main() {
         tester.widget<Text>(find.text('User Testing').first).style,
         isNotNull,
       );
+      // The row title is the one dominant element of a row: subtitle1 (16).
       expect(
         tester.widget<Text>(find.text('User Testing').first).style?.fontSize,
-        14,
+        16,
       );
       expect(
         tester.widget<Text>(find.text('User Testing').first).style?.fontWeight,
