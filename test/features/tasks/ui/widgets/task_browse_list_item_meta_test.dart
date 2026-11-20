@@ -81,6 +81,33 @@ void main() {
     );
 
     testWidgets(
+      'a long meta label ellipsizes on a narrow row at large text rather '
+      'than overflowing it',
+      (tester) async {
+        tester.view.physicalSize = const Size(280, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final task = TestTaskFactory.create(
+          id: 'task-narrow-meta',
+          title: 'Narrow',
+          dateFrom: DateTime(2026, 4, 8),
+        );
+
+        await pumpTaskBrowseItem(
+          tester,
+          task,
+          showDueDate: true,
+          trackedDurationLabelOverride: '123h 59m tracked so far',
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('No due date'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'does not render CoverArtThumbnail when showCoverArt is false',
       (
         tester,

@@ -408,7 +408,14 @@ class _PriorityMeta extends StatelessWidget {
       children: [
         TaskShowcasePriorityGlyph(priority: priority),
         SizedBox(width: context.designTokens.spacing.step2),
-        Text(priorityLabel(context, priority), style: textStyle),
+        Flexible(
+          child: Text(
+            priorityLabel(context, priority),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: textStyle,
+          ),
+        ),
       ],
     );
   }
@@ -440,10 +447,14 @@ class _MetaText extends StatelessWidget {
       children: [
         Icon(icon, size: IconSizes.xs, color: color),
         SizedBox(width: tokens.spacing.step2),
-        Text(
-          label,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: color,
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: color,
+            ),
           ),
         ),
       ],
@@ -535,7 +546,14 @@ class _TrackedDurationMetaContent extends StatelessWidget {
           color: TaskShowcasePalette.lowText(context),
         ),
         const SizedBox(width: 6),
-        Text(label, style: textStyle),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: textStyle,
+          ),
+        ),
       ],
     );
   }

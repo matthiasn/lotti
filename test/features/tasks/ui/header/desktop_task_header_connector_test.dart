@@ -20,6 +20,7 @@ import 'package:lotti/features/design_system/components/selection/design_system_
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
@@ -908,6 +909,30 @@ void main() {
         expect(find.textContaining('/2026'), findsNothing);
       },
     );
+
+    testWidgets('the due label follows the day as it rolls over', (
+      tester,
+    ) async {
+      var today = now;
+      final task = buildTask(due: now.add(const Duration(days: 1)));
+
+      await withClock(Clock(() => today), () async {
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Due Tomorrow'), findsOneWidget);
+
+        // Midnight passes: the day provider re-emits, nothing else changes.
+        today = now.add(const Duration(days: 1));
+        ProviderScope.containerOf(
+          tester.element(find.byType(DesktopTaskHeader)),
+        ).invalidate(taskDueDayProvider);
+        await tester.pump();
+      });
+
+      expect(find.text('Due Today'), findsOneWidget);
+      expect(find.text('Due Tomorrow'), findsNothing);
+    });
 
     for (final (offset, label) in [
       (-1, 'Due Yesterday'),

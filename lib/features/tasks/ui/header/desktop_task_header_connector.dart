@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/tasks/state/task_blockers_controller.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_column.dart';
@@ -49,6 +50,9 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Rebuild when label definitions change (names, colours, visibility).
     ref.watch(labelsStreamProvider);
+    // Rebuild at local midnight: "Due Tomorrow" becomes "Due Today", and the
+    // urgency with it, without the task changing.
+    ref.watch(taskDueDayProvider);
 
     final entryState = ref.watch(entryControllerProvider(taskId)).value;
     final task = entryState?.entry;
