@@ -143,8 +143,9 @@ Megolm-encrypted Matrix room ([Vodozemac](https://github.com/matrix-org/vodozema
 for Olm/Megolm); attachments are encrypted per file. Keys are shared only with
 devices you verified by emoji, and events from anything else — or sent in
 plaintext — are dropped. Every entry carries a vector clock, so a device that
-was offline for a week rejoins without losing writes, and genuinely concurrent
-edits show up as conflicts for you to resolve. You set up the first device
+was offline for a week rejoins without losing writes. Genuinely concurrent
+edits to an entry show up as conflicts for you to resolve; for definitions such
+as categories and labels, the later edit wins. You set up the first device
 against a homeserver with the included
 [`tools/matrix_provisioner`](tools/matrix_provisioner); every further device
 pairs from one you already use by QR code and emoji check.
@@ -156,7 +157,9 @@ anything sensitive:**
   can see the account, which device synced when, from which IP, and how much.
 - **A compromised device.** The local databases are not encrypted by Lotti
   today; rely on your operating system's full-disk encryption. Passwords, API
-  keys and the GitHub token are kept in the OS keystore.
+  keys and the GitHub token are kept in the OS keystore; an AI provider key
+  waiting to sync to your other devices also sits in the local sync outbox
+  until it is sent.
 - **Losing every device.** There is no server-side backup and no account
   recovery. A second paired device is your replica — after you send it your
   history from the first — and an ordinary backup of the database plus the
@@ -224,7 +227,7 @@ Install Flutter through [FVM](https://fvm.app/) (the repository pins the
 version in `.fvmrc`), then:
 
 ```sh
-make deps
+fvm flutter pub get
 fvm flutter run -d macos   # or linux, windows, or a connected device
 ```
 
