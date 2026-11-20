@@ -3,8 +3,7 @@
 [![Flathub installs](https://img.shields.io/flathub/downloads/com.matthiasn.lotti?style=flat&label=Flathub%20installs)](https://flathub.org/en/apps/com.matthiasn.lotti) [![GitHub Releases downloads](https://img.shields.io/github/downloads/matthiasn/lotti/total?label=GitHub%20Releases%20downloads)](https://github.com/matthiasn/lotti/releases) [![codecov](https://codecov.io/gh/matthiasn/lotti/graph/badge.svg?token=VB6FWvA1yW)](https://codecov.io/gh/matthiasn/lotti) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
 **Tasks, time, journal and the people in your life — kept on your own devices,
-synced end-to-end encrypted, with AI agents that propose and never decide for
-you.**
+synced end-to-end encrypted, with AI agents that propose while you decide.**
 
 Lotti is a personal task manager, time tracker and journal. Speak a rambling
 voice note and it comes back as a task with a checklist; an agent keeps a
@@ -12,6 +11,9 @@ living summary of every task and suggests the next change for you to confirm.
 There is no Lotti cloud and no Lotti account: your record lives in a local
 database on each of your devices, and the AI runs on a provider you pick — or
 on none at all.
+
+In development since 2016. I have tracked around 11,000 hours of my own work
+in it since 2022.
 
 <!-- Every screenshot on this page comes from the manual's screenshot catalog
      (docs-site/metadata/screenshot-cases.json), regenerated from the code
