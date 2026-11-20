@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -337,6 +338,17 @@ void main() {
       // Linked photo + note render as timeline entries; the task as a task.
       expect(find.text('Timeline'), findsOneWidget);
       expect(find.text('Tasks'), findsOneWidget);
+    });
+
+    testWidgets('dates the event against the injected clock', (tester) async {
+      // In a later year the May 2026 event carries its year; a wall-clock
+      // read in 2026 would drop it.
+      await withClock(Clock.fixed(DateTime(2030, 1, 5)), () async {
+        await pumpResolved(tester, linked: const []);
+      });
+
+      final view = tester.widget<EventDetailView>(find.byType(EventDetailView));
+      expect(view.data.card.dateLabel, 'May 2026');
     });
 
     testWidgets('renames inline through the controller (not the old editor)', (

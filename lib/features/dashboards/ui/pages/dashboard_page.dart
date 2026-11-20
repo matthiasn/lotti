@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/features/dashboards/ui/settings/dashboard_definition_page.dart';
@@ -20,8 +21,9 @@ import 'package:material_ui/material_ui.dart';
 /// edit affordance) above a scrolling stack of charts ([DashboardWidget]).
 ///
 /// Holds the selected time span in state (default 90 days) and derives the
-/// `[rangeStart, rangeEnd]` window from it on every build, so changing the span
-/// re-keys the charts' providers. Beams back to `/dashboards` if the dashboard
+/// `[rangeStart, rangeEnd]` window from it on every build — ending on the last
+/// second of today as read from `clock.now()`, so a pinned clock pins the
+/// window — and changing the span re-keys the charts' providers. Beams back to `/dashboards` if the dashboard
 /// id no longer resolves. Renders both as a standalone mobile route and as the
 /// desktop detail pane of the dashboards list; opening the definition editor
 /// slides in a side panel on desktop and pushes full-screen on mobile.
@@ -71,10 +73,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final tokens = context.designTokens;
     final isDesktop = isDesktopLayout(context);
 
-    final rangeStart = DateTime.now()
-        .subtract(Duration(days: timeSpanDays))
-        .dayAtMidnight;
-    final rangeEnd = DateTime.now().dayAtMidnight.add(
+    final now = clock.now();
+    final rangeStart = now.subtract(Duration(days: timeSpanDays)).dayAtMidnight;
+    final rangeEnd = now.dayAtMidnight.add(
       const Duration(hours: 23, minutes: 59, seconds: 59),
     );
 

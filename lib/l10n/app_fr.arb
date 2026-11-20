@@ -222,7 +222,7 @@
   "agentInstancesFilterSectionSoul": "Âme",
   "agentInstancesFilterSectionStatus": "Statut",
   "agentInstancesFilterSectionType": "Type",
-  "agentInstancesGroupActiveCount": "{count, plural, =1{1 actif} other{{count} actifs}}",
+  "agentInstancesGroupActiveCount": "{count, plural, one{{count} actif} other{{count} actifs}}",
   "@agentInstancesGroupActiveCount": {
     "placeholders": {
       "count": {
@@ -236,7 +236,7 @@
   "agentInstancesKindEvolution": "Évolution",
   "agentInstancesKindTaskAgent": "Agent de tâches",
   "agentInstancesPageTitle": "Instances d'agents",
-  "agentInstancesResultCountAll": "{count, plural, =1{1 instance} other{{count} instances}}",
+  "agentInstancesResultCountAll": "{count, plural, one{{count} instance} other{{count} instances}}",
   "@agentInstancesResultCountAll": {
     "placeholders": {
       "count": {
@@ -311,6 +311,14 @@
   "agentPendingWakesFilterSectionType": "Type",
   "agentPendingWakesGroupByType": "Type",
   "agentPendingWakesPendingLabel": "En attente",
+  "agentPendingWakesResultCountAll": "{count, plural, one{{count} réveil} other{{count} réveils}}",
+  "@agentPendingWakesResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentPendingWakesRunningHeading": "{count, plural, =1{En cours} other{En cours ({count})}}",
   "agentPendingWakesScheduledLabel": "Planifié",
   "agentPendingWakesSearchPlaceholder": "Rechercher des réveils…",
@@ -396,6 +404,14 @@
   "agentSoulSelectTitle": "Sélectionner une âme",
   "agentSoulsEmptyFiltered": "Aucune âme ne correspond à tes filtres.",
   "agentSoulSettingsTab": "Paramètres",
+  "agentSoulsResultCountAll": "{count, plural, one{{count} âme} other{{count} âmes}}",
+  "@agentSoulsResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentSoulsSearchPlaceholder": "Rechercher des âmes…",
   "agentSoulsTitle": "Âmes",
   "agentSoulToneBoundsLabel": "Limites de ton",
@@ -533,6 +549,14 @@
   "agentTemplatesFilterSectionKind": "Type",
   "agentTemplatesGroupByKind": "Type",
   "agentTemplatesGroupNone": "Tous",
+  "agentTemplatesResultCountAll": "{count, plural, one{{count} modèle} other{{count} modèles}}",
+  "@agentTemplatesResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentTemplatesSearchPlaceholder": "Rechercher des modèles…",
   "agentTemplateStatsTab": "Statistiques",
   "agentTemplateStatusActive": "Actif",
@@ -1928,8 +1952,8 @@
   "conflictsEmptyTitle": "Aucun conflit détecté",
   "conflictSideFromSync": "DEPUIS LA SYNC",
   "conflictSideThisDevice": "CET APPAREIL",
-  "conflictsResolved": "résolu",
-  "conflictsUnresolved": "non résolu",
+  "conflictsResolved": "Résolu",
+  "conflictsUnresolved": "Non résolu",
   "conflictValueAbsent": "Non défini",
   "conflictValueNo": "Non",
   "conflictValueYes": "Oui",
@@ -4031,7 +4055,7 @@
   "journalDateFromLabel": "Date de début :",
   "journalDateInvalid": "Plage de dates invalide",
   "journalDateLabel": "Date",
-  "journalDateNowButton": "maintenant",
+  "journalDateNowButton": "Maintenant",
   "journalDateSaveButton": "Enregistrer",
   "journalDateTimeRangeTitle": "Date et heure",
   "journalDateToLabel": "Date de fin :",
@@ -6326,7 +6350,7 @@
   "sidebarWakesOpenTask": "Ouvrir la tâche",
   "sidebarWakesQueuedCount": "{count, plural, =1{1 en file} other{{count} en file}}",
   "sidebarWakesQueuedLabel": "En file",
-  "sidebarWakesWorkingLabel": "Travaille",
+  "sidebarWakesWorkingLabel": "En cours",
   "skillsSectionTitle": "Compétences",
   "speechModalSelectLanguage": "Sélectionner la langue",
   "speechModalTitle": "Reconnaissance vocale",

@@ -22,6 +22,7 @@ class AgentListingShell extends StatefulWidget {
     required this.groupAxes,
     required this.sortAxes,
     required this.searchPlaceholder,
+    required this.countLabel,
     required this.emptyMessage,
     required this.axisMatcher,
     super.key,
@@ -32,6 +33,10 @@ class AgentListingShell extends StatefulWidget {
   final List<AgentListGroupAxis> groupAxes;
   final List<AgentListSortAxis> sortAxes;
   final String searchPlaceholder;
+
+  /// Names the page's rows in the toolbar count; see
+  /// [AgentListToolbar.countLabel].
+  final String Function(int count) countLabel;
   final String emptyMessage;
 
   /// Page-supplied predicate that maps an axis selection set onto a row.
@@ -129,6 +134,7 @@ class _AgentListingShellState extends State<AgentListingShell> {
           groupAxes: widget.groupAxes,
           sortAxes: widget.sortAxes,
           searchPlaceholder: widget.searchPlaceholder,
+          countLabel: widget.countLabel,
         ),
         if (_filters.isAnyFilterActive)
           ActiveFiltersRow(

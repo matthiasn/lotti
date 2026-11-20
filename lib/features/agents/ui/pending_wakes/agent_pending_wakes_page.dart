@@ -63,6 +63,7 @@ class AgentPendingWakesPage extends ConsumerWidget {
             groupAxes: _buildGroupAxes(messages, hints),
             sortAxes: _buildSortAxes(messages),
             searchPlaceholder: messages.agentPendingWakesSearchPlaceholder,
+            countLabel: messages.agentPendingWakesResultCountAll,
             emptyMessage: messages.agentPendingWakesEmptyFiltered,
             axisMatcher: (axisId, selected, row) =>
                 _matchRow(hints, row, axisId, selected),

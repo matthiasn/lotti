@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -224,6 +225,33 @@ void main() {
     expect(find.text('Event past'), findsOneWidget);
     // Nothing narrows the list yet: no filter chips, a resting funnel.
     expect(find.byType(ActiveFilterChip), findsNothing);
+  });
+
+  testWidgets('splits Upcoming from past by the injected clock', (
+    tester,
+  ) async {
+    // Both events sit in the real past; only the pinned clock makes the
+    // August one upcoming.
+    stubPaged([
+      _event('summit', DateTime(2026, 8, 3), title: 'Europa summit'),
+      _event('launch', DateTime(2026, 6, 2), title: 'Launch review'),
+    ]);
+
+    await withClock(Clock.fixed(DateTime(2026, 7, 17, 12)), () async {
+      await pumpPage(tester);
+    });
+
+    expect(find.text('Upcoming'), findsOneWidget);
+    expect(find.text('2026'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Europa summit')).dy,
+      lessThan(tester.getTopLeft(find.text('2026')).dy),
+      reason: 'the upcoming event sits above the year section',
+    );
+    expect(
+      tester.getTopLeft(find.text('Launch review')).dy,
+      greaterThan(tester.getTopLeft(find.text('2026')).dy),
+    );
   });
 
   testWidgets('typing in the search field narrows the list', (tester) async {

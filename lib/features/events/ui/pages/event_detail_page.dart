@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -41,7 +42,8 @@ import 'package:material_ui/material_ui.dart';
 /// Route-level page for a single event's detail view.
 ///
 /// Resolves the [JournalEvent] and its outgoing linked entries, maps them into
-/// an [EventDetailView] via [eventDetailDataFromEntities], and wires the view's
+/// an [EventDetailView] via [eventDetailDataFromEntities] (dated against
+/// `clock.now()`, so a pinned clock pins the labels), and wires the view's
 /// inline-edit callbacks to [EntryController] mutations and the shared
 /// pickers — so editing an event never leaves this page. Adding to the event
 /// happens from the [EntryActionBar] docked along the bottom edge, the same
@@ -164,7 +166,7 @@ class EventDetailPage extends ConsumerWidget {
     final data = eventDetailDataFromEntities(
       event: entry,
       linked: linked,
-      now: DateTime.now(),
+      now: clock.now(),
       locale: Localizations.localeOf(context).toString(),
       categoryColor: colorFromCssHex(category?.color),
       categoryName: category?.name,

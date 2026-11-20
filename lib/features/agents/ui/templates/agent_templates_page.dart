@@ -46,6 +46,7 @@ class AgentTemplatesPage extends ConsumerWidget {
       groupAxes: _buildGroupAxes(messages, hints),
       sortAxes: _buildSortAxes(messages),
       searchPlaceholder: messages.agentTemplatesSearchPlaceholder,
+      countLabel: messages.agentTemplatesResultCountAll,
       emptyMessage: messages.agentTemplatesEmptyFiltered,
       axisMatcher: (axisId, selected, row) =>
           _matchRow(hints, row, axisId, selected),

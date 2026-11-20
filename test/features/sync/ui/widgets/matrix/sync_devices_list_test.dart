@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
@@ -72,18 +73,21 @@ void main() {
   Future<void> pumpList(
     WidgetTester tester, {
     required SyncDevicesController Function() controller,
+    DateTime? at,
   }) async {
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        SyncDevicesList(now: () => now),
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-          syncDevicesControllerProvider.overrideWith(controller),
-        ],
-      ),
-    );
-    await tester.pump();
-    await tester.pump();
+    await withClock(Clock.fixed(at ?? now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SyncDevicesList(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            syncDevicesControllerProvider.overrideWith(controller),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+    });
   }
 
   SyncDeviceInfo unverifiedDevice({bool withKeys = true}) {
@@ -246,24 +250,35 @@ void main() {
     expect(find.text("Couldn't load the device list."), findsOneWidget);
   });
 
-  testWidgets('renders without an injected clock', (tester) async {
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        const SyncDevicesList(),
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-          syncDevicesControllerProvider.overrideWith(
-            () => _FakeSyncDevicesController([currentDevice]),
-          ),
-        ],
-      ),
+  testWidgets('measures staleness against the injected clock', (
+    tester,
+  ) async {
+    // Seen ten days before the pinned "now": current then, long unused by
+    // any later wall clock.
+    final recentlySeen = SyncDeviceInfo(
+      deviceId: 'LAPTOP',
+      displayName: 'Expedition laptop',
+      lastSeen: now.subtract(const Duration(days: 10)),
+      isCurrentDevice: false,
+      verified: true,
     );
-    await tester.pump();
-    await tester.pump();
+    final stillHint = find.text('Probably no longer in use');
 
-    // No lastSeen anywhere, so the wall-clock fallback cannot make the
-    // rendering time-dependent.
-    expect(find.byType(DeviceCard), findsOneWidget);
+    await pumpList(
+      tester,
+      controller: () => _FakeSyncDevicesController([recentlySeen]),
+    );
+    expect(find.text('Expedition laptop'), findsOneWidget);
+    expect(stillHint, findsNothing);
+
+    // The same device, read a season later, is flagged as unused.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await pumpList(
+      tester,
+      at: now.add(const Duration(days: 60)),
+      controller: () => _FakeSyncDevicesController([recentlySeen]),
+    );
+    expect(stillHint, findsOneWidget);
   });
 
   testWidgets('a refresh requested mid-flight shows the spinner and is '
@@ -346,7 +361,7 @@ void main() {
 
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        SyncDevicesList(now: () => now),
+        const SyncDevicesList(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
         ],
@@ -678,11 +693,11 @@ void main() {
 
     await tester.pumpWidget(
       makeTestableWidget(
-        MediaQuery(
-          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+        const MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(2)),
           child: SizedBox(
             width: 390,
-            child: SyncDevicesList(now: () => now),
+            child: SyncDevicesList(),
           ),
         ),
         overrides: [
@@ -715,9 +730,9 @@ void main() {
     // wide-layout cards — so this pumps the pane width directly.
     await tester.pumpWidget(
       makeTestableWidget(
-        SizedBox(
+        const SizedBox(
           width: 1100,
-          child: SyncDevicesList(now: () => now),
+          child: SyncDevicesList(),
         ),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
@@ -787,14 +802,16 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: makeTestableWidgetWithScaffold(
-            SingleChildScrollView(child: SyncDevicesList(now: () => now)),
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidgetWithScaffold(
+              const SingleChildScrollView(child: SyncDevicesList()),
+            ),
           ),
-        ),
-      );
+        );
+      });
       await tester.pump();
       await tester.pump();
       return container;

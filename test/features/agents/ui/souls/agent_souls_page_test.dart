@@ -64,6 +64,12 @@ void main() {
     expect(find.text('Laura'), findsOneWidget);
     expect(find.text('v4'), findsOneWidget);
     expect(find.byType(SoulAvatar), findsOneWidget);
+    // The toolbar counts souls, not instances.
+    final ctx = tester.element(find.byType(AgentSoulsPage));
+    expect(
+      find.text(ctx.messages.agentSoulsResultCountAll(1)),
+      findsOneWidget,
+    );
   });
 
   testWidgets('soul without an active version omits the metaRight cell', (

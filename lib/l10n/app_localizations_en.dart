@@ -613,6 +613,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentPendingWakesPendingLabel => 'Pending';
 
   @override
+  String agentPendingWakesResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count wakes',
+      one: '1 wake',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentPendingWakesRunningHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -860,6 +871,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentSoulSettingsTab => 'Settings';
+
+  @override
+  String agentSoulsResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count souls',
+      one: '1 soul',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentSoulsSearchPlaceholder => 'Search souls…';
@@ -1315,6 +1337,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentTemplatesGroupNone => 'All';
+
+  @override
+  String agentTemplatesResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count templates',
+      one: '1 template',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentTemplatesSearchPlaceholder => 'Search templates…';
@@ -4586,10 +4619,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conflictSideThisDevice => 'THIS DEVICE';
 
   @override
-  String get conflictsResolved => 'resolved';
+  String get conflictsResolved => 'Resolved';
 
   @override
-  String get conflictsUnresolved => 'unresolved';
+  String get conflictsUnresolved => 'Unresolved';
 
   @override
   String get conflictValueAbsent => 'Not set';
@@ -18746,10 +18779,10 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
       'Enable this to automatically resend failed attachment uploads when the connection is restored.';
 
   @override
-  String get conflictsResolved => 'resolved';
+  String get conflictsResolved => 'Resolved';
 
   @override
-  String get conflictsUnresolved => 'unresolved';
+  String get conflictsUnresolved => 'Unresolved';
 
   @override
   String get createCategoryTitle => 'Create category';

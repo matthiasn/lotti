@@ -11,7 +11,8 @@ import 'package:material_ui/material_ui.dart';
 /// Generic over the page's filter axes — Instances, Templates, Souls,
 /// and Pending Wakes all build their own list of [AgentListFilterAxis] /
 /// [AgentListGroupAxis] / [AgentListSortAxis] and feed them to this
-/// shared toolbar.
+/// shared toolbar. The unfiltered count names what the page lists through
+/// [countLabel]; a narrowed count reads "N of M" on every page.
 class AgentListToolbar extends StatelessWidget {
   const AgentListToolbar({
     required this.state,
@@ -22,6 +23,7 @@ class AgentListToolbar extends StatelessWidget {
     required this.groupAxes,
     required this.sortAxes,
     required this.searchPlaceholder,
+    required this.countLabel,
     super.key,
   });
 
@@ -34,6 +36,10 @@ class AgentListToolbar extends StatelessWidget {
   final List<AgentListSortAxis> sortAxes;
   final String searchPlaceholder;
 
+  /// Pluralized count of the whole list ("3 templates", "1 soul"), shown
+  /// while no filter or search narrows it.
+  final String Function(int count) countLabel;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -41,7 +47,7 @@ class AgentListToolbar extends StatelessWidget {
 
     final countText = Text(
       totalAfterFilter == totalBeforeFilter
-          ? messages.agentInstancesResultCountAll(totalBeforeFilter)
+          ? countLabel(totalBeforeFilter)
           : messages.agentInstancesResultCountFiltered(
               totalAfterFilter,
               totalBeforeFilter,

@@ -625,6 +625,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentPendingWakesPendingLabel => 'Ausstehend';
 
   @override
+  String agentPendingWakesResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Weckvorgänge',
+      one: '1 Weckvorgang',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentPendingWakesRunningHeading(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -878,6 +889,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentSoulSettingsTab => 'Einstellungen';
+
+  @override
+  String agentSoulsResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Seelen',
+      one: '1 Seele',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentSoulsSearchPlaceholder => 'Seelen suchen…';
@@ -1339,6 +1361,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplatesGroupNone => 'Alle';
 
   @override
+  String agentTemplatesResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Vorlagen',
+      one: '1 Vorlage',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get agentTemplatesSearchPlaceholder => 'Vorlagen suchen…';
 
   @override
@@ -1398,7 +1431,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTokenUsageOutputTokens => 'Ausgabe';
 
   @override
-  String get agentTokenUsageThoughtsTokens => 'Denken';
+  String get agentTokenUsageThoughtsTokens => 'Gedanken';
 
   @override
   String get agentTokenUsageTotalTokens => 'Gesamt';
@@ -1759,7 +1792,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiConfigNoModelsAvailable =>
-      'Noch keine AI-Modelle konfiguriert. Bitte füge eines in den Einstellungen hinzu.';
+      'Noch keine KI-Modelle konfiguriert. Bitte füge eines in den Einstellungen hinzu.';
 
   @override
   String get aiConfigNoSuitableModelsAvailable =>
@@ -2632,18 +2665,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiSettingsNoDefaultProfile => 'Kein Standardprofil';
 
   @override
-  String get aiSettingsNoModelsConfigured => 'Keine AI-Modelle konfiguriert';
+  String get aiSettingsNoModelsConfigured => 'Keine KI-Modelle konfiguriert';
 
   @override
   String get aiSettingsNoProvidersConfigured =>
-      'Keine AI-Anbieter konfiguriert';
+      'Keine KI-Anbieter konfiguriert';
 
   @override
   String get aiSettingsPageLead =>
       'Richte KI-Anbieter ein, die Modelle, die Lotti nutzen kann, und die Inferenzprofile, die entscheiden, welches Modell welche Aufgabe übernimmt.';
 
   @override
-  String get aiSettingsPageTitle => 'AI-Einstellungen';
+  String get aiSettingsPageTitle => 'KI-Einstellungen';
 
   @override
   String get aiSettingsReasoningLabel => 'Schlussfolgerung';
@@ -3282,8 +3315,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Lass den Assistenten in dieser Kategorie sich selbst aktualisieren, wenn sich eine Aufgabe ändert. Gilt für neue Aufgaben; bestehende behalten ihre eigene Einstellung.';
 
   @override
-  String get categoryAutomaticAgentWakesLabel =>
-      'Assistent automatisch aktualisieren';
+  String get categoryAutomaticAgentWakesLabel => 'Assistent automatisch wecken';
 
   @override
   String get categoryAutomaticInferenceDescription =>
@@ -4194,25 +4226,25 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get configFlagEnableAiStreaming =>
-      'AI-Streaming für Aufgabenaktionen aktivieren';
+      'KI-Streaming für Aufgabenaktionen aktivieren';
 
   @override
   String get configFlagEnableAiStreamingDescription =>
-      'Streame AI-Antworten für aufgabenbezogene Aktionen. Deaktivieren, um Antworten zu puffern und die UI flüssiger zu halten.';
+      'Streame KI-Antworten für aufgabenbezogene Aktionen. Deaktivieren, um Antworten zu puffern und die UI flüssiger zu halten.';
 
   @override
-  String get configFlagEnableAiSummaryTts => 'AI-Zusammenfassung vorlesen';
+  String get configFlagEnableAiSummaryTts => 'KI-Zusammenfassung vorlesen';
 
   @override
   String get configFlagEnableAiSummaryTtsDescription =>
-      'Zeigt die lokale Text-to-Speech-Schaltfläche in AI-Zusammenfassungen von Aufgaben. Erfordert ein installiertes Supertonic-TTS-Modell.';
+      'Zeigt die lokale Text-to-Speech-Schaltfläche in KI-Zusammenfassungen von Aufgaben. Erfordert ein installiertes Supertonic-TTS-Modell.';
 
   @override
   String get configFlagEnableCompanion => 'Begleitung';
 
   @override
   String get configFlagEnableCompanionDescription =>
-      'Zeigt neben der AI-Zusammenfassung eine Figur, die sie vorliest – ihr Mund folgt der Stimme. Braucht „AI-Zusammenfassung vorlesen“.';
+      'Zeigt neben der KI-Zusammenfassung eine Figur, die sie vorliest – ihr Mund folgt der Stimme. Braucht „KI-Zusammenfassung vorlesen“.';
 
   @override
   String get configFlagEnableDailyOs => 'DailyOS aktivieren';
@@ -4639,10 +4671,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get conflictSideThisDevice => 'DIESES GERÄT';
 
   @override
-  String get conflictsResolved => 'gelöst';
+  String get conflictsResolved => 'Gelöst';
 
   @override
-  String get conflictsUnresolved => 'ungelöst';
+  String get conflictsUnresolved => 'Ungelöst';
 
   @override
   String get conflictValueAbsent => 'Nicht gesetzt';
@@ -7153,7 +7185,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get entryLabelsNoLabels => 'Keine Labels zugewiesen';
 
   @override
-  String get entryTypeLabelAiResponse => 'AI-Antwort';
+  String get entryTypeLabelAiResponse => 'KI-Antwort';
 
   @override
   String get entryTypeLabelCheckIn => 'Check-in';
@@ -11571,11 +11603,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get maintenanceSyncDefinitions =>
-      'Messgrößen, Dashboards, Gewohnheiten, Kategorien, AI-Einstellungen synchronisieren';
+      'Messgrößen, Dashboards, Gewohnheiten, Kategorien, KI-Einstellungen synchronisieren';
 
   @override
   String get maintenanceSyncDefinitionsDescription =>
-      'Messgrößen, Dashboards, Gewohnheiten, Kategorien und AI-Einstellungen synchronisieren';
+      'Messgrößen, Dashboards, Gewohnheiten, Kategorien und KI-Einstellungen synchronisieren';
 
   @override
   String get manageLinks => 'Verknüpfungen verwalten…';
@@ -13096,7 +13128,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get projectsFilterTooltip => 'Projekte filtern';
 
   @override
-  String get projectShowcaseAiReportTitle => 'AI-Bericht';
+  String get projectShowcaseAiReportTitle => 'KI-Bericht';
 
   @override
   String projectShowcaseBlockedLegend(int count) {
@@ -15197,10 +15229,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsAiSubtitle =>
-      'AI-Anbieter, Modelle und Prompts konfigurieren';
+      'KI-Anbieter, Modelle und Prompts konfigurieren';
 
   @override
-  String get settingsAiTitle => 'AI-Einstellungen';
+  String get settingsAiTitle => 'KI-Einstellungen';
 
   @override
   String get settingsAiUsageSubtitle =>
@@ -15244,7 +15276,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCategoriesSearchHint => 'Kategorien suchen…';
 
   @override
-  String get settingsCategoriesSubtitle => 'Kategorien mit AI-Einstellungen';
+  String get settingsCategoriesSubtitle => 'Kategorien mit KI-Einstellungen';
 
   @override
   String settingsCategoriesTaskCount(int count) {
@@ -16346,7 +16378,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsResetGeminiSubtitle =>
-      'Den Gemini AI-Einrichtungsdialog erneut anzeigen';
+      'Den Gemini-KI-Einrichtungsdialog erneut anzeigen';
 
   @override
   String get settingsResetGeminiTitle =>
@@ -16706,14 +16738,14 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count geplant',
-      one: '1 geplant',
+      other: '$count in Warteschlange',
+      one: '1 in Warteschlange',
     );
     return '$_temp0';
   }
 
   @override
-  String get sidebarWakesQueuedLabel => 'Geplant';
+  String get sidebarWakesQueuedLabel => 'In Warteschlange';
 
   @override
   String get sidebarWakesWorkingLabel => 'Arbeitet';
@@ -17368,10 +17400,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Koordination von Agentenläufen';
 
   @override
-  String get syncPayloadAiConfig => 'AI-Konfiguration';
+  String get syncPayloadAiConfig => 'KI-Konfiguration';
 
   @override
-  String get syncPayloadAiConfigDelete => 'AI-Konfiguration löschen';
+  String get syncPayloadAiConfigDelete => 'KI-Konfiguration löschen';
 
   @override
   String get syncPayloadBackfillRequest => 'Nachfüllanfrage';

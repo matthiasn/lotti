@@ -117,13 +117,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentBinaryChoiceNo => 'Nee';
 
   @override
-  String get agentBinaryChoiceYes => 'Ja.';
+  String get agentBinaryChoiceYes => 'Ja';
 
   @override
   String get agentCategoryRatingsScaleMax => 'Eerst repareren';
 
   @override
-  String get agentCategoryRatingsScaleMin => 'Laat maar.';
+  String get agentCategoryRatingsScaleMin => 'Laat maar';
 
   @override
   String agentCategoryRatingsStarLabel(int starIndex, int totalStars) {
@@ -156,7 +156,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get agentControlsDeleteButton => 'permanent verwijderen';
+  String get agentControlsDeleteButton => 'Permanent verwijderen';
 
   @override
   String get agentControlsDeleteDialogContent =>
@@ -238,7 +238,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentEvolutionChartVersionPerformance => 'Op versie';
 
   @override
-  String get agentEvolutionChartWakeHistory => 'Wakegeschiedenis';
+  String get agentEvolutionChartWakeHistory => 'Geschiedenis van wekmomenten';
 
   @override
   String get agentEvolutionChatPlaceholder =>
@@ -263,7 +263,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentEvolutionMetricSuccess => 'Succes';
 
   @override
-  String get agentEvolutionMetricWakes => 'Wakker worden';
+  String get agentEvolutionMetricWakes => 'Wekmomenten';
 
   @override
   String get agentEvolutionNoSessions => 'Nog geen evolutiesessies';
@@ -601,11 +601,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentObservationsEmpty => 'Nog geen waarnemingen.';
 
   @override
-  String get agentPendingWakesDeleteTooltip => 'Wakker worden verwijderen';
+  String get agentPendingWakesDeleteTooltip => 'Wekmoment verwijderen';
 
   @override
   String get agentPendingWakesEmptyFiltered =>
-      'Geen wakes die overeenkomen met je filters.';
+      'Geen wekmomenten die overeenkomen met je filters.';
 
   @override
   String get agentPendingWakesFilterSectionType => 'Type';
@@ -615,6 +615,17 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentPendingWakesPendingLabel => 'In afwachting';
+
+  @override
+  String agentPendingWakesResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count wekmomenten',
+      one: '1 wekmoment',
+    );
+    return '$_temp0';
+  }
 
   @override
   String agentPendingWakesRunningHeading(int count) {
@@ -631,16 +642,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentPendingWakesScheduledLabel => 'Gepland';
 
   @override
-  String get agentPendingWakesSearchPlaceholder => 'Zoek wordt wakker...';
+  String get agentPendingWakesSearchPlaceholder => 'Wekmomenten zoeken…';
 
   @override
-  String get agentPendingWakesSortDueLatest => 'Uiterlijk';
+  String get agentPendingWakesSortDueLatest => 'Laatst gepland';
 
   @override
-  String get agentPendingWakesSortDueSoonest => 'Binnenkort te betalen';
+  String get agentPendingWakesSortDueSoonest => 'Vroegst gepland';
 
   @override
-  String get agentPendingWakesTitle => 'Wake Cycles';
+  String get agentPendingWakesTitle => 'Wekcycli';
 
   @override
   String get agentReportHistoryBadge => 'Verslag';
@@ -731,11 +742,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentRitualSummaryWakeHistory30Days =>
-      'Wakker worden (laatste 30 dagen)';
+      'Activiteit van wekmomenten (laatste 30 dagen)';
 
   @override
   String get agentRitualSummaryWakesSinceLast =>
-      'Wakker worden sinds de laatste 1-op-1';
+      'Wekmomenten sinds de laatste 1-op-1';
 
   @override
   String get agentRitualTypingSemantics => 'De agent stelt een antwoord op';
@@ -745,8 +756,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count keer wakker sinds jullie laatste 1-op-1',
-      one: '1 keer wakker sinds jullie laatste 1-op-1',
+      other: '$count wekmomenten sinds jullie laatste 1-op-1',
+      one: '1 wekmoment sinds jullie laatste 1-op-1',
     );
     return '$_temp0';
   }
@@ -764,7 +775,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentSettingsSubtitle => 'Sjablonen, instanties en monitoring';
 
   @override
-  String get agentSettingsTitle => 'Middelen';
+  String get agentSettingsTitle => 'Agents';
 
   @override
   String get agentSoulAntiSycophancyLabel => 'Antisycophancybeleid';
@@ -871,6 +882,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentSoulSettingsTab => 'Instellingen';
 
   @override
+  String agentSoulsResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count zielen',
+      one: '1 ziel',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get agentSoulsSearchPlaceholder => 'Zoek zielen...';
 
   @override
@@ -916,10 +938,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentStateHeading => 'State Info';
 
   @override
-  String get agentStateLastWake => 'Laatste wake';
+  String get agentStateLastWake => 'Laatste wekmoment';
 
   @override
-  String get agentStateNextWake => 'Volgende wake';
+  String get agentStateNextWake => 'Volgende wekmoment';
 
   @override
   String get agentStateRevision => 'Herziening';
@@ -928,7 +950,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentStateSleepingUntil => 'Slapen tot';
 
   @override
-  String get agentStateWakeCount => 'Wakker worden';
+  String get agentStateWakeCount => 'Aantal wekmomenten';
 
   @override
   String get agentStopWakeStopping => 'Bezig met stoppen…';
@@ -1271,7 +1293,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentTemplateKindTaskAgent => 'Taakbeheerder';
 
   @override
-  String get agentTemplateMetricsTotalWakes => 'Totaal Wakker worden';
+  String get agentTemplateMetricsTotalWakes => 'Totaal aantal wekmomenten';
 
   @override
   String get agentTemplateNoneAssigned => 'Geen sjabloon toegewezen';
@@ -1304,7 +1326,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String agentTemplateRollbackConfirm(int version) {
-    return 'Terugdraaien naar versie $version? De agent zal deze versie gebruiken op zijn volgende wake.';
+    return 'Terugdraaien naar versie $version? De agent gebruikt deze versie bij zijn volgende wekmoment.';
   }
 
   @override
@@ -1321,13 +1343,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentTemplateSettingsTab => 'Instellingen';
 
   @override
-  String get agentTemplatesFilterSectionKind => 'Aardig';
+  String get agentTemplatesFilterSectionKind => 'Soort';
 
   @override
   String get agentTemplatesGroupByKind => 'Aardig';
 
   @override
   String get agentTemplatesGroupNone => 'Alles';
+
+  @override
+  String agentTemplatesResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sjablonen',
+      one: '1 sjabloon',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentTemplatesSearchPlaceholder => 'Sjablonen zoeken...';
@@ -1361,10 +1394,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentThreadReportLabel =>
-      'Verslag dat tijdens deze wake is opgesteld';
+      'Verslag opgesteld tijdens dit wekmoment';
 
   @override
-  String get agentTokenUsageCachedTokens => 'Gekacheld';
+  String get agentTokenUsageCachedTokens => 'In cache';
 
   @override
   String get agentTokenUsageCacheHitRate => 'Cachehits';
@@ -1375,11 +1408,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String agentTokenUsageErrorLoading(String error) {
-    return 'Laden van token is mislukt: $error';
+    return 'Laden van tokengebruik mislukt: $error';
   }
 
   @override
-  String get agentTokenUsageHeading => 'Token gebruik';
+  String get agentTokenUsageHeading => 'Tokengebruik';
 
   @override
   String get agentTokenUsageInputTokens => 'Invoer';
@@ -1397,7 +1430,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentTokenUsageTotalTokens => 'Totaal';
 
   @override
-  String get agentTokenUsageWakeCount => 'Wakker worden';
+  String get agentTokenUsageWakeCount => 'Wekmomenten';
 
   @override
   String get agentToolGoalRevisionLabel => 'Voorstel tot doelherziening';
@@ -1448,7 +1481,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentWakeBudgetIncrease => 'Daglimiet verhogen';
 
   @override
-  String get agentWakeBudgetLabel => 'Dagelijkse limiet voor activeringen';
+  String get agentWakeBudgetLabel => 'Dagelijkse limiet voor wekmomenten';
 
   @override
   String agentWakeBudgetUsage(int used, int max) {
@@ -1655,7 +1688,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiCapabilityChipThinking => 'Denken';
 
   @override
-  String get aiCapabilityChipTranscription => 'Omschrijving';
+  String get aiCapabilityChipTranscription => 'Transcriptie';
 
   @override
   String get aiCardCompanionOpenFullScreen =>
@@ -1682,19 +1715,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiCardMenuTooltip => 'Meer acties';
 
   @override
-  String get aiCardOpenAgentInternals => 'Open agent internals';
+  String get aiCardOpenAgentInternals => 'Interne details van agent openen';
 
   @override
   String get aiCardProposalConfirmed => 'Bevestigd';
 
   @override
-  String get aiCardProposalDismissed => 'Ingerukt';
+  String get aiCardProposalDismissed => 'Genegeerd';
 
   @override
   String get aiCardProposalKindAdd => 'Toevoegen';
 
   @override
-  String get aiCardProposalKindDue => 'Verloopdatum';
+  String get aiCardProposalKindDue => 'Deadline';
 
   @override
   String get aiCardProposalKindEstimate => 'Raming';
@@ -1825,7 +1858,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiConsumptionTypeAudioSummary => 'Samenvatting';
 
   @override
-  String get aiConsumptionTypeAudioTranscription => 'Omschrijving';
+  String get aiConsumptionTypeAudioTranscription => 'Transcriptie';
 
   @override
   String get aiConsumptionTypeEmbeddingIndexing => 'Embeddings indexeren';
@@ -1891,7 +1924,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiFormCancel => 'Annuleren';
 
   @override
-  String get aiFormFixErrors => 'Foutherstel voordat u opslaat';
+  String get aiFormFixErrors => 'Herstel de fouten voordat je opslaat';
 
   @override
   String get aiFormNoChanges => 'Geen niet opgeslagen wijzigingen';
@@ -2071,7 +2104,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiInferenceErrorUnknownTitle => 'Fout';
 
   @override
-  String get aiInternalsTitle => 'Agent internals';
+  String get aiInternalsTitle => 'Interne details van agent';
 
   @override
   String get aiModelCardDeleteTooltip => 'Model verwijderen';
@@ -2160,13 +2193,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiPickProviderBadgeNew => 'NIEUW';
 
   @override
-  String get aiPickProviderBadgeRecommended => 'AANGEVALDE';
+  String get aiPickProviderBadgeRecommended => 'AANBEVOLEN';
 
   @override
   String get aiPickProviderContinueButton => 'Doorgaan';
 
   @override
-  String get aiPickProviderDontShowAgainButton => 'Kom niet meer opdagen.';
+  String get aiPickProviderDontShowAgainButton => 'Niet meer tonen';
 
   @override
   String get aiPickProviderFooterHint =>
@@ -2195,13 +2228,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
 
   @override
-  String get aiProviderAnthropicName => 'Antropische Claude';
+  String get aiProviderAnthropicName => 'Anthropic Claude';
 
   @override
   String get aiProviderCardDraftBadge => 'ONTWERP';
 
   @override
-  String get aiProviderCardFixButton => 'Fix';
+  String get aiProviderCardFixButton => 'Oplossen';
 
   @override
   String aiProviderCardModelCount(int count) {
@@ -2272,7 +2305,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aiProviderConnectFieldDisplayNameHint =>
-      'Getoond in uw provider lijst';
+      'Getoond in je providerlijst';
 
   @override
   String get aiProviderConnectionCheckingLabel =>
@@ -2380,7 +2413,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiProviderDetailDangerZoneTitle => 'Gevaarszone';
 
   @override
-  String get aiProviderDetailDisplayNameLabel => 'Naam tonen';
+  String get aiProviderDetailDisplayNameLabel => 'Weergavenaam';
 
   @override
   String get aiProviderDetailEditButton => 'Bewerken';
@@ -2500,7 +2533,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiProviderVoxtralName => 'Voxtral (lokaal)';
 
   @override
-  String get aiProviderWhisperName => 'Fluisteren (lokaal)';
+  String get aiProviderWhisperName => 'Whisper (lokaal)';
 
   @override
   String get aiResponseDeleteCancel => 'Annuleren';
@@ -2556,7 +2589,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aiSettingsAgentWakeConcurrencyLabel =>
-      'Gelijktijdige toediening van het middel';
+      'Gelijktijdige wekmomenten van agents';
 
   @override
   String get aiSettingsClearAllFiltersTooltip => 'Alle filters wissen';
@@ -2607,10 +2640,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Lotti zal modellen en een startprofiel voor je opzetten.';
 
   @override
-  String get aiSettingsFtueBannerStartButton => 'Startinstellingen';
+  String get aiSettingsFtueBannerStartButton => 'Instellen starten';
 
   @override
-  String get aiSettingsFtueBannerTitle => 'Voeg uw eerste AI provider toe';
+  String get aiSettingsFtueBannerTitle => 'Voeg je eerste AI-provider toe';
 
   @override
   String get aiSettingsModalityAudio => 'Audio';
@@ -2619,7 +2652,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiSettingsModalityText => 'Tekst';
 
   @override
-  String get aiSettingsModalityVision => 'Gezicht';
+  String get aiSettingsModalityVision => 'Beeld';
 
   @override
   String get aiSettingsNoDefaultProfile => 'Geen standaardprofiel';
@@ -2643,7 +2676,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aiSettingsRemoveModelTooltip =>
-      'Verwijder dit model van uw provider';
+      'Verwijder dit model van je provider';
 
   @override
   String get aiSettingsSearchHint => 'Zoekproviders, modellen, profielen...';
@@ -2661,7 +2694,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiSettingsTabProviders => 'Aanbieders';
 
   @override
-  String get aiSetupPreviewAcceptButton => '& Afronden accepteren';
+  String get aiSetupPreviewAcceptButton => 'Accepteren en afronden';
 
   @override
   String get aiSetupPreviewAlreadyAddedSectionLabel => 'Reeds toegevoegd';
@@ -2774,7 +2807,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiSetupWizardRunLabel => 'Instellen-assistent uitvoeren';
 
   @override
-  String get aiSetupWizardRunningButton => 'Rennen...';
+  String get aiSetupWizardRunningButton => 'Bezig…';
 
   @override
   String get aiSetupWizardSafeToRunMultiple =>
@@ -2822,7 +2855,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get apiKeyAddPageTitle => 'Aanbieder toevoegen';
 
   @override
-  String get apiKeyAuthenticationDescription => 'Beveilig uw API-verbinding';
+  String get apiKeyAuthenticationDescription => 'Beveilig je API-verbinding';
 
   @override
   String get apiKeyAuthenticationTitle => 'Authenticatie';
@@ -2841,7 +2874,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get apiKeyDisplayNameHint => 'Een vriendschappelijke naam invoeren';
 
   @override
-  String get apiKeyDisplayNameLabel => 'Naam tonen';
+  String get apiKeyDisplayNameLabel => 'Weergavenaam';
 
   @override
   String get apiKeyDynamicModelsDescription =>
@@ -2865,7 +2898,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get apiKeyHideTooltip => 'API-sleutel verbergen';
 
   @override
-  String get apiKeyInputHint => 'Voer uw API-sleutel in';
+  String get apiKeyInputHint => 'Voer je API-sleutel in';
 
   @override
   String get apiKeyInputLabel => 'API-sleutel';
@@ -2882,7 +2915,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get apiKeyProviderConfigDescription =>
-      'Configureer uw AI-inferentieproviderinstellingen';
+      'Configureer je instellingen voor AI-inferentieproviders';
 
   @override
   String get apiKeyProviderConfigTitle => 'Configuratie van de provider';
@@ -3138,7 +3171,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillResetUnresolvableTrigger => 'Onoplosbare items herstellen';
 
   @override
-  String get backfillRetireStuckConfirmAccept => 'Ga nu met pensioen.';
+  String get backfillRetireStuckConfirmAccept => 'Nu buiten gebruik stellen';
 
   @override
   String backfillRetireStuckConfirmContent(int count) {
@@ -3437,7 +3470,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Klaar — lees het voor je het verstuurt';
 
   @override
-  String get chatInputHintDefault => 'Vraag naar uw taken en productiviteit...';
+  String get chatInputHintDefault => 'Vraag naar je taken en productiviteit...';
 
   @override
   String get chatInputHintSelectModel =>
@@ -4162,7 +4195,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsVoiceLabel => 'Stem';
 
   @override
-  String get completeHabitFailButton => 'Gemiste';
+  String get completeHabitFailButton => 'Gemist';
 
   @override
   String get completeHabitSkipButton => 'Overslaan';
@@ -4175,8 +4208,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Wanneer ingeschakeld zal de app proberen om inbeddingen te genereren voor uw inzendingen om zoekopdrachten en gerelateerde inhoudsuggesties te verbeteren.';
 
   @override
-  String get configFlagDailyOsOnboardingEnabled =>
-      'Dagelijkse doorloop van het besturingssysteem';
+  String get configFlagDailyOsOnboardingEnabled => 'Daily OS-rondleiding';
 
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
@@ -4233,7 +4265,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get configFlagEnableForkHealingDescription =>
-      'Genees uiteenlopende agent geschiedenissen van multi-apparaat gebruik door ze samen te voegen bij de volgende wake.';
+      'Herstel uiteengelopen agentgeschiedenissen door gebruik op meerdere apparaten door ze bij het volgende wekmoment samen te voegen.';
 
   @override
   String get configFlagEnableFrontAgent => 'Metgezel-chat';
@@ -4390,7 +4422,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get conflictBannerAgoJustNow => 'Nu net.';
+  String get conflictBannerAgoJustNow => 'zojuist';
 
   @override
   String conflictBannerAgoMinutes(int count) {
@@ -4628,10 +4660,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get conflictSideThisDevice => 'DIT DOEL';
 
   @override
-  String get conflictsResolved => 'opgelost';
+  String get conflictsResolved => 'Opgelost';
 
   @override
-  String get conflictsUnresolved => 'onopgelost';
+  String get conflictsUnresolved => 'Onopgelost';
 
   @override
   String get conflictValueAbsent => 'Niet ingesteld';
@@ -4640,7 +4672,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get conflictValueNo => 'Nee';
 
   @override
-  String get conflictValueYes => 'Ja.';
+  String get conflictValueYes => 'Ja';
 
   @override
   String conflictWordCount(int count) {
@@ -4744,7 +4776,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get createCategoryTitle => 'Categorie aanmaken';
 
   @override
-  String get createEntryLabel => 'Nieuwe item aanmaken';
+  String get createEntryLabel => 'Nieuw item aanmaken';
 
   @override
   String get createEntryTitle => 'Toevoegen';
@@ -4975,7 +5007,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextBlockEditSaved => 'Schema bijgewerkt.';
 
   @override
-  String get dailyOsNextBlockEditTimeLabel => '& Einde starten';
+  String get dailyOsNextBlockEditTimeLabel => 'Begin en einde';
 
   @override
   String get dailyOsNextBlockEditTitle => 'Blok bewerken';
@@ -4984,7 +5016,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextBlockEditTooltip => 'Blok bewerken';
 
   @override
-  String get dailyOsNextBlockEditWhyLabel => 'Waarom deze keer?';
+  String get dailyOsNextBlockEditWhyLabel => 'Waarom dit tijdstip';
 
   @override
   String get dailyOsNextBlockLinked => 'Gekoppeld aan de taak.';
@@ -5156,13 +5188,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineCaptured => 'Ziet dit er goed uit?';
 
   @override
-  String get dailyOsNextCaptureHeadlineLead => 'Wat is er aan de hand?';
+  String get dailyOsNextCaptureHeadlineLead => 'Waar denk je aan';
 
   @override
   String get dailyOsNextCaptureHeadlineListening => 'Ik luister.';
 
   @override
-  String get dailyOsNextCaptureHeadlineTail => 'Voor vandaag?';
+  String get dailyOsNextCaptureHeadlineTail => 'voor vandaag?';
 
   @override
   String dailyOsNextCaptureHeadlineTailForDate(String date) {
@@ -5170,10 +5202,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextCaptureHeadlineTailTomorrow => 'Voor morgen?';
+  String get dailyOsNextCaptureHeadlineTailTomorrow => 'voor morgen?';
 
   @override
-  String get dailyOsNextCaptureHeadlineTailYesterday => 'Voor gisteren?';
+  String get dailyOsNextCaptureHeadlineTailYesterday => 'voor gisteren?';
 
   @override
   String get dailyOsNextCaptureHeadlineTranscribing => 'Dat opschrijven...';
@@ -5217,7 +5249,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Maak alles goed wat het transcript fout deed voordat het gepland werd.';
 
   @override
-  String get dailyOsNextCaptureTranscriptLabel => 'Beoordeling transcript';
+  String get dailyOsNextCaptureTranscriptLabel => 'Transcript nakijken';
 
   @override
   String get dailyOsNextCaptureTypeInstead => 'Type in plaats daarvan';
@@ -5229,7 +5261,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextCaptureVoiceButtonStart => 'Begin met luisteren';
 
   @override
-  String get dailyOsNextCaptureVoiceButtonStop => 'Stop met luisteren.';
+  String get dailyOsNextCaptureVoiceButtonStop => 'Stop met luisteren';
 
   @override
   String get dailyOsNextCategoryFilterAll => 'Alle categorieën';
@@ -5366,10 +5398,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextDraftingInternalsTools => 'Toolaanroepen';
 
   @override
-  String get dailyOsNextDraftingNudgeAccept => 'Ja, bescherm de ochtenden.';
+  String get dailyOsNextDraftingNudgeAccept => 'Ja, bescherm de ochtenden';
 
   @override
-  String get dailyOsNextDraftingNudgeDecline => 'Vandaag niet.';
+  String get dailyOsNextDraftingNudgeDecline => 'Vandaag niet';
 
   @override
   String get dailyOsNextDraftingProgressBlocks => 'Tekenblokken';
@@ -5385,7 +5417,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsNextDraftingRecoveryBody =>
-      'De wake heeft geen plan gemaakt. Probeer het opnieuw, of ga terug en pas de beslissingen voor het opstellen.';
+      'Het wekmoment heeft geen plan opgeleverd. Probeer het opnieuw, of ga terug en pas de beslissingen aan voordat je een concept maakt.';
 
   @override
   String get dailyOsNextDraftingRecoveryTitle => 'Opstellen is vertraagd';
@@ -5609,7 +5641,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextRefineKeepChanges => 'Wijzigingen houden';
 
   @override
-  String get dailyOsNextRefineKeepTalking => 'Blijf praten.';
+  String get dailyOsNextRefineKeepTalking => 'Blijf praten';
 
   @override
   String get dailyOsNextRefineNoChanges =>
@@ -5650,7 +5682,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Voeg een realistische buffer toe tussen de geplande blokken, vooral rond overgangen en na veeleisend werk.';
 
   @override
-  String get dailyOsNextReviewLooksGood => 'Ziet er goed uit.';
+  String get dailyOsNextReviewLooksGood => 'Ziet er goed uit';
 
   @override
   String get dailyOsNextReviewMoveLighter => 'Aansteker verplaatsen';
@@ -5660,7 +5692,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Beweeg het lichtere of minder energie werk later, en houd het sterkste focusvenster voor de meest veeleisende taak.';
 
   @override
-  String get dailyOsNextReviewTooMuch => 'Te veel.';
+  String get dailyOsNextReviewTooMuch => 'Te veel';
 
   @override
   String get dailyOsNextReviewTooMuchPrompt =>
@@ -5757,7 +5789,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextShutdownReflectionSave => 'Opslaan';
 
   @override
-  String get dailyOsNextShutdownReflectionSpeak => 'Zeg het.';
+  String get dailyOsNextShutdownReflectionSpeak => 'Zeg het';
 
   @override
   String get dailyOsNextShutdownReflectionThanks =>
@@ -5939,10 +5971,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kies wat er vandaag hoort. Nieuwe items worden taken als je de dag opbouwt.';
 
   @override
-  String get dailyOsOnboardingSpotlightAction => 'Probeer het.';
+  String get dailyOsOnboardingSpotlightAction => 'Probeer het';
 
   @override
-  String get dailyOsOnboardingSpotlightDismiss => 'Niet nu.';
+  String get dailyOsOnboardingSpotlightDismiss => 'Niet nu';
 
   @override
   String get dailyOsOnboardingSpotlightMessage =>
@@ -5977,8 +6009,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsSettingsDefaultProfileMissing => 'Kies een profiel';
 
   @override
-  String get dailyOsSettingsDefaultRestored =>
-      'Standaard dagelijks besturingssysteem hersteld';
+  String get dailyOsSettingsDefaultRestored => 'Daily OS-standaard hersteld';
 
   @override
   String get dailyOsSettingsDirectOverrideActive =>
@@ -5993,7 +6024,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsSettingsInstanceOverrideDescription =>
-      'Gebruik het standaardprofiel van het dagelijks besturingssysteem, kies een profieloverride of override alleen het denkmodel van deze planner.';
+      'Gebruik het standaardprofiel van Daily OS, kies een ander profiel of vervang alleen het denkmodel van deze planner.';
 
   @override
   String get dailyOsSettingsInstanceOverrideTitle => 'Dagelijkse OS-inferentie';
@@ -6004,7 +6035,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String dailyOsSettingsModelChanged(String model) {
-    return 'Dagelijks besturingssysteem gebruikt nu $model';
+    return 'Daily OS gebruikt nu $model';
   }
 
   @override
@@ -6015,11 +6046,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Een voorkeursnaam toevoegen maakt check-ins persoonlijker. U kunt zonder deze plannen blijven plannen.';
 
   @override
-  String get dailyOsSettingsNameNudgeTitle => 'Hoe moet Daily OS u aanpakken?';
+  String get dailyOsSettingsNameNudgeTitle => 'Hoe mag Daily OS je aanspreken?';
 
   @override
   String dailyOsSettingsProfileChanged(String profile) {
-    return 'Dagelijks besturingssysteem gebruikt nu $profile';
+    return 'Daily OS gebruikt nu $profile';
   }
 
   @override
@@ -6036,7 +6067,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsSettingsSetupRequiredBody =>
-      'Dagelijkse besturingssysteem heeft uw provider keuze nodig voordat het uw planning context kan verwerken.';
+      'Daily OS heeft je providerkeuze nodig voordat het je planningscontext kan verwerken.';
 
   @override
   String get dailyOsSettingsSetupRequiredTitle => 'Kies een inferentieprofiel';
@@ -6046,7 +6077,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kies hoe Daily OS u aanspreekt en welk gevolggevingsprofiel uw dagen plant.';
 
   @override
-  String get dailyOsSettingsTitle => 'Dagelijks besturingssysteem';
+  String get dailyOsSettingsTitle => 'Daily OS';
 
   @override
   String get dailyOsSettingsTreeSubtitle =>
@@ -6100,7 +6131,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dashboardAddSurveyTitle => 'Overzichtsgrafieken';
 
   @override
-  String get dashboardAddWorkoutButton => 'Uitwerkingen';
+  String get dashboardAddWorkoutButton => 'Trainingen';
 
   @override
   String get dashboardAddWorkoutTitle => 'Werkschema\'s';
@@ -6168,13 +6199,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dashboardDeleteHint => 'Dashboard verwijderen';
 
   @override
-  String get dashboardDeleteQuestion => 'Wilt u dit dashboard verwijderen?';
+  String get dashboardDeleteQuestion => 'Wil je dit dashboard verwijderen?';
 
   @override
   String get dashboardDescriptionLabel => 'Beschrijving (facultatief)';
 
   @override
-  String get dashboardEditAggregationLabel => 'samengevoegd bewerken';
+  String get dashboardEditAggregationLabel => 'Aggregatie bewerken';
 
   @override
   String get dashboardHealthBloodPressure => 'Bloeddruk';
@@ -6229,7 +6260,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dashboardRemoveChartLabel => 'Grafiek verwijderen';
 
   @override
-  String get dashboardReorderChartLabel => 'Kaart herschikken';
+  String get dashboardReorderChartLabel => 'Grafiek herschikken';
 
   @override
   String get dashboardTakeSurveyTooltip => 'Onderzoek uitvoeren';
@@ -7119,13 +7150,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Labels toewijzen om dit item te organiseren';
 
   @override
-  String get entryLabelsActionTitle => 'Etiketten';
+  String get entryLabelsActionTitle => 'Labels';
 
   @override
   String get entryLabelsEditTooltip => 'Labels bewerken';
 
   @override
-  String get entryLabelsHeaderTitle => 'Etiketten';
+  String get entryLabelsHeaderTitle => 'Labels';
 
   @override
   String get entryLabelsNoLabels => 'Geen labels toegewezen';
@@ -9402,7 +9433,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String habitCompleteSemanticLabel(String habit) {
-    return 'Opname $habit';
+    return '$habit registreren';
   }
 
   @override
@@ -9421,7 +9452,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitDeleteConfirm => 'Ja, verwijder deze gewoonte';
 
   @override
-  String get habitDeleteQuestion => 'Wilt u deze gewoonte verwijderen?';
+  String get habitDeleteQuestion => 'Wil je deze gewoonte verwijderen?';
 
   @override
   String get habitEditorAddSignal => 'Signaal toevoegen';
@@ -9714,7 +9745,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitsFilterCompleted => 'klaar';
 
   @override
-  String get habitsFilterOpenNow => 'vervallen';
+  String get habitsFilterOpenNow => 'te doen';
 
   @override
   String get habitsFilterPendingLater => 'later';
@@ -9794,7 +9825,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get habitsOpenHeader => 'Vervallen';
+  String get habitsOpenHeader => 'Nu te doen';
 
   @override
   String get habitsPendingLaterHeader => 'Later vandaag';
@@ -9811,7 +9842,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get habitsRecordButton => 'Opname';
+  String get habitsRecordButton => 'Registreren';
 
   @override
   String get habitsRollingAverageLabel => '7-daags Ø';
@@ -10144,7 +10175,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inferenceProfileThinkingRequired => 'Een denkmodel is vereist';
 
   @override
-  String get inferenceProfileTranscription => 'Omschrijving';
+  String get inferenceProfileTranscription => 'Transcriptie';
 
   @override
   String get inferenceProfileUnavailable =>
@@ -10341,7 +10372,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get insightsRefreshError => 'Kon niet vernieuwen';
 
   @override
-  String get insightsTableAvgPerDay => 'AVG/DAG';
+  String get insightsTableAvgPerDay => 'GEM./DAG';
 
   @override
   String get insightsTableCategory => 'CATEGORIE';
@@ -10356,10 +10387,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get insightsTableDelta => 'Verschil';
 
   @override
-  String get insightsTablePrevious => 'VOORAFGAANDE';
+  String get insightsTablePrevious => 'VORIGE';
 
   @override
-  String get insightsTableShare => 'DELEN';
+  String get insightsTableShare => 'AANDEEL';
 
   @override
   String get insightsTableTotal => 'TOTAAL';
@@ -10405,7 +10436,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get journalDeleteHint => 'item verwijderen';
 
   @override
-  String get journalDeleteQuestion => 'Wilt u dit journaal item verwijderen?';
+  String get journalDeleteQuestion => 'Wil je dit journaalitem verwijderen?';
 
   @override
   String get journalDurationLabel => 'Duur';
@@ -10438,10 +10469,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get journalFilterShowTitle => 'Tonen';
 
   @override
-  String get journalFilterStarred => 'Sterren';
+  String get journalFilterStarred => 'Met ster';
 
   @override
-  String get journalFilterTitle => 'Filter journaal';
+  String get journalFilterTitle => 'Journaal filteren';
 
   @override
   String get journalHideLinkHint => 'Verwijzing verbergen';
@@ -10453,7 +10484,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get journalLinkedEntriesActivityFilterAudio => 'Audio';
 
   @override
-  String get journalLinkedEntriesActivityFilterCode => 'Rubriek';
+  String get journalLinkedEntriesActivityFilterCode => 'Code';
 
   @override
   String get journalLinkedEntriesActivityFilterImages => 'Afbeeldingen';
@@ -10481,7 +10512,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get journalLinkedEntriesSortOldestFirst => 'Oudste eerst';
 
   @override
-  String get journalLinkedFromLabel => 'Verbonden met:';
+  String get journalLinkedFromLabel => 'Gekoppeld vanuit:';
 
   @override
   String get journalLinkFromHint => 'Link van';
@@ -10648,10 +10679,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get keyboardKeyEnter => 'Enter';
 
   @override
-  String get keyboardKeyEscape => 'Ontsnappen';
+  String get keyboardKeyEscape => 'Esc';
 
   @override
-  String get keyboardKeyHome => 'Begin';
+  String get keyboardKeyHome => 'Home';
 
   @override
   String get keyboardKeyMinus => 'Min';
@@ -10663,7 +10694,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get keyboardKeyPageDown => 'Pagina omlaag';
 
   @override
-  String get keyboardKeyPageUp => 'Pagina Omhoog';
+  String get keyboardKeyPageUp => 'Pagina omhoog';
 
   @override
   String get keyboardKeyPlus => 'Plus';
@@ -10672,10 +10703,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get keyboardKeyShift => 'Shift';
 
   @override
-  String get keyboardKeySpace => 'Ruimte';
+  String get keyboardKeySpace => 'Spatie';
 
   @override
-  String get keyboardResizeDividerLabel => 'Pannen verkleinen';
+  String get keyboardResizeDividerLabel => 'Deelvensters vergroten/verkleinen';
 
   @override
   String keyboardResizeDividerValue(int value, int min, int max) {
@@ -10684,7 +10715,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get keyboardShortcutsNoResults =>
-      'Geen sneltoetsen gevonden voor uw zoekopdracht';
+      'Geen sneltoetsen gevonden voor je zoekopdracht';
 
   @override
   String get keyboardShortcutsSearchHint => 'Sneltoetsen zoeken...';
@@ -11148,7 +11179,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get loggingDomainAgentRuntime => 'Agent runtime';
 
   @override
-  String get loggingDomainAgentWorkflow => 'Werkstroom van het agentschap';
+  String get loggingDomainAgentWorkflow => 'Agent-werkstroom';
 
   @override
   String get loggingDomainAi => 'AI';
@@ -11160,7 +11191,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get loggingDomainChat => 'Gesprek';
 
   @override
-  String get loggingDomainDailyOs => 'Dagelijks besturingssysteem';
+  String get loggingDomainDailyOs => 'Daily OS';
 
   @override
   String get loggingDomainDatabase => 'Database';
@@ -11175,7 +11206,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get loggingDomainHealth => 'Gezondheid';
 
   @override
-  String get loggingDomainLabels => 'Etiketten';
+  String get loggingDomainLabels => 'Labels';
 
   @override
   String get loggingDomainLocation => 'Locatie';
@@ -11184,10 +11215,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get loggingDomainNavigation => 'Navigatie';
 
   @override
-  String get loggingDomainNotifications => 'Kennisgevingen';
+  String get loggingDomainNotifications => 'Meldingen';
 
   @override
-  String get loggingDomainOnboarding => 'Aan boord gaan van & FTUE';
+  String get loggingDomainOnboarding => 'Onboarding & FTUE';
 
   @override
   String get loggingDomainPersistence => 'Persistentie';
@@ -11368,7 +11399,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get maintenancePurgeDeleted => 'Verwijderde items verwijderen';
 
   @override
-  String get maintenancePurgeDeletedConfirm => 'Ja, alles zuiveren.';
+  String get maintenancePurgeDeletedConfirm =>
+      'Ja, alles definitief verwijderen';
 
   @override
   String get maintenancePurgeDeletedDescription =>
@@ -11620,7 +11652,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get measurableDeleteQuestion =>
-      'Wilt u dit meetbare gegevenstype verwijderen?';
+      'Wil je dit meetbare gegevenstype verwijderen?';
 
   @override
   String get measurableNotFound => 'Maattabel niet gevonden';
@@ -11711,7 +11743,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get modelEditDisplayNameHint => 'Een vriendelijke naam voor dit model';
 
   @override
-  String get modelEditDisplayNameLabel => 'Naam tonen';
+  String get modelEditDisplayNameLabel => 'Weergavenaam';
 
   @override
   String get modelEditFunctionCallingDescription =>
@@ -11721,13 +11753,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get modelEditFunctionCallingLabel => 'Functie aanroepen';
 
   @override
-  String get modelEditGeminiThinkingModeLabel => 'Tweelingen denken modus';
+  String get modelEditGeminiThinkingModeLabel => 'Gemini-denkmodus';
 
   @override
   String get modelEditInputModalitiesHint => 'Selecteer invoertypen';
 
   @override
-  String get modelEditInputModalitiesLabel => 'Invoervoorwaarden';
+  String get modelEditInputModalitiesLabel => 'Invoermodaliteiten';
 
   @override
   String get modelEditLoadError => 'Laden van modelconfiguratie is mislukt';
@@ -11809,10 +11841,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get navSidebarCloseLabel => 'Navigatie sluiten';
 
   @override
-  String get navSidebarManualBrowserHint => 'Opent in uw browser';
+  String get navSidebarManualBrowserHint => 'Opent in je browser';
 
   @override
-  String get navSidebarManualLabel => 'Handmatig';
+  String get navSidebarManualLabel => 'Handleiding';
 
   @override
   String get navSidebarOpenLabel => 'Navigatie openen';
@@ -11907,7 +11939,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get notificationChannelRemindersName => 'Herinneringen';
 
   @override
-  String get notificationInboxDismiss => 'Mededeling verwerpen';
+  String get notificationInboxDismiss => 'Melding sluiten';
 
   @override
   String get notificationInboxEmpty => 'Je bent helemaal bij.';
@@ -12040,7 +12072,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingCaptureListening => 'Luisteren... tik als je klaar bent';
 
   @override
-  String get onboardingCaptureOrbLabel => 'Neem je gedachten op.';
+  String get onboardingCaptureOrbLabel => 'Neem je gedachte op';
 
   @override
   String get onboardingCaptureRatherType => 'Liever typen?';
@@ -12056,7 +12088,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingCaptureTypePrompt => 'Typ je gedachten';
 
   @override
-  String get onboardingCategoryAddOwn => 'Voeg je eigen';
+  String get onboardingCategoryAddOwn => 'Voeg je eigen toe';
 
   @override
   String get onboardingCategoryContinue => 'Doorgaan';
@@ -12234,7 +12266,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get onboardingWelcomeConnectButton => 'Kies uw AI-hersenen';
+  String get onboardingWelcomeConnectButton => 'Kies je AI-brein';
 
   @override
   String get onboardingWelcomeMessage =>
@@ -12248,7 +12280,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je kunt dit allemaal later wijzigen in Instellingen.';
 
   @override
-  String get onboardingWelcomeSkipButton => 'Kijk eerst om je heen.';
+  String get onboardingWelcomeSkipButton => 'Eerst rondkijken';
 
   @override
   String get onboardingWelcomeStepAreas => 'Kies je gebieden';
@@ -12291,7 +12323,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get outboxFilterFailed => 'Fout';
 
   @override
-  String get outboxFilterWaiting => 'Wachten';
+  String get outboxFilterWaiting => 'Wachtend';
 
   @override
   String get outboxMonitorAttachmentLabel => 'Bijlage';
@@ -12346,7 +12378,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get outboxMonitorRetries => 'opnieuw';
 
   @override
-  String get outboxMonitorRetriesLabel => 'Herhalingen';
+  String get outboxMonitorRetriesLabel => 'Pogingen';
 
   @override
   String get outboxMonitorRetry => 'opnieuw proberen';
@@ -12430,7 +12462,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get outboxSummarySynced => 'Alles is gesynchroniseerd.';
+  String get outboxSummarySynced => 'Alles is gesynchroniseerd';
 
   @override
   String outboxSummaryWaiting(int count) {
@@ -12533,7 +12565,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Het schema van positieve en negatieve effecten (PANAS; Watson et al., 1988)';
 
   @override
-  String get panasScaleALittle => 'Een beetje.';
+  String get panasScaleALittle => 'Een beetje';
 
   @override
   String get panasScaleExtremely => 'Extreem';
@@ -12542,7 +12574,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get panasScaleModerately => 'Matig';
 
   @override
-  String get panasScaleQuiteABit => 'Nogal een beetje.';
+  String get panasScaleQuiteABit => 'Behoorlijk';
 
   @override
   String get panasScaleVerySlightlyOrNotAtAll => 'Zeer licht of helemaal niet';
@@ -13173,10 +13205,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectStatusMonitoring => 'Toezicht';
 
   @override
-  String get projectStatusOnHold => 'In wacht';
+  String get projectStatusOnHold => 'In de wacht';
 
   @override
-  String get projectStatusOpen => 'Openen';
+  String get projectStatusOpen => 'Open';
 
   @override
   String get projectSummaryOutdated => 'Samenvatting verouderd.';
@@ -13255,7 +13287,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectTasksSortCreated => 'Aangemaakt';
 
   @override
-  String get projectTasksSortDueDate => 'Verloopdatum';
+  String get projectTasksSortDueDate => 'Deadline';
 
   @override
   String get projectTasksSortEstimate => 'Schatting';
@@ -13297,7 +13329,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get promptGenerationExpandTooltip => 'Volledige prompt tonen';
 
   @override
-  String get promptGenerationFullPromptLabel => 'Volledige vraag:';
+  String get promptGenerationFullPromptLabel => 'Volledige prompt:';
 
   @override
   String get promptGenerationPlayTooltip => 'Prompt voorlezen';
@@ -13785,7 +13817,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get queueCatchUpNowButton => 'Inhalen nu';
+  String get queueCatchUpNowButton => 'Nu inhalen';
 
   @override
   String get queueCatchUpNowDone => 'De inhaalslag is aan het draineren.';
@@ -14987,13 +15019,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get selectLanguage => 'Taal selecteren';
 
   @override
-  String get sessionRatingCardLabel => 'Sessie-klasse';
+  String get sessionRatingCardLabel => 'Sessiebeoordeling';
 
   @override
-  String get sessionRatingChallengeJustRight => 'Precies goed.';
+  String get sessionRatingChallengeJustRight => 'Precies goed';
 
   @override
-  String get sessionRatingChallengeTooEasy => 'Te makkelijk.';
+  String get sessionRatingChallengeTooEasy => 'Te makkelijk';
 
   @override
   String get sessionRatingChallengeTooHard => 'Te uitdagend';
@@ -15040,21 +15072,21 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsAboutAppInformation => 'App-informatie';
 
   @override
-  String get settingsAboutAppTagline => 'Uw persoonlijke dagboek';
+  String get settingsAboutAppTagline => 'Je persoonlijke dagboek';
 
   @override
   String get settingsAboutBuildType => 'Bouwtype';
 
   @override
   String get settingsAboutDailyOsPersonalizationTitle =>
-      'Dagelijkse OS-personalisatie';
+      'Daily OS-personalisatie';
 
   @override
   String get settingsAboutDailyOsUserNameHelper =>
       'Gebruikt voor de dagelijkse OS begroeting en gesynchroniseerd op uw apparaten.';
 
   @override
-  String get settingsAboutDailyOsUserNameLabel => 'Uw naam';
+  String get settingsAboutDailyOsUserNameLabel => 'Je naam';
 
   @override
   String get settingsAboutJournalEntries => 'Journal Inzendingen';
@@ -15069,7 +15101,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsAboutVersion => 'Versie';
 
   @override
-  String get settingsAboutYourData => 'Uw gegevens';
+  String get settingsAboutYourData => 'Je gegevens';
 
   @override
   String get settingsAdvancedAboutSubtitle =>
@@ -15212,10 +15244,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Meester schakelaar voor voltooiing bloeit. Af verbergt elke animatie; haptici houden hun eigen schakelaar.';
 
   @override
-  String get settingsCelebrationsEnabledTitle => 'Viering animaties';
+  String get settingsCelebrationsEnabledTitle => 'Feestanimaties';
 
   @override
-  String get settingsCelebrationsGroupLook => 'Kijk.';
+  String get settingsCelebrationsGroupLook => 'Uiterlijk';
 
   @override
   String get settingsCelebrationsGroupMotion => 'Beweging';
@@ -15235,7 +15267,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Een korte buzz als je iets afmaakt .. onafhankelijk van de animatie.';
 
   @override
-  String get settingsCelebrationsHapticsTitle => 'Afronding haptiek';
+  String get settingsCelebrationsHapticsTitle => 'Haptiek bij afronden';
 
   @override
   String get settingsCelebrationsKnobClearCenter => 'Middenspleet';
@@ -15276,7 +15308,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsCelebrationsKnobDescLaunch => 'Vertraging voor de barst';
 
   @override
-  String get settingsCelebrationsKnobDescPop => 'Als ze opduiken.';
+  String get settingsCelebrationsKnobDescPop => 'Als ze verschijnen';
 
   @override
   String get settingsCelebrationsKnobDescReach => 'Hoe ver deeltjes reizen';
@@ -15363,7 +15395,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsCelebrationsKnobSway => 'Sway';
 
   @override
-  String get settingsCelebrationsKnobSwell => 'Geweldig.';
+  String get settingsCelebrationsKnobSwell => 'Zwellen';
 
   @override
   String get settingsCelebrationsKnobTrail => 'Lengte van het spoor';
@@ -15386,7 +15418,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Wijzigingen overal direct opslaan en toepassen';
 
   @override
-  String get settingsCelebrationsPreviewChecklistItem => 'Controleer me.';
+  String get settingsCelebrationsPreviewChecklistItem => 'Vink me af';
 
   @override
   String get settingsCelebrationsPreviewDescription =>
@@ -15399,7 +15431,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsCelebrationsPreviewHabit => 'Gewoonte';
 
   @override
-  String get settingsCelebrationsPreviewSample1 => 'Goedemorgen wandeling.';
+  String get settingsCelebrationsPreviewSample1 => 'Ochtendwandeling';
 
   @override
   String get settingsCelebrationsPreviewSample2 => 'Het verslag afronden';
@@ -15408,7 +15440,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsCelebrationsPreviewSample3 => 'Water de planten';
 
   @override
-  String get settingsCelebrationsPreviewTitle => 'Probeer het.';
+  String get settingsCelebrationsPreviewTitle => 'Probeer het';
 
   @override
   String get settingsCelebrationsReplay => 'Herspelen';
@@ -15427,7 +15459,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Speel een bloeiende wanneer je iets af te maken. Schakel een uit houdt de voltooiing en de haptische . . het slaat gewoon de animatie.';
 
   @override
-  String get settingsCelebrationsSectionTitle => 'Afrondingsfeesten';
+  String get settingsCelebrationsSectionTitle => 'Vieringen bij afronden';
 
   @override
   String get settingsCelebrationsStyleDescription =>
@@ -15486,7 +15518,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsCompanionTitle => 'Metgezel';
 
   @override
-  String get settingsConflictsTitle => 'Conflicten synchroniseren';
+  String get settingsConflictsTitle => 'Synchronisatieconflicten';
 
   @override
   String get settingsDashboardDetailsLabel => 'Dashboard bewerken';
@@ -15516,7 +15548,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsDashboardsSearchHint => 'Zoek dashboards...';
 
   @override
-  String get settingsDashboardsSubtitle => 'Pas uw dashboardweergaven aan';
+  String get settingsDashboardsSubtitle => 'Pas je dashboardweergaven aan';
 
   @override
   String get settingsDashboardsTitle => 'Dashboards';
@@ -15540,7 +15572,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsFlagsEmptySearch =>
-      'Geen vlaggen gevonden voor uw zoekopdracht';
+      'Geen vlaggen gevonden voor je zoekopdracht';
 
   @override
   String get settingsFlagsEmptySearchSectionsHint =>
@@ -15559,7 +15591,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsFlagsSubtitle => 'Functievlaggen en -opties configureren';
 
   @override
-  String get settingsFlagsTitle => 'Vlaggen instellen';
+  String get settingsFlagsTitle => 'Configuratievlaggen';
 
   @override
   String get settingsGitHubSubtitle =>
@@ -15569,7 +15601,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsGitHubTitle => 'GitHub';
 
   @override
-  String get settingsHabitsCreateTitle => 'Gebruiking maken';
+  String get settingsHabitsCreateTitle => 'Gewoonte aanmaken';
 
   @override
   String get settingsHabitsDeleteTooltip => 'Gewoonte verwijderen';
@@ -15588,7 +15620,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsHabitsErrorLoading => 'Fout bij laden';
 
   @override
-  String get settingsHabitsNameLabel => 'Naam van de habitat';
+  String get settingsHabitsNameLabel => 'Naam van de gewoonte';
 
   @override
   String settingsHabitsNoMatchQuery(String query) {
@@ -15605,7 +15637,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsHabitsSearchHint => 'Zoekgewoonten...';
 
   @override
-  String get settingsHabitsSubtitle => 'Beheer uw gewoonten en routines';
+  String get settingsHabitsSubtitle => 'Beheer je gewoonten en routines';
 
   @override
   String get settingsHabitsTitle => 'Gewoontes';
@@ -15760,7 +15792,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String settingsLabelsDeleteConfirmMessage(Object labelName) {
-    return 'Weet u zeker dat u wilt verwijderen \"$labelName\"? Taken met dit label zullen de opdracht verliezen.';
+    return 'Weet je zeker dat je \"$labelName\" wilt verwijderen? Taken met dit label raken het kwijt.';
   }
 
   @override
@@ -15822,7 +15854,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsLabelsSubtitle => 'Taken met gekleurde labels organiseren';
 
   @override
-  String get settingsLabelsTitle => 'Etiketten';
+  String get settingsLabelsTitle => 'Labels';
 
   @override
   String settingsLabelsUsageCount(int count) {
@@ -15840,7 +15872,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Bepaal welke domeinen naar het logboek schrijven';
 
   @override
-  String get settingsLoggingDomainsTitle => 'Loggen van domeinnamen';
+  String get settingsLoggingDomainsTitle => 'Logdomeinen';
 
   @override
   String get settingsLoggingGlobalToggle => 'Loggen inschakelen';
@@ -15862,7 +15894,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsMaintenanceOnboardingAnimationGalleryTitle =>
-      'Animatiegalerij aan boord';
+      'Onboarding-animatiegalerij';
 
   @override
   String get settingsMaintenanceOnboardingWelcomeSubtitle =>
@@ -15870,7 +15902,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsMaintenanceOnboardingWelcomeTitle =>
-      'Ontvangst aan boord tonen';
+      'Onboarding-welkom tonen';
 
   @override
   String get settingsMaintenanceTitle => 'Onderhoud';
@@ -15938,7 +15970,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsMatrixDiagnosticDialogTitle =>
-      'Diagnostische informatie synchroniseren';
+      'Diagnose-informatie synchronisatie';
 
   @override
   String get settingsMatrixDiagnosticShowButton => 'Technische details';
@@ -15970,20 +16002,20 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get settingsMatrixStartVerificationLabel => 'Begincontrole';
+  String get settingsMatrixStartVerificationLabel => 'Verificatie starten';
 
   @override
   String get settingsMatrixStatsTitle => 'Matrix Stats';
 
   @override
-  String get settingsMatrixTitle => 'Instellingen synchroniseren';
+  String get settingsMatrixTitle => 'Synchronisatie-instellingen';
 
   @override
   String get settingsMatrixVerificationCancelledLabel =>
       'Geannuleerd op een ander apparaat...';
 
   @override
-  String get settingsMatrixVerificationSuccessConfirm => 'Begrepen.';
+  String get settingsMatrixVerificationSuccessConfirm => 'Begrepen';
 
   @override
   String get settingsMatrixVerifyLabel => 'Verifiëren';
@@ -16055,7 +16087,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Opslaan';
 
   @override
-  String get settingsMeasurablesCreateTitle => 'Meetbaar maken';
+  String get settingsMeasurablesCreateTitle => 'Meetbare waarde aanmaken';
 
   @override
   String get settingsMeasurablesEmptyState => 'Nog geen meetbare waarden';
@@ -16200,13 +16232,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsOnboardingMetricsSubtitle => 'FTUE trechter';
 
   @override
-  String get settingsOnboardingMetricsTitle => 'Metrics aan boord';
+  String get settingsOnboardingMetricsTitle => 'Onboarding-statistieken';
 
   @override
-  String get settingsOnboardingReplayTitle => 'Aan boord spelen';
+  String get settingsOnboardingReplayTitle => 'Onboarding opnieuw afspelen';
 
   @override
-  String get settingsOnboardingStartTitle => 'Beginnen met aan boord gaan';
+  String get settingsOnboardingStartTitle => 'Onboarding starten';
 
   @override
   String get settingsOnboardingStatusActivated =>
@@ -16238,10 +16270,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsOnboardingTestResetTitle =>
-      'Aan boord van de test herstellen';
+      'Onboarding-teststatus resetten';
 
   @override
-  String get settingsOnboardingTitle => 'Aan boord';
+  String get settingsOnboardingTitle => 'Onboarding';
 
   @override
   String get settingsOptionsTitle => 'Opties';
@@ -16300,7 +16332,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsResetHintsSubtitle =>
-      'Eenmalige tips en hints aan boord wissen';
+      'Eenmalige tips en onboarding-hints wissen';
 
   @override
   String get settingsResetHintsTitle => 'In-app hints resetten';
@@ -16407,7 +16439,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsSpeechSubtitle => 'Stem en hardop lezen';
 
   @override
-  String get settingsSpeechTitle => 'Toespraak';
+  String get settingsSpeechTitle => 'Spraak';
 
   @override
   String get settingsSyncConflictsSubtitle =>
@@ -16431,7 +16463,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsSyncNodeProfileCapabilityVoxtral => 'Voxtral (lokaal)';
 
   @override
-  String get settingsSyncNodeProfileCapabilityWhisper => 'Fluisteren (lokaal)';
+  String get settingsSyncNodeProfileCapabilityWhisper => 'Whisper (lokaal)';
 
   @override
   String get settingsSyncNodeProfileDisplayNameHelper =>
@@ -16439,7 +16471,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsSyncNodeProfileDisplayNameLabel =>
-      'Naam van apparaatweergave';
+      'Weergavenaam van apparaat';
 
   @override
   String get settingsSyncNodeProfileKnownNodesEmpty =>
@@ -16501,7 +16533,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsTreeResizeHandleLabel =>
-      'Grootte-instellingen-boom wijzigen';
+      'Grootte van instellingenboom wijzigen';
 
   @override
   String get settingsTreeRootCrumb => 'Instellingen';
@@ -16510,7 +16542,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsWhatsNewSubtitle => 'Zie de laatste updates en functies';
 
   @override
-  String get settingsWhatsNewTitle => 'Wat is er nieuw?';
+  String get settingsWhatsNewTitle => 'Wat is er nieuw';
 
   @override
   String get sherpaAllFamilies => 'Alle families';
@@ -16579,19 +16611,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get sidebarActiveSectionTitle => 'Activiteit';
 
   @override
-  String get sidebarActivityCollapseTooltip => 'Inklappen';
+  String get sidebarActivityCollapseTooltip => 'Activiteit inklappen';
 
   @override
-  String get sidebarActivityExpandTooltip => 'Activiteiten uitbreiden';
+  String get sidebarActivityExpandTooltip => 'Activiteit uitklappen';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Opname';
 
   @override
-  String get sidebarRunningTimerLabel => 'Tijdklok draaien';
+  String get sidebarRunningTimerLabel => 'Lopende timer';
 
   @override
-  String get sidebarRunningTimerStopTooltip => 'Stop timer';
+  String get sidebarRunningTimerStopTooltip => 'Timer stoppen';
 
   @override
   String get sidebarTimerStatusLabel => 'Timer';
@@ -16617,7 +16649,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get sidebarWakesCancelTooltip => 'Agent annuleren';
 
   @override
-  String get sidebarWakesHeader => 'Middelen';
+  String get sidebarWakesHeader => 'Agents';
 
   @override
   String get sidebarWakesNow => 'nu';
@@ -16626,15 +16658,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get sidebarWakesOpenList => 'Lijst openen';
 
   @override
-  String get sidebarWakesOpenTask => 'Open taak';
+  String get sidebarWakesOpenTask => 'Taak openen';
 
   @override
   String sidebarWakesQueuedCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count wachtrij',
-      one: '1 wachtrij',
+      other: '$count in wachtrij',
+      one: '1 in wachtrij',
     );
     return '$_temp0';
   }
@@ -16643,7 +16675,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get sidebarWakesQueuedLabel => 'In wachtrij';
 
   @override
-  String get sidebarWakesWorkingLabel => 'Werken';
+  String get sidebarWakesWorkingLabel => 'Bezig';
 
   @override
   String get skillsSectionTitle => 'Vaardigheden';
@@ -16831,7 +16863,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get surveyValueBetween => 'Moet tussen';
 
   @override
-  String get surveyYesButton => 'Ja.';
+  String get surveyYesButton => 'Ja';
 
   @override
   String get syncAddDeviceAction => 'Apparaat toevoegen';
@@ -17110,7 +17142,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get syncListPayloadKindLabel => 'Betaling';
+  String get syncListPayloadKindLabel => 'Payload';
 
   @override
   String get syncListUnknownPayload => 'Onbekende lading';
@@ -17313,8 +17345,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncPayloadConsumptionEvent => 'AI-verbruik';
 
   @override
-  String get syncPayloadDailyOsUserName =>
-      'Dagelijkse naam van het besturingssysteem';
+  String get syncPayloadDailyOsUserName => 'Daily OS-naam';
 
   @override
   String get syncPayloadDeepBackfillInventory =>
@@ -17435,7 +17466,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncStepHabits => 'Gewoontes';
 
   @override
-  String get syncStepLabels => 'Etiketten';
+  String get syncStepLabels => 'Labels';
 
   @override
   String get syncStepMeasurables => 'Meetbare';
@@ -17655,13 +17686,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskActionBarMoreActions => 'Meer acties';
 
   @override
-  String get taskActionBarOpenRunningTimer => 'Openen van de lopende timer';
+  String get taskActionBarOpenRunningTimer => 'Lopende timer openen';
 
   @override
-  String get taskActionBarStopTracking => 'Stop tijd volgen';
+  String get taskActionBarStopTracking => 'Tijdregistratie stoppen';
 
   @override
-  String get taskActionBarTrackTime => 'Tracktijd';
+  String get taskActionBarTrackTime => 'Tijd registreren';
 
   @override
   String get taskAgentAssignHint =>
@@ -17779,7 +17810,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskAgentRouteVia => 'via';
 
   @override
-  String get taskAgentRunNowTooltip => 'Rennen.';
+  String get taskAgentRunNowTooltip => 'Nu uitvoeren';
 
   @override
   String get taskAgentSavingSetup =>
@@ -17921,7 +17952,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'niet toegewezen';
 
   @override
-  String get taskDueDateLabel => 'Verloopdatum';
+  String get taskDueDateLabel => 'Vervaldatum';
 
   @override
   String taskDueDateWithDate(String date) {
@@ -18155,7 +18186,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskMetaDetailsButton => 'Details';
 
   @override
-  String get taskMetaDueDateLabel => 'Verloopdatum';
+  String get taskMetaDueDateLabel => 'Vervaldatum';
 
   @override
   String get taskMetaEstimateLabel => 'Schatting';
@@ -18222,7 +18253,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksAgentFilterHasAgent => 'Heeft agent';
 
   @override
-  String get tasksAgentFilterNoAgent => 'Geen agent.';
+  String get tasksAgentFilterNoAgent => 'Geen agent';
 
   @override
   String get tasksAgentFilterTitle => 'Agent';
@@ -18274,7 +18305,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksFilterIgnoredBySearch => 'Zoeken negeert dit filter';
 
   @override
-  String get tasksFilterTitle => 'Filtertaken';
+  String get tasksFilterTitle => 'Taken filteren';
 
   @override
   String get taskShowcaseAudio => 'Audio';
@@ -18391,7 +18422,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksPriorityP3 => 'Laag';
 
   @override
-  String get tasksPriorityP3Description => 'Laag (wanneer)';
+  String get tasksPriorityP3Description => 'Laag (ooit)';
 
   @override
   String get tasksPriorityPickerTitle => 'Selecteer prioriteit';
@@ -18407,7 +18438,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksSavedFilterDeleteTooltip => 'Opgeslagen filter verwijderen';
 
   @override
-  String get tasksSavedFilterDragHandleSemantics => 'Sleep naar herschikken';
+  String get tasksSavedFilterDragHandleSemantics => 'Sleep om te herschikken';
 
   @override
   String get tasksSavedFilterDueTodayMarker =>
@@ -18528,7 +18559,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksSavedFiltersSavePopupSave => 'Opslaan';
 
   @override
-  String get tasksSavedFiltersSavePopupTitle => 'Dit filter noemen';
+  String get tasksSavedFiltersSavePopupTitle => 'Geef dit filter een naam';
 
   @override
   String get tasksSavedFiltersSheetTitle => 'Taakfilters';
@@ -18604,7 +18635,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksSortByCreationDate => 'Aangemaakt';
 
   @override
-  String get tasksSortByDueDate => 'Verloopdatum';
+  String get tasksSortByDueDate => 'Deadline';
 
   @override
   String get tasksSortByLabel => 'Sorteren op';
@@ -18631,10 +18662,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskStatusLabel => 'Status:';
 
   @override
-  String get taskStatusOnHold => 'In wacht';
+  String get taskStatusOnHold => 'In de wacht';
 
   @override
-  String get taskStatusOpen => 'Openen';
+  String get taskStatusOpen => 'Open';
 
   @override
   String get taskStatusRejected => 'Afgewezen';
@@ -18777,7 +18808,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get unifiedGoalsUngroupedHabitsHeader => 'Zonder doel';
 
   @override
-  String get unlinkButton => 'Verbinding verbreken';
+  String get unlinkButton => 'Ontkoppelen';
 
   @override
   String get unlinkTaskConfirm => 'Weet u zeker dat u deze taak wilt losmaken?';

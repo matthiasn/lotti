@@ -250,6 +250,8 @@ List<Observation> aggregateMeasurementNone(
   return aggregated;
 }
 
+/// Midnight at the start of a chart window one day per [scale] logical pixels
+/// of screen width back from `clock.now()`, shifted [shiftDays] earlier.
 DateTime getRangeStart({
   required BuildContext context,
   double scale = 10,
@@ -257,7 +259,7 @@ DateTime getRangeStart({
 }) {
   final durationDays = (MediaQuery.of(context).size.width / scale).ceil();
   final duration = Duration(days: durationDays);
-  final now = DateTime.now();
+  final now = clock.now();
   final from = now.subtract(duration);
   return DateTime(
     from.year,
@@ -266,8 +268,10 @@ DateTime getRangeStart({
   ).subtract(Duration(days: shiftDays));
 }
 
+/// Midnight ending `clock.now()`'s day (the start of tomorrow), shifted
+/// [shiftDays] earlier.
 DateTime getRangeEnd({int shiftDays = 0}) {
-  final now = DateTime.now();
+  final now = clock.now();
   return DateTime(
     now.year,
     now.month,

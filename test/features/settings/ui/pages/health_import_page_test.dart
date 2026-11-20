@@ -17,7 +17,6 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/health_import.dart';
-import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -45,17 +44,6 @@ void main() {
   late MockHealthImport mockHealthImport;
 
   setUp(() async {
-    // The page ships on iOS/Android only; the macOS test host would otherwise
-    // take the "unavailable" branch for every test.
-    final originalIsDesktop = platform.isDesktop;
-    final originalIsMobile = platform.isMobile;
-    platform.isDesktop = false;
-    platform.isMobile = true;
-    addTearDown(() {
-      platform.isDesktop = originalIsDesktop;
-      platform.isMobile = originalIsMobile;
-    });
-
     mockHealthImport = MockHealthImport();
     await setUpTestGetIt(
       additionalSetup: () {
@@ -93,7 +81,10 @@ void main() {
   /// Pumps the page in a viewport tall enough to hold the whole surface, so
   /// every row and the footer button are laid out *and* hit-testable without
   /// scrolling mid-assertion.
-  Future<void> pumpPage(WidgetTester tester) async {
+  Future<void> pumpPage(
+    WidgetTester tester, {
+    TargetPlatform? targetPlatform,
+  }) async {
     const size = Size(600, 1600);
     tester.view
       ..physicalSize = size
@@ -103,7 +94,7 @@ void main() {
 
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        const HealthImportPage(),
+        HealthImportPage(platform: targetPlatform),
         mediaQueryData: const MediaQueryData(size: size),
       ),
     );
@@ -194,27 +185,41 @@ void main() {
       expect(rowFor(tester, 'Workouts').showDivider, isFalse);
     });
 
-    testWidgets('hides the unavailable callout on mobile', (tester) async {
-      await pumpPage(tester);
+    const unavailable = 'Health data is only available on iOS and Android';
 
-      expect(find.byType(DesignSystemInlineCallout), findsNothing);
-    });
+    // The callout keys on the injected platform, not on the host process: a
+    // phone page rendered on a desktop machine must not claim to be desktop.
+    for (final targetPlatform in [
+      TargetPlatform.iOS,
+      TargetPlatform.android,
+      TargetPlatform.fuchsia,
+    ]) {
+      testWidgets('hides the unavailable callout on ${targetPlatform.name}', (
+        tester,
+      ) async {
+        await pumpPage(tester, targetPlatform: targetPlatform);
 
-    testWidgets('warns instead of pretending to work on desktop', (
-      tester,
-    ) async {
-      // Both flags, so the state is one a real desktop target can be in —
-      // `isDesktop` is derived from `!isMobile` in production.
-      platform.isDesktop = true;
-      platform.isMobile = false;
-      await pumpPage(tester);
+        expect(find.byType(DesignSystemInlineCallout), findsNothing);
+        expect(find.text(unavailable), findsNothing);
+        expect(find.text('Activity'), findsOneWidget);
+      });
+    }
 
-      expect(find.byType(DesignSystemInlineCallout), findsOneWidget);
-      expect(
-        find.text('Health data is only available on iOS and Android'),
-        findsOneWidget,
+    for (final targetPlatform in [
+      TargetPlatform.macOS,
+      TargetPlatform.linux,
+      TargetPlatform.windows,
+    ]) {
+      testWidgets(
+        'warns instead of pretending to work on ${targetPlatform.name}',
+        (tester) async {
+          await pumpPage(tester, targetPlatform: targetPlatform);
+
+          expect(find.byType(DesignSystemInlineCallout), findsOneWidget);
+          expect(find.text(unavailable), findsOneWidget);
+        },
       );
-    });
+    }
   });
 
   // The escape hatch for the reported bug: a data type switched off in
