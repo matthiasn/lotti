@@ -4,8 +4,8 @@ import 'package:material_ui/material_ui.dart';
 /// stack.
 ///
 /// Paints a [selectedColor]/[hoverColor] fill behind [child], reports taps via
-/// [onTap] and hover via [onHoverChanged], and exposes the row as `selected` to
-/// semantics. Keyboard focus uses the exact same fill and clipping geometry as
+/// [onTap] and hover via [onHoverChanged], and exposes the row to semantics as
+/// one button, `selected` when it is. Keyboard focus uses the exact same fill and clipping geometry as
 /// pointer hover. The background can bleed past the content using [topOverlap]/
 /// [bottomOverlap] (to hide seams between connected cards) and be inset/rounded
 /// via [backgroundTopInset]/[backgroundBottomInset]/[backgroundBorderRadius];
@@ -60,6 +60,8 @@ class _GroupedCardRowSurfaceState extends State<GroupedCardRowSurface> {
 
     return Semantics(
       selected: widget.selected,
+      // The whole row is the target, so assistive tech announces it as one.
+      button: true,
       child: Material(
         color: Colors.transparent,
         child: InkWell(

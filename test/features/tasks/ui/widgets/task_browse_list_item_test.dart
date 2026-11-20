@@ -642,6 +642,38 @@ void main() {
   // Cover art
   // -------------------------------------------------------------------------
 
+  group('Semantics', () {
+    testWidgets(
+      'a row is one button that reads its title, status and priority',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        final task = TestTaskFactory.create(
+          id: 'task-semantics',
+          title: 'Refill the krill tubs',
+          dateFrom: DateTime(2026, 4, 8),
+        );
+
+        await pumpTaskBrowseItem(
+          tester,
+          task,
+          sortOption: TaskSortOption.byDate,
+          trackedDurationLabelOverride: '1h 10m',
+        );
+
+        final row = find.byKey(
+          const ValueKey('task-browse-row-task-semantics'),
+        );
+        final node = tester.getSemantics(row);
+        expect(node.flagsCollection.isButton, isTrue);
+        expect(node.label, contains('Refill the krill tubs'));
+        expect(node.label, contains('Open'));
+        expect(node.label, contains('Medium'));
+        expect(node.label, contains('1h 10m'));
+        handle.dispose();
+      },
+    );
+  });
+
   group('Compact density mode', () {
     testWidgets(
       'renders only the task title — no duration, category, or status',
