@@ -156,7 +156,9 @@ by `TasksRootPage`, so it remains reachable even while task data is loading. Its
 collapse preference and expanded width are shared with Projects and persisted by
 `PaneWidthController`. Focus mode uses the released canvas without turning media
 into wall-sized chrome: cover art remains 16:9 but is capped at the shared
-960 pt detail measure.
+960 pt detail measure, and at `kTaskCoverMaxHeight` (320 pt) tall — above that
+it becomes a banner cropped from its top, so the title, metadata and agent
+summary are on the first screen of a laptop window.
 
 Focus mode is also what mounts the **details column**: with the list gone and
 a pane at least 960 pt wide, `TaskMetaColumn` carries the task's metadata

@@ -247,7 +247,7 @@ Two meaning-bearing hues on a neutral, paired light/dark ramp.
 
 ## Layout
 
-The shell is a persistent left sidebar from 960px up (`kDesktopBreakpoint`) and a bottom navigation bar below that. On desktop, a list pane sits beside a detail pane, joined by a draggable `ResizableDivider`. A docked day-view column appears only from 1200px. Detail content caps at 960px (`kDetailContentMaxWidth`), prose inside it at 600px, worded action lists at 520px, and the goals surfaces at 760px. Page headers fold their tools beneath the title below 520px. Agent conversations slide in as a 400px overlay sheet, never as a column the page reflows around.
+The shell is a persistent left sidebar from 960px up (`kDesktopBreakpoint`) and a bottom navigation bar below that. On desktop, a list pane sits beside a detail pane, joined by a draggable `ResizableDivider`. A docked day-view column appears only from 1200px. Detail content caps at 960px (`kDetailContentMaxWidth`), prose inside it at 600px, worded action lists at 520px, and the goals surfaces at 760px. Page headers fold their tools beneath the title below 520px. Agent conversations slide in as a 400px overlay sheet, never as a column the page reflows around. A task's cover art is 16:9 of its column but never taller than 320px (`kTaskCoverMaxHeight`). Above that it becomes a banner, so the title, metadata and agent summary sit on the first screen of a laptop window.
 
 Spacing uses the 13-step gap scale (2 → 160px). The common rhythm is `cardPadding` 16 (step5), `cardItemSpacing` 12 (step4) and `sectionGap` 24 (step6). Control, icon and stroke sizes come from the separate sizing set (`ControlSizes`, `TapTargets`, `IconSizes`, `BorderWidths`), never from the gap scale. Above a 1.3 text scale, components re-flow (an avatar steps aside, an action bar stacks) rather than clip. Footers that hold translated actions measure their real content instead of trusting a width breakpoint.
 
@@ -298,6 +298,14 @@ Circular icon buttons (back, overflow, mic) are 48dp targets. Rows inside a card
 ### Navigation
 - **Desktop:** a persistent left sidebar from 960px, with the list and detail panes side by side and a resizable divider.
 - **Mobile:** a bottom navigation bar, a floating glass action bar on detail pages, and circular glass back and overflow buttons over cover art.
+
+### Task Row (reference)
+Three tiers, so one thing leads: the title (Subtitle 1, 600), the agent one-liner on one line in Agent Violet (caption), then one caption-tier meta line in medium ink (status glyph and word, priority glyph and word, dates, the category as a colour swatch and name, tracked time once there is any). There are no filled colour blocks and no "0h 0m". A cover thumbnail (64, `ControlSizes.mediaThumbnail`) leads the row and steps aside on large text. The row is one button to assistive tech.
+
+**The One Vocabulary Rule.** A fact reads the same wherever it appears. Priority is its word (*High*) on the row, the header chip and the filter, and the P-code is only a sort key. A due date within a day of today reads as the list's own section words (*Due Today*) in the header too.
+
+### Task Metadata Lane
+Status, priority, due date, estimate and labels are read-out tags (4px), followed by a dashed *Details* lever. Below 520 wide, the lane is two lines rather than one wrapped lane: the decision facts (status, blocked-by, priority, due) come first, then the rest, with several labels shown as their count.
 
 ### AI Summary Card (signature)
 The agent's voice made visible. It is a violet-washed card (`aiCard.*`) with a sparkle tile, a title and the agent's name, report prose in body type, then a quiet footer: freshness ("4 min ago") and a teal "Update now". **Proposed changes** sit inside it as white or raised rows, each with a dismiss (neutral circle ×) and a confirm (violet-tinted circle ✓), plus a pending count tag and an outlined "Confirm all". Resolved proposals hold for 200ms, then collapse (250ms, emphasised decelerate). Structured agent output renders as A2UI components here, not as Markdown.
