@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
+import 'package:lotti/features/design_system/theme/motion_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_body.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_components.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
@@ -260,7 +261,7 @@ class _ChecklistCardState extends ConsumerState<ChecklistCard> {
             // ── Body (animated) ───────────────────────────────────────────────
             AnimatedCrossFade(
               duration: animationDuration,
-              sizeCurve: Curves.easeInOut,
+              sizeCurve: MotionCurves.standard,
               crossFadeState: showBody
                   ? CrossFadeState.showFirst
                   : CrossFadeState.showSecond,
