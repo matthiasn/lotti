@@ -8,6 +8,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
@@ -1438,7 +1439,7 @@ void main() {
 
           await openSuggestionDialog(tester);
 
-          expect(find.byType(AlertDialog), findsOneWidget);
+          expect(find.byType(DesignSystemModalActionBar), findsOneWidget);
           expect(find.text('AI Suggestion'), findsOneWidget);
           expect(find.text('Journal mentions completion'), findsOneWidget);
           expect(find.text('Confidence: high'), findsOneWidget);

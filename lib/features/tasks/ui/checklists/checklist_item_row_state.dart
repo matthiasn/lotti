@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
@@ -754,11 +757,13 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   }
 
   Color _getSuggestionColor(ChecklistCompletionConfidence confidence) {
-    final colorScheme = Theme.of(context).colorScheme;
+    // An agent's suggestion speaks in agent violet; less confidence recedes
+    // to neutral ink rather than borrowing unrelated scheme roles.
+    final colors = context.designTokens.colors;
     return switch (confidence) {
-      ChecklistCompletionConfidence.high => colorScheme.primary,
-      ChecklistCompletionConfidence.medium => colorScheme.secondary,
-      ChecklistCompletionConfidence.low => colorScheme.tertiary,
+      ChecklistCompletionConfidence.high => colors.aiCard.accent,
+      ChecklistCompletionConfidence.medium => colors.text.mediumEmphasis,
+      ChecklistCompletionConfidence.low => colors.text.lowEmphasis,
     };
   }
 
@@ -767,12 +772,13 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     ChecklistCompletionSuggestion suggestion,
   ) {
     final tokens = context.designTokens;
+    final completion = ref.read(checklistCompletionServiceProvider.notifier);
 
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.messages.checklistAiSuggestionTitle),
-        content: Column(
+    unawaited(
+      DsActionModal.show<void>(
+        context: context,
+        title: context.messages.checklistAiSuggestionTitle,
+        builder: (modalContext) => Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -783,13 +789,18 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
               ),
             ),
             SizedBox(height: tokens.spacing.step3),
-            Text(suggestion.reason),
+            Text(
+              suggestion.reason,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
+            ),
             SizedBox(height: tokens.spacing.step5),
             Row(
               children: [
                 Icon(
                   LottiIcons.insights,
-                  size: 16,
+                  size: IconSizes.s,
                   color: _getSuggestionColor(suggestion.confidence),
                 ),
                 SizedBox(width: tokens.spacing.step2),
@@ -803,39 +814,40 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                 ),
               ],
             ),
+            SizedBox(height: tokens.spacing.step6),
+            DesignSystemModalActionBar(
+              secondary: [
+                DesignSystemButton(
+                  label: context.messages.cancelButton,
+                  variant: DesignSystemButtonVariant.secondary,
+                  onPressed: () {
+                    Navigator.of(modalContext).pop();
+                    completion.clearSuggestion(widget.itemId);
+                  },
+                ),
+              ],
+              primary: DesignSystemButton(
+                label: context.messages.checklistAiMarkComplete,
+                leadingIcon: LottiIcons.confirmCircled,
+                fullWidth: true,
+                onPressed: () {
+                  Navigator.of(modalContext).pop();
+                  _suppressDataCheckCelebration = true;
+                  ref
+                      .read(
+                        checklistItemControllerProvider((
+                          id: widget.itemId,
+                          taskId: widget.taskId,
+                        )).notifier,
+                      )
+                      .updateChecked(checked: true);
+                  _celebrateCheck(interactive: true);
+                  completion.clearSuggestion(widget.itemId);
+                },
+              ),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              ref
-                  .read(checklistCompletionServiceProvider.notifier)
-                  .clearSuggestion(widget.itemId);
-            },
-            child: Text(context.messages.cancelButton),
-          ),
-          FilledButton.icon(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              _suppressDataCheckCelebration = true;
-              ref
-                  .read(
-                    checklistItemControllerProvider((
-                      id: widget.itemId,
-                      taskId: widget.taskId,
-                    )).notifier,
-                  )
-                  .updateChecked(checked: true);
-              _celebrateCheck(interactive: true);
-              ref
-                  .read(checklistCompletionServiceProvider.notifier)
-                  .clearSuggestion(widget.itemId);
-            },
-            icon: const Icon(LottiIcons.confirmCircled, size: 18),
-            label: Text(context.messages.checklistAiMarkComplete),
-          ),
-        ],
       ),
     );
   }
