@@ -1394,7 +1394,7 @@ void main() {
           createdAt: createdAt,
           utcOffset: 0,
         ),
-        'In Progress',
+        'In progress',
       ),
       (
         TaskStatus.blocked(
@@ -1459,7 +1459,7 @@ void main() {
         // high-emphasis text colour (see _statusTint in the meta part).
         final context = tester.element(find.byType(DesktopTaskHeader));
         final accent = switch (label) {
-          'In Progress' => TaskShowcasePalette.info(context),
+          'In progress' => TaskShowcasePalette.info(context),
           'Blocked' => TaskShowcasePalette.error(context),
           'On Hold' => TaskShowcasePalette.warning(context),
           'Groomed' => context.designTokens.colors.interactive.enabled,

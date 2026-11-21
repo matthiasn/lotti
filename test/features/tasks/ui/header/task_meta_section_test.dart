@@ -570,7 +570,7 @@ void main() {
 
       await tester.tap(find.text('Status'));
       await settle(tester);
-      await tester.tap(find.text('In Progress'));
+      await tester.tap(find.text('In progress'));
       await settle(tester);
 
       expect(tracker.updateTaskStatusCalls, hasLength(1));
@@ -692,7 +692,7 @@ void main() {
 
       await tester.tap(find.text('Status'));
       await settle(tester);
-      await tester.tap(find.text('In Progress'));
+      await tester.tap(find.text('In progress'));
       await settle(tester);
 
       expect(dismissed, 1);

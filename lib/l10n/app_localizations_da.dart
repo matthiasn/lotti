@@ -3413,7 +3413,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Kun synlig, når private bidrag vises';
 
   @override
-  String get categorySearchPlaceholder => 'Søgekategorier...';
+  String get categorySearchPlaceholder => 'Søgekategorier…';
 
   @override
   String get changeSetCardTitle => 'Foreslåede ændringer';
@@ -7095,7 +7095,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get editorMoreFormatting => 'Mere formatering';
 
   @override
-  String get editorPlaceholder => 'Indtast noter...';
+  String get editorPlaceholder => 'Indtast noter…';
 
   @override
   String get embeddingModelCheckFailed =>

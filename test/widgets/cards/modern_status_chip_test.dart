@@ -14,7 +14,7 @@ void main() {
 
   group('ModernStatusChip Tests', () {
     testWidgets('label is rendered correctly', (tester) async {
-      const testLabel = 'In Progress';
+      const testLabel = 'In progress';
       const testColor = Colors.blue;
 
       await tester.pumpWidget(
@@ -142,7 +142,7 @@ void main() {
       testWidgets('${mode.name} mode adjusts alpha values correctly', (
         tester,
       ) async {
-        const testLabel = 'In Progress';
+        const testLabel = 'In progress';
         const testColor = Colors.blue;
 
         await tester.pumpWidget(
@@ -263,7 +263,7 @@ void main() {
     });
 
     testWidgets('text has correct font weight', (tester) async {
-      const testLabel = 'In Progress';
+      const testLabel = 'In progress';
       const testColor = Colors.blue;
 
       await tester.pumpWidget(

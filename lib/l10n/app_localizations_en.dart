@@ -3400,7 +3400,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Only visible when private entries are shown';
 
   @override
-  String get categorySearchPlaceholder => 'Search categories...';
+  String get categorySearchPlaceholder => 'Search categories…';
 
   @override
   String get changeSetCardTitle => 'Proposed changes';
@@ -7066,7 +7066,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editorMoreFormatting => 'More formatting';
 
   @override
-  String get editorPlaceholder => 'Enter notes...';
+  String get editorPlaceholder => 'Enter notes…';
 
   @override
   String get embeddingModelCheckFailed =>
@@ -10949,7 +10949,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkedTasksMenuTooltip => 'Linked tasks options';
 
   @override
-  String get linkedTasksTitle => 'Linked Tasks';
+  String get linkedTasksTitle => 'Linked tasks';
 
   @override
   String get linkExistingTask => 'Link existing task…';
@@ -17843,7 +17843,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskDetailNotFound => 'This task no longer exists';
 
   @override
-  String get taskDueDateLabel => 'Due Date';
+  String get taskDueDateLabel => 'Due date';
 
   @override
   String taskDueDateWithDate(String date) {
@@ -17862,13 +17862,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get taskDueToday => 'Due Today';
+  String get taskDueToday => 'Due today';
 
   @override
-  String get taskDueTomorrow => 'Due Tomorrow';
+  String get taskDueTomorrow => 'Due tomorrow';
 
   @override
-  String get taskDueYesterday => 'Due Yesterday';
+  String get taskDueYesterday => 'Due yesterday';
 
   @override
   String get taskEditTitleLabel => 'Edit task title';
@@ -18151,10 +18151,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksAgentFilterAll => 'All';
 
   @override
-  String get tasksAgentFilterHasAgent => 'Has Agent';
+  String get tasksAgentFilterHasAgent => 'Has agent';
 
   @override
-  String get tasksAgentFilterNoAgent => 'No Agent';
+  String get tasksAgentFilterNoAgent => 'No agent';
 
   @override
   String get tasksAgentFilterTitle => 'Agent';
@@ -18542,7 +18542,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksSortByCreationDate => 'Created';
 
   @override
-  String get tasksSortByDueDate => 'Due Date';
+  String get tasksSortByDueDate => 'Due date';
 
   @override
   String get tasksSortByLabel => 'Sort by';
@@ -18563,7 +18563,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskStatusGroomed => 'Groomed';
 
   @override
-  String get taskStatusInProgress => 'In Progress';
+  String get taskStatusInProgress => 'In progress';
 
   @override
   String get taskStatusLabel => 'Status:';
@@ -18941,7 +18941,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get editMenuTitle => 'Edit';
 
   @override
-  String get editorPlaceholder => 'Enter notes...';
+  String get editorPlaceholder => 'Enter notes…';
 
   @override
   String get entryActions => 'Actions';

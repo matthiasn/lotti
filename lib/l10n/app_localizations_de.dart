@@ -3441,7 +3441,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nur sichtbar, wenn private Einträge angezeigt werden';
 
   @override
-  String get categorySearchPlaceholder => 'Kategorien suchen...';
+  String get categorySearchPlaceholder => 'Kategorien suchen…';
 
   @override
   String get changeSetCardTitle => 'Vorgeschlagene Änderungen';
@@ -7141,7 +7141,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editorMoreFormatting => 'Mehr Formatierung';
 
   @override
-  String get editorPlaceholder => 'Notizen eingeben...';
+  String get editorPlaceholder => 'Notizen eingeben…';
 
   @override
   String get embeddingModelCheckFailed =>

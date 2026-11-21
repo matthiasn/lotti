@@ -38,7 +38,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.text('Due Today'), findsOneWidget);
+        expect(find.text('Due today'), findsOneWidget);
       });
     });
 
@@ -128,7 +128,7 @@ void main() {
         await tester.tap(find.text(absoluteText));
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.text('Due Tomorrow'), findsOneWidget);
+        expect(find.text('Due tomorrow'), findsOneWidget);
       });
     });
 
@@ -149,7 +149,7 @@ void main() {
         await tester.tap(find.text(absoluteText));
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.text('Due Yesterday'), findsOneWidget);
+        expect(find.text('Due yesterday'), findsOneWidget);
       });
     });
 
@@ -234,12 +234,12 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         // In absolute mode (default), "Due Today" should show for same-day
-        expect(find.text('Due Today'), findsOneWidget);
+        expect(find.text('Due today'), findsOneWidget);
 
         // Toggle to relative - should still show "Due Today"
-        await tester.tap(find.text('Due Today'));
+        await tester.tap(find.text('Due today'));
         await tester.pump(const Duration(milliseconds: 100));
-        expect(find.text('Due Today'), findsOneWidget);
+        expect(find.text('Due today'), findsOneWidget);
       });
     });
 
@@ -278,7 +278,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         // Should use "Due Tomorrow" not "Due in 1 days"
-        expect(find.text('Due Tomorrow'), findsOneWidget);
+        expect(find.text('Due tomorrow'), findsOneWidget);
         expect(find.textContaining('1 days'), findsNothing);
       });
     });
@@ -301,7 +301,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         // Should use "Due Yesterday" not "Overdue by 1 days"
-        expect(find.text('Due Yesterday'), findsOneWidget);
+        expect(find.text('Due yesterday'), findsOneWidget);
         expect(find.textContaining('1 days'), findsNothing);
       });
     });

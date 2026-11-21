@@ -218,7 +218,7 @@ void main() {
         showSectionHeader: true,
       );
 
-      expect(find.text('Due Today'), findsOneWidget);
+      expect(find.text('Due today'), findsOneWidget);
     });
 
     testWidgets('renders dueTomorrow section header', (tester) async {
@@ -235,7 +235,7 @@ void main() {
         showSectionHeader: true,
       );
 
-      expect(find.text('Due Tomorrow'), findsOneWidget);
+      expect(find.text('Due tomorrow'), findsOneWidget);
     });
 
     testWidgets('renders dueYesterday section header', (tester) async {
@@ -252,7 +252,7 @@ void main() {
         showSectionHeader: true,
       );
 
-      expect(find.text('Due Yesterday'), findsOneWidget);
+      expect(find.text('Due yesterday'), findsOneWidget);
     });
 
     testWidgets('renders createdDate section header', (tester) async {
@@ -363,7 +363,7 @@ void main() {
 
       expect(find.text('My Custom Header'), findsOneWidget);
       // "Due Today" should NOT appear since override takes precedence
-      expect(find.text('Due Today'), findsNothing);
+      expect(find.text('Due today'), findsNothing);
     });
   });
 

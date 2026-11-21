@@ -338,7 +338,7 @@ void main() {
       expect(
         subtitle(tester, 'ice-pad'),
         'Crosswind near the 18-knot limit\n'
-        'In Progress · [widget] Launch Ops   [widget]   [widget]',
+        'In progress · [widget] Launch Ops   [widget]   [widget]',
       );
       expect(find.byType(ColorIcon), findsOneWidget);
       expect(
@@ -362,7 +362,7 @@ void main() {
       expect(
         item(tester, 'ice-pad').semanticsLabel,
         'Check the ice-pad weather window, Crosswind near the 18-knot limit, '
-        'In Progress, Launch Ops, P2, Estimate: 1h 30m',
+        'In progress, Launch Ops, P2, Estimate: 1h 30m',
       );
     });
 
@@ -388,7 +388,7 @@ void main() {
             ice(oneLiner: null, categoryId: null, estimate: null),
       );
 
-      expect(subtitle(tester, 'ice-pad'), 'In Progress   [widget]');
+      expect(subtitle(tester, 'ice-pad'), 'In progress   [widget]');
       expect(item(tester, 'ice-pad').subtitleMaxLines, 2);
       expect(find.byType(ColorIcon), findsNothing);
       expect(
@@ -397,7 +397,7 @@ void main() {
       );
       expect(
         item(tester, 'ice-pad').semanticsLabel,
-        'Check the ice-pad weather window, In Progress, P2',
+        'Check the ice-pad weather window, In progress, P2',
       );
     });
 
@@ -407,7 +407,7 @@ void main() {
       await pump(tester, load: (_) async => ice(oneLiner: null));
 
       expect(find.byType(ColorIcon), findsNothing);
-      expect(subtitle(tester, 'ice-pad'), startsWith('In Progress   '));
+      expect(subtitle(tester, 'ice-pad'), startsWith('In progress   '));
     });
 
     for (final (name, status, label) in [
@@ -449,7 +449,7 @@ void main() {
       expect(thumbnail.size, ControlSizes.iconChip);
       expect(find.byType(StatusGlyph), findsNothing);
       // How it stands is still said, in words.
-      expect(subtitle(tester, 'ice-pad'), contains('In Progress'));
+      expect(subtitle(tester, 'ice-pad'), contains('In progress'));
     });
 
     testWidgets('a tap on a loaded task opens it', (tester) async {
@@ -620,7 +620,7 @@ void main() {
         );
         // In place of the status glyph, which the words still give.
         expect(find.byType(StatusGlyph), findsNothing);
-        expect(subtitle(tester, 'ice-pad'), contains('In Progress'));
+        expect(subtitle(tester, 'ice-pad'), contains('In progress'));
         expect(
           textIn(
             tester,
@@ -1588,7 +1588,7 @@ void main() {
       await tester.tap(action('due'));
       await settle(tester);
 
-      expect(find.text('Due Date'), findsOneWidget);
+      expect(find.text('Due date'), findsOneWidget);
     });
 
     testWidgets('moving it opens the project picker its page opens, in the '

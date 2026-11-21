@@ -3452,7 +3452,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Viditelné pouze při zobrazení soukromých záznamů';
 
   @override
-  String get categorySearchPlaceholder => 'Vyhledávat kategorie...';
+  String get categorySearchPlaceholder => 'Vyhledávat kategorie…';
 
   @override
   String get changeSetCardTitle => 'Navržené změny';
@@ -7195,7 +7195,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get editorMoreFormatting => 'Více formátování';
 
   @override
-  String get editorPlaceholder => 'Zadej poznámky...';
+  String get editorPlaceholder => 'Zadej poznámky…';
 
   @override
   String get embeddingModelCheckFailed =>

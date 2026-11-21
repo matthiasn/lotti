@@ -3452,7 +3452,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Visível apenas quando entradas privadas são mostradas';
 
   @override
-  String get categorySearchPlaceholder => 'Pesquisar categorias...';
+  String get categorySearchPlaceholder => 'Pesquisar categorias…';
 
   @override
   String get changeSetCardTitle => 'Mudanças propostas';
@@ -7188,7 +7188,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get editorMoreFormatting => 'Mais formatação';
 
   @override
-  String get editorPlaceholder => 'Insira notas...';
+  String get editorPlaceholder => 'Insira notas…';
 
   @override
   String get embeddingModelCheckFailed =>

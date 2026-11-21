@@ -3469,7 +3469,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Vizibil doar când intrările private sunt afișate';
 
   @override
-  String get categorySearchPlaceholder => 'Căutați categorii...';
+  String get categorySearchPlaceholder => 'Căutați categorii…';
 
   @override
   String get changeSetCardTitle => 'Modificări propuse';
@@ -7224,7 +7224,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get editorMoreFormatting => 'Mai multă formatare';
 
   @override
-  String get editorPlaceholder => 'Introduceți notițe...';
+  String get editorPlaceholder => 'Introduceți notițe…';
 
   @override
   String get embeddingModelCheckFailed =>

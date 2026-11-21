@@ -3464,7 +3464,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Visible uniquement lorsque les entrées privées sont affichées';
 
   @override
-  String get categorySearchPlaceholder => 'Rechercher des catégories...';
+  String get categorySearchPlaceholder => 'Rechercher des catégories…';
 
   @override
   String get changeSetCardTitle => 'Modifications proposées';
@@ -7216,7 +7216,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editorMoreFormatting => 'Plus de mise en forme';
 
   @override
-  String get editorPlaceholder => 'Saisir des notes...';
+  String get editorPlaceholder => 'Saisir des notes…';
 
   @override
   String get embeddingModelCheckFailed =>

@@ -3430,7 +3430,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Alleen zichtbaar wanneer privé-items getoond worden';
 
   @override
-  String get categorySearchPlaceholder => 'Zoeken in categorieën...';
+  String get categorySearchPlaceholder => 'Zoeken in categorieën…';
 
   @override
   String get changeSetCardTitle => 'Voorgestelde wijzigingen';
@@ -7118,7 +7118,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get editorMoreFormatting => 'Meer opmaak';
 
   @override
-  String get editorPlaceholder => 'Notities invoeren...';
+  String get editorPlaceholder => 'Notities invoeren…';
 
   @override
   String get embeddingModelCheckFailed =>

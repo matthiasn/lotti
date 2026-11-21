@@ -905,7 +905,7 @@ void main() {
         });
 
         // The list's own words for the day, not the numeric date.
-        expect(find.text('Due Today'), findsOneWidget);
+        expect(find.text('Due today'), findsOneWidget);
         expect(find.textContaining('/2026'), findsNothing);
       },
     );
@@ -920,7 +920,7 @@ void main() {
         await tester.pumpWidget(pumpConnector(task: task));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        expect(find.text('Due Tomorrow'), findsOneWidget);
+        expect(find.text('Due tomorrow'), findsOneWidget);
 
         // Midnight passes: the day provider re-emits, nothing else changes.
         today = now.add(const Duration(days: 1));
@@ -930,13 +930,13 @@ void main() {
         await tester.pump();
       });
 
-      expect(find.text('Due Today'), findsOneWidget);
-      expect(find.text('Due Tomorrow'), findsNothing);
+      expect(find.text('Due today'), findsOneWidget);
+      expect(find.text('Due tomorrow'), findsNothing);
     });
 
     for (final (offset, label) in [
-      (-1, 'Due Yesterday'),
-      (1, 'Due Tomorrow'),
+      (-1, 'Due yesterday'),
+      (1, 'Due tomorrow'),
     ]) {
       testWidgets('a task due $offset day(s) from today says "$label"', (
         tester,

@@ -1240,9 +1240,9 @@ void main() {
           };
           expect(
             chips.keys,
-            containsAll(['Has Agent', 'Open', 'High', 'Work']),
+            containsAll(['Has agent', 'Open', 'High', 'Work']),
           );
-          for (final label in ['Has Agent', 'Open', 'High']) {
+          for (final label in ['Has agent', 'Open', 'High']) {
             expect(chips[label]!.muted, query.isNotEmpty, reason: label);
             expect(
               chips[label]!.mutedReason,
@@ -1276,7 +1276,7 @@ void main() {
           find.byType(ActiveFilterChip),
         );
         expect(chip.leadingIcon, LottiIcons.aiModel);
-        expect(chip.label, 'Has Agent');
+        expect(chip.label, 'Has agent');
 
         await tester.tap(find.byType(ActiveFilterChip));
         await tester.pump();
@@ -1364,7 +1364,7 @@ void main() {
 
       expect(
         tester.widget<ActiveFilterChip>(find.byType(ActiveFilterChip)).label,
-        'No Agent',
+        'No agent',
       );
     });
 

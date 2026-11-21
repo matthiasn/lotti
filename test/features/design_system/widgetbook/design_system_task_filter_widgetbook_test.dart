@@ -40,7 +40,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Mobile Preview'), findsOneWidget);
       expect(find.text('Apply'), findsOneWidget);
-      expect(find.text('Open, In Progress'), findsOneWidget);
+      expect(find.text('Open, In progress'), findsOneWidget);
       expect(find.text('Learn, Study'), findsOneWidget);
       expect(find.text('AI Coding, Agents'), findsOneWidget);
       expect(_serializedState(tester), contains('"selectedPriorityId": "p2"'));

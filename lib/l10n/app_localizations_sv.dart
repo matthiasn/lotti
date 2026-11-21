@@ -3422,7 +3422,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Endast synligt när privata bidrag visas';
 
   @override
-  String get categorySearchPlaceholder => 'Sökkategorier...';
+  String get categorySearchPlaceholder => 'Sökkategorier…';
 
   @override
   String get changeSetCardTitle => 'Föreslagna förändringar';
@@ -7109,7 +7109,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get editorMoreFormatting => 'Mer formatering';
 
   @override
-  String get editorPlaceholder => 'Skriv in anteckningarna...';
+  String get editorPlaceholder => 'Skriv in anteckningarna…';
 
   @override
   String get embeddingModelCheckFailed =>

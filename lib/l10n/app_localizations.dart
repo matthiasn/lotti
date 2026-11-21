@@ -5745,7 +5745,7 @@ abstract class AppLocalizations {
   /// No description provided for @categorySearchPlaceholder.
   ///
   /// In en, this message translates to:
-  /// **'Search categories...'**
+  /// **'Search categories…'**
   String get categorySearchPlaceholder;
 
   /// No description provided for @changeSetCardTitle.
@@ -12020,7 +12020,7 @@ abstract class AppLocalizations {
   /// No description provided for @editorPlaceholder.
   ///
   /// In en, this message translates to:
-  /// **'Enter notes...'**
+  /// **'Enter notes…'**
   String get editorPlaceholder;
 
   /// No description provided for @embeddingModelCheckFailed.
@@ -18543,7 +18543,7 @@ abstract class AppLocalizations {
   /// No description provided for @linkedTasksTitle.
   ///
   /// In en, this message translates to:
-  /// **'Linked Tasks'**
+  /// **'Linked tasks'**
   String get linkedTasksTitle;
 
   /// No description provided for @linkExistingTask.
@@ -29744,7 +29744,7 @@ abstract class AppLocalizations {
   /// No description provided for @taskDueDateLabel.
   ///
   /// In en, this message translates to:
-  /// **'Due Date'**
+  /// **'Due date'**
   String get taskDueDateLabel;
 
   /// No description provided for @taskDueDateWithDate.
@@ -29762,19 +29762,19 @@ abstract class AppLocalizations {
   /// No description provided for @taskDueToday.
   ///
   /// In en, this message translates to:
-  /// **'Due Today'**
+  /// **'Due today'**
   String get taskDueToday;
 
   /// No description provided for @taskDueTomorrow.
   ///
   /// In en, this message translates to:
-  /// **'Due Tomorrow'**
+  /// **'Due tomorrow'**
   String get taskDueTomorrow;
 
   /// No description provided for @taskDueYesterday.
   ///
   /// In en, this message translates to:
-  /// **'Due Yesterday'**
+  /// **'Due yesterday'**
   String get taskDueYesterday;
 
   /// No description provided for @taskEditTitleLabel.
@@ -30284,13 +30284,13 @@ abstract class AppLocalizations {
   /// No description provided for @tasksAgentFilterHasAgent.
   ///
   /// In en, this message translates to:
-  /// **'Has Agent'**
+  /// **'Has agent'**
   String get tasksAgentFilterHasAgent;
 
   /// No description provided for @tasksAgentFilterNoAgent.
   ///
   /// In en, this message translates to:
-  /// **'No Agent'**
+  /// **'No agent'**
   String get tasksAgentFilterNoAgent;
 
   /// No description provided for @tasksAgentFilterTitle.
@@ -30920,7 +30920,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSortByDueDate.
   ///
   /// In en, this message translates to:
-  /// **'Due Date'**
+  /// **'Due date'**
   String get tasksSortByDueDate;
 
   /// No description provided for @tasksSortByLabel.
@@ -30962,7 +30962,7 @@ abstract class AppLocalizations {
   /// No description provided for @taskStatusInProgress.
   ///
   /// In en, this message translates to:
-  /// **'In Progress'**
+  /// **'In progress'**
   String get taskStatusInProgress;
 
   /// No description provided for @taskStatusLabel.

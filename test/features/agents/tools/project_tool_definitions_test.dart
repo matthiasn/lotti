@@ -61,7 +61,7 @@ void main() {
     test('normalizes case, whitespace and separators before matching', () {
       expect(canonicalProjectStatus('  On Hold  '), 'on_hold');
       expect(canonicalProjectStatus('AT-RISK'), 'on_hold');
-      expect(canonicalProjectStatus('In Progress'), 'active');
+      expect(canonicalProjectStatus('In progress'), 'active');
     });
 
     test('returns null outside the vocabulary', () {

@@ -103,16 +103,16 @@ void main() {
       await pump(tester, initial: read, heard: true);
 
       expect(find.text("Here's what I heard. Change anything?"), findsOne);
-      expect(labelOf(tester, FrontTaskSetupKeys.status(0)), 'In Progress');
+      expect(labelOf(tester, FrontTaskSetupKeys.status(0)), 'In progress');
       expect(labelOf(tester, FrontTaskSetupKeys.priority(0)), 'Urgent');
-      expect(labelOf(tester, FrontTaskSetupKeys.due(0)), 'Due Today');
+      expect(labelOf(tester, FrontTaskSetupKeys.due(0)), 'Due today');
       expect(
         chip(tester, FrontTaskSetupKeys.priority(0)).semanticsLabel,
         'Priority: Urgent',
       );
       expect(
         chip(tester, FrontTaskSetupKeys.status(0)).semanticsLabel,
-        'Status: In Progress',
+        'Status: In progress',
       );
 
       // The task's own glyphs: an urgent task reads urgent before it is made.
@@ -434,7 +434,7 @@ void main() {
       expect(chip(tester, FrontTaskSetupKeys.status(0)).selected, isTrue);
       expect(find.byIcon(LottiIcons.chevronUp), findsOne);
       expect(find.text('Groomed'), findsOne);
-      expect(find.text('In Progress'), findsOne);
+      expect(find.text('In progress'), findsOne);
 
       await tester.tap(
         find.byKey(FrontTaskSetupKeys.option(0, FrontTaskStart.groomed.name)),
@@ -503,12 +503,12 @@ void main() {
         expect(find.text('Tomorrow'), findsOne);
         await tester.tap(find.byKey(FrontTaskSetupKeys.option(0, 'today')));
         await tester.pumpAndSettle();
-        expect(labelOf(tester, FrontTaskSetupKeys.due(0)), 'Due Today');
+        expect(labelOf(tester, FrontTaskSetupKeys.due(0)), 'Due today');
         await create(tester);
         expect(created.last.due, today);
 
         await choose(tester, FrontTaskSetupKeys.due(0), 'tomorrow');
-        expect(labelOf(tester, FrontTaskSetupKeys.due(0)), 'Due Tomorrow');
+        expect(labelOf(tester, FrontTaskSetupKeys.due(0)), 'Due tomorrow');
         await create(tester);
         expect(created.last.due, DateTime(2026, 11, 12));
 
@@ -540,7 +540,7 @@ void main() {
       await withClock(Clock.fixed(now), () async {
         await pump(tester);
         await choose(tester, FrontTaskSetupKeys.due(0), 'pick');
-        expect(find.text('Due Date'), findsOne);
+        expect(find.text('Due date'), findsOne);
 
         await tester.tap(find.text('20'));
         await tester.pumpAndSettle();
@@ -595,8 +595,8 @@ void main() {
         await tester.tapAt(const Offset(4, 4));
         await tester.pumpAndSettle();
 
-        expect(find.text('Due Date'), findsNothing);
-        expect(labelOf(tester, FrontTaskSetupKeys.due(0)), 'Due Today');
+        expect(find.text('Due date'), findsNothing);
+        expect(labelOf(tester, FrontTaskSetupKeys.due(0)), 'Due today');
       });
     });
   });

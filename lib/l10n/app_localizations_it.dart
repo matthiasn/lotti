@@ -3458,7 +3458,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Solo visibile quando vengono mostrate le voci private';
 
   @override
-  String get categorySearchPlaceholder => 'Cerca le categorie...';
+  String get categorySearchPlaceholder => 'Cerca le categorie…';
 
   @override
   String get changeSetCardTitle => 'Modifiche proposte';
@@ -7191,7 +7191,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get editorMoreFormatting => 'Più formattazione';
 
   @override
-  String get editorPlaceholder => 'Inserisci note...';
+  String get editorPlaceholder => 'Inserisci note…';
 
   @override
   String get embeddingModelCheckFailed =>

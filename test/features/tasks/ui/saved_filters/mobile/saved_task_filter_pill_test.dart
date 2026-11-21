@@ -58,7 +58,7 @@ void main() {
         await _pump(
           tester,
           SavedTaskFilterPill(
-            label: 'In Progress',
+            label: 'In progress',
             semanticsLabel: 'In Progress, 5 tasks',
             selected: true,
             count: 5,
@@ -371,7 +371,7 @@ void main() {
       await _pump(
         tester,
         SavedTaskFilterPill(
-          label: 'In Progress',
+          label: 'In progress',
           semanticsLabel: 'Lotti, In Progress, 5 tasks',
           selected: true,
           count: 5,

@@ -2297,7 +2297,7 @@
   "categoryNotFound": "Category not found",
   "categoryPrivateBadgeLabel": "Private",
   "categoryPrivateDescription": "Only visible when private entries are shown",
-  "categorySearchPlaceholder": "Search categories...",
+  "categorySearchPlaceholder": "Search categories…",
   "changeSetCardTitle": "Proposed changes",
   "changeSetConfirmAll": "Confirm all",
   "changeSetConfirmAllPartialIssues": "{count, plural, =1{1 item had partial issues} other{{count} items had partial issues}}",
@@ -4501,7 +4501,7 @@
   "editorDiscardChanges": "Discard changes",
   "editorInsertDivider": "Insert divider",
   "editorMoreFormatting": "More formatting",
-  "editorPlaceholder": "Enter notes...",
+  "editorPlaceholder": "Enter notes…",
   "embeddingModelCheckFailed": "Couldn't check the model on this device.",
   "embeddingModelDescription": "Search by meaning runs on this device. Download the model once to use it.",
   "embeddingModelDownloadAction": "Download",
@@ -7271,7 +7271,7 @@
   "linkedTasksEmptyAction": "Link a task…",
   "linkedTasksEmptyHint": "Connect this task to another task.",
   "linkedTasksMenuTooltip": "Linked tasks options",
-  "linkedTasksTitle": "Linked Tasks",
+  "linkedTasksTitle": "Linked tasks",
   "linkExistingTask": "Link existing task…",
   "linkExistingTaskTitle": "Link existing task",
   "@linkExistingTaskTitle": {
@@ -11465,7 +11465,7 @@
   "@taskDetailNotFound": {
     "description": "Task page title when the task it was opened for no longer exists."
   },
-  "taskDueDateLabel": "Due Date",
+  "taskDueDateLabel": "Due date",
   "taskDueDateWithDate": "Due: {date}",
   "@taskDueDateWithDate": {
     "placeholders": {
@@ -11482,9 +11482,9 @@
       }
     }
   },
-  "taskDueToday": "Due Today",
-  "taskDueTomorrow": "Due Tomorrow",
-  "taskDueYesterday": "Due Yesterday",
+  "taskDueToday": "Due today",
+  "taskDueTomorrow": "Due tomorrow",
+  "taskDueYesterday": "Due yesterday",
   "taskEditTitleLabel": "Edit task title",
   "taskEstimateLabel": "Estimate:",
   "taskEstimateModalTitle": "Estimate",
@@ -11637,8 +11637,8 @@
   "taskPriorityUrgent": "Urgent",
   "tasksAddLabelButton": "Add label",
   "tasksAgentFilterAll": "All",
-  "tasksAgentFilterHasAgent": "Has Agent",
-  "tasksAgentFilterNoAgent": "No Agent",
+  "tasksAgentFilterHasAgent": "Has agent",
+  "tasksAgentFilterNoAgent": "No agent",
   "tasksAgentFilterTitle": "Agent",
   "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filters}}",
   "@tasksCompactFilterCount": {
@@ -11913,14 +11913,14 @@
   "tasksShowCreationDate": "Show creation date on cards",
   "tasksShowDueDate": "Show due date on cards",
   "tasksSortByCreationDate": "Created",
-  "tasksSortByDueDate": "Due Date",
+  "tasksSortByDueDate": "Due date",
   "tasksSortByLabel": "Sort by",
   "tasksSortByPriority": "Priority",
   "taskStatusAll": "All",
   "taskStatusBlocked": "Blocked",
   "taskStatusDone": "Done",
   "taskStatusGroomed": "Groomed",
-  "taskStatusInProgress": "In Progress",
+  "taskStatusInProgress": "In progress",
   "taskStatusLabel": "Status:",
   "taskStatusOnHold": "On Hold",
   "taskStatusOpen": "Open",
