@@ -1,4 +1,5 @@
 import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -379,7 +380,6 @@ class _HeaderMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     return AgentSurfaceMenuButton(
       semanticsLabel: context.messages.checklistMoreTooltip,
       items: [
@@ -416,10 +416,10 @@ class _HeaderMenu extends StatelessWidget {
             },
           ),
       ],
-      triggerBuilder: (context, open) => IconButton(
+      triggerBuilder: (context, open) => DesignSystemIconAction(
+        icon: LottiIcons.moreVertical,
         tooltip: context.messages.checklistMoreTooltip,
         onPressed: open,
-        icon: Icon(LottiIcons.moreVertical, size: tokens.spacing.step5),
       ),
     );
   }

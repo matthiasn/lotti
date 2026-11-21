@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklists_sorting_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Container widget for all checklists within a task.
@@ -125,8 +125,6 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
     if (checklistIds.isEmpty) {
       return const SizedBox.shrink();
     }
-    final color = context.colorScheme.outline;
-
     final tokens = context.designTokens;
 
     return Column(
@@ -140,7 +138,6 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
         _ChecklistsSectionHeader(
           onSortChecklists: checklistIds.length > 1 ? _enterSortingMode : null,
           checklistCount: checklistIds.length,
-          color: color,
         ),
 
         // CHECKLIST CARDS
@@ -241,13 +238,11 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
 class _ChecklistsSectionHeader extends StatelessWidget {
   const _ChecklistsSectionHeader({
     required this.checklistCount,
-    required this.color,
     this.onSortChecklists,
   });
 
   final VoidCallback? onSortChecklists;
   final int checklistCount;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -265,14 +260,10 @@ class _ChecklistsSectionHeader extends StatelessWidget {
               onTap: onSortChecklists,
             ),
           ],
-          triggerBuilder: (context, open) => IconButton(
+          triggerBuilder: (context, open) => DesignSystemIconAction(
+            icon: LottiIcons.moreVertical,
             tooltip: context.messages.checklistMoreTooltip,
             onPressed: open,
-            icon: Icon(
-              LottiIcons.moreVertical,
-              color: color,
-              size: context.designTokens.spacing.step5,
-            ),
           ),
         ),
       ],
