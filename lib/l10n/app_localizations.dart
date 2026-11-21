@@ -29681,6 +29681,12 @@ abstract class AppLocalizations {
   /// **'Unassigned'**
   String get taskCategoryUnassignedLabel;
 
+  /// Task page title when the task it was opened for no longer exists.
+  ///
+  /// In en, this message translates to:
+  /// **'This task no longer exists'**
+  String get taskDetailNotFound;
+
   /// No description provided for @taskDueDateLabel.
   ///
   /// In en, this message translates to:
@@ -30275,6 +30281,36 @@ abstract class AppLocalizations {
   /// **'Due date views'**
   String get tasksDueViewsSemantics;
 
+  /// Action on the filter-miss empty state that resets every filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get tasksEmptyClearFilters;
+
+  /// Action on the search-miss empty state that clears the search.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get tasksEmptyClearSearch;
+
+  /// Task list empty state when the active filters match no task.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks match these filters'**
+  String get tasksEmptyFilterMiss;
+
+  /// Task list empty state when there are no tasks at all.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks yet'**
+  String get tasksEmptyNoTasks;
+
+  /// Task list empty state when a search matches no task; {query} is the typed search.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches “{query}”'**
+  String tasksEmptySearchMiss(String query);
+
   /// No description provided for @taskSetCategoryLabel.
   ///
   /// In en, this message translates to:
@@ -30449,6 +30485,18 @@ abstract class AppLocalizations {
   /// **'Detailed list'**
   String get tasksListExpandedModeTooltip;
 
+  /// Task list error state when tasks could not be loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your tasks'**
+  String get tasksListLoadFailed;
+
+  /// Action on the task list error state that loads the tasks again.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tasksListRetry;
+
   /// No description provided for @tasksPriorityFilterAll.
   ///
   /// In en, this message translates to:
@@ -30461,23 +30509,11 @@ abstract class AppLocalizations {
   /// **'Priority'**
   String get tasksPriorityFilterTitle;
 
-  /// No description provided for @tasksPriorityP0.
-  ///
-  /// In en, this message translates to:
-  /// **'Urgent'**
-  String get tasksPriorityP0;
-
   /// No description provided for @tasksPriorityP0Description.
   ///
   /// In en, this message translates to:
   /// **'Urgent (ASAP)'**
   String get tasksPriorityP0Description;
-
-  /// No description provided for @tasksPriorityP1.
-  ///
-  /// In en, this message translates to:
-  /// **'High'**
-  String get tasksPriorityP1;
 
   /// No description provided for @tasksPriorityP1Description.
   ///
@@ -30485,23 +30521,11 @@ abstract class AppLocalizations {
   /// **'High (Soon)'**
   String get tasksPriorityP1Description;
 
-  /// No description provided for @tasksPriorityP2.
-  ///
-  /// In en, this message translates to:
-  /// **'Medium'**
-  String get tasksPriorityP2;
-
   /// No description provided for @tasksPriorityP2Description.
   ///
   /// In en, this message translates to:
   /// **'Medium (Default)'**
   String get tasksPriorityP2Description;
-
-  /// No description provided for @tasksPriorityP3.
-  ///
-  /// In en, this message translates to:
-  /// **'Low'**
-  String get tasksPriorityP3;
 
   /// No description provided for @tasksPriorityP3Description.
   ///

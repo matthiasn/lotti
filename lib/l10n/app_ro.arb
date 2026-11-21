@@ -6821,6 +6821,7 @@
   "taskCategoryAllLabel": "toate",
   "taskCategoryLabel": "Categorie:",
   "taskCategoryUnassignedLabel": "neatribuit",
+  "taskDetailNotFound": "Această sarcină nu mai există",
   "taskDueDateLabel": "Data scadenței",
   "taskDueDateWithDate": "Scadent: {date}",
   "@taskDueDateWithDate": {
@@ -6978,6 +6979,18 @@
   "tasksDueViewDueToday": "Scadente astăzi",
   "tasksDueViewOverdue": "Restante",
   "tasksDueViewsSemantics": "Vizualizări după termen",
+  "tasksEmptyClearFilters": "Ștergeți filtrele",
+  "tasksEmptyClearSearch": "Ștergeți căutarea",
+  "tasksEmptyFilterMiss": "Nicio sarcină nu corespunde acestor filtre",
+  "tasksEmptyNoTasks": "Nicio sarcină încă",
+  "tasksEmptySearchMiss": "Nimic nu corespunde cu „{query}”",
+  "@tasksEmptySearchMiss": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "taskSetCategoryLabel": "Setați categoria",
   "taskSetDueDateLabel": "Stabiliți termenul",
   "taskSetEstimateLabel": "Adăugați o estimare",
@@ -7038,15 +7051,13 @@
   "tasksLabelsUpdateFailed": "Eșec la actualizarea etichetelor",
   "tasksListCompactModeTooltip": "Listă compactă",
   "tasksListExpandedModeTooltip": "Listă detaliată",
+  "tasksListLoadFailed": "Sarcinile dumneavoastră nu au putut fi încărcate",
+  "tasksListRetry": "Încercați din nou",
   "tasksPriorityFilterAll": "Toate",
   "tasksPriorityFilterTitle": "Prioritate",
-  "tasksPriorityP0": "Urgentă",
   "tasksPriorityP0Description": "Urgentă (Cât mai curând)",
-  "tasksPriorityP1": "Ridicată",
   "tasksPriorityP1Description": "Ridicată (Curând)",
-  "tasksPriorityP2": "Medie",
   "tasksPriorityP2Description": "Medie (Implicit)",
-  "tasksPriorityP3": "Scăzută",
   "tasksPriorityP3Description": "Scăzută (Când se poate)",
   "tasksPriorityPickerTitle": "Selectați prioritatea",
   "tasksQuickFilterUnassignedLabel": "Neatribuit",

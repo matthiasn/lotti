@@ -18213,6 +18213,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'non attribué';
 
   @override
+  String get taskDetailNotFound => 'Cette tâche n\'existe plus';
+
+  @override
   String get taskDueDateLabel => 'Date d\'échéance';
 
   @override
@@ -18560,6 +18563,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Vues par échéance';
 
   @override
+  String get tasksEmptyClearFilters => 'Effacer les filtres';
+
+  @override
+  String get tasksEmptyClearSearch => 'Effacer la recherche';
+
+  @override
+  String get tasksEmptyFilterMiss => 'Aucune tâche ne correspond à ces filtres';
+
+  @override
+  String get tasksEmptyNoTasks => 'Pas encore de tâches';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Rien ne correspond à « $query »';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Définir la catégorie';
 
   @override
@@ -18676,31 +18696,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Liste détaillée';
 
   @override
+  String get tasksListLoadFailed => 'Impossible de charger tes tâches';
+
+  @override
+  String get tasksListRetry => 'Réessayer';
+
+  @override
   String get tasksPriorityFilterAll => 'Toutes';
 
   @override
   String get tasksPriorityFilterTitle => 'Priorité';
 
   @override
-  String get tasksPriorityP0 => 'Urgente';
-
-  @override
   String get tasksPriorityP0Description => 'Urgente (Dès que possible)';
-
-  @override
-  String get tasksPriorityP1 => 'Haute';
 
   @override
   String get tasksPriorityP1Description => 'Haute (Bientôt)';
 
   @override
-  String get tasksPriorityP2 => 'Moyenne';
-
-  @override
   String get tasksPriorityP2Description => 'Moyenne (Par défaut)';
-
-  @override
-  String get tasksPriorityP3 => 'Basse';
 
   @override
   String get tasksPriorityP3Description => 'Basse (Quand possible)';

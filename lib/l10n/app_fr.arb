@@ -6821,6 +6821,7 @@
   "taskCategoryAllLabel": "tout",
   "taskCategoryLabel": "Catégorie :",
   "taskCategoryUnassignedLabel": "non attribué",
+  "taskDetailNotFound": "Cette tâche n'existe plus",
   "taskDueDateLabel": "Date d'échéance",
   "taskDueDateWithDate": "Échéance : {date}",
   "@taskDueDateWithDate": {
@@ -6978,6 +6979,18 @@
   "tasksDueViewDueToday": "Échéance aujourd’hui",
   "tasksDueViewOverdue": "En retard",
   "tasksDueViewsSemantics": "Vues par échéance",
+  "tasksEmptyClearFilters": "Effacer les filtres",
+  "tasksEmptyClearSearch": "Effacer la recherche",
+  "tasksEmptyFilterMiss": "Aucune tâche ne correspond à ces filtres",
+  "tasksEmptyNoTasks": "Pas encore de tâches",
+  "tasksEmptySearchMiss": "Rien ne correspond à « {query} »",
+  "@tasksEmptySearchMiss": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "taskSetCategoryLabel": "Définir la catégorie",
   "taskSetDueDateLabel": "Définir l'échéance",
   "taskSetEstimateLabel": "Ajouter une estimation",
@@ -7038,15 +7051,13 @@
   "tasksLabelsUpdateFailed": "Échec de la mise à jour des étiquettes",
   "tasksListCompactModeTooltip": "Liste compacte",
   "tasksListExpandedModeTooltip": "Liste détaillée",
+  "tasksListLoadFailed": "Impossible de charger tes tâches",
+  "tasksListRetry": "Réessayer",
   "tasksPriorityFilterAll": "Toutes",
   "tasksPriorityFilterTitle": "Priorité",
-  "tasksPriorityP0": "Urgente",
   "tasksPriorityP0Description": "Urgente (Dès que possible)",
-  "tasksPriorityP1": "Haute",
   "tasksPriorityP1Description": "Haute (Bientôt)",
-  "tasksPriorityP2": "Moyenne",
   "tasksPriorityP2Description": "Moyenne (Par défaut)",
-  "tasksPriorityP3": "Basse",
   "tasksPriorityP3Description": "Basse (Quand possible)",
   "tasksPriorityPickerTitle": "Sélectionner la priorité",
   "tasksQuickFilterUnassignedLabel": "Non attribué",

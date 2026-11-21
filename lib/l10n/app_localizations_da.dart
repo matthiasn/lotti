@@ -17914,6 +17914,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'Ikke tildelt';
 
   @override
+  String get taskDetailNotFound => 'Denne opgave findes ikke længere';
+
+  @override
   String get taskDueDateLabel => 'Forfaldsdato';
 
   @override
@@ -18260,6 +18263,23 @@ class AppLocalizationsDa extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Visninger efter forfaldsdato';
 
   @override
+  String get tasksEmptyClearFilters => 'Ryd filtre';
+
+  @override
+  String get tasksEmptyClearSearch => 'Ryd søgning';
+
+  @override
+  String get tasksEmptyFilterMiss => 'Ingen opgaver matcher disse filtre';
+
+  @override
+  String get tasksEmptyNoTasks => 'Ingen opgaver endnu';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Intet matcher »$query«';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Vælg kategori';
 
   @override
@@ -18368,31 +18388,25 @@ class AppLocalizationsDa extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Detaljeret liste';
 
   @override
+  String get tasksListLoadFailed => 'Dine opgaver kunne ikke indlæses';
+
+  @override
+  String get tasksListRetry => 'Prøv igen';
+
+  @override
   String get tasksPriorityFilterAll => 'Alle';
 
   @override
   String get tasksPriorityFilterTitle => 'Prioritet';
 
   @override
-  String get tasksPriorityP0 => 'Hastende';
-
-  @override
   String get tasksPriorityP0Description => 'Hastende (ASAP)';
-
-  @override
-  String get tasksPriorityP1 => 'Høj';
 
   @override
   String get tasksPriorityP1Description => 'Høj (snart)';
 
   @override
-  String get tasksPriorityP2 => 'Medium';
-
-  @override
   String get tasksPriorityP2Description => 'Medium (Standard)';
-
-  @override
-  String get tasksPriorityP3 => 'Lavt';
 
   @override
   String get tasksPriorityP3Description => 'Lav (når som helst)';

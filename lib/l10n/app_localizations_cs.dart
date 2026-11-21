@@ -18144,6 +18144,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'nepřiřazeno';
 
   @override
+  String get taskDetailNotFound => 'Tento úkol už neexistuje';
+
+  @override
   String get taskDueDateLabel => 'Datum splnění';
 
   @override
@@ -18492,6 +18495,23 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Zobrazení podle termínu';
 
   @override
+  String get tasksEmptyClearFilters => 'Zrušit filtry';
+
+  @override
+  String get tasksEmptyClearSearch => 'Vymazat hledání';
+
+  @override
+  String get tasksEmptyFilterMiss => 'Těmto filtrům neodpovídá žádný úkol';
+
+  @override
+  String get tasksEmptyNoTasks => 'Zatím žádné úkoly';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Nic neodpovídá „$query“';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Nastavit kategorii';
 
   @override
@@ -18601,31 +18621,25 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Podrobný seznam';
 
   @override
+  String get tasksListLoadFailed => 'Tvoje úkoly se nepodařilo načíst';
+
+  @override
+  String get tasksListRetry => 'Zkusit znovu';
+
+  @override
   String get tasksPriorityFilterAll => 'Vše';
 
   @override
   String get tasksPriorityFilterTitle => 'Priorita';
 
   @override
-  String get tasksPriorityP0 => 'Naléhavé';
-
-  @override
   String get tasksPriorityP0Description => 'Naléhavé (co nejdříve)';
-
-  @override
-  String get tasksPriorityP1 => 'Vysoká';
 
   @override
   String get tasksPriorityP1Description => 'Vysoká (brzy)';
 
   @override
-  String get tasksPriorityP2 => 'Střední';
-
-  @override
   String get tasksPriorityP2Description => 'Střední (výchozí)';
-
-  @override
-  String get tasksPriorityP3 => 'Nízká';
 
   @override
   String get tasksPriorityP3Description => 'Nízká (kdykoliv)';

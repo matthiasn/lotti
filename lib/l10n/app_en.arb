@@ -11425,6 +11425,10 @@
   "taskCategoryAllLabel": "all",
   "taskCategoryLabel": "Category:",
   "taskCategoryUnassignedLabel": "Unassigned",
+  "taskDetailNotFound": "This task no longer exists",
+  "@taskDetailNotFound": {
+    "description": "Task page title when the task it was opened for no longer exists."
+  },
   "taskDueDateLabel": "Due Date",
   "taskDueDateWithDate": "Due: {date}",
   "@taskDueDateWithDate": {
@@ -11634,6 +11638,31 @@
   "@tasksDueViewsSemantics": {
     "description": "Screen-reader label for the group of due-date smart views."
   },
+  "tasksEmptyClearFilters": "Clear filters",
+  "@tasksEmptyClearFilters": {
+    "description": "Action on the filter-miss empty state that resets every filter."
+  },
+  "tasksEmptyClearSearch": "Clear search",
+  "@tasksEmptyClearSearch": {
+    "description": "Action on the search-miss empty state that clears the search."
+  },
+  "tasksEmptyFilterMiss": "No tasks match these filters",
+  "@tasksEmptyFilterMiss": {
+    "description": "Task list empty state when the active filters match no task."
+  },
+  "tasksEmptyNoTasks": "No tasks yet",
+  "@tasksEmptyNoTasks": {
+    "description": "Task list empty state when there are no tasks at all."
+  },
+  "tasksEmptySearchMiss": "Nothing matches “{query}”",
+  "@tasksEmptySearchMiss": {
+    "description": "Task list empty state when a search matches no task; {query} is the typed search.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "taskSetCategoryLabel": "Set category",
   "taskSetDueDateLabel": "Set due date",
   "taskSetEstimateLabel": "Add estimate",
@@ -11697,15 +11726,19 @@
   "tasksLabelsUpdateFailed": "Failed to update labels",
   "tasksListCompactModeTooltip": "Compact list",
   "tasksListExpandedModeTooltip": "Detailed list",
+  "tasksListLoadFailed": "Couldn't load your tasks",
+  "@tasksListLoadFailed": {
+    "description": "Task list error state when tasks could not be loaded."
+  },
+  "tasksListRetry": "Try again",
+  "@tasksListRetry": {
+    "description": "Action on the task list error state that loads the tasks again."
+  },
   "tasksPriorityFilterAll": "All",
   "tasksPriorityFilterTitle": "Priority",
-  "tasksPriorityP0": "Urgent",
   "tasksPriorityP0Description": "Urgent (ASAP)",
-  "tasksPriorityP1": "High",
   "tasksPriorityP1Description": "High (Soon)",
-  "tasksPriorityP2": "Medium",
   "tasksPriorityP2Description": "Medium (Default)",
-  "tasksPriorityP3": "Low",
   "tasksPriorityP3Description": "Low (Whenever)",
   "tasksPriorityPickerTitle": "Select priority",
   "tasksQuickFilterUnassignedLabel": "Unassigned",

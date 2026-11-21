@@ -6821,6 +6821,7 @@
   "taskCategoryAllLabel": "Alle",
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "Nicht zugewiesen",
+  "taskDetailNotFound": "Diese Aufgabe gibt es nicht mehr",
   "taskDueDateLabel": "Fälligkeitsdatum",
   "taskDueDateWithDate": "Fällig: {date}",
   "@taskDueDateWithDate": {
@@ -6978,6 +6979,18 @@
   "tasksDueViewDueToday": "Heute fällig",
   "tasksDueViewOverdue": "Überfällig",
   "tasksDueViewsSemantics": "Ansichten nach Fälligkeit",
+  "tasksEmptyClearFilters": "Filter zurücksetzen",
+  "tasksEmptyClearSearch": "Suche löschen",
+  "tasksEmptyFilterMiss": "Keine Aufgaben passen zu diesen Filtern",
+  "tasksEmptyNoTasks": "Noch keine Aufgaben",
+  "tasksEmptySearchMiss": "Nichts passt zu „{query}“",
+  "@tasksEmptySearchMiss": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "taskSetCategoryLabel": "Kategorie festlegen",
   "taskSetDueDateLabel": "Fälligkeit setzen",
   "taskSetEstimateLabel": "Aufwand schätzen",
@@ -7038,15 +7051,13 @@
   "tasksLabelsUpdateFailed": "Labels konnten nicht aktualisiert werden",
   "tasksListCompactModeTooltip": "Kompakte Liste",
   "tasksListExpandedModeTooltip": "Detaillierte Liste",
+  "tasksListLoadFailed": "Deine Aufgaben konnten nicht geladen werden",
+  "tasksListRetry": "Erneut versuchen",
   "tasksPriorityFilterAll": "Alle",
   "tasksPriorityFilterTitle": "Priorität",
-  "tasksPriorityP0": "Dringend",
   "tasksPriorityP0Description": "Dringend (ASAP)",
-  "tasksPriorityP1": "Hoch",
   "tasksPriorityP1Description": "Hoch (Bald)",
-  "tasksPriorityP2": "Mittel",
   "tasksPriorityP2Description": "Mittel (Standard)",
-  "tasksPriorityP3": "Niedrig",
   "tasksPriorityP3Description": "Niedrig (Irgendwann)",
   "tasksPriorityPickerTitle": "Priorität auswählen",
   "tasksQuickFilterUnassignedLabel": "Nicht zugewiesen",

@@ -7471,6 +7471,7 @@
   "taskCategoryAllLabel": "Alle",
   "taskCategoryLabel": "Kategori:",
   "taskCategoryUnassignedLabel": "Ikke tildelt",
+  "taskDetailNotFound": "Denne opgave findes ikke længere",
   "taskDueDateLabel": "Forfaldsdato",
   "taskDueDateWithDate": "To: {date}",
   "@taskDueDateWithDate": {
@@ -7628,6 +7629,18 @@
   "tasksDueViewDueToday": "Forfalder i dag",
   "tasksDueViewOverdue": "Forfaldne",
   "tasksDueViewsSemantics": "Visninger efter forfaldsdato",
+  "tasksEmptyClearFilters": "Ryd filtre",
+  "tasksEmptyClearSearch": "Ryd søgning",
+  "tasksEmptyFilterMiss": "Ingen opgaver matcher disse filtre",
+  "tasksEmptyNoTasks": "Ingen opgaver endnu",
+  "tasksEmptySearchMiss": "Intet matcher »{query}«",
+  "@tasksEmptySearchMiss": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "taskSetCategoryLabel": "Vælg kategori",
   "taskSetDueDateLabel": "Angiv forfaldsdato",
   "taskSetEstimateLabel": "Tilføj estimat",
@@ -7688,15 +7701,13 @@
   "tasksLabelsUpdateFailed": "Undlod at opdatere etiketter",
   "tasksListCompactModeTooltip": "Kompakt liste",
   "tasksListExpandedModeTooltip": "Detaljeret liste",
+  "tasksListLoadFailed": "Dine opgaver kunne ikke indlæses",
+  "tasksListRetry": "Prøv igen",
   "tasksPriorityFilterAll": "Alle",
   "tasksPriorityFilterTitle": "Prioritet",
-  "tasksPriorityP0": "Hastende",
   "tasksPriorityP0Description": "Hastende (ASAP)",
-  "tasksPriorityP1": "Høj",
   "tasksPriorityP1Description": "Høj (snart)",
-  "tasksPriorityP2": "Medium",
   "tasksPriorityP2Description": "Medium (Standard)",
-  "tasksPriorityP3": "Lavt",
   "tasksPriorityP3Description": "Lav (når som helst)",
   "tasksPriorityPickerTitle": "Vælg prioritet",
   "tasksQuickFilterUnassignedLabel": "Ikke tildelt",

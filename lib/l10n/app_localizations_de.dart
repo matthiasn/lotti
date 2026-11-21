@@ -18049,6 +18049,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'Nicht zugewiesen';
 
   @override
+  String get taskDetailNotFound => 'Diese Aufgabe gibt es nicht mehr';
+
+  @override
   String get taskDueDateLabel => 'Fälligkeitsdatum';
 
   @override
@@ -18395,6 +18398,23 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Ansichten nach Fälligkeit';
 
   @override
+  String get tasksEmptyClearFilters => 'Filter zurücksetzen';
+
+  @override
+  String get tasksEmptyClearSearch => 'Suche löschen';
+
+  @override
+  String get tasksEmptyFilterMiss => 'Keine Aufgaben passen zu diesen Filtern';
+
+  @override
+  String get tasksEmptyNoTasks => 'Noch keine Aufgaben';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Nichts passt zu „$query“';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Kategorie festlegen';
 
   @override
@@ -18504,31 +18524,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Detaillierte Liste';
 
   @override
+  String get tasksListLoadFailed =>
+      'Deine Aufgaben konnten nicht geladen werden';
+
+  @override
+  String get tasksListRetry => 'Erneut versuchen';
+
+  @override
   String get tasksPriorityFilterAll => 'Alle';
 
   @override
   String get tasksPriorityFilterTitle => 'Priorität';
 
   @override
-  String get tasksPriorityP0 => 'Dringend';
-
-  @override
   String get tasksPriorityP0Description => 'Dringend (ASAP)';
-
-  @override
-  String get tasksPriorityP1 => 'Hoch';
 
   @override
   String get tasksPriorityP1Description => 'Hoch (Bald)';
 
   @override
-  String get tasksPriorityP2 => 'Mittel';
-
-  @override
   String get tasksPriorityP2Description => 'Mittel (Standard)';
-
-  @override
-  String get tasksPriorityP3 => 'Niedrig';
 
   @override
   String get tasksPriorityP3Description => 'Niedrig (Irgendwann)';

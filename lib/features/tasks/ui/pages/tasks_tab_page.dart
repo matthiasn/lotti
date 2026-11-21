@@ -12,11 +12,9 @@ import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
-import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
@@ -44,6 +42,7 @@ import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_due_views_strip.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_list_states.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -637,22 +636,18 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                   builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
                                     invisibleItemsThreshold: 10,
                                     firstPageProgressIndicatorBuilder: (_) =>
-                                        const Padding(
-                                          padding: EdgeInsets.only(top: 32),
-                                          child: Center(
-                                            child:
-                                                CircularProgressIndicator.adaptive(),
-                                          ),
-                                        ),
+                                        const TaskListSpinner(),
                                     newPageProgressIndicatorBuilder: (_) =>
-                                        const Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 24,
-                                          ),
-                                          child: Center(
-                                            child:
-                                                CircularProgressIndicator.adaptive(),
-                                          ),
+                                        const TaskListSpinner(inline: true),
+                                    // Retrying re-requests the page that
+                                    // failed, first or later.
+                                    firstPageErrorIndicatorBuilder: (_) =>
+                                        TaskListErrorState(
+                                          onRetry: fetchNextPage,
+                                        ),
+                                    newPageErrorIndicatorBuilder: (_) =>
+                                        TaskListErrorState(
+                                          onRetry: fetchNextPage,
                                         ),
                                     // The sliver has no horizontal inset, so
                                     // this indicator must bring its own — a
@@ -667,23 +662,20 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                                 .spacing
                                                 .step9,
                                           ),
-                                          child: DesignSystemEmptyState(
-                                            icon: LottiIcons.list,
-                                            title:
+                                          child: TaskListEmptyState(
+                                            query: state.match,
+                                            filtersActive: filtersActive,
+                                            pullRequestSearch:
                                                 pullRequestSearchRef(
-                                                      state.match,
-                                                    ) !=
-                                                    null
-                                                ? context
-                                                      .messages
-                                                      .tasksSearchNoLinkedTasks
-                                                : context
-                                                      .messages
-                                                      .taskShowcaseNoResults,
-                                            // Self-gating: only outside demo
-                                            // mode AND with a truly empty
-                                            // journal (never a filter miss).
-                                            action: const DemoTryButton(),
+                                                  state.match,
+                                                ) !=
+                                                null,
+                                            onClearSearch: () => unawaited(
+                                              controller.setSearchString(''),
+                                            ),
+                                            onClearFilters: () => unawaited(
+                                              _clearAll(controller, false),
+                                            ),
                                           ),
                                         ),
                                     itemBuilder: (context, item, index) {
@@ -784,12 +776,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                             )
                           else
                             const SliverToBoxAdapter(
-                              child: Padding(
-                                padding: EdgeInsets.only(top: 32),
-                                child: Center(
-                                  child: CircularProgressIndicator.adaptive(),
-                                ),
-                              ),
+                              child: TaskListSpinner(),
                             ),
                           const SliverToBoxAdapter(
                             child: SizedBox(height: 120),

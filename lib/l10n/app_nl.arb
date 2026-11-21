@@ -7470,6 +7470,7 @@
   "taskCategoryAllLabel": "alle",
   "taskCategoryLabel": "Categorie:",
   "taskCategoryUnassignedLabel": "niet toegewezen",
+  "taskDetailNotFound": "Deze taak bestaat niet meer",
   "taskDueDateLabel": "Vervaldatum",
   "taskDueDateWithDate": "Verloopdatum: {date}",
   "@taskDueDateWithDate": {
@@ -7627,6 +7628,18 @@
   "tasksDueViewDueToday": "Vervalt vandaag",
   "tasksDueViewOverdue": "Te laat",
   "tasksDueViewsSemantics": "Weergaven op vervaldatum",
+  "tasksEmptyClearFilters": "Filters wissen",
+  "tasksEmptyClearSearch": "Zoekopdracht wissen",
+  "tasksEmptyFilterMiss": "Geen taken passen bij deze filters",
+  "tasksEmptyNoTasks": "Nog geen taken",
+  "tasksEmptySearchMiss": "Niets komt overeen met ‘{query}’",
+  "@tasksEmptySearchMiss": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "taskSetCategoryLabel": "Categorie instellen",
   "taskSetDueDateLabel": "Vervaldatum instellen",
   "taskSetEstimateLabel": "Schatting toevoegen",
@@ -7687,15 +7700,13 @@
   "tasksLabelsUpdateFailed": "Bijwerken van labels is mislukt",
   "tasksListCompactModeTooltip": "Compacte lijst",
   "tasksListExpandedModeTooltip": "Gedetailleerde lijst",
+  "tasksListLoadFailed": "Je taken konden niet worden geladen",
+  "tasksListRetry": "Opnieuw proberen",
   "tasksPriorityFilterAll": "Alles",
   "tasksPriorityFilterTitle": "Prioriteit",
-  "tasksPriorityP0": "Dringend",
   "tasksPriorityP0Description": "Dringend (ASAP)",
-  "tasksPriorityP1": "Hoog",
   "tasksPriorityP1Description": "Hoog (binnenkort)",
-  "tasksPriorityP2": "Middel",
   "tasksPriorityP2Description": "Middel (Standaard)",
-  "tasksPriorityP3": "Laag",
   "tasksPriorityP3Description": "Laag (ooit)",
   "tasksPriorityPickerTitle": "Selecteer prioriteit",
   "tasksQuickFilterUnassignedLabel": "Niet toegewezen",

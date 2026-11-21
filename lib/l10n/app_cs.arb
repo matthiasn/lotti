@@ -6828,6 +6828,7 @@
   "taskCategoryAllLabel": "vše",
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "nepřiřazeno",
+  "taskDetailNotFound": "Tento úkol už neexistuje",
   "taskDueDateLabel": "Datum splnění",
   "taskDueDateWithDate": "Splnit do: {date}",
   "@taskDueDateWithDate": {
@@ -6985,6 +6986,18 @@
   "tasksDueViewDueToday": "Dnes splatné",
   "tasksDueViewOverdue": "Po splatnosti",
   "tasksDueViewsSemantics": "Zobrazení podle termínu",
+  "tasksEmptyClearFilters": "Zrušit filtry",
+  "tasksEmptyClearSearch": "Vymazat hledání",
+  "tasksEmptyFilterMiss": "Těmto filtrům neodpovídá žádný úkol",
+  "tasksEmptyNoTasks": "Zatím žádné úkoly",
+  "tasksEmptySearchMiss": "Nic neodpovídá „{query}“",
+  "@tasksEmptySearchMiss": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "taskSetCategoryLabel": "Nastavit kategorii",
   "taskSetDueDateLabel": "Nastavit termín",
   "taskSetEstimateLabel": "Přidat odhad",
@@ -7045,15 +7058,13 @@
   "tasksLabelsUpdateFailed": "Nepodařilo se aktualizovat štítky",
   "tasksListCompactModeTooltip": "Kompaktní seznam",
   "tasksListExpandedModeTooltip": "Podrobný seznam",
+  "tasksListLoadFailed": "Tvoje úkoly se nepodařilo načíst",
+  "tasksListRetry": "Zkusit znovu",
   "tasksPriorityFilterAll": "Vše",
   "tasksPriorityFilterTitle": "Priorita",
-  "tasksPriorityP0": "Naléhavé",
   "tasksPriorityP0Description": "Naléhavé (co nejdříve)",
-  "tasksPriorityP1": "Vysoká",
   "tasksPriorityP1Description": "Vysoká (brzy)",
-  "tasksPriorityP2": "Střední",
   "tasksPriorityP2Description": "Střední (výchozí)",
-  "tasksPriorityP3": "Nízká",
   "tasksPriorityP3Description": "Nízká (kdykoliv)",
   "tasksPriorityPickerTitle": "Vyber prioritu",
   "tasksQuickFilterUnassignedLabel": "Nepřiřazeno",

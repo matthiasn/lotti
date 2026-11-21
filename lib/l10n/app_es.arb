@@ -6821,6 +6821,7 @@
   "taskCategoryAllLabel": "todos",
   "taskCategoryLabel": "Categoría:",
   "taskCategoryUnassignedLabel": "sin asignar",
+  "taskDetailNotFound": "Esta tarea ya no existe",
   "taskDueDateLabel": "Fecha de vencimiento",
   "taskDueDateWithDate": "Vence: {date}",
   "@taskDueDateWithDate": {
@@ -6978,6 +6979,18 @@
   "tasksDueViewDueToday": "Vencen hoy",
   "tasksDueViewOverdue": "Vencidas",
   "tasksDueViewsSemantics": "Vistas por vencimiento",
+  "tasksEmptyClearFilters": "Quitar filtros",
+  "tasksEmptyClearSearch": "Borrar búsqueda",
+  "tasksEmptyFilterMiss": "Ninguna tarea coincide con estos filtros",
+  "tasksEmptyNoTasks": "Aún no hay tareas",
+  "tasksEmptySearchMiss": "Nada coincide con «{query}»",
+  "@tasksEmptySearchMiss": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "taskSetCategoryLabel": "Establecer categoría",
   "taskSetDueDateLabel": "Definir vencimiento",
   "taskSetEstimateLabel": "Añadir estimación",
@@ -7038,15 +7051,13 @@
   "tasksLabelsUpdateFailed": "Error al actualizar etiquetas",
   "tasksListCompactModeTooltip": "Lista compacta",
   "tasksListExpandedModeTooltip": "Lista detallada",
+  "tasksListLoadFailed": "No se pudieron cargar tus tareas",
+  "tasksListRetry": "Reintentar",
   "tasksPriorityFilterAll": "Todas",
   "tasksPriorityFilterTitle": "Prioridad",
-  "tasksPriorityP0": "Urgente",
   "tasksPriorityP0Description": "Urgente (Lo antes posible)",
-  "tasksPriorityP1": "Alta",
   "tasksPriorityP1Description": "Alta (Pronto)",
-  "tasksPriorityP2": "Media",
   "tasksPriorityP2Description": "Media (Predeterminada)",
-  "tasksPriorityP3": "Baja",
   "tasksPriorityP3Description": "Baja (Cuando sea posible)",
   "tasksPriorityPickerTitle": "Seleccionar prioridad",
   "tasksQuickFilterUnassignedLabel": "Sin asignar",

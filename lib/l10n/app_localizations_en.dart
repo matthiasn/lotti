@@ -17813,6 +17813,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'Unassigned';
 
   @override
+  String get taskDetailNotFound => 'This task no longer exists';
+
+  @override
   String get taskDueDateLabel => 'Due Date';
 
   @override
@@ -18158,6 +18161,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Due date views';
 
   @override
+  String get tasksEmptyClearFilters => 'Clear filters';
+
+  @override
+  String get tasksEmptyClearSearch => 'Clear search';
+
+  @override
+  String get tasksEmptyFilterMiss => 'No tasks match these filters';
+
+  @override
+  String get tasksEmptyNoTasks => 'No tasks yet';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Nothing matches “$query”';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Set category';
 
   @override
@@ -18265,31 +18285,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Detailed list';
 
   @override
+  String get tasksListLoadFailed => 'Couldn\'t load your tasks';
+
+  @override
+  String get tasksListRetry => 'Try again';
+
+  @override
   String get tasksPriorityFilterAll => 'All';
 
   @override
   String get tasksPriorityFilterTitle => 'Priority';
 
   @override
-  String get tasksPriorityP0 => 'Urgent';
-
-  @override
   String get tasksPriorityP0Description => 'Urgent (ASAP)';
-
-  @override
-  String get tasksPriorityP1 => 'High';
 
   @override
   String get tasksPriorityP1Description => 'High (Soon)';
 
   @override
-  String get tasksPriorityP2 => 'Medium';
-
-  @override
   String get tasksPriorityP2Description => 'Medium (Default)';
-
-  @override
-  String get tasksPriorityP3 => 'Low';
 
   @override
   String get tasksPriorityP3Description => 'Low (Whenever)';

@@ -18264,6 +18264,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'neatribuit';
 
   @override
+  String get taskDetailNotFound => 'Această sarcină nu mai există';
+
+  @override
   String get taskDueDateLabel => 'Data scadenței';
 
   @override
@@ -18611,6 +18614,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Vizualizări după termen';
 
   @override
+  String get tasksEmptyClearFilters => 'Ștergeți filtrele';
+
+  @override
+  String get tasksEmptyClearSearch => 'Ștergeți căutarea';
+
+  @override
+  String get tasksEmptyFilterMiss =>
+      'Nicio sarcină nu corespunde acestor filtre';
+
+  @override
+  String get tasksEmptyNoTasks => 'Nicio sarcină încă';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Nimic nu corespunde cu „$query”';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Setați categoria';
 
   @override
@@ -18722,31 +18743,26 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Listă detaliată';
 
   @override
+  String get tasksListLoadFailed =>
+      'Sarcinile dumneavoastră nu au putut fi încărcate';
+
+  @override
+  String get tasksListRetry => 'Încercați din nou';
+
+  @override
   String get tasksPriorityFilterAll => 'Toate';
 
   @override
   String get tasksPriorityFilterTitle => 'Prioritate';
 
   @override
-  String get tasksPriorityP0 => 'Urgentă';
-
-  @override
   String get tasksPriorityP0Description => 'Urgentă (Cât mai curând)';
-
-  @override
-  String get tasksPriorityP1 => 'Ridicată';
 
   @override
   String get tasksPriorityP1Description => 'Ridicată (Curând)';
 
   @override
-  String get tasksPriorityP2 => 'Medie';
-
-  @override
   String get tasksPriorityP2Description => 'Medie (Implicit)';
-
-  @override
-  String get tasksPriorityP3 => 'Scăzută';
 
   @override
   String get tasksPriorityP3Description => 'Scăzută (Când se poate)';

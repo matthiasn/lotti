@@ -18149,6 +18149,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'sin asignar';
 
   @override
+  String get taskDetailNotFound => 'Esta tarea ya no existe';
+
+  @override
   String get taskDueDateLabel => 'Fecha de vencimiento';
 
   @override
@@ -18495,6 +18498,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Vistas por vencimiento';
 
   @override
+  String get tasksEmptyClearFilters => 'Quitar filtros';
+
+  @override
+  String get tasksEmptyClearSearch => 'Borrar búsqueda';
+
+  @override
+  String get tasksEmptyFilterMiss => 'Ninguna tarea coincide con estos filtros';
+
+  @override
+  String get tasksEmptyNoTasks => 'Aún no hay tareas';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Nada coincide con «$query»';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Establecer categoría';
 
   @override
@@ -18609,31 +18629,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Lista detallada';
 
   @override
+  String get tasksListLoadFailed => 'No se pudieron cargar tus tareas';
+
+  @override
+  String get tasksListRetry => 'Reintentar';
+
+  @override
   String get tasksPriorityFilterAll => 'Todas';
 
   @override
   String get tasksPriorityFilterTitle => 'Prioridad';
 
   @override
-  String get tasksPriorityP0 => 'Urgente';
-
-  @override
   String get tasksPriorityP0Description => 'Urgente (Lo antes posible)';
-
-  @override
-  String get tasksPriorityP1 => 'Alta';
 
   @override
   String get tasksPriorityP1Description => 'Alta (Pronto)';
 
   @override
-  String get tasksPriorityP2 => 'Media';
-
-  @override
   String get tasksPriorityP2Description => 'Media (Predeterminada)';
-
-  @override
-  String get tasksPriorityP3 => 'Baja';
 
   @override
   String get tasksPriorityP3Description => 'Baja (Cuando sea posible)';

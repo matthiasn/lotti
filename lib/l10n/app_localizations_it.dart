@@ -18140,6 +18140,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'non assegnata';
 
   @override
+  String get taskDetailNotFound => 'Questa attività non esiste più';
+
+  @override
   String get taskDueDateLabel => 'Data di scadenza';
 
   @override
@@ -18486,6 +18489,24 @@ class AppLocalizationsIt extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Viste per scadenza';
 
   @override
+  String get tasksEmptyClearFilters => 'Rimuovi i filtri';
+
+  @override
+  String get tasksEmptyClearSearch => 'Cancella la ricerca';
+
+  @override
+  String get tasksEmptyFilterMiss =>
+      'Nessuna attività corrisponde a questi filtri';
+
+  @override
+  String get tasksEmptyNoTasks => 'Ancora nessuna attività';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Nessun risultato per «$query»';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Imposta categoria';
 
   @override
@@ -18596,31 +18617,25 @@ class AppLocalizationsIt extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Elenco dettagliato';
 
   @override
+  String get tasksListLoadFailed => 'Impossibile caricare le tue attività';
+
+  @override
+  String get tasksListRetry => 'Riprova';
+
+  @override
   String get tasksPriorityFilterAll => 'Tutti';
 
   @override
   String get tasksPriorityFilterTitle => 'Priorità';
 
   @override
-  String get tasksPriorityP0 => 'Urgente';
-
-  @override
   String get tasksPriorityP0Description => 'Urgente (ASAP)';
-
-  @override
-  String get tasksPriorityP1 => 'Alta';
 
   @override
   String get tasksPriorityP1Description => 'Alta (presto)';
 
   @override
-  String get tasksPriorityP2 => 'Media';
-
-  @override
   String get tasksPriorityP2Description => 'Media (predefinita)';
-
-  @override
-  String get tasksPriorityP3 => 'Bassa';
 
   @override
   String get tasksPriorityP3Description => 'Bassa (quando capita)';

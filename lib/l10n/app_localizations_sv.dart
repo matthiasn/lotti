@@ -17940,6 +17940,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'ej tilldelad';
 
   @override
+  String get taskDetailNotFound => 'Den här uppgiften finns inte längre';
+
+  @override
   String get taskDueDateLabel => 'Förfallodatum';
 
   @override
@@ -18286,6 +18289,23 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Vyer efter förfallodatum';
 
   @override
+  String get tasksEmptyClearFilters => 'Rensa filter';
+
+  @override
+  String get tasksEmptyClearSearch => 'Rensa sökning';
+
+  @override
+  String get tasksEmptyFilterMiss => 'Inga uppgifter matchar de här filtren';
+
+  @override
+  String get tasksEmptyNoTasks => 'Inga uppgifter än';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Inget matchar ”$query”';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Välj kategori';
 
   @override
@@ -18395,31 +18415,25 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Detaljerad lista';
 
   @override
+  String get tasksListLoadFailed => 'Dina uppgifter kunde inte läsas in';
+
+  @override
+  String get tasksListRetry => 'Försök igen';
+
+  @override
   String get tasksPriorityFilterAll => 'Alla';
 
   @override
   String get tasksPriorityFilterTitle => 'Prioritet';
 
   @override
-  String get tasksPriorityP0 => 'Brådskande';
-
-  @override
   String get tasksPriorityP0Description => 'Brådskande (så snart som möjligt)';
-
-  @override
-  String get tasksPriorityP1 => 'Högt';
 
   @override
   String get tasksPriorityP1Description => 'Hög (snart)';
 
   @override
-  String get tasksPriorityP2 => 'Medium';
-
-  @override
   String get tasksPriorityP2Description => 'Medium (Standard)';
-
-  @override
-  String get tasksPriorityP3 => 'Lågt';
 
   @override
   String get tasksPriorityP3Description => 'Lågt (när som helst)';

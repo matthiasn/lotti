@@ -17973,6 +17973,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'niet toegewezen';
 
   @override
+  String get taskDetailNotFound => 'Deze taak bestaat niet meer';
+
+  @override
   String get taskDueDateLabel => 'Vervaldatum';
 
   @override
@@ -18319,6 +18322,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Weergaven op vervaldatum';
 
   @override
+  String get tasksEmptyClearFilters => 'Filters wissen';
+
+  @override
+  String get tasksEmptyClearSearch => 'Zoekopdracht wissen';
+
+  @override
+  String get tasksEmptyFilterMiss => 'Geen taken passen bij deze filters';
+
+  @override
+  String get tasksEmptyNoTasks => 'Nog geen taken';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Niets komt overeen met ‘$query’';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Categorie instellen';
 
   @override
@@ -18427,31 +18447,25 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Gedetailleerde lijst';
 
   @override
+  String get tasksListLoadFailed => 'Je taken konden niet worden geladen';
+
+  @override
+  String get tasksListRetry => 'Opnieuw proberen';
+
+  @override
   String get tasksPriorityFilterAll => 'Alles';
 
   @override
   String get tasksPriorityFilterTitle => 'Prioriteit';
 
   @override
-  String get tasksPriorityP0 => 'Dringend';
-
-  @override
   String get tasksPriorityP0Description => 'Dringend (ASAP)';
-
-  @override
-  String get tasksPriorityP1 => 'Hoog';
 
   @override
   String get tasksPriorityP1Description => 'Hoog (binnenkort)';
 
   @override
-  String get tasksPriorityP2 => 'Middel';
-
-  @override
   String get tasksPriorityP2Description => 'Middel (Standaard)';
-
-  @override
-  String get tasksPriorityP3 => 'Laag';
 
   @override
   String get tasksPriorityP3Description => 'Laag (ooit)';

@@ -7471,6 +7471,7 @@
   "taskCategoryAllLabel": "alla",
   "taskCategoryLabel": "Kategori:",
   "taskCategoryUnassignedLabel": "ej tilldelad",
+  "taskDetailNotFound": "Den här uppgiften finns inte längre",
   "taskDueDateLabel": "Förfallodatum",
   "taskDueDateWithDate": "Förfaller: {date}",
   "@taskDueDateWithDate": {
@@ -7628,6 +7629,18 @@
   "tasksDueViewDueToday": "Förfaller i dag",
   "tasksDueViewOverdue": "Försenade",
   "tasksDueViewsSemantics": "Vyer efter förfallodatum",
+  "tasksEmptyClearFilters": "Rensa filter",
+  "tasksEmptyClearSearch": "Rensa sökning",
+  "tasksEmptyFilterMiss": "Inga uppgifter matchar de här filtren",
+  "tasksEmptyNoTasks": "Inga uppgifter än",
+  "tasksEmptySearchMiss": "Inget matchar ”{query}”",
+  "@tasksEmptySearchMiss": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "taskSetCategoryLabel": "Välj kategori",
   "taskSetDueDateLabel": "Ange förfallodatum",
   "taskSetEstimateLabel": "Lägg till uppskattning",
@@ -7688,15 +7701,13 @@
   "tasksLabelsUpdateFailed": "Misslyckades med att uppdatera etiketterna",
   "tasksListCompactModeTooltip": "Kompakt lista",
   "tasksListExpandedModeTooltip": "Detaljerad lista",
+  "tasksListLoadFailed": "Dina uppgifter kunde inte läsas in",
+  "tasksListRetry": "Försök igen",
   "tasksPriorityFilterAll": "Alla",
   "tasksPriorityFilterTitle": "Prioritet",
-  "tasksPriorityP0": "Brådskande",
   "tasksPriorityP0Description": "Brådskande (så snart som möjligt)",
-  "tasksPriorityP1": "Högt",
   "tasksPriorityP1Description": "Hög (snart)",
-  "tasksPriorityP2": "Medium",
   "tasksPriorityP2Description": "Medium (Standard)",
-  "tasksPriorityP3": "Lågt",
   "tasksPriorityP3Description": "Lågt (när som helst)",
   "tasksPriorityPickerTitle": "Välj prioritet",
   "tasksQuickFilterUnassignedLabel": "Otilldelat",

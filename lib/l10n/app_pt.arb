@@ -7470,6 +7470,7 @@
   "taskCategoryAllLabel": "tudo",
   "taskCategoryLabel": "Categoria:",
   "taskCategoryUnassignedLabel": "não atribuído",
+  "taskDetailNotFound": "Esta tarefa já não existe",
   "taskDueDateLabel": "Data de vencimento",
   "taskDueDateWithDate": "Vencimento: {date}",
   "@taskDueDateWithDate": {
@@ -7627,6 +7628,18 @@
   "tasksDueViewDueToday": "Vencem hoje",
   "tasksDueViewOverdue": "Em atraso",
   "tasksDueViewsSemantics": "Vistas por prazo",
+  "tasksEmptyClearFilters": "Limpar filtros",
+  "tasksEmptyClearSearch": "Limpar pesquisa",
+  "tasksEmptyFilterMiss": "Nenhuma tarefa corresponde a estes filtros",
+  "tasksEmptyNoTasks": "Ainda não há tarefas",
+  "tasksEmptySearchMiss": "Nada corresponde a «{query}»",
+  "@tasksEmptySearchMiss": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "taskSetCategoryLabel": "Definir categoria",
   "taskSetDueDateLabel": "Definir prazo",
   "taskSetEstimateLabel": "Adicionar estimativa",
@@ -7687,15 +7700,13 @@
   "tasksLabelsUpdateFailed": "Falha ao atualizar rótulos",
   "tasksListCompactModeTooltip": "Lista compacta",
   "tasksListExpandedModeTooltip": "Lista detalhada",
+  "tasksListLoadFailed": "Não foi possível carregar as tuas tarefas",
+  "tasksListRetry": "Tentar novamente",
   "tasksPriorityFilterAll": "Todos",
   "tasksPriorityFilterTitle": "Prioridade",
-  "tasksPriorityP0": "Urgente",
   "tasksPriorityP0Description": "Urgente (o mais rápido possível)",
-  "tasksPriorityP1": "Alto",
   "tasksPriorityP1Description": "Alto (em breve)",
-  "tasksPriorityP2": "Médio",
   "tasksPriorityP2Description": "Médio (padrão)",
-  "tasksPriorityP3": "Baixo",
   "tasksPriorityP3Description": "Baixo (quando calhar)",
   "tasksPriorityPickerTitle": "Seleciona a prioridade",
   "tasksQuickFilterUnassignedLabel": "Não atribuído",
