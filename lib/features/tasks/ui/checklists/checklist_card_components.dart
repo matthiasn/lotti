@@ -1,6 +1,6 @@
 import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
-import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
@@ -296,35 +296,34 @@ class _FilterStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final messages = context.messages;
+    // The design system's filter chips, not a filled tab band: Open / Done /
+    // All filters the list, and DesignSystemChip is the filter control.
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          height: 40,
-          color: Theme.of(context).colorScheme.onSurface.withValues(
-            alpha: 0.06,
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.cardPadding,
+            vertical: tokens.spacing.step3,
           ),
-          child: Row(
+          child: Wrap(
+            spacing: tokens.spacing.step2,
+            runSpacing: tokens.spacing.step2,
             children: [
-              _FilterTab(
-                label: context.messages.taskStatusOpen,
-                isSelected: filter == ChecklistFilter.openOnly,
-                tokens: tokens,
-                onTap: () => onFilterChanged(ChecklistFilter.openOnly),
-              ),
-              _FilterTab(
-                label: context.messages.taskStatusDone,
-                isSelected: filter == ChecklistFilter.doneOnly,
-                tokens: tokens,
-                onTap: () => onFilterChanged(ChecklistFilter.doneOnly),
-              ),
-              _FilterTab(
-                label: context.messages.taskStatusAll,
-                isSelected: filter == ChecklistFilter.all,
-                tokens: tokens,
-                onTap: () => onFilterChanged(ChecklistFilter.all),
-              ),
-              const Spacer(),
+              for (final (value, label) in [
+                (ChecklistFilter.openOnly, messages.taskStatusOpen),
+                (ChecklistFilter.doneOnly, messages.taskStatusDone),
+                (ChecklistFilter.all, messages.taskStatusAll),
+              ])
+                DesignSystemChip(
+                  key: ValueKey('checklist-filter-${value.name}'),
+                  label: label,
+                  selected: filter == value,
+                  size: DesignSystemChipSize.compactPill,
+                  onPressed: () => onFilterChanged(value),
+                ),
             ],
           ),
         ),
@@ -334,78 +333,6 @@ class _FilterStrip extends StatelessWidget {
           color: tokens.colors.decorative.level01,
         ),
       ],
-    );
-  }
-}
-
-class _FilterTab extends StatelessWidget {
-  const _FilterTab({
-    required this.label,
-    required this.isSelected,
-    required this.tokens,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final DsTokens tokens;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final accentColor = tokens.colors.interactive.enabled;
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: label,
-      child: SizedBox(
-        width: 64,
-        // No hover fill — a rectangle washing over the tab read as a phantom
-        // button. The tab's own ink reacts instead: an unselected label
-        // brightens and gains a quiet underline; the SELECTED tab — whose
-        // label is already high-emphasis — shifts its underline to the
-        // interactive hover tone, so keyboard focus stays visible on it too.
-        child: DsQuietInk(
-          onTap: onTap,
-          builder: (context, highlighted) => Column(
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? accentColor.withValues(alpha: 0.24)
-                        : Colors.transparent,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: isSelected || highlighted
-                          ? tokens.colors.text.highEmphasis
-                          : tokens.colors.text.lowEmphasis,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                    ),
-                  ),
-                ),
-              ),
-              Container(
-                width: 64,
-                height: 3,
-                color: isSelected
-                    ? (highlighted
-                          ? tokens.colors.interactive.hover
-                          : accentColor)
-                    : (highlighted
-                          ? tokens.colors.text.lowEmphasis
-                          : Colors.transparent),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

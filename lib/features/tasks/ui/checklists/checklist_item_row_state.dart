@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/functions/checklist_completion_functions.dart'
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/components/motion/strikethrough_wipe.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -427,13 +428,11 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                   // checking the LAST item collapses the row, and the data
                   // listener fires it for external check-offs (accepted AI
                   // proposals) too. Reduced motion suppresses the sparks + pop.
-                  // The visual checkbox stays a compact 20×20, but a 44×44
-                  // InkWell around it provides a Material-compliant tap
-                  // target so users with reduced motor precision can hit it
-                  // without aiming at the tiny box. A centre tap lands on the
-                  // Checkbox itself (keeping its native gesture + a11y
-                  // semantics); the surrounding ring is caught by the
-                  // InkWell. Both route through [applyCheck].
+                  // One shape for one control: the design system's checkbox,
+                  // inside a 44×44 target that lights up under a pointer or a
+                  // press. It used to sit in a resting circular "well" — a
+                  // square inside a circle, two shapes for one checkbox. Both
+                  // the ring and the box route through [applyCheck].
                   InkWell(
                     onTap: canToggle
                         ? () => applyCheck(checked: !item.data.isChecked)
@@ -441,57 +440,23 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                     borderRadius: BorderRadius.circular(
                       tokens.radii.badgesPills,
                     ),
-                    // Light up the whole 44×44 zone on hover / press so the
-                    // forgiving tap area is *visible*, not just promised —
-                    // users can see where it is safe to tap rather than
-                    // having to aim at the tiny box.
                     hoverColor: tokens.colors.surface.hover,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      alignment: Alignment.center,
-                      // A faint resting "well" (the same filled+bordered
-                      // language as the metadata chips) makes the 44px tap
-                      // zone visible at REST — on touch there is no hover, so
-                      // the hover highlight alone left the forgiving area
-                      // invisible where most users tap.
-                      decoration: BoxDecoration(
-                        color: tokens.colors.surface.enabled,
-                        borderRadius: BorderRadius.circular(
-                          tokens.radii.badgesPills,
-                        ),
-                        border: Border.all(
-                          color: tokens.colors.decorative.level02,
-                        ),
-                      ),
-                      child: SizedBox(
-                        key: _checkboxKey,
-                        width: 20,
-                        height: 20,
-                        child: ScaleTransition(
-                          scale: _checkPopScale,
-                          child: Checkbox(
-                            value: item.data.isChecked,
-                            onChanged: canToggle
-                                ? (value) => applyCheck(checked: value ?? false)
-                                : null,
-                            activeColor: tokens.colors.interactive.enabled,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
+                    child: SizedBox.square(
+                      dimension: TapTargets.compact,
+                      child: Center(
+                        child: SizedBox.square(
+                          key: _checkboxKey,
+                          dimension: ControlSizes.checkbox,
+                          child: ScaleTransition(
+                            scale: _checkPopScale,
+                            child: DesignSystemCheckbox(
+                              value: item.data.isChecked,
+                              semanticsLabel: item.data.title,
+                              onChanged: canToggle
+                                  ? (value) =>
+                                        applyCheck(checked: value ?? false)
+                                  : null,
                             ),
-                            // Medium emphasis (not low) at 2px: an empty
-                            // checkbox is a control the user must be able to
-                            // SEE — a faint low-emphasis outline nearly
-                            // vanished against the dark card for low-vision
-                            // users. This is control legibility, not the
-                            // metadata-chip emphasis tiering.
-                            side: BorderSide(
-                              color: tokens.colors.text.mediumEmphasis,
-                              width: 2,
-                            ),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
                           ),
                         ),
                       ),

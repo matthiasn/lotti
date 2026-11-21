@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -6,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
-import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_components.dart';
@@ -498,7 +497,7 @@ void main() {
       expect(find.byIcon(LottiIcons.moreVertical), findsNothing);
     });
 
-    testWidgets('selected filter tab renders with bold text', (tester) async {
+    testWidgets('the default filter chip is Open', (tester) async {
       await _pump(
         tester,
         initiallyExpanded: true,
@@ -507,78 +506,11 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Default filter is openOnly → 'Open' tab bold, 'All' tab normal.
-      final openTexts = tester.widgetList<Text>(find.text('Open')).toList();
-      expect(
-        openTexts.any((t) => t.style?.fontWeight == FontWeight.w600),
-        isTrue,
-        reason: 'Open tab should be bold when selected',
-      );
-      final allTexts = tester.widgetList<Text>(find.text('All')).toList();
-      expect(
-        allTexts.every((t) => t.style?.fontWeight != FontWeight.w600),
-        isTrue,
-        reason: 'All tab should not be bold when not selected',
-      );
+      expect(_filterSelected(tester, ChecklistFilter.openOnly), isTrue);
+      expect(_filterSelected(tester, ChecklistFilter.all), isFalse);
     });
 
-    testWidgets(
-      'hovering a filter tab shifts its own underline — the selected tab '
-      'included — instead of painting an overlay',
-      (tester) async {
-        await _pump(
-          tester,
-          initiallyExpanded: true,
-          completedCount: 0,
-          totalCount: 3,
-        );
-        await tester.pump(const Duration(milliseconds: 300));
-
-        final tokens = tester
-            .element(find.text('Open').hitTestable())
-            .designTokens;
-
-        Color? underlineColor(String label) {
-          final containers = tester
-              .widgetList<Container>(
-                find.descendant(
-                  of: find.ancestor(
-                    of: find.text(label).hitTestable(),
-                    matching: find.byType(DsQuietInk),
-                  ),
-                  matching: find.byType(Container),
-                ),
-              )
-              .toList();
-          // The tab column's last Container is the 64x3 underline bar.
-          return containers.last.color;
-        }
-
-        // Selected tab at rest: the accent underline.
-        expect(underlineColor('Open'), tokens.colors.interactive.enabled);
-
-        final gesture = await tester.createGesture(
-          kind: PointerDeviceKind.mouse,
-        );
-        await gesture.addPointer(location: Offset.zero);
-        addTearDown(gesture.removePointer);
-        await gesture.moveTo(
-          tester.getCenter(find.text('Open').hitTestable()),
-        );
-        await tester.pump();
-
-        // The selected label is already high-emphasis, so the underline is
-        // the visible hover/keyboard-focus cue on it.
-        expect(underlineColor('Open'), tokens.colors.interactive.hover);
-
-        await gesture.moveTo(tester.getCenter(find.text('All').hitTestable()));
-        await tester.pump();
-        expect(underlineColor('All'), tokens.colors.text.lowEmphasis);
-        expect(underlineColor('Open'), tokens.colors.interactive.enabled);
-      },
-    );
-
-    testWidgets('tapping All tab selects it and makes its text bold', (
+    testWidgets('tapping the All chip selects it', (
       tester,
     ) async {
       await _pump(
@@ -592,12 +524,8 @@ void main() {
       await tester.tap(find.text('All'));
       await tester.pump();
 
-      final allTexts = tester.widgetList<Text>(find.text('All')).toList();
-      expect(
-        allTexts.any((t) => t.style?.fontWeight == FontWeight.w600),
-        isTrue,
-        reason: 'All tab should be bold after being tapped',
-      );
+      expect(_filterSelected(tester, ChecklistFilter.all), isTrue);
+      expect(_filterSelected(tester, ChecklistFilter.openOnly), isFalse);
     });
 
     // ── Title editing ────────────────────────────────────────────────────────
@@ -1196,14 +1124,7 @@ void main() {
         await tester.tap(find.text('Done'));
         await tester.pump(const Duration(milliseconds: 400));
 
-        final openWhileDone = tester
-            .widgetList<Text>(find.text('Open'))
-            .toList();
-        expect(
-          openWhileDone.every((t) => t.style?.fontWeight != FontWeight.w600),
-          isTrue,
-          reason: 'Open tab should not be bold while Done is selected',
-        );
+        expect(_filterSelected(tester, ChecklistFilter.openOnly), isFalse);
 
         // Tap the Open tab — exercises its onTap → onFilterChanged(openOnly).
         await tester.tap(find.text('Open'));
@@ -1211,18 +1132,8 @@ void main() {
 
         // The openOnly callback fired: the Open tab is bold again and Done is
         // no longer bold.
-        final openAfter = tester.widgetList<Text>(find.text('Open')).toList();
-        expect(
-          openAfter.any((t) => t.style?.fontWeight == FontWeight.w600),
-          isTrue,
-          reason: 'Open tab should be bold after being re-selected',
-        );
-        final doneAfter = tester.widgetList<Text>(find.text('Done')).toList();
-        expect(
-          doneAfter.every((t) => t.style?.fontWeight != FontWeight.w600),
-          isTrue,
-          reason: 'Done tab should not be bold after Open is re-selected',
-        );
+        expect(_filterSelected(tester, ChecklistFilter.openOnly), isTrue);
+        expect(_filterSelected(tester, ChecklistFilter.doneOnly), isFalse);
       },
     );
 
@@ -1287,12 +1198,7 @@ void main() {
 
         // The persisted doneOnly filter must now be active: the Done tab is
         // bold and the doneOnly empty state is shown.
-        final doneTexts = tester.widgetList<Text>(find.text('Done')).toList();
-        expect(
-          doneTexts.any((t) => t.style?.fontWeight == FontWeight.w600),
-          isTrue,
-          reason: 'Done tab should be bold from the persisted preference',
-        );
+        expect(_filterSelected(tester, ChecklistFilter.doneOnly), isTrue);
         expect(find.text('No completed items yet.'), findsOneWidget);
       },
     );
@@ -1544,3 +1450,10 @@ void main() {
     });
   });
 }
+
+/// Whether the checklist's filter chip for [filter] is the selected one.
+bool _filterSelected(WidgetTester tester, ChecklistFilter filter) => tester
+    .widget<DesignSystemChip>(
+      find.byKey(ValueKey('checklist-filter-${filter.name}')),
+    )
+    .selected;
