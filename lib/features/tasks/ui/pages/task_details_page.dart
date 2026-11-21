@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/checklist/ui/correction_undo_snackbar.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -29,6 +30,7 @@ import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_history_section.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -550,6 +552,17 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     }
 
     if (task == null || task is! Task) {
+      // Loaded and still no task: it was deleted, or the link is stale. Say
+      // so instead of the loading shell, which would wait forever.
+      if (asyncTask.hasValue || asyncTask.hasError) {
+        return EmptyScaffoldWithTitle(
+          '',
+          body: DesignSystemEmptyState(
+            icon: LottiIcons.list,
+            title: context.messages.taskDetailNotFound,
+          ),
+        );
+      }
       return const EmptyScaffoldWithTitle('');
     }
 
