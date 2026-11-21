@@ -6,6 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_estimate_progress_bar.dart';
@@ -25,10 +26,12 @@ import 'package:material_ui/material_ui.dart';
 /// a 28px shell.
 const double kTaskChipGlyphSize = 14;
 
-/// The compact metadata summary under the title: a single lane of quiet,
+/// The compact metadata summary under the title: a lane of quiet,
 /// **informational** read-outs (status, priority, due date, estimate, labels)
-/// followed
-/// by the one interactive element — the "Details" trigger that opens the
+/// followed by the one interactive element. Narrower than
+/// [kActionListContentMaxWidth] it splits into two lines — the decision facts,
+/// then the rest with labels counted — instead of wrapping unevenly. The
+/// interactive element is — the "Details" trigger that opens the
 /// metadata fly-out where every value is edited. A null [onOpenDetails] drops
 /// both the trigger and the tags' hit targets: that is the state where the
 /// details are already on screen as their own column.
@@ -112,61 +115,98 @@ class TaskMetaSummaryLine extends StatelessWidget {
     // Inter-tag gap (step2 = 4) tighter than each tag's own horizontal
     // padding (step3 = 8) so the lane reads as one anchored cluster; the run
     // gap one step looser so a wrapped lane still shows its row break.
-    return Wrap(
+    Widget lane(List<Widget> children) => Wrap(
       spacing: tokens.spacing.step2,
       runSpacing: tokens.spacing.step3,
       crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        TaskStatusSummaryTag(status: status, onTap: onOpenDetails),
-        ?blockedBySlot,
-        _SummaryTag(
-          leading: TaskShowcasePriorityGlyph(
-            priority: priority,
-            size: kTaskChipGlyphSize,
-          ),
-          label: priority.localizedLabel(context),
-          onTap: onOpenDetails,
-        ),
-        if (dueDate case final dueDate?)
-          _DueSummaryTag(dueDate: dueDate, onTap: onOpenDetails),
-        // The compact units read in whole minutes, so anything shorter would
-        // say "0m of 0m"; the tag waits for an estimate it can actually state.
-        if (estimate case final estimate?
-            when estimate >= TaskMetaSummaryLine.minStatedEstimate)
-          _EstimateSummaryTag(
-            estimate: estimate,
-            tracked: trackedTime,
-            onTap: onOpenDetails,
-          ),
-        if (labels.isNotEmpty)
-          _LabelsSummaryTag(labels: labels, onTap: onOpenDetails),
-        // What the AI has cost on this task, at the same glance as its status
-        // — a fact about the task, sitting with the other facts, rather than
-        // something a reader has to open a panel to learn. Renders nothing
-        // until the task has recorded AI calls.
-        ?aiCostSlot,
-        // An offer, not a read-out: dashed muted shell on the fully-rounded
-        // interactive radius, opening the category picker directly. Verb
-        // form, matching the grammar the old add-lane established.
-        if (showSetCategory)
-          DsPill(
-            variant: DsPillVariant.muted,
-            label: context.messages.taskSetCategoryLabel,
-            leading: Icon(
-              LottiIcons.category,
-              size: kTaskChipGlyphSize,
-              color: TaskShowcasePalette.mediumText(context),
-            ),
-            onTap: onCategoryTap,
-          ),
-        // Only where there is a fly-out to open: with the details column
-        // mounted beside the task, the connector passes null and the lane
-        // ends at its facts rather than offering the same panel twice.
-        if (onOpenDetails case final openDetails?)
-          _DetailsTrigger(onTap: openDetails),
-      ],
+      children: children,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Below the action-list measure one lane wraps into three uneven
+        // rows on a phone. There the facts a person decides on (status,
+        // priority, due) take the first line, the bookkeeping the second, and
+        // the label names give way to their count so that line fits.
+        final narrow = constraints.maxWidth < kActionListContentMaxWidth;
+        final facts = _facts(context);
+        final rest = _bookkeeping(context, countLabels: narrow);
+        if (!narrow) return lane([...facts, ...rest]);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            lane(facts),
+            if (rest.isNotEmpty) ...[
+              SizedBox(height: tokens.spacing.step3),
+              lane(rest),
+            ],
+          ],
+        );
+      },
     );
   }
+
+  /// Status, a blocked-by alarm, priority and due date: the decision facts.
+  List<Widget> _facts(BuildContext context) => [
+    TaskStatusSummaryTag(status: status, onTap: onOpenDetails),
+    ?blockedBySlot,
+    _SummaryTag(
+      leading: TaskShowcasePriorityGlyph(
+        priority: priority,
+        size: kTaskChipGlyphSize,
+      ),
+      label: priority.localizedLabel(context),
+      onTap: onOpenDetails,
+    ),
+    if (dueDate case final dueDate?)
+      _DueSummaryTag(dueDate: dueDate, onTap: onOpenDetails),
+  ];
+
+  /// Estimate, labels, AI cost, the category offer and the Details trigger.
+  List<Widget> _bookkeeping(
+    BuildContext context, {
+    required bool countLabels,
+  }) => [
+    // The compact units read in whole minutes, so anything shorter would
+    // say "0m of 0m"; the tag waits for an estimate it can actually state.
+    if (estimate case final estimate?
+        when estimate >= TaskMetaSummaryLine.minStatedEstimate)
+      _EstimateSummaryTag(
+        estimate: estimate,
+        tracked: trackedTime,
+        onTap: onOpenDetails,
+      ),
+    if (labels.isNotEmpty)
+      _LabelsSummaryTag(
+        labels: labels,
+        countOnly: countLabels,
+        onTap: onOpenDetails,
+      ),
+    // What the AI has cost on this task, at the same glance as its status
+    // — a fact about the task, sitting with the other facts, rather than
+    // something a reader has to open a panel to learn. Renders nothing
+    // until the task has recorded AI calls.
+    ?aiCostSlot,
+    // An offer, not a read-out: dashed muted shell on the fully-rounded
+    // interactive radius, opening the category picker directly. Verb
+    // form, matching the grammar the old add-lane established.
+    if (showSetCategory)
+      DsPill(
+        variant: DsPillVariant.muted,
+        label: context.messages.taskSetCategoryLabel,
+        leading: Icon(
+          LottiIcons.category,
+          size: kTaskChipGlyphSize,
+          color: TaskShowcasePalette.mediumText(context),
+        ),
+        onTap: onCategoryTap,
+      ),
+    // Only where there is a fly-out to open: with the details column
+    // mounted beside the task, the connector passes null and the lane
+    // ends at its facts rather than offering the same panel twice.
+    if (onOpenDetails case final openDetails?)
+      _DetailsTrigger(onTap: openDetails),
+  ];
 }
 
 /// A quiet informational read-out: filled + bordered [DsPill] on the tight
@@ -407,9 +447,17 @@ class _EstimateSummaryTag extends StatelessWidget {
 /// a "+N" suffix, led by the first labels' colour dots — the user's taxonomy
 /// compressed to one glanceable tag instead of a lane of pills.
 class _LabelsSummaryTag extends StatelessWidget {
-  const _LabelsSummaryTag({required this.labels, this.onTap});
+  const _LabelsSummaryTag({
+    required this.labels,
+    this.countOnly = false,
+    this.onTap,
+  });
 
   final List<LabelDefinition> labels;
+
+  /// States how many labels there are instead of naming them, where the
+  /// names do not fit the lane. A single label is still named.
+  final bool countOnly;
   final VoidCallback? onTap;
 
   @override
@@ -419,7 +467,9 @@ class _LabelsSummaryTag extends StatelessWidget {
         .take(TaskMetaSummaryLine.maxNamedLabels)
         .map((label) => label.name);
     final overflow = labels.length - TaskMetaSummaryLine.maxNamedLabels;
-    final text = overflow > 0
+    final text = countOnly && labels.length > 1
+        ? context.messages.taskLabelsCount(labels.length)
+        : overflow > 0
         ? '${named.join(', ')} '
               '${context.messages.taskLabelsMoreCount(overflow)}'
         : named.join(', ');

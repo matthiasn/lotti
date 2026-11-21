@@ -7520,6 +7520,14 @@
   "taskFirstRunWriteNote": "Scrivi una nota",
   "taskFirstRunWriteNoteHint": "Aggiunge una nota collegata per dettagli e pensieri.",
   "taskHistoryTitle": "Cronologia",
+  "taskLabelsCount": "{count, plural, =1{1 etichetta} other{{count} etichette}}",
+  "@taskLabelsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

@@ -291,6 +291,11 @@ void main() {
         ),
       );
 
+      // The same words the task row and the header chip use, not P-codes.
+      expect(
+        result.priorityOptions.map((option) => option.label),
+        ['Urgent', 'High', 'Medium', 'Low', 'All'],
+      );
       expect(result.selectedPriorityIds, isEmpty);
       // Empty set is equivalent to the legacy `allPriorityId` sentinel.
       expect(

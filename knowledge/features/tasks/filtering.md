@@ -183,8 +183,16 @@ stateDiagram-v2
   shows it selected and closable.
 
 Rows say the opposite fact quietly: an open task **without** a due date carries
-a grey *No due date* meta chip in its footer (whenever due dates are shown and
+a grey *No due date* item on its meta line (whenever due dates are shown and
 the list is not grouped by due date, where the section header says it).
+
+**A row has three tiers, so its title leads.** `TaskRowContent` sets the title
+in `subtitle1`, the agent one-liner on one line in the AI accent, then one quiet
+caption-tier meta line: status, priority as its word (*High*, not *P1* — the
+same word the header chip and the filter use), dates, the category as its
+colour swatch and name, and tracked time once there is any. Nothing on the row
+is a filled colour block. On large text (`TextScales.large`) the cover
+thumbnail steps aside so the title keeps its width.
 
 # Saved filters
 

@@ -1,5 +1,7 @@
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/task_list_items/design_system_priority_glyph.dart';
+import 'package:lotti/features/design_system/components/task_list_items/design_system_task_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/utils/color.dart';
@@ -118,7 +120,7 @@ class TaskShowcaseMetaChip extends StatelessWidget {
   }
 }
 
-/// Renders the SVG priority glyph for [priority], sized to [size].
+/// The design system's priority glyph for a [TaskPriority], sized to [size].
 class TaskShowcasePriorityGlyph extends StatelessWidget {
   const TaskShowcasePriorityGlyph({
     required this.priority,
@@ -130,43 +132,15 @@ class TaskShowcasePriorityGlyph extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) {
-    final asset = switch (priority) {
-      TaskPriority.p0Urgent => 'assets/design_system/task_priority_p0.svg',
-      TaskPriority.p1High => 'assets/design_system/task_priority_high.svg',
-      TaskPriority.p2Medium => 'assets/design_system/task_priority_medium.svg',
-      TaskPriority.p3Low => 'assets/design_system/task_priority_low.svg',
-    };
-
-    // Tinted from the palette, exactly as the status glyph is. The assets
-    // themselves bake the *dark* theme's alert hues (#D65E5C / #FBA337 /
-    // #4AB6E8 / #7AB889), so an untinted glyph painted the dark palette onto
-    // the light screen — the only un-themed ink on the page, and a direct
-    // hue collision with the Groomed status. The per-bar `opacity` in the
-    // assets is shape, not colour, and survives `srcIn` as alpha.
-    // Only urgency earns colour, and only upwards — the same escalation the
-    // due chip uses. Painting all four levels from the `alert.*` ramp meant a
-    // task nobody had prioritised wore the brightest mark on the page, in the
-    // very hue that means *In Progress* one chip to its left. Medium and Low
-    // read from the bar count alone, at neutral ink — but Medium, the ramp's
-    // DEFAULT stop, gets the high-emphasis neutral: the asset's baked per-bar
-    // alpha already dims its upper bars, and over medium ink the whole glyph
-    // sank into the disabled-grey band, making the one priority every new
-    // task wears look like a control that had been turned off.
-    final color = switch (priority) {
-      TaskPriority.p0Urgent => TaskShowcasePalette.error(context),
-      TaskPriority.p1High => TaskShowcasePalette.warning(context),
-      TaskPriority.p2Medium => TaskShowcasePalette.highText(context),
-      TaskPriority.p3Low => TaskShowcasePalette.mediumText(context),
-    };
-
-    return SvgPicture.asset(
-      asset,
-      width: size,
-      height: size,
-      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-    );
-  }
+  Widget build(BuildContext context) => DesignSystemPriorityGlyph(
+    priority: switch (priority) {
+      TaskPriority.p0Urgent => DesignSystemTaskPriority.p0,
+      TaskPriority.p1High => DesignSystemTaskPriority.p1,
+      TaskPriority.p2Medium => DesignSystemTaskPriority.p2,
+      TaskPriority.p3Low => DesignSystemTaskPriority.p3,
+    },
+    size: size,
+  );
 }
 
 /// Renders the SVG status glyph for [status], tinted from the palette to match

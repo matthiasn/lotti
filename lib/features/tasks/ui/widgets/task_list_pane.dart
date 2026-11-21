@@ -14,7 +14,6 @@ import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Left pane of the task showcase: a search header, the active-filter chip
@@ -137,7 +136,6 @@ class _TaskListSectionsListState extends State<TaskListSectionsList> {
             showDueDate: true,
             showCoverArt: false,
             categoryNameOverride: item.record.category.name,
-            categoryIconOverride: item.record.category.icon?.iconData,
             categoryColorHexOverride: item.record.category.color,
             trackedDurationLabelOverride: item.record.trackedDurationLabel,
             sectionHeaderTitleOverride: item.sectionTitle,

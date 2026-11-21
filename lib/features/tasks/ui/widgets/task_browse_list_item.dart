@@ -24,7 +24,6 @@ class TaskBrowseListItem extends StatelessWidget {
     this.vectorDistance,
     this.searchHit,
     this.categoryNameOverride,
-    this.categoryIconOverride,
     this.categoryColorHexOverride,
     this.trackedDurationLabelOverride,
     this.sectionHeaderTitleOverride,
@@ -48,7 +47,6 @@ class TaskBrowseListItem extends StatelessWidget {
   /// Where a search found the task, when it is a search result.
   final TaskSearchHit? searchHit;
   final String? categoryNameOverride;
-  final IconData? categoryIconOverride;
   final String? categoryColorHexOverride;
   final String? trackedDurationLabelOverride;
   final String? sectionHeaderTitleOverride;
@@ -214,7 +212,6 @@ class TaskBrowseListItem extends StatelessWidget {
       searchHit: searchHit,
       vectorDistance: vectorDistance,
       categoryNameOverride: categoryNameOverride,
-      categoryIconOverride: categoryIconOverride,
       categoryColorHexOverride: categoryColorHexOverride,
       trackedDurationLabelOverride: trackedDurationLabelOverride,
     );

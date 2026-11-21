@@ -141,24 +141,24 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
 
   // Priority options
   final priorityOptions = [
-    const DesignSystemTaskFilterOption(
+    DesignSystemTaskFilterOption(
       id: 'p0',
-      label: 'P0',
+      label: messages.tasksPriorityP0,
       glyph: DesignSystemTaskFilterGlyph.priorityP0,
     ),
-    const DesignSystemTaskFilterOption(
+    DesignSystemTaskFilterOption(
       id: 'p1',
-      label: 'P1',
+      label: messages.tasksPriorityP1,
       glyph: DesignSystemTaskFilterGlyph.priorityP1,
     ),
-    const DesignSystemTaskFilterOption(
+    DesignSystemTaskFilterOption(
       id: 'p2',
-      label: 'P2',
+      label: messages.tasksPriorityP2,
       glyph: DesignSystemTaskFilterGlyph.priorityP2,
     ),
-    const DesignSystemTaskFilterOption(
+    DesignSystemTaskFilterOption(
       id: 'p3',
-      label: 'P3',
+      label: messages.tasksPriorityP3,
       glyph: DesignSystemTaskFilterGlyph.priorityP3,
     ),
     DesignSystemTaskFilterOption(

@@ -53,7 +53,57 @@ void main() {
           find.byType(CoverArtThumbnail),
         );
         expect(thumbnail.imageId, coverArtImageId);
-        expect(thumbnail.size, 72);
+        expect(thumbnail.size, ControlSizes.mediaThumbnail);
+      },
+    );
+
+    testWidgets(
+      'on large text the thumbnail steps aside so the title keeps its width',
+      (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = TextScales.large;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final task =
+            TestTaskFactory.create(
+              id: 'task-cover-art-large-text',
+              title: 'Task With Cover Art',
+              dateFrom: DateTime(2026, 4, 8),
+            ).copyWith(
+              data: TestTaskDataFactory.create(
+                title: 'Task With Cover Art',
+              ).copyWith(coverArtId: 'cover-img-1'),
+            );
+
+        await pumpTaskBrowseItem(tester, task, showCoverArt: true);
+
+        expect(find.text('Task With Cover Art'), findsOneWidget);
+        expect(find.byType(CoverArtThumbnail), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a long meta label ellipsizes on a narrow row at large text rather '
+      'than overflowing it',
+      (tester) async {
+        tester.view.physicalSize = const Size(280, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final task = TestTaskFactory.create(
+          id: 'task-narrow-meta',
+          title: 'Narrow',
+          dateFrom: DateTime(2026, 4, 8),
+        );
+
+        await pumpTaskBrowseItem(
+          tester,
+          task,
+          showDueDate: true,
+          trackedDurationLabelOverride: '123h 59m tracked so far',
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('No due date'), findsOneWidget);
       },
     );
 
@@ -260,8 +310,9 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // null state → Duration.zero → "0h 0m"
-      expect(find.text('0h 0m'), findsOneWidget);
+      // Nothing tracked yet: the row says nothing rather than "0h 0m".
+      expect(find.text('0h 0m'), findsNothing);
+      expect(find.byIcon(LottiIcons.timelapse), findsNothing);
     });
   });
 

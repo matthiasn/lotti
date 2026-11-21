@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -103,6 +105,19 @@ void main() {
       await tester.pump();
 
       expect(backgroundColor(tester), selectedColor);
+    });
+
+    testWidgets('the row is one selected button to assistive tech', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pumpSurface(tester, selected: true);
+
+      final node = tester.getSemantics(find.byType(InkWell));
+      expect(node.flagsCollection.isButton, isTrue);
+      expect(node.flagsCollection.isSelected, Tristate.isTrue);
+      expect(node.label, contains('Row'));
+      handle.dispose();
     });
 
     testWidgets('keyboard focus uses the exact hover background color', (

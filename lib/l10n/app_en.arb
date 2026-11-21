@@ -11458,6 +11458,15 @@
   "taskFirstRunWriteNote": "Write a note",
   "taskFirstRunWriteNoteHint": "Adds a linked note for details and thoughts.",
   "taskHistoryTitle": "History",
+  "taskLabelsCount": "{count, plural, =1{1 label} other{{count} labels}}",
+  "@taskLabelsCount": {
+    "description": "How many labels a task carries, on the task header's compact metadata lane where the label names do not fit.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {
