@@ -2584,6 +2584,24 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher la progression de l\'IA';
 
   @override
+  String get aiRunningAnalyzingImage => 'Analyse de l\'image';
+
+  @override
+  String get aiRunningGeneratingImage => 'Génération de l\'image';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Résumé de l\'enregistrement';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Transcription de l\'audio';
+
+  @override
+  String get aiRunningWorking => 'L\'IA travaille';
+
+  @override
+  String get aiRunningWritingPrompt => 'Rédaction d\'un prompt';
+
+  @override
   String get aiSettingsAddedLabel => 'Ajouté';
 
   @override

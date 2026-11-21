@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_label.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -264,6 +265,59 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.byType(UnifiedAiProgressContent), findsNothing);
+      container.dispose();
+    });
+
+    testWidgets('an interactive band names the job that is running', (
+      tester,
+    ) async {
+      final container = makeContainer();
+      setInferenceStatus(
+        container: container,
+        entryId: testId,
+        responseType: AiResponseType.audioTranscription,
+        status: InferenceStatus.running,
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          container,
+          const AiRunningDecoderBars(
+            entryId: testId,
+            responseTypes: {
+              AiResponseType.imageAnalysis,
+              AiResponseType.audioTranscription,
+            },
+            isInteractive: true,
+          ),
+        ),
+      );
+      await tester.pump(AiRunningDecoderBars.transitionDuration);
+
+      expect(
+        tester.widget<AiRunningLabel>(find.byType(AiRunningLabel)).type,
+        AiResponseType.audioTranscription,
+      );
+      expect(find.text('Transcribing audio'), findsOneWidget);
+      container.dispose();
+    });
+
+    testWidgets('an idle interactive band shows no label', (tester) async {
+      final container = makeContainer();
+
+      await tester.pumpWidget(
+        buildSubject(
+          container,
+          const AiRunningDecoderBars(
+            entryId: testId,
+            responseTypes: testSet,
+            isInteractive: true,
+          ),
+        ),
+      );
+      await tester.pump(AiRunningDecoderBars.transitionDuration);
+
+      expect(find.byType(AiRunningLabel), findsNothing);
       container.dispose();
     });
 

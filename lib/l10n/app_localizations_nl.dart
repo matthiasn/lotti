@@ -2562,6 +2562,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'AI-voortgang tonen';
 
   @override
+  String get aiRunningAnalyzingImage => 'Afbeelding analyseren';
+
+  @override
+  String get aiRunningGeneratingImage => 'Afbeelding genereren';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Opname samenvatten';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Audio transcriberen';
+
+  @override
+  String get aiRunningWorking => 'AI is bezig';
+
+  @override
+  String get aiRunningWritingPrompt => 'Prompt schrijven';
+
+  @override
   String get aiSettingsAddedLabel => 'Toegevoegd';
 
   @override

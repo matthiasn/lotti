@@ -2566,6 +2566,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'KI-Fortschritt anzeigen';
 
   @override
+  String get aiRunningAnalyzingImage => 'Bild wird analysiert';
+
+  @override
+  String get aiRunningGeneratingImage => 'Bild wird erzeugt';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Aufnahme wird zusammengefasst';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Audio wird transkribiert';
+
+  @override
+  String get aiRunningWorking => 'KI arbeitet';
+
+  @override
+  String get aiRunningWritingPrompt => 'Prompt wird geschrieben';
+
+  @override
   String get aiSettingsAddedLabel => 'Hinzugefügt';
 
   @override

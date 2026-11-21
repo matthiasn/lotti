@@ -2555,6 +2555,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Visa AI-framsteg';
 
   @override
+  String get aiRunningAnalyzingImage => 'Analyserar bild';
+
+  @override
+  String get aiRunningGeneratingImage => 'Genererar bild';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Sammanfattar inspelning';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Transkriberar ljud';
+
+  @override
+  String get aiRunningWorking => 'AI arbetar';
+
+  @override
+  String get aiRunningWritingPrompt => 'Skriver en prompt';
+
+  @override
   String get aiSettingsAddedLabel => 'Tillagd';
 
   @override

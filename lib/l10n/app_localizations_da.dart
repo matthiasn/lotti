@@ -2548,6 +2548,24 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Vis AI-fremskridt';
 
   @override
+  String get aiRunningAnalyzingImage => 'Analyserer billede';
+
+  @override
+  String get aiRunningGeneratingImage => 'Genererer billede';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Opsummerer optagelse';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Transskriberer lyd';
+
+  @override
+  String get aiRunningWorking => 'AI arbejder';
+
+  @override
+  String get aiRunningWritingPrompt => 'Skriver en prompt';
+
+  @override
   String get aiSettingsAddedLabel => 'Tilføjet';
 
   @override

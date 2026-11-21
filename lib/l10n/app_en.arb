@@ -1823,6 +1823,30 @@
   "aiResponseShowLess": "Show less",
   "aiResponseShowMore": "Show more",
   "aiRunningActivityOpenProgress": "Show AI progress",
+  "aiRunningAnalyzingImage": "Analyzing image",
+  "@aiRunningAnalyzingImage": {
+    "description": "Visible label on the AI-running band above a task's action bar, naming the job in flight."
+  },
+  "aiRunningGeneratingImage": "Generating image",
+  "@aiRunningGeneratingImage": {
+    "description": "Visible label on the AI-running band above a task's action bar, naming the job in flight."
+  },
+  "aiRunningSummarizingRecording": "Summarizing recording",
+  "@aiRunningSummarizingRecording": {
+    "description": "Visible label on the AI-running band above a task's action bar, naming the job in flight."
+  },
+  "aiRunningTranscribingAudio": "Transcribing audio",
+  "@aiRunningTranscribingAudio": {
+    "description": "Visible label on the AI-running band above a task's action bar, naming the job in flight."
+  },
+  "aiRunningWorking": "AI is working",
+  "@aiRunningWorking": {
+    "description": "Visible label on the AI-running band above a task's action bar, naming the job in flight."
+  },
+  "aiRunningWritingPrompt": "Writing a prompt",
+  "@aiRunningWritingPrompt": {
+    "description": "Visible label on the AI-running band above a task's action bar, naming the job in flight."
+  },
   "aiSettingsAddedLabel": "Added",
   "aiSettingsAddModelButton": "Add model",
   "aiSettingsAddModelErrorDescription": "Something went wrong while adding the model. Please try again.",

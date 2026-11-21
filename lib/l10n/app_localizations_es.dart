@@ -2572,6 +2572,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Mostrar el progreso de la IA';
 
   @override
+  String get aiRunningAnalyzingImage => 'Analizando imagen';
+
+  @override
+  String get aiRunningGeneratingImage => 'Generando imagen';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Resumiendo grabación';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Transcribiendo audio';
+
+  @override
+  String get aiRunningWorking => 'La IA está trabajando';
+
+  @override
+  String get aiRunningWritingPrompt => 'Escribiendo un prompt';
+
+  @override
   String get aiSettingsAddedLabel => 'Añadido';
 
   @override

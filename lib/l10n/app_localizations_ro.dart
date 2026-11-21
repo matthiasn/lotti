@@ -2586,6 +2586,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Afișați progresul AI';
 
   @override
+  String get aiRunningAnalyzingImage => 'Se analizează imaginea';
+
+  @override
+  String get aiRunningGeneratingImage => 'Se generează imaginea';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Se rezumă înregistrarea';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Se transcrie audio';
+
+  @override
+  String get aiRunningWorking => 'AI lucrează';
+
+  @override
+  String get aiRunningWritingPrompt => 'Se scrie un prompt';
+
+  @override
   String get aiSettingsAddedLabel => 'Adăugat';
 
   @override

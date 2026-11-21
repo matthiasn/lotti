@@ -2572,6 +2572,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Zobrazit průběh AI';
 
   @override
+  String get aiRunningAnalyzingImage => 'Analyzuji obrázek';
+
+  @override
+  String get aiRunningGeneratingImage => 'Generuji obrázek';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Shrnuji nahrávku';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Přepisuji zvuk';
+
+  @override
+  String get aiRunningWorking => 'AI pracuje';
+
+  @override
+  String get aiRunningWritingPrompt => 'Píšu prompt';
+
+  @override
   String get aiSettingsAddedLabel => 'Přidáno';
 
   @override

@@ -4314,6 +4314,42 @@ abstract class AppLocalizations {
   /// **'Show AI progress'**
   String get aiRunningActivityOpenProgress;
 
+  /// Visible label on the AI-running band above a task's action bar, naming the job in flight.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing image'**
+  String get aiRunningAnalyzingImage;
+
+  /// Visible label on the AI-running band above a task's action bar, naming the job in flight.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating image'**
+  String get aiRunningGeneratingImage;
+
+  /// Visible label on the AI-running band above a task's action bar, naming the job in flight.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarizing recording'**
+  String get aiRunningSummarizingRecording;
+
+  /// Visible label on the AI-running band above a task's action bar, naming the job in flight.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing audio'**
+  String get aiRunningTranscribingAudio;
+
+  /// Visible label on the AI-running band above a task's action bar, naming the job in flight.
+  ///
+  /// In en, this message translates to:
+  /// **'AI is working'**
+  String get aiRunningWorking;
+
+  /// Visible label on the AI-running band above a task's action bar, naming the job in flight.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing a prompt'**
+  String get aiRunningWritingPrompt;
+
   /// No description provided for @aiSettingsAddedLabel.
   ///
   /// In en, this message translates to:
