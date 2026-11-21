@@ -3911,6 +3911,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checklistItemDeleteWarning => 'Esta ação não pode ser desfeita.';
 
   @override
+  String get checklistItemSwipeArchive => 'Arquivar';
+
+  @override
+  String get checklistItemSwipeDelete => 'Eliminar';
+
+  @override
+  String get checklistItemSwipeRestore => 'Restaurar';
+
+  @override
   String get checklistMarkdownCopied =>
       'Lista de verificação copiada como Markdown';
 

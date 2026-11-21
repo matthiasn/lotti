@@ -3934,6 +3934,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Această acțiune nu poate fi anulată.';
 
   @override
+  String get checklistItemSwipeArchive => 'Arhivați';
+
+  @override
+  String get checklistItemSwipeDelete => 'Ștergeți';
+
+  @override
+  String get checklistItemSwipeRestore => 'Restaurați';
+
+  @override
   String get checklistMarkdownCopied =>
       'Lista de verificare copiată ca Markdown';
 

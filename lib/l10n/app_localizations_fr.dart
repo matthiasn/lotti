@@ -3924,6 +3924,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Cette action ne peut pas être annulée.';
 
   @override
+  String get checklistItemSwipeArchive => 'Archiver';
+
+  @override
+  String get checklistItemSwipeDelete => 'Supprimer';
+
+  @override
+  String get checklistItemSwipeRestore => 'Restaurer';
+
+  @override
   String get checklistMarkdownCopied => 'Liste de contrôle copiée en Markdown';
 
   @override

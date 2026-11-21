@@ -3866,6 +3866,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checklistItemDeleteWarning => 'Denne handling kan ikke gøres om.';
 
   @override
+  String get checklistItemSwipeArchive => 'Arkivér';
+
+  @override
+  String get checklistItemSwipeDelete => 'Slet';
+
+  @override
+  String get checklistItemSwipeRestore => 'Gendan';
+
+  @override
   String get checklistMarkdownCopied => 'Tjekliste kopieret som Markdown';
 
   @override

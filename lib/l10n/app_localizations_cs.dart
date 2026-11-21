@@ -3914,6 +3914,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checklistItemDeleteWarning => 'Tuto akci nelze vrátit zpět.';
 
   @override
+  String get checklistItemSwipeArchive => 'Archivovat';
+
+  @override
+  String get checklistItemSwipeDelete => 'Smazat';
+
+  @override
+  String get checklistItemSwipeRestore => 'Obnovit';
+
+  @override
   String get checklistMarkdownCopied =>
       'Kontrolní seznam zkopírován jako Markdown';
 

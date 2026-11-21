@@ -2593,6 +2593,18 @@
   "checklistItemDeleteConfirm": "Confirm",
   "checklistItemDeleted": "Item deleted",
   "checklistItemDeleteWarning": "This action cannot be undone.",
+  "checklistItemSwipeArchive": "Archive",
+  "@checklistItemSwipeArchive": {
+    "description": "Label on the band revealed by swiping a checklist item."
+  },
+  "checklistItemSwipeDelete": "Delete",
+  "@checklistItemSwipeDelete": {
+    "description": "Label on the band revealed by swiping a checklist item."
+  },
+  "checklistItemSwipeRestore": "Restore",
+  "@checklistItemSwipeRestore": {
+    "description": "Label on the band revealed by swiping a checklist item."
+  },
   "checklistMarkdownCopied": "Checklist copied as Markdown",
   "checklistMoreTooltip": "More",
   "checklistNoneDone": "No completed items yet.",

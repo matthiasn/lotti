@@ -3898,6 +3898,15 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Aktion kann nicht rückgängig gemacht werden.';
 
   @override
+  String get checklistItemSwipeArchive => 'Archivieren';
+
+  @override
+  String get checklistItemSwipeDelete => 'Löschen';
+
+  @override
+  String get checklistItemSwipeRestore => 'Wiederherstellen';
+
+  @override
   String get checklistMarkdownCopied => 'Checkliste als Markdown kopiert';
 
   @override

@@ -3872,6 +3872,15 @@ class AppLocalizationsSv extends AppLocalizations {
       'Denna åtgärd kan inte göras ogjort.';
 
   @override
+  String get checklistItemSwipeArchive => 'Arkivera';
+
+  @override
+  String get checklistItemSwipeDelete => 'Ta bort';
+
+  @override
+  String get checklistItemSwipeRestore => 'Återställ';
+
+  @override
   String get checklistMarkdownCopied => 'Checklista kopierad som Markdown';
 
   @override

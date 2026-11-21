@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/components/celebration/celebration_
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_swipe_actions.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
@@ -935,6 +936,27 @@ void main() {
 
     // ── Swipe to archive ───────────────────────────────────────────────────
 
+    testWidgets('each swipe band names what letting go will do', (
+      tester,
+    ) async {
+      await _pumpWithControllers(tester);
+      await tester.pump();
+      final swipe = tester.widget<DesignSystemSwipeActions>(
+        find.byType(DesignSystemSwipeActions),
+      );
+      expect(swipe.startToEnd!.label, 'Archive');
+      expect(swipe.endToStart!.label, 'Delete');
+    });
+
+    testWidgets('an archived item swipes to restore', (tester) async {
+      await _pumpWithControllers(tester, item: _makeItem(isArchived: true));
+      await tester.pump();
+      final swipe = tester.widget<DesignSystemSwipeActions>(
+        find.byType(DesignSystemSwipeActions),
+      );
+      expect(swipe.startToEnd!.label, 'Restore');
+    });
+
     testWidgets('swipe right archives item and shows snackbar', (
       tester,
     ) async {
@@ -944,7 +966,7 @@ void main() {
       // Swipe right (startToEnd)
       await tester.drag(
         find.byType(Dismissible),
-        const Offset(300, 0),
+        const Offset(500, 0),
       );
       await tester.pumpAndSettle();
 
@@ -963,7 +985,7 @@ void main() {
 
       await tester.drag(
         find.byType(Dismissible),
-        const Offset(300, 0),
+        const Offset(500, 0),
       );
       await tester.pumpAndSettle();
 
@@ -975,7 +997,7 @@ void main() {
     /// Swipes the row away to the left and lets the dismiss animation run,
     /// staying well inside the undo window.
     Future<void> swipeToDelete(WidgetTester tester) async {
-      await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
+      await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
       // Frame by frame: the slide-out, then the resize, then onDismissed.
       for (var i = 0; i < 5; i++) {
         await tester.pump(const Duration(milliseconds: 200));
@@ -1563,7 +1585,7 @@ void main() {
         await tester.pump();
 
         // Swipe right to archive.
-        await tester.drag(find.byType(Dismissible), const Offset(300, 0));
+        await tester.drag(find.byType(Dismissible), const Offset(500, 0));
         await tester.pumpAndSettle();
 
         expect(ctrls.itemController.archiveCalled, isTrue);

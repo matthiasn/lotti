@@ -3887,6 +3887,15 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deze actie kan niet ongedaan worden gemaakt.';
 
   @override
+  String get checklistItemSwipeArchive => 'Archiveren';
+
+  @override
+  String get checklistItemSwipeDelete => 'Verwijderen';
+
+  @override
+  String get checklistItemSwipeRestore => 'Herstellen';
+
+  @override
   String get checklistMarkdownCopied => 'Checklist gekopieerd als Markdown';
 
   @override

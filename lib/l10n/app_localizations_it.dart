@@ -3916,6 +3916,15 @@ class AppLocalizationsIt extends AppLocalizations {
       'Questa azione non può essere annullata.';
 
   @override
+  String get checklistItemSwipeArchive => 'Archivia';
+
+  @override
+  String get checklistItemSwipeDelete => 'Elimina';
+
+  @override
+  String get checklistItemSwipeRestore => 'Ripristina';
+
+  @override
   String get checklistMarkdownCopied =>
       'Elenco di controllo copiato come Markdown';
 

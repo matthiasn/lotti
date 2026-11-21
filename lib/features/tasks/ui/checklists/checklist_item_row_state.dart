@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_swipe_actions.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/components/motion/strikethrough_wipe.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -623,101 +624,90 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
         );
       }
 
-      // Wrap in Dismissible for swipe actions.
-      Widget child = Dismissible(
-        key: Key('dismissible-${item.id}'),
-        dismissThresholds: const {
-          DismissDirection.endToStart: 0.25,
-          DismissDirection.startToEnd: 0.25,
-        },
-        confirmDismiss: (direction) async {
-          if (direction == DismissDirection.startToEnd) {
-            // Swipe right → toggle archive
-            if (item.data.isArchived) {
-              itemNotifier.unarchive();
-            } else {
-              itemNotifier.archive();
-              messenger.showDesignSystemToast(
-                tone: DesignSystemToastTone.warning,
-                title: context.messages.checklistItemArchived,
-                duration: kChecklistArchiveDuration,
-                countdown: true,
-                replaceCurrent: true,
-                action: ToastAction(
-                  label: context.messages.checklistItemArchiveUndo,
-                  onPressed: () {
-                    itemNotifier.unarchive();
-                    messenger.hideCurrentSnackBar();
-                  },
-                ),
-              );
-            }
-            return false;
-          }
-          // Swipe left → confirm delete
-          return true;
-        },
-        onDismissed: (_) async {
-          // Capture the message strings from `context` BEFORE the await:
-          // `beginItemDeletion` removes this row from the checklist's items,
-          // which unmounts the row and invalidates `context`. The
-          // `messenger` reference is captured higher up and survives.
-          final deletedMessage = context.messages.checklistItemDeleted;
-          final undoLabel = context.messages.checklistItemArchiveUndo;
-
-          // The repository deletes the item when the undo window closes —
-          // this row is gone by then — and records the deletion, so it
-          // completes even if the app dies meanwhile.
-          final key = await checklistNotifier.beginItemDeletion(
-            widget.itemId,
-            undoWindow: kChecklistDeleteDuration,
-          );
-          if (key == null) return;
-
+      // Swipe right toggles archive, swipe left deletes with an undo window:
+      // the design system's one swipe mechanic, its band naming the action.
+      void toggleArchive() {
+        // Swipe right → toggle archive
+        if (item.data.isArchived) {
+          itemNotifier.unarchive();
+        } else {
+          itemNotifier.archive();
           messenger.showDesignSystemToast(
             tone: DesignSystemToastTone.warning,
-            title: deletedMessage,
-            duration: kChecklistDeleteDuration,
+            title: context.messages.checklistItemArchived,
+            duration: kChecklistArchiveDuration,
             countdown: true,
             replaceCurrent: true,
             action: ToastAction(
-              label: undoLabel,
+              label: context.messages.checklistItemArchiveUndo,
               onPressed: () {
-                unawaited(
-                  checklistNotifier.undoItemDeletion(
-                    key: key,
-                    checklistItemId: widget.itemId,
-                  ),
-                );
+                itemNotifier.unarchive();
                 messenger.hideCurrentSnackBar();
               },
             ),
           );
-        },
-        background: ColoredBox(
-          color: Colors.amber.shade700,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: EdgeInsets.only(left: tokens.spacing.step5),
-              child: Icon(
-                item.data.isArchived
-                    ? LottiIcons.unarchive
-                    : LottiIcons.archive,
-                color: Colors.white,
-              ),
-            ),
+        }
+      }
+
+      Future<void> deleteWithUndo() async {
+        // Capture the message strings from `context` BEFORE the await:
+        // `beginItemDeletion` removes this row from the checklist's items,
+        // which unmounts the row and invalidates `context`. The
+        // `messenger` reference is captured higher up and survives.
+        final deletedMessage = context.messages.checklistItemDeleted;
+        final undoLabel = context.messages.checklistItemArchiveUndo;
+
+        // The repository deletes the item when the undo window closes —
+        // this row is gone by then — and records the deletion, so it
+        // completes even if the app dies meanwhile.
+        final key = await checklistNotifier.beginItemDeletion(
+          widget.itemId,
+          undoWindow: kChecklistDeleteDuration,
+        );
+        if (key == null) return;
+
+        messenger.showDesignSystemToast(
+          tone: DesignSystemToastTone.warning,
+          title: deletedMessage,
+          duration: kChecklistDeleteDuration,
+          countdown: true,
+          replaceCurrent: true,
+          action: ToastAction(
+            label: undoLabel,
+            onPressed: () {
+              unawaited(
+                checklistNotifier.undoItemDeletion(
+                  key: key,
+                  checklistItemId: widget.itemId,
+                ),
+              );
+              messenger.hideCurrentSnackBar();
+            },
           ),
+        );
+      }
+
+      final colors = tokens.colors;
+      Widget child = DesignSystemSwipeActions(
+        swipeKey: Key('dismissible-${item.id}'),
+        borderRadius: BorderRadius.zero,
+        startToEnd: DesignSystemSwipeAction(
+          color: colors.alert.warning.defaultColor,
+          foregroundColor: colors.text.onInteractiveAlert,
+          icon: item.data.isArchived
+              ? LottiIcons.unarchive
+              : LottiIcons.archive,
+          label: item.data.isArchived
+              ? context.messages.checklistItemSwipeRestore
+              : context.messages.checklistItemSwipeArchive,
+          onTrigger: toggleArchive,
         ),
-        secondaryBackground: ColoredBox(
-          color: Colors.red,
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: EdgeInsets.only(right: tokens.spacing.step5),
-              child: const Icon(LottiIcons.delete, color: Colors.white),
-            ),
-          ),
+        endToStart: DesignSystemSwipeAction(
+          color: colors.alert.error.defaultColor,
+          foregroundColor: colors.text.onInteractiveAlert,
+          icon: LottiIcons.delete,
+          label: context.messages.checklistItemSwipeDelete,
+          onTrigger: () => unawaited(deleteWithUndo()),
         ),
         child: rowContent,
       );

@@ -6474,6 +6474,24 @@ abstract class AppLocalizations {
   /// **'This action cannot be undone.'**
   String get checklistItemDeleteWarning;
 
+  /// Label on the band revealed by swiping a checklist item.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get checklistItemSwipeArchive;
+
+  /// Label on the band revealed by swiping a checklist item.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get checklistItemSwipeDelete;
+
+  /// Label on the band revealed by swiping a checklist item.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get checklistItemSwipeRestore;
+
   /// No description provided for @checklistMarkdownCopied.
   ///
   /// In en, this message translates to:

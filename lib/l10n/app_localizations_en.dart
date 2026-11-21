@@ -3850,6 +3850,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checklistItemDeleteWarning => 'This action cannot be undone.';
 
   @override
+  String get checklistItemSwipeArchive => 'Archive';
+
+  @override
+  String get checklistItemSwipeDelete => 'Delete';
+
+  @override
+  String get checklistItemSwipeRestore => 'Restore';
+
+  @override
   String get checklistMarkdownCopied => 'Checklist copied as Markdown';
 
   @override
