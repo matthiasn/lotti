@@ -8,6 +8,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/header/project_selection_modal_content.dart';
 import 'package:lotti/providers/project_lookup_providers.dart';
@@ -230,7 +231,7 @@ void main() {
       final pending = Completer<List<ProjectEntry>>();
       await pumpContent(tester, loadProjects: () => pending.future);
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
       expect(find.byType(EntityPickerSheet), findsNothing);
     });
 
@@ -283,7 +284,7 @@ void main() {
     }
 
     void expectRowsKept(WidgetTester tester) {
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(DesignSystemSpinner), findsNothing);
       expect(find.text('Alpha'), findsOneWidget);
       expect(find.text('Beta'), findsNothing);
       expect(tester.widget<TextField>(searchField).controller?.text, 'alp');
@@ -411,7 +412,7 @@ void main() {
       );
 
       expect(find.text('Error loading projects'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(DesignSystemSpinner), findsNothing);
       expect(find.byType(EntityPickerSheet), findsNothing);
     });
 

@@ -2,7 +2,6 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -24,10 +23,10 @@ class DueDateText extends StatefulWidget {
 class _DueDateTextState extends State<DueDateText> {
   bool _showRelative = false;
 
-  Color _getColor(BuildContext context, DueDateStatus status) {
-    return status.urgentColor ??
-        context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
-  }
+  // Urgency keeps its own colour; otherwise the medium ink every other item
+  // on a task row's meta line wears.
+  Color _getColor(BuildContext context, DueDateStatus status) =>
+      status.urgentColor ?? context.designTokens.colors.text.mediumEmphasis;
 
   String _getAbsoluteText(BuildContext context, DueDateStatus status) {
     if (status.daysUntilDue == 0) {
@@ -64,6 +63,7 @@ class _DueDateTextState extends State<DueDateText> {
       referenceDate: now,
     );
 
+    final tokens = context.designTokens;
     final color = _getColor(context, status);
     final text = _showRelative
         ? _getRelativeText(context, status)
@@ -74,18 +74,16 @@ class _DueDateTextState extends State<DueDateText> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            LottiIcons.calendar,
-            size: AppTheme.statusIndicatorFontSize,
-            color: color,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: context.textTheme.bodySmall?.copyWith(
-              fontSize: AppTheme.statusIndicatorFontSize,
-              color: color,
-              fontWeight: FontWeight.w500,
+          Icon(LottiIcons.calendar, size: IconSizes.xs, color: color),
+          SizedBox(width: tokens.spacing.step2),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: color,
+              ),
             ),
           ),
         ],
