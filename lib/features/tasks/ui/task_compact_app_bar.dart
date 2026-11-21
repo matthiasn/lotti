@@ -67,7 +67,7 @@ class TaskCompactAppBar extends ConsumerWidget {
       leading: _TaskBackLeading(isDesktop: isDesktop),
       centerTitle: true,
       title: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 160),
+        duration: MotionDurations.short3,
         child: showTitle
             ? _CompactTitle(
                 key: const ValueKey('compact-title'),

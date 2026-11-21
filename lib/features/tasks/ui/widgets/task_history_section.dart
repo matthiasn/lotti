@@ -73,7 +73,7 @@ class TaskHistorySection extends StatelessWidget {
                     ),
                     AnimatedRotation(
                       turns: expanded ? 0.0 : -0.25,
-                      duration: const Duration(milliseconds: 200),
+                      duration: MotionDurations.short4,
                       child: Icon(
                         LottiIcons.expand,
                         size: 24,

@@ -198,8 +198,8 @@ class _TasksRootPageState extends ConsumerState<TasksRootPage> {
                       // is the split view's core interaction, and matches the
                       // logbook split so both panes feel identical.
                       duration: MotionDurations.short4,
-                      switchInCurve: Curves.easeInOutCubic,
-                      switchOutCurve: Curves.easeInOutCubic,
+                      switchInCurve: MotionCurves.standard,
+                      switchOutCurve: MotionCurves.standard,
                       layoutBuilder: (currentChild, previousChildren) {
                         return Stack(
                           fit: StackFit.expand,
