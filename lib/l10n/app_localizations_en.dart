@@ -2814,10 +2814,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'No AI profile is set up for this entry, so nothing could run.';
 
   @override
+  String get aiSummaryLoadFailed => 'Couldn\'t load this task\'s agent';
+
+  @override
   String get aiSummaryPlayTooltip => 'Play summary';
 
   @override
   String get aiSummaryPreparingTooltip => 'Preparing audio';
+
+  @override
+  String get aiSummaryRetry => 'Try again';
 
   @override
   String get aiSummarySpeakTooltip => 'Read summary aloud locally';

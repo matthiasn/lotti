@@ -2857,10 +2857,17 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não há nenhum perfil de IA configurado para esta entrada, por isso nada pôde ser executado.';
 
   @override
+  String get aiSummaryLoadFailed =>
+      'Não foi possível carregar o agente desta tarefa';
+
+  @override
   String get aiSummaryPlayTooltip => 'Resumo do jogo';
 
   @override
   String get aiSummaryPreparingTooltip => 'Preparando áudio';
+
+  @override
+  String get aiSummaryRetry => 'Tentar novamente';
 
   @override
   String get aiSummarySpeakTooltip => 'Leia o resumo em voz alta localmente';

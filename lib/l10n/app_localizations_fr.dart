@@ -2864,10 +2864,17 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun profil IA n\'est configuré pour cette entrée, donc rien n\'a pu s\'exécuter.';
 
   @override
+  String get aiSummaryLoadFailed =>
+      'Impossible de charger l\'agent de cette tâche';
+
+  @override
   String get aiSummaryPlayTooltip => 'Lire le résumé';
 
   @override
   String get aiSummaryPreparingTooltip => 'Préparation de l\'audio';
+
+  @override
+  String get aiSummaryRetry => 'Réessayer';
 
   @override
   String get aiSummarySpeakTooltip => 'Lire le résumé localement à voix haute';

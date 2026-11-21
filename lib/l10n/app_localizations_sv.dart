@@ -2833,10 +2833,16 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ingen AI-profil är uppsatt för den här posten, så inget kunde köras.';
 
   @override
+  String get aiSummaryLoadFailed => 'Uppgiftens agent kunde inte läsas in';
+
+  @override
   String get aiSummaryPlayTooltip => 'Spelsammanfattning';
 
   @override
   String get aiSummaryPreparingTooltip => 'Förberedelse av ljud';
+
+  @override
+  String get aiSummaryRetry => 'Försök igen';
 
   @override
   String get aiSummarySpeakTooltip => 'Läs sammanfattningen högt lokalt';

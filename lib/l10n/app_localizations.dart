@@ -4758,6 +4758,12 @@ abstract class AppLocalizations {
   /// **'No AI profile is set up for this entry, so nothing could run.'**
   String get aiSkillNoProfileConfigured;
 
+  /// Task page: the agent card's state when the task's agent could not be loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this task\'s agent'**
+  String get aiSummaryLoadFailed;
+
   /// No description provided for @aiSummaryPlayTooltip.
   ///
   /// In en, this message translates to:
@@ -4769,6 +4775,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preparing audio'**
   String get aiSummaryPreparingTooltip;
+
+  /// Task page: the agent card's state when the task's agent could not be loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get aiSummaryRetry;
 
   /// No description provided for @aiSummarySpeakTooltip.
   ///

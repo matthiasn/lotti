@@ -2825,10 +2825,16 @@ class AppLocalizationsDa extends AppLocalizations {
       'Der er ingen AI-profil sat op til denne post, så intet kunne køre.';
 
   @override
+  String get aiSummaryLoadFailed => 'Opgavens agent kunne ikke indlæses';
+
+  @override
   String get aiSummaryPlayTooltip => 'Spilresumé';
 
   @override
   String get aiSummaryPreparingTooltip => 'Forberedelse af lyd';
+
+  @override
+  String get aiSummaryRetry => 'Prøv igen';
 
   @override
   String get aiSummarySpeakTooltip => 'Læs resuméet højt lokalt';

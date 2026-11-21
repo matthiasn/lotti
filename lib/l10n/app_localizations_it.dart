@@ -2864,10 +2864,17 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non c’è nessun profilo IA configurato per questa voce, quindi non è stato possibile eseguire nulla.';
 
   @override
+  String get aiSummaryLoadFailed =>
+      'Impossibile caricare l\'agente di questa attività';
+
+  @override
   String get aiSummaryPlayTooltip => 'Riepilogo del gioco';
 
   @override
   String get aiSummaryPreparingTooltip => 'Preparazione audio';
+
+  @override
+  String get aiSummaryRetry => 'Riprova';
 
   @override
   String get aiSummarySpeakTooltip => 'Leggi sommario aloud localmente';

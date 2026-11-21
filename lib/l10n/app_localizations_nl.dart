@@ -2839,10 +2839,17 @@ class AppLocalizationsNl extends AppLocalizations {
       'Er is geen AI-profiel ingesteld voor dit item, dus er kon niets draaien.';
 
   @override
+  String get aiSummaryLoadFailed =>
+      'De agent van deze taak kon niet worden geladen';
+
+  @override
   String get aiSummaryPlayTooltip => 'Samenvatting afspelen';
 
   @override
   String get aiSummaryPreparingTooltip => 'Audio wordt voorbereid';
+
+  @override
+  String get aiSummaryRetry => 'Opnieuw proberen';
 
   @override
   String get aiSummarySpeakTooltip => 'Samenvatting lokaal voorlezen';

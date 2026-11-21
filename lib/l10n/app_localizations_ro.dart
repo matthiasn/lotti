@@ -2866,10 +2866,17 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu este configurat niciun profil AI pentru această intrare, așa că nu s-a putut rula nimic.';
 
   @override
+  String get aiSummaryLoadFailed =>
+      'Agentul acestei sarcini nu a putut fi încărcat';
+
+  @override
   String get aiSummaryPlayTooltip => 'Citiți rezumatul';
 
   @override
   String get aiSummaryPreparingTooltip => 'Se pregătește audio';
+
+  @override
+  String get aiSummaryRetry => 'Încercați din nou';
 
   @override
   String get aiSummarySpeakTooltip => 'Citiți rezumatul local cu voce tare';

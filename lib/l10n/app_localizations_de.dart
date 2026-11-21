@@ -2848,10 +2848,17 @@ class AppLocalizationsDe extends AppLocalizations {
       'Für diesen Eintrag ist kein KI-Profil eingerichtet, deshalb konnte nichts laufen.';
 
   @override
+  String get aiSummaryLoadFailed =>
+      'Der Agent dieser Aufgabe konnte nicht geladen werden';
+
+  @override
   String get aiSummaryPlayTooltip => 'Zusammenfassung vorlesen';
 
   @override
   String get aiSummaryPreparingTooltip => 'Audio wird vorbereitet';
+
+  @override
+  String get aiSummaryRetry => 'Erneut versuchen';
 
   @override
   String get aiSummarySpeakTooltip => 'Zusammenfassung lokal vorlesen';

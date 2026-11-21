@@ -2854,10 +2854,16 @@ class AppLocalizationsCs extends AppLocalizations {
       'Pro tento záznam není nastavený žádný AI profil, takže se nedalo nic spustit.';
 
   @override
+  String get aiSummaryLoadFailed => 'Agenta tohoto úkolu se nepodařilo načíst';
+
+  @override
   String get aiSummaryPlayTooltip => 'Přečíst shrnutí';
 
   @override
   String get aiSummaryPreparingTooltip => 'Příprava zvuku';
+
+  @override
+  String get aiSummaryRetry => 'Zkusit znovu';
 
   @override
   String get aiSummarySpeakTooltip => 'Přečíst souhrn nahlas lokálně';

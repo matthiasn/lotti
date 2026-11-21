@@ -2030,8 +2030,16 @@
   "@aiSkillNoProfileConfigured": {
     "description": "Shown when an AI skill cannot run because the entry resolves to no inference profile"
   },
+  "aiSummaryLoadFailed": "Couldn't load this task's agent",
+  "@aiSummaryLoadFailed": {
+    "description": "Task page: the agent card's state when the task's agent could not be loaded."
+  },
   "aiSummaryPlayTooltip": "Play summary",
   "aiSummaryPreparingTooltip": "Preparing audio",
+  "aiSummaryRetry": "Try again",
+  "@aiSummaryRetry": {
+    "description": "Task page: the agent card's state when the task's agent could not be loaded."
+  },
   "aiSummarySpeakTooltip": "Read summary aloud locally",
   "aiSummaryStopTooltip": "Stop",
   "aiSummaryThinkingLabel": "Thinking…",

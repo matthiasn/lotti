@@ -2851,10 +2851,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay ningún perfil de IA configurado para esta entrada, así que no se pudo ejecutar nada.';
 
   @override
+  String get aiSummaryLoadFailed => 'No se pudo cargar el agente de esta tarea';
+
+  @override
   String get aiSummaryPlayTooltip => 'Leer el resumen';
 
   @override
   String get aiSummaryPreparingTooltip => 'Preparando el audio';
+
+  @override
+  String get aiSummaryRetry => 'Reintentar';
 
   @override
   String get aiSummarySpeakTooltip => 'Leer resumen en voz alta localmente';
