@@ -92,7 +92,12 @@ flowchart LR
 listens to the matching `inferenceErrorControllerProvider` instances, and
 delegates its visual lifecycle to `AiThinkingShaderPresence`. Interactive hosts
 also use it as the labelled tap target that resolves the active prompt and opens
-`UnifiedAiProgressContent`.
+`UnifiedAiProgressContent`. **An interactive band says which job is in flight**:
+while it runs, `AiRunningLabel` sits over the bars — the job's glyph in agent
+violet, its name (*Transcribing audio*, *Generating image*, …) and a chevron —
+read from the same per-type `inferenceStatusControllerProvider` that makes the
+band run, so the words and the bars cannot disagree. The bars alone said nothing
+a sighted reader could act on, and frozen in a screenshot they read as a glitch.
 
 It appears in `TaskDetailsPage` (the interactive `topSlot` of `TaskActionBar`,
 for image analysis, audio transcription, audio summary, prompt generation and

@@ -182,6 +182,15 @@ stateDiagram-v2
   lifted by *Clear all*; it has no chip of its own, because the strip already
   shows it selected and closable.
 
+**An empty list says why, and how to get out.** `TaskListEmptyState`
+(`widgets/task_list_states.dart`) picks by cause: a search that found nothing
+names the search and offers *Clear search*; a filter miss offers *Clear
+filters* (the same reset as the chip row's *Clear all*, search untouched); a
+list nothing narrows is genuinely empty and keeps the demo offer. Loading is the
+design-system spinner (`TaskListSpinner`), and a page that failed to load shows
+`TaskListErrorState` with *Try again* instead of the pagination package's
+default.
+
 Rows say the opposite fact quietly: an open task **without** a due date carries
 a grey *No due date* item on its meta line (whenever due dates are shown and
 the list is not grouped by due date, where the section header says it).
