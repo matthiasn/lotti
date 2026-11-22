@@ -159,6 +159,7 @@ Future<void> _capture(
   required Brightness brightness,
   required _Face face,
   required String name,
+  Locale? locale,
 }) async {
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pump();
@@ -222,6 +223,7 @@ Future<void> _capture(
             ? DesignSystemTheme.dark()
             : DesignSystemTheme.light(),
         mediaQueryData: MediaQueryData(size: device.size),
+        locale: locale,
         overrides: overrides,
       ),
     ),
@@ -268,6 +270,16 @@ void main() {
         );
       });
     }
+    testWidgets('$viewport goals list — dark, German', (tester) async {
+      await _capture(
+        tester,
+        device: device,
+        brightness: Brightness.dark,
+        face: _Face.goals,
+        name: 'goals_list_${viewport}_dark_de',
+        locale: const Locale('de'),
+      );
+    });
     testWidgets('$viewport goals list empty — dark', (tester) async {
       await _capture(
         tester,
