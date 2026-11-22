@@ -85,10 +85,11 @@ abstract class TaskDocumentVersionData with _$TaskDocumentVersionData {
     /// empty for a hand edit.
     String? changeSummary,
 
-    /// For an agent version, the change set and item it was confirmed from:
-    /// its provenance.
-    String? changeSetId,
-    String? changeItemId,
+    /// For an agent version, the effect key of the change item it was
+    /// confirmed from (`ChangeItem.effectKeyIn`, `<changeSetId>:<index>`
+    /// unless reopened): its provenance, the same on every device that
+    /// applied the confirmation.
+    String? changeEffectKey,
 
     /// For a restore, the older version whose text this repeats.
     String? restoredFromVersionId,

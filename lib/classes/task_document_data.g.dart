@@ -48,8 +48,7 @@ _TaskDocumentVersionData _$TaskDocumentVersionDataFromJson(
   ),
   baseVersionId: json['baseVersionId'] as String?,
   changeSummary: json['changeSummary'] as String?,
-  changeSetId: json['changeSetId'] as String?,
-  changeItemId: json['changeItemId'] as String?,
+  changeEffectKey: json['changeEffectKey'] as String?,
   restoredFromVersionId: json['restoredFromVersionId'] as String?,
 );
 
@@ -62,8 +61,7 @@ Map<String, dynamic> _$TaskDocumentVersionDataToJson(
   'author': _$TaskDocumentAuthorEnumMap[instance.author]!,
   'baseVersionId': instance.baseVersionId,
   'changeSummary': instance.changeSummary,
-  'changeSetId': instance.changeSetId,
-  'changeItemId': instance.changeItemId,
+  'changeEffectKey': instance.changeEffectKey,
   'restoredFromVersionId': instance.restoredFromVersionId,
 };
 

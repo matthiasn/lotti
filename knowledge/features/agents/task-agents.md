@@ -1350,6 +1350,16 @@ sequenceDiagram
   L->>G: read the pull request, check holders again
 ```
 
+## Task documents
+
+A task's markdown documents are owned by the documents feature, which ranks
+above agents. The dispatcher already applies a confirmed
+`propose_document_version` through the `TaskDocumentSource` port
+(`lib/features/agents/model/task_document_source.dart`), once per
+confirmation and never over a newer version; a stale one is withdrawn
+`nonRetryable`. The agent is not offered the document tools yet. See
+[Task documents](../documents.md#applying-a-confirmed-proposal).
+
 ## Linked and related tasks are read on demand
 
 Of other tasks, only the linked ones enter the wake up front, and only as

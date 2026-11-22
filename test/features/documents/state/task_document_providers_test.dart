@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task_document_merge.dart';
 import 'package:lotti/features/documents/repository/task_document_repository.dart';
+import 'package:lotti/features/documents/service/task_document_agent_source.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
@@ -66,6 +67,16 @@ void main() {
       isA<TaskDocumentRepository>(),
     );
   });
+
+  test(
+    'taskDocumentAgentSourceProvider is the source the agent is wired to',
+    () {
+      expect(
+        containerWith(const []).read(taskDocumentAgentSourceProvider),
+        isA<TaskDocumentAgentSource>(),
+      );
+    },
+  );
 
   group('one document -', () {
     const key = (taskId: taskId, documentId: 'doc-1');

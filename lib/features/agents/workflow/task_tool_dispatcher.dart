@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/pull_request_link_source.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart'
     show TaskAgentWorkflow;
+import 'package:lotti/features/agents/workflow/task_document_tool_handler.dart';
 import 'package:lotti/features/agents/workflow/task_tool_handlers.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -41,6 +43,7 @@ class TaskToolDispatcher {
     this.syncService,
     this.requestingAgentId,
     this.pullRequestLinks,
+    this.taskDocuments,
   });
 
   final JournalDb journalDb;
@@ -58,6 +61,10 @@ class TaskToolDispatcher {
 
   /// Links a confirmed `link_pull_request`; null where GitHub is not wired.
   final PullRequestLinkSource? pullRequestLinks;
+
+  /// Writes a confirmed `propose_document_version`; null where the documents
+  /// feature is not wired.
+  final TaskDocumentSource? taskDocuments;
 
   /// Human confirmation supplies this receipt separately from untrusted args.
   Future<ToolExecutionResult> dispatchApproved(
@@ -287,6 +294,14 @@ class TaskToolDispatcher {
 
       case TaskAgentToolNames.linkPullRequest:
         return handleLinkPullRequest(taskId, normalizedArgs);
+
+      case TaskAgentToolNames.proposeDocumentVersion:
+        return applyDocumentProposal(
+          source: taskDocuments,
+          taskId: taskId,
+          args: normalizedArgs,
+          effect: effect,
+        );
 
       case TaskAgentToolNames.createTimeEntry:
         return handleCreateTimeEntry(normalizedArgs, taskId, effect: effect);

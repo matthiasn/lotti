@@ -113,6 +113,62 @@ void main() {
     });
   });
 
+  group('derived ids', () {
+    test(
+      'a creation with a derived id happens once, and a document deleted '
+      'since is not brought back',
+      () async {
+        final first = await repository.create(
+          taskId: taskId,
+          title: 'Brief',
+          uuidV5Input: 'change-effect:set:0:task-document',
+        );
+        final second = await repository.create(
+          taskId: taskId,
+          title: 'Brief',
+          uuidV5Input: 'change-effect:set:0:task-document',
+        );
+        expect(second?.id, first!.id);
+        expect(await repository.forTask(taskId), hasLength(1));
+
+        await repository.delete(first.id);
+        expect(
+          await repository.create(
+            taskId: taskId,
+            title: 'Brief',
+            uuidV5Input: 'change-effect:set:0:task-document',
+          ),
+          isNull,
+        );
+        expect(await repository.forTask(taskId), isEmpty);
+      },
+    );
+
+    test(
+      'a version with a derived id is written once: applied again, even '
+      'after it moved the document on, it is found and nothing is written',
+      () async {
+        final document = await created();
+        Future<TaskDocumentWriteResult> write() => repository.writeVersion(
+          documentId: document.id,
+          markdown: 'one',
+          author: TaskDocumentAuthor.agent,
+          baseVersionId: null,
+          uuidV5Input: 'change-effect:set:0:task-document-version',
+        );
+
+        final first = await write();
+        clearInteractions(harness.outboxService);
+        final second = await write();
+
+        expect(second.status, TaskDocumentWriteStatus.written);
+        expect(second.version?.id, first.version!.id);
+        expect(await repository.versions(document.id), hasLength(1));
+        verifyNever(() => harness.outboxService.enqueueMessage(any()));
+      },
+    );
+  });
+
   group('forTask', () {
     test(
       "lists the task's live documents oldest first, and nothing else it "
@@ -144,16 +200,14 @@ void main() {
           author: TaskDocumentAuthor.agent,
           baseVersionId: null,
           changeSummary: 'First draft from the voice note.',
-          changeSetId: 'change-set-1',
-          changeItemId: 'change-item-1',
+          changeEffectKey: 'change-set-1:0',
         );
 
         expect(result.status, TaskDocumentWriteStatus.written);
         final version = result.version!;
         expect(version.data.number, 1);
         expect(version.data.author, TaskDocumentAuthor.agent);
-        expect(version.data.changeSetId, 'change-set-1');
-        expect(version.data.changeItemId, 'change-item-1');
+        expect(version.data.changeEffectKey, 'change-set-1:0');
         expect(version.meta.categoryId, 'colony');
         final stored = await repository.document(document.id);
         expect(stored?.data.current?.id, version.id);

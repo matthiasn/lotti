@@ -12,6 +12,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/pull_request_link_source.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
@@ -23,6 +24,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../projects/test_utils.dart' show makeTestProject;
+import '../fake_task_document_source.dart';
 import '../test_utils.dart' show makeTestChecklistApproval;
 
 /// The field-level change handed to `ChecklistRepository.updateChecklistItem`.
@@ -808,6 +810,67 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.errorMessage, 'link_pull_request is not configured');
+    });
+  });
+
+  group('dispatch — propose_document_version', () {
+    late FakeTaskDocumentSource documents;
+    late TaskToolDispatcher documentDispatcher;
+
+    setUp(() {
+      documents = FakeTaskDocumentSource();
+      documentDispatcher = TaskToolDispatcher(
+        domainLogger: MockDomainLogger(),
+        journalDb: mockJournalDb,
+        journalRepository: mockJournalRepository,
+        checklistRepository: mockChecklistRepository,
+        labelsRepository: mockLabelsRepository,
+        persistenceLogic: mockPersistenceLogic,
+        timeService: mockTimeService,
+        taskDocuments: documents,
+      );
+      when(
+        () => mockJournalDb.journalEntityById(taskId),
+      ).thenAnswer((_) async => _makeTestTask(taskId));
+    });
+
+    test(
+      "applies the confirmed version under the confirmation's effect, "
+      'which no handler argument carries',
+      () async {
+        const effect = ChangeEffect(key: 'change-set-1:0');
+        final result = await documentDispatcher.dispatch(
+          TaskAgentToolNames.proposeDocumentVersion,
+          effect.addTo(const {
+            'documentId': 'doc-1',
+            'markdown': '# Brief',
+            'baseVersionId': 'version-1',
+          }),
+          taskId,
+        );
+
+        expect(result.success, isTrue);
+        final call = documents.applied.single;
+        expect(call.changeEffectKey, 'change-set-1:0');
+        expect(call.documentId, 'doc-1');
+        expect(call.baseVersionId, 'version-1');
+      },
+    );
+
+    test('a stale proposal is withdrawn, not left to fail again', () async {
+      documents.applyOutcome = const TaskDocumentApplyRefused(
+        reason: 'the document changed after this version was drafted',
+        permanent: true,
+      );
+
+      final result = await documentDispatcher.dispatch(
+        TaskAgentToolNames.proposeDocumentVersion,
+        const {'documentId': 'doc-1', 'markdown': '# Brief'},
+        taskId,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.nonRetryable, isTrue);
     });
   });
 

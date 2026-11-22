@@ -5,9 +5,21 @@ description: Markdown documents a task holds, drafted and revised by its agent t
 resource: ../../lib/features/documents
 tags: [documents, tasks, agents, proposals, markdown, versions, review]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-23T02:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-23T05:00:00Z }
 stale_after: 2027-04-03
 sources:
+  - id: source-port
+    resource: ../../lib/features/agents/model/task_document_source.dart
+    title: TaskDocumentSource — the port the documents feature implements
+    last_modified: 2026-11-23
+  - id: agent-source
+    resource: ../../lib/features/documents/service/task_document_agent_source.dart
+    title: TaskDocumentAgentSource
+    last_modified: 2026-11-23
+  - id: apply-handler
+    resource: ../../lib/features/agents/workflow/task_document_tool_handler.dart
+    title: applyDocumentProposal
+    last_modified: 2026-11-23
   - id: page
     resource: ../../lib/features/documents/ui/task_document_page.dart
     title: TaskDocumentPage
@@ -111,13 +123,16 @@ sources:
 > **Partly built.** This concept describes the design agreed in
 > [ADR 0166](../../docs/adr/0166-task-documents-are-journal-entries-revised-by-proposal.md).
 > What runs today: the two journal variants, their merge, the repository,
-> and the user's side of the UI — the task's Documents section, the "Write a
-> document" row in the Add sheet, the editor, and the document page with its
-> history, restore and delete ([Entities](#entities),
-> [The repository](#the-repository), [Where it shows](#where-it-shows)).
-> Side-by-side review and the agent and chat paths are not built yet. Each
-> implementation step rewrites the part it lands, and the page moves to
-> `stable` when the last part does.
+> the user's side of the UI — the Documents section, the Add sheet row, the
+> editor, and the document page with history, restore and delete — and the
+> apply path of an agent proposal: a confirmed `propose_document_version` is
+> written through the documents feature ([Entities](#entities),
+> [The repository](#the-repository), [Where it shows](#where-it-shows),
+> [Applying a confirmed proposal](#applying-a-confirmed-proposal)). Nothing
+> proposes one yet: the agent is not offered the document tools, and the
+> chat path and side-by-side review are not built. Each implementation step
+> rewrites the part it lands, and the page moves to `stable` when the last
+> part does.
 
 A task can hold several markdown documents, such as a client one-pager, a
 meeting summary or a follow-up email. The task agent drafts and revises them
@@ -150,7 +165,7 @@ flowchart LR
 - **`TaskDocumentVersionEntry`** is written once and never changed:
   `documentId`, `number`, `markdown`, `author` (`user` or `agent`; an author
   a newer build added reads as `user`), and provenance: `baseVersionId`,
-  `changeSummary`, `changeSetId` / `changeItemId` for a confirmed agent
+  `changeSummary`, `changeEffectKey` (the change item's effect key) for a confirmed agent
   version, `restoredFromVersionId` for a restore.
 - **A document's versions are an indexed lookup.**
   [`toDbEntity`](../../lib/database/conversions.dart) writes a version's
@@ -236,11 +251,41 @@ flowchart TD
 - **The proposal** carries `documentId` (or `newTitle` for a first draft),
   the full `markdown`, a `changeSummary`, and `baseVersionId`, the version
   it was drafted against.
-- **The write.** [`TaskToolDispatcher`](../../lib/features/agents/workflow/task_tool_dispatcher.dart)
-  reaches the documents feature through an interface `agents` defines,
-  the same pattern as
-  [`PullRequestLinkSource`](../../lib/features/agents/model/pull_request_link_source.dart).
+- **The write** is [Applying a confirmed proposal](#applying-a-confirmed-proposal),
+  below.
 - **Hand edits** are the user's own writes and skip the proposal.
+
+## Applying a confirmed proposal
+
+`agents` ranks below `documents`, so the task agent depends on a port,
+[`TaskDocumentSource`](../../lib/features/agents/model/task_document_source.dart),
+the pattern
+[`PullRequestLinkSource`](../../lib/features/agents/model/pull_request_link_source.dart)
+set. The documents feature implements it in
+[`TaskDocumentAgentSource`](../../lib/features/documents/service/task_document_agent_source.dart),
+over the repository, and `app_bootstrap.dart` wires it into
+`taskDocumentSourceProvider`. Unwired, the provider is null and the
+dispatcher answers that the tool is not configured.
+
+On confirmation, `ChangeSetConfirmationService` dispatches the item with its
+`ChangeEffect`, and `TaskToolDispatcher` hands the arguments to
+[`applyDocumentProposal`](../../lib/features/agents/workflow/task_document_tool_handler.dart):
+
+- **Once, however often it applies** (ADR 0075). The document and the
+  version take ids derived from the effect (`entityInput('task-document')`,
+  `entityInput('task-document-version')`). `create` and `writeVersion`
+  given a `uuidV5Input` first look for the entity that id names: a version
+  already there is the effect having happened — on this device, or synced
+  from one that confirmed too — and comes back `written` with nothing
+  written. A new document deleted since is not brought back.
+- **Over its base.** The version is written with the repository's
+  compare-and-set, as the agent's (`author: agent`), with the proposal's
+  `changeSummary` and the effect key as `changeEffectKey`. A new document
+  (`newTitle`) is created first and written over what it shows.
+- **Refused for good, or for now.** A stale base, a deleted document or one
+  not on the task is `TaskDocumentApplyRefused(permanent: true)`, which the
+  dispatcher returns `nonRetryable`, so the item is withdrawn. A failed write
+  is not permanent: the item goes back to pending, to confirm again.
 
 ## Proposal lifecycle
 
@@ -263,10 +308,12 @@ stateDiagram-v2
   retracted --> [*]
 ```
 
-- **A stale proposal cannot be confirmed.** If the current version moved on
-  after the agent drafted, the UI offers "Ask the agent to redo" instead of
-  Confirm. Dismiss stays available. The redo produces a new proposal, which
-  retracts the stale one.
+- **A stale proposal cannot be confirmed.** Today the apply refuses it for
+  good: the dispatch fails `nonRetryable`, and the confirmation service
+  records that as a retraction, so it leaves the open list instead of
+  failing again on every tap. The side-by-side review (not built yet) is to
+  catch it before that, offering "Ask the agent to redo" instead of Confirm;
+  the redo produces a new proposal, which retracts the stale one.
 - **A dismiss reason is feedback.** It reaches the next draft the way
   rejection reasons already reach the task agent.
 

@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/pull_request_link_source_provider.dart';
+import 'package:lotti/features/agents/state/task_document_source_provider.dart';
 import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -41,6 +42,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup
 import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_startup.dart';
+import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -480,6 +482,12 @@ List<Override> appFeatureWiringOverrides() => [
   // the user confirms through GitHub, which ranks above agents.
   pullRequestLinkSourceProvider.overrideWith(
     (ref) => ref.watch(pullRequestLinkSuggestionsProvider),
+  ),
+  // The task agent reads a task's documents, and a document proposal the
+  // user confirms is written, through the documents feature, which ranks
+  // above agents.
+  taskDocumentSourceProvider.overrideWith(
+    (ref) => ref.watch(taskDocumentAgentSourceProvider),
   ),
   // An active lockdown scopes every category list; categories ranks below
   // lockdown.

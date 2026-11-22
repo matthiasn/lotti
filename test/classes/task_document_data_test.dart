@@ -39,8 +39,7 @@ void main() {
         author: TaskDocumentAuthor.agent,
         baseVersionId: 'version-3',
         changeSummary: 'Adds dated next steps.',
-        changeSetId: 'change-set-1',
-        changeItemId: 'change-item-1',
+        changeEffectKey: 'change-set-1:0',
       );
 
       expect(TaskDocumentVersionData.fromJson(roundTrip(version)), version);

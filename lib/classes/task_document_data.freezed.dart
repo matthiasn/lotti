@@ -595,9 +595,11 @@ mixin _$TaskDocumentVersionData {
  String get markdown;@JsonKey(unknownEnumValue: TaskDocumentAuthor.user) TaskDocumentAuthor get author;/// The version this one was written over; null for a first version.
  String? get baseVersionId;/// What changed, in a sentence: the agent's summary of its proposal, or
 /// empty for a hand edit.
- String? get changeSummary;/// For an agent version, the change set and item it was confirmed from:
-/// its provenance.
- String? get changeSetId; String? get changeItemId;/// For a restore, the older version whose text this repeats.
+ String? get changeSummary;/// For an agent version, the effect key of the change item it was
+/// confirmed from (`ChangeItem.effectKeyIn`, `<changeSetId>:<index>`
+/// unless reopened): its provenance, the same on every device that
+/// applied the confirmation.
+ String? get changeEffectKey;/// For a restore, the older version whose text this repeats.
  String? get restoredFromVersionId;
 /// Create a copy of TaskDocumentVersionData
 /// with the given fields replaced by the non-null parameter values.
@@ -611,16 +613,16 @@ $TaskDocumentVersionDataCopyWith<TaskDocumentVersionData> get copyWith => _$Task
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDocumentVersionData&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.number, number) || other.number == number)&&(identical(other.markdown, markdown) || other.markdown == markdown)&&(identical(other.author, author) || other.author == author)&&(identical(other.baseVersionId, baseVersionId) || other.baseVersionId == baseVersionId)&&(identical(other.changeSummary, changeSummary) || other.changeSummary == changeSummary)&&(identical(other.changeSetId, changeSetId) || other.changeSetId == changeSetId)&&(identical(other.changeItemId, changeItemId) || other.changeItemId == changeItemId)&&(identical(other.restoredFromVersionId, restoredFromVersionId) || other.restoredFromVersionId == restoredFromVersionId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDocumentVersionData&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.number, number) || other.number == number)&&(identical(other.markdown, markdown) || other.markdown == markdown)&&(identical(other.author, author) || other.author == author)&&(identical(other.baseVersionId, baseVersionId) || other.baseVersionId == baseVersionId)&&(identical(other.changeSummary, changeSummary) || other.changeSummary == changeSummary)&&(identical(other.changeEffectKey, changeEffectKey) || other.changeEffectKey == changeEffectKey)&&(identical(other.restoredFromVersionId, restoredFromVersionId) || other.restoredFromVersionId == restoredFromVersionId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,documentId,number,markdown,author,baseVersionId,changeSummary,changeSetId,changeItemId,restoredFromVersionId);
+int get hashCode => Object.hash(runtimeType,documentId,number,markdown,author,baseVersionId,changeSummary,changeEffectKey,restoredFromVersionId);
 
 @override
 String toString() {
-  return 'TaskDocumentVersionData(documentId: $documentId, number: $number, markdown: $markdown, author: $author, baseVersionId: $baseVersionId, changeSummary: $changeSummary, changeSetId: $changeSetId, changeItemId: $changeItemId, restoredFromVersionId: $restoredFromVersionId)';
+  return 'TaskDocumentVersionData(documentId: $documentId, number: $number, markdown: $markdown, author: $author, baseVersionId: $baseVersionId, changeSummary: $changeSummary, changeEffectKey: $changeEffectKey, restoredFromVersionId: $restoredFromVersionId)';
 }
 
 
@@ -631,7 +633,7 @@ abstract mixin class $TaskDocumentVersionDataCopyWith<$Res>  {
   factory $TaskDocumentVersionDataCopyWith(TaskDocumentVersionData value, $Res Function(TaskDocumentVersionData) _then) = _$TaskDocumentVersionDataCopyWithImpl;
 @useResult
 $Res call({
- String documentId, int number, String markdown,@JsonKey(unknownEnumValue: TaskDocumentAuthor.user) TaskDocumentAuthor author, String? baseVersionId, String? changeSummary, String? changeSetId, String? changeItemId, String? restoredFromVersionId
+ String documentId, int number, String markdown,@JsonKey(unknownEnumValue: TaskDocumentAuthor.user) TaskDocumentAuthor author, String? baseVersionId, String? changeSummary, String? changeEffectKey, String? restoredFromVersionId
 });
 
 
@@ -648,7 +650,7 @@ class _$TaskDocumentVersionDataCopyWithImpl<$Res>
 
 /// Create a copy of TaskDocumentVersionData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? documentId = null,Object? number = null,Object? markdown = null,Object? author = null,Object? baseVersionId = freezed,Object? changeSummary = freezed,Object? changeSetId = freezed,Object? changeItemId = freezed,Object? restoredFromVersionId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? documentId = null,Object? number = null,Object? markdown = null,Object? author = null,Object? baseVersionId = freezed,Object? changeSummary = freezed,Object? changeEffectKey = freezed,Object? restoredFromVersionId = freezed,}) {
   return _then(_self.copyWith(
 documentId: null == documentId ? _self.documentId : documentId // ignore: cast_nullable_to_non_nullable
 as String,number: null == number ? _self.number : number // ignore: cast_nullable_to_non_nullable
@@ -656,8 +658,7 @@ as int,markdown: null == markdown ? _self.markdown : markdown // ignore: cast_nu
 as String,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
 as TaskDocumentAuthor,baseVersionId: freezed == baseVersionId ? _self.baseVersionId : baseVersionId // ignore: cast_nullable_to_non_nullable
 as String?,changeSummary: freezed == changeSummary ? _self.changeSummary : changeSummary // ignore: cast_nullable_to_non_nullable
-as String?,changeSetId: freezed == changeSetId ? _self.changeSetId : changeSetId // ignore: cast_nullable_to_non_nullable
-as String?,changeItemId: freezed == changeItemId ? _self.changeItemId : changeItemId // ignore: cast_nullable_to_non_nullable
+as String?,changeEffectKey: freezed == changeEffectKey ? _self.changeEffectKey : changeEffectKey // ignore: cast_nullable_to_non_nullable
 as String?,restoredFromVersionId: freezed == restoredFromVersionId ? _self.restoredFromVersionId : restoredFromVersionId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -744,10 +745,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String documentId,  int number,  String markdown, @JsonKey(unknownEnumValue: TaskDocumentAuthor.user)  TaskDocumentAuthor author,  String? baseVersionId,  String? changeSummary,  String? changeSetId,  String? changeItemId,  String? restoredFromVersionId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String documentId,  int number,  String markdown, @JsonKey(unknownEnumValue: TaskDocumentAuthor.user)  TaskDocumentAuthor author,  String? baseVersionId,  String? changeSummary,  String? changeEffectKey,  String? restoredFromVersionId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TaskDocumentVersionData() when $default != null:
-return $default(_that.documentId,_that.number,_that.markdown,_that.author,_that.baseVersionId,_that.changeSummary,_that.changeSetId,_that.changeItemId,_that.restoredFromVersionId);case _:
+return $default(_that.documentId,_that.number,_that.markdown,_that.author,_that.baseVersionId,_that.changeSummary,_that.changeEffectKey,_that.restoredFromVersionId);case _:
   return orElse();
 
 }
@@ -765,10 +766,10 @@ return $default(_that.documentId,_that.number,_that.markdown,_that.author,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String documentId,  int number,  String markdown, @JsonKey(unknownEnumValue: TaskDocumentAuthor.user)  TaskDocumentAuthor author,  String? baseVersionId,  String? changeSummary,  String? changeSetId,  String? changeItemId,  String? restoredFromVersionId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String documentId,  int number,  String markdown, @JsonKey(unknownEnumValue: TaskDocumentAuthor.user)  TaskDocumentAuthor author,  String? baseVersionId,  String? changeSummary,  String? changeEffectKey,  String? restoredFromVersionId)  $default,) {final _that = this;
 switch (_that) {
 case _TaskDocumentVersionData():
-return $default(_that.documentId,_that.number,_that.markdown,_that.author,_that.baseVersionId,_that.changeSummary,_that.changeSetId,_that.changeItemId,_that.restoredFromVersionId);case _:
+return $default(_that.documentId,_that.number,_that.markdown,_that.author,_that.baseVersionId,_that.changeSummary,_that.changeEffectKey,_that.restoredFromVersionId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -785,10 +786,10 @@ return $default(_that.documentId,_that.number,_that.markdown,_that.author,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String documentId,  int number,  String markdown, @JsonKey(unknownEnumValue: TaskDocumentAuthor.user)  TaskDocumentAuthor author,  String? baseVersionId,  String? changeSummary,  String? changeSetId,  String? changeItemId,  String? restoredFromVersionId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String documentId,  int number,  String markdown, @JsonKey(unknownEnumValue: TaskDocumentAuthor.user)  TaskDocumentAuthor author,  String? baseVersionId,  String? changeSummary,  String? changeEffectKey,  String? restoredFromVersionId)?  $default,) {final _that = this;
 switch (_that) {
 case _TaskDocumentVersionData() when $default != null:
-return $default(_that.documentId,_that.number,_that.markdown,_that.author,_that.baseVersionId,_that.changeSummary,_that.changeSetId,_that.changeItemId,_that.restoredFromVersionId);case _:
+return $default(_that.documentId,_that.number,_that.markdown,_that.author,_that.baseVersionId,_that.changeSummary,_that.changeEffectKey,_that.restoredFromVersionId);case _:
   return null;
 
 }
@@ -800,7 +801,7 @@ return $default(_that.documentId,_that.number,_that.markdown,_that.author,_that.
 @JsonSerializable()
 
 class _TaskDocumentVersionData implements TaskDocumentVersionData {
-  const _TaskDocumentVersionData({required this.documentId, required this.number, required this.markdown, @JsonKey(unknownEnumValue: TaskDocumentAuthor.user) required this.author, this.baseVersionId, this.changeSummary, this.changeSetId, this.changeItemId, this.restoredFromVersionId});
+  const _TaskDocumentVersionData({required this.documentId, required this.number, required this.markdown, @JsonKey(unknownEnumValue: TaskDocumentAuthor.user) required this.author, this.baseVersionId, this.changeSummary, this.changeEffectKey, this.restoredFromVersionId});
   factory _TaskDocumentVersionData.fromJson(Map<String, dynamic> json) => _$TaskDocumentVersionDataFromJson(json);
 
 /// The `JournalEntity.taskDocument` this is a version of. Stored as the
@@ -818,10 +819,11 @@ class _TaskDocumentVersionData implements TaskDocumentVersionData {
 /// What changed, in a sentence: the agent's summary of its proposal, or
 /// empty for a hand edit.
 @override final  String? changeSummary;
-/// For an agent version, the change set and item it was confirmed from:
-/// its provenance.
-@override final  String? changeSetId;
-@override final  String? changeItemId;
+/// For an agent version, the effect key of the change item it was
+/// confirmed from (`ChangeItem.effectKeyIn`, `<changeSetId>:<index>`
+/// unless reopened): its provenance, the same on every device that
+/// applied the confirmation.
+@override final  String? changeEffectKey;
 /// For a restore, the older version whose text this repeats.
 @override final  String? restoredFromVersionId;
 
@@ -838,16 +840,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDocumentVersionData&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.number, number) || other.number == number)&&(identical(other.markdown, markdown) || other.markdown == markdown)&&(identical(other.author, author) || other.author == author)&&(identical(other.baseVersionId, baseVersionId) || other.baseVersionId == baseVersionId)&&(identical(other.changeSummary, changeSummary) || other.changeSummary == changeSummary)&&(identical(other.changeSetId, changeSetId) || other.changeSetId == changeSetId)&&(identical(other.changeItemId, changeItemId) || other.changeItemId == changeItemId)&&(identical(other.restoredFromVersionId, restoredFromVersionId) || other.restoredFromVersionId == restoredFromVersionId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDocumentVersionData&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.number, number) || other.number == number)&&(identical(other.markdown, markdown) || other.markdown == markdown)&&(identical(other.author, author) || other.author == author)&&(identical(other.baseVersionId, baseVersionId) || other.baseVersionId == baseVersionId)&&(identical(other.changeSummary, changeSummary) || other.changeSummary == changeSummary)&&(identical(other.changeEffectKey, changeEffectKey) || other.changeEffectKey == changeEffectKey)&&(identical(other.restoredFromVersionId, restoredFromVersionId) || other.restoredFromVersionId == restoredFromVersionId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,documentId,number,markdown,author,baseVersionId,changeSummary,changeSetId,changeItemId,restoredFromVersionId);
+int get hashCode => Object.hash(runtimeType,documentId,number,markdown,author,baseVersionId,changeSummary,changeEffectKey,restoredFromVersionId);
 
 @override
 String toString() {
-  return 'TaskDocumentVersionData(documentId: $documentId, number: $number, markdown: $markdown, author: $author, baseVersionId: $baseVersionId, changeSummary: $changeSummary, changeSetId: $changeSetId, changeItemId: $changeItemId, restoredFromVersionId: $restoredFromVersionId)';
+  return 'TaskDocumentVersionData(documentId: $documentId, number: $number, markdown: $markdown, author: $author, baseVersionId: $baseVersionId, changeSummary: $changeSummary, changeEffectKey: $changeEffectKey, restoredFromVersionId: $restoredFromVersionId)';
 }
 
 
@@ -858,7 +860,7 @@ abstract mixin class _$TaskDocumentVersionDataCopyWith<$Res> implements $TaskDoc
   factory _$TaskDocumentVersionDataCopyWith(_TaskDocumentVersionData value, $Res Function(_TaskDocumentVersionData) _then) = __$TaskDocumentVersionDataCopyWithImpl;
 @override @useResult
 $Res call({
- String documentId, int number, String markdown,@JsonKey(unknownEnumValue: TaskDocumentAuthor.user) TaskDocumentAuthor author, String? baseVersionId, String? changeSummary, String? changeSetId, String? changeItemId, String? restoredFromVersionId
+ String documentId, int number, String markdown,@JsonKey(unknownEnumValue: TaskDocumentAuthor.user) TaskDocumentAuthor author, String? baseVersionId, String? changeSummary, String? changeEffectKey, String? restoredFromVersionId
 });
 
 
@@ -875,7 +877,7 @@ class __$TaskDocumentVersionDataCopyWithImpl<$Res>
 
 /// Create a copy of TaskDocumentVersionData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? documentId = null,Object? number = null,Object? markdown = null,Object? author = null,Object? baseVersionId = freezed,Object? changeSummary = freezed,Object? changeSetId = freezed,Object? changeItemId = freezed,Object? restoredFromVersionId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? documentId = null,Object? number = null,Object? markdown = null,Object? author = null,Object? baseVersionId = freezed,Object? changeSummary = freezed,Object? changeEffectKey = freezed,Object? restoredFromVersionId = freezed,}) {
   return _then(_TaskDocumentVersionData(
 documentId: null == documentId ? _self.documentId : documentId // ignore: cast_nullable_to_non_nullable
 as String,number: null == number ? _self.number : number // ignore: cast_nullable_to_non_nullable
@@ -883,8 +885,7 @@ as int,markdown: null == markdown ? _self.markdown : markdown // ignore: cast_nu
 as String,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
 as TaskDocumentAuthor,baseVersionId: freezed == baseVersionId ? _self.baseVersionId : baseVersionId // ignore: cast_nullable_to_non_nullable
 as String?,changeSummary: freezed == changeSummary ? _self.changeSummary : changeSummary // ignore: cast_nullable_to_non_nullable
-as String?,changeSetId: freezed == changeSetId ? _self.changeSetId : changeSetId // ignore: cast_nullable_to_non_nullable
-as String?,changeItemId: freezed == changeItemId ? _self.changeItemId : changeItemId // ignore: cast_nullable_to_non_nullable
+as String?,changeEffectKey: freezed == changeEffectKey ? _self.changeEffectKey : changeEffectKey // ignore: cast_nullable_to_non_nullable
 as String?,restoredFromVersionId: freezed == restoredFromVersionId ? _self.restoredFromVersionId : restoredFromVersionId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));

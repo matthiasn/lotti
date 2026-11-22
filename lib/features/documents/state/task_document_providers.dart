@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/documents/repository/task_document_repository.dart';
+import 'package:lotti/features/documents/service/task_document_agent_source.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -14,6 +15,13 @@ final taskDocumentRepositoryProvider = Provider<TaskDocumentRepository>(
     journalRepository: ref.watch(journalRepositoryProvider),
   ),
   name: 'taskDocumentRepositoryProvider',
+);
+
+/// The documents feature's `TaskDocumentSource` for the task agent; the
+/// composition root wires it into `taskDocumentSourceProvider`.
+final taskDocumentAgentSourceProvider = Provider<TaskDocumentAgentSource>(
+  (ref) => TaskDocumentAgentSource(ref.watch(taskDocumentRepositoryProvider)),
+  name: 'taskDocumentAgentSourceProvider',
 );
 
 /// The live documents linked from a task, oldest first, so a new one joins

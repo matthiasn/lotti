@@ -4,6 +4,7 @@ import 'package:lotti/classes/task_document_merge.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/logic/write_on_stored.dart';
 
 /// The live documents among [linked], oldest first (ties by id), so a new
@@ -93,15 +94,30 @@ class TaskDocumentRepository {
   ///
   /// The document takes the task's category and private flag, so it syncs,
   /// filters and hides with the task that holds it.
+  ///
+  /// [uuidV5Input] derives the document's id, for a creation that must
+  /// happen once however often it is applied — a confirmed agent proposal
+  /// (ADR 0075). The document that id names is returned when it is there
+  /// already, and nothing is created; null when it was deleted since.
   Future<TaskDocumentEntry?> create({
     required String taskId,
     required String title,
+    String? uuidV5Input,
   }) async {
+    if (uuidV5Input != null) {
+      final existing = await _byDerivedId(uuidV5Input);
+      if (existing != null) {
+        return existing is TaskDocumentEntry && !existing.isDeleted
+            ? existing
+            : null;
+      }
+    }
     final task = await _db.journalEntityById(taskId);
     if (task is! Task) return null;
     final meta = await _persistence.createMetadata(
       categoryId: task.meta.categoryId,
       private: task.meta.private,
+      uuidV5Input: uuidV5Input,
     );
     final document = TaskDocumentEntry(
       meta: meta,
@@ -129,16 +145,28 @@ class TaskDocumentRepository {
   /// never showed does not linger in its history.
   ///
   /// [author] and the provenance fields are stored on the version as given.
+  ///
+  /// [uuidV5Input] derives the version's id, so a confirmed proposal applied
+  /// twice — on two devices, or again after a crash — writes one version
+  /// (ADR 0075). When the version that id names is there already, the
+  /// effect happened, and it comes back [TaskDocumentWriteStatus.written]
+  /// with nothing written.
   Future<TaskDocumentWriteResult> writeVersion({
     required String documentId,
     required String markdown,
     required TaskDocumentAuthor author,
     required String? baseVersionId,
     String? changeSummary,
-    String? changeSetId,
-    String? changeItemId,
+    String? changeEffectKey,
     String? restoredFromVersionId,
+    String? uuidV5Input,
   }) async {
+    if (uuidV5Input != null) {
+      final existing = await _byDerivedId(uuidV5Input);
+      if (existing is TaskDocumentVersionEntry) {
+        return (status: TaskDocumentWriteStatus.written, version: existing);
+      }
+    }
     final stored = await document(documentId);
     if (stored == null) return _result(TaskDocumentWriteStatus.missing);
     if (stored.data.current?.id != baseVersionId) {
@@ -148,6 +176,7 @@ class TaskDocumentRepository {
     final meta = await _persistence.createMetadata(
       categoryId: stored.meta.categoryId,
       private: stored.meta.private,
+      uuidV5Input: uuidV5Input,
     );
     final version = TaskDocumentVersionEntry(
       meta: meta,
@@ -158,8 +187,7 @@ class TaskDocumentRepository {
         author: author,
         baseVersionId: baseVersionId,
         changeSummary: changeSummary,
-        changeSetId: changeSetId,
-        changeItemId: changeItemId,
+        changeEffectKey: changeEffectKey,
         restoredFromVersionId: restoredFromVersionId,
       ),
     );
@@ -255,6 +283,12 @@ class TaskDocumentRepository {
       await _journal.deleteJournalEntity(version.id);
     }
     return _journal.deleteJournalEntity(documentId);
+  }
+
+  /// The entity the id derived from [uuidV5Input] names, deleted or not.
+  Future<JournalEntity?> _byDerivedId(String uuidV5Input) async {
+    final id = MetadataService.deterministicId(uuidV5Input);
+    return (await _db.journalEntityMapForIdsIncludingDeleted([id]))[id];
   }
 
   static TaskDocumentWriteResult _result(TaskDocumentWriteStatus status) =>
