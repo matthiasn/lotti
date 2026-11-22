@@ -160,8 +160,8 @@ void main() {
       isNot(contains('out-of-scope concepts')),
     );
     expect(
-      (reportProperties['content']! as Map<String, dynamic>)['description'],
-      contains('free-form Markdown'),
+      (reportProperties['sections']! as Map<String, dynamic>)['description'],
+      contains('as sections, titles in the task language'),
     );
   });
 

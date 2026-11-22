@@ -550,17 +550,17 @@ void main() {
       expect(report.description, contains('matching successful'));
       expect(report.description, contains('stale report claims'));
       final parameters = report.parameters!;
-      expect(parameters['required'], ['oneLiner', 'tldr', 'content']);
+      expect(parameters['required'], ['oneLiner', 'tldr', 'sections']);
       expect(parameters['additionalProperties'], isFalse);
       final properties = parameters['properties']! as Map<String, dynamic>;
-      expect(properties.keys, containsAll(['oneLiner', 'tldr', 'content']));
+      expect(properties.keys, containsAll(['oneLiner', 'tldr', 'sections']));
       expect(
-        (properties['content']! as Map<String, dynamic>)['type'],
-        'string',
+        (properties['sections']! as Map<String, dynamic>)['type'],
+        'array',
       );
       expect(
-        (properties['content']! as Map<String, dynamic>)['description'],
-        contains('free-form Markdown'),
+        (properties['sections']! as Map<String, dynamic>)['description'],
+        contains('as sections, titles in the task language'),
       );
     });
   });
