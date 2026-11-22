@@ -54,10 +54,13 @@ final _now = DateTime(2026, 8, 15, 14);
 HabitDefinition _habit(String id, String name) =>
     habitFlossing.copyWith(id: id, name: name);
 
-final _swim = _habit('habit-swim', 'Swim before breakfast');
-final _stretch = _habit('habit-stretch', 'Stretch on the ice shelf');
-final _read = _habit('habit-read', 'Read to the chicks');
-final _krill = _habit('habit-krill', 'Log the krill catch');
+final HabitDefinition _swim = _habit('habit-swim', 'Swim before breakfast');
+final HabitDefinition _stretch = _habit(
+  'habit-stretch',
+  'Stretch on the ice shelf',
+);
+final HabitDefinition _read = _habit('habit-read', 'Read to the chicks');
+final HabitDefinition _krill = _habit('habit-krill', 'Log the krill catch');
 
 /// The goals on the page: id, title, status, the habit it claims, its week.
 final _goals = <(String, String, GoalTrackStatus, HabitDefinition, int)>[
@@ -125,7 +128,6 @@ GoalProgressView _progress(HabitDefinition habit, int done) {
             GoalProgressDay(
               day: today.subtract(Duration(days: 6 - i)),
               value: i >= 7 - done ? 1 : 0,
-              isObserved: true,
               targetSatisfied: i >= 7 - done,
             ),
         ],
@@ -175,7 +177,7 @@ Future<void> _capture(
   final goals = face == _Face.goals
       ? _goals
       : const <(String, String, GoalTrackStatus, HabitDefinition, int)>[];
-  final List<Override> overrides = [
+  final overrides = <Override>[
     habitsControllerProvider.overrideWith(() => FakeHabitsController(state)),
     habitsNowProvider.overrideWithValue(() => _now),
     habitHeatmapControllerProvider.overrideWith(_FakeHeatmapController.new),
