@@ -341,8 +341,8 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
             // The recorder's own automation transcribes a goal's take, under
             // the goal's automatic-updates switch.
             transcriptionHandledByCaller: false,
-            // The sheet has no status line of its own.
-            showStatus: true,
+            // No "● Recording" line: the red Stop pill carrying the running
+            // time already says so, as it does on the recording sheet.
             onRecorded: _onRecorded,
             onDiscarded: () => setState(() => _mode = _Mode.idle),
             onFailed: (failure) => setState(() {

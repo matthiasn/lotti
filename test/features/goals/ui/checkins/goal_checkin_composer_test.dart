@@ -212,6 +212,9 @@ void main() {
       expect(find.byType(InlineRecorder), findsOneWidget);
       // The question being answered stays in view while recording.
       expect(find.text('What got in the way on Tuesday?'), findsOneWidget);
+      // The red Stop pill says it is recording; no second line repeats it.
+      expect(key('check-in-recorder-status'), findsNothing);
+      expect(find.text('Recording'), findsNothing);
       // The recorder's own row is the only set of controls.
       expect(key('goal-checkin-mode-toggle'), findsNothing);
       expect(find.text('Close'), findsNothing);

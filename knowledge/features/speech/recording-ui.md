@@ -154,7 +154,7 @@ settings* goes through, on every surface.
 | Surface | Shows |
 |---------|-------|
 | Recording modal | The whole `RecordingStage`: VU meter or orb, level line, record / discard–timed Stop–pause, *Transcribe* |
-| Goal check-in sheet | The whole stage, embedded by `InlineRecorder` under the goal's name and the agent's question, with the stage's own status line (`showStatus`) |
+| Goal check-in sheet | The whole stage, embedded by `InlineRecorder` under the goal's name and the agent's question — no status line: the red Stop pill carrying the running time says it is recording, as on the recording modal |
 | Check-in page dock | The stage `compact` — no orb or meter — embedded in place by `CheckInInlineRecorder` (the person's wrapper over `InlineRecorder`), with its own status line in the stage's notice slot (`showStatus`: `● Recording` / `Paused` in the composer header's grammar, a live region), since no header above it says so |
 | Check-in composer | The whole stage, under the composer's header and its status line |
 | Mobile recording pill | A compact live indicator |
