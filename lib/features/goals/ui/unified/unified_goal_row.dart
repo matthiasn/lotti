@@ -134,6 +134,13 @@ class UnifiedGoalRow extends ConsumerWidget {
       if (showPill)
         unifiedGoalStatusText(messages, status, recoveryHint: recoveryHint),
       if (failed) messages.goalDetailHealthUnavailable,
+      // Everything the caption line shows, since the label replaces it: the
+      // trend and a proposal waiting for review are otherwise unseen by a
+      // screen reader until the goal is opened.
+      if (health?.direction case final direction?)
+        goalHealthDirectionLabel(messages, direction),
+      if ((health?.pendingProposals ?? 0) > 0)
+        messages.goalPendingProposalBadge,
       ?summary,
     ].join(', ');
 

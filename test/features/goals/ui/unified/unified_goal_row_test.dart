@@ -263,6 +263,29 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('the spoken label carries the trend and a waiting proposal, '
+      'which the caption line shows', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pump(
+      tester,
+      agentHealth: health(
+        agentId: 'goal-1',
+        trackStatus: GoalTrackStatus.onTrack,
+        direction: GoalHealthDirection.down,
+        pendingProposals: 1,
+      ),
+      progressView: progress(),
+    );
+
+    final label = tester
+        .getSemantics(find.byType(GroupedCardRowSurface))
+        .getSemanticsData()
+        .label;
+    expect(label, contains('Trending down'));
+    expect(label, contains('Proposal awaiting review'));
+    handle.dispose();
+  });
+
   testWidgets('a failed health read says so on the row instead of leaving it '
       'blank', (tester) async {
     await pump(
