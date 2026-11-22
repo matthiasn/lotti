@@ -47,6 +47,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -226,6 +227,8 @@ void main() {
     ...getItServiceOverrides(),
     journalPageScopeProvider.overrideWithValue(true),
     journalPageControllerProvider(true).overrideWith(() => fakeController),
+    // The page asks the cache whether any category exists at all.
+    entitiesCacheServiceProvider.overrideWithValue(mockEntitiesCacheService),
     fakeRecentSearches(fakeRecents = FakeRecentSearchesController()),
     taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
     taskDueViewCountsProvider.overrideWith((ref) async => dueViewCounts),

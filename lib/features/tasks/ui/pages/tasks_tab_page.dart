@@ -57,8 +57,8 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 
-part 'tasks_tab_page_chrome_part.dart';
 part 'tasks_tab_page_active_filters_part.dart';
+part 'tasks_tab_page_chrome_part.dart';
 
 /// Signature for the create-task action invoked by the [TasksTabPage] FAB.
 typedef TasksTabCreateTaskCallback =
@@ -448,7 +448,8 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
     final onlyAutoCategory =
         activeFilterCount == 1 &&
         setEquals(liveFilter.selectedCategoryIds, const {''}) &&
-        getIt<EntitiesCacheService>().sortedCategories.isEmpty;
+        (ref.watch(entitiesCacheServiceProvider)?.sortedCategories.isEmpty ??
+            false);
     // Watched here (not only in the toggle widget) so flipping density
     // rebuilds every visible row.
     final compactList = ref.watch(taskListDensityControllerProvider);
