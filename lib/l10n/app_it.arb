@@ -3276,6 +3276,7 @@
   "designSystemStateMatrixTitle": "Matrice di Stato",
   "designSystemSuccessLabel": "Successo",
   "designSystemTabBarTitle": "Bar della scheda",
+  "designSystemTabHeaderFiltersLabel": "Filtri",
   "designSystemTabPendingLabel": "Finanziamenti",
   "designSystemTaskListBlockedLabel": "Bloccato",
   "designSystemTaskListDefaultLabel": "Predefinito",

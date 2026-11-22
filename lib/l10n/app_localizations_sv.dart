@@ -6953,6 +6953,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get designSystemTabBarTitle => 'Tabbar';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filter';
+
+  @override
   String get designSystemTabPendingLabel => 'Väntar';
 
   @override

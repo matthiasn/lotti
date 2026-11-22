@@ -11729,6 +11729,12 @@ abstract class AppLocalizations {
   /// **'Tab Bar'**
   String get designSystemTabBarTitle;
 
+  /// Chip under a tab's search field that opens the page's filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get designSystemTabHeaderFiltersLabel;
+
   /// No description provided for @designSystemTabPendingLabel.
   ///
   /// In en, this message translates to:

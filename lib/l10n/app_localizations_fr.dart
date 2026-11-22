@@ -7059,6 +7059,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemTabBarTitle => 'Barre d\'onglets';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filtres';
+
+  @override
   String get designSystemTabPendingLabel => 'En attente';
 
   @override

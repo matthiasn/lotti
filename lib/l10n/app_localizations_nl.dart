@@ -6962,6 +6962,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get designSystemTabBarTitle => 'Tabbalk';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filters';
+
+  @override
   String get designSystemTabPendingLabel => 'In afwachting';
 
   @override

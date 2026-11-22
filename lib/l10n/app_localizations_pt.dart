@@ -7031,6 +7031,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get designSystemTabBarTitle => 'Barra de guias';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filtros';
+
+  @override
   String get designSystemTabPendingLabel => 'Pendente';
 
   @override

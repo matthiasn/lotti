@@ -3275,6 +3275,7 @@
   "designSystemStateMatrixTitle": "Statusmatrix",
   "designSystemSuccessLabel": "Succes",
   "designSystemTabBarTitle": "Tabbalk",
+  "designSystemTabHeaderFiltersLabel": "Filters",
   "designSystemTabPendingLabel": "In afwachting",
   "designSystemTaskListBlockedLabel": "Geblokkeerd",
   "designSystemTaskListDefaultLabel": "Standaard",

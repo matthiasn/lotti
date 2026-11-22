@@ -7067,6 +7067,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemTabBarTitle => 'Bara de file';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filtre';
+
+  @override
   String get designSystemTabPendingLabel => 'În așteptare';
 
   @override

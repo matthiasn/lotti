@@ -2965,6 +2965,7 @@
   "designSystemStateMatrixTitle": "Matrice d'états",
   "designSystemSuccessLabel": "Succès",
   "designSystemTabBarTitle": "Barre d'onglets",
+  "designSystemTabHeaderFiltersLabel": "Filtres",
   "designSystemTabPendingLabel": "En attente",
   "designSystemTaskListBlockedLabel": "Bloqué",
   "designSystemTaskListDefaultLabel": "Par défaut",

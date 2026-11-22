@@ -2965,6 +2965,7 @@
   "designSystemStateMatrixTitle": "Matrice de stări",
   "designSystemSuccessLabel": "Succes",
   "designSystemTabBarTitle": "Bara de file",
+  "designSystemTabHeaderFiltersLabel": "Filtre",
   "designSystemTabPendingLabel": "În așteptare",
   "designSystemTaskListBlockedLabel": "Blocat",
   "designSystemTaskListDefaultLabel": "Implicit",

@@ -52,7 +52,13 @@ buckets; creation-date sort produces creation-day buckets.
 
 # The filter modal
 
-The filter button opens **one** adaptive `showDesignSystemFilterModal` route — a
+**Search keeps its row to itself.** In the expanded `TabSectionHeader` nothing
+sits in or beside the search field; the filter entry is a *Filters*
+`DesignSystemChip` leading the chip lane under it, selected while any clause
+narrows the list. The same header serves Tasks, Projects, Logbook and Events.
+The collapsed compact bar keeps its icon button.
+
+The Filters chip opens **one** adaptive `showDesignSystemFilterModal` route — a
 bottom sheet on compact layouts, a dialog on wide. The overview and its status,
 category, label and project pages **share one mutable draft**, so navigating
 deeper never stacks another modal. Child pages return with Back or Done; Apply and

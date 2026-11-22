@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/icon_tokens.dart';
@@ -60,8 +61,9 @@ const _family = EventCategoryFilter(
   color: eventBlue,
 );
 
-bool _funnelActive(WidgetTester tester) =>
-    tester.widget<TabHeaderIconButton>(find.byType(TabHeaderIconButton)).active;
+bool _funnelActive(WidgetTester tester) => tester
+    .widget<DesignSystemChip>(find.byKey(tabSectionHeaderFiltersKey))
+    .selected;
 
 void main() {
   group('EventsOverviewView', () {
@@ -145,7 +147,7 @@ void main() {
         size: _desktop,
       );
 
-      await tester.tap(find.byType(TabHeaderIconButton));
+      await tester.tap(find.byKey(tabSectionHeaderFiltersKey));
 
       expect(opened, 1);
     });

@@ -7033,6 +7033,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get designSystemTabBarTitle => 'Bar della scheda';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filtri';
+
+  @override
   String get designSystemTabPendingLabel => 'Finanziamenti';
 
   @override

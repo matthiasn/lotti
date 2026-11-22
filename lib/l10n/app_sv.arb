@@ -3276,6 +3276,7 @@
   "designSystemStateMatrixTitle": "Tillståndsmatris",
   "designSystemSuccessLabel": "Framgång",
   "designSystemTabBarTitle": "Tabbar",
+  "designSystemTabHeaderFiltersLabel": "Filter",
   "designSystemTabPendingLabel": "Väntar",
   "designSystemTaskListBlockedLabel": "Blockerad",
   "designSystemTaskListDefaultLabel": "Standard",

@@ -2965,6 +2965,7 @@
   "designSystemStateMatrixTitle": "Statusmatrix",
   "designSystemSuccessLabel": "Erfolg",
   "designSystemTabBarTitle": "Tab-Leiste",
+  "designSystemTabHeaderFiltersLabel": "Filter",
   "designSystemTabPendingLabel": "Ausstehend",
   "designSystemTaskListBlockedLabel": "Blockiert",
   "designSystemTaskListDefaultLabel": "Standard",

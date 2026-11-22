@@ -4433,6 +4433,10 @@
   "designSystemStateMatrixTitle": "State Matrix",
   "designSystemSuccessLabel": "Success",
   "designSystemTabBarTitle": "Tab Bar",
+  "designSystemTabHeaderFiltersLabel": "Filters",
+  "@designSystemTabHeaderFiltersLabel": {
+    "description": "Chip under a tab's search field that opens the page's filters."
+  },
   "designSystemTabPendingLabel": "Pending",
   "designSystemTaskListBlockedLabel": "Blocked",
   "designSystemTaskListDefaultLabel": "Default",

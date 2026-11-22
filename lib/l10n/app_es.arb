@@ -2965,6 +2965,7 @@
   "designSystemStateMatrixTitle": "Matriz de estados",
   "designSystemSuccessLabel": "Éxito",
   "designSystemTabBarTitle": "Barra de pestañas",
+  "designSystemTabHeaderFiltersLabel": "Filtros",
   "designSystemTabPendingLabel": "Pendiente",
   "designSystemTaskListBlockedLabel": "Bloqueado",
   "designSystemTaskListDefaultLabel": "Predeterminado",

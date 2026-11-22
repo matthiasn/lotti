@@ -10,6 +10,10 @@
   chips. Each item has one square checkbox. Swiping an item reveals a band
   that names the action (*Archive*, *Restore*, *Delete*). The AI completion
   suggestion opens in the app's usual sheet.
+- **The search field keeps its full width.** On Tasks, Projects, Logbook and
+  Events the filter button no longer sits beside the search field. A
+  *Filters* chip under the field opens the filters instead, and it is
+  highlighted while filters are active.
 - **Task labels are in sentence case.** For example *Due today*, *In
   progress*, *Linked tasks*. Priority now reads the same word in the active
   filter chips as on the rest of the task page.

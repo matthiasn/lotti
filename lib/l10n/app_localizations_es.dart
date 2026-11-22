@@ -7038,6 +7038,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemTabBarTitle => 'Barra de pestañas';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filtros';
+
+  @override
   String get designSystemTabPendingLabel => 'Pendiente';
 
   @override

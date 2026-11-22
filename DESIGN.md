@@ -324,6 +324,8 @@ Motion is short and functional: 100–500ms, standard curve `cubic(0.2, 0, 0, 1)
 
 ## Do's and Don'ts
 
+**The Search Row Rule.** A search field keeps its row to itself: no control in or beside it takes its width. A list's filter entry is a *Filters* chip leading the chip lane beneath the field, selected while filters narrow the list.
+
 ### Do:
 - **Do** read every visual value from the tokens: `tokens.spacing.stepN`, `tokens.typography.styles.*`, `tokens.colors.*` and `tokens.radii.*`. `make token_check` ratchets raw values down per file.
 - **Do** keep teal for the user's actions and violet for agent-authored surfaces (The Two Voices Rule).

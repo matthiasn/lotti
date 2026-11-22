@@ -89,8 +89,8 @@ language updates both surfaces immediately without migrating an event.
 # Finding an event
 
 The overview header is the shared `TabSectionHeader` the Tasks, Projects and
-Logbook tabs use — title and bell, then a real search field beside the filter
-funnel — and the page, header and card grid share one content column
+Logbook tabs use — title and bell, a full-width search field, and a *Filters*
+chip leading the lane beneath it — and the page, header and card grid share one content column
 (`detailContentInsets`), so the title, the field and the first card start on
 the same edge. There is no events-only chip row: the category filter works the
 way the Tasks filter does.
@@ -129,12 +129,12 @@ filter cannot land on the new list. The previous list stays on screen while a re
 runs, and a filter that matches nothing shows an empty state that offers
 **Clear all** rather than a blank page.
 
-**Categories are multi-select, behind the funnel.** `showEventsFilterModal` is
+**Categories are multi-select, behind the Filters chip.** `showEventsFilterModal` is
 the shared `showDesignSystemFilterModal` with only the category field — Unassigned
 (`''`) first, then each category with its icon and colour. With a single field
 the shared modal opens straight on that field's page (see
 [Tasks filtering](tasks/filtering.md#the-filter-modal)). Applied categories show
-as `ActiveFilterChip`s in their own colours, the funnel tints, and from two
+as `ActiveFilterChip`s in their own colours, the Filters chip is selected, and from two
 narrowings up — the query counts as one — a **Clear all** chip ends the session.
 
 **New event** is the page's `DesignSystemFloatingActionButton`, a bare glyph

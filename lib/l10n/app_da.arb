@@ -3276,6 +3276,7 @@
   "designSystemStateMatrixTitle": "Tilstandsmatrix",
   "designSystemSuccessLabel": "Succes",
   "designSystemTabBarTitle": "Tab-bar",
+  "designSystemTabHeaderFiltersLabel": "Filtre",
   "designSystemTabPendingLabel": "Afventer",
   "designSystemTaskListBlockedLabel": "Blokeret",
   "designSystemTaskListDefaultLabel": "Default",

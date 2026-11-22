@@ -7038,6 +7038,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemTabBarTitle => 'Panel záložek';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filtry';
+
+  @override
   String get designSystemTabPendingLabel => 'Čekající';
 
   @override
