@@ -115,6 +115,8 @@ DEPENDENCIES:
   - just_waveform (from `Flutter/ephemeral/.symlinks/plugins/just_waveform/darwin`)
   - media_kit_libs_macos_audio (from `Flutter/ephemeral/.symlinks/plugins/media_kit_libs_macos_audio/macos`)
   - objectbox_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/objectbox_flutter_libs/macos`)
+  - onnxruntime-c (from `../third_party/onnxruntime_apple/onnxruntime-c.podspec.json`)
+  - onnxruntime-objc (from `../third_party/onnxruntime_apple/onnxruntime-objc.podspec.json`)
   - OpenSSL-Universal
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
@@ -134,8 +136,6 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - ObjectBox
-    - onnxruntime-c
-    - onnxruntime-objc
     - OpenSSL-Universal
 
 EXTERNAL SOURCES:
@@ -183,6 +183,10 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/media_kit_libs_macos_audio/macos
   objectbox_flutter_libs:
     :path: Flutter/ephemeral/.symlinks/plugins/objectbox_flutter_libs/macos
+  onnxruntime-c:
+    :podspec: "../third_party/onnxruntime_apple/onnxruntime-c.podspec.json"
+  onnxruntime-objc:
+    :podspec: "../third_party/onnxruntime_apple/onnxruntime-objc.podspec.json"
   package_info_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos
   path_provider_foundation:
@@ -236,8 +240,8 @@ SPEC CHECKSUMS:
   media_kit_libs_macos_audio: 06f3cf88d6d89c7c3c87eae57689d1c6adb335b2
   ObjectBox: 2aae8ad350012cb53c6e7848064307cf68617f73
   objectbox_flutter_libs: c6ec3df598aa194da1cdf929fc9640bbc8f58be1
-  onnxruntime-c: b58bafbc58707d165404665e46a7467a16e8e0e4
-  onnxruntime-objc: 99e0fe4b6d606970c6c1350c194c7629ef6e6fc9
+  onnxruntime-c: afbf0e2e60dc23db6a1955a15321eee0574a3d1e
+  onnxruntime-objc: c2beaab33619ad4c9232ba41c7fb220104a5798a
   OpenSSL-Universal: 9110d21982bb7e8b22a962b6db56a8aa805afde7
   package_info_plus: f0052d280d17aa382b932f399edf32507174e870
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
@@ -254,6 +258,6 @@ SPEC CHECKSUMS:
   video_player_avfoundation: 3453f792138786248960ca029747fcd9f318ef52
   window_manager: b729e31d38fb04905235df9ea896128991cad99e
 
-PODFILE CHECKSUM: 481248ab00d30452d8c6bfe642a8daa6f28d838c
+PODFILE CHECKSUM: 1870c5da627524d82eb075ccb51913d205174e78
 
 COCOAPODS: 1.16.2

@@ -129,7 +129,10 @@ When bumping `flutter_onnxruntime`, re-vendor the new version and re-apply the
 
 If the bundled ONNX Runtime **version** changes, also update the pinned binary
 URL + per-arch `sha256` in the Flathub manifest's `onnxruntime` module
-(`flatpak/com.matthiasn.lotti.flatpak-flutter.yml`).
+(`flatpak/com.matthiasn.lotti.flatpak-flutter.yml`), and the iOS/macOS pod
+specs in `third_party/onnxruntime_apple/`. Both Podfiles take `onnxruntime-c`
+and `onnxruntime-objc` from there because their upstream download host is gone.
+Its README explains how to pin a new version.
 
 The application overrides the Linux runtime version to match sherpa's ASR
 runtime. The shared-library packaging contract is documented in

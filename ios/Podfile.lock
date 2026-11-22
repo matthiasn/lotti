@@ -143,6 +143,8 @@ DEPENDENCIES:
   - just_waveform (from `.symlinks/plugins/just_waveform/darwin`)
   - media_kit_libs_ios_audio (from `.symlinks/plugins/media_kit_libs_ios_audio/ios`)
   - objectbox_flutter_libs (from `.symlinks/plugins/objectbox_flutter_libs/ios`)
+  - onnxruntime-c (from `../third_party/onnxruntime_apple/onnxruntime-c.podspec.json`)
+  - onnxruntime-objc (from `../third_party/onnxruntime_apple/onnxruntime-objc.podspec.json`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
@@ -161,8 +163,6 @@ SPEC REPOS:
   trunk:
     - libwebp
     - ObjectBox
-    - onnxruntime-c
-    - onnxruntime-objc
     - SDWebImage
     - SDWebImageWebPCoder
 
@@ -219,6 +219,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/media_kit_libs_ios_audio/ios"
   objectbox_flutter_libs:
     :path: ".symlinks/plugins/objectbox_flutter_libs/ios"
+  onnxruntime-c:
+    :podspec: "../third_party/onnxruntime_apple/onnxruntime-c.podspec.json"
+  onnxruntime-objc:
+    :podspec: "../third_party/onnxruntime_apple/onnxruntime-objc.podspec.json"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
@@ -275,8 +279,8 @@ SPEC CHECKSUMS:
   media_kit_libs_ios_audio: 905e6323b72e65c63ab9262b2e473f52c024a3a8
   ObjectBox: 2aae8ad350012cb53c6e7848064307cf68617f73
   objectbox_flutter_libs: 42b57158b8c4869b731487f220e07d6edc6616e0
-  onnxruntime-c: b58bafbc58707d165404665e46a7467a16e8e0e4
-  onnxruntime-objc: 99e0fe4b6d606970c6c1350c194c7629ef6e6fc9
+  onnxruntime-c: afbf0e2e60dc23db6a1955a15321eee0574a3d1e
+  onnxruntime-objc: c2beaab33619ad4c9232ba41c7fb220104a5798a
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   permission_handler_apple: 92d754bbaa7361d436db2d6c3c1c2a0fdcec462e
@@ -293,6 +297,6 @@ SPEC CHECKSUMS:
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   video_player_avfoundation: bc5f800d1e1c4f389bc5d51778a4f89dd1bf4a77
 
-PODFILE CHECKSUM: 42f202ec693eb2d5e19e000bf11590a1ac4ee130
+PODFILE CHECKSUM: d51e7e64ad05142fe876979b7689db52f90c257b
 
 COCOAPODS: 1.16.2
