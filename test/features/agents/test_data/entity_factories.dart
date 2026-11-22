@@ -1,6 +1,7 @@
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/agents/attention_negotiation.dart';
 import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:lotti/classes/day_directive_models.dart';
@@ -213,6 +214,7 @@ AgentReportEntity makeTestReport({
   String? oneLiner,
   double? confidence,
   Map<String, Object?> provenance = const {},
+  List<AgentReportSection> sections = const [],
 }) {
   return AgentDomainEntity.agentReport(
         id: id,
@@ -223,6 +225,7 @@ AgentReportEntity makeTestReport({
         content: content,
         tldr: tldr,
         oneLiner: oneLiner,
+        sections: sections,
         confidence: confidence,
         provenance: provenance,
       )

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -999,7 +1000,7 @@ void main() {
         expect(models, [meliousQwen35122BA10BModelId]);
         expect(capturedTemperature, 0);
         expect(systemMessage, contains('## Scope Erasure'));
-        expect(systemMessage, contains('Write free-form Markdown'));
+        expect(systemMessage, contains('Write the report as sections'));
         expect(systemMessage, isNot(contains('Examples of the boundary:')));
         final captured = verify(
           () => mockSyncService.upsertEntity(captureAny()),
@@ -1325,6 +1326,106 @@ void main() {
           everyElement(meliousQwen35122BA10BModelId),
         );
       });
+
+      test(
+        'a sectioned report is stored cleaned, sections and text alike',
+        () async {
+          stubMeliousTaskAgentModel(
+            providerId: 'melious-provider-sections',
+            modelConfigId: 'deepseek-model',
+            modelName: 'DeepSeek',
+            providerModelId: meliousDeepseekV41FlashModelId,
+          );
+          final capturingRepo =
+              MockConversationRepository(mockConversationManager)
+                ..sendMessageDelegate =
+                    ({
+                      required conversationId,
+                      required message,
+                      required model,
+                      required provider,
+                      required inferenceRepo,
+                      tools,
+                      toolChoice,
+                      temperature = 0.7,
+                      strategy,
+                    }) async {
+                      await strategy!.processToolCalls(
+                        toolCalls: [
+                          ChatCompletionMessageToolCall(
+                            id: 'report-call',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: TaskAgentToolNames.updateReport,
+                              arguments: jsonEncode({
+                                'oneLiner': 'Fix profile seeding',
+                                'tldr': 'Seeding is the next fix.',
+                                'sections': [
+                                  {
+                                    'kind': 'checklist',
+                                    'title': 'Next actions',
+                                    'items': [
+                                      {'text': 'Fix profile seeding'},
+                                    ],
+                                  },
+                                  {
+                                    'kind': 'points',
+                                    'title': 'Links',
+                                    'items': [
+                                      {'text': 'No links yet'},
+                                    ],
+                                  },
+                                ],
+                              }),
+                            ),
+                          ),
+                        ],
+                        manager: mockConversationManager,
+                      );
+                      return const InferenceUsage(
+                        inputTokens: 100,
+                        outputTokens: 20,
+                      );
+                    };
+          final workflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+          );
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          final report = capturedEntitiesOfType<AgentReportEntity>(
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured,
+          ).single;
+          // The linkless Links section leaves both the card and the text.
+          expect(report.sections, const [
+            AgentReportSection(
+              kind: AgentReportSectionKind.checklist,
+              title: 'Next actions',
+              items: [AgentReportSectionItem(text: 'Fix profile seeding')],
+            ),
+          ]);
+          expect(
+            report.content,
+            '## Next actions\n\n- [ ] Fix profile seeding',
+          );
+        },
+      );
 
       for (final (name, modelId) in [
         ('DeepSeek', meliousDeepseekV41FlashModelId),

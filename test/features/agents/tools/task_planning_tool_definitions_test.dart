@@ -207,17 +207,25 @@ void main() {
         expect(tool.description, isNot(contains('end of every wake')));
       });
 
-      test('requires oneLiner, tldr, and content parameters', () {
+      test('requires oneLiner, tldr, and sections parameters', () {
         final properties = tool.parameters['properties'] as Map;
         final oneLinerProp = properties['oneLiner'] as Map;
         expect(oneLinerProp['type'], equals('string'));
         final tldrProp = properties['tldr'] as Map;
         expect(tldrProp['type'], equals('string'));
-        final contentProp = properties['content'] as Map;
-        expect(contentProp['type'], equals('string'));
-        expect(tool.parameters['required'], contains('oneLiner'));
-        expect(tool.parameters['required'], contains('tldr'));
-        expect(tool.parameters['required'], contains('content'));
+        final sectionsProp = properties['sections'] as Map;
+        expect(sectionsProp['type'], equals('array'));
+        final section = sectionsProp['items'] as Map;
+        expect(
+          ((section['properties'] as Map)['kind'] as Map)['enum'],
+          ['points', 'checklist', 'text'],
+        );
+        expect(section['required'], ['kind']);
+        expect(
+          tool.parameters['required'],
+          ['oneLiner', 'tldr', 'sections'],
+        );
+        expect(properties.containsKey('content'), isFalse);
         expect(properties.containsKey('markdown'), isFalse);
       });
     });

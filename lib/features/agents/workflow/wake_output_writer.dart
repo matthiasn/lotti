@@ -3,6 +3,7 @@ import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
@@ -71,6 +72,8 @@ class WakeOutputWriter {
   /// against ([TaskAgentReportPolicy.taskFactsSnapshot]), stored in its
   /// provenance. [nextScheduledWakeAt] replaces the agent's device-local
   /// `scheduledWakeAt` — the next due-date boundary, or `null` for none.
+  /// [reportSections] is the structured body, when the agent wrote one; the
+  /// stored content is then its Markdown.
   ///
   /// Returns the report details to embed post-commit, or `null` if no report
   /// was written this wake (an empty [reportContent]).
@@ -93,12 +96,28 @@ class WakeOutputWriter {
     ReportInferenceProvenance? reportProvenance,
     Map<String, Object?>? reportTaskFacts,
     DateTime? nextScheduledWakeAt,
+    List<AgentReportSection> reportSections = const [],
   }) async {
     // Collects report details inside the transaction for post-commit
     // embedding. Declared outside so it survives the transaction scope.
     WakeReportToEmbed? reportToEmbed;
 
-    final sanitizedContent = sanitizeAgentReportText(reportContent);
+    final sanitizedSections = [
+      for (final section in reportSections)
+        section.copyWith(
+          title: sanitizeAgentReportText(section.title),
+          text: sanitizeAgentReportText(section.text),
+          items: [
+            for (final item in section.items)
+              item.copyWith(text: sanitizeAgentReportText(item.text)),
+          ],
+        ),
+    ];
+    // A sectioned report stores its sanitized sections' Markdown, so the text
+    // and the sections cannot disagree.
+    final sanitizedContent = sanitizedSections.isEmpty
+        ? sanitizeAgentReportText(reportContent)
+        : renderAgentReportSectionsMarkdown(sanitizedSections);
     final sanitizedTldr = reportTldr == null
         ? null
         : sanitizeAgentReportText(reportTldr);
@@ -167,6 +186,7 @@ class WakeOutputWriter {
             content: sanitizedContent,
             tldr: sanitizedTldr,
             oneLiner: sanitizedOneLiner,
+            sections: sanitizedSections,
             provenance: <String, Object?>{
               ...?reportProvenance?.toReportMap(),
               TaskAgentReportPolicy.taskFactsProvenanceKey: ?reportTaskFacts,

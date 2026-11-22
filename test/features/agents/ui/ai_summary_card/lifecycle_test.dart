@@ -285,7 +285,7 @@ void main() {
         // hidden rather than offering an empty interaction. The internals
         // link is not about the report, and stays.
         expect(find.text('Read more'), findsNothing);
-        expect(find.text('Open agent internals'), findsOneWidget);
+        expect(find.text('Agent details'), findsOneWidget);
         // Still exactly one copy of the content — no duplicated report body.
         expect(find.text('Bare content becomes the tldr.'), findsOneWidget);
       },

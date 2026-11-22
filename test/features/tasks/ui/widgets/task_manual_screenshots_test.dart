@@ -16,6 +16,7 @@ import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_response_type.dart';
@@ -225,12 +226,43 @@ final AgentTemplateEntity _manualTaskAgentTemplate =
           vectorClock: null,
         )
         as AgentTemplateEntity;
+
+/// The fixture report as the agent now writes it: one section per heading,
+/// a list as points and a paragraph as text. Derived from the localized
+/// Markdown above so every manual locale keeps its translation.
+List<AgentReportSection> _sectionsFrom(String markdown) => [
+  for (final block in markdown.split(RegExp('^## ', multiLine: true)))
+    if (block.trim().isNotEmpty)
+      () {
+        final lines = block.trim().split('\n');
+        final body = [
+          for (final line in lines.skip(1))
+            if (line.trim().isNotEmpty) line.trim(),
+        ];
+        return body.every((line) => line.startsWith('- '))
+            ? AgentReportSection(
+                kind: AgentReportSectionKind.points,
+                title: lines.first.trim(),
+                items: [
+                  for (final line in body)
+                    AgentReportSectionItem(text: line.substring(2)),
+                ],
+              )
+            : AgentReportSection(
+                kind: AgentReportSectionKind.text,
+                title: lines.first.trim(),
+                text: body.join(' '),
+              );
+      }(),
+];
+
 final AgentReportEntity _manualAgentReport = makeTestReport(
   id: 'report-habitat-watcher',
   agentId: _manualTaskAgentId,
   createdAt: manualDemoNow.subtract(const Duration(minutes: 4)),
   tldr: _manualTaskAgentTldr,
   content: _manualTaskAgentReport,
+  sections: _sectionsFrom(_manualTaskAgentReport),
   oneLiner: _t(
     'Habitat stable; zero-gravity sardine feeder blocks sign-off.',
     'Habitat stabil; der Schwerelos-Futterautomat verhindert die Freigabe.',
@@ -771,7 +803,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.text(messages.aiCardOpenAgentInternals),
+          find.text(messages.aiInternalsTitle),
           findsOneWidget,
         );
         expect(find.text(messages.aiCardShowLess), findsOneWidget);

@@ -2934,12 +2934,6 @@ abstract class AppLocalizations {
   /// **'More actions'**
   String get aiCardMenuTooltip;
 
-  /// No description provided for @aiCardOpenAgentInternals.
-  ///
-  /// In en, this message translates to:
-  /// **'Open agent internals'**
-  String get aiCardOpenAgentInternals;
-
   /// No description provided for @aiCardProposalConfirmed.
   ///
   /// In en, this message translates to:
@@ -3597,7 +3591,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiInternalsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Agent internals'**
+  /// **'Agent details'**
   String get aiInternalsTitle;
 
   /// No description provided for @aiModelCardDeleteTooltip.

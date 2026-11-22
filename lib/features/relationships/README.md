@@ -71,7 +71,7 @@ marks a relationship briefing stale. One status line under the title says which,
 its glyph. Every face closes the way the task agent's card does, on one line:
 the model row naming the model and provider, and *Update now* — *Thinking…*
 while a briefing is written, waiting while no model is set up. Tapping the
-header, or *Open agent internals* beside *Read more*, opens the agent's
+header, or *Agent details* beside *Read more*, opens the agent's
 activity; the model row opens the model setup. Without reminders the card is an offer:
 how often, and *Turn on reminders*. An out-of-date briefing says its age
 on the status line; open task proposals are counted by their own band
@@ -82,7 +82,7 @@ starts at once, with no confirmation; while a new briefing is written the
 previous one stays readable under the spinner, and after a failed run it
 stays readable under the failure, with its age. The agent keeps private notes
 between briefings — a corrected name, a complaint about its briefing, how
-things feel — shown under *Agent internals*, and reads them back the next
+things feel — shown under *Agent details*, and reads them back the next
 time it writes. The chat talks to the briefing agent about the person, never
 to the person.
 

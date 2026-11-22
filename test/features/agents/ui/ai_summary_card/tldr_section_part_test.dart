@@ -3,6 +3,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/agent_report_sections_view.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
@@ -736,6 +738,38 @@ void main() {
   });
 
   group('TldrBody', () {
+    testWidgets('expanded, sections replace the Markdown body', (
+      tester,
+    ) async {
+      Widget body({required bool expanded}) => makeTestableWidget(
+        TldrBody(
+          tldr: 'Summary first.',
+          expanded: expanded,
+          additionalReport: '## Next actions\n\n- [ ] Run the test',
+          sections: const [
+            AgentReportSection(
+              kind: AgentReportSectionKind.checklist,
+              title: 'Next actions',
+              items: [AgentReportSectionItem(text: 'Run the test')],
+            ),
+          ],
+          onToggle: () {},
+          disclosureKey: const ValueKey('disclosure'),
+        ),
+      );
+
+      await tester.pumpWidget(body(expanded: false));
+      expect(find.byType(AgentReportSectionsView), findsNothing);
+      expect(find.text('Read more'), findsOneWidget);
+
+      await tester.pumpWidget(body(expanded: true));
+      expect(find.byType(AgentReportSectionsView), findsOneWidget);
+      expect(find.text('Run the test'), findsOneWidget);
+      // Only the summary is still drawn as Markdown.
+      expect(find.byType(AgentMarkdownView), findsNWidgets(2));
+      expect(find.textContaining('- [ ]'), findsNothing);
+    });
+
     testWidgets('a trailing widget sits after the report and above its '
         'disclosure row', (tester) async {
       await tester.pumpWidget(
@@ -894,13 +928,13 @@ void main() {
       );
 
       // Collapsed: the link is already there, beside Read more.
-      await tester.tap(find.text('Open agent internals'));
+      await tester.tap(find.text('Agent details'));
       await tester.pump();
       expect(internalsTaps, 1);
 
       await tester.tap(find.text('Read more'));
       await tester.pump();
-      await tester.tap(find.text('Open agent internals'));
+      await tester.tap(find.text('Agent details'));
 
       expect(internalsTaps, 2);
     });

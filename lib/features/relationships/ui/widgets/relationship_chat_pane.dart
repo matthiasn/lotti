@@ -45,7 +45,7 @@ class RelationshipChatPane extends ConsumerWidget {
   /// sidebar, where the person page stays beside the chat.
   final VoidCallback? onClose;
 
-  /// Whether the header offers *Agent internals*. The desktop pane does,
+  /// Whether the header offers *Agent details*. The desktop pane does,
   /// because it has the width for a labelled button and no other way in.
   final bool showInternalsAction;
 

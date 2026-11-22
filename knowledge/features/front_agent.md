@@ -1715,7 +1715,7 @@ never a filled twin of the user's own bubble —
 under her **latest** question only (an older question's options would answer
 a question nobody is asking). The thread shows only what was said: no cost
 line under her words — what the open conversation has cost is the drawer's
-*Agent internals* row to say (`frontConversationCostProvider`, every run
+*Agent details* row to say (`frontConversationCostProvider`, every run
 of hers in the conversation — `FrontChatThread.runKeys`, gathered before the
 thread's fifty-message window, so the total never shrinks as it moves —
 summed from `agentRunConsumptionTotalsProvider`,
@@ -1827,7 +1827,7 @@ on, with the way to have her say her latest answer again
 conversation; *Reading speed* (`FrontVoiceSpeedRow`) under it while she
 answers aloud, a tap stepping to the next speed; *AI profile*, once she exists and the profiles are loaded,
 naming the profile she has of her own, else the Settings default she follows
-(`FrontProfileChoice`); and *Agent internals*, with what the open
+(`FrontProfileChoice`); and *Agent details*, with what the open
 conversation has cost (none in the inbox), opening `AgentInternalsPanel`.
 
 A conversation not begun opens on her invitation, centred where the thread

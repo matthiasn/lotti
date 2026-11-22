@@ -267,7 +267,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('person-chat-internals')),
-        matching: find.text('Agent internals'),
+        matching: find.text('Agent details'),
       ),
       findsNothing,
       reason: 'a phone header has no room for the word beside the name',
@@ -280,7 +280,7 @@ void main() {
     );
 
     expect(
-      find.widgetWithText(DesignSystemButton, 'Agent internals'),
+      find.widgetWithText(DesignSystemButton, 'Agent details'),
       findsOneWidget,
     );
   });
@@ -326,7 +326,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.widgetWithText(DesignSystemButton, 'Agent internals'),
+      find.widgetWithText(DesignSystemButton, 'Agent details'),
       findsNothing,
       reason: 'the header is narrow even though the window is not',
     );

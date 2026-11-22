@@ -62,7 +62,7 @@ export 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_pa
 /// The schedule, the automatic-updates switch and the model identity
 /// are not here: they are agent plumbing, and live in
 /// `AgentMaintenanceSection` inside the internals panel the header name
-/// and the *Open agent internals* link both open.
+/// and the *Agent details* link both open.
 ///
 /// The card is a library split across part files in the
 /// `ai_summary_card/` directory:
@@ -657,6 +657,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       tldr: tldr,
       expanded: _expanded,
       additionalReport: additionalReport,
+      sections: report?.sections ?? const [],
       onToggle: () => setState(() => _expanded = !_expanded),
       onOpenInternals: () => _openInternals(agentName: subtitle),
     );

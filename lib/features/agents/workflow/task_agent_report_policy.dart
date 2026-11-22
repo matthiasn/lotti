@@ -1,4 +1,5 @@
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
@@ -19,6 +20,53 @@ abstract final class TaskAgentReportPolicy {
       'unchanged content. A reply without a tool call ends the wake, so send '
       'it only after every tool call the evidence calls for. Label or '
       'language housekeeping alone does not require a new report.';
+
+  /// JSON schema of one entry in `update_report`'s `sections` array, shared
+  /// by the executor's tool and the report editor's.
+  static const sectionSchema = <String, dynamic>{
+    'type': 'object',
+    'properties': {
+      'kind': {
+        'type': 'string',
+        'enum': ['points', 'checklist', 'text'],
+        'description':
+            '`points`: a bulleted list in `items`. `checklist`: to-dos in '
+            '`items`, each marked `done` or not. `text`: one paragraph in '
+            '`text`.',
+      },
+      'title': {
+        'type': 'string',
+        'description':
+            'The section heading in the task language. Leave it empty only '
+            'for a lead paragraph that needs no heading.',
+      },
+      'text': {
+        'type': 'string',
+        'description': 'The paragraph of a `text` section; inline Markdown.',
+      },
+      'items': {
+        'type': 'array',
+        'description': 'The rows of a `points` or `checklist` section.',
+        'items': {
+          'type': 'object',
+          'properties': {
+            'text': {
+              'type': 'string',
+              'description': 'One row; inline Markdown such as a link.',
+            },
+            'done': {
+              'type': 'boolean',
+              'description': 'Checklist rows only: the to-do is done.',
+            },
+          },
+          'required': ['text'],
+          'additionalProperties': false,
+        },
+      },
+    },
+    'required': ['kind'],
+    'additionalProperties': false,
+  };
 
   /// Existing-report context contains no prior report prose.
   static const existingReportContext = '''
@@ -50,7 +98,7 @@ A report already exists. Before publishing, identify a new or corrected task fac
       'two required sections plus a source section when a URL exists means '
       'three sections when a URL is present. Build this heading outline before '
       'writing the prose, then fill each section. Before calling update_report, '
-      'check the content against that outline: every required and activated '
+      'check the sections against that outline: every required and activated '
       'conditional heading must be present with its exact spelling, '
       'translated into the task language. '
       'Evidence activating a section must appear under its requested heading; '
@@ -435,6 +483,40 @@ A report already exists. Before publishing, identify a new or corrected task fac
   static String withoutPublicationNoise(String report) {
     final cleaned = withoutEmptySections(withoutAbsentMetadataNotes(report));
     return cleaned.trim().isEmpty ? report : cleaned;
+  }
+
+  /// [sections] put through the same filters as [withoutPublicationNoise],
+  /// so the card never shows what the stored Markdown dropped: absent-metadata
+  /// notes leave every row and paragraph, and a section the Markdown rules
+  /// would drop (empty, "none", a Links section without a link) goes whole.
+  /// Like the Markdown filter, it keeps [sections] when nothing would remain.
+  ///
+  /// shortcut: each section is checked alone, so a reference link defined in
+  /// another section does not count as a link; move to whole-report label
+  /// lookup if reports start using reference-style links.
+  static List<AgentReportSection> withoutPublicationNoiseSections(
+    List<AgentReportSection> sections,
+  ) {
+    final cleaned = <AgentReportSection>[];
+    for (final section in sections) {
+      final candidate = section.copyWith(
+        text: withoutAbsentMetadataNotes(section.text),
+        items: [
+          for (final item in section.items)
+            if (withoutAbsentMetadataNotes(item.text) case final text
+                when text.isNotEmpty)
+              item.copyWith(text: text),
+        ],
+      );
+      final rendered = renderAgentReportSectionsMarkdown([candidate]);
+      final hasBody = candidate.kind == AgentReportSectionKind.text
+          ? candidate.text.isNotEmpty
+          : candidate.items.isNotEmpty;
+      if (hasBody && withoutEmptySections(rendered).isNotEmpty) {
+        cleaned.add(candidate);
+      }
+    }
+    return cleaned.isEmpty ? sections : cleaned;
   }
 
   /// [report] without Markdown sections whose body only says "none".

@@ -1,6 +1,6 @@
 {
   "_comment": "Dart files in lib/ allowed above the 1,000-line limit, each held at its current size. A file may shrink, never grow: lower its entry when it does, and delete the entry once it is at or below the limit.",
   "files": {
-    "lib/classes/agents/agent_domain_entity.dart": 1279
+    "lib/classes/agents/agent_domain_entity.dart": 1270
   }
 }

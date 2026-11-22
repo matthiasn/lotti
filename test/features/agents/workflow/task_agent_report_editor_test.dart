@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/ai/ai_call_impact.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -69,6 +70,51 @@ turn task metadata or a checklist edit into an accomplishment.
         reason: '$invalid',
       );
     }
+  });
+
+  test('a sectioned draft carries its sections and their Markdown', () {
+    const sections = [
+      AgentReportSection(
+        kind: AgentReportSectionKind.points,
+        title: 'Next moves',
+        items: [AgentReportSectionItem(text: 'Ship it')],
+      ),
+    ];
+    // The editor's raw tool arguments and the executor's parsed sections
+    // both yield the same draft.
+    for (final raw in <Object>[
+      [
+        {
+          'kind': 'points',
+          'title': 'Next moves',
+          'items': [
+            {'text': 'Ship it'},
+          ],
+        },
+      ],
+      sections,
+    ]) {
+      final draft = TaskAgentReportDraft.fromJson({
+        'oneLiner': 'Ship it',
+        'tldr': 'Shipping is next.',
+        'sections': raw,
+        'content': 'ignored when sections parse',
+      });
+      expect(draft?.sections, sections, reason: '$raw');
+      expect(draft?.toJson(), {
+        'oneLiner': 'Ship it',
+        'tldr': 'Shipping is next.',
+        'content': '## Next moves\n\n- Ship it',
+      });
+    }
+    expect(
+      TaskAgentReportDraft.fromJson(const {
+        'oneLiner': 'Ship it',
+        'tldr': 'Shipping is next.',
+        'sections': <Object>[],
+      }),
+      isNull,
+    );
   });
 
   test('editor support is limited to the validated Melious route', () {
@@ -166,12 +212,12 @@ turn task metadata or a checklist edit into an accomplishment.
       allOf(contains('German'), contains('target date'), contains('12 words')),
     );
     expect(
-      (properties['content']! as Map<String, dynamic>)['description'],
+      (properties['sections']! as Map<String, dynamic>)['description'],
       allOf(
         contains('German'),
         contains('headings'),
         contains('reportDirective'),
-        contains('title, detail, and section policy'),
+        contains('detail, and section policy'),
         contains('real `http://` or `https://` URL'),
         contains('waits for the user'),
         contains('user-marked complete'),

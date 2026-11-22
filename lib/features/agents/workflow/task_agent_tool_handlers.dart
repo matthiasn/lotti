@@ -5,7 +5,8 @@ part of 'task_agent_strategy.dart';
 /// library; the class-side `processToolCalls` dispatches into them.
 extension TaskAgentToolHandlers on TaskAgentStrategy {
   /// Handles the `update_report` tool call by capturing the one-liner, TLDR,
-  /// and content.
+  /// and sections, with their Markdown form as the content. A plain `content`
+  /// string is still taken from a model that ignored the schema.
   ///
   /// If the LLM calls this more than once per wake, the last call wins — the
   /// previous content is silently replaced. This is by design: the agent
@@ -16,7 +17,10 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
     String callId,
     ConversationManager manager,
   ) async {
-    final contentArg = args['content'];
+    final sections = parseAgentReportSections(args['sections']);
+    final contentArg = sections.isEmpty
+        ? args['content']
+        : renderAgentReportSectionsMarkdown(sections);
     final rawTldr = args['tldr'];
     final rawOneLiner = args['oneLiner'];
     final tldr = (rawTldr is String && rawTldr.trim().isNotEmpty)
@@ -49,6 +53,7 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
       }
 
       _reportContent = contentArg.trim();
+      _reportSections = sections;
       _reportTldr = tldr;
       _reportOneLiner = oneLiner;
 
@@ -69,7 +74,7 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
         toolName: TaskAgentStrategy.reportToolName,
       );
     } else {
-      const errorMsg = 'Error: "content" must be a non-empty string.';
+      const errorMsg = 'Error: "sections" must be a non-empty array.';
       manager.addToolResponse(
         toolCallId: callId,
         response: errorMsg,

@@ -6,32 +6,50 @@ typedef TaskAgentMutationRecord = ({
   Map<String, dynamic> arguments,
 });
 
-/// The three user-facing fields published by `update_report`.
+/// The user-facing fields published by `update_report`.
 class TaskAgentReportDraft {
   const TaskAgentReportDraft({
     required this.oneLiner,
     required this.tldr,
     required this.content,
+    this.sections = const [],
   });
 
   /// Creates a draft only when all required report fields are non-empty.
+  ///
+  /// `sections` is either the model's raw argument or already-parsed
+  /// sections; when it yields any, [content] is their Markdown form,
+  /// otherwise a plain `content` string is taken.
   static TaskAgentReportDraft? fromJson(Map<String, dynamic> value) {
     final oneLiner = _nonEmptyString(value['oneLiner']);
     final tldr = _nonEmptyString(value['tldr']);
-    final content = _nonEmptyString(value['content']);
+    final rawSections = value['sections'];
+    final sections = rawSections is List<AgentReportSection>
+        ? rawSections
+        : parseAgentReportSections(rawSections);
+    final content = sections.isEmpty
+        ? _nonEmptyString(value['content'])
+        : renderAgentReportSectionsMarkdown(sections);
     if (oneLiner == null || tldr == null || content == null) return null;
     return TaskAgentReportDraft(
       oneLiner: oneLiner,
       tldr: tldr,
       content: content,
+      sections: sections,
     );
   }
 
   final String oneLiner;
   final String tldr;
+
+  /// The report body as Markdown, the form every text check reads.
   final String content;
 
-  /// Serializes the draft for the compact editor request and regression checks.
+  /// The structured body the task card draws; empty for a Markdown report.
+  final List<AgentReportSection> sections;
+
+  /// Serializes the draft for the compact editor request and regression
+  /// checks, which read the Markdown [content].
   Map<String, dynamic> toJson() => {
     'oneLiner': oneLiner,
     'tldr': tldr,
@@ -41,7 +59,7 @@ class TaskAgentReportDraft {
 
 /// Known report defects that the bounded repair pass can correct.
 enum TaskAgentReportRevisionIssue {
-  invalidShape('Return non-empty oneLiner, tldr, and content fields.'),
+  invalidShape('Return non-empty oneLiner, tldr, and sections fields.'),
   missingPriority('Restore the current task priority.'),
   missingDueDate('Restore the current due date and its purpose.'),
   missingEstimate('Restore the current time estimate.'),

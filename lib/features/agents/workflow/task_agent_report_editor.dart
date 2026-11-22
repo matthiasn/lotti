@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
@@ -269,7 +271,7 @@ class TaskAgentReportEditor {
         parameters: {
           'type': 'object',
           'additionalProperties': false,
-          'required': ['oneLiner', 'tldr', 'content'],
+          'required': ['oneLiner', 'tldr', 'sections'],
           'properties': {
             'oneLiner': {
               'type': 'string',
@@ -294,12 +296,16 @@ class TaskAgentReportEditor {
                   'resolve a later event, and do not explain this evidence '
                   'rule in the report.',
             },
-            'content': {
-              'type': 'string',
+            'sections': {
+              'type': 'array',
+              'items': TaskAgentReportPolicy.sectionSchema,
               'description':
-                  'Flexible Markdown entirely in $languageInstruction. Follow '
+                  'The report as sections, entirely in $languageInstruction. '
+                  'The draft arrives as Markdown: each heading is a section '
+                  'title, a list is `points`, a to-do list is `checklist`, a '
+                  'paragraph is `text`. Follow '
                   'the supplied reportDirective for structure, headings, '
-                  'title, detail, and section policy. Translate any retained '
+                  'detail, and section policy. Translate any retained '
                   'headings into $languageInstruction. Omit empty, process-only, '
                   'and unsupported Status or Progress sections. '
                   'Omit Links or Reference unless it contains a real `http://` '

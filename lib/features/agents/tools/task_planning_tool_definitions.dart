@@ -230,8 +230,8 @@ final taskPlanningTools = <AgentToolDefinition>[
     name: TaskAgentToolNames.updateReport,
     description:
         '${TaskAgentReportPolicy.publicationRule} Provide a compact one-liner '
-        'tagline, a short TLDR summary, and the full report content as '
-        'markdown. Follow the report structure defined in your report '
+        'tagline, a short TLDR summary, and the full report as sections. '
+        'Follow the report structure defined in your report '
         'directive. Write in the task content language. Express your '
         'personality and voice from your directives.',
     parameters: {
@@ -251,12 +251,16 @@ final taskPlanningTools = <AgentToolDefinition>[
               'state. This is shown in the collapsed view. Be punchy and '
               'include 1-2 relevant emojis.',
         },
-        'content': {
-          'type': 'string',
-          'description': 'The full updated report as a markdown document.',
+        'sections': {
+          'type': 'array',
+          'description':
+              'The full updated report, one entry per section in reading '
+              'order. Each heading the report directive names becomes a '
+              'section title.',
+          'items': TaskAgentReportPolicy.sectionSchema,
         },
       },
-      'required': ['oneLiner', 'tldr', 'content'],
+      'required': ['oneLiner', 'tldr', 'sections'],
       'additionalProperties': false,
     },
   ),

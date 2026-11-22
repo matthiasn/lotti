@@ -1114,7 +1114,7 @@ void main() {
       );
     });
 
-    testWidgets('Open agent internals, beside Read more, opens the panel', (
+    testWidgets('Agent details, beside Read more, opens the panel', (
       tester,
     ) async {
       await pump(
@@ -1124,7 +1124,7 @@ void main() {
         state: agentState(failures: 1, failedAt: failedAt),
       );
 
-      await tester.tap(find.text('Open agent internals'));
+      await tester.tap(find.text('Agent details'));
       await tester.pumpAndSettle();
 
       expect(find.byType(AgentInternalsPanel), findsOneWidget);
@@ -1190,7 +1190,7 @@ void main() {
       // The card carries the agent's verbs and only those: logging a
       // check-in is the page's verb and lives on the sticky action bar. The
       // worded door to the internals is the task card's, beside Read more.
-      expect(find.text('Open agent internals'), findsOneWidget);
+      expect(find.text('Agent details'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('relationship-agent-log-check-in')),
         findsNothing,

@@ -1726,9 +1726,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiCardMenuTooltip => 'Mais ações';
 
   @override
-  String get aiCardOpenAgentInternals => 'Abrir detalhes internos do agente';
-
-  @override
   String get aiCardProposalConfirmed => 'Confirmado';
 
   @override
@@ -2115,7 +2112,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiInferenceErrorUnknownTitle => 'Erro';
 
   @override
-  String get aiInternalsTitle => 'Detalhes internos do agente';
+  String get aiInternalsTitle => 'Detalhes do agente';
 
   @override
   String get aiModelCardDeleteTooltip => 'Excluir modelo';

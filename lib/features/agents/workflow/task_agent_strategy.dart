@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/agents/retired_tool_calls.dart';
 import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -233,6 +234,7 @@ class TaskAgentStrategy extends ConversationStrategy {
   final Future<String> Function()? refreshLinkedPullRequests;
 
   String? _reportContent;
+  List<AgentReportSection> _reportSections = const [];
   String? _reportTldr;
   String? _reportOneLiner;
   String? _finalResponse;
@@ -632,6 +634,10 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Returns the markdown string, or empty string if the LLM never called
   /// `update_report`.
   String extractReportContent() => _reportContent ?? '';
+
+  /// The sections published via the `update_report` tool call; empty when
+  /// the model wrote Markdown or never called it.
+  List<AgentReportSection> extractReportSections() => _reportSections;
 
   /// Extracts the TLDR published via the `update_report` tool call.
   ///

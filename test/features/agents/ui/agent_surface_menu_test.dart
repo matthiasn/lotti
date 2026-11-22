@@ -262,7 +262,7 @@ void main() {
 
       final row = find.byKey(const ValueKey('row-internals'));
       expect(
-        find.descendant(of: row, matching: find.text('Agent internals')),
+        find.descendant(of: row, matching: find.text('Agent details')),
         findsOneWidget,
       );
       expect(

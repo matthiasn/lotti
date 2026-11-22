@@ -297,6 +297,13 @@ AgentReportEntity _$AgentReportEntityFromJson(Map<String, dynamic> json) =>
       content: json['content'] as String? ?? '',
       tldr: json['tldr'] as String?,
       oneLiner: json['oneLiner'] as String?,
+      sections:
+          (json['sections'] as List<dynamic>?)
+              ?.map(
+                (e) => AgentReportSection.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <AgentReportSection>[],
       confidence: (json['confidence'] as num?)?.toDouble(),
       provenance: json['provenance'] as Map<String, dynamic>? ?? const {},
       deletedAt: json['deletedAt'] == null
@@ -316,6 +323,7 @@ Map<String, dynamic> _$AgentReportEntityToJson(AgentReportEntity instance) =>
       'content': instance.content,
       'tldr': instance.tldr,
       'oneLiner': instance.oneLiner,
+      'sections': instance.sections,
       'confidence': instance.confidence,
       'provenance': instance.provenance,
       'deletedAt': instance.deletedAt?.toIso8601String(),

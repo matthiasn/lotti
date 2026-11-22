@@ -1,4 +1,6 @@
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/agent_report_sections_view.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -386,8 +388,13 @@ class TldrBody extends StatelessWidget {
     required this.disclosureKey,
     this.onOpenInternals,
     this.trailing,
+    this.sections = const [],
     super.key,
   });
+
+  /// The report body as sections; when given, the expanded body draws them
+  /// instead of rendering [additionalReport] as Markdown.
+  final List<AgentReportSection> sections;
 
   /// What the host says about the reading, after it and above its
   /// disclosure row — the person briefing's band rationale and sources —
@@ -448,7 +455,12 @@ class TldrBody extends StatelessWidget {
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: maxReadingWidth),
             child: SelectionArea(
-              child: AgentMarkdownView(additionalReport!, style: bodyStyle),
+              child: sections.isEmpty
+                  ? AgentMarkdownView(additionalReport!, style: bodyStyle)
+                  : AgentReportSectionsView(
+                      sections: sections,
+                      bodyStyle: bodyStyle,
+                    ),
             ),
           ),
         ],
@@ -481,7 +493,7 @@ class TldrBody extends StatelessWidget {
               // already says "Read more", and it costs no height there.
               if (onOpenInternals != null)
                 _QuietDisclosureLink(
-                  label: messages.aiCardOpenAgentInternals,
+                  label: messages.aiInternalsTitle,
                   icon: LottiIcons.tune,
                   onPressed: onOpenInternals!,
                 ),

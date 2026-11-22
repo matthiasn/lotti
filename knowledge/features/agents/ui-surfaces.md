@@ -8,6 +8,10 @@ status: stable
 generated: { by: claude-code/opus-5.5, at: 2026-11-06T12:00:00Z }
 stale_after: 2027-02-01
 sources:
+  - id: report-sections-view
+    resource: ../../../lib/features/agents/ui/ai_summary_card/agent_report_sections_view.dart
+    title: AgentReportSectionsView — the task report drawn from its sections
+    last_modified: 2026-11-22
   - id: unmet-request-callout
     resource: ../../../lib/features/agents/ui/ai_summary_card/unmet_request_callout.dart
     title: UnmetRequestCallout — the card's "I couldn't do what you asked"
@@ -99,9 +103,12 @@ flowchart LR
 Contents:
 
 - **TLDR header** (`AgentReportEntity.tldr`, falling back to the report's full
-  content when there is no separate TLDR — `resolveReportTldr`) plus an inline
-  expandable Goal / Achieved / Next / Learnings block under a quiet *Read more /
-  Show less* text link. *Chat* (`QueryAskButton(disc: true)`,
+  content when there is no separate TLDR — `resolveReportTldr`) plus the
+  full report under a quiet *Read more / Show less* text link. A report the
+  agent wrote as sections (ADR 0166) expands into `AgentReportSectionsView`:
+  each title over a bulleted list, a read-only checklist (checkbox glyphs,
+  announced as checked or not) or a paragraph. A report without sections
+  expands as Markdown through `AgentMarkdownView`. *Chat* (`QueryAskButton(disc: true)`,
   a glyph-only `DsAiDiscButton` announced as *Ask about this task*) leads the
   header's trailing rail, left of the read-aloud `TtsPlayButton`, which wears
   the same disc. It stands there whether or not a summary exists, and is
@@ -138,7 +145,7 @@ Contents:
     read aloud carries on in her mouth.
 
   Her tile stands outside the header's tap-to-internals ink at either
-  width, so only the title and agent name (and the *Open agent internals*
+  width, so only the title and agent name (and the *Agent details*
   link) open the internals; on a wide card she is no control at all; with no badge border in
   that ink, the agent name takes the accent on hover and the ink draws its
   focus ring.
@@ -292,7 +299,7 @@ while its report is current.
 
 Everything else that used to sit in a footer under the summary — the schedule
 sentence, the automatic-updates switch, the model identity and the setup
-chevron — is **agent plumbing**, and lives behind *Open agent internals*. That
+chevron — is **agent plumbing**, and lives behind *Agent details*. That
 is six controls the primary reading surface no longer carries.
 
 ## The unmet-request callout
@@ -774,7 +781,7 @@ rows in the system's type, a destructive row in the error ink, a setting as a
 the shared modal scrim (`ModalUtils.getModalBarrierColor`), under its trigger
 with the trailing edges aligned, and above it when there is no room below. A
 tap on the scrim or Escape closes it without acting; a row closes it, then
-acts. `agentInternalsMenuItem` is *Agent internals*, the panel's own title,
+acts. `agentInternalsMenuItem` is *Agent details*, the panel's own title,
 under the tune glyph. Both menus order themselves the same way: the page's own
 actions, a hairline (`startsGroup`), the agent's actions ending in the
 internals, a hairline, delete.
@@ -819,7 +826,7 @@ header, and the sidebar's wake rows for agents whose wake has no subject page of
 its own (a goal's or a person's), which used to jump to the Settings instance
 page instead. On the task and project cards it is reachable two ways: the header
 (its whole badge, title and name block is the tap target, from the shared
-`TldrHeader`) and the quiet *Open agent internals* text link under the report,
+`TldrHeader`) and the quiet *Agent details* text link under the report,
 which `TldrBody` shows whenever the host passes `onOpenInternals` — not only
 when the report is expanded. The goal agent's read uses `TldrHeader` plus an
 overflow-menu item; the relationship briefing shows the same link beside

@@ -244,7 +244,7 @@ final List<AgentToolDefinition> relationshipAgentTools = [
     name: RelationshipAgentToolNames.recordRelationshipObservations,
     description:
         'Record private notes for your later wakes. Never shown as the '
-        'briefing; the user can read them under Agent internals.',
+        'briefing; the user can read them under Agent details.',
     parameters: recordObservationsParameters(
       textDescription:
           'One self-contained note, naming the check-in or message it '

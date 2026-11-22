@@ -1715,9 +1715,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiCardMenuTooltip => 'Fler åtgärder';
 
   @override
-  String get aiCardOpenAgentInternals => 'Öppna agentens interna detaljer';
-
-  @override
   String get aiCardProposalConfirmed => 'Bekräftat';
 
   @override
@@ -2101,7 +2098,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiInferenceErrorUnknownTitle => 'Fel';
 
   @override
-  String get aiInternalsTitle => 'Agentens interna detaljer';
+  String get aiInternalsTitle => 'Agentdetaljer';
 
   @override
   String get aiModelCardDeleteTooltip => 'Radera modell';

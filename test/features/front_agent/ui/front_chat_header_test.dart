@@ -401,7 +401,7 @@ void main() {
       expect(find.byType(FrontVoiceButton), findsNothing);
       expect(find.byType(FrontVoiceSwitch), findsNothing);
       expect(find.text('AI profile'), findsNothing);
-      expect(find.text('Agent internals'), findsNothing);
+      expect(find.text('Agent details'), findsNothing);
     });
   });
 

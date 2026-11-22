@@ -3843,7 +3843,7 @@ void main() {
     // the title of the panel it opens.
     final entry = find.byKey(const ValueKey('goal-menu-internals'));
     expect(
-      find.descendant(of: entry, matching: find.text('Agent internals')),
+      find.descendant(of: entry, matching: find.text('Agent details')),
       findsOneWidget,
     );
 
@@ -3851,7 +3851,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AgentInternalsPanel), findsOneWidget);
-    expect(find.text('Agent internals'), findsOneWidget);
+    expect(find.text('Agent details'), findsOneWidget);
   });
 
   testWidgets('tapping the read card header opens the same internals panel', (
@@ -3905,7 +3905,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AgentInternalsPanel), findsOneWidget);
-    expect(find.text('Agent internals'), findsOneWidget);
+    expect(find.text('Agent details'), findsOneWidget);
   });
 
   testWidgets('a stale link or non-goal agent renders the not-found state '

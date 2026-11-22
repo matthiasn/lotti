@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/pull_request_link_source.dart';
@@ -1441,6 +1442,94 @@ void main() {
         ).called(1);
       });
 
+      test(
+        'captures sections and stores their Markdown as the content',
+        () async {
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-report',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_report',
+                arguments: jsonEncode({
+                  'sections': [
+                    {
+                      'kind': 'checklist',
+                      'title': 'Next actions',
+                      'items': [
+                        {'text': 'Run the feeder test', 'done': false},
+                      ],
+                    },
+                  ],
+                  // Ignored: sections win over a stray Markdown body.
+                  'content': '# Stale Markdown',
+                  'oneLiner': 'Feeder test next',
+                  'tldr': 'The feeder test is next.',
+                }),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(strategy.extractReportSections(), const [
+            AgentReportSection(
+              kind: AgentReportSectionKind.checklist,
+              title: 'Next actions',
+              items: [AgentReportSectionItem(text: 'Run the feeder test')],
+            ),
+          ]);
+          expect(
+            strategy.extractReportContent(),
+            '## Next actions\n\n- [ ] Run the feeder test',
+          );
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-report',
+              response: 'Report updated.',
+            ),
+          ).called(1);
+        },
+      );
+
+      test('a later Markdown-only call clears the earlier sections', () async {
+        for (final (id, args) in [
+          (
+            'call-1',
+            {
+              'sections': [
+                {'kind': 'text', 'text': 'First draft.'},
+              ],
+            },
+          ),
+          ('call-2', {'content': '## Progress\n\n- Shipped'}),
+        ]) {
+          await strategy.processToolCalls(
+            toolCalls: [
+              ChatCompletionMessageToolCall(
+                id: id,
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: 'update_report',
+                  arguments: jsonEncode({
+                    ...args,
+                    'oneLiner': 'Shipped',
+                    'tldr': 'It shipped.',
+                  }),
+                ),
+              ),
+            ],
+            manager: mockManager,
+          );
+        }
+
+        expect(strategy.extractReportSections(), isEmpty);
+        expect(strategy.extractReportContent(), '## Progress\n\n- Shipped');
+      });
+
       test('uses last update_report call when called multiple times', () async {
         for (final (id, content, oneLiner, tldr) in [
           ('call-1', '# First', 'First one-liner', 'First summary'),
@@ -1526,7 +1615,7 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-report',
-            response: 'Error: "content" must be a non-empty string.',
+            response: 'Error: "sections" must be a non-empty array.',
           ),
         ).called(1);
       });
