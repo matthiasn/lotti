@@ -53,8 +53,10 @@ typedef ChatFailedTakeKeeper = Future<bool> Function(String filePath);
 /// have been handed back or the user cancelled. When transcription fails it
 /// is first saved to the journal as a recording
 /// ([ChatRecorderState.keptInJournal]), where it can be played and
-/// transcribed again; if even that fails the file is moved out of the
-/// directory cleanup clears and left on disk.
+/// transcribed again; if even that fails the file is moved beside the temp
+/// directory, or left in it — which is only ever removed when empty — and
+/// stays on disk. The file is handed to that step before it is awaited, so
+/// a teardown racing it cannot delete the take either.
 ///
 /// Race model: every recording session captures a monotonically increasing
 /// `_operationId` before its first startup await (see [start]). Async callbacks (amplitude
@@ -167,7 +169,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
 
   Future<void> _deleteDirectoryQuietly(Directory? directory) async {
     try {
-      await directory?.delete(recursive: true);
+      // Only when empty: a take that could not be kept elsewhere may
+      // still be in it.
+      await directory?.delete();
     } catch (_) {
       // Teardown: a leftover temp directory is cleared with the OS temp.
     }
@@ -212,6 +216,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     final currentOpId = ++_operationId;
     final recorder = _recorderFactory();
     Directory? tempDir;
+    // This startup's own partial file, deleted by name if the startup is
+    // abandoned: the directory is only removed when empty.
+    String? abandonedPath;
     var nativeStartAttempted = false;
     var transferred = false;
     Object? startError;
@@ -235,6 +242,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       if (!ref.mounted || currentOpId != _operationId) return;
       final fileName = 'chat_${_nowMillisProvider()}.m4a';
       final filePath = '${tempDir.path}/$fileName';
+      abandonedPath = filePath;
 
       // Talking over the voice stops it: the microphone never records what
       // the app itself is saying.
@@ -317,6 +325,11 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         } catch (_) {
           // Teardown: each step runs whether or not the previous one did.
         }
+        try {
+          if (abandonedPath != null) await File(abandonedPath).delete();
+        } catch (_) {
+          // Teardown: the native start may never have created it.
+        }
         await _deleteDirectoryQuietly(tempDir);
       }
       if (startError != null && ref.mounted && currentOpId == _operationId) {
@@ -392,7 +405,10 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         subDomain: 'stopAndTranscribe.transcription',
         message: 'Voice transcription failed',
       );
-      // Before the cleanup below deletes it: the recording is the user's.
+      // The recording is the user's. From here the keep step owns the file:
+      // dropping the path first means neither the cleanup below nor a
+      // teardown racing this await can delete it.
+      if (_filePath == filePath) _filePath = null;
       final kept = filePath != null && await _keepFailedTake(filePath);
       if (currentOpId != _operationId || !ref.mounted) return;
       completed = state.copyWith(
@@ -418,13 +434,23 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
 
   /// Saves a take whose transcription failed to the journal, unlinked — it
   /// was words for a text field, not a check-in on anything. Never throws.
-  /// When the journal cannot take it either, the file is moved beside the
-  /// recorder's temp directory, out of reach of every cleanup here, so the
-  /// audio is still on disk rather than gone.
+  ///
+  /// The caller has handed the file over: nothing else deletes it. Once the
+  /// journal holds its own copy the temp file is removed here. When the
+  /// journal cannot take it, the file is moved beside the recorder's temp
+  /// directory; and if even that fails it is left where it is — the
+  /// directory is only ever removed when empty, so it stays on disk.
   Future<bool> _keepFailedTake(String filePath) async {
     try {
       final keep = _keepFailedTakeOverride ?? _keepInJournal;
-      if (await keep(filePath)) return true;
+      if (await keep(filePath)) {
+        try {
+          await File(filePath).delete();
+        } catch (_) {
+          // The journal has its copy; a leftover temp file loses nothing.
+        }
+        return true;
+      }
     } catch (e, s) {
       _logger.error(
         LogDomain.chat,
@@ -657,9 +683,11 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     try {
       if (tempDir != null) {
         try {
-          await tempDir
-              .delete(recursive: true)
-              .timeout(const Duration(seconds: _cleanupTimeoutSeconds));
+          // Only when empty: a take that could not be kept elsewhere may
+          // still be in it, and it is not this cleanup's to delete.
+          await tempDir.delete().timeout(
+            const Duration(seconds: _cleanupTimeoutSeconds),
+          );
         } on PathNotFoundException catch (e, s) {
           // Log and continue; directory already gone
           _logger.error(

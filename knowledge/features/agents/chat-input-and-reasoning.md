@@ -152,8 +152,12 @@ the same voice-input primitives under `agents/ui/chat/`:
   and sets `ChatRecorderState.keptInJournal`; `chatRecorderErrorMessage`
   then says where the recording is instead of asking the user to say it all
   again. If the journal cannot take it either, the file is renamed to
-  `lotti_unsaved_*.m4a` beside the recorder's temp directory, out of reach
-  of every cleanup, and the message claims nothing about the recording.
+  `lotti_unsaved_*.m4a` beside the recorder's temp directory, or — should
+  the rename fail too — left inside it, and the message claims nothing about
+  the recording. Two things make that hold: the file's path is dropped from
+  the controller *before* the keep step is awaited, so neither the cleanup
+  that follows nor a teardown racing the await deletes it; and the temp
+  directory is only ever removed when empty.
 - `chat_amplitude_history.dart` provides bounded history and normalization
   functions; the design system's `DesignSystemVoiceWaveform` renders the
   normalized samples (the evolution chat and the goal charter sheet use it

@@ -3169,6 +3169,95 @@ void main() {
       });
     }
 
+    test('a teardown racing the keep step cannot delete the take out from '
+        'under it', () async {
+      when(
+        () => transcription.transcribeStream(any()),
+      ).thenAnswer((_) => Stream.error(Exception('network down')));
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      String? readByKeeper;
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => baseTemp,
+              transcriptionService: transcription,
+              keepFailedTake: (path) async {
+                entered.complete();
+                await release.future;
+                final file = File(path);
+                readByKeeper = file.existsSync()
+                    ? file.readAsStringSync()
+                    : null;
+                return readByKeeper != null;
+              },
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
+      final stopping = controller.stopAndTranscribe();
+      await entered.future;
+
+      // The chat closes while the journal is still taking the recording.
+      await controller.dispose();
+      release.complete();
+      await stopping;
+
+      expect(readByKeeper, 'the take');
+    });
+
+    test('when the journal refuses the take and it cannot be moved aside '
+        'either, it is left where it is — no cleanup deletes it', () async {
+      when(
+        () => transcription.transcribeStream(any()),
+      ).thenAnswer((_) => Stream.error(Exception('network down')));
+      // Something already sits where the take would be moved to.
+      Directory(
+        '${baseTemp.path}/lotti_unsaved_chat_42.m4a',
+      ).createSync();
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              nowMillisProvider: () => 42,
+              tempDirectoryProvider: () async => baseTemp,
+              transcriptionService: transcription,
+              keepFailedTake: (_) async => false,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
+      await controller.stopAndTranscribe();
+
+      final state = container.read(chatRecorderControllerProvider);
+      expect(state.errorKind, ChatRecorderErrorKind.transcriptionFailed);
+      expect(state.keptInJournal, isFalse);
+      final take = File('${baseTemp.path}/lotti_chat_rec/chat_42.m4a');
+      expect(take.existsSync(), isTrue);
+      expect(take.readAsStringSync(), 'the take');
+
+      // Nor does tearing the recorder down afterwards.
+      await controller.dispose();
+      expect(take.readAsStringSync(), 'the take');
+    });
+
     test('words that arrive need no keeping: the take is deleted, as '
         'dictation always was', () async {
       when(

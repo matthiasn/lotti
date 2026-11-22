@@ -2560,8 +2560,10 @@ flowchart LR
   recording whose link is refused or throws **stays in the journal**,
   unlinked, and the toast says so: a written note that fails to link is
   deleted again because its words are still in the sheet, but a recording
-  exists nowhere else. Dictation into the sheet keeps a take whose
-  transcription failed the same way
+  exists nowhere else. Dictation into the sheet saves a take whose
+  transcription failed to the journal too; should the journal refuse it,
+  the audio file is left on disk rather than deleted and the message claims
+  nothing about the recording
   ([chat input](agents/chat-input-and-reasoning.md)). Its
   transcript is what the agent reads, so `charter()` leaves a recording out
   until it has words; the card plays it and shows the transcript state with
