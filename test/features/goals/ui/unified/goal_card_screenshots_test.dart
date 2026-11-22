@@ -26,7 +26,7 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
-import 'package:lotti/features/goals/ui/unified/unified_goal_card.dart';
+import 'package:lotti/features/goals/ui/unified/unified_goal_row.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -195,7 +195,7 @@ Future<void> _capture(
               child: Column(
                 children: [
                   for (final (id, title, _) in _goals) ...[
-                    UnifiedGoalCard(identity: _identity(id, title)),
+                    UnifiedGoalRow(identity: _identity(id, title)),
                     const SizedBox(height: 12),
                   ],
                 ],

@@ -6,6 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/cards/ds_rows_card.dart';
 import 'package:lotti/features/design_system/components/motion/on_screen_ticker_mode.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -16,7 +17,7 @@ import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/unified/goal_today_briefing_card.dart';
-import 'package:lotti/features/goals/ui/unified/unified_goal_card.dart';
+import 'package:lotti/features/goals/ui/unified/unified_goal_row.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_controller.dart';
@@ -39,16 +40,16 @@ import 'package:material_ui/material_ui.dart';
 
 /// The unified Goals tab (flag: `enable_unified_goals`; design handover
 /// "Goals, Unified" §4.2): one calm centered column in the Habits page's
-/// visual language — the Done-today summary card, one expanded
-/// [UnifiedGoalCard] per goal, the "not in a goal" habit group, then the
-/// aggregate Consistency heatmap and Completion-rate chart.
+/// visual language — the day's briefing, the Done-today summary card, the
+/// goals as one rows card of [UnifiedGoalRow]s, the archive, the "not in a
+/// goal" habit group, then the aggregate Consistency heatmap and
+/// Completion-rate chart.
 ///
-/// The habits controller and heatmap controller are read once here and their
-/// state fanned out to every card, so the daily loop (page-open → + →
-/// Record) costs exactly what it costs on the Habits tab. The due/later/done
-/// filter tabs act on habit ROWS globally; a goal whose rows all filter out
-/// collapses to its header — pills always reflect full state, filters never
-/// change a verdict.
+/// The habits controller and heatmap controller are read once here, so the
+/// daily loop (page-open → + → Record) costs exactly what it costs on the
+/// Habits tab. The Due/Later/Done/All tabs select the ungrouped habit rows;
+/// a goal row carries no habit rows, so the tabs never change what a goal
+/// row says.
 class UnifiedGoalsPage extends ConsumerStatefulWidget {
   const UnifiedGoalsPage({super.key});
 
@@ -379,12 +380,29 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
                             archivedIdentities.isEmpty &&
                             !failedFirstLoad)
                           const _NoGoalsYet(),
-                        for (final identity in identities) ...[
-                          OnScreenTickerMode(
-                            child: UnifiedGoalCard(
-                              key: Key('unified-goal-card-${identity.agentId}'),
-                              identity: identity,
-                            ),
+                        // One rows card, as the People and task lists group
+                        // their rows: a divider between goals, no border, no
+                        // box per goal.
+                        if (identities.isNotEmpty) ...[
+                          DsRowsCard(
+                            key: const ValueKey('unified-goals-rows'),
+                            // The page is `dsPageSurface`; the card one step
+                            // lighter in both themes.
+                            color: dsCardSurface(context),
+                            rows: [
+                              for (final identity in identities)
+                                OnScreenTickerMode(
+                                  key: ValueKey(
+                                    'unified-goal-slot-${identity.agentId}',
+                                  ),
+                                  child: UnifiedGoalRow(
+                                    key: Key(
+                                      'unified-goal-card-${identity.agentId}',
+                                    ),
+                                    identity: identity,
+                                  ),
+                                ),
+                            ],
                           ),
                           SizedBox(height: tokens.spacing.cardItemSpacing),
                         ],
@@ -496,16 +514,21 @@ class _ArchivedGoalsSection extends StatelessWidget {
           tokens.spacing.cardPadding,
         ),
         children: [
-          for (final identity in identities) ...[
-            OnScreenTickerMode(
-              child: UnifiedGoalCard(
-                key: Key('unified-archived-goal-card-${identity.agentId}'),
-                identity: identity,
-              ),
-            ),
-            if (identity != identities.last)
-              SizedBox(height: tokens.spacing.cardItemSpacing),
-          ],
+          DsRowsCard(
+            color: dsCardSurface(context),
+            rows: [
+              for (final identity in identities)
+                OnScreenTickerMode(
+                  key: ValueKey(
+                    'unified-archived-goal-slot-${identity.agentId}',
+                  ),
+                  child: UnifiedGoalRow(
+                    key: Key('unified-archived-goal-card-${identity.agentId}'),
+                    identity: identity,
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );

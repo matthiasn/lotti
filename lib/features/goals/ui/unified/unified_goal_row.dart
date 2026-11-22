@@ -1,10 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
+import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -21,26 +20,30 @@ import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// One goal on the unified Goals list (design handover "Goals, Unified"
-/// §4.2): header (persona chip · name · status pill with folded recovery
-/// hint · trend chip · 7-day strip), a deterministic templated summary line,
-/// and nothing else. With the companion on, her bust stands in for the
-/// persona chip, her pose and mood following the goal's track status
-/// ([goalCompanionPose]).
+/// One goal on the Goals list, a row of the list's rows card (DESIGN.md,
+/// *Goal Row*): the goal's face (its monogram, or the companion whose pose
+/// follows the goal's track status), then two tiers so the title leads — the
+/// title in Subtitle 1 on a line of its own, and under it one caption line
+/// with the status as a glyph and a word ([UnifiedGoalStatusMark]), the trend
+/// and a pending proposal. The templated summary follows, and the 7-day strip
+/// sits beside the words when the row is wide, under them when it is narrow
+/// or the text is large.
 ///
-/// It used to embed the goal's habit rows as well — glyph, streak chain,
-/// flame count, window fraction, check circle apiece — which spent several
-/// rows of a LIST card restating what the status pill says in two words. A
-/// habit's own record is read on the goal's page; the one-tap complete lives
-/// in the "not in a goal" group, which is the Habits-tab daily loop.
+/// The status used to be a pill on the title's line, and Behind a solid
+/// amber block — the loudest thing on the page, outweighing the goal it
+/// belonged to. It now reads the way a People row carries *5 days overdue*.
 ///
-/// The card watches the same per-agent providers the agents list row does.
-/// It takes no habits-side state: with no rows to render there is nothing
-/// for `successToday`, `streaksByHabit` or a visibility filter to act on,
-/// and keeping them would have made every caller compute and thread state
-/// the widget silently discards.
-class UnifiedGoalCard extends ConsumerWidget {
-  const UnifiedGoalCard({
+/// The row is a [GroupedCardRowSurface]: one button to assistive tech with
+/// the title, the status and the summary as one sentence, and the shared
+/// hover and focus fill. A health read that failed says so on the caption
+/// line rather than leaving the row blank.
+///
+/// It used to embed the goal's habit rows as well, which spent several rows
+/// restating what the status says in two words. A habit's own record is read
+/// on the goal's page; the one-tap complete lives in the "not in a goal"
+/// group, which is the Habits-tab daily loop.
+class UnifiedGoalRow extends ConsumerWidget {
+  const UnifiedGoalRow({
     required this.identity,
     super.key,
   });
@@ -104,47 +107,82 @@ class UnifiedGoalCard extends ConsumerWidget {
             specVersionId: health!.spec!.id,
           );
 
-    // Quiet ink: the header is a card region, not a button, and Material's
-    // hover overlay painted a phantom one over the title and strip. The
-    // pointer cursor and the card's own affordances carry tappability.
-    final header = DsQuietInk(
-      borderRadius: BorderRadius.circular(tokens.radii.m),
-      focusRing: true,
+    final title = health?.spec?.title ?? identity.displayName;
+    final failed = !healthAsync.hasValue && healthAsync.hasError;
+    final largeText =
+        MediaQuery.textScalerOf(context).scale(1) >= TextScales.large;
+    final caption = <Widget>[
+      if (showPill)
+        UnifiedGoalStatusMark(status: status, recoveryHint: recoveryHint),
+      if (failed)
+        Text(
+          messages.goalDetailHealthUnavailable,
+          key: const ValueKey('unified-goal-row-health-failed'),
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+      if (health?.direction case final direction?)
+        GoalHealthDirectionChip(direction: direction),
+      // A pending revision proposal is only approvable from the detail
+      // page — without a list-level signal it stays undiscovered until the
+      // user happens to open the goal.
+      if ((health?.pendingProposals ?? 0) > 0) const _PendingProposalChip(),
+    ];
+    final semanticsLabel = [
+      title,
+      if (showPill)
+        [
+          unifiedGoalStatusLabel(messages, status),
+          if (recoveryHint != null &&
+              (status == UnifiedGoalStatus.behind ||
+                  status == UnifiedGoalStatus.atRisk))
+            recoveryHint,
+        ].join(' · '),
+      if (failed) messages.goalDetailHealthUnavailable,
+      ?summary,
+    ].join(', ');
+
+    return GroupedCardRowSurface(
+      rowKey: ValueKey('unified-goal-row-${identity.agentId}'),
+      selected: false,
+      hoverColor: tokens.colors.surface.hover,
+      selectedColor: tokens.colors.surface.selected,
+      padding: EdgeInsets.all(tokens.spacing.cardPadding),
       onTap: () => beamToNamed(goalDetailPath(identity.agentId)),
-      builder: (context, highlighted) => Padding(
-        padding: EdgeInsets.all(tokens.spacing.cardPadding),
+      child: Semantics(
+        label: semanticsLabel,
+        excludeSemantics: true,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final wide = constraints.maxWidth >= kActionListContentMaxWidth;
-            final identityBlock = Column(
+            final wide =
+                constraints.maxWidth >= kActionListContentMaxWidth &&
+                !largeText;
+            final words = Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  spacing: tokens.spacing.step3,
-                  runSpacing: tokens.spacing.step1,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Text(
-                      health?.spec?.title ?? identity.displayName,
-                      style: tokens.typography.styles.subtitle.subtitle1
-                          .copyWith(color: tokens.colors.text.highEmphasis),
-                    ),
-                    if (showPill)
-                      UnifiedGoalStatusPill(
-                        status: status,
-                        recoveryHint: recoveryHint,
-                      ),
-                    if (health?.direction case final direction?)
-                      GoalHealthDirectionChip(direction: direction),
-                    // A pending revision proposal is only approvable from
-                    // the detail page — without a list-level signal it stays
-                    // undiscovered until the user happens to open the goal.
-                    if ((health?.pendingProposals ?? 0) > 0)
-                      const _PendingProposalChip(),
-                  ],
+                Text(
+                  title,
+                  key: const ValueKey('unified-goal-row-title'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
                 ),
+                if (caption.isNotEmpty) ...[
+                  SizedBox(height: tokens.spacing.step2),
+                  // A Wrap, like the task and People rows' meta line: what
+                  // does not share a line takes the next one whole.
+                  Wrap(
+                    spacing: tokens.spacing.step4,
+                    runSpacing: tokens.spacing.step2,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: caption,
+                  ),
+                ],
                 if (summary != null) ...[
-                  SizedBox(height: tokens.spacing.step1),
+                  SizedBox(height: tokens.spacing.step2),
                   Text(
                     summary,
                     maxLines: 2,
@@ -188,13 +226,14 @@ class UnifiedGoalCard extends ConsumerWidget {
                 children: [
                   leading,
                   SizedBox(width: tokens.spacing.step4),
-                  Expanded(child: identityBlock),
+                  Expanded(child: words),
                   SizedBox(width: tokens.spacing.step4),
                   strip,
                 ],
               );
             }
             return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 leading,
                 SizedBox(width: tokens.spacing.step4),
@@ -202,8 +241,8 @@ class UnifiedGoalCard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      identityBlock,
-                      SizedBox(height: tokens.spacing.step2),
+                      words,
+                      SizedBox(height: tokens.spacing.step3),
                       strip,
                     ],
                   ),
@@ -212,28 +251,6 @@ class UnifiedGoalCard extends ConsumerWidget {
             );
           },
         ),
-      ),
-    );
-
-    return Material(
-      key: ValueKey('unified-goal-card-frame-${identity.agentId}'),
-      color: dsCardSurface(context),
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        side: BorderSide(color: tokens.colors.decorative.level01),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header only. The card used to embed every linked habit as a full
-          // row — glyph, streak chain, flame count, window fraction, check
-          // circle — which cost several rows of a LIST card to restate what
-          // the status pill above it already says in two words. The detail
-          // page is where a habit's own record is read; the overview answers
-          // "is this goal all right", and the pill answers that.
-          header,
-        ],
       ),
     );
   }

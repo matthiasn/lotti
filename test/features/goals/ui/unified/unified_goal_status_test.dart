@@ -352,80 +352,107 @@ void main() {
     });
   });
 
-  group('UnifiedGoalStatusPill', () {
-    testWidgets('Behind is the only solid fill and folds the recovery hint '
-        'into its label', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const UnifiedGoalStatusPill(
-            status: UnifiedGoalStatus.behind,
-            recoveryHint: '2 days to recover',
+  group('UnifiedGoalStatusMark', () {
+    Future<void> pumpMark(
+      WidgetTester tester,
+      UnifiedGoalStatus status, {
+      String? hint,
+    }) => tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        UnifiedGoalStatusMark(status: status, recoveryHint: hint),
+      ),
+    );
+
+    Icon? glyphOf(WidgetTester tester) {
+      final icons = find.descendant(
+        of: find.byType(UnifiedGoalStatusMark),
+        matching: find.byType(Icon),
+      );
+      return icons.evaluate().isEmpty ? null : tester.widget<Icon>(icons);
+    }
+
+    testWidgets('Behind is the warning glyph and the words in the warning '
+        'ink, semibold, the recovery hint folded in — no filled block', (
+      tester,
+    ) async {
+      await pumpMark(
+        tester,
+        UnifiedGoalStatus.behind,
+        hint: '2 days to recover',
+      );
+      final tokens = resolveTestTheme().extension<DsTokens>()!;
+      final text = tester.widget<Text>(
+        find.text('Behind · 2 days to recover'),
+      );
+      expect(text.style?.color, tokens.colors.alert.warning.ink);
+      expect(text.style?.fontWeight, tokens.typography.weight.semiBold);
+      expect(glyphOf(tester)?.icon, LottiIcons.warning);
+      expect(glyphOf(tester)?.color, tokens.colors.alert.warning.ink);
+      expect(
+        find.descendant(
+          of: find.byType(UnifiedGoalStatusMark),
+          matching: find.byWidgetPredicate(
+            (w) => w is Container && w.decoration != null,
           ),
         ),
-      );
-
-      expect(find.text('Behind · 2 days to recover'), findsOneWidget);
-      final tokens = resolveTestTheme().extension<DsTokens>()!;
-      final container = tester.widget<Container>(
-        find.ancestor(
-          of: find.text('Behind · 2 days to recover'),
-          matching: find.byType(Container),
-        ),
-      );
-      final decoration = container.decoration! as BoxDecoration;
-      // Solid warning fill with the on-alert ink — the strongest signal on
-      // the card, still not a red.
-      expect(decoration.color, tokens.colors.alert.warning.defaultColor);
-      expect(
-        tester
-            .widget<Text>(find.text('Behind · 2 days to recover'))
-            .style
-            ?.color,
-        tokens.colors.text.onInteractiveAlert,
+        findsNothing,
+        reason: 'the status is never a filled block',
       );
     });
 
-    testWidgets('At risk keeps the wash fill but still folds the hint', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const UnifiedGoalStatusPill(
-            status: UnifiedGoalStatus.atRisk,
-            recoveryHint: '1 day of buffer',
-          ),
-        ),
-      );
-
-      expect(find.text('At risk · 1 day of buffer'), findsOneWidget);
+    testWidgets('At risk wears the clock in the warning ink, its words in '
+        'the medium ink, the hint folded in', (tester) async {
+      await pumpMark(tester, UnifiedGoalStatus.atRisk, hint: '1 day of buffer');
       final tokens = resolveTestTheme().extension<DsTokens>()!;
-      final container = tester.widget<Container>(
-        find.ancestor(
-          of: find.text('At risk · 1 day of buffer'),
-          matching: find.byType(Container),
-        ),
-      );
-      final decoration = container.decoration! as BoxDecoration;
-      expect(
-        decoration.color,
-        tokens.colors.alert.warning.defaultColor.withValues(
-          alpha: SurfaceAlphas.washChip,
-        ),
-      );
       expect(
         tester
             .widget<Text>(find.text('At risk · 1 day of buffer'))
             .style
             ?.color,
-        tokens.colors.text.highEmphasis,
+        tokens.colors.text.mediumEmphasis,
+      );
+      expect(glyphOf(tester)?.icon, LottiIcons.schedule);
+      expect(glyphOf(tester)?.color, tokens.colors.alert.warning.ink);
+    });
+
+    testWidgets('On track wears the circled check; No data is the word alone '
+        'in the low ink', (tester) async {
+      final tokens = resolveTestTheme().extension<DsTokens>()!;
+      await pumpMark(tester, UnifiedGoalStatus.onTrack);
+      expect(glyphOf(tester)?.icon, LottiIcons.confirmCircled);
+      expect(glyphOf(tester)?.color, tokens.colors.alert.success.defaultColor);
+
+      await pumpMark(tester, UnifiedGoalStatus.noData);
+      expect(glyphOf(tester), isNull);
+      expect(
+        tester.widget<Text>(find.text('No data')).style?.color,
+        tokens.colors.text.lowEmphasis,
       );
     });
 
-    testWidgets('an on-track pill never renders a hint — the glance budget '
+    testWidgets('a long hint wraps beside its glyph in a narrow column '
+        'instead of overflowing', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: 160,
+            child: UnifiedGoalStatusMark(
+              status: UnifiedGoalStatus.atRisk,
+              recoveryHint: '2 successful days needed to recover',
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('an on-track status never renders a hint — the glance budget '
         'rule', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const UnifiedGoalStatusPill(
+          const UnifiedGoalStatusMark(
             status: UnifiedGoalStatus.onTrack,
             recoveryHint: '3 days of buffer',
           ),

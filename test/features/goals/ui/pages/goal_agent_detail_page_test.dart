@@ -3344,10 +3344,10 @@ void main() {
     );
     // The sheet header carries the same computed pill as the page: the
     // same widget fed the same status, twice on screen, never disagreeing.
-    expect(find.byType(UnifiedGoalStatusPill), findsNWidgets(2));
+    expect(find.byType(UnifiedGoalStatusMark), findsNWidgets(2));
     expect(
       find.descendant(
-        of: find.byType(UnifiedGoalStatusPill),
+        of: find.byType(UnifiedGoalStatusMark),
         matching: find.text('On track'),
       ),
       findsNWidgets(2),
@@ -4672,7 +4672,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('goal-detail-talk-to')));
     await tester.pumpAndSettle();
     expect(find.byType(GoalAgentChatPane), findsOneWidget);
-    expect(find.byType(UnifiedGoalStatusPill), findsNothing);
+    expect(find.byType(UnifiedGoalStatusMark), findsNothing);
   });
 
   testWidgets('a narrow desktop pane keeps the drawer a pure overlay — the '

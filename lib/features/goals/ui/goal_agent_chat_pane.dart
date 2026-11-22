@@ -157,7 +157,7 @@ class GoalAgentChatPane extends ConsumerWidget {
                             ),
                             child: Align(
                               alignment: AlignmentDirectional.centerStart,
-                              child: UnifiedGoalStatusPill(status: status),
+                              child: UnifiedGoalStatusMark(status: status),
                             ),
                           ),
                       ],

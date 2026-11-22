@@ -81,7 +81,7 @@ class _GoalChatDrawer extends StatelessWidget {
                               ),
                         ),
                         if (showPill)
-                          UnifiedGoalStatusPill(
+                          UnifiedGoalStatusMark(
                             status: status,
                             recoveryHint: recoveryHint,
                           ),
@@ -195,7 +195,7 @@ class _GoalHeader extends StatelessWidget {
               style: calmPageTitleStyle(tokens),
             ),
             if (showPill)
-              UnifiedGoalStatusPill(
+              UnifiedGoalStatusMark(
                 status: status,
                 recoveryHint: recoveryHint,
               ),

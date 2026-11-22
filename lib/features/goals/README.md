@@ -190,7 +190,7 @@ A **unified Goals page** is landing behind `enable_unified_goals` (Phase 1 of
 the Habits + Goal Agents merge; `ui/pages/unified_goals_page.dart`, `/goals`
 route in the Habits nav slot): one centered column carrying the reused
 Done-today card and due/later/done/all filter tabs, one expanded card per goal
-(`ui/unified/unified_goal_card.dart` — persona chip, four-pill status with the
+(`ui/unified/unified_goal_row.dart` — persona chip, four-pill status with the
 recovery hint folded in, deterministic templated summary, the goal's habit
 rows with one-tap quick-complete and "N of M this window" readings), a
 "not in a goal" group for unclaimed habits, and the aggregate consistency

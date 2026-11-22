@@ -11,13 +11,14 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/cards/ds_rows_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/pages/unified_goals_page.dart';
-import 'package:lotti/features/goals/ui/unified/unified_goal_card.dart';
+import 'package:lotti/features/goals/ui/unified/unified_goal_row.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_controller.dart';
@@ -346,12 +347,19 @@ void main() {
     );
     expect(firstCard, findsOneWidget);
     expect(secondCard, findsOneWidget);
-    final firstBounds = tester.getRect(firstCard);
-    final secondBounds = tester.getRect(secondCard);
-    final tokens = tester.element(find.byType(UnifiedGoalsPage)).designTokens;
+    // One rows card for the archive: the two rows meet at its divider.
+    final archiveCard = find.ancestor(
+      of: firstCard,
+      matching: find.byType(DsRowsCard),
+    );
+    expect(archiveCard, findsOneWidget);
     expect(
-      secondBounds.top - firstBounds.bottom,
-      tokens.spacing.cardItemSpacing,
+      find.descendant(of: archiveCard, matching: secondCard),
+      findsOneWidget,
+    );
+    expect(
+      tester.getRect(secondCard).top - tester.getRect(firstCard).bottom,
+      lessThanOrEqualTo(1),
     );
   });
 
@@ -366,7 +374,7 @@ void main() {
     // The goal card is its header: a claimed habit's own record is read on
     // the detail page, not restated as a row under the pill that already
     // summarises it.
-    expect(find.byType(UnifiedGoalCard), findsOneWidget);
+    expect(find.byType(UnifiedGoalRow), findsOneWidget);
     expect(find.text('Fitness'), findsOneWidget);
     expect(find.text(habitFlossing.name), findsNothing);
 
@@ -549,7 +557,7 @@ void main() {
 
     // No goal cards yet — and crucially no orphan group either: the habits
     // would jump into their goal cards the moment the agents resolve.
-    expect(find.byType(UnifiedGoalCard), findsNothing);
+    expect(find.byType(UnifiedGoalRow), findsNothing);
     expect(find.text('Not in a goal'), findsNothing);
     expect(find.byType(HabitActionRow), findsNothing);
   });
@@ -599,7 +607,7 @@ void main() {
       find.text("Couldn't load your agents right now."),
       findsOneWidget,
     );
-    expect(find.byType(UnifiedGoalCard), findsNothing);
+    expect(find.byType(UnifiedGoalRow), findsNothing);
     // Without the goal claims, orphan classification would be guesswork —
     // the error line carries the state instead of a misgrouped list.
     expect(find.text('Not in a goal'), findsNothing);
@@ -642,7 +650,7 @@ void main() {
       ),
     );
 
-    expect(find.byType(UnifiedGoalCard), findsOneWidget);
+    expect(find.byType(UnifiedGoalRow), findsOneWidget);
     expect(
       find.byKey(const Key('unified-goal-goal-1-c-retired-habit-retired')),
       findsNothing,
@@ -674,7 +682,7 @@ void main() {
     );
     await pump(tester, state);
 
-    expect(find.byType(UnifiedGoalCard), findsOneWidget);
+    expect(find.byType(UnifiedGoalRow), findsOneWidget);
     expect(
       find.byKey(Key('unified-goal-goal-1-c1-${expired.id}')),
       findsNothing,
@@ -951,7 +959,7 @@ void main() {
       ],
     );
 
-    expect(find.byType(UnifiedGoalCard), findsOneWidget);
+    expect(find.byType(UnifiedGoalRow), findsOneWidget);
     expect(find.text('Work goal'), findsOneWidget);
     expect(find.text('Health goal'), findsNothing);
     expect(find.text('Uncategorised goal'), findsNothing);
@@ -1026,7 +1034,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.byType(UnifiedGoalCard, skipOffstage: false),
+        find.byType(UnifiedGoalRow, skipOffstage: false),
         findsNWidgets(goalIds.length),
       );
       expect(loads, {
@@ -1043,7 +1051,7 @@ void main() {
       // At the bottom, the goal cards are far above the viewport — and
       // still mounted, their reads still alive.
       expect(
-        find.byType(UnifiedGoalCard, skipOffstage: false),
+        find.byType(UnifiedGoalRow, skipOffstage: false),
         findsNWidgets(goalIds.length),
       );
       await tester.pump(const Duration(seconds: 5));

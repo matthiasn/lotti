@@ -58,9 +58,10 @@ String unifiedGoalStatusLabel(
   UnifiedGoalStatus.noData => messages.unifiedGoalStatusNoData,
 };
 
-/// The pill's hue per status. Behind and At risk share the warning hue — the
-/// fill strength separates them (solid vs wash), never a red: the surface
-/// stays calm and every negative state carries a recovery door instead.
+/// The hue a goal's face — its monogram or the companion — is washed in, per
+/// status. Behind and At risk share the warning hue, never a red: the surface
+/// stays calm and every negative state carries a recovery door instead. The
+/// status mark tells the two apart by glyph and ink ([UnifiedGoalStatusMark]).
 Color unifiedGoalStatusColor(UnifiedGoalStatus status, DsColors colors) =>
     switch (status) {
       UnifiedGoalStatus.onTrack => colors.alert.success.defaultColor,
@@ -105,13 +106,22 @@ String? unifiedGoalSummary(
   return messages.unifiedGoalSummaryPartial(onTrackCount, habits.length);
 }
 
-/// The unified status pill. Behind is the only solid fill (warning hue,
-/// [DsColorsText.onInteractiveAlert] label — the strongest signal on the
-/// card); At risk / On track are washes; No data is a neutral wash. An
-/// off-track pill folds its recovery hint into the label ("Behind · 1 day to
-/// recover") so the door is part of the state, not garnish.
-class UnifiedGoalStatusPill extends StatelessWidget {
-  const UnifiedGoalStatusPill({
+/// The goal's status as a glyph and a word, the way a People row carries
+/// *5 days overdue* and a task row its status: never a filled block, and
+/// never on the title's line. An off-track or at-risk status folds its
+/// recovery hint into the words ("Behind · 1 day to recover"), so the way
+/// back is part of the state, not garnish.
+///
+/// Behind leads with the warning glyph and is set in the warning ink and
+/// semibold — the strongest signal on the row without a block of colour.
+/// At risk wears the clock in the warning ink, On track the circled check in
+/// the success hue, both with the word in the medium ink. No data is the
+/// word alone in the low ink: there is nothing to flag.
+///
+/// The words wrap rather than clip, so a long recovery hint at large text
+/// takes a second line.
+class UnifiedGoalStatusMark extends StatelessWidget {
+  const UnifiedGoalStatusMark({
     required this.status,
     this.recoveryHint,
     super.key,
@@ -120,15 +130,14 @@ class UnifiedGoalStatusPill extends StatelessWidget {
   final UnifiedGoalStatus status;
 
   /// Deterministic recovery copy folded into the label after a separator.
-  /// Rendered only for the off-track states — a hint on an on-track pill
+  /// Rendered only for the off-track states — a hint on an on-track status
   /// would blow the glance budget for no decision value.
   final String? recoveryHint;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final color = unifiedGoalStatusColor(status, tokens.colors);
-    final solid = status == UnifiedGoalStatus.behind;
+    final colors = tokens.colors;
     final hint =
         recoveryHint != null &&
             (status == UnifiedGoalStatus.behind ||
@@ -139,30 +148,45 @@ class UnifiedGoalStatusPill extends StatelessWidget {
       unifiedGoalStatusLabel(context.messages, status),
       ?hint,
     ].join(' · ');
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step3,
-        vertical: tokens.spacing.step1,
+    final (glyph, glyphColor) = switch (status) {
+      UnifiedGoalStatus.behind => (
+        LottiIcons.warning,
+        colors.alert.warning.ink,
       ),
-      decoration: BoxDecoration(
-        color: solid ? color : color.withValues(alpha: SurfaceAlphas.washChip),
-        // Informative, not tappable: the small-chip radius, never the pill —
-        // full rounding is reserved for clickable elements on goal surfaces.
-        borderRadius: BorderRadius.circular(tokens.radii.smallChips),
+      UnifiedGoalStatus.atRisk => (
+        LottiIcons.schedule,
+        colors.alert.warning.ink,
       ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        // Solid fill takes the on-alert ink; washes keep high-emphasis text so
-        // the 12px caption clears the 4.5:1 floor over a wash of its own hue
-        // (the pill's documented contrast rule).
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: solid
-              ? tokens.colors.text.onInteractiveAlert
-              : tokens.colors.text.highEmphasis,
+      UnifiedGoalStatus.onTrack => (
+        LottiIcons.confirmCircled,
+        colors.alert.success.defaultColor,
+      ),
+      UnifiedGoalStatus.noData => (null, null),
+    };
+    final behind = status == UnifiedGoalStatus.behind;
+    final ink = switch (status) {
+      UnifiedGoalStatus.behind => colors.alert.warning.ink,
+      UnifiedGoalStatus.noData => colors.text.lowEmphasis,
+      _ => colors.text.mediumEmphasis,
+    };
+    return Row(
+      key: ValueKey('unified-goal-status-${status.name}'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (glyph != null) ...[
+          Icon(glyph, size: IconSizes.xs, color: glyphColor),
+          SizedBox(width: tokens.spacing.step2),
+        ],
+        Flexible(
+          child: Text(
+            label,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: ink,
+              fontWeight: behind ? tokens.typography.weight.semiBold : null,
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
