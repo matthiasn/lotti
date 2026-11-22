@@ -1,7 +1,7 @@
 ---
 type: Domain Model
 title: JournalEntity
-description: The twenty-variant union every recorded journal entry is, what sits outside it, and the shared Metadata envelope that carries identity, time, ownership and sync state.
+description: The twenty-two-variant union every recorded journal entry is, what sits outside it, and the shared Metadata envelope that carries identity, time, ownership and sync state.
 resource: ../../lib/classes/journal_entities.dart
 tags: [domain, journal-entity, metadata, freezed]
 status: stable
@@ -18,7 +18,7 @@ sources:
     last_modified: 2026-07-22
 ---
 
-# One union, twenty variants
+# One union, twenty-two variants
 
 Every entry the user *records* is a `JournalEntity` — a Freezed union whose
 variants are:

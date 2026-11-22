@@ -352,7 +352,5 @@ bool hasNonTaskLinkedEntries(
   String id,
 ) {
   final entities = ref.watch(resolvedOutgoingLinkedEntriesProvider(id));
-  return entities.any(
-    (entity) => entity is! Task && entity is! PullRequestEntry,
-  );
+  return entities.any((entity) => !entity.hasOwnTaskSection);
 }

@@ -374,6 +374,12 @@ extension JournalEntityExtension on JournalEntity {
   String? get categoryId => meta.categoryId;
   bool get isDeleted => meta.deletedAt != null;
 
+  /// Whether a task shows this entry in a section of its own — Linked
+  /// tasks, Pull requests, Documents — so its history of linked entries
+  /// leaves it out.
+  bool get hasOwnTaskSection =>
+      this is Task || this is PullRequestEntry || this is TaskDocumentEntry;
+
   Set<String> get affectedIds {
     final ids = <String>{id};
 

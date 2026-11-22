@@ -67,6 +67,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../classes/task_document_fixtures.dart';
 import '../../../../helpers/path_provider.dart';
 import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
@@ -862,38 +863,41 @@ void main() {
       },
     );
 
-    testWidgets(
-      'a pull request is left to its own section on a task, and shown '
-      'elsewhere',
-      (tester) async {
-        final pr = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
-        Future<void> pumpWith({required bool hideTaskEntries}) async {
-          await tester.pumpWidget(
-            makeTestableWidgetWithScaffold(
-              ProviderScope(
-                overrides: withServiceOverrides([
-                  entryControllerProvider(pr.meta.id).overrideWith(
-                    () => _FakeEntryController(pr),
+    for (final (kind, entry) in <(String, JournalEntity)>[
+      ('pull request', prEntry(clock: {'a': 1}, snapshot: prSnapshot())),
+      ('task document', taskDocumentEntry(clock: {'a': 1})),
+    ]) {
+      testWidgets(
+        'a $kind is left to its own section on a task, and shown elsewhere',
+        (tester) async {
+          Future<void> pumpWith({required bool hideTaskEntries}) async {
+            await tester.pumpWidget(
+              makeTestableWidgetWithScaffold(
+                ProviderScope(
+                  overrides: withServiceOverrides([
+                    entryControllerProvider(entry.meta.id).overrideWith(
+                      () => _FakeEntryController(entry),
+                    ),
+                  ]),
+                  child: EntryDetailsWidget(
+                    itemId: entry.meta.id,
+                    showAiEntry: false,
+                    hideTaskEntries: hideTaskEntries,
                   ),
-                ]),
-                child: EntryDetailsWidget(
-                  itemId: pr.meta.id,
-                  showAiEntry: false,
-                  hideTaskEntries: hideTaskEntries,
                 ),
               ),
-            ),
-          );
-          await tester.pump();
-        }
+            );
+            await tester.pump();
+          }
 
-        await pumpWith(hideTaskEntries: true);
-        expect(find.byType(EntryDetailsContent), findsNothing);
+          await pumpWith(hideTaskEntries: true);
+          expect(find.byType(EntryDetailsContent), findsNothing);
 
-        await pumpWith(hideTaskEntries: false);
-        expect(find.byType(EntryDetailsContent), findsOneWidget);
-      },
-    );
+          await pumpWith(hideTaskEntries: false);
+          expect(find.byType(EntryDetailsContent), findsOneWidget);
+        },
+      );
+    }
 
     // Lines 84-85, 91: isTask=true, showTaskDetails=false → ModernJournalCard
     testWidgets(

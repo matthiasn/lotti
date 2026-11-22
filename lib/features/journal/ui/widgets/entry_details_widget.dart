@@ -108,9 +108,9 @@ class EntryDetailsWidget extends ConsumerWidget {
 
     final isTask = item is Task;
 
-    // Hide task and pull request entries when viewing from a task's linked
-    // entries: they have their own sections, Linked Tasks and Pull Requests.
-    if ((isTask || item is PullRequestEntry) && hideTaskEntries) {
+    // Hide entries with a task section of their own (linked tasks, pull
+    // requests, documents) when viewing from a task's linked entries.
+    if (item.hasOwnTaskSection && hideTaskEntries) {
       return const SizedBox.shrink();
     }
     final isAudio = item is JournalAudio;

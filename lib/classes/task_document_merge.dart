@@ -2,6 +2,17 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task_document_data.dart';
 import 'package:lotti/classes/vector_clock.dart';
 
+/// The ref a document stores to show a version.
+extension TaskDocumentVersionEntryRef on TaskDocumentVersionEntry {
+  /// This version as a [TaskDocumentVersionRef]: its id, number and
+  /// creation time, what [compareTaskDocumentVersionRefs] orders by.
+  TaskDocumentVersionRef get ref => TaskDocumentVersionRef(
+    id: meta.id,
+    number: data.number,
+    createdAt: meta.createdAt,
+  );
+}
+
 /// Orders two version refs; positive when [a] is the newer version.
 ///
 /// By [TaskDocumentVersionRef.number] first, then by when the version was

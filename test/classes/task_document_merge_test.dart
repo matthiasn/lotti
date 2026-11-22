@@ -7,6 +7,16 @@ import 'package:lotti/classes/vector_clock.dart';
 import 'task_document_fixtures.dart';
 
 void main() {
+  test(
+    "a version's ref carries its id, number and creation time, what the "
+    'merge orders by',
+    () {
+      final version = taskDocumentVersionEntry(number: 3, id: 'v3');
+
+      expect(version.ref, taskDocumentRef(3, id: 'v3'));
+    },
+  );
+
   group('compareTaskDocumentVersionRefs -', () {
     test('no version is older than any version', () {
       expect(compareTaskDocumentVersionRefs(null, taskDocumentRef(1)), -1);

@@ -2,14 +2,20 @@
 type: Feature Module
 title: Task documents
 description: Markdown documents a task holds, drafted and revised by its agent through proposals and edited by hand — designed, not yet built.
-# No lib/features/documents yet. Point this at ../../lib/features/documents
-# in the change that creates it.
-resource: ../../docs/adr/0166-task-documents-are-journal-entries-revised-by-proposal.md
+resource: ../../lib/features/documents
 tags: [documents, tasks, agents, proposals, markdown, versions, review]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-22T19:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-22T21:00:00Z }
 stale_after: 2027-04-03
 sources:
+  - id: repository
+    resource: ../../lib/features/documents/repository/task_document_repository.dart
+    title: TaskDocumentRepository
+    last_modified: 2026-11-22
+  - id: version-query
+    resource: ../../lib/database/database_task_document_queries.dart
+    title: getTaskDocumentVersions
+    last_modified: 2026-11-22
   - id: document-data
     resource: ../../lib/classes/task_document_data.dart
     title: TaskDocumentData, TaskDocumentVersionRef, TaskDocumentVersionData
@@ -72,12 +78,12 @@ sources:
 
 > **Partly built.** This concept describes the design agreed in
 > [ADR 0166](../../docs/adr/0166-task-documents-are-journal-entries-revised-by-proposal.md).
-> What runs today: the two journal variants, their row mapping and the merge
-> of concurrent document rows ([Entities](#entities) and
-> [Merging across devices](#merging-across-devices)). Nothing writes them
-> yet, and nothing under `documents` exists. Each implementation step
-> rewrites the part it lands, and the page moves to `stable` when the last
-> part does.
+> What runs today: the two journal variants, their row mapping, the merge
+> of concurrent document rows and the repository that writes them
+> ([Entities](#entities), [The repository](#the-repository) and
+> [Merging across devices](#merging-across-devices)). Nothing in the app
+> calls the repository yet. Each implementation step rewrites the part it
+> lands, and the page moves to `stable` when the last part does.
 
 A task can hold several markdown documents, such as a client one-pager, a
 meeting summary or a follow-up email. The task agent drafts and revises them
@@ -123,8 +129,51 @@ flowchart LR
   the index, so search never lists every revision.
 - Neither entity is meant for the journal list: the entry-type filter does
   not offer them, and the journal card renders them only so its switch stays
-  exhaustive. They will also be kept out of the task's history list, like
-  pull request entries.
+  exhaustive. A document is kept out of the task's history list by
+  `JournalEntity.hasOwnTaskSection`, the check the history shares with
+  tasks and pull requests. A version is never linked from the task, so the
+  history never sees one.
+
+## The repository
+
+[`TaskDocumentRepository`](../../lib/features/documents/repository/task_document_repository.dart)
+is the only writer. Every write in it is the user's own or one the user
+confirmed.
+
+- **`create`** stores a document with no version yet, linked from its task
+  (`createDbEntity` with `linkedId`), in the task's category and with its
+  private flag. **`forTask`** lists a task's live documents oldest first, so
+  a new one joins the end and none moves.
+- **`writeVersion`** is the compare-and-set. It refuses a write whose
+  `baseVersionId` is not the version the document shows, before anything is
+  stored, so nothing syncs. Otherwise it stores the version row (number one
+  past the base, the document's category and private flag), then points the
+  document at it through `writeOnStored`, which rebuilds on every version
+  stored meanwhile and checks the base again each time. If the document
+  moved on in that window, the version row is deleted and the write comes
+  back `stale`. If it was deleted, the result is `missing`.
+- **`restore`** writes an older version's text as the next version, by the
+  user, with `restoredFromVersionId`.
+- **`rename`** is built on the stored row, so a version confirmed meanwhile
+  is kept.
+- **`delete`** deletes the document and every version of it, like the pull
+  request feature deletes an entry's summaries: nothing reaches a version
+  once its document is gone.
+- **`versions`** reads
+  [`getTaskDocumentVersions`](../../lib/database/database_task_document_queries.dart),
+  newest first in the merge's own order.
+
+```mermaid
+flowchart TD
+  W[writeVersion with baseVersionId] --> B{Document shows the base?}
+  B -->|no| S1[stale, nothing stored]
+  B -->|yes| R[Store version row]
+  R --> P[Point document at it, rebuilt on every stored version]
+  P --> C{Base still shown?}
+  C -->|yes| OK[written]
+  C -->|no| D[Delete the version row]
+  D --> S2[stale, or missing if the document is gone]
+```
 
 ## How a version is made
 
@@ -264,8 +313,6 @@ Ask for changes, Dismiss and Confirm.
 
 ## Open
 
-- Whether deleting a document also deletes its version rows, or leaves them
-  for a restore.
 - Copy as plain markdown only, or also as rich text for email.
 - Whether a document follows the task's language or the request's.
 - `DESIGN.md` says agent chat is an overlay that never reflows the page,

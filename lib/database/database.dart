@@ -44,6 +44,7 @@ part 'database_migration.dart';
 part 'database_migration_recent.dart';
 part 'database_project_queries.dart';
 part 'database_relationship_queries.dart';
+part 'database_task_document_queries.dart';
 part 'database_task_due_queries.dart';
 part 'database_task_queries.dart';
 part 'database_task_query_builders.dart';
@@ -129,6 +130,7 @@ class JournalDb extends _$JournalDb
         _JournalDbProjectQueries,
         _JournalDbGoalQueries,
         _JournalDbRelationshipQueries,
+        _JournalDbTaskDocumentQueries,
         _JournalDbLinksRatings,
         _JournalDbDataQueries,
         _JournalDbDefinitions,
