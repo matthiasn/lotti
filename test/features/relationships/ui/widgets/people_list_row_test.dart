@@ -5,6 +5,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
@@ -12,7 +16,9 @@ import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.d
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/themes/theme_text_styles.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/test_app.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -427,6 +433,58 @@ void main() {
     expect(statusMaxLines(), 2);
   });
 
+  testWidgets('in the desktop split the expand command opens the person and '
+      'moves focus into their page, as on a task or project row', (
+    tester,
+  ) async {
+    var taps = 0;
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          ListDetailFocusTraversal(
+            debugLabel: 'people-test-split',
+            listPane: SizedBox(
+              width: 320,
+              child: PeopleListRow(item: item(), onTap: () => taps++),
+            ),
+            divider: const SizedBox(width: 3),
+            detailPane: TextButton(
+              onPressed: () {},
+              child: const Text('Detail action'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    final scope = tester.widget<AppCommandScope>(find.byType(AppCommandScope));
+    await scope.handlers[AppCommandId.expand]!.invoke(
+      AppCommandInvocation(
+        context: tester.element(find.text('Anna')),
+        snapshot: _Snapshot(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(taps, 1);
+    // Focus left the list for the detail pane's first control.
+    final focused = FocusManager.instance.primaryFocus?.context;
+    expect(focused, isNotNull);
+    expect(
+      focused!.findAncestorWidgetOfExactType<TextButton>(),
+      isNotNull,
+      reason: 'focus moved into the detail pane',
+    );
+  });
+
+  testWidgets('outside a split the row carries no expand command', (
+    tester,
+  ) async {
+    await pump(tester, item());
+    expect(find.byType(AppCommandScope), findsNothing);
+  });
+
   testWidgets('tapping anywhere on the row fires onTap', (tester) async {
     var taps = 0;
     await pump(tester, item(), onTap: () => taps++);
@@ -483,3 +541,5 @@ Map<String, TextStyle?> _spanStyles(WidgetTester tester) {
       });
   return fonts;
 }
+
+class _Snapshot extends Mock implements AppCommandContextSnapshot {}
