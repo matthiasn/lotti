@@ -8565,6 +8565,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInRecorderBusyBody =>
+      'Fermala qui e verrà salvata dove è stata avviata. Poi potrai parlare.';
+
+  @override
   String get goalCheckInSave => 'Salva check-in';
 
   @override
@@ -8610,6 +8614,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String goalCheckInsTitleWithCount(int count) {
     return 'Check-in · $count';
   }
+
+  @override
+  String get goalCheckInStopRunning => 'Ferma quella registrazione';
 
   @override
   String get goalCheckInTimeQuickPickHint =>

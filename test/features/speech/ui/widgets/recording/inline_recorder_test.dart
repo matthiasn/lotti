@@ -45,7 +45,6 @@ void main() {
     bool stopThrows = false,
     Completer<void>? stopGate,
     String? runningFor,
-    bool adoptRunning = false,
     String style = 'modern',
     bool showStatus = false,
   }) async {
@@ -60,7 +59,6 @@ void main() {
         InlineRecorder(
           linkedId: 'person-1',
           categoryId: 'category-7',
-          adoptRunning: adoptRunning,
           showStatus: showStatus,
           onRecorded: (id, length) => recorded.add((id, length)),
           onDiscarded: () => discarded++,
@@ -188,10 +186,13 @@ void main() {
     expect(failed, [InlineRecordingFailure.startFailed]);
   });
 
-  // `record()` on a running recorder toggles it off; adopting attaches to
-  // the take instead, and only hides the indicator.
-  testWidgets('adopting a running take never calls record', (tester) async {
-    await pump(tester, runningFor: 'person-1', adoptRunning: true);
+  // `record()` on a running recorder toggles it off; attaching to this
+  // subject's take never calls it, never refiles it, and only hides the
+  // indicator.
+  testWidgets("attaching to this subject's running take never calls record", (
+    tester,
+  ) async {
+    await pump(tester, runningFor: 'person-1');
     expect(recorder.recordCalls, isEmpty);
     expect(recorder.categoryIds, isEmpty);
     expect(recorder.modalVisibleLog, [true]);
@@ -199,6 +200,63 @@ void main() {
     await tester.tap(key('check-in-recorder-stop'));
     await tester.pump();
     expect(recorded, [('audio-1', Duration.zero)]);
+  });
+
+  testWidgets('mounted on a host that is already on its way out, it leaves '
+      "a running take's indicator alone and starts nothing", (tester) async {
+    recorder = FakeAudioRecorderController(runningFor: 'person-1');
+    final show = ValueNotifier(false);
+    addTearDown(show.dispose);
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => Dialog(
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: show,
+                  builder: (context, shown, _) => shown
+                      ? InlineRecorder(
+                          linkedId: 'person-1',
+                          categoryId: 'category-7',
+                          onRecorded: (id, length) =>
+                              recorded.add((id, length)),
+                          onDiscarded: () => discarded++,
+                          onFailed: failed.add,
+                        )
+                      : const Text('waiting'),
+                ),
+              ),
+            ),
+            child: const Text('open'),
+          ),
+        ),
+        overrides: [
+          audioRecorderControllerProvider.overrideWith(() => recorder),
+          recordingStyleAppPrefsProvider.overrideWithValue(
+            _stylePrefs('modern'),
+          ),
+        ],
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Dismissed; the recorder only mounts during the exit animation.
+    Navigator.of(tester.element(find.text('waiting'))).pop();
+    await tester.pump();
+    show.value = true;
+    await tester.pump();
+    expect(find.byType(InlineRecorder), findsOneWidget);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Hiding the indicator here would leave the take with no Stop anywhere.
+    expect(recorder.modalVisibleLog, isEmpty);
+    expect(recorder.recordCalls, isEmpty);
+    expect(failed, isEmpty);
   });
 
   testWidgets('a take running for someone else is never taken over: it is '
@@ -310,21 +368,22 @@ void main() {
     expect(recorded, [('audio-1', const Duration(seconds: 23))]);
   });
 
-  testWidgets('a stop that saves nothing, or throws, is a recording not '
-      'saved — never a start that failed', (tester) async {
-    final semantics = tester.ensureSemantics();
-    await pump(tester, stopResult: null);
-    await tester.tap(key('check-in-recorder-stop'));
-    await tester.pump();
-    expect(failed, [InlineRecordingFailure.notSaved]);
-    expect(recorded, isEmpty);
+  for (final (name, stopResult, stopThrows) in [
+    ('saves nothing', null, false),
+    ('throws', 'audio-1', true),
+  ]) {
+    testWidgets('a stop that $name is a recording not saved — never a start '
+        'that failed', (tester) async {
+      await pump(tester, stopResult: stopResult, stopThrows: stopThrows);
+      await tester.tap(key('check-in-recorder-stop'));
+      await tester.pump();
+      await tester.pump();
 
-    await pump(tester, stopThrows: true);
-    await tester.tap(key('check-in-recorder-stop'));
-    await tester.pump();
-    expect(failed.last, InlineRecordingFailure.notSaved);
-    semantics.dispose();
-  });
+      expect(recorder.stopCalls, 1);
+      expect(failed, [InlineRecordingFailure.notSaved]);
+      expect(recorded, isEmpty);
+    });
+  }
 
   testWidgets('every control goes quiet while a stop is in flight', (
     tester,
@@ -439,12 +498,18 @@ void main() {
     await pump(tester);
     recorder.tick(progress: const Duration(seconds: 9));
     await tester.pump();
-    final stopBefore = tester.getRect(key('check-in-recorder-stop'));
+    List<Rect> controls() => [
+      for (final name in ['discard', 'stop', 'pause'])
+        tester.getRect(key('check-in-recorder-$name')),
+    ];
+    final before = controls();
+    final stopBefore = before[1];
 
+    // The timer and both its neighbours: same size, same place.
     recorder.tick(progress: const Duration(minutes: 59, seconds: 59));
     await tester.pump();
     expect(find.text('59:59'), findsOneWidget);
-    expect(tester.getRect(key('check-in-recorder-stop')), stopBefore);
+    expect(controls(), before);
 
     // Past the hour the time grows its hour digit; the row stays on its
     // centre line.

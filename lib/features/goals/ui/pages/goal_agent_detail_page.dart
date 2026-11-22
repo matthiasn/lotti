@@ -8,6 +8,7 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
@@ -306,7 +307,10 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
           spec: spec!,
           progress: progress!,
           assessments: assessments,
-          day: progress.today,
+          // Today as it is now, not as the page saw it before the menu
+          // opened: a menu left open past midnight must not file the
+          // reflection under yesterday.
+          day: GoalWindow.dayUtc(clock.now()),
         );
     }
   }

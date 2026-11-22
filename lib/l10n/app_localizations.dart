@@ -14309,6 +14309,12 @@ abstract class AppLocalizations {
   /// **'{name} · prepared for you'**
   String goalCheckInPreparedBy(String name);
 
+  /// Body of the goal check-in sheet's callout when another recording is already running elsewhere in the app. Sits under the title 'A recording is already running'.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop it here and it is saved where it was started. Then you can speak.'**
+  String get goalCheckInRecorderBusyBody;
+
   /// No description provided for @goalCheckInSave.
   ///
   /// In en, this message translates to:
@@ -14386,6 +14392,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check-ins · {count}'**
   String goalCheckInsTitleWithCount(int count);
+
+  /// Button in the goal check-in sheet that stops and saves a recording running elsewhere in the app, so a check-in can be spoken.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop that recording'**
+  String get goalCheckInStopRunning;
 
   /// Hint above the quick-pick durations for a goal check-in.
   ///

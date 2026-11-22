@@ -127,7 +127,8 @@ stateDiagram-v2
     starting --> recording: record() landed
     starting --> [*]: onFailed(microphoneDenied | startFailed)
     starting --> [*]: onFailed(recorderBusy) — another subject's take is live
-    starting --> recording: adopts this subject's running take
+    starting --> recording: attaches to this subject's running take
+    starting --> [*]: host already leaving — nothing touched
     recording --> paused: Pause
     paused --> recording: Resume
     recording --> [*]: Stop — onRecorded(id, length) or onFailed(notSaved)
@@ -140,7 +141,11 @@ stateDiagram-v2
 toggle: called while a take is live it stops that take and files it under the
 new `linkedId`. So before starting, the recorder reads the controller: a take
 running for another subject is `recorderBusy` and `record` is never called; a
-take already running for this subject is attached to, not restarted.
+take already running for this subject is attached to, not restarted. The
+subject is compared on every start; there is no host flag that skips it. A
+recorder mounted on a host that is already on its way out (a popped route is
+mounted until its exit animation ends) does nothing at all: it neither hides
+a running take's indicator nor starts a take behind a sheet that is gone.
 Dismissing the host mid-take does not stop it — the host hands the floating
 indicator back (`setModalVisible(false)`) and the take is stopped from there.
 

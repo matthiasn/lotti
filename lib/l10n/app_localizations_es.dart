@@ -8565,6 +8565,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInRecorderBusyBody =>
+      'Detenla aquí y se guardará donde se inició. Después podrás hablar.';
+
+  @override
   String get goalCheckInSave => 'Guardar registro';
 
   @override
@@ -8609,6 +8613,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String goalCheckInsTitleWithCount(int count) {
     return 'Registros · $count';
   }
+
+  @override
+  String get goalCheckInStopRunning => 'Detener esa grabación';
 
   @override
   String get goalCheckInTimeQuickPickHint => '¿Cuánto te llevó este registro?';

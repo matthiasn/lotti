@@ -60,8 +60,8 @@ String spokenClockLabel(AppLocalizations messages, Duration length) {
 /// starting, the recorder looks: a take already running for [linkedId] is
 /// adopted (a sheet dismissed mid-take and reopened simply attaches to it),
 /// and a take running for anything else is left alone and reported as
-/// [InlineRecordingFailure.recorderBusy]. [adoptRunning] says the host
-/// already knows the running take is this subject's.
+/// [InlineRecordingFailure.recorderBusy]. The subject is compared on every
+/// start, whatever the host believed when it mounted this.
 ///
 /// It drives the app-wide [AudioRecorderController] the way the recording
 /// sheet does, and hides the floating recording indicator while it is on
@@ -76,7 +76,6 @@ class InlineRecorder extends ConsumerStatefulWidget {
     required this.onDiscarded,
     required this.onFailed,
     this.categoryId,
-    this.adoptRunning = false,
     this.compact = false,
     this.showStatus = false,
     this.transcriptionHandledByCaller = true,
@@ -92,9 +91,6 @@ class InlineRecorder extends ConsumerStatefulWidget {
   final void Function(String audioEntryId, Duration length) onRecorded;
   final VoidCallback onDiscarded;
   final void Function(InlineRecordingFailure failure) onFailed;
-
-  /// Attach to the recording already running rather than starting one.
-  final bool adoptRunning;
 
   /// Whether to leave the orb or meter out, as a page's dock does, so
   /// recording never covers the thing it adds to.
@@ -130,28 +126,31 @@ class _InlineRecorderState extends ConsumerState<InlineRecorder> {
   }
 
   Future<void> _start() async {
+    // A host dismissed while this is still starting is on its way out but
+    // mounted until its exit animation ends. It must neither hide the
+    // floating indicator of a running take nor start a take behind a sheet
+    // that is already gone, with nothing left to stop it — the recording
+    // sheet's own rule.
+    final route = ModalRoute.of(context);
+    bool leaving() => !mounted || (route != null && !route.isCurrent);
+    if (leaving()) return;
     final running = ref.read(audioRecorderControllerProvider);
     final taking =
         running.status == AudioRecorderStatus.recording ||
         running.status == AudioRecorderStatus.paused;
-    if (taking && !widget.adoptRunning && running.linkedId != widget.linkedId) {
+    if (taking && running.linkedId != widget.linkedId) {
       // Someone else's take: calling `record()` would stop it and file it
       // under this subject.
       widget.onFailed(InlineRecordingFailure.recorderBusy);
       return;
     }
     _controller.setModalVisible(modalVisible: true);
-    if (widget.adoptRunning || taking) return;
+    if (taking) return;
     _controller.setCategoryId(widget.categoryId);
-    // A host dismissed while the microphone is still starting is on its way
-    // out but mounted until its exit animation ends: without the route check
-    // the take would start behind a sheet that is already gone, with nothing
-    // left to stop it. The recording sheet's own rule.
-    final route = ModalRoute.of(context);
     final failure = await _controller.record(
       linkedId: widget.linkedId,
       transcriptionHandledByCaller: widget.transcriptionHandledByCaller,
-      shouldCancel: () => !mounted || (route != null && !route.isCurrent),
+      shouldCancel: leaving,
     );
     if (!mounted || failure == null) return;
     widget.onFailed(switch (failure) {

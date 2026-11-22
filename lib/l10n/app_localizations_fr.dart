@@ -8593,6 +8593,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInRecorderBusyBody =>
+      'Arrête-le ici et il sera enregistré là où il a commencé. Tu pourras ensuite parler.';
+
+  @override
   String get goalCheckInSave => 'Enregistrer le point';
 
   @override
@@ -8637,6 +8641,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String goalCheckInsTitleWithCount(int count) {
     return 'Points · $count';
   }
+
+  @override
+  String get goalCheckInStopRunning => 'Arrêter cet enregistrement';
 
   @override
   String get goalCheckInTimeQuickPickHint =>

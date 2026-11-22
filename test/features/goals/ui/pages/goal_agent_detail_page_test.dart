@@ -2616,11 +2616,24 @@ void main() {
     Navigator.of(tester.element(find.byType(GoalLogTodaySheet))).pop();
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('goal-action-add')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('goal-create-reflectToday')));
-    await tester.pumpAndSettle();
-    expect(find.byType(GoalDayAssessmentSheet), findsOneWidget);
+    // Today is read from the clock when the choice is made, not from the
+    // progress the page built earlier (11 August here): a menu left open
+    // past midnight must not file the reflection under yesterday. The
+    // handler keeps the zone of the tap that opened the menu, so that tap
+    // carries the later clock.
+    final nextDay = DateTime(2026, 8, 12, 0, 5);
+    await withClock(Clock.fixed(nextDay), () async {
+      await tester.tap(find.byKey(const ValueKey('goal-action-add')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('goal-create-reflectToday')));
+      await tester.pumpAndSettle();
+    });
+    expect(
+      tester
+          .widget<GoalDayAssessmentSheet>(find.byType(GoalDayAssessmentSheet))
+          .day,
+      GoalWindow.dayUtc(nextDay),
+    );
     Navigator.of(tester.element(find.byType(GoalDayAssessmentSheet))).pop();
     await tester.pumpAndSettle();
 

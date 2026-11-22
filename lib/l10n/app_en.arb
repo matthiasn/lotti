@@ -5473,6 +5473,10 @@
       }
     }
   },
+  "goalCheckInRecorderBusyBody": "Stop it here and it is saved where it was started. Then you can speak.",
+  "@goalCheckInRecorderBusyBody": {
+    "description": "Body of the goal check-in sheet's callout when another recording is already running elsewhere in the app. Sits under the title 'A recording is already running'."
+  },
   "goalCheckInSave": "Save check-in",
   "goalCheckInSaved": "Check-in saved",
   "@goalCheckInSaved": {
@@ -5526,6 +5530,10 @@
         "type": "int"
       }
     }
+  },
+  "goalCheckInStopRunning": "Stop that recording",
+  "@goalCheckInStopRunning": {
+    "description": "Button in the goal check-in sheet that stops and saves a recording running elsewhere in the app, so a check-in can be spoken."
   },
   "goalCheckInTimeQuickPickHint": "How long did this check-in take?",
   "@goalCheckInTimeQuickPickHint": {

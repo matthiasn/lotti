@@ -33,10 +33,14 @@ void main() {
   var saveSucceeds = true;
   var settingsOpened = 0;
 
+  /// When set, a save waits for it before it answers.
+  Completer<void>? saveGate;
+
   setUp(() {
     saved = [];
     filedUnder = [];
     saveSucceeds = true;
+    saveGate = null;
     settingsOpened = 0;
     recorder = FakeAudioRecorderController();
   });
@@ -79,6 +83,7 @@ void main() {
                   started: started,
                   timeSpent: timeSpent,
                 ));
+                await saveGate?.future;
                 return saveSucceeds;
               },
           pickDuration: ({required context, required initialDuration}) async =>
@@ -332,6 +337,82 @@ void main() {
       expect(key('goal-checkin-open-settings'), findsNothing);
     });
 
+    testWidgets('the running take can be stopped from the callout — a '
+        "phone's goal page has no recording indicator to stop it from — and "
+        'then Speak records', (tester) async {
+      recorder = FakeAudioRecorderController(runningFor: 'another-goal');
+      await pump(tester, start: GoalCheckInStart.speaking);
+      await settle(tester);
+
+      // Says where the stopped take goes, not to look for an indicator.
+      expect(find.textContaining('saved where it was started'), findsOneWidget);
+      await tester.tap(key('goal-checkin-stop-running'));
+      await settle(tester);
+
+      // Stopped, which saves it under its own subject; never `record`, which
+      // would have filed it under this goal.
+      expect(recorder.stopCalls, 1);
+      expect(recorder.recordCalls, isEmpty);
+      expect(find.text('A recording is already running'), findsNothing);
+
+      await tester.tap(key('goal-checkin-record'));
+      await settle(tester);
+      expect(recorder.recordCalls, [
+        (linkedId: 'goal-1', handledByCaller: false),
+      ]);
+    });
+
+    testWidgets('a running take that could not be saved on stop says so', (
+      tester,
+    ) async {
+      recorder = FakeAudioRecorderController(
+        runningFor: 'another-goal',
+        stopResult: null,
+      );
+      await pump(tester, start: GoalCheckInStart.speaking);
+      await settle(tester);
+
+      await tester.tap(key('goal-checkin-stop-running'));
+      await settle(tester);
+
+      expect(find.text("Recording couldn't be saved"), findsOneWidget);
+    });
+
+    testWidgets('a goal row that could not be read says so with Try again, '
+        'never an endless spinner — and a retry that lands does not turn '
+        'the mic on by itself', (tester) async {
+      var fail = true;
+      var reads = 0;
+      await pump(
+        tester,
+        start: GoalCheckInStart.speaking,
+        captureTargetRead: () async {
+          reads++;
+          if (fail) throw StateError('journal gone');
+          return 'goal-1';
+        },
+      );
+      await settle(tester);
+
+      expect(key('goal-checkin-target-failed'), findsOneWidget);
+      expect(find.byType(DesignSystemSpinner), findsNothing);
+      expect(recorder.recordCalls, isEmpty);
+
+      fail = false;
+      final before = reads;
+      await tester.tap(key('goal-checkin-target-retry'));
+      await settle(tester);
+
+      expect(reads, greaterThan(before));
+      expect(key('goal-checkin-target-failed'), findsNothing);
+      // At rest: the user reads an error, then decides to speak.
+      expect(recorder.recordCalls, isEmpty);
+      expect(
+        tester.widget<DesignSystemButton>(key('goal-checkin-record')).onPressed,
+        isNotNull,
+      );
+    });
+
     for (final (name, arrange, title) in <(String, void Function(), String)>[
       (
         'a start that failed',
@@ -539,6 +620,32 @@ void main() {
     await tester.pump();
 
     expect(saved, isEmpty);
+  });
+
+  testWidgets('while a save is pending nothing else can open or start: '
+      'no time picker over it, no take behind it', (tester) async {
+    final gate = Completer<void>();
+    saveGate = gate;
+    await pump(tester, start: GoalCheckInStart.writing);
+    await tester.pump();
+    await tester.enterText(find.byType(DesignSystemTextarea), 'Walked.');
+    await tester.tap(find.text('Save check-in'));
+    await tester.pump();
+
+    DesignSystemButton button(String name) =>
+        tester.widget<DesignSystemButton>(key(name));
+    expect(button('goal-checkin-mode-toggle').onPressed, isNull);
+    expect(button('goal-checkin-session-edit').onPressed, isNull);
+    expect(button('goal-checkin-session-toggle').onPressed, isNull);
+
+    // A failed save hands them back, the draft intact.
+    saveSucceeds = false;
+    gate.complete();
+    await tester.pump();
+    await tester.pump();
+    expect(button('goal-checkin-mode-toggle').onPressed, isNotNull);
+    expect(button('goal-checkin-session-edit').onPressed, isNotNull);
+    expect(find.text('Walked.'), findsOneWidget);
   });
 
   testWidgets('a failed save keeps the composer open with the text intact', (

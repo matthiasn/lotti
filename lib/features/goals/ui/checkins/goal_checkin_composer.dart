@@ -159,6 +159,7 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
   };
   InlineRecordingFailure? _failure;
   var _saving = false;
+  var _stopping = false;
 
   /// The writing session: when it began, the time counted before the current
   /// run, and when the current run started (null while paused). A check-in is
@@ -256,6 +257,27 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
     );
   }
 
+  /// Stops the take running elsewhere in the app. `stop` saves it under
+  /// the subject it was started for — unlike `record`, which would file it
+  /// under this goal — so nothing is lost and nothing is misfiled. On a
+  /// phone this is the only place to do it: a goal's page slides the app's
+  /// own recording indicator away with the navigation bar.
+  Future<void> _stopRunning() async {
+    if (_stopping) return;
+    setState(() => _stopping = true);
+    String? saved;
+    try {
+      saved = await ref.read(audioRecorderControllerProvider.notifier).stop();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _stopping = false;
+          _failure = saved == null ? InlineRecordingFailure.notSaved : null;
+        });
+      }
+    }
+  }
+
   Future<void> _saveText(String goalEntryId, String? categoryId) async {
     final text = _text.text.trim();
     if (text.isEmpty || _saving) return;
@@ -294,6 +316,15 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
     final categoryReady =
         widget.categoryId != null || category.hasValue || category.hasError;
     final ready = target.hasValue && categoryReady;
+    // The error before the loading flag: a Riverpod retry is both at once.
+    final targetFailed = target.hasError && !target.hasValue;
+    // A goal row that could not be read rests the sheet, so a retry that
+    // lands later never turns the mic on under an error.
+    ref.listen(goalCaptureTargetProvider(widget.agentId), (_, next) {
+      if (next.hasError && !next.hasValue && _mode == _Mode.speaking) {
+        setState(() => _mode = _Mode.idle);
+      }
+    });
     final failure = _failure;
 
     return Column(
@@ -313,17 +344,42 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
           SizedBox(height: tokens.spacing.step4),
           _PreparedCard(line: line, personaName: widget.personaName),
         ],
+        if (targetFailed) ...[
+          SizedBox(height: tokens.spacing.step4),
+          DesignSystemInlineCallout(
+            key: const ValueKey('goal-checkin-target-failed'),
+            icon: LottiIcons.warning,
+            tone: tokens.colors.alert.error.defaultColor,
+            text: messages.goalPageLoadFailed,
+            announce: true,
+            actions: [
+              DesignSystemButton(
+                key: const ValueKey('goal-checkin-target-retry'),
+                label: messages.goalTryAgain,
+                leadingIcon: LottiIcons.refresh,
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.medium,
+                tapTargetSize: MaterialTapTargetSize.padded,
+                onPressed: () => ref
+                  ..invalidate(goalCaptureTargetProvider(widget.agentId))
+                  ..invalidate(goalCategoryIdProvider(widget.agentId)),
+              ),
+            ],
+          ),
+        ],
         if (failure != null) ...[
           SizedBox(height: tokens.spacing.step4),
           _FailureCallout(
             failure: failure,
+            stopping: _stopping,
             onOpenSettings: () => ref.read(appSettingsOpenerProvider)(),
+            onStopRunning: _stopRunning,
             onWrite: _write,
           ),
         ],
         SizedBox(height: tokens.spacing.step5),
         switch (_mode) {
-          _Mode.speaking when !ready => Padding(
+          _Mode.speaking when !ready && !targetFailed => Padding(
             padding: EdgeInsets.symmetric(vertical: tokens.spacing.step6),
             child: Center(
               child: DesignSystemSpinner(
@@ -361,6 +417,10 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
                 timeSpent: _timeSpent,
                 running: _running,
                 edited: _override != null,
+                // A picker opened over a pending save would be what the
+                // save's pop closes, leaving the saved text to be sent
+                // twice.
+                enabled: !_saving,
                 onPause: () => setState(_pause),
                 onResume: () => setState(_resume),
                 onEdit: _editTime,
@@ -393,8 +453,11 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
                         ? LottiIcons.mic
                         : LottiIcons.edit,
                     variant: DesignSystemButtonVariant.secondary,
+                    // Not while a save is pending: the save closes the
+                    // sheet, and a take started now would run on without
+                    // its controls.
                     onPressed: _mode == _Mode.writing
-                        ? (goalEntryId == null ? null : _speak)
+                        ? (goalEntryId == null || _saving ? null : _speak)
                         : _write,
                   ),
                 ),
@@ -483,12 +546,18 @@ class _PreparedCard extends StatelessWidget {
 class _FailureCallout extends StatelessWidget {
   const _FailureCallout({
     required this.failure,
+    required this.stopping,
     required this.onOpenSettings,
+    required this.onStopRunning,
     required this.onWrite,
   });
 
   final InlineRecordingFailure failure;
+
+  /// True while the running take is being stopped and saved.
+  final bool stopping;
   final VoidCallback onOpenSettings;
+  final VoidCallback onStopRunning;
   final VoidCallback onWrite;
 
   @override
@@ -514,7 +583,7 @@ class _FailureCallout extends StatelessWidget {
         alert.warning.defaultColor,
         LottiIcons.mic,
         messages.checkInRecorderBusyTitle,
-        messages.checkInRecorderBusyBody,
+        messages.goalCheckInRecorderBusyBody,
       ),
       InlineRecordingFailure.notSaved => (
         alert.error.defaultColor,
@@ -540,7 +609,19 @@ class _FailureCallout extends StatelessWidget {
           onPressed: onWrite,
         ),
         // Trying again is the sheet's own Speak button, right under this
-        // callout; only a refused microphone needs a door of its own.
+        // callout; a refused microphone and a take running elsewhere each
+        // need a door of their own.
+        if (failure == InlineRecordingFailure.recorderBusy)
+          DesignSystemButton(
+            key: const ValueKey('goal-checkin-stop-running'),
+            label: messages.goalCheckInStopRunning,
+            leadingIcon: LottiIcons.stop,
+            variant: DesignSystemButtonVariant.secondary,
+            size: DesignSystemButtonSize.medium,
+            tapTargetSize: MaterialTapTargetSize.padded,
+            isLoading: stopping,
+            onPressed: onStopRunning,
+          ),
         if (denied)
           DesignSystemButton(
             key: const ValueKey('goal-checkin-open-settings'),
@@ -563,6 +644,7 @@ class _SessionRow extends StatelessWidget {
     required this.timeSpent,
     required this.running,
     required this.edited,
+    required this.enabled,
     required this.onPause,
     required this.onResume,
     required this.onEdit,
@@ -571,6 +653,9 @@ class _SessionRow extends StatelessWidget {
   final Duration timeSpent;
   final bool running;
   final bool edited;
+
+  /// False while the check-in is being saved: its controls wait.
+  final bool enabled;
   final VoidCallback onPause;
   final VoidCallback onResume;
   final VoidCallback onEdit;
@@ -611,7 +696,11 @@ class _SessionRow extends StatelessWidget {
             leadingIcon: running ? LottiIcons.pause : LottiIcons.play,
             variant: DesignSystemButtonVariant.tertiary,
             size: DesignSystemButtonSize.dense,
-            onPressed: running ? onPause : onResume,
+            onPressed: !enabled
+                ? null
+                : running
+                ? onPause
+                : onResume,
           ),
         DesignSystemButton(
           key: const ValueKey('goal-checkin-session-edit'),
@@ -619,7 +708,7 @@ class _SessionRow extends StatelessWidget {
           leadingIcon: LottiIcons.timer,
           variant: DesignSystemButtonVariant.tertiary,
           size: DesignSystemButtonSize.dense,
-          onPressed: onEdit,
+          onPressed: enabled ? onEdit : null,
         ),
       ],
     );

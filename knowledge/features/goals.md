@@ -2242,6 +2242,7 @@ stateDiagram-v2
     speaking --> [*]: Stop — saved, "Check-in saved"
     speaking --> idle: Discard (confirmed)
     speaking --> idle: could not record — callout names why
+    speaking --> idle: goal row could not be read
     idle --> speaking: Speak
     idle --> writing: Write instead
     writing --> speaking: Speak instead
@@ -2252,9 +2253,19 @@ stateDiagram-v2
 **A recorder that cannot record says why.** `InlineRecorder` reports one of
 four `InlineRecordingFailure`s and the sheet returns to rest under a
 `DesignSystemInlineCallout`: a refused microphone offers *Open settings*
-(`appSettingsOpenerProvider`); a take that did not start or was not saved,
-and a recording already running elsewhere, name themselves. *Write instead*
-is in every callout, and the sheet's own *Speak* is the retry. **A running
+(`appSettingsOpenerProvider`); a take that did not start or was not saved
+names itself; and a recording already running elsewhere offers *Stop that
+recording*, which calls the recorder's `stop` — saving that take under the
+subject it was started for — after which *Speak* records. The sheet has to
+offer it: on a phone a goal's page slides the navigation bar away and the
+app's recording indicator leaves with it, so there is nowhere else on that
+screen to stop a take from. *Write instead* is in every callout, and the
+sheet's own *Speak* is the retry. A goal row that could not be read
+(`goalCaptureTargetProvider` in error) rests the sheet under *This goal's
+page didn't load.* with *Try again*, never an endless spinner, and a retry
+that lands does not turn the microphone on by itself. While a written
+check-in is saving, *Speak instead* and the time controls wait, so nothing
+opens over the save or starts behind it. **A running
 take is never taken over:** `AudioRecorderController.record` is a toggle that
 stops whatever is running and files it under the new subject, so
 `InlineRecorder` refuses to start while another subject's take is live

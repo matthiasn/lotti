@@ -8606,6 +8606,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInRecorderBusyBody =>
+      'Opriți-o aici și va fi salvată acolo unde a fost pornită. Apoi puteți vorbi.';
+
+  @override
   String get goalCheckInSave => 'Salvați raportarea';
 
   @override
@@ -8651,6 +8655,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String goalCheckInsTitleWithCount(int count) {
     return 'Raportări · $count';
   }
+
+  @override
+  String get goalCheckInStopRunning => 'Opriți acea înregistrare';
 
   @override
   String get goalCheckInTimeQuickPickHint => 'Cât a durat această raportare?';

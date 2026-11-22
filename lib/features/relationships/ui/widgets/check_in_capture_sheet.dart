@@ -200,11 +200,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// files where their other entries do.
   String? _categoryId;
 
-  /// Whether the recorder attaches to this person's recording already
-  /// running — a sheet dismissed mid-take and reopened — instead of
-  /// starting one.
-  bool _adoptRunning = false;
-
   /// The recordings made here, oldest first — the check-in's entries once
   /// it is saved (ADR 0062).
   List<CheckInTake> _takes = const [];
@@ -501,7 +496,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         );
         return;
       }
-      _adoptRunning = busy;
       widget.handle.recorder = ref.read(
         audioRecorderControllerProvider.notifier,
       );
@@ -860,7 +854,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
               ? CheckInInlineRecorder(
                   linkedId: widget.relationshipId,
                   categoryId: _categoryId,
-                  adoptRunning: _adoptRunning,
                   onRecorded: _onRecorded,
                   onDiscarded: _onRecordingDiscarded,
                   onFailed: _onRecordingFailed,

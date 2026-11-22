@@ -18,7 +18,9 @@
 - **A check-in that could not record now says why.** A refused microphone
   showed a line of red text with no way forward, and a recording already
   running elsewhere showed nothing. Both now explain themselves, offer
-  *Write instead*, and a refused microphone offers *Open settings*.
+  *Write instead*, and a refused microphone offers *Open settings*. A
+  recording running elsewhere can be stopped right there with *Stop that
+  recording*; it is saved where it was started.
 - **Starting to speak no longer cuts off a recording that is already running.**
   Opening a check-in while another recording was in progress stopped that
   recording and filed it under the wrong goal or person. The running recording

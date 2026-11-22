@@ -20,7 +20,6 @@ class CheckInInlineRecorder extends StatelessWidget {
     required this.onDiscarded,
     required this.onFailed,
     this.categoryId,
-    this.adoptRunning = false,
     this.compact = false,
     this.showStatus = false,
     super.key,
@@ -36,9 +35,6 @@ class CheckInInlineRecorder extends StatelessWidget {
   final VoidCallback onDiscarded;
   final void Function(CheckInSpeechFailureKind failure) onFailed;
 
-  /// Attach to the recording already running rather than starting one.
-  final bool adoptRunning;
-
   /// Whether to leave the orb or meter out, as the check-in page's dock
   /// does, so dictating never covers the check-in it adds to.
   final bool compact;
@@ -52,7 +48,6 @@ class CheckInInlineRecorder extends StatelessWidget {
   Widget build(BuildContext context) => InlineRecorder(
     linkedId: linkedId,
     categoryId: categoryId,
-    adoptRunning: adoptRunning,
     compact: compact,
     showStatus: showStatus,
     onRecorded: onRecorded,

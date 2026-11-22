@@ -8569,6 +8569,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInRecorderBusyBody =>
+      'Zastav ji tady a uloží se tam, kde začala. Pak můžeš mluvit.';
+
+  @override
   String get goalCheckInSave => 'Uložit hlášení';
 
   @override
@@ -8613,6 +8617,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String goalCheckInsTitleWithCount(int count) {
     return 'Hlášení · $count';
   }
+
+  @override
+  String get goalCheckInStopRunning => 'Zastavit tu nahrávku';
 
   @override
   String get goalCheckInTimeQuickPickHint =>
