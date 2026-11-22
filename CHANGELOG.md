@@ -4,6 +4,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.108]
+
+### Changed
+
+- **Goals read as one list, each goal's title leading.** The goals sit in one
+  card of rows, as people and tasks do, and a goal's status sits under its
+  title as a mark and a word. *Behind* is the warning mark in the warning
+  colour rather than a solid amber block, which had outweighed the goal it
+  belonged to; the goal's page, its chat and the day's briefing show the
+  status the same way.
+- **A goal's page has one place to speak, at the bottom of the screen.** The
+  small microphone in the top bar, the plus in the check-ins heading and the
+  button in the empty check-ins list all opened the same sheet. They are
+  replaced by one bar docked at the bottom, as on a person's page: *Speak* and
+  *Add*. *Add* offers a written check-in, logging today's habits and
+  reflecting on today.
+- **A spoken check-in starts recording with one tap.** It used to take three
+  taps and two sheets, and the second sheet covered the agent's question. Now
+  *Speak* opens one sheet that is already recording, names the goal, and keeps
+  the agent's question in view while you answer. Stopping saves the check-in
+  and closes the sheet.
+- **Check-ins sit on the goal's page as a section** instead of a card inside
+  the stack of cards, and the second "Talk to agent" button at the bottom of
+  the page is gone.
+- **The task's AI summary reads as part of the app.** Behind *Read more*, the
+  agent's report is now laid out as titled sections: points, to-dos with their
+  done marks, and short paragraphs, rather than a pasted document. Reports
+  written before this update still show as before.
+- **The companion shows where a task stands.** Ask "what's next on the
+  habitat task?" and the companion shows the sections of the task's AI summary
+  that answer it, as the agent wrote them, with how old that summary is. Tap
+  the task to open it.
+- **"Open agent internals" is now "Agent details"**, on the AI summary and
+  wherever the agent's settings, reports and logs open.
+- **The Due, Later, Done and All tabs on Goals and Habits are capitalised.**
+
+### Fixed
+
+- **A check-in that could not record now says why.** A refused microphone
+  showed a line of red text with no way forward, and a recording already
+  running elsewhere showed nothing. Both now explain themselves, offer
+  *Write instead*, and a refused microphone offers *Open settings*. A
+  recording running elsewhere can be stopped right there with *Stop that
+  recording*; it is saved where it was started.
+- **Starting to speak no longer cuts off a recording that is already running.**
+  Opening a check-in while another recording was in progress stopped that
+  recording and filed it under the wrong goal or person. The running recording
+  is now left alone and the sheet says a recording is already running.
+- **A goal's check-ins said "nothing here yet" while they were still
+  loading.** The list now waits for them, and says when they could not be
+  read, with Try again.
+- **The Goals list, a goal's page, its check-in history and its chat said only
+  a bare line when they failed to load.** Each now says what did not load and
+  offers Try again; a goal that no longer exists says so.
+- **A goal's page kept yesterday after midnight.** Its check-in history,
+  this-week figures and chat now move on to the new day.
+- **The record button on a goal's check-in history showed a crossed-out
+  microphone.** It now shows the microphone it records with.
+- **In Italian, the new-category page title now matches the button that opens
+  it.** The button read "Crea categoria" but the page it opened was titled
+  "Creare una categoria". Both now read "Crea categoria".
+
 ## [1.1.107]
 
 ### Added
