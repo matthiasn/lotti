@@ -29,6 +29,7 @@ import 'package:lotti/features/relationships/ui/widgets/check_in_meta_summary_li
 import 'package:lotti/features/relationships/ui/widgets/check_in_narrative_field.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_pickers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
+import 'package:lotti/features/speech/state/app_settings_opener.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -40,7 +41,6 @@ import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:permission_handler/permission_handler.dart' as permissions;
 
 part 'check_in_capture_sheet_actions_part.dart';
 part 'check_in_capture_sheet_form_part.dart';
@@ -80,7 +80,7 @@ String checkInSentimentLabel(
 typedef CheckInSettingsOpener = Future<bool> Function();
 
 final checkInSettingsOpenerProvider = Provider<CheckInSettingsOpener>(
-  (ref) => permissions.openAppSettings,
+  (ref) => ref.watch(appSettingsOpenerProvider),
   name: 'checkInSettingsOpenerProvider',
 );
 

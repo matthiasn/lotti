@@ -5265,6 +5265,18 @@
   "githubTrackPullRequests": "Pull request tracking",
   "githubTrackPullRequestsHint": "Adds a section for the pull requests that implement this task.",
   "githubUnlinkPullRequest": "Unlink pull request",
+  "goalAddAction": "Add",
+  "@goalAddAction": {
+    "description": "Goal page bar: opens the + menu."
+  },
+  "goalAddMenuTitle": "Add to this goal",
+  "@goalAddMenuTitle": {
+    "description": "Goal page: title of the + menu and the + button's accessible name."
+  },
+  "goalAddWriteCheckIn": "Write a check-in",
+  "@goalAddWriteCheckIn": {
+    "description": "Goal page + menu: opens the check-in sheet for typing."
+  },
   "goalAssessmentHistoryTitle": "Daily reflections",
   "goalAssessmentImproving": "Improving",
   "goalAssessmentMeasuredReadOnly": "Measured by Lotti — this part isn’t editable.",
@@ -5439,6 +5451,10 @@
   "goalCheckInKindNote": "Note",
   "goalCheckInKindReflection": "Daily reflection",
   "goalCheckInKindVoice": "Voice check-in",
+  "goalCheckInMicrophoneDeniedBody": "Turn it on for Lotti in system settings, then tap Speak. Nothing was recorded.",
+  "@goalCheckInMicrophoneDeniedBody": {
+    "description": "Goal check-in sheet: the microphone was refused; names the Speak button."
+  },
   "goalCheckInMinutes": "{count} min",
   "@goalCheckInMinutes": {
     "description": "A goal check-in's time spent, in whole minutes.",
@@ -5459,6 +5475,10 @@
   },
   "goalCheckInRecordCta": "Record a check-in",
   "goalCheckInSave": "Save check-in",
+  "goalCheckInSaved": "Check-in saved",
+  "@goalCheckInSaved": {
+    "description": "Toast after a spoken goal check-in was saved."
+  },
   "goalCheckInsEmptyInvitation": "Tell your agent what is actually going on — thirty seconds, in your own words, whenever it is worth saying.",
   "goalCheckInSessionEdit": "Edit time",
   "@goalCheckInSessionEdit": {
@@ -5493,6 +5513,10 @@
   "goalCheckInsLoadFailed": "Your check-ins didn't load.",
   "@goalCheckInsLoadFailed": {
     "description": "A goal's check-in history could not be read."
+  },
+  "goalCheckInSpeakInstead": "Speak instead",
+  "@goalCheckInSpeakInstead": {
+    "description": "Goal check-in sheet, while typing: switches to recording."
   },
   "goalCheckInsSeeAll": "See all check-ins",
   "goalCheckInsTitle": "Check-ins",
@@ -6339,6 +6363,10 @@
   "goalsLoadFailed": "Your goals didn't load.",
   "@goalsLoadFailed": {
     "description": "Goals list: the first load of the goals failed."
+  },
+  "goalSpeak": "Speak",
+  "@goalSpeak": {
+    "description": "Goal page bar and check-in sheet: starts recording a check-in."
   },
   "goalTimelineRowLabel": "{kind}, {time}. {text}",
   "@goalTimelineRowLabel": {

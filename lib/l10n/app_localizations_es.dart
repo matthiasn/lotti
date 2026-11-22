@@ -8336,6 +8336,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get githubUnlinkPullRequest => 'Desvincular pull request';
 
   @override
+  String get goalAddAction => 'Añadir';
+
+  @override
+  String get goalAddMenuTitle => 'Añadir a este objetivo';
+
+  @override
+  String get goalAddWriteCheckIn => 'Escribir un registro';
+
+  @override
   String get goalAssessmentHistoryTitle => 'Reflexiones diarias';
 
   @override
@@ -8538,6 +8547,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalCheckInKindVoice => 'Registro de voz';
 
   @override
+  String get goalCheckInMicrophoneDeniedBody =>
+      'Actívalo para Lotti en los ajustes del sistema y luego toca Hablar. No se grabó nada.';
+
+  @override
   String goalCheckInMinutes(int count) {
     return '$count min';
   }
@@ -8556,6 +8569,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalCheckInSave => 'Guardar registro';
+
+  @override
+  String get goalCheckInSaved => 'Registro guardado';
 
   @override
   String get goalCheckInsEmptyInvitation =>
@@ -8582,6 +8598,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalCheckInsLoadFailed => 'Tus registros no se cargaron.';
+
+  @override
+  String get goalCheckInSpeakInstead => 'Hablar en su lugar';
 
   @override
   String get goalCheckInsSeeAll => 'Ver todos los registros';
@@ -9477,6 +9496,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalsLoadFailed => 'Tus objetivos no se cargaron.';
+
+  @override
+  String get goalSpeak => 'Hablar';
 
   @override
   String goalTimelineRowLabel(String kind, String time, String text) {

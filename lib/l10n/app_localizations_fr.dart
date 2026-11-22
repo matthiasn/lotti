@@ -8365,6 +8365,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get githubUnlinkPullRequest => 'Délier la pull request';
 
   @override
+  String get goalAddAction => 'Ajouter';
+
+  @override
+  String get goalAddMenuTitle => 'Ajouter à cet objectif';
+
+  @override
+  String get goalAddWriteCheckIn => 'Écrire un point';
+
+  @override
   String get goalAssessmentHistoryTitle => 'Réflexions quotidiennes';
 
   @override
@@ -8567,6 +8576,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalCheckInKindVoice => 'Point vocal';
 
   @override
+  String get goalCheckInMicrophoneDeniedBody =>
+      'Active-le pour Lotti dans les réglages système, puis touche Parler. Rien n’a été enregistré.';
+
+  @override
   String goalCheckInMinutes(int count) {
     return '$count min';
   }
@@ -8584,6 +8597,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalCheckInSave => 'Enregistrer le point';
+
+  @override
+  String get goalCheckInSaved => 'Point enregistré';
 
   @override
   String get goalCheckInsEmptyInvitation =>
@@ -8610,6 +8626,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalCheckInsLoadFailed => 'Tes points n’ont pas pu être chargés.';
+
+  @override
+  String get goalCheckInSpeakInstead => 'Parler à la place';
 
   @override
   String get goalCheckInsSeeAll => 'Voir tous les points';
@@ -9506,6 +9525,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalsLoadFailed => 'Tes objectifs n’ont pas pu être chargés.';
+
+  @override
+  String get goalSpeak => 'Parler';
 
   @override
   String goalTimelineRowLabel(String kind, String time, String text) {

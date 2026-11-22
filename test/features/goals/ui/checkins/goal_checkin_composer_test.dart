@@ -1,15 +1,21 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
+import 'package:lotti/features/speech/state/app_settings_opener.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../relationships/helpers/check_in_speech_fakes.dart';
 
 void main() {
   final now = DateTime(2026, 8, 18, 14, 20);
@@ -18,19 +24,19 @@ void main() {
     ({String text, String goalEntryId, DateTime started, Duration timeSpent})
   >
   saved;
-  late List<String> recorded;
 
-  /// The category every save and every recording was filed under.
+  /// The category every written save was filed under.
   late List<String?> filedUnder;
+  late FakeAudioRecorderController recorder;
   var saveSucceeds = true;
-  String? recorderResult;
+  var settingsOpened = 0;
 
   setUp(() {
     saved = [];
-    recorded = [];
     filedUnder = [];
     saveSucceeds = true;
-    recorderResult = 'audio-1';
+    settingsOpened = 0;
+    recorder = FakeAudioRecorderController();
   });
 
   Future<void> pump(
@@ -42,6 +48,8 @@ void main() {
     Duration? pickedDuration,
     String? hostCategory = 'cat-1',
     String? goalRowCategory,
+    GoalCheckInStart start = GoalCheckInStart.idle,
+    Future<String?> Function()? captureTargetRead,
   }) => withClock(
     clockOverride ?? Clock.fixed(now),
     () => tester.pumpWidget(
@@ -49,6 +57,7 @@ void main() {
         GoalCheckInComposer(
           agentId: 'agent-1',
           goalTitle: 'Fitness',
+          start: start,
           preparedLine: preparedLine,
           personaName: personaName,
           categoryId: hostCategory,
@@ -71,23 +80,80 @@ void main() {
               },
           pickDuration: ({required context, required initialDuration}) async =>
               pickedDuration,
-          openRecorder: (context, {required goalEntryId, categoryId}) async {
-            filedUnder.add(categoryId);
-            recorded.add(goalEntryId);
-            return recorderResult;
-          },
         ),
         overrides: [
-          goalCaptureTargetProvider(
-            'agent-1',
-          ).overrideWith((ref) async => captureTarget),
+          goalCaptureTargetProvider('agent-1').overrideWith(
+            (ref) => captureTargetRead != null
+                ? captureTargetRead()
+                : Future.value(captureTarget),
+          ),
           goalCategoryIdProvider(
             'agent-1',
           ).overrideWith((ref) async => goalRowCategory),
+          audioRecorderControllerProvider.overrideWith(() => recorder),
+          appSettingsOpenerProvider.overrideWithValue(() async {
+            settingsOpened++;
+            return true;
+          }),
         ],
       ),
     ),
   );
+
+  /// Lets the capture target resolve and the recorder start, frame by frame:
+  /// while a take is live the visualizer keeps moving, so nothing settles.
+  Future<void> settle(WidgetTester tester) async {
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
+
+  Finder key(String name) => find.byKey(ValueKey(name));
+
+  /// Opens the composer on a route of its own, as the app does, so a test
+  /// can tell that it closed. Returns how many times it has closed.
+  Future<int Function()> pumpOnRoute(
+    WidgetTester tester, {
+    GoalCheckInStart start = GoalCheckInStart.idle,
+  }) async {
+    var closed = 0;
+    await withClock(
+      Clock.fixed(now),
+      () => tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                await showDialog<void>(
+                  context: context,
+                  builder: (_) => Dialog(
+                    child: GoalCheckInComposer(
+                      agentId: 'agent-1',
+                      goalTitle: 'Fitness',
+                      categoryId: 'cat-1',
+                      start: start,
+                    ),
+                  ),
+                );
+                closed++;
+              },
+              child: const Text('open'),
+            ),
+          ),
+          overrides: [
+            goalCaptureTargetProvider(
+              'agent-1',
+            ).overrideWith((ref) async => 'goal-1'),
+            goalCategoryIdProvider('agent-1').overrideWith((ref) async => null),
+            audioRecorderControllerProvider.overrideWith(() => recorder),
+          ],
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await settle(tester);
+    return () => closed;
+  }
 
   group('the real adapters behind the seams', () {
     tearDown(getIt.reset);
@@ -110,25 +176,200 @@ void main() {
     });
   });
 
-  testWidgets('names the goal and the moment', (tester) async {
-    await pump(tester);
-    // The frame that lands the resolved capture target rebuilds the header,
-    // and the header formats `clock.now()` on every build — so this pump has
-    // to run under the fixed clock too, or the month tracks the wall calendar
-    // (the test rolled over on 1 September).
-    await withClock(Clock.fixed(now), tester.pump);
-
-    expect(find.text('Check in · Fitness'), findsOneWidget);
-    expect(find.textContaining('August 18, 2026'), findsOneWidget);
-  });
-
-  testWidgets('opens on the recorder, not on a keyboard', (tester) async {
+  testWidgets('names the goal it is about', (tester) async {
     await pump(tester);
     await tester.pump();
 
-    // One tap, no typing, is the entire point.
-    expect(find.byKey(const ValueKey('goal-checkin-record')), findsOneWidget);
+    expect(
+      tester.widget<Text>(key('goal-checkin-goal-title')).data,
+      'Fitness',
+    );
+  });
+
+  group('speaking', () {
+    testWidgets('opened from Speak it is already recording: one sheet, no '
+        'second tap, linked to the goal and left to the recorder to '
+        'transcribe', (tester) async {
+      await pump(
+        tester,
+        start: GoalCheckInStart.speaking,
+        preparedLine: 'What got in the way on Tuesday?',
+        personaName: 'Juno',
+      );
+      await settle(tester);
+
+      expect(recorder.recordCalls, [
+        (linkedId: 'goal-1', handledByCaller: false),
+      ]);
+      expect(recorder.categoryIds, ['cat-1']);
+      expect(find.byType(InlineRecorder), findsOneWidget);
+      // The question being answered stays in view while recording.
+      expect(find.text('What got in the way on Tuesday?'), findsOneWidget);
+      // The recorder's own row is the only set of controls.
+      expect(key('goal-checkin-mode-toggle'), findsNothing);
+      expect(find.text('Close'), findsNothing);
+    });
+
+    testWidgets('Stop saves the take, says so and closes the sheet', (
+      tester,
+    ) async {
+      final closed = await pumpOnRoute(
+        tester,
+        start: GoalCheckInStart.speaking,
+      );
+
+      await tester.tap(key('check-in-recorder-stop'));
+      await settle(tester);
+
+      expect(recorder.stopCalls, 1);
+      expect(closed(), 1);
+      expect(find.byType(GoalCheckInComposer), findsNothing);
+      expect(find.text('Check-in saved'), findsOneWidget);
+    });
+
+    testWidgets('it waits for the goal row and its category, then records '
+        'under the goal row category', (tester) async {
+      await pump(
+        tester,
+        start: GoalCheckInStart.speaking,
+        hostCategory: null,
+        goalRowCategory: 'colony-fitness',
+      );
+      // Before either lookup lands: a spinner, and no recording yet.
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
+      expect(recorder.recordCalls, isEmpty);
+
+      await settle(tester);
+      expect(recorder.categoryIds, ['colony-fitness']);
+      expect(recorder.recordCalls, hasLength(1));
+    });
+
+    testWidgets('with no goal row to record into it rests, Speak disabled, '
+        'and never records', (tester) async {
+      await pump(tester, start: GoalCheckInStart.speaking, captureTarget: null);
+      await settle(tester);
+
+      // Linking to a row that has not been written saves the recording and
+      // silently drops the link, so the beat would never appear.
+      expect(recorder.recordCalls, isEmpty);
+      expect(
+        tester.widget<DesignSystemButton>(key('goal-checkin-record')).onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets('a discarded take returns to the sheet at rest', (
+      tester,
+    ) async {
+      await pump(tester, start: GoalCheckInStart.speaking);
+      await settle(tester);
+
+      await tester.tap(key('check-in-recorder-discard'));
+      await settle(tester);
+      await tester.tap(find.text('Discard').last);
+      await settle(tester);
+
+      expect(recorder.cancelCalls, 1);
+      expect(find.byType(GoalCheckInComposer), findsOneWidget);
+      expect(find.byType(InlineRecorder), findsNothing);
+      // The user may still want to speak again, or write instead.
+      expect(key('goal-checkin-record'), findsOneWidget);
+      expect(find.text('Write instead'), findsOneWidget);
+    });
+
+    testWidgets('a refused microphone says so, with Open settings and Write '
+        'instead — and Speak right there to try again', (tester) async {
+      recorder = FakeAudioRecorderController(
+        recordFailure: AudioRecordingFailure.permissionDenied,
+      );
+      await pump(tester, start: GoalCheckInStart.speaking);
+      await settle(tester);
+
+      expect(find.text('Allow microphone access'), findsOneWidget);
+      expect(find.textContaining('then tap Speak'), findsOneWidget);
+      // The slashed mic belongs here: the microphone IS unavailable.
+      expect(
+        find.descendant(
+          of: key('goal-checkin-failure-microphoneDenied'),
+          matching: find.byIcon(LottiIcons.micIdle),
+        ),
+        findsOneWidget,
+      );
+      // One Write instead, in the callout — not a second under it.
+      expect(find.text('Write instead'), findsOneWidget);
+
+      await tester.tap(key('goal-checkin-open-settings'));
+      expect(settingsOpened, 1);
+
+      // Speak tries again, and the failure is cleared while it does.
+      recorder.recordFailure = null;
+      await tester.tap(key('goal-checkin-record'));
+      await settle(tester);
+      expect(find.text('Allow microphone access'), findsNothing);
+      expect(find.byType(InlineRecorder), findsOneWidget);
+    });
+
+    testWidgets("someone else's running take is never taken over: the sheet "
+        'says a recording is already running', (tester) async {
+      recorder = FakeAudioRecorderController(runningFor: 'another-goal');
+      await pump(tester, start: GoalCheckInStart.speaking);
+      await settle(tester);
+
+      expect(find.text('A recording is already running'), findsOneWidget);
+      expect(recorder.recordCalls, isEmpty);
+      expect(recorder.stopCalls, 0);
+      // No settings door: the microphone is fine.
+      expect(key('goal-checkin-open-settings'), findsNothing);
+    });
+
+    for (final (name, arrange, title) in <(String, void Function(), String)>[
+      (
+        'a start that failed',
+        () => recorder = FakeAudioRecorderController(
+          recordFailure: AudioRecordingFailure.startFailed,
+        ),
+        "Recording didn't start",
+      ),
+      (
+        'a take that could not be saved',
+        () => recorder = FakeAudioRecorderController(stopResult: null),
+        "Recording couldn't be saved",
+      ),
+    ]) {
+      testWidgets('$name says so, and writing is the way that still works', (
+        tester,
+      ) async {
+        arrange();
+        await pump(tester, start: GoalCheckInStart.speaking);
+        await settle(tester);
+        if (find.byType(InlineRecorder).evaluate().isNotEmpty) {
+          await tester.tap(key('check-in-recorder-stop'));
+          await settle(tester);
+        }
+
+        expect(find.text(title), findsOneWidget);
+        await tester.tap(key('goal-checkin-failure-write'));
+        await tester.pump();
+        expect(find.byType(DesignSystemTextarea), findsOneWidget);
+        expect(find.text(title), findsNothing);
+      });
+    }
+  });
+
+  testWidgets('opened from a banner it rests: the mic is not turned on for '
+      'the user, and Speak is one tap away', (tester) async {
+    await pump(tester);
+    await settle(tester);
+
+    expect(recorder.recordCalls, isEmpty);
     expect(find.byType(DesignSystemTextarea), findsNothing);
+    final speak = tester.widget<DesignSystemButton>(key('goal-checkin-record'));
+    expect(speak.label, 'Speak');
+    expect(speak.leadingIcon, LottiIcons.mic);
+
+    await tester.tap(key('goal-checkin-record'));
+    await settle(tester);
+    expect(recorder.recordCalls, hasLength(1));
   });
 
   testWidgets('recording is withheld until the goal row exists', (
@@ -137,17 +378,14 @@ void main() {
     await pump(tester, captureTarget: null);
     await tester.pump();
 
-    // Linking to a row that has not been written saves the recording and
-    // silently drops the link, so the beat would never appear.
     final button = tester.widget<DesignSystemButton>(
-      find.byKey(const ValueKey('goal-checkin-record')),
+      key('goal-checkin-record'),
     );
     expect(button.onPressed, isNull);
   });
 
-  testWidgets('Write instead swaps the recorder for a textarea', (
-    tester,
-  ) async {
+  testWidgets('Write instead swaps Speak for a textarea, and Speak instead '
+      'is the way back', (tester) async {
     await pump(tester);
     await tester.pump();
 
@@ -155,14 +393,21 @@ void main() {
     await tester.pump();
 
     expect(find.byType(DesignSystemTextarea), findsOneWidget);
-    expect(find.byKey(const ValueKey('goal-checkin-record')), findsNothing);
+    expect(key('goal-checkin-record'), findsNothing);
     // And back again — the fallback is a toggle, not a one-way door.
-    expect(find.text('Record a check-in'), findsWidgets);
+    expect(find.text('Speak instead'), findsOneWidget);
   });
 
-  testWidgets("the prepared line is shown as the agent's, not as fact", (
-    tester,
-  ) async {
+  testWidgets('opened to write, the text field is up at once', (tester) async {
+    await pump(tester, start: GoalCheckInStart.writing);
+    await tester.pump();
+
+    expect(find.byType(DesignSystemTextarea), findsOneWidget);
+    expect(recorder.recordCalls, isEmpty);
+  });
+
+  testWidgets("the prepared line is shown as the agent's, in the agent's "
+      'violet, not as fact', (tester) async {
     await pump(
       tester,
       preparedLine: 'You said you would walk after lunch. It is 14:20.',
@@ -175,74 +420,37 @@ void main() {
       findsOneWidget,
     );
     // Provenance is explicit: the user is never answering a prompt without
-    // knowing whose it is.
-    expect(find.text('Juno · prepared for you'), findsOneWidget);
+    // knowing whose it is — in words and in the agent's colour.
+    final label = tester.widget<Text>(find.text('Juno · prepared for you'));
+    final tokens = tester.element(key('goal-checkin-prepared')).designTokens;
+    expect(label.style?.color, tokens.colors.aiCard.accent);
   });
 
-  testWidgets('recording links to the goal row it was given', (tester) async {
-    await pump(tester);
+  testWidgets("opened before the host knew the goal's category, a note is "
+      'filed under the goal row category', (tester) async {
+    await pump(tester, hostCategory: null, goalRowCategory: 'colony-fitness');
+    await tester.pump();
+    await tester.tap(find.text('Write instead'));
+    await tester.pump();
+    await tester.enterText(find.byType(DesignSystemTextarea), 'Waddled.');
+    await tester.tap(find.text('Save check-in'));
     await tester.pump();
 
-    await tester.tap(find.byKey(const ValueKey('goal-checkin-record')));
-    await tester.pumpAndSettle();
-
-    // The link is what puts the recording on the timeline — and, because the
-    // recorder's stop path transcribes goal-linked audio, into the pipeline.
-    expect(recorded, ['goal-1']);
-    // The composer's job ended with the recording; it closes itself.
-    expect(find.byType(GoalCheckInComposer), findsNothing);
+    expect(filedUnder, ['colony-fitness']);
   });
-
-  for (final (path, act) in <(String, Future<void> Function(WidgetTester))>[
-    (
-      'a recording',
-      (tester) async {
-        await tester.tap(find.byKey(const ValueKey('goal-checkin-record')));
-        await tester.pumpAndSettle();
-      },
-    ),
-    (
-      'a note',
-      (tester) async {
-        await tester.tap(find.text('Write instead'));
-        await tester.pump();
-        await tester.enterText(find.byType(DesignSystemTextarea), 'Waddled.');
-        await tester.tap(find.text('Save check-in'));
-        await tester.pump();
-      },
-    ),
-  ]) {
-    testWidgets("opened before the host knew the goal's category, the "
-        'composer files $path under the goal row category', (tester) async {
-      await pump(tester, hostCategory: null, goalRowCategory: 'colony-fitness');
-      await tester.pump();
-      await act(tester);
-
-      expect(filedUnder, ['colony-fitness']);
-    });
-  }
 
   testWidgets("the host's category, when it has one, is the one used", (
     tester,
   ) async {
     await pump(tester, goalRowCategory: 'colony-fitness');
     await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('goal-checkin-record')));
-    await tester.pumpAndSettle();
+    await tester.tap(find.text('Write instead'));
+    await tester.pump();
+    await tester.enterText(find.byType(DesignSystemTextarea), 'Waddled.');
+    await tester.tap(find.text('Save check-in'));
+    await tester.pump();
 
     expect(filedUnder, ['cat-1']);
-  });
-
-  testWidgets('discarding a recording returns to the composer', (tester) async {
-    recorderResult = null;
-    await pump(tester);
-    await tester.pump();
-
-    await tester.tap(find.byKey(const ValueKey('goal-checkin-record')));
-    await tester.pump();
-
-    expect(recorded, ['goal-1']);
-    expect(find.byType(GoalCheckInComposer), findsOneWidget);
   });
 
   testWidgets('a written check-in saves its text against the goal', (
@@ -298,18 +506,19 @@ void main() {
     expect(find.text('Walked.'), findsOneWidget);
   });
 
-  testWidgets('Close dismisses record mode without implying a save', (
+  testWidgets('at rest Close is a plain way out, never a save', (
     tester,
   ) async {
-    await pump(tester);
-    await tester.pump();
+    final closed = await pumpOnRoute(tester);
 
+    // At rest Speak is the one primary; Close is an unambiguous dismissal.
     expect(find.text('Save check-in'), findsNothing);
     await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
 
-    // Record mode has one primary CTA; Close is an unambiguous dismissal.
+    expect(closed(), 1);
     expect(saved, isEmpty);
+    expect(recorder.recordCalls, isEmpty);
     expect(find.byType(GoalCheckInComposer), findsNothing);
   });
 
@@ -464,8 +673,10 @@ void main() {
         await startWriting(tester);
         await elapse(tester, const Duration(minutes: 1));
 
-        // The recorder's own span is a voice check-in's time.
-        await tester.tap(find.text('Record a check-in').last);
+        // The recorder's own span is a voice check-in's time. Here the take
+        // never starts, so the sheet comes back at rest with the reason.
+        recorder.recordFailure = AudioRecordingFailure.startFailed;
+        await tester.tap(find.text('Speak instead'));
         await tester.pump();
         await elapse(tester, const Duration(minutes: 10));
 

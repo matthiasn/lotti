@@ -4,11 +4,19 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
-import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
+
+/// Opens the recorder against a goal. Resolves with the created audio
+/// entry's id, or null when the recording was discarded.
+typedef GoalCheckInRecorderOpener =
+    Future<String?> Function(
+      BuildContext context, {
+      required String goalEntryId,
+      String? categoryId,
+    });
 
 /// The voice half of the reflection sheet's Note block.
 ///
@@ -29,9 +37,8 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
     super.key,
   });
 
-  /// The recorder, defaulted to the real one and injected for the same reason
-  /// the composer's is: the tap is behaviour worth testing without standing up
-  /// the audio stack.
+  /// The recorder, defaulted to the real one and injected because the tap is
+  /// behaviour worth testing without standing up the audio stack.
   final GoalCheckInRecorderOpener openRecorder;
 
   final String agentId;
@@ -141,8 +148,8 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
   }
 }
 
-/// The real recorder opener — pure delegation, excluded for the same reason as
-/// the composer's.
+/// The real recorder opener — pure delegation to the app-wide recording
+/// sheet, which has its own tests, so it is excluded here.
 // coverage:ignore-start
 Future<String?> openReflectionRecorder(
   BuildContext context, {
