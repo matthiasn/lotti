@@ -24,6 +24,7 @@ import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_composer_header.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_meta_summary_line.dart';
+import 'package:lotti/features/speech/state/app_settings_opener.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -48,6 +49,23 @@ class _FixedDurationSuggestions extends CheckInDurationSuggestionsController {
 }
 
 void main() {
+  test("the check-in's Open settings goes through the app-wide seam, so one "
+      'override reaches every recorder', () async {
+    var opened = 0;
+    final container = ProviderContainer(
+      overrides: [
+        appSettingsOpenerProvider.overrideWithValue(() async {
+          opened++;
+          return true;
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    expect(await container.read(checkInSettingsOpenerProvider)(), isTrue);
+    expect(opened, 1);
+  });
+
   // The form is a full scroll: give the scaffold a viewport that holds it,
   // the way the modal page does, so nothing overflows or lands off-screen.
   const tallForm = MediaQueryData(size: Size(1000, 2400));

@@ -126,6 +126,13 @@ On phones a goal's own pages — detail, chat, and the create and edit wizards �
 take the whole screen: the bottom navigation bar slides away, so the day
 sheet's record button and the wizards' Continue band dock at the bottom edge
 instead of sitting under it.
+An active goal's page docks one capture bar at the bottom, the one a
+person's page has: *Speak* opens a check-in that is already recording, with
+the goal named and the agent's question still in view, and *+ Add* offers a
+written check-in, logging today and reflecting on today. A microphone that
+was refused, or a recording already running elsewhere, is said in words with
+the way forward; a running recording is never taken over. The check-ins sit
+on the page as a section under the read.
 Asking the agent in chat to change its report — shorter, sectioned, less
 repetitive — rewrites the standing report itself rather than only answering in
 chat, and an explicit refusal to change it is respected.
@@ -137,7 +144,7 @@ a goal whose check-ins are the point — a journal, whether measured by
 check-in time or ticked off as a habit — they are compacted for what they
 say rather than that they happened, and a transcript landing after its
 recording refreshes the report minutes later (ADR 0143).
-A spoken check-in — from the composer or a reflection's voice note — is
+A spoken check-in — from the check-in sheet or a reflection's voice note — is
 filed in the goal's category and transcribes through the goal agent's
 profile, else that category's profile, else the system default profile,
 whichever first can transcribe — the same rule a person's check-ins follow,

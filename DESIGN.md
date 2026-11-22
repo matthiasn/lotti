@@ -322,6 +322,12 @@ The agent's voice made visible. It is a violet-washed card (`aiCard.*`) with a s
 ### Glass Action Bar (signature)
 The floating chrome at the bottom of a detail page. It is a frosted strip (blur 20, under a gradient scrim) that content scrolls beneath. It holds the primary pill (Track time) and circular icon actions (mic, checklist, image, Add ▾). While an AI job runs, an animated band rides above it, carrying a small capsule that names the job in agent violet (*Transcribing audio*) and opens its progress. It reserves 88px of scroll clearance so the last row stays reachable.
 
+### Speak Bar
+The glass strip of a page about one subject the user talks about: a person, a goal. It holds two pills, centred on the reading column. *Speak* is the filled teal pill with the mic, and one tap leaves the page's recorder listening. *+ Add* is the neutral pill beside it and opens the page's create menu, each row a full phrase. On a wide pane the bar docks under the page's main column and never covers the rail. **The One Mic Rule.** A page has one place to start speaking about its subject, and it is this bar. No mic in the app bar, none in a section heading, none in an empty state. Dictating into a text field (a goal's *About this goal*, a chat input) is a different act and keeps its own mic beside that field.
+
+### Check-in Sheet
+What *Speak* opens on a goal. One sheet, titled *Check in*, with the goal's name under the title. The agent's question sits in the agent's violet card and stays in view while the user answers. Below it is the recorder, already listening: the orb or meter, then discard, the red Stop pill with the running time, and pause. The red pill is the recording signal; no *Recording* line repeats it. Stop saves and closes with a *Check-in saved* toast. At rest (after a discard, a failure, or when a banner opened it) the sheet shows one large *Speak* button, *Write instead* and *Close*. A recorder that cannot record says why in an inline callout: error tone and *Open settings* for a refused microphone, warning tone and *Stop that recording* when another recording is already running (a phone's goal page has no recording indicator to stop it from). *Write instead* is in every callout.
+
 ### Motion
 Motion is short and functional: 100–500ms, standard curve `cubic(0.2, 0, 0, 1)`, and emphasised decelerate for things settling. Proposal rows stagger by 55ms. Tickers animate only while on screen (`OnScreenTickerMode`).
 

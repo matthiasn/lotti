@@ -13961,6 +13961,24 @@ abstract class AppLocalizations {
   /// **'Unlink pull request'**
   String get githubUnlinkPullRequest;
 
+  /// Goal page bar: opens the + menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get goalAddAction;
+
+  /// Goal page: title of the + menu and the + button's accessible name.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to this goal'**
+  String get goalAddMenuTitle;
+
+  /// Goal page + menu: opens the check-in sheet for typing.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a check-in'**
+  String get goalAddWriteCheckIn;
+
   /// No description provided for @goalAssessmentHistoryTitle.
   ///
   /// In en, this message translates to:
@@ -14267,6 +14285,12 @@ abstract class AppLocalizations {
   /// **'Voice check-in'**
   String get goalCheckInKindVoice;
 
+  /// Goal check-in sheet: the microphone was refused; names the Speak button.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn it on for Lotti in system settings, then tap Speak. Nothing was recorded.'**
+  String get goalCheckInMicrophoneDeniedBody;
+
   /// A goal check-in's time spent, in whole minutes.
   ///
   /// In en, this message translates to:
@@ -14285,17 +14309,23 @@ abstract class AppLocalizations {
   /// **'{name} · prepared for you'**
   String goalCheckInPreparedBy(String name);
 
-  /// No description provided for @goalCheckInRecordCta.
+  /// Body of the goal check-in sheet's callout when another recording is already running elsewhere in the app. Sits under the title 'A recording is already running'.
   ///
   /// In en, this message translates to:
-  /// **'Record a check-in'**
-  String get goalCheckInRecordCta;
+  /// **'Stop it here and it is saved where it was started. Then you can speak.'**
+  String get goalCheckInRecorderBusyBody;
 
   /// No description provided for @goalCheckInSave.
   ///
   /// In en, this message translates to:
   /// **'Save check-in'**
   String get goalCheckInSave;
+
+  /// Toast after a spoken goal check-in was saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in saved'**
+  String get goalCheckInSaved;
 
   /// No description provided for @goalCheckInsEmptyInvitation.
   ///
@@ -14339,6 +14369,12 @@ abstract class AppLocalizations {
   /// **'Your check-ins didn\'t load.'**
   String get goalCheckInsLoadFailed;
 
+  /// Goal check-in sheet, while typing: switches to recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak instead'**
+  String get goalCheckInSpeakInstead;
+
   /// No description provided for @goalCheckInsSeeAll.
   ///
   /// In en, this message translates to:
@@ -14356,6 +14392,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check-ins · {count}'**
   String goalCheckInsTitleWithCount(int count);
+
+  /// Button in the goal check-in sheet that stops and saves a recording running elsewhere in the app, so a check-in can be spoken.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop that recording'**
+  String get goalCheckInStopRunning;
 
   /// Hint above the quick-pick durations for a goal check-in.
   ///
@@ -15677,6 +15719,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your goals didn\'t load.'**
   String get goalsLoadFailed;
+
+  /// Goal page bar and check-in sheet: starts recording a check-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak'**
+  String get goalSpeak;
 
   /// Screen-reader label of one goal check-in row: its kind, its time and what was said.
   ///

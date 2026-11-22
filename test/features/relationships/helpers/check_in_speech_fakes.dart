@@ -142,6 +142,10 @@ class FakeAudioRecorderController extends AudioRecorderController {
   /// When set, `stop` waits for it before answering.
   Completer<void>? stopGate;
 
+  /// When set, `record` waits for it before it starts the take — the
+  /// microphone still starting up.
+  Completer<void>? recordGate;
+
   final recordCalls = <({String? linkedId, bool handledByCaller})>[];
   final modalVisibleLog = <bool>[];
   final categoryIds = <String?>[];
@@ -175,6 +179,9 @@ class FakeAudioRecorderController extends AudioRecorderController {
       handledByCaller: transcriptionHandledByCaller,
     ));
     if (recordFailure != null) return recordFailure;
+    // The microphone starting up: the real controller asks [shouldCancel]
+    // only once it has.
+    await recordGate?.future;
     if (shouldCancel?.call() ?? false) return null;
     state = state.copyWith(
       status: AudioRecorderStatus.recording,

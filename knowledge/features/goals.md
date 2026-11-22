@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-06T12:00:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-22T20:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -72,6 +72,26 @@ sources:
     resource: ../../lib/features/agents/memory/memory_search.dart
     title: The shared memory-search tool — schema, parsing, rendering
     last_modified: 2026-10-18
+  - id: checkin-sheet
+    resource: ../../lib/features/goals/ui/checkins/goal_checkin_composer.dart
+    title: GoalCheckInComposer — the one-sheet check-in, recording on open
+    last_modified: 2026-11-22
+  - id: checkins-section
+    resource: ../../lib/features/goals/ui/checkins/goal_checkins_section.dart
+    title: GoalCheckInsSection — the page's check-ins, heading and rail preview
+    last_modified: 2026-11-22
+  - id: goal-create-menu
+    resource: ../../lib/features/goals/ui/goal_create_menu.dart
+    title: showGoalCreateMenu — the bar's + menu
+    last_modified: 2026-11-22
+  - id: speak-add-bar
+    resource: ../../lib/features/design_system/components/speak_add_action_bar.dart
+    title: DesignSystemSpeakAddBar — the docked Speak and + Add bar
+    last_modified: 2026-11-22
+  - id: inline-recorder
+    resource: ../../lib/features/speech/ui/widgets/recording/inline_recorder.dart
+    title: InlineRecorder — the app's recorder, embedded and started on mount
+    last_modified: 2026-11-22
   - id: checkin-duration
     resource: ../../lib/features/goals/ui/checkins/goal_checkin_duration.dart
     title: A check-in's time — label, picker, beat chip
@@ -1492,7 +1512,7 @@ handler would retract it; that wiring is a follow-up.
   Show more — with the hover fill suppressed
   (`DesignSystemButton.suppressHoverFill`): a pill fading in mid-paragraph
   reads as a phantom button, and the accent ink already says it is an action.
-  "Ask why" is gone: the header already offers a mic for a check-in and a
+  "Ask why" is gone: the page already offers *Speak* for a check-in and a
   chat doorway, so a third entrance set mid-paragraph was the least
   discoverable of the three. The automation band drops the settled
   "Updates on changes" caption
@@ -1942,7 +1962,8 @@ Key pieces:
   reflection surface, so records judged under superseded criteria stay
   readable there (only the day strip's colouring stays spec-scoped).
   Reflections are withheld entirely while the active spec is unknown. Full history renders in bounded pages instead of eagerly
-  mounting every audio player; the inline card remains a short preview.
+  mounting every audio player; the page's inline section remains a short
+  preview.
 - `lib/features/speech/helpers/automatic_prompt_trigger.dart` — the
   recorder's post-stop automation; its goal fallback asks the shared skill
   pipeline to transcribe a goal-linked recording, gated on the goal agent's
@@ -2174,7 +2195,89 @@ Invariants worth not breaking:
   state with the latest durable audio-transcription attribution, so the failure
   and Retry action survive provider disposal and app restart.
 
+## Saying something: the Speak bar and the check-in sheet
+
+**One capture control, in thumb reach.** An active goal's page docks
+[`DesignSystemSpeakAddBar`](../../lib/features/design_system/components/speak_add_action_bar.dart)
+— the bar the person page docks — under its dashboard column: *Speak* and
+*+ Add*. The column is its own `Scaffold` (`extendBody`), so beside the
+desktop rail the bar sits under the cards it adds to and never covers the
+rail; the list reads the bar's reserved height back as its bottom inset
+(`MediaQuery.paddingOf`), which is what lets the last card scroll clear of
+the glass. A dormant goal takes nothing new and has no bar. There is no mic
+in the app bar, no plus in the check-ins heading and no button in the empty
+rail: three doors to one sheet were one too many twice over. The timeline
+route (`GoalTimelinePage`) keeps a single app-bar mic, which is the same
+*Speak*.
+
+- **Speak** opens the check-in sheet already recording.
+- **+ Add** ([`showGoalCreateMenu`](../../lib/features/goals/ui/goal_create_menu.dart))
+  offers *Write a check-in*, *Log today* when the goal has a habit to tick
+  off, and *Reflect on today* when there is a day to judge. It returns the
+  choice and the page opens the flow once the menu is gone, so no sheet
+  stacks on another.
+- A **banner's CTA** on a goal with nothing to tick off opens the sheet at
+  rest: a banner must not turn the microphone on for the user.
+
+**The sheet** ([`GoalCheckInComposer`](../../lib/features/goals/ui/checkins/goal_checkin_composer.dart),
+opened through `DsActionModal` — a sheet on a phone, a dialog on a wide
+window) names the goal under its *Check in* title and keeps the agent's
+question in view, in the agent's violet card (`aiCardDecoration`), while the
+user answers it. It records with the shared
+[`InlineRecorder`](../../lib/features/speech/ui/widgets/recording/inline_recorder.dart)
+— the recorder a person's check-in uses — linked to the goal row from
+`goalCaptureTargetProvider` and filed in the goal's category; it waits for
+both before it starts, and never records with no row to link to. The take is
+handed to the recorder's own automation (`transcriptionHandledByCaller:
+false`), so it is transcribed under the goal's automatic-updates switch
+whether it is stopped in the sheet or, after the sheet was dismissed
+mid-take, from the floating indicator — `show` hands the indicator back
+(`setModalVisible(false)`) when the sheet goes.
+
+```mermaid
+stateDiagram-v2
+    [*] --> speaking: opened from Speak
+    [*] --> idle: opened from a banner
+    [*] --> writing: opened from + Add
+    speaking --> [*]: Stop — saved, "Check-in saved"
+    speaking --> idle: Discard (confirmed)
+    speaking --> idle: could not record — callout names why
+    speaking --> idle: goal row could not be read
+    idle --> speaking: Speak
+    idle --> writing: Write instead
+    writing --> speaking: Speak instead
+    writing --> [*]: Save check-in
+    idle --> [*]: Close
+```
+
+**A recorder that cannot record says why.** `InlineRecorder` reports one of
+four `InlineRecordingFailure`s and the sheet returns to rest under a
+`DesignSystemInlineCallout`: a refused microphone offers *Open settings*
+(`appSettingsOpenerProvider`); a take that did not start or was not saved
+names itself; and a recording already running elsewhere offers *Stop that
+recording*, which calls the recorder's `stop` — saving that take under the
+subject it was started for — after which *Speak* records. The sheet has to
+offer it: on a phone a goal's page slides the navigation bar away and the
+app's recording indicator leaves with it, so there is nowhere else on that
+screen to stop a take from. *Write instead* is in every callout, and the
+sheet's own *Speak* is the retry. A goal row that could not be read
+(`goalCaptureTargetProvider` in error) rests the sheet under *This goal's
+page didn't load.* with *Try again*, never an endless spinner, and a retry
+that lands does not turn the microphone on by itself. While a written
+check-in is saving, *Speak instead* and the time controls wait, so nothing
+opens over the save or starts behind it. **A running
+take is never taken over:** `AudioRecorderController.record` is a toggle that
+stops whatever is running and files it under the new subject, so
+`InlineRecorder` refuses to start while another subject's take is live
+(`recorderBusy`) instead of calling it.
+
 ## The check-in rail, and where a goal is filed
+
+The page's check-ins are a section, not a card
+([`GoalCheckInsSection`](../../lib/features/goals/ui/checkins/goal_checkins_section.dart)):
+a heading carrying the count, on the rows' own left edge as the person
+timeline's is, over a three-beat preview with *See all check-ins* on a
+phone, and the whole loaded history in the desktop rail.
 
 **How wide the rail is.** Beside a desktop pane of at least
 `kGoalTimelineRailFoldWidth` + `kGoalTimelineRailMinWidth` the rail stands to
@@ -2216,8 +2319,9 @@ plain list over the shared linked-entries projection, which turns a first load
 and a failure alike into `[]`. `goalCheckInsLoadProvider` reads the goal's
 links, each linked entry and the assessments: while any is on its way the rail
 shows a quiet spinner, a failed read says *Your check-ins didn't load.* with
-*Try again*, and only a settled empty history shows the invitation to record
-(with the person timeline's empty glyph, not the slashed mic). An entry that
+*Try again*, and only a settled empty history shows the invitation
+(with the person timeline's empty glyph, not the slashed mic) — words alone,
+with no button: making a check-in is the page bar's *Speak*. An entry that
 resolved to nothing does not hold the rail.
 
 **A goal is filed in a category.** The goal page names it above the title

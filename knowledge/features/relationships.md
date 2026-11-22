@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-04T12:00:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-22T20:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: tla-lifecycle
@@ -106,8 +106,16 @@ sources:
     last_modified: 2026-09-13
   - id: inline-recorder
     resource: ../../lib/features/relationships/ui/widgets/check_in_inline_recorder.dart
-    title: CheckInInlineRecorder — the app's recorder, in the field and the page's bar
-    last_modified: 2026-09-13
+    title: CheckInInlineRecorder — the shared InlineRecorder in the check-in's words
+    last_modified: 2026-11-22
+  - id: shared-inline-recorder
+    resource: ../../lib/features/speech/ui/widgets/recording/inline_recorder.dart
+    title: InlineRecorder — the app's recorder, embedded and started on mount
+    last_modified: 2026-11-22
+  - id: speak-add-bar
+    resource: ../../lib/features/design_system/components/speak_add_action_bar.dart
+    title: DesignSystemSpeakAddBar — the docked Speak and + Add bar
+    last_modified: 2026-11-22
   - id: composer-header
     resource: ../../lib/features/relationships/ui/widgets/check_in_composer_header.dart
     title: CheckInComposerHeader — the pinned heading with its status line
@@ -874,7 +882,7 @@ sequenceDiagram
 | Callouts | `PostInteractionPrompt`, the paused-reminder callout | Where the user lands coming back from a call. |
 | Before you talk | [`PersonBriefCard`](../../lib/features/relationships/ui/widgets/person_brief_card.dart), `RelationshipBriefingCard`, [`PersonAboutSection`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | One card with one thing that leads: the note to bring up, from the newest check-in that has notes (`PersonBriefCard.sourceOf`), set as a `heading3` headline; what to avoid under it in the quiet ink, marked by its glyph rather than a second label; a link into that check-in; and on a phone the next meeting as a row that opens it. With a meeting booked the label over the headline names its day — *Bring up before Sun 18 Oct* — on every width, rail included. Then the agent's briefing, then what the user pinned *About* the person. On a phone, when the user's notes lead, the briefing's calm faces (current, writing) fold to their header row (`RelationshipBriefingCard.folded`) and *About* to its heading — each opening in place — so the timeline starts on the first screen; a face that asks something is never folded. A wide pane shows the first three *About* notes, the rest behind `personDisclosure`. |
 | Timeline | [`PersonTimelineSliver`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | The heading, the filter pills once there is enough to filter (a filter that matches nothing says *Nothing under this filter yet.* with *Show all*, never a blank space), then each section's rows on [`DesignSystemTimelineRow`](../../lib/features/design_system/components/timeline/design_system_timeline_row.dart): a tile on a continuous rail, the meta line (when · what · how long) shedding segments from the end on a narrow width, the words capped at the prose measure, and for a check-in a caption line of how it felt and its topics. A task row unlinks on a long press. Lazily built: the history grows without bound. |
-| Bar | [`RelationshipActionBar`](../../lib/features/relationships/ui/widgets/relationship_action_bar.dart) | *Speak* (filled: opens *Speak about Pip* recording, see *Speak your mind*) and *+ Add*, whose [menu](../../lib/features/relationships/ui/widgets/person_create_menu.dart) offers a check-in, a meeting, a note, a task and photos, each naming the person. A meeting is planned in [its own sheet](../../lib/features/relationships/ui/widgets/person_meeting_sheet.dart): a title prefilled *Meet {name}*, then when and how long as the composer's own fact tags (`FactTag`) — tomorrow at the next full hour for an hour until changed — each opening its picker (`pickMeetingStart`, which looks ahead from today and moves a time already past to the next full hour, and the check-in duration picker). While the meeting is being written the sheet holds — Cancel off, and a `PopScope` the modal's close respects — so it never closes on a write that then lands anyway. |
+| Bar | [`RelationshipActionBar`](../../lib/features/relationships/ui/widgets/relationship_action_bar.dart), the person's labels on the design system's [`DesignSystemSpeakAddBar`](../../lib/features/design_system/components/speak_add_action_bar.dart) — the bar the goal page docks too | *Speak* (filled: opens *Speak about Pip* recording, see *Speak your mind*) and *+ Add*, whose [menu](../../lib/features/relationships/ui/widgets/person_create_menu.dart) offers a check-in, a meeting, a note, a task and photos, each naming the person. A meeting is planned in [its own sheet](../../lib/features/relationships/ui/widgets/person_meeting_sheet.dart): a title prefilled *Meet {name}*, then when and how long as the composer's own fact tags (`FactTag`) — tomorrow at the next full hour for an hour until changed — each opening its picker (`pickMeetingStart`, which looks ahead from today and moves a time already past to the next full hour, and the check-in duration picker). While the meeting is being written the sheet holds — Cancel off, and a `PopScope` the modal's close respects — so it never closes on a write that then lands anyway. |
 
 On a pane at least `kDesktopBreakpoint` wide the page splits: the hero, header
 and timeline in a column of their own — its own Scaffold, so the bar docks
@@ -2362,7 +2370,11 @@ recording after the sheet has closed: the service's run is not the sheet's,
 and once the words are read back it touches the check-in holding them
 (`touchCheckInsHolding`), so the briefing catches up.
 
-The recorder is [`CheckInInlineRecorder`](../../lib/features/relationships/ui/widgets/check_in_inline_recorder.dart),
+The recorder is [`CheckInInlineRecorder`](../../lib/features/relationships/ui/widgets/check_in_inline_recorder.dart)
+— the speech feature's shared
+[`InlineRecorder`](../../lib/features/speech/ui/widgets/recording/inline_recorder.dart),
+which a goal's check-in sheet uses too, with its failures mapped onto the
+composer's `CheckInSpeechFailureKind` —
 embedded in the field (and in the check-in page's action bar) rather than
 pushed as a sheet, and it wears the recording sheet's anatomy — the one a
 task's microphone opens — from
@@ -2395,7 +2407,8 @@ stopping it here would save someone else's audio wordless.
 The recorder's typed refusal (`AudioRecordingFailure`) maps onto the
 composer's own vocabulary, `CheckInSpeechFailure.fromRecorder`: a denied
 microphone is the error card with *Open settings* (through
-`checkInSettingsOpenerProvider`, the seam over `openAppSettings`) and
+`checkInSettingsOpenerProvider`, which reads the speech feature's
+`appSettingsOpenerProvider`, the seam over `openAppSettings`) and
 *Dismiss*; a failed start is the same card with *Try again*. Preparation
 reads have a 15-second deadline and land in the same failed phase as
 everything else.

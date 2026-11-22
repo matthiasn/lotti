@@ -8248,6 +8248,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get githubUnlinkPullRequest => 'Koppla bort pull request';
 
   @override
+  String get goalAddAction => 'Lägg till';
+
+  @override
+  String get goalAddMenuTitle => 'Lägg till i det här målet';
+
+  @override
+  String get goalAddWriteCheckIn => 'Skriv en avstämning';
+
+  @override
   String get goalAssessmentHistoryTitle => 'Dagliga reflektioner';
 
   @override
@@ -8450,6 +8459,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalCheckInKindVoice => 'Röstavstämning';
 
   @override
+  String get goalCheckInMicrophoneDeniedBody =>
+      'Slå på den för Lotti i systeminställningarna och tryck sedan på Prata. Inget spelades in.';
+
+  @override
   String goalCheckInMinutes(int count) {
     return '$count min';
   }
@@ -8464,10 +8477,14 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInRecordCta => 'Spela in en avstämning';
+  String get goalCheckInRecorderBusyBody =>
+      'Stoppa den här så sparas den där den startades. Sedan kan du prata.';
 
   @override
   String get goalCheckInSave => 'Spara avstämning';
+
+  @override
+  String get goalCheckInSaved => 'Avstämning sparad';
 
   @override
   String get goalCheckInsEmptyInvitation =>
@@ -8496,6 +8513,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalCheckInsLoadFailed => 'Dina avstämningar kunde inte laddas.';
 
   @override
+  String get goalCheckInSpeakInstead => 'Prata i stället';
+
+  @override
   String get goalCheckInsSeeAll => 'Visa alla avstämningar';
 
   @override
@@ -8505,6 +8525,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String goalCheckInsTitleWithCount(int count) {
     return 'Avstämningar · $count';
   }
+
+  @override
+  String get goalCheckInStopRunning => 'Stoppa den inspelningen';
 
   @override
   String get goalCheckInTimeQuickPickHint =>
@@ -9376,6 +9399,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalsLoadFailed => 'Dina mål kunde inte laddas.';
+
+  @override
+  String get goalSpeak => 'Prata';
 
   @override
   String goalTimelineRowLabel(String kind, String time, String text) {

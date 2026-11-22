@@ -8291,6 +8291,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get githubUnlinkPullRequest => 'Pull-Request lösen';
 
   @override
+  String get goalAddAction => 'Hinzufügen';
+
+  @override
+  String get goalAddMenuTitle => 'Zu diesem Ziel hinzufügen';
+
+  @override
+  String get goalAddWriteCheckIn => 'Check-in schreiben';
+
+  @override
   String get goalAssessmentHistoryTitle => 'Tägliche Reflexionen';
 
   @override
@@ -8494,6 +8503,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalCheckInKindVoice => 'Sprach-Check-in';
 
   @override
+  String get goalCheckInMicrophoneDeniedBody =>
+      'Schalte ihn für Lotti in den Systemeinstellungen ein und tippe dann auf Sprechen. Es wurde nichts aufgenommen.';
+
+  @override
   String goalCheckInMinutes(int count) {
     return '$count Min.';
   }
@@ -8508,10 +8521,14 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInRecordCta => 'Check-in aufnehmen';
+  String get goalCheckInRecorderBusyBody =>
+      'Stoppe sie hier, dann wird sie dort gespeichert, wo sie gestartet wurde. Danach kannst du sprechen.';
 
   @override
   String get goalCheckInSave => 'Check-in speichern';
+
+  @override
+  String get goalCheckInSaved => 'Check-in gespeichert';
 
   @override
   String get goalCheckInsEmptyInvitation =>
@@ -8540,6 +8557,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalCheckInsLoadFailed => 'Deine Check-ins wurden nicht geladen.';
 
   @override
+  String get goalCheckInSpeakInstead => 'Stattdessen sprechen';
+
+  @override
   String get goalCheckInsSeeAll => 'Alle Check-ins ansehen';
 
   @override
@@ -8549,6 +8569,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String goalCheckInsTitleWithCount(int count) {
     return 'Check-ins · $count';
   }
+
+  @override
+  String get goalCheckInStopRunning => 'Diese Aufnahme stoppen';
 
   @override
   String get goalCheckInTimeQuickPickHint =>
@@ -9425,6 +9448,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalsLoadFailed => 'Deine Ziele wurden nicht geladen.';
+
+  @override
+  String get goalSpeak => 'Sprechen';
 
   @override
   String goalTimelineRowLabel(String kind, String time, String text) {

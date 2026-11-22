@@ -26,7 +26,6 @@ extension _GoalDetailList on _GoalAgentDetailPageState {
   Widget _detailList(
     BuildContext context,
     _GoalDetailInputs inputs, {
-    required bool showChatAction,
     double? contentMaxWidth,
     bool showRail = false,
   }) {
@@ -141,10 +140,10 @@ extension _GoalDetailList on _GoalAgentDetailPageState {
           ],
           // Directly after the week: the reflect row and the check-in list
           // are the two halves of "what I've said about this goal", so they
-          // belong adjacent. On desktop this same card is hoisted into the
-          // rail instead.
+          // belong adjacent. On desktop this same section is hoisted into
+          // the rail instead.
           if (!showRail) ...[
-            SizedBox(height: tokens.spacing.cardItemSpacing),
+            SizedBox(height: tokens.spacing.sectionGap),
             checkInsCard(maxBeats: 3),
           ],
         ],
@@ -272,21 +271,7 @@ extension _GoalDetailList on _GoalAgentDetailPageState {
       ],
       // Daily reflections deliberately do NOT get a main-column card:
       // they live in the check-ins rail (the flyout on desktop, the
-      // check-ins card on phones), where each one is a tight single row.
-      if (showChatAction) ...[
-        SizedBox(height: tokens.spacing.cardItemSpacing),
-        DesignSystemButton(
-          label: context.messages.goalChatTalkToAgent,
-          onPressed: () => beamToNamed(goalChatPath(agentId)),
-          leadingIcon: LottiIcons.chat,
-          // Secondary: the persistent app-bar action is the primary
-          // doorway; this tail button is the convenience for readers who
-          // reached the bottom.
-          variant: DesignSystemButtonVariant.secondary,
-          size: DesignSystemButtonSize.medium,
-          fullWidth: true,
-        ),
-      ],
+      // check-ins section on phones), where each one is a tight single row.
     ];
     // Eager, not lazy: the section count is small and bounded, and the
     // lazily mounted ListView made scrolling janky — heavy cards laid out
@@ -295,8 +280,10 @@ extension _GoalDetailList on _GoalAgentDetailPageState {
     // whole page once and scrolls smoothly.
     return SingleChildScrollView(
       controller: _scrollController,
-      // The mobile shell keeps the bottom navigation overlaid on goals
-      // subroutes, so the final content must clear it.
+      // The final content clears whatever sits over the page's foot: the
+      // docked bar (reserved by its Scaffold as the bottom inset), the
+      // device's own inset where there is no bar, and the shell's
+      // navigation where that is overlaid.
       // The Habits dashboard's behavior: a step6 gutter that holds on
       // small screens, with the centered cap binding on wide ones — the
       // goals list and this page share both numbers with Habits.
@@ -305,6 +292,7 @@ extension _GoalDetailList on _GoalAgentDetailPageState {
         tokens.spacing.step5,
         tokens.spacing.step6,
         tokens.spacing.step5 +
+            MediaQuery.paddingOf(context).bottom +
             DesignSystemBottomNavigationBar.occupiedHeight(context),
       ),
       child: Column(

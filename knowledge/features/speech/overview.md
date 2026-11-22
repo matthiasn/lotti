@@ -93,9 +93,10 @@ row (discard ✕, the red Stop pill carrying the running time, pause ⏸ /
 resume ▶) —
 is `RecordingStage` in
 [`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart),
-laid out in [Recording UI](recording-ui.md), so every surface that records in place — the check-in composer and page
-(`CheckInInlineRecorder`) as well as this modal — wears one recorder rather
-than drawing its own buttons. The host keeps the meaning of each act (whether
+laid out in [Recording UI](recording-ui.md), so every surface that records in place — a person's check-in composer and
+page and a goal's check-in sheet (through the shared
+[`InlineRecorder`](recording-ui.md#the-inline-recorder)) as well as this
+modal — wears one recorder rather than drawing its own buttons. The host keeps the meaning of each act (whether
 a discard asks first, where a stopped take goes) and may name the controls'
 keys; the controls are inert while it reports `busy`. The visualizer keeps
 moving while paused, so a test with one mounted pumps by hand.

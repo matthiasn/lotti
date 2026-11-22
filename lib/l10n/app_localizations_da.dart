@@ -8232,6 +8232,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String get githubUnlinkPullRequest => 'Fjern pull request';
 
   @override
+  String get goalAddAction => 'Tilføj';
+
+  @override
+  String get goalAddMenuTitle => 'Føj til dette mål';
+
+  @override
+  String get goalAddWriteCheckIn => 'Skriv en check-in';
+
+  @override
   String get goalAssessmentHistoryTitle => 'Daglige refleksioner';
 
   @override
@@ -8433,6 +8442,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalCheckInKindVoice => 'Stemme-check-in';
 
   @override
+  String get goalCheckInMicrophoneDeniedBody =>
+      'Slå den til for Lotti i systemindstillingerne, og tryk så på Tal. Intet blev optaget.';
+
+  @override
   String goalCheckInMinutes(int count) {
     return '$count min';
   }
@@ -8447,10 +8460,14 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInRecordCta => 'Optag et check-in';
+  String get goalCheckInRecorderBusyBody =>
+      'Stop den her, så gemmes den der, hvor den blev startet. Derefter kan du tale.';
 
   @override
   String get goalCheckInSave => 'Gem check-in';
+
+  @override
+  String get goalCheckInSaved => 'Check-in gemt';
 
   @override
   String get goalCheckInsEmptyInvitation =>
@@ -8479,6 +8496,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalCheckInsLoadFailed => 'Dine check-ins blev ikke indlæst.';
 
   @override
+  String get goalCheckInSpeakInstead => 'Tal i stedet';
+
+  @override
   String get goalCheckInsSeeAll => 'Se alle check-ins';
 
   @override
@@ -8488,6 +8508,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String goalCheckInsTitleWithCount(int count) {
     return 'Check-ins · $count';
   }
+
+  @override
+  String get goalCheckInStopRunning => 'Stop den optagelse';
 
   @override
   String get goalCheckInTimeQuickPickHint =>
@@ -9357,6 +9380,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalsLoadFailed => 'Dine mål blev ikke indlæst.';
+
+  @override
+  String get goalSpeak => 'Tal';
 
   @override
   String goalTimelineRowLabel(String kind, String time, String text) {

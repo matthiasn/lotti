@@ -8339,6 +8339,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get githubUnlinkPullRequest => 'Odpojit pull request';
 
   @override
+  String get goalAddAction => 'Přidat';
+
+  @override
+  String get goalAddMenuTitle => 'Přidat k tomuto cíli';
+
+  @override
+  String get goalAddWriteCheckIn => 'Napsat hlášení';
+
+  @override
   String get goalAssessmentHistoryTitle => 'Denní úvahy';
 
   @override
@@ -8542,6 +8551,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalCheckInKindVoice => 'Hlasové hlášení';
 
   @override
+  String get goalCheckInMicrophoneDeniedBody =>
+      'Zapni ho pro Lotti v nastavení systému a pak klepni na Mluvit. Nic se nenahrálo.';
+
+  @override
   String goalCheckInMinutes(int count) {
     return '$count min';
   }
@@ -8556,10 +8569,14 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInRecordCta => 'Nahrát hlášení';
+  String get goalCheckInRecorderBusyBody =>
+      'Zastav ji tady a uloží se tam, kde začala. Pak můžeš mluvit.';
 
   @override
   String get goalCheckInSave => 'Uložit hlášení';
+
+  @override
+  String get goalCheckInSaved => 'Hlášení uloženo';
 
   @override
   String get goalCheckInsEmptyInvitation =>
@@ -8588,6 +8605,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalCheckInsLoadFailed => 'Tvoje hlášení se nenačetla.';
 
   @override
+  String get goalCheckInSpeakInstead => 'Mluvit místo toho';
+
+  @override
   String get goalCheckInsSeeAll => 'Zobrazit všechna hlášení';
 
   @override
@@ -8597,6 +8617,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String goalCheckInsTitleWithCount(int count) {
     return 'Hlášení · $count';
   }
+
+  @override
+  String get goalCheckInStopRunning => 'Zastavit tu nahrávku';
 
   @override
   String get goalCheckInTimeQuickPickHint =>
@@ -9476,6 +9499,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalsLoadFailed => 'Tvoje cíle se nenačetly.';
+
+  @override
+  String get goalSpeak => 'Mluvit';
 
   @override
   String goalTimelineRowLabel(String kind, String time, String text) {

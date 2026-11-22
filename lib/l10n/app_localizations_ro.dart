@@ -8376,6 +8376,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get githubUnlinkPullRequest => 'Dezlegați pull request-ul';
 
   @override
+  String get goalAddAction => 'Adăugați';
+
+  @override
+  String get goalAddMenuTitle => 'Adăugați la acest obiectiv';
+
+  @override
+  String get goalAddWriteCheckIn => 'Scrieți o raportare';
+
+  @override
   String get goalAssessmentHistoryTitle => 'Reflecții zilnice';
 
   @override
@@ -8580,6 +8589,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalCheckInKindVoice => 'Raportare vocală';
 
   @override
+  String get goalCheckInMicrophoneDeniedBody =>
+      'Activați-l pentru Lotti în setările de sistem, apoi atingeți Vorbiți. Nu s-a înregistrat nimic.';
+
+  @override
   String goalCheckInMinutes(int count) {
     return '$count min';
   }
@@ -8593,10 +8606,14 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInRecordCta => 'Înregistrați o raportare';
+  String get goalCheckInRecorderBusyBody =>
+      'Opriți-o aici și va fi salvată acolo unde a fost pornită. Apoi puteți vorbi.';
 
   @override
   String get goalCheckInSave => 'Salvați raportarea';
+
+  @override
+  String get goalCheckInSaved => 'Raportare salvată';
 
   @override
   String get goalCheckInsEmptyInvitation =>
@@ -8626,6 +8643,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Raportările dumneavoastră nu s-au încărcat.';
 
   @override
+  String get goalCheckInSpeakInstead => 'Vorbiți în schimb';
+
+  @override
   String get goalCheckInsSeeAll => 'Vedeți toate raportările';
 
   @override
@@ -8635,6 +8655,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String goalCheckInsTitleWithCount(int count) {
     return 'Raportări · $count';
   }
+
+  @override
+  String get goalCheckInStopRunning => 'Opriți acea înregistrare';
 
   @override
   String get goalCheckInTimeQuickPickHint => 'Cât a durat această raportare?';
@@ -9530,6 +9553,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalsLoadFailed => 'Obiectivele dumneavoastră nu s-au încărcat.';
+
+  @override
+  String get goalSpeak => 'Vorbiți';
 
   @override
   String goalTimelineRowLabel(String kind, String time, String text) {

@@ -3,10 +3,13 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
-import 'package:lotti/features/goals/ui/checkins/goal_checkins_card.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_checkins_section.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -40,16 +43,14 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     required List<GoalTimelineItem> items,
-    VoidCallback? onCreate,
     VoidCallback? onSeeAll,
     int? maxBeats,
   }) => withClock(
     Clock.fixed(today.add(const Duration(hours: 1))),
     () => tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        GoalCheckInsCard(
+        GoalCheckInsSection(
           agentId: 'agent-1',
-          onCreate: onCreate,
           onSeeAll: onSeeAll,
           maxBeats: maxBeats,
         ),
@@ -67,16 +68,14 @@ void main() {
     await pump(
       tester,
       items: [checkIn('a'), checkIn('b', minutesAgo: 5)],
-      onCreate: () {},
     );
 
     expect(find.text('Check-ins · 2'), findsOneWidget);
   });
 
-  testWidgets('an empty goal shows the title alone, and the invitation', (
-    tester,
-  ) async {
-    await pump(tester, items: const [], onCreate: () {});
+  testWidgets('an empty goal shows the title alone and the invitation — and '
+      "no button: speaking is the page bar's", (tester) async {
+    await pump(tester, items: const []);
 
     // "Check-ins · 0" would be a scoreboard of nothing.
     expect(find.text('Check-ins'), findsOneWidget);
@@ -84,25 +83,29 @@ void main() {
       find.textContaining('Tell your agent what is actually going on'),
       findsOneWidget,
     );
-    expect(
-      find.byKey(const ValueKey('goal-checkin-empty-cta')),
-      findsOneWidget,
-    );
+    // Three doors to one sheet — a header plus, an empty-state button and
+    // the app-bar mic — are now the one Speak bar.
+    expect(find.byType(DesignSystemButton), findsNothing);
+    expect(find.byIcon(LottiIcons.mic), findsNothing);
+    expect(find.byIcon(LottiIcons.addCircled), findsNothing);
   });
 
-  testWidgets('a dormant goal can be read but not added to', (tester) async {
+  testWidgets("a section, not a card: the heading shares the rows' left "
+      'edge and wears the page-section tier', (tester) async {
     await pump(tester, items: [checkIn('a')]);
 
-    expect(find.byKey(const ValueKey('goal-checkin-create')), findsNothing);
-    expect(find.byKey(const ValueKey('goal-checkin-empty-cta')), findsNothing);
-  });
-
-  testWidgets('creating is reachable from the header', (tester) async {
-    var created = 0;
-    await pump(tester, items: [checkIn('a')], onCreate: () => created++);
-
-    await tester.tap(find.byKey(const ValueKey('goal-checkin-create')));
-    expect(created, 1);
+    final heading = find.byKey(const ValueKey('goal-checkins-heading'));
+    final tokens = tester.element(heading).designTokens;
+    expect(
+      tester.widget<Text>(heading).style?.fontSize,
+      tokens.typography.styles.subtitle.subtitle1.fontSize,
+    );
+    expect(find.byType(DesignSystemSectionCard), findsNothing);
+    expect(
+      tester.getTopLeft(heading).dx,
+      tester.getTopLeft(find.byType(DesignSystemTimelineSectionHeader)).dx +
+          tokens.spacing.step3,
+    );
   });
 
   testWidgets('See all appears only when the preview hides something', (

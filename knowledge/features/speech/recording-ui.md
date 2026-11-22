@@ -5,7 +5,7 @@ description: "Two interchangeable level visualizations over one dBFS stream, the
 resource: ../../../lib/features/speech/ui/widgets/recording
 tags: [speech, ui, vu-meter, visualization]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-10-05T12:00:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-22T20:00:00Z }
 stale_after: 2027-04-02
 sources:
   - id: src
@@ -108,12 +108,59 @@ The dBFS values come from `AudioRecorderController`, which samples amplitude eve
 20 ms and derives VU through the standalone `VuMeter` sliding-window unit. See
 [the speech overview](overview.md).
 
+# The inline recorder
+
+[`InlineRecorder`](../../../lib/features/speech/ui/widgets/recording/inline_recorder.dart)
+is the stage for a surface that records in place — a person's check-in
+composer and page, a goal's check-in sheet — rather than pushing the
+recording modal. It starts the app-wide `AudioRecorderController` on mount
+with the subject as `linkedId`, hides the floating indicator while it is up,
+and hands back the saved entry id and the length the clock stood at
+(`onRecorded`), a confirmed discard (`onDiscarded`), or why there is nothing
+to hand back (`onFailed`, an `InlineRecordingFailure`: `microphoneDenied`,
+`startFailed`, `recorderBusy`, `notSaved`). The host decides what each means
+and who transcribes (`transcriptionHandledByCaller`).
+
+```mermaid
+stateDiagram-v2
+    [*] --> starting: mounted
+    starting --> recording: record() landed
+    starting --> [*]: onFailed(microphoneDenied | startFailed)
+    starting --> [*]: onFailed(recorderBusy) — another subject's take is live
+    starting --> recording: attaches to this subject's running take
+    starting --> [*]: host already leaving — nothing touched
+    recording --> paused: Pause
+    paused --> recording: Resume
+    recording --> [*]: Stop — onRecorded(id, length) or onFailed(notSaved)
+    paused --> [*]: Stop — onRecorded(id, length) or onFailed(notSaved)
+    recording --> [*]: Discard, confirmed — onDiscarded
+    paused --> [*]: Discard, confirmed — onDiscarded
+```
+
+**It never takes a running take over.** `AudioRecorderController.record` is a
+toggle: called while a take is live it stops that take and files it under the
+new `linkedId`. So before starting, the recorder reads the controller: a take
+running for another subject is `recorderBusy` and `record` is never called; a
+take already running for this subject is attached to, not restarted. The
+subject is compared on every start; there is no host flag that skips it. A
+recorder mounted on a host that is already on its way out (a popped route is
+mounted until its exit animation ends) does nothing at all: it neither hides
+a running take's indicator nor starts a take behind a sheet that is gone.
+Dismissing the host mid-take does not stop it — the host hands the floating
+indicator back (`setModalVisible(false)`) and the take is stopped from there.
+
+`spokenClockLabel` reads a take's length to assistive technology in words.
+`appSettingsOpenerProvider` (`speech/state/app_settings_opener.dart`) is the
+seam over the system's settings page that a refused microphone's *Open
+settings* goes through, on every surface.
+
 # Where the indicators are, and are not
 
 | Surface | Shows |
 |---------|-------|
 | Recording modal | The whole `RecordingStage`: VU meter or orb, level line, record / discard–timed Stop–pause, *Transcribe* |
-| Check-in page dock | The stage `compact` — no orb or meter — embedded in place by `CheckInInlineRecorder`, with its own status line in the stage's notice slot (`showStatus`: `● Recording` / `Paused` in the composer header's grammar, a live region), since no header above it says so |
+| Goal check-in sheet | The whole stage, embedded by `InlineRecorder` under the goal's name and the agent's question — no status line: the red Stop pill carrying the running time says it is recording, as on the recording modal |
+| Check-in page dock | The stage `compact` — no orb or meter — embedded in place by `CheckInInlineRecorder` (the person's wrapper over `InlineRecorder`), with its own status line in the stage's notice slot (`showStatus`: `● Recording` / `Paused` in the composer header's grammar, a live region), since no header above it says so |
 | Check-in composer | The whole stage, under the composer's header and its status line |
 | Mobile recording pill | A compact live indicator |
 | Desktop sidebar row | A red accent card, a pulsing dot and elapsed time — **deliberately no dBFS reaction** |
