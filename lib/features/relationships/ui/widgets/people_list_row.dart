@@ -186,12 +186,15 @@ class _StateSegment extends StatelessWidget {
           Icon(LottiIcons.warning, size: IconSizes.xs, color: ink),
           SizedBox(width: tokens.spacing.step2),
         ],
-        Text(
-          label,
-          maxLines: 1,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: ink,
-            fontWeight: overdue ? tokens.typography.weight.semiBold : null,
+        // Flexible: a long label (German, large text, a narrow pane) wraps in
+        // the room left beside the glyph instead of running past the row.
+        Flexible(
+          child: Text(
+            label,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: ink,
+              fontWeight: overdue ? tokens.typography.weight.semiBold : null,
+            ),
           ),
         ),
       ],

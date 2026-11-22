@@ -485,6 +485,35 @@ void main() {
     expect(find.byType(AppCommandScope), findsNothing);
   });
 
+  testWidgets('a long state at large text in a narrow pane wraps beside its '
+      'glyph instead of running past the row', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SizedBox(
+            width: 150,
+            child: PeopleListRow(
+              item: item(lastCheckInAt: DateTime(2026, 8, 3, 9)),
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    expect(tester.takeException(), isNull);
+    final state = tester.getRect(
+      find.byKey(const ValueKey('people-row-overdue')),
+    );
+    expect(
+      state.right,
+      lessThanOrEqualTo(tester.getRect(find.byType(PeopleListRow)).right),
+    );
+  });
+
   testWidgets('tapping anywhere on the row fires onTap', (tester) async {
     var taps = 0;
     await pump(tester, item(), onTap: () => taps++);
