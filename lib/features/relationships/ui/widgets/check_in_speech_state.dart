@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 /// Where the composer's recorder is (design 2026-09-13, options 1a–1f),
@@ -230,15 +231,8 @@ int checkInWordCount(String text) =>
 /// on the chip is the `0:23` the timer stopped on.
 /// The same length in words, for assistive technology: `0:23` reads as
 /// "zero colon twenty-three" and says nothing; "23 seconds" does.
-String checkInSpokenClockLabel(AppLocalizations messages, Duration length) {
-  final total = length.inSeconds.clamp(0, 1 << 31);
-  final minutes = total ~/ 60;
-  final seconds = total % 60;
-  return [
-    if (minutes > 0) messages.checkInSpokenMinutes(minutes),
-    if (seconds > 0 || minutes == 0) messages.checkInSpokenSeconds(seconds),
-  ].join(' ');
-}
+String checkInSpokenClockLabel(AppLocalizations messages, Duration length) =>
+    spokenClockLabel(messages, length);
 
 /// What the composer's header says beside the title: who the check-in is
 /// with at rest, or what the recorder is doing now. Each state has one

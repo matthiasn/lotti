@@ -1,7 +1,4 @@
-import 'package:lotti/features/design_system/components/glass_action_bar.dart';
-import 'package:lotti/features/design_system/components/glass_strip.dart';
-import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/components/speak_add_action_bar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -20,8 +17,9 @@ import 'package:material_ui/material_ui.dart';
 /// name, behind a confirmation: in the bar, an unlabelled handset beside the
 /// capture verbs could place a call by a mis-tap.
 ///
-/// The same glass strip the task page docks, hugging and centred on the
-/// page's reading column, so the two pages end the same way.
+/// The shared [DesignSystemSpeakAddBar] — the glass strip the task page
+/// docks, and the bar the goal page ends with too — under this page's own
+/// words.
 class RelationshipActionBar extends StatelessWidget {
   const RelationshipActionBar({
     required this.onSpeak,
@@ -38,58 +36,15 @@ class RelationshipActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final spacing = tokens.spacing;
     final messages = context.messages;
-    // The glass extends edge to edge and into the home-indicator inset; the
-    // controls sit above it (the task bar's rule) and on the page's reading
-    // column, so a desktop window does not stretch the pill across it.
-    final safeBottomInset = MediaQuery.paddingOf(context).bottom;
-
-    return DesignSystemGlassStrip(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final column = detailContentInsets(
-            context,
-            availableWidth: constraints.maxWidth,
-          );
-          return Padding(
-            padding: EdgeInsets.fromLTRB(
-              column.left,
-              spacing.step4,
-              column.right,
-              spacing.step4 + safeBottomInset,
-            ),
-            // A `Wrap`, so at large text on a narrow phone the controls take
-            // a second line instead of overflowing.
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: spacing.step4,
-              runSpacing: spacing.step4,
-              children: [
-                DsGlassPill(
-                  key: const ValueKey('person-action-speak'),
-                  label: messages.relationshipSpeak,
-                  icon: LottiIcons.mic,
-                  fillColor: tokens.colors.interactive.enabled,
-                  foregroundColor: tokens.colors.text.onInteractiveAlert,
-                  onTap: onSpeak,
-                ),
-                DsGlassPill(
-                  key: const ValueKey('person-action-add'),
-                  label: messages.relationshipAddAction,
-                  icon: LottiIcons.add,
-                  semanticLabel: messages.relationshipAddToTimeline(
-                    personName,
-                  ),
-                  onTap: onAdd,
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+    return DesignSystemSpeakAddBar(
+      speakKey: const ValueKey('person-action-speak'),
+      addKey: const ValueKey('person-action-add'),
+      speakLabel: messages.relationshipSpeak,
+      addLabel: messages.relationshipAddAction,
+      addSemanticLabel: messages.relationshipAddToTimeline(personName),
+      onSpeak: onSpeak,
+      onAdd: onAdd,
     );
   }
 }
