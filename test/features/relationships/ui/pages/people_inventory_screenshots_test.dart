@@ -1386,14 +1386,17 @@ void main() {
           brightness: Brightness.dark,
           overrides: withServiceOverrides(personOverrides()),
         );
-        await tester.enterText(
-          find.descendant(
-            of: find.byKey(const ValueKey('people-search')),
-            matching: find.byType(TextField),
-          ),
-          query,
-        );
-        await tester.pumpAndSettle();
+        // Typed under the suite's clock: the rebuild re-reads the date.
+        await withClock(Clock.fixed(_now), () async {
+          await tester.enterText(
+            find.descendant(
+              of: find.byKey(const ValueKey('people-search')),
+              matching: find.byType(TextField),
+            ),
+            query,
+          );
+          await tester.pumpAndSettle();
+        });
         await captureScreenshot(
           tester,
           'people_list_${name}_${viewport}_dark',
@@ -1428,6 +1431,26 @@ void main() {
       expect(find.byKey(const ValueKey('people-load-retry')), findsOneWidget);
     });
   }
+
+  // The list at large text in German: names wrap, the state and the status
+  // line take lines of their own rather than clipping.
+  testWidgets('mobile people list — large text, German', (tester) async {
+    await pumpSurface(
+      tester,
+      home: const _PeopleUnderLauncher(),
+      device: proDevice,
+      brightness: Brightness.dark,
+      textScaler: const TextScaler.linear(1.6),
+      locale: const Locale('de'),
+      overrides: withServiceOverrides(personOverrides()),
+    );
+    await captureScreenshot(
+      tester,
+      'people_list_mobile_large_text_de',
+      subdir: _subdir,
+    );
+    expect(find.byType(PeopleListRow), findsWidgets);
+  });
 
   testWidgets('mobile person page, load failed — dark', (tester) async {
     when(
