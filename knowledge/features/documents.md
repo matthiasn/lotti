@@ -7,9 +7,21 @@ description: Markdown documents a task holds, drafted and revised by its agent t
 resource: ../../docs/adr/0166-task-documents-are-journal-entries-revised-by-proposal.md
 tags: [documents, tasks, agents, proposals, markdown, versions, review]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-22T16:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-22T19:00:00Z }
 stale_after: 2027-04-03
 sources:
+  - id: document-data
+    resource: ../../lib/classes/task_document_data.dart
+    title: TaskDocumentData, TaskDocumentVersionRef, TaskDocumentVersionData
+    last_modified: 2026-11-22
+  - id: document-merge
+    resource: ../../lib/classes/task_document_merge.dart
+    title: mergeConcurrentTaskDocumentVersions
+    last_modified: 2026-11-22
+  - id: conversions
+    resource: ../../lib/database/conversions.dart
+    title: Journal row type and subtype for both variants
+    last_modified: 2026-11-22
   - id: adr-0166
     resource: ../../docs/adr/0166-task-documents-are-journal-entries-revised-by-proposal.md
     title: "ADR 0166: Task Documents Are Journal Entries, Revised by Proposal"
@@ -58,11 +70,14 @@ sources:
 
 # Task documents
 
-> **Not built yet.** This concept describes the design agreed in
+> **Partly built.** This concept describes the design agreed in
 > [ADR 0166](../../docs/adr/0166-task-documents-are-journal-entries-revised-by-proposal.md).
-> None of the classes it names under `documents` exist. Each implementation
-> step rewrites the part it lands so that this page describes what runs, and
-> the page moves to `stable` when the last part does.
+> What runs today: the two journal variants, their row mapping and the merge
+> of concurrent document rows ([Entities](#entities) and
+> [Merging across devices](#merging-across-devices)). Nothing writes them
+> yet, and nothing under `documents` exists. Each implementation step
+> rewrites the part it lands, and the page moves to `stable` when the last
+> part does.
 
 A task can hold several markdown documents, such as a client one-pager, a
 meeting summary or a follow-up email. The task agent drafts and revises them
@@ -72,8 +87,9 @@ and copies the markdown out.
 
 ## Entities
 
-Both are new `JournalEntity` variants
-([`journal_entities.dart`](../../lib/classes/journal_entities.dart)),
+Both are `JournalEntity` variants
+([`journal_entities.dart`](../../lib/classes/journal_entities.dart)) with
+payloads in [`task_document_data.dart`](../../lib/classes/task_document_data.dart),
 modelled on the soul document's version and head in
 [`agent_domain_entity.dart`](../../lib/classes/agents/agent_domain_entity.dart).
 
@@ -86,15 +102,29 @@ flowchart LR
   V3 --> D
 ```
 
-- **`TaskDocument`** is the only mutable row: its title and the id of its
-  current version. It is linked to exactly one task.
-- **`TaskDocumentVersion`** is written once and never changed: document id,
-  version number, markdown, author (agent or user) and provenance (the
-  change item it was confirmed from, or the edit it came from).
-- How a version is found from its document is still open (see the end of
-  this page).
-- Neither entity appears in the task's history list. The filter that already
-  hides pull request entries hides them too.
+- **`TaskDocumentEntry`** is the only mutable row: its `title` and
+  `current`, a `TaskDocumentVersionRef` naming the version it shows (null
+  until the first one). The ref repeats the version's `number` and
+  `createdAt` so the merge never has to read version rows. The document is
+  linked to exactly one task.
+- **`TaskDocumentVersionEntry`** is written once and never changed:
+  `documentId`, `number`, `markdown`, `author` (`user` or `agent`; an author
+  a newer build added reads as `user`), and provenance: `baseVersionId`,
+  `changeSummary`, `changeSetId` / `changeItemId` for a confirmed agent
+  version, `restoredFromVersionId` for a restore.
+- **A document's versions are an indexed lookup.**
+  [`toDbEntity`](../../lib/database/conversions.dart) writes a version's
+  `documentId` into the `subtype` column (the goal snapshot precedent), and
+  types the rows `TaskDocument` and `TaskDocumentVersion`.
+- **Writing a version notifies its document.** A version's `affectedIds`
+  include its `documentId` as well as `taskDocumentNotification`, so a
+  watcher of the document refreshes when a version lands.
+- **Search finds a document by its title.** Versions contribute nothing to
+  the index, so search never lists every revision.
+- Neither entity is meant for the journal list: the entry-type filter does
+  not offer them, and the journal card renders them only so its switch stays
+  exhaustive. They will also be kept out of the task's history list, like
+  pull request entries.
 
 ## How a version is made
 
@@ -160,14 +190,22 @@ stateDiagram-v2
 ## Merging across devices
 
 Versions never conflict because they are never edited. Two concurrent
-versions of a `TaskDocument` (say a rename on the phone and a confirm on the
-desktop) are merged in
+versions of a `TaskDocumentEntry` (say a rename on the phone and a confirm
+on the desktop) are merged in
 [`database_entity_ops.dart`](../../lib/database/database_entity_ops.dart)
-without a user-facing conflict, like the pull request pair already is:
+without a user-facing conflict, like the pull request pair already is, by
+[`mergeConcurrentTaskDocumentVersions`](../../lib/classes/task_document_merge.dart):
 
-- the pointer goes to the newer of the two versions
-- the title is last-writer-wins
-- both versions stay in history
+- **`current`** goes to the newer ref by `compareTaskDocumentVersionRefs`:
+  number, then `createdAt`, then id. Two devices writing over the same
+  version both produce the same number, and the id still picks one on every
+  device. The other version keeps its row and stays in history.
+- **The title and the rest of the row** come from the later edit by
+  `meta.updatedAt`, ties broken by the clock's canonical key.
+- **A deletion on either side survives.** Against a purge's tombstone the
+  deletion wins under the joined clock, as for pull requests.
+- **The clock** is the join of both. Either argument order gives the same
+  row, which a property test checks.
 
 A device on an older build skips both variants as undeserializable.
 
@@ -226,9 +264,8 @@ Ask for changes, Dismiss and Confirm.
 
 ## Open
 
-- How a version is found from its document: an `EntryLink`, or an indexed
-  column in [`conversions.dart`](../../lib/database/conversions.dart).
-- Whether deleting a document deletes its versions.
+- Whether deleting a document also deletes its version rows, or leaves them
+  for a restore.
 - Copy as plain markdown only, or also as rich text for email.
 - Whether a document follows the task's language or the request's.
 - `DESIGN.md` says agent chat is an overlay that never reflows the page,

@@ -30,6 +30,10 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     goal: (GoalEntry entry) => entry.data.snapshotOf ?? '',
     // `owner/repo#number`, so a duplicate link is an indexed lookup.
     pullRequest: (PullRequestEntry entry) => entry.data.key,
+    // The owning document, so "this document's versions" is an indexed
+    // type+subtype lookup, the goal snapshot precedent above.
+    taskDocumentVersion: (TaskDocumentVersionEntry entry) =>
+        entry.data.documentId,
     orElse: () => '',
   );
 
@@ -409,4 +413,6 @@ String entityTypeName(JournalEntity entity) => entity.map(
   checkIn: (_) => 'CheckIn',
   goal: (_) => 'Goal',
   pullRequest: (_) => 'PullRequest',
+  taskDocument: (_) => 'TaskDocument',
+  taskDocumentVersion: (_) => 'TaskDocumentVersion',
 );

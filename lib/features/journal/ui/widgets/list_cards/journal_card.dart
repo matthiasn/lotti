@@ -254,8 +254,29 @@ class _EntryCardContent extends StatelessWidget {
         iconColor: _categoryColor(context, item),
         title: _titleText(context, pr.data.snapshot?.title ?? pr.data.key),
       ),
+      // A task document and its versions live in the task's documents
+      // section. Like a pull request, they are rendered here only so the
+      // switch stays exhaustive; a version shows its first line of text.
+      final TaskDocumentEntry document => _scaffold(
+        context,
+        icon: LottiIcons.description,
+        iconColor: _categoryColor(context, item),
+        title: _titleText(context, document.data.title),
+      ),
+      final TaskDocumentVersionEntry version => _scaffold(
+        context,
+        icon: LottiIcons.description,
+        iconColor: _categoryColor(context, item),
+        title: _titleText(context, _firstLine(version.data.markdown)),
+      ),
     };
   }
+
+  /// The first non-blank line of [markdown], without its heading marks.
+  static String _firstLine(String markdown) => markdown
+      .split('\n')
+      .map((line) => line.replaceFirst(RegExp(r'^\s*#+\s*'), '').trim())
+      .firstWhere((line) => line.isNotEmpty, orElse: () => '');
 
   // --- Scaffolding -----------------------------------------------------------
 

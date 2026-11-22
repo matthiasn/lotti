@@ -35,6 +35,8 @@ String folderForJournalEntity(JournalEntity journalEntity) {
     checkIn: (_) => 'check_ins',
     goal: (_) => 'goals',
     pullRequest: (_) => 'pull_requests',
+    taskDocument: (_) => 'task_documents',
+    taskDocumentVersion: (_) => 'task_document_versions',
   );
 }
 
@@ -60,6 +62,8 @@ String typeSuffix(JournalEntity journalEntity) {
     checkIn: (_) => 'check_in',
     goal: (_) => 'goal',
     pullRequest: (_) => 'pull_request',
+    taskDocument: (_) => 'task_document',
+    taskDocumentVersion: (_) => 'task_document_version',
   );
 }
 

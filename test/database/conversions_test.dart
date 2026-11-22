@@ -30,6 +30,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:research_package/model.dart';
 
+import '../classes/task_document_fixtures.dart';
 import '../test_data/test_data.dart';
 
 // ---------------------------------------------------------------------------
@@ -293,6 +294,8 @@ void main() {
         meta: _meta('pull-request'),
         data: const PullRequestData(owner: 'o', repo: 'r', number: 1),
       ),
+      'TaskDocument': taskDocumentEntry(clock: {'a': 1}),
+      'TaskDocumentVersion': taskDocumentVersionEntry(),
     };
 
     entries.forEach((expectedType, entity) {
@@ -380,6 +383,18 @@ void main() {
         ),
       );
       expect(toDbEntity(entry).subtype, 'matthiasn/lotti#4501');
+    },
+  );
+
+  test(
+    "toDbEntity keys a document version by its document, so a document's "
+    'versions are an indexed lookup, and leaves the document itself blank',
+    () {
+      expect(
+        toDbEntity(taskDocumentVersionEntry(documentId: 'doc-7')).subtype,
+        'doc-7',
+      );
+      expect(toDbEntity(taskDocumentEntry(clock: {'a': 1})).subtype, '');
     },
   );
 
@@ -514,6 +529,8 @@ void main() {
         checkIn: (_) => throw StateError('unexpected variant'),
         goal: (_) => throw StateError('unexpected variant'),
         pullRequest: (_) => throw StateError('unexpected variant'),
+        taskDocument: (_) => throw StateError('unexpected variant'),
+        taskDocumentVersion: (_) => throw StateError('unexpected variant'),
       );
     }
 

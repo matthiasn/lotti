@@ -14,6 +14,7 @@ import 'package:lotti/classes/habit_completion_record.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/classes/task_document_merge.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';

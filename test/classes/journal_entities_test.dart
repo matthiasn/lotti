@@ -24,6 +24,7 @@ import 'package:research_package/model.dart';
 import '../features/agents/query/query_audio_test_utils.dart';
 import '../helpers/entity_factories.dart';
 import '../test_data/test_data.dart';
+import 'task_document_fixtures.dart';
 
 void main() {
   test(
@@ -595,6 +596,27 @@ void main() {
             data: const PullRequestData(owner: 'o', repo: 'r', number: 1),
           ).affectedIds,
           <String>{'entity-1', pullRequestNotification},
+        );
+      },
+    );
+
+    test('a task document notifies taskDocumentNotification', () {
+      expect(
+        taskDocumentEntry(clock: {'a': 1}, id: 'entity-1').affectedIds,
+        <String>{'entity-1', taskDocumentNotification},
+      );
+    });
+
+    test(
+      'a document version also notifies its document, so the document page '
+      'and the task section refresh when a version is written',
+      () {
+        expect(
+          taskDocumentVersionEntry(
+            id: 'entity-1',
+            documentId: 'doc-1',
+          ).affectedIds,
+          <String>{'entity-1', 'doc-1', taskDocumentNotification},
         );
       },
     );

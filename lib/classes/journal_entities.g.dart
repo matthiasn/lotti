@@ -593,3 +593,49 @@ Map<String, dynamic> _$PullRequestEntryToJson(PullRequestEntry instance) =>
       'geolocation': instance.geolocation,
       'runtimeType': instance.$type,
     };
+
+TaskDocumentEntry _$TaskDocumentEntryFromJson(Map<String, dynamic> json) =>
+    TaskDocumentEntry(
+      meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
+      data: TaskDocumentData.fromJson(json['data'] as Map<String, dynamic>),
+      entryText: json['entryText'] == null
+          ? null
+          : EntryText.fromJson(json['entryText'] as Map<String, dynamic>),
+      geolocation: json['geolocation'] == null
+          ? null
+          : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$TaskDocumentEntryToJson(TaskDocumentEntry instance) =>
+    <String, dynamic>{
+      'meta': instance.meta,
+      'data': instance.data,
+      'entryText': instance.entryText,
+      'geolocation': instance.geolocation,
+      'runtimeType': instance.$type,
+    };
+
+TaskDocumentVersionEntry _$TaskDocumentVersionEntryFromJson(
+  Map<String, dynamic> json,
+) => TaskDocumentVersionEntry(
+  meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
+  data: TaskDocumentVersionData.fromJson(json['data'] as Map<String, dynamic>),
+  entryText: json['entryText'] == null
+      ? null
+      : EntryText.fromJson(json['entryText'] as Map<String, dynamic>),
+  geolocation: json['geolocation'] == null
+      ? null
+      : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$TaskDocumentVersionEntryToJson(
+  TaskDocumentVersionEntry instance,
+) => <String, dynamic>{
+  'meta': instance.meta,
+  'data': instance.data,
+  'entryText': instance.entryText,
+  'geolocation': instance.geolocation,
+  'runtimeType': instance.$type,
+};

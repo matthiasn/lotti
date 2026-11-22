@@ -45,6 +45,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 import 'package:research_package/model.dart';
 
+import '../../../../../classes/task_document_fixtures.dart';
 import '../../../../../mocks/mocks.dart'
     show
         MockEntitiesCacheService,
@@ -208,6 +209,32 @@ void main() {
       expect(find.text('Waddle to the ice shelf daily'), findsOneWidget);
       expect(find.byIcon(LottiIcons.flag), findsOneWidget);
     });
+
+    testWidgets(
+      'a task document renders titled with its name, and a version with its '
+      'first line of text, heading marks removed',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(item: taskDocumentEntry(clock: {'a': 1})),
+          ),
+        );
+        expect(find.text('Client one-pager'), findsOneWidget);
+        expect(find.byIcon(LottiIcons.description), findsOneWidget);
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(
+              item: taskDocumentVersionEntry(
+                markdown: '\n\n## Next steps\n\nShare the rollout plan.',
+              ),
+            ),
+          ),
+        );
+        expect(find.text('Next steps'), findsOneWidget);
+        expect(find.textContaining('##'), findsNothing);
+      },
+    );
 
     testWidgets(
       'a pull request renders as a merge row titled with its snapshot, or '
