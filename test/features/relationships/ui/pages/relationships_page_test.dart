@@ -263,6 +263,45 @@ void main() {
     expect(find.text('1 day overdue'), findsOneWidget);
   });
 
+  testWidgets('searching keeps the matching people, a miss offers Clear '
+      'search, and either clear brings everyone back', (tester) async {
+    when(() => mockRepository.getRelationshipsByRecency()).thenAnswer(
+      (_) async => [
+        item('rel-1', title: 'Anna'),
+        item('rel-2', title: 'Ben'),
+      ],
+    );
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    final field = find.descendant(
+      of: find.byKey(const ValueKey('people-search')),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(field, 'ann');
+    await tester.pumpAndSettle();
+    expect(_rowNamed('Anna'), findsOneWidget);
+    expect(_rowNamed('Ben'), findsNothing);
+
+    await tester.enterText(field, 'walrus');
+    await tester.pumpAndSettle();
+    expect(find.text('Nobody matches “walrus”'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('people-search-clear')));
+    await tester.pumpAndSettle();
+    expect(_rowNamed('Anna'), findsOneWidget);
+    expect(_rowNamed('Ben'), findsOneWidget);
+    expect(tester.widget<TextField>(field).controller!.text, isEmpty);
+
+    // The field's own clear button does the same.
+    await tester.enterText(field, 'ben');
+    await tester.pumpAndSettle();
+    expect(_rowNamed('Anna'), findsNothing);
+    await tester.tap(find.byIcon(LottiIcons.closeCircled));
+    await tester.pumpAndSettle();
+    expect(_rowNamed('Anna'), findsOneWidget);
+  });
+
   testWidgets(
     'shows progress on the first load, then swaps it for the list',
     (tester) async {
