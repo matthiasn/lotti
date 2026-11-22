@@ -210,7 +210,6 @@
     "lib/features/projects/widgetbook/project_widgetbook.dart": {"spacing":2},
     "lib/features/ratings/ui/session_rating_modal.dart": {"spacing":6,"color":1},
     "lib/features/relationships/ui/pages/contact_import_page.dart": {"spacing":1},
-    "lib/features/relationships/ui/pages/relationships_page.dart": {"spacing":1},
     "lib/features/relationships/ui/shared/persona_avatar.dart": {"typography":3},
     "lib/features/settings/ui/pages/advanced/about_page.dart": {"typography":1,"color":3},
     "lib/features/settings/ui/pages/advanced/celebration_settings_page.dart": {"spacing":1},

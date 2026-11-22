@@ -100,6 +100,45 @@ extension _AnyPeople on glados.Any {
 }
 
 void main() {
+  group('personMatchesQuery', () {
+    final at = DateTime(2026, 8);
+    RelationshipEntry person(String title, {String? nickname}) =>
+        RelationshipEntry(
+          meta: Metadata(
+            id: 'rel-$title',
+            createdAt: at,
+            updatedAt: at,
+            dateFrom: at,
+            dateTo: at,
+          ),
+          data: RelationshipData(
+            title: title,
+            nickname: nickname,
+            status: RelationshipStatus.active(
+              id: 's',
+              createdAt: at,
+              utcOffset: 0,
+            ),
+          ),
+        );
+    final pip = person('Commander Pip Frostbeak', nickname: 'Captain');
+
+    test('matches the name anywhere in it, ignoring case and padding', () {
+      expect(personMatchesQuery(pip, 'frost'), isTrue);
+      expect(personMatchesQuery(pip, '  PIP '), isTrue);
+    });
+
+    test('matches the nickname the user calls them', () {
+      expect(personMatchesQuery(pip, 'capt'), isTrue);
+    });
+
+    test('a blank query matches everyone; a stranger matches nobody', () {
+      expect(personMatchesQuery(pip, '   '), isTrue);
+      expect(personMatchesQuery(pip, 'walrus'), isFalse);
+      expect(personMatchesQuery(person('Mo Krillson'), 'captain'), isFalse);
+    });
+  });
+
   group('peopleListSections — properties', () {
     glados.Glados(
       glados.any.people,
