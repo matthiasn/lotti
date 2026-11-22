@@ -8569,9 +8569,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInRecordCta => 'Nahrát hlášení';
-
-  @override
   String get goalCheckInSave => 'Uložit hlášení';
 
   @override

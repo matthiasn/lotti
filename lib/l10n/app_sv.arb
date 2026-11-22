@@ -3810,7 +3810,6 @@
   "goalCheckInMinutes": "{count} min",
   "goalCheckInNoteKeptSeparate": "Hålls skild från din skrivna anteckning",
   "goalCheckInPreparedBy": "{name} · förberett åt dig",
-  "goalCheckInRecordCta": "Spela in en avstämning",
   "goalCheckInSave": "Spara avstämning",
   "goalCheckInSaved": "Avstämning sparad",
   "goalCheckInsEmptyInvitation": "Berätta för din agent vad som faktiskt pågår — trettio sekunder, med dina egna ord, när det känns värt det.",

@@ -8490,9 +8490,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInRecordCta => 'Check-in opnemen';
-
-  @override
   String get goalCheckInSave => 'Check-in opslaan';
 
   @override

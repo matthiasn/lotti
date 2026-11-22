@@ -8460,9 +8460,6 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInRecordCta => 'Optag et check-in';
-
-  @override
   String get goalCheckInSave => 'Gem check-in';
 
   @override

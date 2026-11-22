@@ -8606,9 +8606,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInRecordCta => 'Înregistrați o raportare';
-
-  @override
   String get goalCheckInSave => 'Salvați raportarea';
 
   @override

@@ -8477,9 +8477,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInRecordCta => 'Spela in en avstämning';
-
-  @override
   String get goalCheckInSave => 'Spara avstämning';
 
   @override

@@ -8565,9 +8565,6 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInRecordCta => 'Registra un check-in';
-
-  @override
   String get goalCheckInSave => 'Salva check-in';
 
   @override

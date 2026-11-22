@@ -3810,7 +3810,6 @@
   "goalCheckInMinutes": "{count} min",
   "goalCheckInNoteKeptSeparate": "Holdes adskilt fra din skrevne note",
   "goalCheckInPreparedBy": "{name} · forberedt til dig",
-  "goalCheckInRecordCta": "Optag et check-in",
   "goalCheckInSave": "Gem check-in",
   "goalCheckInSaved": "Check-in gemt",
   "goalCheckInsEmptyInvitation": "Fortæl din agent, hvad der faktisk sker — tredive sekunder, med dine egne ord, når det er værd at sige.",

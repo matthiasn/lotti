@@ -5473,7 +5473,6 @@
       }
     }
   },
-  "goalCheckInRecordCta": "Record a check-in",
   "goalCheckInSave": "Save check-in",
   "goalCheckInSaved": "Check-in saved",
   "@goalCheckInSaved": {

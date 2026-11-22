@@ -90,6 +90,7 @@ import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -164,7 +165,13 @@ void main() {
 
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        const GoalAgentDetailPage(agentId: 'goal-1'),
+        // As the shell renders a goal page: its launcher slid away, so the
+        // page's own bar is the only thing at the bottom edge.
+        const DesignSystemBottomNavigationOverlayHeight(
+          height: 0,
+          barDocked: false,
+          child: GoalAgentDetailPage(agentId: 'goal-1'),
+        ),
         overrides: [
           habitsControllerProvider.overrideWith(
             () => FakeHabitsController(
@@ -310,7 +317,16 @@ void main() {
     // Scrolled to the end, the page's last card stands clear of the docked
     // bar rather than under its glass.
     expect(
-      tester.getRect(find.byType(GoalProgressCard)).bottom,
+      tester
+          .getRect(
+            find
+                .descendant(
+                  of: find.byType(SingleChildScrollView).first,
+                  matching: find.byType(Column),
+                )
+                .first,
+          )
+          .bottom,
       lessThanOrEqualTo(
         tester.getRect(find.byType(DesignSystemSpeakAddBar)).top,
       ),

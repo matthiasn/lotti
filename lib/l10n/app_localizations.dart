@@ -14309,12 +14309,6 @@ abstract class AppLocalizations {
   /// **'{name} · prepared for you'**
   String goalCheckInPreparedBy(String name);
 
-  /// No description provided for @goalCheckInRecordCta.
-  ///
-  /// In en, this message translates to:
-  /// **'Record a check-in'**
-  String get goalCheckInRecordCta;
-
   /// No description provided for @goalCheckInSave.
   ///
   /// In en, this message translates to:

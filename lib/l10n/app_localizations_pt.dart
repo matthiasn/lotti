@@ -8561,9 +8561,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInRecordCta => 'Gravar um registo';
-
-  @override
   String get goalCheckInSave => 'Guardar registo';
 
   @override
