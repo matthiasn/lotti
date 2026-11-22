@@ -190,8 +190,9 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
     final difference = today.difference(day).inDays;
     if (difference == 0) return context.messages.timelineDayToday;
     if (difference == 1) return context.messages.timelineDayYesterday;
-    return DateFormat(
-      'EEEE · d MMM',
+    // A localized skeleton: the weekday, day and month in the order and
+    // with the separators each locale writes them, not one fixed pattern.
+    return DateFormat.MMMMEEEEd(
       Localizations.localeOf(context).toLanguageTag(),
     ).format(day);
   }
@@ -378,7 +379,10 @@ class _VerdictPill extends StatelessWidget {
         vertical: tokens.spacing.step1,
       ),
       decoration: BoxDecoration(
-        color: dayVerdictFill(tokens, rating).withValues(alpha: 0.16),
+        color: dayVerdictFill(
+          tokens,
+          rating,
+        ).withValues(alpha: SurfaceAlphas.washChip),
         // Informative, not tappable: the small-chip radius, never the pill —
         // full rounding is reserved for clickable elements on this surface.
         borderRadius: BorderRadius.circular(tokens.radii.smallChips),

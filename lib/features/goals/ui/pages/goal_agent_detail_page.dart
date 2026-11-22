@@ -30,9 +30,12 @@ import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/categories/ui/widgets/category_crumb.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -677,13 +680,13 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             // check-ins card can be below the fold, so "say what is going on"
             // must not depend on scrolling to it.
             if (isActive)
-              IconButton(
+              DesignSystemIconAction(
                 key: const ValueKey('goal-detail-checkin-action'),
                 // The LIVE mic glyph, not `micIdle`: that token resolves to
                 // Lucide's slashed mic-off, which on an enabled action reads
                 // as "recording unavailable". This button starts a check-in
                 // recording; nothing about it is muted.
-                icon: const Icon(LottiIcons.mic),
+                icon: LottiIcons.mic,
                 tooltip: context.messages.goalCheckInRecordCta,
                 onPressed: openComposer,
               ),

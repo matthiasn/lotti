@@ -88,9 +88,9 @@ class _GoalChatDrawer extends StatelessWidget {
                       ],
                     ),
                   ),
-                  IconButton(
+                  DesignSystemIconAction(
                     key: const ValueKey('goal-chat-drawer-close'),
-                    icon: const Icon(LottiIcons.close),
+                    icon: LottiIcons.close,
                     tooltip: MaterialLocalizations.of(
                       context,
                     ).closeButtonTooltip,

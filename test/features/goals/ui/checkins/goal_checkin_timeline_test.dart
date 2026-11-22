@@ -708,7 +708,7 @@ void main() {
             find.byType(DesignSystemTimelineSectionHeader),
           )
           .label,
-      'Saturday · 15 Aug',
+      'Saturday, August 15',
     );
   });
 

@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -92,11 +94,11 @@ class _GoalLogTodaySheetState extends ConsumerState<GoalLogTodaySheet> {
         ..invalidate(goalAgentProgressViewProvider(widget.agentId))
         ..invalidate(goalAgentProgressViewForSpanProvider);
     } else {
-      ScaffoldMessenger.maybeOf(context)
-        ?..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(context.messages.saveFailedRetry)),
-        );
+      ScaffoldMessenger.maybeOf(context)?.showDesignSystemToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.saveFailedRetry,
+        replaceCurrent: true,
+      );
     }
   }
 

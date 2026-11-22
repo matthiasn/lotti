@@ -359,9 +359,11 @@ class _PreparedCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(tokens.spacing.cardPadding),
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.08),
+        color: accent.withValues(alpha: SurfaceAlphas.tint),
         borderRadius: BorderRadius.circular(tokens.radii.m),
-        border: Border.all(color: accent.withValues(alpha: 0.24)),
+        border: Border.all(
+          color: accent.withValues(alpha: SurfaceAlphas.washBorder),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
