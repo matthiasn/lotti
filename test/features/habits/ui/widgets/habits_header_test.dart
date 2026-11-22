@@ -111,7 +111,7 @@ void main() {
     expect(find.byType(HabitStatusSegmentedControl), findsOneWidget);
     // Each segment label is rendered twice (a hidden width-reserving ghost
     // plus the visible label), so each resolves to two Text widgets.
-    for (final label in ['due', 'later', 'done', 'all']) {
+    for (final label in ['Due', 'Later', 'Done', 'All']) {
       expect(find.text(label), findsNWidgets(2));
     }
   });
@@ -126,7 +126,7 @@ void main() {
     // Tap the visible "done" segment via its InkWell ancestor.
     await tester.tap(
       find
-          .ancestor(of: find.text('done'), matching: find.byType(InkWell))
+          .ancestor(of: find.text('Done'), matching: find.byType(InkWell))
           .first,
     );
     await tester.pump(const Duration(milliseconds: 100));

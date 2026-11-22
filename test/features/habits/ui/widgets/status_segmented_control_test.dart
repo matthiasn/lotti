@@ -8,13 +8,13 @@ import '../../../../widget_test_utils.dart';
 
 void main() {
   // Pairs of (visible label text, the filter that segment maps to). The labels
-  // come from app_en.arb: openNow -> 'due', pendingLater -> 'later',
-  // completed -> 'done', all -> 'all'.
+  // come from app_en.arb: openNow -> 'Due', pendingLater -> 'Later',
+  // completed -> 'Done', all -> 'All' (sentence case).
   const segments = <(String label, HabitDisplayFilter filter)>[
-    ('due', HabitDisplayFilter.openNow),
-    ('later', HabitDisplayFilter.pendingLater),
-    ('done', HabitDisplayFilter.completed),
-    ('all', HabitDisplayFilter.all),
+    ('Due', HabitDisplayFilter.openNow),
+    ('Later', HabitDisplayFilter.pendingLater),
+    ('Done', HabitDisplayFilter.completed),
+    ('All', HabitDisplayFilter.all),
   ];
 
   Future<void> pumpControl(
@@ -112,7 +112,7 @@ void main() {
         onValueChanged: (value) => captured = value,
       );
 
-      await tester.tap(find.text('done').last);
+      await tester.tap(find.text('Done').last);
       await tester.pump();
 
       expect(captured, HabitDisplayFilter.completed);
