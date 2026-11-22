@@ -4,6 +4,99 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.107]
+
+### Added
+
+- **The People list has a search field.** Type part of a name or the nickname
+  you call someone, and each band keeps only the people who match. When nobody
+  matches, the list says so and offers *Clear search*.
+
+### Changed
+
+- **The task list now leads with each task's title.** A row shows the title,
+  the agent's one-line summary and one quiet line of facts. The category is a
+  small colour swatch and its name instead of a bright filled tag on every
+  card, and tracked time appears only once there is some, so untouched tasks
+  no longer say "0h 0m". Priority reads as a word (*High*, *Urgent*)
+  everywhere, in the list, on the task and in the filter, instead of "P1" in
+  one place and "High" in another. With large text the cover thumbnail steps
+  aside so the title keeps its width.
+- **A task's first screen starts with the task.** On a laptop, the cover art
+  is now a banner at most 320 points tall, so the title, its details and the
+  agent's summary are visible without scrolling. On a phone, the details
+  under the title take two tidy lines: status, priority and due date first,
+  then time, labels and *Details*. A task due today, tomorrow or yesterday
+  says so in words in the header as well as in the list.
+- **An empty task list says why, and how to get out.** A search that finds
+  nothing names what you searched for and offers *Clear search*. Filters that
+  match nothing offer *Clear filters*. An empty list says there are no tasks
+  yet. If the list fails to load, it says so and offers *Try again*.
+- **The search field keeps its full width.** On Tasks, Projects, Logbook and
+  Events the filter button no longer sits beside the search field. A
+  *Filters* chip under the field opens the filters instead, and it is
+  highlighted while filters are active.
+- **The priority filter shows the real priority marks.** High, Medium and
+  Low used to share one signal icon in three colours, and Urgent wore a
+  checkmark badge. Each now shows the same mark the task itself carries.
+- **Task labels are in sentence case.** For example *Due today*, *In
+  progress*, *Linked tasks*. Priority now reads the same word in the active
+  filter chips as on the rest of the task page.
+- **The AI band above a task's buttons says what it is doing.** While an AI
+  job runs, the animated band now names it (for example *Transcribing audio*
+  or *Generating image*) and still opens the job's progress when tapped.
+- **Checklists use the app's own controls.** Open, Done and All are filter
+  chips. Each item has one square checkbox. Swiping an item reveals a band
+  that names the action (*Archive*, *Restore*, *Delete*). The AI completion
+  suggestion opens in the app's usual sheet.
+- **Task rows are announced as buttons** by screen readers, in the task and
+  project lists.
+- **People rows lead with the person.** Each band is now one card of rows, as
+  on the task list, and the name has its line to itself. Whether someone is
+  overdue or due this week sits under the name with the last contact, instead
+  of a tag that squeezed long names onto two lines.
+- **A person's briefing card now looks and works like a task's card on every
+  face.** Each state ends on the same single line: the model and provider on
+  the left, *Update now* on the right — *Thinking…* while a briefing is
+  written. The washed footer band, the large buttons and *See activity* are
+  gone; *Open agent internals* sits beside *Read more*, as on a task. An
+  out-of-date briefing says its age on its status line instead of in a tag,
+  only the status glyph wears the warning or error colour, and a failed run's
+  message sits as a caption above the briefing it kept. The card no longer
+  shows the agent's token count; that lives in the agent internals. When no
+  model is set up, the message points at the model line on the card itself.
+
+### Fixed
+
+- **Hundreds of menu, button and settings labels were mistranslated in Dutch,
+  Italian, Danish, Swedish and Portuguese.** Machine translation had picked the
+  wrong sense of short English words, so Dutch showed "Middelen" (remedies) for
+  Agents and "Toespraak" (a speech) for Speech, Italian offered "Annullamento"
+  instead of "Annulla" on Cancel and "Abitazioni" (dwellings) for Habits, and
+  Danish and Swedish called the time-tracking button "Banetid" and "Bantid" (a
+  racetrack's lap time). These labels now read as a native speaker would write
+  them across navigation, settings, the task action bar, sheets, filters,
+  statuses and keyboard shortcuts. The Daily OS name is no longer translated
+  word for word, Portuguese uses European rather than Brazilian forms and the
+  informal "tu" in the labels that were fixed, Czech and Dutch prompts address
+  you informally, and provider names such as Anthropic Claude, Google Gemini
+  and Whisper are no longer translated as if they were ordinary words.
+- **A task that no longer exists says so**, instead of an empty page that
+  never finishes loading.
+- **An AI summary that fails to load says so**, with *Try again*, instead of
+  disappearing as if the task had no agent.
+- **The People list and a person's page said only "Error" when they failed to
+  load.** They now say what did not load and offer *Try again*, and a person's
+  page no longer shows a spinner while a failed read is being retried.
+- **A timeline filter with nothing in it showed a blank space.** It now says
+  there is nothing under that filter yet and offers *Show all*.
+- **People lists and pages kept yesterday's dates after midnight.** Someone
+  due today now turns overdue at midnight, and Today and Yesterday move on with
+  the clock.
+- **At large text sizes the People summary card squeezed "Next due" into a
+  column of letters.** Its two halves now stack, and each row's last-contact
+  line wraps instead of being cut off.
+
 ## [1.1.106]
 
 ### Changed
