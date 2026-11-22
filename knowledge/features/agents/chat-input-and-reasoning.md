@@ -5,7 +5,7 @@ description: Shared voice-recorder state, waveform feedback, and reasoning discl
 resource: ../../../lib/features/agents/ui/chat
 tags: [agents, chat, recording, reasoning]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T18:00:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-23T09:00:00Z }
 stale_after: 2027-01-31
 sources:
   - id: chat
@@ -144,6 +144,16 @@ the same voice-input primitives under `agents/ui/chat/`:
 - `ChatRecorderController` and `ChatRecorderState` manage a temporary recording,
   streamed transcript feedback, and typed errors. A take runs until Done, as
   a recording on a task does: the controller never stops one on its own.
+  **A take is never thrown away because its words could not be read.** The
+  temp file is deleted once its words have been handed back or the user
+  cancelled. When transcription fails — a failed request or no audio model —
+  the controller first saves the take to the journal as an unlinked
+  recording (`importAudioXFiles`, behind the `ChatFailedTakeKeeper` seam)
+  and sets `ChatRecorderState.keptInJournal`; `chatRecorderErrorMessage`
+  then says where the recording is instead of asking the user to say it all
+  again. If the journal cannot take it either, the file is renamed to
+  `lotti_unsaved_*.m4a` beside the recorder's temp directory, out of reach
+  of every cleanup, and the message claims nothing about the recording.
 - `chat_amplitude_history.dart` provides bounded history and normalization
   functions; the design system's `DesignSystemVoiceWaveform` renders the
   normalized samples (the evolution chat and the goal charter sheet use it

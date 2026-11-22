@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -26,6 +28,7 @@ import 'package:record/record.dart' as record;
 
 import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_data/ai_config_factories.dart';
 
@@ -3183,6 +3186,80 @@ void main() {
       expect(state.transcript, 'hello');
       expect(state.keptInJournal, isFalse);
       expect(asked, 0);
+      expect(filesUnder(baseTemp), isEmpty);
+    });
+
+    test('unless overridden, the take goes into the journal: its audio '
+        "copied into the app's own audio store and filed as an unlinked "
+        'recording', () async {
+      when(
+        () => transcription.transcribeStream(any()),
+      ).thenAnswer((_) => Stream.error(Exception('network down')));
+      final documents = Directory.systemTemp.createTempSync('chat_keep_docs');
+      addTearDown(() => documents.deleteSync(recursive: true));
+      if (getIt.isRegistered<Directory>()) getIt.unregister<Directory>();
+      getIt.registerSingleton<Directory>(documents);
+      addTearDown(() => getIt.unregister<Directory>());
+      final speech = MockSpeechRepository();
+      registerFallbackValue(
+        AudioNote(
+          createdAt: DateTime(2026, 8, 18),
+          audioFile: 'fallback.m4a',
+          audioDirectory: '/audio/',
+          duration: Duration.zero,
+        ),
+      );
+      when(
+        () => speech.createAudioEntry(
+          any(),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => testAudioEntry);
+
+      final container = ProviderContainer(
+        overrides: [
+          speechRepositoryProvider.overrideWithValue(speech),
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => baseTemp,
+              transcriptionService: transcription,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
+      await controller.stopAndTranscribe();
+
+      expect(
+        container.read(chatRecorderControllerProvider).keptInJournal,
+        isTrue,
+      );
+      // Words for a text field, not a check-in on anything: no link.
+      final note =
+          verify(
+                () => speech.createAudioEntry(
+                  captureAny(),
+                  // Stated, not defaulted: that there is no link is the claim.
+                  // ignore: avoid_redundant_argument_values
+                  linkedId: null,
+                  // ignore: avoid_redundant_argument_values
+                  categoryId: null,
+                ),
+              ).captured.single
+              as AudioNote;
+      final stored = File(
+        '${documents.path}${note.audioDirectory}${note.audioFile}',
+      );
+      expect(stored.readAsStringSync(), 'the take');
+      // The temp copy is gone; the journal's is the one that remains.
       expect(filesUnder(baseTemp), isEmpty);
     });
 

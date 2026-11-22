@@ -131,7 +131,11 @@ person's page has: *Speak* opens a check-in that is already recording, with
 the goal named and the agent's question still in view, and *+ Add* offers a
 written check-in, logging today and reflecting on today. A microphone that
 was refused, or a recording already running elsewhere, is said in words with
-the way forward; a running recording is never taken over. The check-ins sit
+the way forward; a running recording is never taken over. While a
+check-in is still recording behind the page, *Speak* reads *Recording* in
+red. A recording is never deleted because its transcription failed or it
+could not be attached to the goal: it stays in the journal, and the message
+says so. The check-ins sit
 on the page as a section under the read.
 Asking the agent in chat to change its report — shorter, sectioned, less
 repetitive — rewrites the standing report itself rather than only answering in

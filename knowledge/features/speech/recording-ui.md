@@ -5,7 +5,7 @@ description: "Two interchangeable level visualizations over one dBFS stream, the
 resource: ../../../lib/features/speech/ui/widgets/recording
 tags: [speech, ui, vu-meter, visualization]
 status: stable
-generated: { by: claude-code/fable-5.2, at: 2026-11-22T20:00:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-23T09:00:00Z }
 stale_after: 2027-04-02
 sources:
   - id: src
@@ -164,6 +164,7 @@ settings* goes through, on every surface.
 | Check-in composer | The whole stage, under the composer's header and its status line |
 | Mobile recording pill | A compact live indicator |
 | Desktop sidebar row | A red accent card, a pulsing dot and elapsed time — **deliberately no dBFS reaction** |
+| Goal and person page bar | The *Speak* pill reads *Recording* on the alert fill while a take linked to that goal or person is recording or paused (`subjectTakeLiveProvider`, which never builds the recorder just to ask). On a phone these pages slide the navigation bar and its indicator away, so the pill is the only sign on the screen — **no level, no time** |
 | Task, entry and event action bars | `GlassRecordButton`: the accent-ringed mic takes the alert fill while a session linked to *that* task, entry or event is recording or paused — **no level, no time** |
 
 The desktop row is intentionally inert to level: it is ambient status in a
