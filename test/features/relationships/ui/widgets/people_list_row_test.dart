@@ -411,6 +411,22 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('at large text the status line takes a second line instead '
+      'of ending in an ellipsis', (tester) async {
+    int statusMaxLines() => tester
+        .widget<RelationshipLineWithDate>(
+          find.byKey(const ValueKey('people-row-status')),
+        )
+        .maxLines!;
+    await pump(tester, item(lastCheckInAt: DateTime(2026, 8, 3, 9)));
+    expect(statusMaxLines(), 1);
+
+    tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await pump(tester, item(lastCheckInAt: DateTime(2026, 8, 3, 9)));
+    expect(statusMaxLines(), 2);
+  });
+
   testWidgets('tapping anywhere on the row fires onTap', (tester) async {
     var taps = 0;
     await pump(tester, item(), onTap: () => taps++);

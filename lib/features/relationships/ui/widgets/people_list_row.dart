@@ -58,6 +58,10 @@ class PeopleListRow extends StatelessWidget {
         : peopleCadencePillLabel(context, pill);
     final status = peopleStatusPartsOf(context, item);
     final overdue = pill.kind == PeopleCadencePillKind.overdue;
+    // At large text the status line takes a second line rather than
+    // ending in an ellipsis (DESIGN.md: re-flow, never clip).
+    final largeText =
+        MediaQuery.textScalerOf(context).scale(1) >= TextScales.large;
 
     final row = GroupedCardRowSurface(
       rowKey: ValueKey('people-row-surface-${relationship.id}'),
@@ -118,7 +122,7 @@ class PeopleListRow extends StatelessWidget {
                         key: const ValueKey('people-row-status'),
                         text: status.text,
                         date: status.date,
-                        maxLines: 1,
+                        maxLines: largeText ? 2 : 1,
                         style: tokens.typography.styles.others.caption.copyWith(
                           color: tokens.colors.text.mediumEmphasis,
                         ),
