@@ -4,6 +4,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/documents/ui/new_document_item.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/github/ui/track_pull_requests_item.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
@@ -79,10 +80,14 @@ void main() {
     expect((section as LinkedFromChecklistWidget).item, same(item));
   });
 
-  test('the task create action is the GitHub pull request tracking row', () {
-    expect(
-      appJournalDetailSlots.taskCreateAction,
-      same(pullRequestTrackingAction),
-    );
-  });
+  test(
+    'the task create actions are a new document, then GitHub pull request '
+    'tracking',
+    () {
+      expect(appJournalDetailSlots.taskCreateActions, [
+        same(newDocumentAction),
+        same(pullRequestTrackingAction),
+      ]);
+    },
+  );
 }

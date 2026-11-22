@@ -8,6 +8,8 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
+import 'package:lotti/features/documents/state/task_document_providers.dart';
+import 'package:lotti/features/documents/ui/task_documents_section.dart';
 import 'package:lotti/features/github/ui/task_pull_requests_section.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -27,6 +29,7 @@ import 'package:lotti/widgets/layout/viewport_stable_animated_size.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../classes/task_document_fixtures.dart';
 import '../../../helpers/fake_linked_entries_controller.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -103,9 +106,12 @@ void main() {
     List<EntryLink>? linkedEntries,
     List<JournalEntity> linkedTargets = const [],
     GlobalKey? pullRequestsFocusKey,
+    List<TaskDocumentEntry> documents = const [],
+    GlobalKey? documentsFocusKey,
   }) {
     return RiverpodWidgetTestBench(
       overrides: [
+        taskDocumentsProvider(task.meta.id).overrideWith((ref) => documents),
         entryControllerProvider(task.meta.id).overrideWith(
           () => _TestEntryController(task),
         ),
@@ -143,6 +149,7 @@ void main() {
           taskId: task.meta.id,
           cardRegionKey: cardRegionKey,
           pullRequestsFocusKey: pullRequestsFocusKey,
+          documentsFocusKey: documentsFocusKey,
         ),
       ),
     );
@@ -457,6 +464,57 @@ void main() {
           ),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'a task with documents gets the Documents band last, below pull '
+      'requests, reported off-screen and marked for the focus scroll; a task '
+      'without one gets no band',
+      (tester) async {
+        final tracking = testTask.copyWith(
+          data: testTask.data.copyWith(tracksPullRequests: true),
+        );
+        final focusKey = GlobalKey(debugLabel: 'documents');
+        await tester.pumpWidget(
+          buildSubject(
+            task: tracking,
+            documents: [
+              taskDocumentEntry(clock: {'a': 1}),
+            ],
+            documentsFocusKey: focusKey,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final keys = tester
+            .widgetList<ViewportStableSizeReporter>(
+              find.byType(ViewportStableSizeReporter),
+            )
+            .map((reporter) => (reporter.key! as ValueKey<String>).value)
+            .toList();
+        expect(keys.last, 'documents-size-reporter-${testTask.meta.id}');
+        expect(
+          keys[keys.length - 2],
+          'pull-requests-size-reporter-${testTask.meta.id}',
+        );
+        expect(
+          reporterFor(tester, find.byType(TaskDocumentsSection)).offscreenOnly,
+          isTrue,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(focusKey),
+            matching: find.byType(TaskDocumentsSection),
+          ),
+          findsOneWidget,
+        );
+
+        // A fresh scope: overrides are read once, when a scope mounts.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(buildSubject(task: tracking));
+        await tester.pumpAndSettle();
+        expect(find.byType(TaskDocumentsSection), findsNothing);
       },
     );
 

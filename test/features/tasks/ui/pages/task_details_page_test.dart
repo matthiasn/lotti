@@ -26,6 +26,8 @@ import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/checklist/ui/correction_undo_snackbar.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/state/task_document_providers.dart';
+import 'package:lotti/features/documents/ui/task_documents_section.dart';
 import 'package:lotti/features/github/ui/task_pull_requests_section.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -56,6 +58,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../classes/task_document_fixtures.dart';
 import '../../../../helpers/fake_linked_entries_controller.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/path_provider.dart';
@@ -1073,6 +1076,68 @@ void main() {
           isNull,
         );
         // Brought up towards the top, by exactly the distance scrolled.
+        expect(position.pixels, greaterThan(0));
+        final top = tester.getTopLeft(section).dy;
+        expect(top, closeTo(before - position.pixels, 0.5));
+        expect(top, greaterThanOrEqualTo(0));
+        expect(top, lessThan(viewportBottom));
+      },
+    );
+
+    testWidgets(
+      'documents focus intent scrolls the Documents section into view',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: withServiceOverrides([
+              ...hTaskDetailsPageOverrides(),
+              taskDocumentsProvider(
+                testTask.id,
+              ).overrideWith(
+                (ref) => [
+                  taskDocumentEntry(clock: {'a': 1}),
+                ],
+              ),
+            ]),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final section = find.byType(
+          TaskDocumentsSection,
+          skipOffstage: false,
+        );
+        expect(section, findsOneWidget);
+        final position = Scrollable.of(tester.element(section)).position;
+        expect(position.pixels, 0);
+        final before = tester.getTopLeft(section).dy;
+        final viewportBottom = tester.view.physicalSize.height;
+        expect(before, greaterThan(0.1 * viewportBottom));
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(TaskDetailsPage)),
+        );
+        container
+            .read(taskFocusControllerProvider(testTask.id).notifier)
+            .publishDocumentsFocus();
+        for (
+          var i = 0;
+          i < 10 &&
+              container.read(taskFocusControllerProvider(testTask.id)) != null;
+          i++
+        ) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(taskFocusControllerProvider(testTask.id)),
+          isNull,
+        );
         expect(position.pixels, greaterThan(0));
         final top = tester.getTopLeft(section).dy;
         expect(top, closeTo(before - position.pixels, 0.5));

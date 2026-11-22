@@ -18285,6 +18285,49 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskDetailRetry => 'Zkusit znovu';
 
   @override
+  String get taskDocumentsAddAction => 'Napsat dokument';
+
+  @override
+  String get taskDocumentsAddActionHint =>
+      'Přidá dokument v Markdownu, který můžeš upravit a zkopírovat.';
+
+  @override
+  String get taskDocumentsCopied => 'Markdown zkopírován';
+
+  @override
+  String get taskDocumentsCopy => 'Kopírovat Markdown';
+
+  @override
+  String get taskDocumentsEdit => 'Upravit dokument';
+
+  @override
+  String get taskDocumentsNew => 'Nový dokument';
+
+  @override
+  String get taskDocumentsNoText => 'Zatím bez textu';
+
+  @override
+  String get taskDocumentsStale =>
+      'Tento dokument se mezitím změnil. Zkopíruj svůj text, zavři ho a otevři znovu.';
+
+  @override
+  String get taskDocumentsTextHint => 'Piš v Markdownu';
+
+  @override
+  String get taskDocumentsTextLabel => 'Text';
+
+  @override
+  String get taskDocumentsTitle => 'Dokumenty';
+
+  @override
+  String get taskDocumentsTitleLabel => 'Název';
+
+  @override
+  String taskDocumentsVersion(int number) {
+    return 'v$number';
+  }
+
+  @override
   String get taskDueDateLabel => 'Datum splnění';
 
   @override

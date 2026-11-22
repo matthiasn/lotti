@@ -483,7 +483,7 @@ A task does not show the Pull requests section by default. The "+" of the
 task's action bar opens the Add sheet, which offers **Pull request tracking**
 while tracking is available and the task shows no section yet
 (`TrackPullRequestsItem`, offered through `pullRequestTrackingAction` in
-journal's `JournalDetailSlots.taskCreateAction`). It sets `TaskData.tracksPullRequests`
+journal's `JournalDetailSlots.taskCreateActions`, after the documents row). It sets `TaskData.tracksPullRequests`
 (`PullRequestRepository.track`, written on the task as stored, and not
 written at all when it is set already), then asks the page to scroll to the
 section (`TaskFocusTarget.pullRequests`), which retries until the section

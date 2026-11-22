@@ -18115,6 +18115,49 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskDetailRetry => 'Opnieuw proberen';
 
   @override
+  String get taskDocumentsAddAction => 'Een document schrijven';
+
+  @override
+  String get taskDocumentsAddActionHint =>
+      'Voegt een Markdown-document toe dat je kunt herzien en kopiëren.';
+
+  @override
+  String get taskDocumentsCopied => 'Markdown gekopieerd';
+
+  @override
+  String get taskDocumentsCopy => 'Markdown kopiëren';
+
+  @override
+  String get taskDocumentsEdit => 'Document bewerken';
+
+  @override
+  String get taskDocumentsNew => 'Nieuw document';
+
+  @override
+  String get taskDocumentsNoText => 'Nog geen tekst';
+
+  @override
+  String get taskDocumentsStale =>
+      'Dit document is gewijzigd terwijl je het bewerkte. Kopieer je tekst, sluit het en open het opnieuw.';
+
+  @override
+  String get taskDocumentsTextHint => 'Schrijf in Markdown';
+
+  @override
+  String get taskDocumentsTextLabel => 'Tekst';
+
+  @override
+  String get taskDocumentsTitle => 'Documenten';
+
+  @override
+  String get taskDocumentsTitleLabel => 'Titel';
+
+  @override
+  String taskDocumentsVersion(int number) {
+    return 'v$number';
+  }
+
+  @override
   String get taskDueDateLabel => 'Vervaldatum';
 
   @override

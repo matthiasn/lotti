@@ -11669,6 +11669,64 @@
   "@taskDetailRetry": {
     "description": "Action on the task page's load-failed state."
   },
+  "taskDocumentsAddAction": "Write a document",
+  "@taskDocumentsAddAction": {
+    "description": "Add-sheet row on a task that creates a markdown document."
+  },
+  "taskDocumentsAddActionHint": "Adds a markdown document you can revise and copy out.",
+  "@taskDocumentsAddActionHint": {
+    "description": "Subtitle of the add-sheet row that creates a task document."
+  },
+  "taskDocumentsCopied": "Markdown copied",
+  "@taskDocumentsCopied": {
+    "description": "Toast after a document's markdown was copied."
+  },
+  "taskDocumentsCopy": "Copy markdown",
+  "@taskDocumentsCopy": {
+    "description": "Action on a document row that copies the current version's markdown."
+  },
+  "taskDocumentsEdit": "Edit document",
+  "@taskDocumentsEdit": {
+    "description": "Title of the editor for an existing task document."
+  },
+  "taskDocumentsNew": "New document",
+  "@taskDocumentsNew": {
+    "description": "Title of the editor for a new task document, and the section's add button label."
+  },
+  "taskDocumentsNoText": "No text yet",
+  "@taskDocumentsNoText": {
+    "description": "Document row subtitle while the document has no version yet."
+  },
+  "taskDocumentsStale": "This document changed while you were editing. Copy your text, then close and open it again.",
+  "@taskDocumentsStale": {
+    "description": "Editor error: the document changed on this or another device while it was being edited, so the save was refused."
+  },
+  "taskDocumentsTextHint": "Write in markdown",
+  "@taskDocumentsTextHint": {
+    "description": "Hint in an empty task document text field."
+  },
+  "taskDocumentsTextLabel": "Text",
+  "@taskDocumentsTextLabel": {
+    "description": "Label of a task document's markdown text field."
+  },
+  "taskDocumentsTitle": "Documents",
+  "@taskDocumentsTitle": {
+    "description": "Title of the task page's Documents section."
+  },
+  "taskDocumentsTitleLabel": "Title",
+  "@taskDocumentsTitleLabel": {
+    "description": "Label of a task document's title field."
+  },
+  "taskDocumentsVersion": "v{number}",
+  "@taskDocumentsVersion": {
+    "description": "Short label of a document version number, e.g. v3.",
+    "placeholders": {
+      "number": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
   "taskDueDateLabel": "Due date",
   "taskDueDateWithDate": "Due: {date}",
   "@taskDueDateWithDate": {

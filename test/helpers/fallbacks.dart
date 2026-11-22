@@ -35,6 +35,7 @@ import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/classes/task_document_data.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
@@ -331,6 +332,7 @@ void registerAllFallbackValues() {
     ),
   );
   registerFallbackValue(Future<void>.value());
+  registerFallbackValue(TaskDocumentAuthor.user);
   const fallbackRegister = EmbeddingRegister(
     entityId: 'fallback',
     modelId: 'fallback',

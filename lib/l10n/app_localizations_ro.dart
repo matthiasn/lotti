@@ -18406,6 +18406,49 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskDetailRetry => 'Încercați din nou';
 
   @override
+  String get taskDocumentsAddAction => 'Scrieți un document';
+
+  @override
+  String get taskDocumentsAddActionHint =>
+      'Adaugă un document Markdown pe care îl puteți revizui și copia.';
+
+  @override
+  String get taskDocumentsCopied => 'Markdown copiat';
+
+  @override
+  String get taskDocumentsCopy => 'Copiați Markdown';
+
+  @override
+  String get taskDocumentsEdit => 'Editați documentul';
+
+  @override
+  String get taskDocumentsNew => 'Document nou';
+
+  @override
+  String get taskDocumentsNoText => 'Încă nu există text';
+
+  @override
+  String get taskDocumentsStale =>
+      'Acest document s-a modificat în timp ce îl editați. Copiați textul, apoi închideți-l și deschideți-l din nou.';
+
+  @override
+  String get taskDocumentsTextHint => 'Scrieți în Markdown';
+
+  @override
+  String get taskDocumentsTextLabel => 'Text';
+
+  @override
+  String get taskDocumentsTitle => 'Documente';
+
+  @override
+  String get taskDocumentsTitleLabel => 'Titlu';
+
+  @override
+  String taskDocumentsVersion(int number) {
+    return 'v$number';
+  }
+
+  @override
   String get taskDueDateLabel => 'Data scadenței';
 
   @override

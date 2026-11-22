@@ -5,9 +5,25 @@ description: Markdown documents a task holds, drafted and revised by its agent t
 resource: ../../lib/features/documents
 tags: [documents, tasks, agents, proposals, markdown, versions, review]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-22T21:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-22T23:30:00Z }
 stale_after: 2027-04-03
 sources:
+  - id: section
+    resource: ../../lib/features/documents/ui/task_documents_section.dart
+    title: TaskDocumentsSection and TaskDocumentRow
+    last_modified: 2026-11-22
+  - id: editor
+    resource: ../../lib/features/documents/ui/task_document_editor.dart
+    title: TaskDocumentEditor
+    last_modified: 2026-11-22
+  - id: add-row
+    resource: ../../lib/features/documents/ui/new_document_item.dart
+    title: NewDocumentItem and newDocumentAction
+    last_modified: 2026-11-22
+  - id: providers
+    resource: ../../lib/features/documents/state/task_document_providers.dart
+    title: taskDocumentsProvider
+    last_modified: 2026-11-22
   - id: repository
     resource: ../../lib/features/documents/repository/task_document_repository.dart
     title: TaskDocumentRepository
@@ -78,12 +94,14 @@ sources:
 
 > **Partly built.** This concept describes the design agreed in
 > [ADR 0166](../../docs/adr/0166-task-documents-are-journal-entries-revised-by-proposal.md).
-> What runs today: the two journal variants, their row mapping, the merge
-> of concurrent document rows and the repository that writes them
-> ([Entities](#entities), [The repository](#the-repository) and
-> [Merging across devices](#merging-across-devices)). Nothing in the app
-> calls the repository yet. Each implementation step rewrites the part it
-> lands, and the page moves to `stable` when the last part does.
+> What runs today: the two journal variants, their merge, the repository,
+> and the first UI — the task's Documents section, the "Write a document"
+> row in the Add sheet, and an editor for a document's title and text
+> ([Entities](#entities), [The repository](#the-repository),
+> [Where it shows](#where-it-shows)). The document page, its history and
+> side-by-side review, and the agent and chat paths are not built yet. Each
+> implementation step rewrites the part it lands, and the page moves to
+> `stable` when the last part does.
 
 A task can hold several markdown documents, such as a client one-pager, a
 meeting summary or a follow-up email. The task agent drafts and revises them
@@ -260,20 +278,38 @@ A device on an older build skips both variants as undeserializable.
 
 ## Where it shows
 
-- **Task section.** A "Documents" band in
+- **Task section.**
+  [`TaskDocumentsSection`](../../lib/features/documents/ui/task_documents_section.dart)
+  is the last band of
   [`task_form.dart`](../../lib/features/tasks/ui/task_form.dart), after
-  linked tasks and pull requests. It shows once the user adds it from the
-  task's "+" sheet or the task holds a document, the same rule the pull
-  request section follows. Each row shows the title, version, author and
-  time, a marker when a proposal is waiting, and a Copy action.
-- **Document page.** The current version at the prose measure, with a
+  linked tasks and pull requests. It shows only while the task holds a
+  document (`taskDocumentsProvider`, the task's live linked entries, oldest
+  first), so it never stands empty and needs no opt-in flag. Each row shows
+  the title, then `v3 · 2 h ago` or "No text yet"; Copy puts the current
+  version's markdown on the clipboard and is offered only once there is
+  one; tapping the row opens the editor. The header's + opens the editor
+  for a new document.
+- **Add sheet.** `NewDocumentItem`, wired into
+  `JournalDetailSlots.taskCreateActions` ahead of pull request tracking, is
+  always offered on a task. It closes the sheet and opens the editor.
+- **Editor.**
+  [`TaskDocumentEditor`](../../lib/features/documents/ui/task_document_editor.dart),
+  a modal with the title and a plain markdown text box. It opens on the
+  current version, read again rather than taken from the row. Save writes
+  only what changed: a new title renames, new text is `writeVersion` over
+  the version it opened on, by the user. A `stale` result keeps the modal
+  open with the typed text and says the document changed meanwhile. A new
+  document is created on the first save (a version only when there is
+  text), publishes `TaskFocusTarget.documents` so the page scrolls to the
+  band, and a retry after a failed text write never creates it twice.
+- **Document page** (not built yet). The current version at the prose measure, with a
   provenance line, any waiting proposal above the text, Edit (a plain
   markdown text box), History, and "Ask for changes", which opens the
   task's chat with the document in context.
-- **Chat card.** In task chat, a proposed version is a short card (title,
+- **Chat card** (not built yet). In task chat, a proposed version is a short card (title,
   change summary, Open, dismiss, confirm). Chat never shows the full text.
 
-### Side-by-side review (desktop)
+### Side-by-side review (desktop, not built yet)
 
 Reviewing a proposal is a mode of the document page. The current version is
 on the left and the proposed one on the right, aligned block by block

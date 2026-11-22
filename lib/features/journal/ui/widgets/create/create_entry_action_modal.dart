@@ -105,12 +105,15 @@ class _CreateEntryMenuList extends ConsumerWidget {
             )
             .value ??
         false;
-    // Offered on a task without a Pull requests section, while this device
-    // may start tracking pull requests; once the section is there it is the
-    // way in, and the row stands down.
-    final taskAction = id != null && hostIsTask
-        ? ref.watch(journalDetailSlotsProvider).taskCreateAction?.call(ref, id)
-        : null;
+    // Rows the features above the journal offer on a task — a document, and
+    // pull request tracking while the task has no section for it yet. Each
+    // builder decides whether its row shows.
+    final taskActions = [
+      if (id != null && hostIsTask)
+        for (final action
+            in ref.watch(journalDetailSlotsProvider).taskCreateActions)
+          ?action(ref, id),
+    ];
 
     return DsActionModalList(
       children: [
@@ -145,7 +148,7 @@ class _CreateEntryMenuList extends ConsumerWidget {
             categoryId: categoryId,
             analysisTrigger: imageAnalysisTrigger,
           ),
-        ?taskAction,
+        ...taskActions,
       ],
     );
   }

@@ -18054,6 +18054,49 @@ class AppLocalizationsDa extends AppLocalizations {
   String get taskDetailRetry => 'Prøv igen';
 
   @override
+  String get taskDocumentsAddAction => 'Skriv et dokument';
+
+  @override
+  String get taskDocumentsAddActionHint =>
+      'Tilføjer et Markdown-dokument, som du kan redigere og kopiere ud.';
+
+  @override
+  String get taskDocumentsCopied => 'Markdown kopieret';
+
+  @override
+  String get taskDocumentsCopy => 'Kopiér Markdown';
+
+  @override
+  String get taskDocumentsEdit => 'Rediger dokument';
+
+  @override
+  String get taskDocumentsNew => 'Nyt dokument';
+
+  @override
+  String get taskDocumentsNoText => 'Ingen tekst endnu';
+
+  @override
+  String get taskDocumentsStale =>
+      'Dokumentet blev ændret, mens du redigerede det. Kopiér din tekst, luk det og åbn det igen.';
+
+  @override
+  String get taskDocumentsTextHint => 'Skriv i Markdown';
+
+  @override
+  String get taskDocumentsTextLabel => 'Tekst';
+
+  @override
+  String get taskDocumentsTitle => 'Dokumenter';
+
+  @override
+  String get taskDocumentsTitleLabel => 'Titel';
+
+  @override
+  String taskDocumentsVersion(int number) {
+    return 'v$number';
+  }
+
+  @override
   String get taskDueDateLabel => 'Forfaldsdato';
 
   @override

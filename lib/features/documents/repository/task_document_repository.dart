@@ -6,6 +6,18 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/write_on_stored.dart';
 
+/// The live documents among [linked], oldest first (ties by id), so a new
+/// document joins the end of its task's section and none moves.
+List<TaskDocumentEntry> liveTaskDocuments(Iterable<JournalEntity> linked) =>
+    linked
+        .whereType<TaskDocumentEntry>()
+        .where((document) => !document.isDeleted)
+        .toList()
+      ..sort((a, b) {
+        final byCreation = a.meta.createdAt.compareTo(b.meta.createdAt);
+        return byCreation != 0 ? byCreation : a.id.compareTo(b.id);
+      });
+
 /// What [TaskDocumentRepository.writeVersion] came to.
 enum TaskDocumentWriteStatus {
   /// The version is stored and the document shows it.
@@ -53,14 +65,7 @@ class TaskDocumentRepository {
   /// The live documents linked from task [taskId], oldest first, so a new
   /// document joins the end of the task's section and none moves.
   Future<List<TaskDocumentEntry>> forTask(String taskId) async =>
-      (await _db.getLinkedEntities(taskId))
-          .whereType<TaskDocumentEntry>()
-          .where((document) => !document.isDeleted)
-          .toList()
-        ..sort((a, b) {
-          final byCreation = a.meta.createdAt.compareTo(b.meta.createdAt);
-          return byCreation != 0 ? byCreation : a.id.compareTo(b.id);
-        });
+      liveTaskDocuments(await _db.getLinkedEntities(taskId));
 
   /// Document [documentId] as stored now, or null once it is deleted.
   Future<TaskDocumentEntry?> document(String documentId) async {

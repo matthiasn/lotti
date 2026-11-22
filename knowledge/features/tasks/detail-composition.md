@@ -62,8 +62,15 @@ sources:
 
 `TaskForm` stacks the reading bands in a deliberate order: the identity header,
 the optional legacy body (set off by a hairline rule and `sectionGap`), then
-the `AiSummaryCard`, and finally the user's **own work** (`ChecklistsWidget`,
-`LinkedTasksWidget`).
+the `AiSummaryCard`, then the user's **own work** (`ChecklistsWidget`,
+`LinkedTasksWidget`), and last the two bands that appear only when they have
+something to hold: `TaskPullRequestsSection` once the task tracks pull
+requests ([GitHub pull requests](../github.md)), and `TaskDocumentsSection`
+while the task holds a document ([Task documents](../documents.md)). Each of
+those two is a band only when shown — the entrance staggers by position, so a
+band that renders nothing would still delay it — and each sits under a focus
+key the page scrolls to when the user turns it on (`TaskFocusTarget.pullRequests`,
+`TaskFocusTarget.documents`).
 
 The AI card renders **directly below the header** so a reader lands on "what
 is this task about and where does it stand" before scrolling into the work.
@@ -616,7 +623,7 @@ three region-adapter modes over one `ViewportStableScrollController`:
 |---------|-----------|
 | `ViewportStableAnimatedSize` | Animates generated entry text and nested AI-response height, arming only when the region is fully above the viewport |
 | `ViewportStableSizeReporter` | No motion — used by the header band and the AI card band while a suggestion-resolution hold is armed, because their content already owns its own animations. Whichever edge the page pins lies *below* both bands, so their deltas are absorbed unconditionally |
-| `ViewportStableSizeReporter(offscreenOnly: true)` | Wraps the checklist and linked-tasks bands, reporting only while the page armed the hold with `includeOffscreenRegions` — i.e. while the card is fully above the viewport and `_belowCardAnchor` pins the linked-entries seam. While the card is visible, a checklist or linked task growing *below* it is the visible reflow — new content appearing, only what lies under it moving |
+| `ViewportStableSizeReporter(offscreenOnly: true)` | Wraps the checklist, linked-tasks, pull-request and documents bands, reporting only while the page armed the hold with `includeOffscreenRegions` — i.e. while the card is fully above the viewport and `_belowCardAnchor` pins the linked-entries seam. While the card is visible, a checklist or linked task growing *below* it is the visible reflow — new content appearing, only what lies under it moving |
 
 The animated adapter measures its bottom edge in the containing viewport's own
 coordinate space. It does not traverse route transforms above that viewport:

@@ -7,6 +7,9 @@ enum TaskFocusTarget {
 
   /// The task's Pull requests section.
   pullRequests,
+
+  /// The task's Documents section.
+  documents,
 }
 
 /// Intent to focus a specific surface within a task.
@@ -27,6 +30,12 @@ class TaskFocusIntent {
     required this.taskId,
     this.alignment = 0.1,
   }) : target = TaskFocusTarget.pullRequests,
+       entryId = null;
+
+  TaskFocusIntent.documents({
+    required this.taskId,
+    this.alignment = 0.1,
+  }) : target = TaskFocusTarget.documents,
        entryId = null;
 
   /// The task ID containing the entry
@@ -50,6 +59,8 @@ class TaskFocusIntent {
         'TaskFocusIntent.suggestions(taskId: $taskId, alignment: $alignment)',
       TaskFocusTarget.pullRequests =>
         'TaskFocusIntent.pullRequests(taskId: $taskId, alignment: $alignment)',
+      TaskFocusTarget.documents =>
+        'TaskFocusIntent.documents(taskId: $taskId, alignment: $alignment)',
     };
   }
 }
@@ -95,6 +106,14 @@ class TaskFocusController extends Notifier<TaskFocusIntent?> {
   /// Publish a focus intent for the task's Pull requests section.
   void publishPullRequestsFocus({double alignment = 0.1}) {
     state = TaskFocusIntent.pullRequests(
+      taskId: id,
+      alignment: alignment,
+    );
+  }
+
+  /// Publish a focus intent for the task's Documents section.
+  void publishDocumentsFocus({double alignment = 0.1}) {
+    state = TaskFocusIntent.documents(
       taskId: id,
       alignment: alignment,
     );

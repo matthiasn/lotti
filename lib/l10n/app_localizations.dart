@@ -29951,6 +29951,84 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get taskDetailRetry;
 
+  /// Add-sheet row on a task that creates a markdown document.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a document'**
+  String get taskDocumentsAddAction;
+
+  /// Subtitle of the add-sheet row that creates a task document.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds a markdown document you can revise and copy out.'**
+  String get taskDocumentsAddActionHint;
+
+  /// Toast after a document's markdown was copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Markdown copied'**
+  String get taskDocumentsCopied;
+
+  /// Action on a document row that copies the current version's markdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy markdown'**
+  String get taskDocumentsCopy;
+
+  /// Title of the editor for an existing task document.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit document'**
+  String get taskDocumentsEdit;
+
+  /// Title of the editor for a new task document, and the section's add button label.
+  ///
+  /// In en, this message translates to:
+  /// **'New document'**
+  String get taskDocumentsNew;
+
+  /// Document row subtitle while the document has no version yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No text yet'**
+  String get taskDocumentsNoText;
+
+  /// Editor error: the document changed on this or another device while it was being edited, so the save was refused.
+  ///
+  /// In en, this message translates to:
+  /// **'This document changed while you were editing. Copy your text, then close and open it again.'**
+  String get taskDocumentsStale;
+
+  /// Hint in an empty task document text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Write in markdown'**
+  String get taskDocumentsTextHint;
+
+  /// Label of a task document's markdown text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get taskDocumentsTextLabel;
+
+  /// Title of the task page's Documents section.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get taskDocumentsTitle;
+
+  /// Label of a task document's title field.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get taskDocumentsTitleLabel;
+
+  /// Short label of a document version number, e.g. v3.
+  ///
+  /// In en, this message translates to:
+  /// **'v{number}'**
+  String taskDocumentsVersion(int number);
+
   /// No description provided for @taskDueDateLabel.
   ///
   /// In en, this message translates to:

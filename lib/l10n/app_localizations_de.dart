@@ -18193,6 +18193,49 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskDetailRetry => 'Erneut versuchen';
 
   @override
+  String get taskDocumentsAddAction => 'Dokument schreiben';
+
+  @override
+  String get taskDocumentsAddActionHint =>
+      'Fügt ein Markdown-Dokument hinzu, das du überarbeiten und herauskopieren kannst.';
+
+  @override
+  String get taskDocumentsCopied => 'Markdown kopiert';
+
+  @override
+  String get taskDocumentsCopy => 'Markdown kopieren';
+
+  @override
+  String get taskDocumentsEdit => 'Dokument bearbeiten';
+
+  @override
+  String get taskDocumentsNew => 'Neues Dokument';
+
+  @override
+  String get taskDocumentsNoText => 'Noch kein Text';
+
+  @override
+  String get taskDocumentsStale =>
+      'Dieses Dokument hat sich geändert, während du es bearbeitet hast. Kopiere deinen Text, schließe es und öffne es erneut.';
+
+  @override
+  String get taskDocumentsTextHint => 'In Markdown schreiben';
+
+  @override
+  String get taskDocumentsTextLabel => 'Text';
+
+  @override
+  String get taskDocumentsTitle => 'Dokumente';
+
+  @override
+  String get taskDocumentsTitleLabel => 'Titel';
+
+  @override
+  String taskDocumentsVersion(int number) {
+    return 'v$number';
+  }
+
+  @override
   String get taskDueDateLabel => 'Fälligkeitsdatum';
 
   @override

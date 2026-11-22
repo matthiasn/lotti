@@ -31,7 +31,7 @@ typedef TaskCreateActionBuilder =
     Widget? Function(WidgetRef ref, String taskId);
 
 /// The widgets journal surfaces show for things higher features own: tasks,
-/// checklists, events and pull requests.
+/// checklists, events, pull requests and documents.
 ///
 /// Journal ranks below those features, so it cannot import their widgets;
 /// the composition root fills these slots instead. An unfilled slot renders
@@ -44,7 +44,7 @@ class JournalDetailSlots {
     this.checklistBody,
     this.checklistItemBody,
     this.linkedFromChecklist,
-    this.taskCreateAction,
+    this.taskCreateActions = const [],
   });
 
   final TaskDetailPageBuilder? taskDetailPage;
@@ -52,7 +52,10 @@ class JournalDetailSlots {
   final ChecklistBodyBuilder? checklistBody;
   final ChecklistItemBodyBuilder? checklistItemBody;
   final LinkedFromChecklistBuilder? linkedFromChecklist;
-  final TaskCreateActionBuilder? taskCreateAction;
+
+  /// Extra rows the create-entry list offers on a task, in this order, each
+  /// left out when its builder returns null.
+  final List<TaskCreateActionBuilder> taskCreateActions;
 }
 
 /// The [JournalDetailSlots] the composition root wires.
