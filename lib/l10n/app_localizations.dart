@@ -15678,6 +15678,12 @@ abstract class AppLocalizations {
   /// **'Your goals didn\'t load.'**
   String get goalsLoadFailed;
 
+  /// Screen-reader label of one goal check-in row: its kind, its time and what was said.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind}, {time}. {text}'**
+  String goalTimelineRowLabel(String kind, String time, String text);
+
   /// A goal's first next step in the Today card.
   ///
   /// In en, this message translates to:

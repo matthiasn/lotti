@@ -3721,6 +3721,7 @@
   "goalReportSectionStanding": "Cómo va",
   "goalReportSectionWindow": "La ventana más amplia",
   "goalsLoadFailed": "Tus objetivos no se cargaron.",
+  "goalTimelineRowLabel": "{kind}, {time}. {text}",
   "goalTodayBriefingNext": "Siguiente: {step}",
   "goalTodayBriefingTitle": "Hoy",
   "goalTryAgain": "Inténtalo de nuevo",

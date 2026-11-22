@@ -6340,6 +6340,21 @@
   "@goalsLoadFailed": {
     "description": "Goals list: the first load of the goals failed."
   },
+  "goalTimelineRowLabel": "{kind}, {time}. {text}",
+  "@goalTimelineRowLabel": {
+    "description": "Screen-reader label of one goal check-in row: its kind, its time and what was said.",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
   "goalTodayBriefingNext": "Next: {step}",
   "@goalTodayBriefingNext": {
     "description": "A goal's first next step in the Today card.",

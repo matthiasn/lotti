@@ -4045,6 +4045,7 @@
   "goalReportSectionStanding": "Hoe het ervoor staat",
   "goalReportSectionWindow": "Het bredere venster",
   "goalsLoadFailed": "Je doelen zijn niet geladen.",
+  "goalTimelineRowLabel": "{kind}, {time}. {text}",
   "goalTodayBriefingNext": "Volgende: {step}",
   "goalTodayBriefingTitle": "Vandaag",
   "goalTryAgain": "Opnieuw proberen",

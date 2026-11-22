@@ -9378,6 +9378,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalsLoadFailed => 'Dina mål kunde inte laddas.';
 
   @override
+  String goalTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
   String goalTodayBriefingNext(String step) {
     return 'Nästa: $step';
   }

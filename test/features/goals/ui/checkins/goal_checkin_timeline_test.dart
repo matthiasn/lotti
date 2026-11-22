@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_timeline.dart';
 import 'package:lotti/features/speech/ui/widgets/recording_playback.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/transcript/folded_words.dart';
@@ -120,6 +122,63 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a row speaks as one sentence with its words, as a person row '
+      'does', (tester) async {
+    final handle = tester.ensureSemantics();
+    final written = JournalEntry(
+      meta: meta('n1', today),
+      entryText: const EntryText(plainText: 'Packed the gym bag.'),
+    );
+    await pump(tester, [GoalTextCheckIn(written)]);
+
+    expect(
+      find.bySemanticsLabel(RegExp(r'Packed the gym bag\.$')),
+      findsWidgets,
+    );
+    handle.dispose();
+  });
+
+  testWidgets('the day heading turns over at midnight with no write', (
+    tester,
+  ) async {
+    final written = JournalEntry(
+      meta: meta('n1', today),
+      entryText: const EntryText(plainText: 'Packed the gym bag.'),
+    );
+    var now = today.add(const Duration(hours: 3));
+    await withClock(Clock(() => now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: SingleChildScrollView(
+              child: GoalCheckInTimeline(agentId: 'goal-1'),
+            ),
+          ),
+          overrides: [
+            goalTimelineItemsProvider(
+              'goal-1',
+            ).overrideWithValue([GoalTextCheckIn(written)]),
+            goalCheckInsLoadProvider(
+              'goal-1',
+            ).overrideWithValue(GoalCheckInsLoad.settled),
+          ],
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Today'), findsOneWidget);
+
+      // Midnight passes: only the day provider re-emits.
+      now = today.add(const Duration(days: 1, hours: 1));
+      ProviderScope.containerOf(
+        tester.element(find.byType(GoalCheckInTimeline)),
+      ).invalidate(taskDueDayProvider);
+      await tester.pump();
+    });
+
+    expect(find.text('Today'), findsNothing);
+    expect(find.text('Yesterday'), findsOneWidget);
   });
 
   testWidgets('a check-in with no time on it offers to add some', (

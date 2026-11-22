@@ -69,6 +69,7 @@ import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/ui/playback_failure_toast.dart';
@@ -311,6 +312,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // The page's this-week card, day strips and Today / Yesterday turn over
+    // at midnight with no write to say so: rebuild when the day turns.
+    ref.watch(taskDueDayProvider);
     final identityAsync = ref.watch(agentIdentityProvider(agentId));
     final healthAsync = ref.watch(goalAgentHealthProvider(agentId));
     final agentState = ref.watch(agentStateProvider(agentId)).value;

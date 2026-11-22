@@ -9469,6 +9469,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalsLoadFailed => 'As tuas metas não foram carregadas.';
 
   @override
+  String goalTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
   String goalTodayBriefingNext(String step) {
     return 'A seguir: $step';
   }

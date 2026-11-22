@@ -4046,6 +4046,7 @@
   "goalReportSectionStanding": "Sådan står det",
   "goalReportSectionWindow": "Det bredere vindue",
   "goalsLoadFailed": "Dine mål blev ikke indlæst.",
+  "goalTimelineRowLabel": "{kind}, {time}. {text}",
   "goalTodayBriefingNext": "Næste: {step}",
   "goalTodayBriefingTitle": "I dag",
   "goalTryAgain": "Prøv igen",

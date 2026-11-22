@@ -3728,6 +3728,7 @@
   "goalReportSectionStanding": "Jak to vypadá",
   "goalReportSectionWindow": "Širší okno",
   "goalsLoadFailed": "Tvoje cíle se nenačetly.",
+  "goalTimelineRowLabel": "{kind}, {time}. {text}",
   "goalTodayBriefingNext": "Dál: {step}",
   "goalTodayBriefingTitle": "Dnes",
   "goalTryAgain": "Zkusit znovu",

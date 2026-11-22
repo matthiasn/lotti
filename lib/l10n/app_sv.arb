@@ -4046,6 +4046,7 @@
   "goalReportSectionStanding": "Hur det ligger till",
   "goalReportSectionWindow": "Det bredare fönstret",
   "goalsLoadFailed": "Dina mål kunde inte laddas.",
+  "goalTimelineRowLabel": "{kind}, {time}. {text}",
   "goalTodayBriefingNext": "Nästa: {step}",
   "goalTodayBriefingTitle": "Idag",
   "goalTryAgain": "Försök igen",

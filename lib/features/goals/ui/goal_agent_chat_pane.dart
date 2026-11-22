@@ -15,6 +15,7 @@ import 'package:lotti/features/goals/state/goal_dictation_provider.dart';
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:lotti/features/goals/ui/goal_record_offer_card.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -61,6 +62,8 @@ class GoalAgentChatPane extends ConsumerWidget {
         : null;
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
+    // The day words below are cut against today: rebuild when it turns.
+    ref.watch(taskDueDayProvider);
     final now = clock.now();
     final shortDay = DateFormat.E(locale);
     final longDay = DateFormat.EEEE(locale);

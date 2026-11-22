@@ -9532,6 +9532,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalsLoadFailed => 'Obiectivele dumneavoastră nu s-au încărcat.';
 
   @override
+  String goalTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
   String goalTodayBriefingNext(String step) {
     return 'Următorul pas: $step';
   }

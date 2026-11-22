@@ -4045,6 +4045,7 @@
   "goalReportSectionStanding": "Como estás",
   "goalReportSectionWindow": "A janela mais ampla",
   "goalsLoadFailed": "As tuas metas não foram carregadas.",
+  "goalTimelineRowLabel": "{kind}, {time}. {text}",
   "goalTodayBriefingNext": "A seguir: {step}",
   "goalTodayBriefingTitle": "Hoje",
   "goalTryAgain": "Tentar novamente",

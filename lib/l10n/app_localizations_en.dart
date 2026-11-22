@@ -9324,6 +9324,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalsLoadFailed => 'Your goals didn\'t load.';
 
   @override
+  String goalTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
   String goalTodayBriefingNext(String step) {
     return 'Next: $step';
   }

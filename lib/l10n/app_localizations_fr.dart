@@ -9508,6 +9508,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalsLoadFailed => 'Tes objectifs n’ont pas pu être chargés.';
 
   @override
+  String goalTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
   String goalTodayBriefingNext(String step) {
     return 'Ensuite : $step';
   }

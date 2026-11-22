@@ -4046,6 +4046,7 @@
   "goalReportSectionStanding": "A che punto sei",
   "goalReportSectionWindow": "La finestra più ampia",
   "goalsLoadFailed": "I tuoi obiettivi non sono stati caricati.",
+  "goalTimelineRowLabel": "{kind}, {time}. {text}",
   "goalTodayBriefingNext": "Prossimo: {step}",
   "goalTodayBriefingTitle": "Oggi",
   "goalTryAgain": "Riprova",

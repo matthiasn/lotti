@@ -3721,6 +3721,7 @@
   "goalReportSectionStanding": "Cum stați",
   "goalReportSectionWindow": "Fereastra mai largă",
   "goalsLoadFailed": "Obiectivele dumneavoastră nu s-au încărcat.",
+  "goalTimelineRowLabel": "{kind}, {time}. {text}",
   "goalTodayBriefingNext": "Următorul pas: {step}",
   "goalTodayBriefingTitle": "Astăzi",
   "goalTryAgain": "Încercați din nou",

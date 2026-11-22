@@ -9478,6 +9478,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalsLoadFailed => 'Tvoje cíle se nenačetly.';
 
   @override
+  String goalTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
   String goalTodayBriefingNext(String step) {
     return 'Dál: $step';
   }

@@ -21,6 +21,7 @@ import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_duration.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording_playback.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme_text_styles.dart';
@@ -87,6 +88,9 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
   @override
   Widget build(BuildContext context) {
     final items = ref.watch(goalTimelineItemsProvider(widget.agentId));
+    // The day headings say Today and Yesterday: rebuild when the day turns,
+    // as the person timeline does.
+    ref.watch(taskDueDayProvider);
     _nextGraceExpiry = null;
     if (items.isEmpty) {
       // An empty list is only "no check-ins yet" once the history has been
@@ -268,7 +272,11 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
           key: ValueKey('goal-checkin-row-${checkIn.id}'),
           leading: const DesignSystemTimelineTile(icon: LottiIcons.mic),
           meta: _meta(context, time, kind),
-          semanticsLabel: '$kind, $time',
+          semanticsLabel: messages.goalTimelineRowLabel(
+            kind,
+            time,
+            checkIn.transcript?.trim() ?? '',
+          ),
           // The time this check-in counts for, correctable in place — the
           // recording's own length until the user says otherwise.
           trailing: GoalCheckInTimeChip(checkIn: checkIn),
@@ -303,7 +311,11 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
           key: ValueKey('goal-checkin-row-${checkIn.id}'),
           leading: const DesignSystemTimelineTile(icon: LottiIcons.note),
           meta: _meta(context, time, kind),
-          semanticsLabel: '$kind, $time',
+          semanticsLabel: messages.goalTimelineRowLabel(
+            kind,
+            time,
+            checkIn.text.trim(),
+          ),
           trailing: GoalCheckInTimeChip(checkIn: checkIn),
           body: FoldedWords(id: checkIn.id, words: checkIn.text.trim()),
           onTap: () => _open(checkIn.id),
@@ -324,8 +336,13 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
             icon: dayVerdictGlyph(record.rating),
           ),
           meta: _meta(context, time, kind),
-          semanticsLabel:
-              '$kind, $time, ${dayVerdictLabel(context, record.rating)}',
+          semanticsLabel: messages.goalTimelineRowLabel(
+            kind,
+            time,
+            note == null || note.isEmpty
+                ? dayVerdictLabel(context, record.rating)
+                : '${dayVerdictLabel(context, record.rating)}. $note',
+          ),
           // No "Rated by you"-style attribution — the provenance stays on
           // the record, it is not day-to-day reading.
           trailing: _VerdictPill(rating: record.rating),
