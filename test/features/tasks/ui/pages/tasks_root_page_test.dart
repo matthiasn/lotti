@@ -8,6 +8,8 @@ import 'package:lotti/features/design_system/components/navigation/desktop_detai
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/state/task_document_providers.dart';
+import 'package:lotti/features/documents/ui/task_document_page.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
@@ -26,6 +28,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../classes/task_document_fixtures.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
@@ -34,8 +37,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late FakeJournalPageController fakeController;
+  late ValueNotifier<({String taskId, String documentId})?> desktopDocument;
 
   setUp(() async {
+    desktopDocument = ValueNotifier(null);
+    addTearDown(desktopDocument.dispose);
     await setUpTestGetIt(
       additionalSetup: () {
         final mockUserActivityService = MockUserActivityService();
@@ -49,6 +55,9 @@ void main() {
         when(
           () => mockNavService.desktopTaskDetailStack,
         ).thenReturn(ValueNotifier<List<String>>(const <String>[]));
+        when(
+          () => mockNavService.desktopTaskDocument,
+        ).thenReturn(desktopDocument);
         getIt
           ..registerSingleton<NavService>(mockNavService)
           ..registerSingleton<EntitiesCacheService>(
@@ -184,6 +193,93 @@ void main() {
 
     // Dispose the widget tree and flush pending timers from
     // flutter_animate inside the detail page.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+    'a document opened over the selected task covers it in the pane, the task '
+    'kept mounted beneath, and closing it shows the task again',
+    (tester) async {
+      fakeController = FakeJournalPageController(state());
+      final navService = getIt<NavService>() as MockNavService;
+      when(() => navService.desktopTaskDetailStack).thenReturn(
+        ValueNotifier<List<String>>(<String>['task-42']),
+      );
+      const key = (taskId: 'task-42', documentId: 'doc-1');
+      desktopDocument.value = key;
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const TasksRootPage(),
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => fakeController),
+            taskDocumentProvider(key).overrideWith(
+              (ref) => taskDocumentEntry(clock: {'a': 1}, id: 'doc-1'),
+            ),
+            taskDocumentCurrentVersionProvider(
+              key,
+            ).overrideWith((ref) async => null),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(TaskDocumentPage), findsOneWidget);
+      expect(find.byType(TaskDetailsPage), findsNothing);
+      expect(
+        find.byType(TaskDetailsPage, skipOffstage: false),
+        findsOneWidget,
+      );
+      final detailState = tester.state(
+        find.byType(TaskDetailsPage, skipOffstage: false),
+      );
+
+      tester.widget<TaskDocumentPage>(find.byType(TaskDocumentPage)).onClose!();
+      await tester.pump();
+
+      expect(desktopDocument.value, isNull);
+      expect(find.byType(TaskDocumentPage), findsNothing);
+      expect(find.byType(TaskDetailsPage), findsOneWidget);
+      // The same page, not a rebuilt one: its scroll position survived.
+      expect(tester.state(find.byType(TaskDetailsPage)), same(detailState));
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets('a document of another task leaves the selected task showing', (
+    tester,
+  ) async {
+    fakeController = FakeJournalPageController(state());
+    final navService = getIt<NavService>() as MockNavService;
+    when(() => navService.desktopTaskDetailStack).thenReturn(
+      ValueNotifier<List<String>>(<String>['task-42']),
+    );
+    desktopDocument.value = (taskId: 'task-other', documentId: 'doc-1');
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const TasksRootPage(),
+        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        overrides: [
+          journalPageScopeProvider.overrideWithValue(true),
+          journalPageControllerProvider(
+            true,
+          ).overrideWith(() => fakeController),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(TaskDocumentPage), findsNothing);
+    expect(find.byType(TaskDetailsPage), findsOneWidget);
+
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   });

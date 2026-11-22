@@ -29975,11 +29975,59 @@ abstract class AppLocalizations {
   /// **'Copy markdown'**
   String get taskDocumentsCopy;
 
+  /// Button on a document page that copies its markdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get taskDocumentsCopyAction;
+
+  /// Marks the version a document shows in its version history.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get taskDocumentsCurrent;
+
+  /// Body of the confirmation before deleting a document.
+  ///
+  /// In en, this message translates to:
+  /// **'The document and all its versions are removed from this task, on every device.'**
+  String get taskDocumentsDeleteMessage;
+
+  /// Title of the confirmation before deleting a document.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this document?'**
+  String get taskDocumentsDeleteTitle;
+
+  /// Who wrote a document version: the task agent drafted it and the user confirmed it.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafted by the agent, confirmed by you'**
+  String get taskDocumentsDraftedByAgent;
+
   /// Title of the editor for an existing task document.
   ///
   /// In en, this message translates to:
   /// **'Edit document'**
   String get taskDocumentsEdit;
+
+  /// Button on a document page that opens the editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get taskDocumentsEditAction;
+
+  /// Shown on a document page whose document was deleted while it was open.
+  ///
+  /// In en, this message translates to:
+  /// **'This document was deleted.'**
+  String get taskDocumentsGone;
+
+  /// Button on a document page, and title of the sheet listing its versions.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get taskDocumentsHistory;
 
   /// Title of the editor for a new task document, and the section's add button label.
   ///
@@ -29992,6 +30040,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No text yet'**
   String get taskDocumentsNoText;
+
+  /// Button that writes an older version's text as the document's newest version.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore this version'**
+  String get taskDocumentsRestore;
+
+  /// Toast after an older version was restored.
+  ///
+  /// In en, this message translates to:
+  /// **'Version restored'**
+  String get taskDocumentsRestored;
+
+  /// Who wrote a document version: the user restored an older version's text.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored by you'**
+  String get taskDocumentsRestoredByYou;
+
+  /// Toast: the restore was refused because a newer version arrived while the user was looking.
+  ///
+  /// In en, this message translates to:
+  /// **'A newer version arrived meanwhile. Look at it, then restore again.'**
+  String get taskDocumentsRestoreStale;
 
   /// Editor error: the document changed on this or another device while it was being edited, so the save was refused.
   ///
@@ -30028,6 +30100,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'v{number}'**
   String taskDocumentsVersion(int number);
+
+  /// Who wrote a document version: the user, by hand.
+  ///
+  /// In en, this message translates to:
+  /// **'Written by you'**
+  String get taskDocumentsWrittenByYou;
 
   /// No description provided for @taskDueDateLabel.
   ///

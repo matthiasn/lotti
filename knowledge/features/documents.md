@@ -5,9 +5,25 @@ description: Markdown documents a task holds, drafted and revised by its agent t
 resource: ../../lib/features/documents
 tags: [documents, tasks, agents, proposals, markdown, versions, review]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-22T23:30:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-23T02:00:00Z }
 stale_after: 2027-04-03
 sources:
+  - id: page
+    resource: ../../lib/features/documents/ui/task_document_page.dart
+    title: TaskDocumentPage
+    last_modified: 2026-11-23
+  - id: history
+    resource: ../../lib/features/documents/ui/task_document_history.dart
+    title: TaskDocumentHistory and TaskDocumentVersionView
+    last_modified: 2026-11-23
+  - id: navigation
+    resource: ../../lib/features/documents/ui/task_document_navigation.dart
+    title: openTaskDocument
+    last_modified: 2026-11-23
+  - id: tasks-location
+    resource: ../../lib/beamer/locations/tasks_location.dart
+    title: The /tasks/:taskId/documents/:documentId route
+    last_modified: 2026-11-23
   - id: section
     resource: ../../lib/features/documents/ui/task_documents_section.dart
     title: TaskDocumentsSection and TaskDocumentRow
@@ -95,11 +111,11 @@ sources:
 > **Partly built.** This concept describes the design agreed in
 > [ADR 0166](../../docs/adr/0166-task-documents-are-journal-entries-revised-by-proposal.md).
 > What runs today: the two journal variants, their merge, the repository,
-> and the first UI — the task's Documents section, the "Write a document"
-> row in the Add sheet, and an editor for a document's title and text
-> ([Entities](#entities), [The repository](#the-repository),
-> [Where it shows](#where-it-shows)). The document page, its history and
-> side-by-side review, and the agent and chat paths are not built yet. Each
+> and the user's side of the UI — the task's Documents section, the "Write a
+> document" row in the Add sheet, the editor, and the document page with its
+> history, restore and delete ([Entities](#entities),
+> [The repository](#the-repository), [Where it shows](#where-it-shows)).
+> Side-by-side review and the agent and chat paths are not built yet. Each
 > implementation step rewrites the part it lands, and the page moves to
 > `stable` when the last part does.
 
@@ -287,8 +303,8 @@ A device on an older build skips both variants as undeserializable.
   first), so it never stands empty and needs no opt-in flag. Each row shows
   the title, then `v3 · 2 h ago` or "No text yet"; Copy puts the current
   version's markdown on the clipboard and is offered only once there is
-  one; tapping the row opens the editor. The header's + opens the editor
-  for a new document.
+  one; tapping the row opens the document page. The header's + opens the
+  editor for a new document.
 - **Add sheet.** `NewDocumentItem`, wired into
   `JournalDetailSlots.taskCreateActions` ahead of pull request tracking, is
   always offered on a task. It closes the sheet and opens the editor.
@@ -302,12 +318,54 @@ A device on an older build skips both variants as undeserializable.
   document is created on the first save (a version only when there is
   text), publishes `TaskFocusTarget.documents` so the page scrolls to the
   band, and a retry after a failed text write never creates it twice.
-- **Document page** (not built yet). The current version at the prose measure, with a
-  provenance line, any waiting proposal above the text, Edit (a plain
-  markdown text box), History, and "Ask for changes", which opens the
-  task's chat with the document in context.
+- **Document page.**
+  [`TaskDocumentPage`](../../lib/features/documents/ui/task_document_page.dart):
+  the title, a provenance line ("v2 · Drafted by the agent, confirmed by you
+  · 2 h ago"), Edit, Copy, History and Delete, then the text rendered by
+  `AgentMarkdownView` at `kProseMeasureWidth`. It reads
+  `taskDocumentCurrentVersionProvider`, which re-reads only when the
+  document moves to another version (a rename reads nothing) and keeps the
+  version on show while the next loads, so the text is replaced in place.
+  A document deleted while open says so. Delete asks first, then deletes
+  the document with its versions and leaves the page. The delete button is
+  neutral ink, not teal.
+- **History.**
+  [`TaskDocumentHistory`](../../lib/features/documents/ui/task_document_history.dart)
+  lists the versions newest first, the current one marked. Opening one shows
+  its text; an older one offers Restore, which writes its text as the next
+  version over the one on show (`restore` with that `baseVersionId`). A
+  refused restore says a newer version arrived; a written one closes the
+  version view and the new version joins the list.
 - **Chat card** (not built yet). In task chat, a proposed version is a short card (title,
   change summary, Open, dismiss, confirm). Chat never shows the full text.
+
+### How the page opens
+
+[`openTaskDocument`](../../lib/features/documents/ui/task_document_navigation.dart)
+follows the rule `openLinkedTaskDetail` follows for a linked task:
+
+- **Desktop**, from the detail pane: `NavService.desktopTaskDocument` names
+  the document, and `TasksRootPage` shows it over its task. The task page
+  stays mounted beneath — offstage, tickers paused, focus excluded — so
+  closing returns to it with its scroll position. The task stack is not
+  touched: it still names the task, which the list highlight and the chat
+  scope read.
+- **Phone**, or from a pushed page: the page is pushed; back pops it.
+- **Deep link** `/tasks/:taskId/documents/:documentId`
+  ([`tasks_location.dart`](../../lib/beamer/locations/tasks_location.dart)):
+  on a phone the document page is stacked over the task page; on desktop the
+  pane opens it over the task, and a URL naming only the task returns the
+  pane to the task. History records it as a visit to the task.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Task
+  Task --> Document: openTaskDocument, or the document route
+  Document --> Task: back arrow (onClose)
+  Document --> Task: the task route without a document
+  Document --> OtherTask: another task selected, the document closes
+  OtherTask --> Task: the task selected again
+```
 
 ### Side-by-side review (desktop, not built yet)
 

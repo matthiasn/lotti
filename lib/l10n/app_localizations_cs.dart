@@ -18298,13 +18298,51 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskDocumentsCopy => 'Kopírovat Markdown';
 
   @override
+  String get taskDocumentsCopyAction => 'Kopírovat';
+
+  @override
+  String get taskDocumentsCurrent => 'Aktuální';
+
+  @override
+  String get taskDocumentsDeleteMessage =>
+      'Dokument a všechny jeho verze budou z tohoto úkolu odstraněny na všech zařízeních.';
+
+  @override
+  String get taskDocumentsDeleteTitle => 'Smazat tento dokument?';
+
+  @override
+  String get taskDocumentsDraftedByAgent => 'Navrženo agentem, potvrzeno tebou';
+
+  @override
   String get taskDocumentsEdit => 'Upravit dokument';
+
+  @override
+  String get taskDocumentsEditAction => 'Upravit';
+
+  @override
+  String get taskDocumentsGone => 'Tento dokument byl smazán.';
+
+  @override
+  String get taskDocumentsHistory => 'Historie';
 
   @override
   String get taskDocumentsNew => 'Nový dokument';
 
   @override
   String get taskDocumentsNoText => 'Zatím bez textu';
+
+  @override
+  String get taskDocumentsRestore => 'Obnovit tuto verzi';
+
+  @override
+  String get taskDocumentsRestored => 'Verze obnovena';
+
+  @override
+  String get taskDocumentsRestoredByYou => 'Obnoveno tebou';
+
+  @override
+  String get taskDocumentsRestoreStale =>
+      'Mezitím přibyla novější verze. Podívej se na ni a pak obnov znovu.';
 
   @override
   String get taskDocumentsStale =>
@@ -18326,6 +18364,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByYou => 'Napsáno tebou';
 
   @override
   String get taskDueDateLabel => 'Datum splnění';

@@ -18128,13 +18128,52 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskDocumentsCopy => 'Markdown kopiëren';
 
   @override
+  String get taskDocumentsCopyAction => 'Kopiëren';
+
+  @override
+  String get taskDocumentsCurrent => 'Huidig';
+
+  @override
+  String get taskDocumentsDeleteMessage =>
+      'Het document en al zijn versies worden op al je apparaten uit deze taak verwijderd.';
+
+  @override
+  String get taskDocumentsDeleteTitle => 'Dit document verwijderen?';
+
+  @override
+  String get taskDocumentsDraftedByAgent =>
+      'Opgesteld door de agent, bevestigd door jou';
+
+  @override
   String get taskDocumentsEdit => 'Document bewerken';
+
+  @override
+  String get taskDocumentsEditAction => 'Bewerken';
+
+  @override
+  String get taskDocumentsGone => 'Dit document is verwijderd.';
+
+  @override
+  String get taskDocumentsHistory => 'Geschiedenis';
 
   @override
   String get taskDocumentsNew => 'Nieuw document';
 
   @override
   String get taskDocumentsNoText => 'Nog geen tekst';
+
+  @override
+  String get taskDocumentsRestore => 'Deze versie herstellen';
+
+  @override
+  String get taskDocumentsRestored => 'Versie hersteld';
+
+  @override
+  String get taskDocumentsRestoredByYou => 'Door jou hersteld';
+
+  @override
+  String get taskDocumentsRestoreStale =>
+      'Er is intussen een nieuwere versie. Bekijk die en herstel daarna opnieuw.';
 
   @override
   String get taskDocumentsStale =>
@@ -18156,6 +18195,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByYou => 'Door jou geschreven';
 
   @override
   String get taskDueDateLabel => 'Vervaldatum';

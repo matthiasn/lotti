@@ -893,6 +893,25 @@ void main() {
         expect(navService.desktopSelectedTaskId.value, 'linked');
       });
 
+      test(
+        'a document open over its task closes when another task is '
+        'selected, and stays open while its own task is',
+        () {
+          final navService = getIt<NavService>()
+            ..resetDesktopTaskDetail('base');
+          navService.desktopTaskDocument.value = (
+            taskId: 'base',
+            documentId: 'doc',
+          );
+
+          navService.resetDesktopTaskDetail('base');
+          expect(navService.desktopTaskDocument.value?.documentId, 'doc');
+
+          navService.pushDesktopTaskDetail('linked');
+          expect(navService.desktopTaskDocument.value, isNull);
+        },
+      );
+
       test('pushDesktopTaskDetail ignores the already visible task', () {
         final navService = getIt<NavService>()
           ..resetDesktopTaskDetail('base')

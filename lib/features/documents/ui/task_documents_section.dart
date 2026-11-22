@@ -1,16 +1,15 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
-import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
+import 'package:lotti/features/documents/ui/task_document_copy.dart';
 import 'package:lotti/features/documents/ui/task_document_editor.dart';
+import 'package:lotti/features/documents/ui/task_document_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/relative_age_label.dart';
 import 'package:material_ui/material_ui.dart';
@@ -28,9 +27,9 @@ abstract final class TaskDocumentsSectionKeys {
 ///
 /// `TaskForm` shows it only while the task holds a document: the "Add" sheet
 /// is the way to the first one, so the section never stands empty. Each
-/// document is a row with its version and age; tapping it opens the editor,
-/// and its Copy action puts the current version's markdown on the
-/// clipboard.
+/// document is a row with its version and age; tapping it opens the
+/// document page, and its Copy action puts the current version's markdown
+/// on the clipboard.
 class TaskDocumentsSection extends ConsumerWidget {
   const TaskDocumentsSection({required this.taskId, super.key});
 
@@ -122,9 +121,9 @@ class TaskDocumentsSection extends ConsumerWidget {
 }
 
 /// One document of a task: its title, then its version and how long ago it
-/// was written — or that it has no text yet. Tapping it opens the editor;
-/// the Copy action copies the current version's markdown, and is offered
-/// only once there is one.
+/// was written — or that it has no text yet. Tapping it opens the document
+/// page; the Copy action copies the current version's markdown, and is
+/// offered only once there is one.
 class TaskDocumentRow extends ConsumerWidget {
   const TaskDocumentRow({
     required this.taskId,
@@ -145,22 +144,16 @@ class TaskDocumentRow extends ConsumerWidget {
       final version = await ref
           .read(taskDocumentRepositoryProvider)
           .currentVersion(document);
-      if (version == null) return;
-      await Clipboard.setData(ClipboardData(text: version.data.markdown));
-      if (!context.mounted) return;
-      context.showToast(
-        tone: DesignSystemToastTone.success,
-        title: messages.taskDocumentsCopied,
-        duration: const Duration(seconds: 2),
-      );
+      if (version == null || !context.mounted) return;
+      await copyTaskDocumentMarkdown(context, version.data.markdown);
     }
 
     return DesignSystemListItem(
       key: TaskDocumentsSectionKeys.row(document.id),
-      onTap: () async => showTaskDocumentEditor(
+      onTap: () => openTaskDocument(
         context,
         taskId: taskId,
-        document: document,
+        documentId: document.id,
       ),
       borderRadius: BorderRadius.circular(tokens.radii.m),
       title: document.data.title,

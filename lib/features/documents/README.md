@@ -7,7 +7,8 @@ proposal the user confirms or dismisses. The user can also edit by hand,
 restore an older version, and copy the markdown out.
 
 The feature is being built in steps (ADR 0166). Today a user can write a
-document by hand, edit it and copy it out; the agent does not draft yet.
+document by hand, read it, edit it, look back through its versions, restore
+one, delete it and copy it out; the agent does not draft yet.
 
 ## What it does
 
@@ -15,7 +16,11 @@ document by hand, edit it and copy it out; the agent does not draft yet.
   document: each one's title, version and age, with a Copy action that puts
   the current markdown on the clipboard. The Add sheet's "Write a document"
   row and the section's + open an editor for a new one; tapping a document
-  opens it in the editor.
+  opens its page.
+- **Shows a document on its own page**: its text, where the version came
+  from, Edit, Copy, its history of versions with Restore, and Delete. On
+  desktop the page opens over its task in the detail pane, which comes back
+  as it was on close; on a phone it is pushed.
 - **Keeps each document on its task.** A document is a `TaskDocumentEntry`
   linked from the task, in the task's category and with its private flag,
   so it syncs, filters and hides with the task.
@@ -35,8 +40,11 @@ document by hand, edit it and copy it out; the agent does not draft yet.
 It owns the document repository
 (`repository/task_document_repository.dart`): creating, writing versions,
 restoring, renaming and deleting. It owns the section
-(`ui/task_documents_section.dart`), the editor (`ui/task_document_editor.dart`)
-and the Add sheet row (`ui/new_document_item.dart`). The tasks feature places
+(`ui/task_documents_section.dart`), the editor (`ui/task_document_editor.dart`),
+the Add sheet row (`ui/new_document_item.dart`), and the document page with
+its history (`ui/task_document_page.dart`, `ui/task_document_history.dart`).
+The tasks feature shows the page in its detail pane, and the app shell routes
+`/tasks/:taskId/documents/:documentId` to it. The tasks feature places
 the section in its page, and the app shell wires the row into the journal's
 Add sheet through `JournalDetailSlots.taskCreateActions`.
 
@@ -46,8 +54,8 @@ indexed query on `JournalDb`, and `updateJournalEntity` merges two
 concurrent versions of a document with `mergeConcurrentTaskDocumentVersions`
 instead of raising a conflict.
 
-Still to come: the document page with its history, restore, delete and
-side-by-side review, and the agent and chat paths that propose versions.
+Still to come: the side-by-side review of a proposed version, and the agent
+and chat paths that propose versions.
 
 ## Where it sits
 

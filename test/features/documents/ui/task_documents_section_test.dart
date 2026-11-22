@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/task_document_editor.dart';
+import 'package:lotti/features/documents/ui/task_document_page.dart';
 import 'package:lotti/features/documents/ui/task_documents_section.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -117,19 +118,18 @@ void main() {
     },
   );
 
-  testWidgets('tapping a document opens it in the editor', (tester) async {
+  testWidgets('tapping a document opens its page', (tester) async {
     await pump(tester);
 
     await tester.tap(find.byKey(TaskDocumentsSectionKeys.row('doc-brief')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Edit document'), findsOneWidget);
-    expect(find.byType(TaskDocumentEditor), findsOneWidget);
-    expect(
-      find.text('# Launch brief\n\nAll 37 penguins present.'),
-      findsOneWidget,
+    final page = tester.widget<TaskDocumentPage>(
+      find.byType(TaskDocumentPage),
     );
+    expect(page.taskId, taskId);
+    expect(page.documentId, 'doc-brief');
   });
 
   testWidgets('the add button opens the editor for a new document', (

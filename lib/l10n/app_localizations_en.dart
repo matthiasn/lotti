@@ -17966,13 +17966,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskDocumentsCopy => 'Copy markdown';
 
   @override
+  String get taskDocumentsCopyAction => 'Copy';
+
+  @override
+  String get taskDocumentsCurrent => 'Current';
+
+  @override
+  String get taskDocumentsDeleteMessage =>
+      'The document and all its versions are removed from this task, on every device.';
+
+  @override
+  String get taskDocumentsDeleteTitle => 'Delete this document?';
+
+  @override
+  String get taskDocumentsDraftedByAgent =>
+      'Drafted by the agent, confirmed by you';
+
+  @override
   String get taskDocumentsEdit => 'Edit document';
+
+  @override
+  String get taskDocumentsEditAction => 'Edit';
+
+  @override
+  String get taskDocumentsGone => 'This document was deleted.';
+
+  @override
+  String get taskDocumentsHistory => 'History';
 
   @override
   String get taskDocumentsNew => 'New document';
 
   @override
   String get taskDocumentsNoText => 'No text yet';
+
+  @override
+  String get taskDocumentsRestore => 'Restore this version';
+
+  @override
+  String get taskDocumentsRestored => 'Version restored';
+
+  @override
+  String get taskDocumentsRestoredByYou => 'Restored by you';
+
+  @override
+  String get taskDocumentsRestoreStale =>
+      'A newer version arrived meanwhile. Look at it, then restore again.';
 
   @override
   String get taskDocumentsStale =>
@@ -17994,6 +18033,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByYou => 'Written by you';
 
   @override
   String get taskDueDateLabel => 'Due date';

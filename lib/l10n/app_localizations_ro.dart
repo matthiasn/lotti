@@ -18419,13 +18419,52 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskDocumentsCopy => 'Copiați Markdown';
 
   @override
+  String get taskDocumentsCopyAction => 'Copiați';
+
+  @override
+  String get taskDocumentsCurrent => 'Actuală';
+
+  @override
+  String get taskDocumentsDeleteMessage =>
+      'Documentul și toate versiunile sale sunt eliminate din această sarcină, pe toate dispozitivele.';
+
+  @override
+  String get taskDocumentsDeleteTitle => 'Ștergeți acest document?';
+
+  @override
+  String get taskDocumentsDraftedByAgent =>
+      'Redactat de agent, confirmat de dvs.';
+
+  @override
   String get taskDocumentsEdit => 'Editați documentul';
+
+  @override
+  String get taskDocumentsEditAction => 'Editați';
+
+  @override
+  String get taskDocumentsGone => 'Acest document a fost șters.';
+
+  @override
+  String get taskDocumentsHistory => 'Istoric';
 
   @override
   String get taskDocumentsNew => 'Document nou';
 
   @override
   String get taskDocumentsNoText => 'Încă nu există text';
+
+  @override
+  String get taskDocumentsRestore => 'Restaurați această versiune';
+
+  @override
+  String get taskDocumentsRestored => 'Versiune restaurată';
+
+  @override
+  String get taskDocumentsRestoredByYou => 'Restaurat de dvs.';
+
+  @override
+  String get taskDocumentsRestoreStale =>
+      'Între timp a apărut o versiune mai nouă. Consultați-o, apoi restaurați din nou.';
 
   @override
   String get taskDocumentsStale =>
@@ -18447,6 +18486,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByYou => 'Scris de dvs.';
 
   @override
   String get taskDueDateLabel => 'Data scadenței';

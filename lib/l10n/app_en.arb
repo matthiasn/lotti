@@ -11685,9 +11685,41 @@
   "@taskDocumentsCopy": {
     "description": "Action on a document row that copies the current version's markdown."
   },
+  "taskDocumentsCopyAction": "Copy",
+  "@taskDocumentsCopyAction": {
+    "description": "Button on a document page that copies its markdown."
+  },
+  "taskDocumentsCurrent": "Current",
+  "@taskDocumentsCurrent": {
+    "description": "Marks the version a document shows in its version history."
+  },
+  "taskDocumentsDeleteMessage": "The document and all its versions are removed from this task, on every device.",
+  "@taskDocumentsDeleteMessage": {
+    "description": "Body of the confirmation before deleting a document."
+  },
+  "taskDocumentsDeleteTitle": "Delete this document?",
+  "@taskDocumentsDeleteTitle": {
+    "description": "Title of the confirmation before deleting a document."
+  },
+  "taskDocumentsDraftedByAgent": "Drafted by the agent, confirmed by you",
+  "@taskDocumentsDraftedByAgent": {
+    "description": "Who wrote a document version: the task agent drafted it and the user confirmed it."
+  },
   "taskDocumentsEdit": "Edit document",
   "@taskDocumentsEdit": {
     "description": "Title of the editor for an existing task document."
+  },
+  "taskDocumentsEditAction": "Edit",
+  "@taskDocumentsEditAction": {
+    "description": "Button on a document page that opens the editor."
+  },
+  "taskDocumentsGone": "This document was deleted.",
+  "@taskDocumentsGone": {
+    "description": "Shown on a document page whose document was deleted while it was open."
+  },
+  "taskDocumentsHistory": "History",
+  "@taskDocumentsHistory": {
+    "description": "Button on a document page, and title of the sheet listing its versions."
   },
   "taskDocumentsNew": "New document",
   "@taskDocumentsNew": {
@@ -11696,6 +11728,22 @@
   "taskDocumentsNoText": "No text yet",
   "@taskDocumentsNoText": {
     "description": "Document row subtitle while the document has no version yet."
+  },
+  "taskDocumentsRestore": "Restore this version",
+  "@taskDocumentsRestore": {
+    "description": "Button that writes an older version's text as the document's newest version."
+  },
+  "taskDocumentsRestored": "Version restored",
+  "@taskDocumentsRestored": {
+    "description": "Toast after an older version was restored."
+  },
+  "taskDocumentsRestoredByYou": "Restored by you",
+  "@taskDocumentsRestoredByYou": {
+    "description": "Who wrote a document version: the user restored an older version's text."
+  },
+  "taskDocumentsRestoreStale": "A newer version arrived meanwhile. Look at it, then restore again.",
+  "@taskDocumentsRestoreStale": {
+    "description": "Toast: the restore was refused because a newer version arrived while the user was looking."
   },
   "taskDocumentsStale": "This document changed while you were editing. Copy your text, then close and open it again.",
   "@taskDocumentsStale": {
@@ -11726,6 +11774,10 @@
         "example": "3"
       }
     }
+  },
+  "taskDocumentsWrittenByYou": "Written by you",
+  "@taskDocumentsWrittenByYou": {
+    "description": "Who wrote a document version: the user, by hand."
   },
   "taskDueDateLabel": "Due date",
   "taskDueDateWithDate": "Due: {date}",

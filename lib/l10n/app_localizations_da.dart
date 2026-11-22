@@ -18067,13 +18067,52 @@ class AppLocalizationsDa extends AppLocalizations {
   String get taskDocumentsCopy => 'Kopiér Markdown';
 
   @override
+  String get taskDocumentsCopyAction => 'Kopiér';
+
+  @override
+  String get taskDocumentsCurrent => 'Aktuel';
+
+  @override
+  String get taskDocumentsDeleteMessage =>
+      'Dokumentet og alle dets versioner fjernes fra denne opgave på alle enheder.';
+
+  @override
+  String get taskDocumentsDeleteTitle => 'Slet dette dokument?';
+
+  @override
+  String get taskDocumentsDraftedByAgent =>
+      'Udkast fra agenten, bekræftet af dig';
+
+  @override
   String get taskDocumentsEdit => 'Rediger dokument';
+
+  @override
+  String get taskDocumentsEditAction => 'Rediger';
+
+  @override
+  String get taskDocumentsGone => 'Dette dokument er slettet.';
+
+  @override
+  String get taskDocumentsHistory => 'Historik';
 
   @override
   String get taskDocumentsNew => 'Nyt dokument';
 
   @override
   String get taskDocumentsNoText => 'Ingen tekst endnu';
+
+  @override
+  String get taskDocumentsRestore => 'Gendan denne version';
+
+  @override
+  String get taskDocumentsRestored => 'Version gendannet';
+
+  @override
+  String get taskDocumentsRestoredByYou => 'Gendannet af dig';
+
+  @override
+  String get taskDocumentsRestoreStale =>
+      'Der er kommet en nyere version i mellemtiden. Se den, og gendan så igen.';
 
   @override
   String get taskDocumentsStale =>
@@ -18095,6 +18134,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByYou => 'Skrevet af dig';
 
   @override
   String get taskDueDateLabel => 'Forfaldsdato';

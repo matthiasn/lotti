@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
+import 'package:lotti/features/documents/ui/task_document_page.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
 import 'package:lotti/get_it.dart';
@@ -17,11 +18,17 @@ void main() {
     late MockBuildContext mockBuildContext;
 
     late MockNavService mockNavService;
+    late ValueNotifier<({String taskId, String documentId})?> desktopDocument;
 
     setUp(() {
       mockBuildContext = MockBuildContext();
       mockNavService = MockNavService();
+      desktopDocument = ValueNotifier(null);
+      addTearDown(desktopDocument.dispose);
       when(() => mockNavService.isDesktopMode).thenReturn(false);
+      when(
+        () => mockNavService.desktopTaskDocument,
+      ).thenReturn(desktopDocument);
       if (getIt.isRegistered<NavService>()) {
         getIt.unregister<NavService>();
       }
@@ -38,7 +45,11 @@ void main() {
       final location = TasksLocation(
         RouteInformation(uri: Uri.parse('/tasks')),
       );
-      expect(location.pathPatterns, ['/tasks', '/tasks/:taskId']);
+      expect(location.pathPatterns, [
+        '/tasks',
+        '/tasks/:taskId',
+        '/tasks/:taskId/documents/:documentId',
+      ]);
     });
 
     test('buildPages builds TasksRootPage', () {
@@ -81,6 +92,71 @@ void main() {
       expect(pages[1].child, isA<TaskDetailsPage>());
       final taskDetailsPage = pages[1].child as TaskDetailsPage;
       expect(taskDetailsPage.taskId, taskId);
+    });
+
+    group('a document of a task -', () {
+      final taskId = const Uuid().v4();
+      final documentId = const Uuid().v4();
+
+      BeamState stateFor(String path, Map<String, String> parameters) {
+        final state = BeamState.fromRouteInformation(
+          RouteInformation(uri: Uri.parse(path)),
+        );
+        return state.copyWith(
+          pathParameters: {...state.pathParameters, ...parameters},
+        );
+      }
+
+      test('on mobile stacks the document page over its task', () {
+        final path = '/tasks/$taskId/documents/$documentId';
+        final pages = TasksLocation(RouteInformation(uri: Uri.parse(path)))
+            .buildPages(
+              mockBuildContext,
+              stateFor(path, {'taskId': taskId, 'documentId': documentId}),
+            );
+
+        expect(pages, hasLength(3));
+        expect((pages[1].child as TaskDetailsPage).taskId, taskId);
+        final page = pages[2].child as TaskDocumentPage;
+        expect(page.taskId, taskId);
+        expect(page.documentId, documentId);
+      });
+
+      testWidgets(
+        'on desktop opens it over its task in the pane, and a URL naming '
+        'only the task returns the pane to the task',
+        (tester) async {
+          await tester.pumpWidget(const SizedBox.shrink());
+          when(() => mockNavService.isDesktopMode).thenReturn(true);
+          when(
+            () => mockNavService.resetDesktopTaskDetail(any()),
+          ).thenAnswer((_) {});
+
+          final path = '/tasks/$taskId/documents/$documentId';
+          final pages = TasksLocation(RouteInformation(uri: Uri.parse(path)))
+              .buildPages(
+                mockBuildContext,
+                stateFor(path, {'taskId': taskId, 'documentId': documentId}),
+              );
+          await tester.pump();
+
+          expect(pages, hasLength(1));
+          verify(() => mockNavService.resetDesktopTaskDetail(taskId)).called(1);
+          expect(desktopDocument.value, (
+            taskId: taskId,
+            documentId: documentId,
+          ));
+
+          TasksLocation(
+            RouteInformation(uri: Uri.parse('/tasks/$taskId')),
+          ).buildPages(
+            mockBuildContext,
+            stateFor('/tasks/$taskId', {'taskId': taskId}),
+          );
+          await tester.pump();
+          expect(desktopDocument.value, isNull);
+        },
+      );
     });
 
     testWidgets(

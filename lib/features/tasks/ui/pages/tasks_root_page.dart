@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/components/navigation/resizable_div
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/ui/task_document_page.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
@@ -120,7 +121,7 @@ class _TasksRootPageState extends ConsumerState<TasksRootPage> {
                       !(splitStarved && !queryOpen) &&
                       !queryNeedsListSpace);
               final detailChild = selectedTaskId != null
-                  ? TaskDetailsPage(
+                  ? _TaskWithDocument(
                       key: ValueKey(selectedTaskId),
                       taskId: selectedTaskId,
                     )
@@ -328,6 +329,50 @@ class _TaskPaneBody extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Task [taskId] in the detail pane, with the document
+/// `NavService.desktopTaskDocument` opened over it, if it belongs to this
+/// task.
+///
+/// The task page stays mounted beneath an open document — offstage, its
+/// tickers paused and out of focus — so closing the document returns to the
+/// task as it was, scroll position and all.
+class _TaskWithDocument extends ConsumerWidget {
+  const _TaskWithDocument({required this.taskId, super.key});
+
+  final String taskId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final navService = ref.read(navServiceProvider);
+    return ValueListenableBuilder<({String taskId, String documentId})?>(
+      valueListenable: navService.desktopTaskDocument,
+      builder: (context, open, task) {
+        final document = open?.taskId == taskId ? open : null;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            Offstage(
+              offstage: document != null,
+              child: TickerMode(
+                enabled: document == null,
+                child: ExcludeFocus(excluding: document != null, child: task!),
+              ),
+            ),
+            if (document != null)
+              TaskDocumentPage(
+                key: ValueKey(document.documentId),
+                taskId: taskId,
+                documentId: document.documentId,
+                onClose: () => navService.desktopTaskDocument.value = null,
+              ),
+          ],
+        );
+      },
+      child: TaskDetailsPage(taskId: taskId),
     );
   }
 }

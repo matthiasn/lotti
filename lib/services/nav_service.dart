@@ -41,6 +41,14 @@ class NavService {
     for (final spec in _tabSpecs) {
       spec.delegate.addListener(_schedulePersist);
     }
+    // A document is shown over its own task only: selecting another task
+    // closes it, so coming back to the first never reopens it unasked.
+    desktopSelectedTaskId.addListener(() {
+      final document = desktopTaskDocument.value;
+      if (document != null && document.taskId != desktopSelectedTaskId.value) {
+        desktopTaskDocument.value = null;
+      }
+    });
 
     // Watched flags come from `sectionFlags`, not from a list spelled out
     // here. Settings -> Sections renders that same constant and calls itself
@@ -149,6 +157,12 @@ class NavService {
   );
   final ValueNotifier<String?> desktopSelectedProjectId =
       ValueNotifier<String?>(null);
+
+  /// The task document the desktop detail pane shows over its task, which
+  /// stays mounted beneath; null while the task itself shows. Set by
+  /// `openTaskDocument` and the `/tasks/:taskId/documents/:documentId` route.
+  final ValueNotifier<({String taskId, String documentId})?>
+  desktopTaskDocument = ValueNotifier(null);
 
   /// Desktop split-pane People selection — the person whose page fills the
   /// right pane, or `null` for the empty state. Written exclusively by
@@ -959,6 +973,7 @@ class NavService {
     }
     desktopTaskDetailStack.dispose();
     desktopSelectedTaskId.dispose();
+    desktopTaskDocument.dispose();
     desktopSelectedProjectId.dispose();
     desktopSelectedRelationshipId.dispose();
     desktopRelationshipChatOpen.dispose();

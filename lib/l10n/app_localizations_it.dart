@@ -18297,13 +18297,52 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskDocumentsCopy => 'Copia Markdown';
 
   @override
+  String get taskDocumentsCopyAction => 'Copia';
+
+  @override
+  String get taskDocumentsCurrent => 'Attuale';
+
+  @override
+  String get taskDocumentsDeleteMessage =>
+      'Il documento e tutte le sue versioni vengono rimossi da questa attività, su tutti i dispositivi.';
+
+  @override
+  String get taskDocumentsDeleteTitle => 'Eliminare questo documento?';
+
+  @override
+  String get taskDocumentsDraftedByAgent =>
+      'Redatto dall\'agente, confermato da te';
+
+  @override
   String get taskDocumentsEdit => 'Modifica documento';
+
+  @override
+  String get taskDocumentsEditAction => 'Modifica';
+
+  @override
+  String get taskDocumentsGone => 'Questo documento è stato eliminato.';
+
+  @override
+  String get taskDocumentsHistory => 'Cronologia';
 
   @override
   String get taskDocumentsNew => 'Nuovo documento';
 
   @override
   String get taskDocumentsNoText => 'Ancora nessun testo';
+
+  @override
+  String get taskDocumentsRestore => 'Ripristina questa versione';
+
+  @override
+  String get taskDocumentsRestored => 'Versione ripristinata';
+
+  @override
+  String get taskDocumentsRestoredByYou => 'Ripristinato da te';
+
+  @override
+  String get taskDocumentsRestoreStale =>
+      'Nel frattempo è arrivata una versione più recente. Guardala, poi ripristina di nuovo.';
 
   @override
   String get taskDocumentsStale =>
@@ -18325,6 +18364,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByYou => 'Scritto da te';
 
   @override
   String get taskDueDateLabel => 'Data di scadenza';
