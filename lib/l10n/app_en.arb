@@ -1823,6 +1823,30 @@
   "aiResponseShowLess": "Show less",
   "aiResponseShowMore": "Show more",
   "aiRunningActivityOpenProgress": "Show AI progress",
+  "aiRunningAnalyzingImage": "Analyzing image",
+  "@aiRunningAnalyzingImage": {
+    "description": "Visible label on the AI-running band above a task's action bar, naming the job in flight."
+  },
+  "aiRunningGeneratingImage": "Generating image",
+  "@aiRunningGeneratingImage": {
+    "description": "Visible label on the AI-running band above a task's action bar, naming the job in flight."
+  },
+  "aiRunningSummarizingRecording": "Summarizing recording",
+  "@aiRunningSummarizingRecording": {
+    "description": "Visible label on the AI-running band above a task's action bar, naming the job in flight."
+  },
+  "aiRunningTranscribingAudio": "Transcribing audio",
+  "@aiRunningTranscribingAudio": {
+    "description": "Visible label on the AI-running band above a task's action bar, naming the job in flight."
+  },
+  "aiRunningWorking": "AI is working",
+  "@aiRunningWorking": {
+    "description": "Visible label on the AI-running band above a task's action bar, naming the job in flight."
+  },
+  "aiRunningWritingPrompt": "Writing a prompt",
+  "@aiRunningWritingPrompt": {
+    "description": "Visible label on the AI-running band above a task's action bar, naming the job in flight."
+  },
   "aiSettingsAddedLabel": "Added",
   "aiSettingsAddModelButton": "Add model",
   "aiSettingsAddModelErrorDescription": "Something went wrong while adding the model. Please try again.",
@@ -2006,8 +2030,16 @@
   "@aiSkillNoProfileConfigured": {
     "description": "Shown when an AI skill cannot run because the entry resolves to no inference profile"
   },
+  "aiSummaryLoadFailed": "Couldn't load this task's agent",
+  "@aiSummaryLoadFailed": {
+    "description": "Task page: the agent card's state when the task's agent could not be loaded."
+  },
   "aiSummaryPlayTooltip": "Play summary",
   "aiSummaryPreparingTooltip": "Preparing audio",
+  "aiSummaryRetry": "Try again",
+  "@aiSummaryRetry": {
+    "description": "Task page: the agent card's state when the task's agent could not be loaded."
+  },
   "aiSummarySpeakTooltip": "Read summary aloud locally",
   "aiSummaryStopTooltip": "Stop",
   "aiSummaryThinkingLabel": "Thinking…",
@@ -2273,7 +2305,7 @@
   "categoryNotFound": "Category not found",
   "categoryPrivateBadgeLabel": "Private",
   "categoryPrivateDescription": "Only visible when private entries are shown",
-  "categorySearchPlaceholder": "Search categories...",
+  "categorySearchPlaceholder": "Search categories…",
   "changeSetCardTitle": "Proposed changes",
   "changeSetConfirmAll": "Confirm all",
   "changeSetConfirmAllPartialIssues": "{count, plural, =1{1 item had partial issues} other{{count} items had partial issues}}",
@@ -2569,6 +2601,18 @@
   "checklistItemDeleteConfirm": "Confirm",
   "checklistItemDeleted": "Item deleted",
   "checklistItemDeleteWarning": "This action cannot be undone.",
+  "checklistItemSwipeArchive": "Archive",
+  "@checklistItemSwipeArchive": {
+    "description": "Label on the band revealed by swiping a checklist item."
+  },
+  "checklistItemSwipeDelete": "Delete",
+  "@checklistItemSwipeDelete": {
+    "description": "Label on the band revealed by swiping a checklist item."
+  },
+  "checklistItemSwipeRestore": "Restore",
+  "@checklistItemSwipeRestore": {
+    "description": "Label on the band revealed by swiping a checklist item."
+  },
   "checklistMarkdownCopied": "Checklist copied as Markdown",
   "checklistMoreTooltip": "More",
   "checklistNoneDone": "No completed items yet.",
@@ -4389,6 +4433,10 @@
   "designSystemStateMatrixTitle": "State Matrix",
   "designSystemSuccessLabel": "Success",
   "designSystemTabBarTitle": "Tab Bar",
+  "designSystemTabHeaderFiltersLabel": "Filters",
+  "@designSystemTabHeaderFiltersLabel": {
+    "description": "Chip under a tab's search field that opens the page's filters."
+  },
   "designSystemTabPendingLabel": "Pending",
   "designSystemTaskListBlockedLabel": "Blocked",
   "designSystemTaskListDefaultLabel": "Default",
@@ -4465,7 +4513,7 @@
   "editorDiscardChanges": "Discard changes",
   "editorInsertDivider": "Insert divider",
   "editorMoreFormatting": "More formatting",
-  "editorPlaceholder": "Enter notes...",
+  "editorPlaceholder": "Enter notes…",
   "embeddingModelCheckFailed": "Couldn't check the model on this device.",
   "embeddingModelDescription": "Search by meaning runs on this device. Download the model once to use it.",
   "embeddingModelDownloadAction": "Download",
@@ -7235,7 +7283,7 @@
   "linkedTasksEmptyAction": "Link a task…",
   "linkedTasksEmptyHint": "Connect this task to another task.",
   "linkedTasksMenuTooltip": "Linked tasks options",
-  "linkedTasksTitle": "Linked Tasks",
+  "linkedTasksTitle": "Linked tasks",
   "linkExistingTask": "Link existing task…",
   "linkExistingTaskTitle": "Link existing task",
   "@linkExistingTaskTitle": {
@@ -11425,7 +11473,19 @@
   "taskCategoryAllLabel": "all",
   "taskCategoryLabel": "Category:",
   "taskCategoryUnassignedLabel": "Unassigned",
-  "taskDueDateLabel": "Due Date",
+  "taskDetailLoadFailed": "Couldn't load this task",
+  "@taskDetailLoadFailed": {
+    "description": "Task page state when loading the task failed (not when it was deleted)."
+  },
+  "taskDetailNotFound": "This task no longer exists",
+  "@taskDetailNotFound": {
+    "description": "Task page title when the task it was opened for no longer exists."
+  },
+  "taskDetailRetry": "Try again",
+  "@taskDetailRetry": {
+    "description": "Action on the task page's load-failed state."
+  },
+  "taskDueDateLabel": "Due date",
   "taskDueDateWithDate": "Due: {date}",
   "@taskDueDateWithDate": {
     "placeholders": {
@@ -11442,9 +11502,9 @@
       }
     }
   },
-  "taskDueToday": "Due Today",
-  "taskDueTomorrow": "Due Tomorrow",
-  "taskDueYesterday": "Due Yesterday",
+  "taskDueToday": "Due today",
+  "taskDueTomorrow": "Due tomorrow",
+  "taskDueYesterday": "Due yesterday",
   "taskEditTitleLabel": "Edit task title",
   "taskEstimateLabel": "Estimate:",
   "taskEstimateModalTitle": "Estimate",
@@ -11597,8 +11657,8 @@
   "taskPriorityUrgent": "Urgent",
   "tasksAddLabelButton": "Add label",
   "tasksAgentFilterAll": "All",
-  "tasksAgentFilterHasAgent": "Has Agent",
-  "tasksAgentFilterNoAgent": "No Agent",
+  "tasksAgentFilterHasAgent": "Has agent",
+  "tasksAgentFilterNoAgent": "No agent",
   "tasksAgentFilterTitle": "Agent",
   "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filters}}",
   "@tasksCompactFilterCount": {
@@ -11633,6 +11693,31 @@
   "tasksDueViewsSemantics": "Due date views",
   "@tasksDueViewsSemantics": {
     "description": "Screen-reader label for the group of due-date smart views."
+  },
+  "tasksEmptyClearFilters": "Clear filters",
+  "@tasksEmptyClearFilters": {
+    "description": "Action on the filter-miss empty state that resets every filter."
+  },
+  "tasksEmptyClearSearch": "Clear search",
+  "@tasksEmptyClearSearch": {
+    "description": "Action on the search-miss empty state that clears the search."
+  },
+  "tasksEmptyFilterMiss": "No tasks match these filters",
+  "@tasksEmptyFilterMiss": {
+    "description": "Task list empty state when the active filters match no task."
+  },
+  "tasksEmptyNoOpenTasks": "No open tasks",
+  "@tasksEmptyNoOpenTasks": {
+    "description": "Task list empty state when nothing narrows the default open-work view and it is empty."
+  },
+  "tasksEmptySearchMiss": "Nothing matches “{query}”",
+  "@tasksEmptySearchMiss": {
+    "description": "Task list empty state when a search matches no task; {query} is the typed search.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
   },
   "taskSetCategoryLabel": "Set category",
   "taskSetDueDateLabel": "Set due date",
@@ -11697,15 +11782,19 @@
   "tasksLabelsUpdateFailed": "Failed to update labels",
   "tasksListCompactModeTooltip": "Compact list",
   "tasksListExpandedModeTooltip": "Detailed list",
+  "tasksListLoadFailed": "Couldn't load your tasks",
+  "@tasksListLoadFailed": {
+    "description": "Task list error state when tasks could not be loaded."
+  },
+  "tasksListRetry": "Try again",
+  "@tasksListRetry": {
+    "description": "Action on the task list error state that loads the tasks again."
+  },
   "tasksPriorityFilterAll": "All",
   "tasksPriorityFilterTitle": "Priority",
-  "tasksPriorityP0": "Urgent",
   "tasksPriorityP0Description": "Urgent (ASAP)",
-  "tasksPriorityP1": "High",
   "tasksPriorityP1Description": "High (Soon)",
-  "tasksPriorityP2": "Medium",
   "tasksPriorityP2Description": "Medium (Default)",
-  "tasksPriorityP3": "Low",
   "tasksPriorityP3Description": "Low (Whenever)",
   "tasksPriorityPickerTitle": "Select priority",
   "tasksQuickFilterUnassignedLabel": "Unassigned",
@@ -11844,14 +11933,14 @@
   "tasksShowCreationDate": "Show creation date on cards",
   "tasksShowDueDate": "Show due date on cards",
   "tasksSortByCreationDate": "Created",
-  "tasksSortByDueDate": "Due Date",
+  "tasksSortByDueDate": "Due date",
   "tasksSortByLabel": "Sort by",
   "tasksSortByPriority": "Priority",
   "taskStatusAll": "All",
   "taskStatusBlocked": "Blocked",
   "taskStatusDone": "Done",
   "taskStatusGroomed": "Groomed",
-  "taskStatusInProgress": "In Progress",
+  "taskStatusInProgress": "In progress",
   "taskStatusLabel": "Status:",
   "taskStatusOnHold": "On Hold",
   "taskStatusOpen": "Open",

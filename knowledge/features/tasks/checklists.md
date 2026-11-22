@@ -286,21 +286,29 @@ task-done beat) and on system reduce-motion.
 does, honoured by passing `onCelebrate: null`. Every beat fires only on the
 not-done → done transition.
 
-# The checkbox is 20×20 inside a 44×44 target
+# The checkbox is one square inside a 44×44 target
 
-The compact visual is centred inside a 44×44 `InkWell`, clearing the Material and
-WCAG touch-target minimum without enlarging the box — users with reduced motor
-precision can hit the surrounding ring instead of aiming at the tiny square.
+The row's checkbox is the design system's `DesignSystemCheckbox`
+(`ControlSizes.checkbox`), centred inside a `TapTargets.compact` (44) `InkWell` —
+clearing the touch-target minimum without enlarging the box, so users with
+reduced motor precision can hit the surrounding ring instead of aiming at the
+square. **Both the box and the ring route through the row's single
+`applyCheck` handler**, so toggle behaviour stays in one place. The ring lights
+up under a pointer or a press.
 
-A centre tap lands on the `Checkbox` itself, keeping its native gesture and
-accessibility semantics; the ring is caught by the `InkWell`. **Both route through
-the row's single `applyCheck` handler**, so toggle behaviour stays in one place.
+It used to sit in a resting circular "well" that made the target visible at rest
+— which drew a square inside a circle, two shapes for one control. The well is
+gone; the target is not.
 
-The 44 px zone draws a faint resting "well" — a `surface.enabled` fill with a
-`decorative.level02` border, the same filled-and-bordered language as the metadata
-chips — so **the forgiving tap area is visible at rest**. On touch there is no
-hover, so a hover-only highlight left it invisible exactly where most users tap.
-The `InkWell` still carries a `hoverColor` for pointer devices.
+# Filters and swipes are the design system's
+
+Open / Done / All are `DesignSystemChip`s (compact pill) on the card's leading
+edge — a filter control, not a filled tab band. A row swipes through
+`DesignSystemSwipeActions`: right archives (or restores an archived item), left
+deletes with the undo window described above; each revealed band names its
+action, and the row snaps back while its own state does the rest. The trigger
+distance is the shared `DesignSystemSwipeActions.threshold`. The AI completion
+suggestion opens as a `DsActionModal` with a `DesignSystemModalActionBar`.
 
 The drag-grip icon sits at a low 0.2 alpha (a long-press anywhere on the row
 starts the drag), so the repeating grip texture does not compete with the checkbox

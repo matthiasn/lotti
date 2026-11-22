@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:material_ui/material_ui.dart';
@@ -257,7 +258,7 @@ void main() {
           tester.getSize(find.byType(RowActions)),
           Size(expected, RowActions.buttonSize),
         );
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(DesignSystemSpinner), findsOneWidget);
       },
     );
 

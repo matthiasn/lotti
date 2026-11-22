@@ -414,7 +414,7 @@ void main() {
         final csB = bulkSet('cs-b');
         final service = await pumpCard(tester, [csA, csB], status: inProgress);
 
-        final row = find.textContaining('Set status to In Progress');
+        final row = find.textContaining('Set status to In progress');
         // Its one row is the band's, and the band is the only status row.
         expect(row, findsOneWidget);
         expect(find.descendant(of: band, matching: row), findsOneWidget);

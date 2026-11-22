@@ -1515,7 +1515,7 @@ void main() {
       when(() => mockAiInputRepo.generate(any())).thenAnswer(
         (_) async => AiInputTaskObject(
           title: 'Test Task',
-          status: 'In Progress',
+          status: 'In progress',
           priority: 'P2',
           estimatedDuration: '1 hour',
           timeSpent: '30 minutes',

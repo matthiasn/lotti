@@ -147,7 +147,7 @@ void main() {
       find.textContaining('WASD walk · hold Shift: 8× speed'),
       findsOneWidget,
     );
-    for (final state in ['In Progress', 'Open', 'Blocked', 'Overdue', 'Done']) {
+    for (final state in ['In progress', 'Open', 'Blocked', 'Overdue', 'Done']) {
       expect(find.text(state), findsOneWidget);
     }
     final done = tester.widget<DsPill>(

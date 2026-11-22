@@ -1,6 +1,7 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
@@ -143,22 +144,22 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
   final priorityOptions = [
     DesignSystemTaskFilterOption(
       id: 'p0',
-      label: messages.tasksPriorityP0,
+      label: TaskPriority.p0Urgent.localizedLabel(context),
       glyph: DesignSystemTaskFilterGlyph.priorityP0,
     ),
     DesignSystemTaskFilterOption(
       id: 'p1',
-      label: messages.tasksPriorityP1,
+      label: TaskPriority.p1High.localizedLabel(context),
       glyph: DesignSystemTaskFilterGlyph.priorityP1,
     ),
     DesignSystemTaskFilterOption(
       id: 'p2',
-      label: messages.tasksPriorityP2,
+      label: TaskPriority.p2Medium.localizedLabel(context),
       glyph: DesignSystemTaskFilterGlyph.priorityP2,
     ),
     DesignSystemTaskFilterOption(
       id: 'p3',
-      label: messages.tasksPriorityP3,
+      label: TaskPriority.p3Low.localizedLabel(context),
       glyph: DesignSystemTaskFilterGlyph.priorityP3,
     ),
     DesignSystemTaskFilterOption(

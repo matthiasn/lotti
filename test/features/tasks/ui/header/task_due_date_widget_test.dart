@@ -35,7 +35,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Verify modal elements are shown
-      expect(find.text('Due Date'), findsOneWidget);
+      expect(find.text('Due date'), findsOneWidget);
       expect(find.text('Cancel'), findsNothing);
       expect(find.text('Clear'), findsOneWidget);
       expect(find.text('Done'), findsOneWidget);
@@ -79,7 +79,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(callbackCalled, isFalse);
-      expect(find.text('Due Date'), findsNothing);
+      expect(find.text('Due date'), findsNothing);
     });
 
     testWidgets('Clear button calls callback with null', (tester) async {
@@ -145,7 +145,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Due Date'), findsNothing);
+      expect(find.text('Due date'), findsNothing);
     });
 
     testWidgets('uses DateTime.now when initialDate is null', (tester) async {

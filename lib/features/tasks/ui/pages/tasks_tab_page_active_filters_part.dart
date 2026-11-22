@@ -104,7 +104,7 @@ class _TasksTabActiveFilters extends ConsumerWidget {
         ActiveFilterChip(
           muted: searching,
           mutedReason: ignoredReason,
-          label: priority,
+          label: taskPriority?.localizedLabel(context) ?? priority,
           accentColor:
               _priorityAccent(priority, brightness: brightness) ?? accent,
           avatar: taskPriority != null

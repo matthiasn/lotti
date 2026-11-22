@@ -2555,6 +2555,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Visa AI-framsteg';
 
   @override
+  String get aiRunningAnalyzingImage => 'Analyserar bild';
+
+  @override
+  String get aiRunningGeneratingImage => 'Genererar bild';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Sammanfattar inspelning';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Transkriberar ljud';
+
+  @override
+  String get aiRunningWorking => 'AI arbetar';
+
+  @override
+  String get aiRunningWritingPrompt => 'Skriver en prompt';
+
+  @override
   String get aiSettingsAddedLabel => 'Tillagd';
 
   @override
@@ -2815,10 +2833,16 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ingen AI-profil är uppsatt för den här posten, så inget kunde köras.';
 
   @override
+  String get aiSummaryLoadFailed => 'Uppgiftens agent kunde inte läsas in';
+
+  @override
   String get aiSummaryPlayTooltip => 'Spelsammanfattning';
 
   @override
   String get aiSummaryPreparingTooltip => 'Förberedelse av ljud';
+
+  @override
+  String get aiSummaryRetry => 'Försök igen';
 
   @override
   String get aiSummarySpeakTooltip => 'Läs sammanfattningen högt lokalt';
@@ -3404,7 +3428,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Endast synligt när privata bidrag visas';
 
   @override
-  String get categorySearchPlaceholder => 'Sökkategorier...';
+  String get categorySearchPlaceholder => 'Sökkategorier…';
 
   @override
   String get changeSetCardTitle => 'Föreslagna förändringar';
@@ -3852,6 +3876,15 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get checklistItemDeleteWarning =>
       'Denna åtgärd kan inte göras ogjort.';
+
+  @override
+  String get checklistItemSwipeArchive => 'Arkivera';
+
+  @override
+  String get checklistItemSwipeDelete => 'Ta bort';
+
+  @override
+  String get checklistItemSwipeRestore => 'Återställ';
 
   @override
   String get checklistMarkdownCopied => 'Checklista kopierad som Markdown';
@@ -6920,6 +6953,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get designSystemTabBarTitle => 'Tabbar';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filter';
+
+  @override
   String get designSystemTabPendingLabel => 'Väntar';
 
   @override
@@ -7082,7 +7118,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get editorMoreFormatting => 'Mer formatering';
 
   @override
-  String get editorPlaceholder => 'Skriv in anteckningarna...';
+  String get editorPlaceholder => 'Skriv in anteckningarna…';
 
   @override
   String get embeddingModelCheckFailed =>
@@ -17940,6 +17976,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'ej tilldelad';
 
   @override
+  String get taskDetailLoadFailed => 'Uppgiften kunde inte läsas in';
+
+  @override
+  String get taskDetailNotFound => 'Den här uppgiften finns inte längre';
+
+  @override
+  String get taskDetailRetry => 'Försök igen';
+
+  @override
   String get taskDueDateLabel => 'Förfallodatum';
 
   @override
@@ -18286,6 +18331,23 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Vyer efter förfallodatum';
 
   @override
+  String get tasksEmptyClearFilters => 'Rensa filter';
+
+  @override
+  String get tasksEmptyClearSearch => 'Rensa sökning';
+
+  @override
+  String get tasksEmptyFilterMiss => 'Inga uppgifter matchar de här filtren';
+
+  @override
+  String get tasksEmptyNoOpenTasks => 'Inga öppna uppgifter';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Inget matchar ”$query”';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Välj kategori';
 
   @override
@@ -18395,31 +18457,25 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Detaljerad lista';
 
   @override
+  String get tasksListLoadFailed => 'Dina uppgifter kunde inte läsas in';
+
+  @override
+  String get tasksListRetry => 'Försök igen';
+
+  @override
   String get tasksPriorityFilterAll => 'Alla';
 
   @override
   String get tasksPriorityFilterTitle => 'Prioritet';
 
   @override
-  String get tasksPriorityP0 => 'Brådskande';
-
-  @override
   String get tasksPriorityP0Description => 'Brådskande (så snart som möjligt)';
-
-  @override
-  String get tasksPriorityP1 => 'Högt';
 
   @override
   String get tasksPriorityP1Description => 'Hög (snart)';
 
   @override
-  String get tasksPriorityP2 => 'Medium';
-
-  @override
   String get tasksPriorityP2Description => 'Medium (Standard)';
-
-  @override
-  String get tasksPriorityP3 => 'Lågt';
 
   @override
   String get tasksPriorityP3Description => 'Lågt (när som helst)';

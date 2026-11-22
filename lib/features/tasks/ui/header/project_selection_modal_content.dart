@@ -3,6 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/project_lookup_providers.dart';
@@ -258,7 +259,7 @@ class _ProjectSelectionModalBodyState extends State<ProjectSelectionModalBody> {
     return widget.projectsAsync.when(
       loading: () => Padding(
         padding: EdgeInsets.all(tokens.spacing.step7),
-        child: const Center(child: CircularProgressIndicator()),
+        child: const Center(child: DesignSystemSpinner(size: IconSizes.xl)),
       ),
       error: (_, _) => Padding(
         padding: EdgeInsets.all(tokens.spacing.step6),

@@ -30,7 +30,7 @@ void main() {
     () {
       for (final (state, label) in [
         (PlazaTaskState.open, 'Open'),
-        (PlazaTaskState.inProgress, 'In Progress'),
+        (PlazaTaskState.inProgress, 'In progress'),
         (PlazaTaskState.blocked, 'Blocked'),
         (PlazaTaskState.done, 'Done'),
         (PlazaTaskState.cancelled, 'Cancelled'),

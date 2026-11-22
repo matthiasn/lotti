@@ -242,7 +242,7 @@ void main() {
 
       await tester.tap(find.text('open-status'));
       await settle(tester);
-      await tester.tap(find.text('In Progress'));
+      await tester.tap(find.text('In progress'));
       await settle(tester);
 
       expect(tracker.updateTaskStatusCalls, hasLength(1));

@@ -1094,7 +1094,7 @@ void main() {
   test('processes saved task filter messages', () async {
     const filter = SavedTaskFilter(
       id: 'stf-1',
-      name: 'In Progress',
+      name: 'In progress',
       filter: TasksFilter(selectedTaskStatuses: {'IN_PROGRESS'}),
     );
     const message = SyncMessage.savedTaskFilter(

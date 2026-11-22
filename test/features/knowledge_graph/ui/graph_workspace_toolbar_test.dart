@@ -177,11 +177,11 @@ void main() {
     expect(filters.last.maxAgeDays, 7);
 
     await tester.scrollUntilVisible(
-      find.text('In Progress'),
+      find.text('In progress'),
       160,
       scrollable: find.byType(Scrollable).last,
     );
-    await tester.tap(find.text('In Progress'));
+    await tester.tap(find.text('In progress'));
     await tester.pump();
     expect(filters.last.categoryIds, {'work'});
     expect(filters.last.maxAgeDays, 7);
@@ -232,7 +232,7 @@ void main() {
         ),
         [
           'Open',
-          'In Progress',
+          'In progress',
           'Groomed',
           'Blocked',
           'On Hold',

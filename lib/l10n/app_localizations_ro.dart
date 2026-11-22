@@ -2586,6 +2586,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Afișați progresul AI';
 
   @override
+  String get aiRunningAnalyzingImage => 'Se analizează imaginea';
+
+  @override
+  String get aiRunningGeneratingImage => 'Se generează imaginea';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Se rezumă înregistrarea';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Se transcrie audio';
+
+  @override
+  String get aiRunningWorking => 'AI lucrează';
+
+  @override
+  String get aiRunningWritingPrompt => 'Se scrie un prompt';
+
+  @override
   String get aiSettingsAddedLabel => 'Adăugat';
 
   @override
@@ -2848,10 +2866,17 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu este configurat niciun profil AI pentru această intrare, așa că nu s-a putut rula nimic.';
 
   @override
+  String get aiSummaryLoadFailed =>
+      'Agentul acestei sarcini nu a putut fi încărcat';
+
+  @override
   String get aiSummaryPlayTooltip => 'Citiți rezumatul';
 
   @override
   String get aiSummaryPreparingTooltip => 'Se pregătește audio';
+
+  @override
+  String get aiSummaryRetry => 'Încercați din nou';
 
   @override
   String get aiSummarySpeakTooltip => 'Citiți rezumatul local cu voce tare';
@@ -3451,7 +3476,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Vizibil doar când intrările private sunt afișate';
 
   @override
-  String get categorySearchPlaceholder => 'Căutați categorii...';
+  String get categorySearchPlaceholder => 'Căutați categorii…';
 
   @override
   String get changeSetCardTitle => 'Modificări propuse';
@@ -3914,6 +3939,15 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get checklistItemDeleteWarning =>
       'Această acțiune nu poate fi anulată.';
+
+  @override
+  String get checklistItemSwipeArchive => 'Arhivați';
+
+  @override
+  String get checklistItemSwipeDelete => 'Ștergeți';
+
+  @override
+  String get checklistItemSwipeRestore => 'Restaurați';
 
   @override
   String get checklistMarkdownCopied =>
@@ -7033,6 +7067,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemTabBarTitle => 'Bara de file';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filtre';
+
+  @override
   String get designSystemTabPendingLabel => 'În așteptare';
 
   @override
@@ -7197,7 +7234,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get editorMoreFormatting => 'Mai multă formatare';
 
   @override
-  String get editorPlaceholder => 'Introduceți notițe...';
+  String get editorPlaceholder => 'Introduceți notițe…';
 
   @override
   String get embeddingModelCheckFailed =>
@@ -18264,6 +18301,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'neatribuit';
 
   @override
+  String get taskDetailLoadFailed => 'Această sarcină nu a putut fi încărcată';
+
+  @override
+  String get taskDetailNotFound => 'Această sarcină nu mai există';
+
+  @override
+  String get taskDetailRetry => 'Încercați din nou';
+
+  @override
   String get taskDueDateLabel => 'Data scadenței';
 
   @override
@@ -18611,6 +18657,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Vizualizări după termen';
 
   @override
+  String get tasksEmptyClearFilters => 'Ștergeți filtrele';
+
+  @override
+  String get tasksEmptyClearSearch => 'Ștergeți căutarea';
+
+  @override
+  String get tasksEmptyFilterMiss =>
+      'Nicio sarcină nu corespunde acestor filtre';
+
+  @override
+  String get tasksEmptyNoOpenTasks => 'Nicio sarcină deschisă';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Nimic nu corespunde cu „$query”';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Setați categoria';
 
   @override
@@ -18722,31 +18786,26 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Listă detaliată';
 
   @override
+  String get tasksListLoadFailed =>
+      'Sarcinile dumneavoastră nu au putut fi încărcate';
+
+  @override
+  String get tasksListRetry => 'Încercați din nou';
+
+  @override
   String get tasksPriorityFilterAll => 'Toate';
 
   @override
   String get tasksPriorityFilterTitle => 'Prioritate';
 
   @override
-  String get tasksPriorityP0 => 'Urgentă';
-
-  @override
   String get tasksPriorityP0Description => 'Urgentă (Cât mai curând)';
-
-  @override
-  String get tasksPriorityP1 => 'Ridicată';
 
   @override
   String get tasksPriorityP1Description => 'Ridicată (Curând)';
 
   @override
-  String get tasksPriorityP2 => 'Medie';
-
-  @override
   String get tasksPriorityP2Description => 'Medie (Implicit)';
-
-  @override
-  String get tasksPriorityP3 => 'Scăzută';
 
   @override
   String get tasksPriorityP3Description => 'Scăzută (Când se poate)';

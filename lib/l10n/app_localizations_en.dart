@@ -2538,6 +2538,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Show AI progress';
 
   @override
+  String get aiRunningAnalyzingImage => 'Analyzing image';
+
+  @override
+  String get aiRunningGeneratingImage => 'Generating image';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Summarizing recording';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Transcribing audio';
+
+  @override
+  String get aiRunningWorking => 'AI is working';
+
+  @override
+  String get aiRunningWritingPrompt => 'Writing a prompt';
+
+  @override
   String get aiSettingsAddedLabel => 'Added';
 
   @override
@@ -2796,10 +2814,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'No AI profile is set up for this entry, so nothing could run.';
 
   @override
+  String get aiSummaryLoadFailed => 'Couldn\'t load this task\'s agent';
+
+  @override
   String get aiSummaryPlayTooltip => 'Play summary';
 
   @override
   String get aiSummaryPreparingTooltip => 'Preparing audio';
+
+  @override
+  String get aiSummaryRetry => 'Try again';
 
   @override
   String get aiSummarySpeakTooltip => 'Read summary aloud locally';
@@ -3382,7 +3406,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Only visible when private entries are shown';
 
   @override
-  String get categorySearchPlaceholder => 'Search categories...';
+  String get categorySearchPlaceholder => 'Search categories…';
 
   @override
   String get changeSetCardTitle => 'Proposed changes';
@@ -3830,6 +3854,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checklistItemDeleteWarning => 'This action cannot be undone.';
+
+  @override
+  String get checklistItemSwipeArchive => 'Archive';
+
+  @override
+  String get checklistItemSwipeDelete => 'Delete';
+
+  @override
+  String get checklistItemSwipeRestore => 'Restore';
 
   @override
   String get checklistMarkdownCopied => 'Checklist copied as Markdown';
@@ -6878,6 +6911,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemTabBarTitle => 'Tab Bar';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filters';
+
+  @override
   String get designSystemTabPendingLabel => 'Pending';
 
   @override
@@ -7039,7 +7075,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editorMoreFormatting => 'More formatting';
 
   @override
-  String get editorPlaceholder => 'Enter notes...';
+  String get editorPlaceholder => 'Enter notes…';
 
   @override
   String get embeddingModelCheckFailed =>
@@ -10922,7 +10958,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkedTasksMenuTooltip => 'Linked tasks options';
 
   @override
-  String get linkedTasksTitle => 'Linked Tasks';
+  String get linkedTasksTitle => 'Linked tasks';
 
   @override
   String get linkExistingTask => 'Link existing task…';
@@ -17813,7 +17849,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'Unassigned';
 
   @override
-  String get taskDueDateLabel => 'Due Date';
+  String get taskDetailLoadFailed => 'Couldn\'t load this task';
+
+  @override
+  String get taskDetailNotFound => 'This task no longer exists';
+
+  @override
+  String get taskDetailRetry => 'Try again';
+
+  @override
+  String get taskDueDateLabel => 'Due date';
 
   @override
   String taskDueDateWithDate(String date) {
@@ -17832,13 +17877,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get taskDueToday => 'Due Today';
+  String get taskDueToday => 'Due today';
 
   @override
-  String get taskDueTomorrow => 'Due Tomorrow';
+  String get taskDueTomorrow => 'Due tomorrow';
 
   @override
-  String get taskDueYesterday => 'Due Yesterday';
+  String get taskDueYesterday => 'Due yesterday';
 
   @override
   String get taskEditTitleLabel => 'Edit task title';
@@ -18121,10 +18166,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksAgentFilterAll => 'All';
 
   @override
-  String get tasksAgentFilterHasAgent => 'Has Agent';
+  String get tasksAgentFilterHasAgent => 'Has agent';
 
   @override
-  String get tasksAgentFilterNoAgent => 'No Agent';
+  String get tasksAgentFilterNoAgent => 'No agent';
 
   @override
   String get tasksAgentFilterTitle => 'Agent';
@@ -18156,6 +18201,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tasksDueViewsSemantics => 'Due date views';
+
+  @override
+  String get tasksEmptyClearFilters => 'Clear filters';
+
+  @override
+  String get tasksEmptyClearSearch => 'Clear search';
+
+  @override
+  String get tasksEmptyFilterMiss => 'No tasks match these filters';
+
+  @override
+  String get tasksEmptyNoOpenTasks => 'No open tasks';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Nothing matches “$query”';
+  }
 
   @override
   String get taskSetCategoryLabel => 'Set category';
@@ -18265,31 +18327,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Detailed list';
 
   @override
+  String get tasksListLoadFailed => 'Couldn\'t load your tasks';
+
+  @override
+  String get tasksListRetry => 'Try again';
+
+  @override
   String get tasksPriorityFilterAll => 'All';
 
   @override
   String get tasksPriorityFilterTitle => 'Priority';
 
   @override
-  String get tasksPriorityP0 => 'Urgent';
-
-  @override
   String get tasksPriorityP0Description => 'Urgent (ASAP)';
-
-  @override
-  String get tasksPriorityP1 => 'High';
 
   @override
   String get tasksPriorityP1Description => 'High (Soon)';
 
   @override
-  String get tasksPriorityP2 => 'Medium';
-
-  @override
   String get tasksPriorityP2Description => 'Medium (Default)';
-
-  @override
-  String get tasksPriorityP3 => 'Low';
 
   @override
   String get tasksPriorityP3Description => 'Low (Whenever)';
@@ -18501,7 +18557,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksSortByCreationDate => 'Created';
 
   @override
-  String get tasksSortByDueDate => 'Due Date';
+  String get tasksSortByDueDate => 'Due date';
 
   @override
   String get tasksSortByLabel => 'Sort by';
@@ -18522,7 +18578,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskStatusGroomed => 'Groomed';
 
   @override
-  String get taskStatusInProgress => 'In Progress';
+  String get taskStatusInProgress => 'In progress';
 
   @override
   String get taskStatusLabel => 'Status:';
@@ -18735,6 +18791,12 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   }
 
   @override
+  String get aiRunningAnalyzingImage => 'Analysing image';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Summarising recording';
+
+  @override
   String get aiSetupWizardCreatesOptimized =>
       'Creates optimised models, prompts, and a test category';
 
@@ -18900,7 +18962,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get editMenuTitle => 'Edit';
 
   @override
-  String get editorPlaceholder => 'Enter notes...';
+  String get editorPlaceholder => 'Enter notes…';
 
   @override
   String get entryActions => 'Actions';

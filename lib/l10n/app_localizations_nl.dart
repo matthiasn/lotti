@@ -2562,6 +2562,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'AI-voortgang tonen';
 
   @override
+  String get aiRunningAnalyzingImage => 'Afbeelding analyseren';
+
+  @override
+  String get aiRunningGeneratingImage => 'Afbeelding genereren';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Opname samenvatten';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Audio transcriberen';
+
+  @override
+  String get aiRunningWorking => 'AI is bezig';
+
+  @override
+  String get aiRunningWritingPrompt => 'Prompt schrijven';
+
+  @override
   String get aiSettingsAddedLabel => 'Toegevoegd';
 
   @override
@@ -2821,10 +2839,17 @@ class AppLocalizationsNl extends AppLocalizations {
       'Er is geen AI-profiel ingesteld voor dit item, dus er kon niets draaien.';
 
   @override
+  String get aiSummaryLoadFailed =>
+      'De agent van deze taak kon niet worden geladen';
+
+  @override
   String get aiSummaryPlayTooltip => 'Samenvatting afspelen';
 
   @override
   String get aiSummaryPreparingTooltip => 'Audio wordt voorbereid';
+
+  @override
+  String get aiSummaryRetry => 'Opnieuw proberen';
 
   @override
   String get aiSummarySpeakTooltip => 'Samenvatting lokaal voorlezen';
@@ -3412,7 +3437,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Alleen zichtbaar wanneer privé-items getoond worden';
 
   @override
-  String get categorySearchPlaceholder => 'Zoeken in categorieën...';
+  String get categorySearchPlaceholder => 'Zoeken in categorieën…';
 
   @override
   String get changeSetCardTitle => 'Voorgestelde wijzigingen';
@@ -3867,6 +3892,15 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get checklistItemDeleteWarning =>
       'Deze actie kan niet ongedaan worden gemaakt.';
+
+  @override
+  String get checklistItemSwipeArchive => 'Archiveren';
+
+  @override
+  String get checklistItemSwipeDelete => 'Verwijderen';
+
+  @override
+  String get checklistItemSwipeRestore => 'Herstellen';
 
   @override
   String get checklistMarkdownCopied => 'Checklist gekopieerd als Markdown';
@@ -6928,6 +6962,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get designSystemTabBarTitle => 'Tabbalk';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filters';
+
+  @override
   String get designSystemTabPendingLabel => 'In afwachting';
 
   @override
@@ -7091,7 +7128,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get editorMoreFormatting => 'Meer opmaak';
 
   @override
-  String get editorPlaceholder => 'Notities invoeren...';
+  String get editorPlaceholder => 'Notities invoeren…';
 
   @override
   String get embeddingModelCheckFailed =>
@@ -17973,6 +18010,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'niet toegewezen';
 
   @override
+  String get taskDetailLoadFailed => 'Deze taak kon niet worden geladen';
+
+  @override
+  String get taskDetailNotFound => 'Deze taak bestaat niet meer';
+
+  @override
+  String get taskDetailRetry => 'Opnieuw proberen';
+
+  @override
   String get taskDueDateLabel => 'Vervaldatum';
 
   @override
@@ -18319,6 +18365,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Weergaven op vervaldatum';
 
   @override
+  String get tasksEmptyClearFilters => 'Filters wissen';
+
+  @override
+  String get tasksEmptyClearSearch => 'Zoekopdracht wissen';
+
+  @override
+  String get tasksEmptyFilterMiss => 'Geen taken passen bij deze filters';
+
+  @override
+  String get tasksEmptyNoOpenTasks => 'Geen open taken';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Niets komt overeen met ‘$query’';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Categorie instellen';
 
   @override
@@ -18427,31 +18490,25 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Gedetailleerde lijst';
 
   @override
+  String get tasksListLoadFailed => 'Je taken konden niet worden geladen';
+
+  @override
+  String get tasksListRetry => 'Opnieuw proberen';
+
+  @override
   String get tasksPriorityFilterAll => 'Alles';
 
   @override
   String get tasksPriorityFilterTitle => 'Prioriteit';
 
   @override
-  String get tasksPriorityP0 => 'Dringend';
-
-  @override
   String get tasksPriorityP0Description => 'Dringend (ASAP)';
-
-  @override
-  String get tasksPriorityP1 => 'Hoog';
 
   @override
   String get tasksPriorityP1Description => 'Hoog (binnenkort)';
 
   @override
-  String get tasksPriorityP2 => 'Middel';
-
-  @override
   String get tasksPriorityP2Description => 'Middel (Standaard)';
-
-  @override
-  String get tasksPriorityP3 => 'Laag';
 
   @override
   String get tasksPriorityP3Description => 'Laag (ooit)';

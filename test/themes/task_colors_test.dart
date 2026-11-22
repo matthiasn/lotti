@@ -61,7 +61,7 @@ void main() {
           taskStatusDarkGreen,
         ),
         (
-          'In Progress',
+          'In progress',
           TaskStatus.inProgress(id: 'test', createdAt: testDate, utcOffset: 0),
           taskStatusDarkBlue,
         ),
@@ -120,7 +120,7 @@ void main() {
           taskStatusLightGreenAccent,
         ),
         (
-          'In Progress',
+          'In progress',
           TaskStatus.inProgress(id: 'test', createdAt: testDate, utcOffset: 0),
           taskStatusBlue,
         ),

@@ -2572,6 +2572,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Mostrar el progreso de la IA';
 
   @override
+  String get aiRunningAnalyzingImage => 'Analizando imagen';
+
+  @override
+  String get aiRunningGeneratingImage => 'Generando imagen';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Resumiendo grabación';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Transcribiendo audio';
+
+  @override
+  String get aiRunningWorking => 'La IA está trabajando';
+
+  @override
+  String get aiRunningWritingPrompt => 'Escribiendo un prompt';
+
+  @override
   String get aiSettingsAddedLabel => 'Añadido';
 
   @override
@@ -2833,10 +2851,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay ningún perfil de IA configurado para esta entrada, así que no se pudo ejecutar nada.';
 
   @override
+  String get aiSummaryLoadFailed => 'No se pudo cargar el agente de esta tarea';
+
+  @override
   String get aiSummaryPlayTooltip => 'Leer el resumen';
 
   @override
   String get aiSummaryPreparingTooltip => 'Preparando el audio';
+
+  @override
+  String get aiSummaryRetry => 'Reintentar';
 
   @override
   String get aiSummarySpeakTooltip => 'Leer resumen en voz alta localmente';
@@ -3431,7 +3455,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solo visible cuando se muestran las entradas privadas';
 
   @override
-  String get categorySearchPlaceholder => 'Buscar categorías...';
+  String get categorySearchPlaceholder => 'Buscar categorías…';
 
   @override
   String get changeSetCardTitle => 'Cambios propuestos';
@@ -3892,6 +3916,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get checklistItemDeleteWarning => 'Esta acción no se puede deshacer.';
+
+  @override
+  String get checklistItemSwipeArchive => 'Archivar';
+
+  @override
+  String get checklistItemSwipeDelete => 'Eliminar';
+
+  @override
+  String get checklistItemSwipeRestore => 'Restaurar';
 
   @override
   String get checklistMarkdownCopied =>
@@ -7005,6 +7038,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemTabBarTitle => 'Barra de pestañas';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filtros';
+
+  @override
   String get designSystemTabPendingLabel => 'Pendiente';
 
   @override
@@ -7168,7 +7204,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editorMoreFormatting => 'Más formato';
 
   @override
-  String get editorPlaceholder => 'Introducir notas...';
+  String get editorPlaceholder => 'Introducir notas…';
 
   @override
   String get embeddingModelCheckFailed =>
@@ -18149,6 +18185,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'sin asignar';
 
   @override
+  String get taskDetailLoadFailed => 'No se pudo cargar esta tarea';
+
+  @override
+  String get taskDetailNotFound => 'Esta tarea ya no existe';
+
+  @override
+  String get taskDetailRetry => 'Reintentar';
+
+  @override
   String get taskDueDateLabel => 'Fecha de vencimiento';
 
   @override
@@ -18495,6 +18540,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Vistas por vencimiento';
 
   @override
+  String get tasksEmptyClearFilters => 'Quitar filtros';
+
+  @override
+  String get tasksEmptyClearSearch => 'Borrar búsqueda';
+
+  @override
+  String get tasksEmptyFilterMiss => 'Ninguna tarea coincide con estos filtros';
+
+  @override
+  String get tasksEmptyNoOpenTasks => 'No hay tareas abiertas';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Nada coincide con «$query»';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Establecer categoría';
 
   @override
@@ -18609,31 +18671,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Lista detallada';
 
   @override
+  String get tasksListLoadFailed => 'No se pudieron cargar tus tareas';
+
+  @override
+  String get tasksListRetry => 'Reintentar';
+
+  @override
   String get tasksPriorityFilterAll => 'Todas';
 
   @override
   String get tasksPriorityFilterTitle => 'Prioridad';
 
   @override
-  String get tasksPriorityP0 => 'Urgente';
-
-  @override
   String get tasksPriorityP0Description => 'Urgente (Lo antes posible)';
-
-  @override
-  String get tasksPriorityP1 => 'Alta';
 
   @override
   String get tasksPriorityP1Description => 'Alta (Pronto)';
 
   @override
-  String get tasksPriorityP2 => 'Media';
-
-  @override
   String get tasksPriorityP2Description => 'Media (Predeterminada)';
-
-  @override
-  String get tasksPriorityP3 => 'Baja';
 
   @override
   String get tasksPriorityP3Description => 'Baja (Cuando sea posible)';

@@ -264,7 +264,7 @@ void main() {
         expect(find.byType(DesignSystemSelectionRow), findsNWidgets(3));
         expect(find.text('Project health'), findsNothing);
         expect(find.text('Agent'), findsNothing);
-        expect(find.text('Linked Tasks'), findsNothing);
+        expect(find.text('Linked tasks'), findsNothing);
         expect(find.text('Penguin Operations'), findsOneWidget);
         expect(find.text('Description'), findsOneWidget);
       },

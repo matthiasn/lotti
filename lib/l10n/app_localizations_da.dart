@@ -2548,6 +2548,24 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Vis AI-fremskridt';
 
   @override
+  String get aiRunningAnalyzingImage => 'Analyserer billede';
+
+  @override
+  String get aiRunningGeneratingImage => 'Genererer billede';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Opsummerer optagelse';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Transskriberer lyd';
+
+  @override
+  String get aiRunningWorking => 'AI arbejder';
+
+  @override
+  String get aiRunningWritingPrompt => 'Skriver en prompt';
+
+  @override
   String get aiSettingsAddedLabel => 'Tilføjet';
 
   @override
@@ -2807,10 +2825,16 @@ class AppLocalizationsDa extends AppLocalizations {
       'Der er ingen AI-profil sat op til denne post, så intet kunne køre.';
 
   @override
+  String get aiSummaryLoadFailed => 'Opgavens agent kunne ikke indlæses';
+
+  @override
   String get aiSummaryPlayTooltip => 'Spilresumé';
 
   @override
   String get aiSummaryPreparingTooltip => 'Forberedelse af lyd';
+
+  @override
+  String get aiSummaryRetry => 'Prøv igen';
 
   @override
   String get aiSummarySpeakTooltip => 'Læs resuméet højt lokalt';
@@ -3395,7 +3419,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Kun synlig, når private bidrag vises';
 
   @override
-  String get categorySearchPlaceholder => 'Søgekategorier...';
+  String get categorySearchPlaceholder => 'Søgekategorier…';
 
   @override
   String get changeSetCardTitle => 'Foreslåede ændringer';
@@ -3846,6 +3870,15 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get checklistItemDeleteWarning => 'Denne handling kan ikke gøres om.';
+
+  @override
+  String get checklistItemSwipeArchive => 'Arkivér';
+
+  @override
+  String get checklistItemSwipeDelete => 'Slet';
+
+  @override
+  String get checklistItemSwipeRestore => 'Gendan';
 
   @override
   String get checklistMarkdownCopied => 'Tjekliste kopieret som Markdown';
@@ -6907,6 +6940,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get designSystemTabBarTitle => 'Tab-bar';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filtre';
+
+  @override
   String get designSystemTabPendingLabel => 'Afventer';
 
   @override
@@ -7068,7 +7104,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get editorMoreFormatting => 'Mere formatering';
 
   @override
-  String get editorPlaceholder => 'Indtast noter...';
+  String get editorPlaceholder => 'Indtast noter…';
 
   @override
   String get embeddingModelCheckFailed =>
@@ -17914,6 +17950,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'Ikke tildelt';
 
   @override
+  String get taskDetailLoadFailed => 'Opgaven kunne ikke indlæses';
+
+  @override
+  String get taskDetailNotFound => 'Denne opgave findes ikke længere';
+
+  @override
+  String get taskDetailRetry => 'Prøv igen';
+
+  @override
   String get taskDueDateLabel => 'Forfaldsdato';
 
   @override
@@ -18260,6 +18305,23 @@ class AppLocalizationsDa extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Visninger efter forfaldsdato';
 
   @override
+  String get tasksEmptyClearFilters => 'Ryd filtre';
+
+  @override
+  String get tasksEmptyClearSearch => 'Ryd søgning';
+
+  @override
+  String get tasksEmptyFilterMiss => 'Ingen opgaver matcher disse filtre';
+
+  @override
+  String get tasksEmptyNoOpenTasks => 'Ingen åbne opgaver';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Intet matcher »$query«';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Vælg kategori';
 
   @override
@@ -18368,31 +18430,25 @@ class AppLocalizationsDa extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Detaljeret liste';
 
   @override
+  String get tasksListLoadFailed => 'Dine opgaver kunne ikke indlæses';
+
+  @override
+  String get tasksListRetry => 'Prøv igen';
+
+  @override
   String get tasksPriorityFilterAll => 'Alle';
 
   @override
   String get tasksPriorityFilterTitle => 'Prioritet';
 
   @override
-  String get tasksPriorityP0 => 'Hastende';
-
-  @override
   String get tasksPriorityP0Description => 'Hastende (ASAP)';
-
-  @override
-  String get tasksPriorityP1 => 'Høj';
 
   @override
   String get tasksPriorityP1Description => 'Høj (snart)';
 
   @override
-  String get tasksPriorityP2 => 'Medium';
-
-  @override
   String get tasksPriorityP2Description => 'Medium (Standard)';
-
-  @override
-  String get tasksPriorityP3 => 'Lavt';
 
   @override
   String get tasksPriorityP3Description => 'Lav (når som helst)';

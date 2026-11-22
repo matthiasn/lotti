@@ -52,7 +52,13 @@ buckets; creation-date sort produces creation-day buckets.
 
 # The filter modal
 
-The filter button opens **one** adaptive `showDesignSystemFilterModal` route — a
+**Search keeps its row to itself.** In the expanded `TabSectionHeader` nothing
+sits in or beside the search field; the filter entry is a *Filters*
+`DesignSystemChip` leading the chip lane under it, selected while any clause
+narrows the list. The same header serves Tasks, Projects, Logbook and Events.
+The collapsed compact bar keeps its icon button.
+
+The Filters chip opens **one** adaptive `showDesignSystemFilterModal` route — a
 bottom sheet on compact layouts, a dialog on wide. The overview and its status,
 category, label and project pages **share one mutable draft**, so navigating
 deeper never stacks another modal. Child pages return with Back or Done; Apply and
@@ -181,6 +187,18 @@ stateDiagram-v2
   `taskFilterNarrowingClauseCount`, takes part in the saved shape, and is
   lifted by *Clear all*; it has no chip of its own, because the strip already
   shows it selected and closable.
+
+**An empty list says why, and how to get out.** `TaskListEmptyState`
+(`widgets/task_list_states.dart`) picks by cause: a search that found nothing
+names the search and offers *Clear search*; a filter miss offers *Clear
+filters* (the same reset as the chip row's *Clear all*, search untouched); with
+nothing narrowing it says *No open tasks* — the default view hides closed
+tasks, so not "no tasks" — and keeps the demo offer. The Unassigned category the
+controller selects by itself when no categories exist does not count as a
+filter here, so a fresh install gets the demo offer. Loading is the
+design-system spinner (`TaskListSpinner`), and a page that failed to load shows
+`TaskListErrorState` with *Try again* instead of the pagination package's
+default.
 
 Rows say the opposite fact quietly: an open task **without** a due date carries
 a grey *No due date* item on its meta line (whenever due dates are shown and

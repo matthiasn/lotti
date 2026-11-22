@@ -2584,6 +2584,24 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher la progression de l\'IA';
 
   @override
+  String get aiRunningAnalyzingImage => 'Analyse de l\'image';
+
+  @override
+  String get aiRunningGeneratingImage => 'Génération de l\'image';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Résumé de l\'enregistrement';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Transcription de l\'audio';
+
+  @override
+  String get aiRunningWorking => 'L\'IA travaille';
+
+  @override
+  String get aiRunningWritingPrompt => 'Rédaction d\'un prompt';
+
+  @override
   String get aiSettingsAddedLabel => 'Ajouté';
 
   @override
@@ -2846,10 +2864,17 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun profil IA n\'est configuré pour cette entrée, donc rien n\'a pu s\'exécuter.';
 
   @override
+  String get aiSummaryLoadFailed =>
+      'Impossible de charger l\'agent de cette tâche';
+
+  @override
   String get aiSummaryPlayTooltip => 'Lire le résumé';
 
   @override
   String get aiSummaryPreparingTooltip => 'Préparation de l\'audio';
+
+  @override
+  String get aiSummaryRetry => 'Réessayer';
 
   @override
   String get aiSummarySpeakTooltip => 'Lire le résumé localement à voix haute';
@@ -3446,7 +3471,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Visible uniquement lorsque les entrées privées sont affichées';
 
   @override
-  String get categorySearchPlaceholder => 'Rechercher des catégories...';
+  String get categorySearchPlaceholder => 'Rechercher des catégories…';
 
   @override
   String get changeSetCardTitle => 'Modifications proposées';
@@ -3904,6 +3929,15 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get checklistItemDeleteWarning =>
       'Cette action ne peut pas être annulée.';
+
+  @override
+  String get checklistItemSwipeArchive => 'Archiver';
+
+  @override
+  String get checklistItemSwipeDelete => 'Supprimer';
+
+  @override
+  String get checklistItemSwipeRestore => 'Restaurer';
 
   @override
   String get checklistMarkdownCopied => 'Liste de contrôle copiée en Markdown';
@@ -7025,6 +7059,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemTabBarTitle => 'Barre d\'onglets';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filtres';
+
+  @override
   String get designSystemTabPendingLabel => 'En attente';
 
   @override
@@ -7189,7 +7226,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editorMoreFormatting => 'Plus de mise en forme';
 
   @override
-  String get editorPlaceholder => 'Saisir des notes...';
+  String get editorPlaceholder => 'Saisir des notes…';
 
   @override
   String get embeddingModelCheckFailed =>
@@ -18213,6 +18250,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'non attribué';
 
   @override
+  String get taskDetailLoadFailed => 'Impossible de charger cette tâche';
+
+  @override
+  String get taskDetailNotFound => 'Cette tâche n\'existe plus';
+
+  @override
+  String get taskDetailRetry => 'Réessayer';
+
+  @override
   String get taskDueDateLabel => 'Date d\'échéance';
 
   @override
@@ -18560,6 +18606,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Vues par échéance';
 
   @override
+  String get tasksEmptyClearFilters => 'Effacer les filtres';
+
+  @override
+  String get tasksEmptyClearSearch => 'Effacer la recherche';
+
+  @override
+  String get tasksEmptyFilterMiss => 'Aucune tâche ne correspond à ces filtres';
+
+  @override
+  String get tasksEmptyNoOpenTasks => 'Aucune tâche ouverte';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Rien ne correspond à « $query »';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Définir la catégorie';
 
   @override
@@ -18676,31 +18739,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Liste détaillée';
 
   @override
+  String get tasksListLoadFailed => 'Impossible de charger tes tâches';
+
+  @override
+  String get tasksListRetry => 'Réessayer';
+
+  @override
   String get tasksPriorityFilterAll => 'Toutes';
 
   @override
   String get tasksPriorityFilterTitle => 'Priorité';
 
   @override
-  String get tasksPriorityP0 => 'Urgente';
-
-  @override
   String get tasksPriorityP0Description => 'Urgente (Dès que possible)';
-
-  @override
-  String get tasksPriorityP1 => 'Haute';
 
   @override
   String get tasksPriorityP1Description => 'Haute (Bientôt)';
 
   @override
-  String get tasksPriorityP2 => 'Moyenne';
-
-  @override
   String get tasksPriorityP2Description => 'Moyenne (Par défaut)';
-
-  @override
-  String get tasksPriorityP3 => 'Basse';
 
   @override
   String get tasksPriorityP3Description => 'Basse (Quand possible)';

@@ -598,7 +598,7 @@ void main() {
           makeTask(status: doneStatus(), title: 'Done'),
           makeTask(status: groomedStatus(), title: 'Groomed'),
           makeTask(status: openStatus(), title: 'Open'),
-          makeTask(status: inProgressStatus(), title: 'In Progress'),
+          makeTask(status: inProgressStatus(), title: 'In progress'),
           makeTask(status: onHoldStatus(), title: 'On Hold'),
           makeTask(status: blockedStatus(), title: 'Blocked'),
         ];
@@ -606,7 +606,7 @@ void main() {
         expect(await sortedTitles(tasks), [
           'Blocked',
           'On Hold',
-          'In Progress',
+          'In progress',
           'Open',
           'Groomed',
           'Done',

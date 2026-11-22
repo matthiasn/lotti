@@ -45,17 +45,28 @@ void main() {
     expect(find.text('AI summary'), findsNothing);
   });
 
-  testWidgets('error: collapses to nothing (no CTA, no shell)', (
+  testWidgets('error: says the agent could not load, and tries again', (
     tester,
   ) async {
+    var lookups = 0;
     await pumpCard(
       tester,
-      taskAgent: () async => throw StateError('agent lookup failed'),
+      taskAgent: () async {
+        lookups++;
+        throw StateError('agent lookup failed');
+      },
     );
     await tester.pump();
 
+    // Never the CTA: the task may well have an agent we failed to read.
     expect(find.text('Assign Agent'), findsNothing);
     expect(find.text('AI summary'), findsNothing);
+    expect(find.text("Couldn't load this task's agent"), findsOneWidget);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    await tester.pump();
+    expect(lookups, 2);
   });
 
   testWidgets('data with no agent: shows the Assign Agent CTA', (

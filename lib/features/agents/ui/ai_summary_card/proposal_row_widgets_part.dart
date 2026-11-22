@@ -1,5 +1,6 @@
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -42,13 +43,11 @@ class RowActions extends StatelessWidget {
         width: footprintWidth(context),
         height: buttonSize,
         child: Center(
-          child: SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: context.designTokens.colors.aiCard.accent,
-            ),
+          child: DesignSystemSpinner(
+            style: DesignSystemSpinnerStyle.plain,
+            size: IconSizes.s,
+            strokeWidth: BorderWidths.emphasis,
+            color: context.designTokens.colors.aiCard.accent,
           ),
         ),
       );

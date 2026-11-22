@@ -73,7 +73,7 @@ class TaskExpandableAppBar extends ConsumerWidget {
           ),
           centerTitle: true,
           title: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 160),
+            duration: MotionDurations.short3,
             child: showTitle
                 ? _ExpandableCompactTitle(
                     key: const ValueKey('expandable-title'),

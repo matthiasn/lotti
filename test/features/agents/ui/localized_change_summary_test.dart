@@ -980,7 +980,7 @@ void main() {
       // agree on what IN PROGRESS is called.
       expect(
         summary(TaskAgentToolNames.setTaskStatus, {'status': 'in progress'}),
-        'Set status to In Progress',
+        'Set status to In progress',
       );
       expect(
         summary(TaskAgentToolNames.setTaskStatus, {

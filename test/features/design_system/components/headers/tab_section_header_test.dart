@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -91,9 +91,10 @@ void main() {
       expect(squares.evaluate().length, withTrailing);
     });
 
-    testWidgets('the trailing slots reach into the gutter by the header bleed '
-        'and the funnel slot meets the search field, so the glyphs — not '
-        'their blank targets — set the edge', (tester) async {
+    testWidgets('the trailing slot reaches into the gutter by the header '
+        'bleed and the search field, alone on its row, ends on that edge', (
+      tester,
+    ) async {
       const trailingKey = Key('trailing');
       const width = 400.0;
       await pump(
@@ -102,29 +103,21 @@ void main() {
         header: buildHeader(titleTrailing: const SizedBox(key: trailingKey)),
       );
       final tokens = tester.element(find.byType(TabSectionHeader)).designTokens;
-      final squares = find.byWidgetPredicate(
-        (widget) =>
-            widget is SizedBox &&
-            widget.width == TapTargets.minimum &&
-            widget.height == TapTargets.minimum,
-      );
       final bellSlot = find.ancestor(
         of: find.byKey(trailingKey),
-        matching: squares,
-      );
-      final funnelSlot = find.ancestor(
-        of: find.byIcon(LottiIcons.filter),
-        matching: squares,
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is SizedBox &&
+              widget.width == TapTargets.minimum &&
+              widget.height == TapTargets.minimum,
+        ),
       );
       final edge =
           width - (tokens.spacing.step5 - tabHeaderTrailingBleed(tokens));
 
       expect(tester.getTopRight(bellSlot.first).dx, edge);
-      expect(tester.getTopRight(funnelSlot.first).dx, edge);
-      expect(
-        tester.getTopRight(find.byType(DesignSystemSearch)).dx,
-        tester.getTopLeft(funnelSlot.first).dx,
-      );
+      // Nothing in or beside the field takes its width.
+      expect(tester.getTopRight(find.byType(DesignSystemSearch)).dx, edge);
     });
 
     testWidgets('fires onSearchChanged as the user types', (tester) async {
@@ -261,35 +254,24 @@ void main() {
     });
 
     testWidgets(
-      'filter affordance is neutral at rest and accent-with-fill when '
-      'filters are active',
+      'the Filters chip leads the lane under the search field and is '
+      'selected exactly while filters narrow the list',
       (tester) async {
-        Icon filterIcon() => tester.widget<Icon>(
-          find.byIcon(LottiIcons.filter),
-        );
-        IconButton filterButton() => tester.widget<IconButton>(
-          find.ancestor(
-            of: find.byIcon(LottiIcons.filter),
-            matching: find.byType(IconButton),
-          ),
+        DesignSystemChip chip() => tester.widget<DesignSystemChip>(
+          find.byKey(tabSectionHeaderFiltersKey),
         );
 
         await pump(tester, header: buildHeader());
-        final context = tester.element(find.byType(TabSectionHeader));
-        final tokens = context.designTokens;
-        // At rest: quiet neutral, no tonal fill — accent is reserved for
-        // state.
-        expect(filterIcon().color, tokens.colors.text.mediumEmphasis);
-        expect(filterButton().style, isNull);
+        expect(chip().label, 'Filters');
+        expect(chip().selected, isFalse);
+        // Below the field, not beside it.
+        expect(
+          tester.getTopLeft(find.byKey(tabSectionHeaderFiltersKey)).dy,
+          greaterThan(tester.getBottomLeft(find.byType(DesignSystemSearch)).dy),
+        );
 
         await pump(tester, header: buildHeader(filtersActive: true));
-        // Active: accent glyph on the activated tonal fill, so a narrowed
-        // list can't masquerade as the full feed.
-        expect(filterIcon().color, tokens.colors.interactive.enabled);
-        expect(
-          filterButton().style?.backgroundColor?.resolve(const {}),
-          DesignSystemListPalette.activatedFill(tokens),
-        );
+        expect(chip().selected, isTrue);
       },
     );
   });

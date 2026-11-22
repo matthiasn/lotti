@@ -589,7 +589,7 @@ void main() {
               () => const SyncMessage.savedTaskFilter(
                 filter: SavedTaskFilter(
                   id: 'stf-001',
-                  name: 'In Progress',
+                  name: 'In progress',
                   filter: TasksFilter(selectedTaskStatuses: {'IN_PROGRESS'}),
                 ),
                 status: SyncEntryStatus.update,

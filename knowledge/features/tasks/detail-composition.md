@@ -327,6 +327,12 @@ always-visible button-styled chrome.** The summary lane is read-outs only:
 `[status] → [blocked-by?] → [priority] → [due?] → [estimate?] → [labels?] →
 [AI cost?] → [Set category?] → Details`.
 
+**A task that no longer exists says so.** While the entry loads, the page
+holds its quiet loading shell; once the load has finished (or failed) without a
+task, it shows *This task no longer exists* rather than a shell that would wait
+forever. An agent card whose agent failed to load shows one quiet line with
+*Try again* (`AiSummaryLoadError`) instead of vanishing as if the task had none.
+
 **Narrower than `kActionListContentMaxWidth` (520), the lane is two lines, not
 one wrapped lane.** One lane wrapped into three uneven rows on a phone, with
 Details stranded alone on the last. The decision facts — status, blocked-by,

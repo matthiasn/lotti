@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/ai_summary_load_error.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/backfill_actions.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_report_layout.dart';
@@ -110,7 +111,11 @@ class AiSummaryCard extends ConsumerWidget {
       skipLoadingOnReload: true,
       skipLoadingOnRefresh: true,
       loading: SizedBox.shrink,
-      error: (_, _) => const SizedBox.shrink(),
+      // A reload keeps the last card (skipLoadingOnReload); only a first load
+      // that failed lands here, and it says so rather than vanishing.
+      error: (_, _) => AiSummaryLoadError(
+        onRetry: () => ref.invalidate(taskAgentProvider(taskId)),
+      ),
       data: (agentEntity) {
         final identity = agentEntity?.mapOrNull(agent: (e) => e);
         if (identity == null) {

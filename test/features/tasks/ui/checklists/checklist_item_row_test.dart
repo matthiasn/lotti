@@ -8,9 +8,12 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_swipe_actions.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
@@ -112,6 +115,14 @@ class ChecklistControllerCallTracker {
   String? deletionKey = 'deletion-key';
   String? deletionBegunForItemId;
   Duration? deletionUndoWindow;
+
+  /// How many deletions were begun, and an optional gate that holds the
+  /// write open, so a test can swipe again while one is pending.
+  int deletionBegins = 0;
+  Completer<void>? deletionGate;
+
+  /// Thrown by `beginItemDeletion` when set: a failed write.
+  Error? deletionError;
   ({String key, String itemId})? undoneDeletion;
   Object? droppedLocalData;
   int? droppedTargetIndex;
@@ -134,7 +145,10 @@ class FakeChecklistController extends ChecklistController {
   }) async {
     _tracker
       ?..deletionBegunForItemId = checklistItemId
-      ..deletionUndoWindow = undoWindow;
+      ..deletionUndoWindow = undoWindow
+      ..deletionBegins += 1;
+    await _tracker?.deletionGate?.future;
+    if (_tracker?.deletionError case final error?) throw error;
     return _tracker?.deletionKey;
   }
 
@@ -310,7 +324,7 @@ void main() {
       await _pump(tester, item: _makeItem(title: 'Buy milk'));
 
       expect(find.text('Buy milk'), findsOneWidget);
-      expect(find.byType(Checkbox), findsOneWidget);
+      expect(find.byType(DesignSystemCheckbox), findsOneWidget);
     });
 
     group('chat approval caption', () {
@@ -340,7 +354,7 @@ void main() {
         tester,
       ) async {
         final controls = await _pumpWithControllers(tester, item: approved);
-        await tester.tap(find.byType(Checkbox));
+        await tester.tap(find.byType(DesignSystemCheckbox));
         await tester.pump();
         expect(controls.itemController.checkedValue, isFalse);
         expect(find.byType(ChecklistChatApprovalCaption), findsNothing);
@@ -359,7 +373,9 @@ void main() {
     testWidgets('unchecked item shows unchecked Checkbox', (tester) async {
       await _pump(tester, item: _makeItem());
 
-      final checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
+      final checkbox = tester.widget<DesignSystemCheckbox>(
+        find.byType(DesignSystemCheckbox),
+      );
       expect(checkbox.value, isFalse);
     });
 
@@ -399,7 +415,9 @@ void main() {
     testWidgets('checked item shows checked Checkbox', (tester) async {
       await _pump(tester, item: _makeItem(isChecked: true));
 
-      final checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
+      final checkbox = tester.widget<DesignSystemCheckbox>(
+        find.byType(DesignSystemCheckbox),
+      );
       expect(checkbox.value, isTrue);
     });
 
@@ -537,7 +555,9 @@ void main() {
       // the line above it always mount together.
       await _pump(tester, showDivider: true);
       final dividerTop = tester.getTopLeft(find.byType(Divider)).dy;
-      final checkboxTop = tester.getTopLeft(find.byType(Checkbox)).dy;
+      final checkboxTop = tester
+          .getTopLeft(find.byType(DesignSystemCheckbox))
+          .dy;
       expect(dividerTop, lessThan(checkboxTop));
     });
 
@@ -571,7 +591,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(Checkbox), findsNothing);
+      expect(find.byType(DesignSystemCheckbox), findsNothing);
     });
 
     // ── Checkbox interaction ───────────────────────────────────────────────
@@ -580,7 +600,7 @@ void main() {
       final ctrls = await _pumpWithControllers(tester);
       await tester.pump();
 
-      await tester.tap(find.byType(Checkbox));
+      await tester.tap(find.byType(DesignSystemCheckbox));
       await tester.pump();
 
       expect(ctrls.itemController.checkedValue, isTrue);
@@ -597,7 +617,7 @@ void main() {
         // enlarged motor-friendly hit target rather than the box itself.
         final inkWell = find
             .ancestor(
-              of: find.byType(Checkbox),
+              of: find.byType(DesignSystemCheckbox),
               matching: find.byType(InkWell),
             )
             .first;
@@ -637,7 +657,7 @@ void main() {
       );
 
       final popFinder = find.ancestor(
-        of: find.byType(Checkbox),
+        of: find.byType(DesignSystemCheckbox),
         matching: find.byType(ScaleTransition),
       );
 
@@ -650,7 +670,7 @@ void main() {
       // At rest the checkbox sits at its natural scale.
       expect(popScale(), moreOrLessEquals(1, epsilon: 0.001));
 
-      await tester.tap(find.byType(Checkbox));
+      await tester.tap(find.byType(DesignSystemCheckbox));
       await tester.pump();
 
       // A light-impact haptic fired on the not-checked → checked edge.
@@ -674,7 +694,7 @@ void main() {
       // No celebration at rest.
       expect(find.byType(CompletionBurst), findsNothing);
 
-      await tester.tap(find.byType(Checkbox));
+      await tester.tap(find.byType(DesignSystemCheckbox));
       await tester.pump(); // process the check → schedule the overlay burst
       // The burst spawns into the app overlay a frame later and runs its own
       // ~850ms timeline; pump into its spark window (0.12–0.96 of it).
@@ -755,7 +775,10 @@ void main() {
         );
         await tester.pump();
         // The row is built but sits well below the ~800px test viewport.
-        expect(tester.getRect(find.byType(Checkbox)).top, greaterThan(800));
+        expect(
+          tester.getRect(find.byType(DesignSystemCheckbox)).top,
+          greaterThan(800),
+        );
         expect(find.byType(CompletionBurst), findsNothing);
 
         itemCtrl.updateChecked(checked: true);
@@ -784,7 +807,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byType(Checkbox));
+      await tester.tap(find.byType(DesignSystemCheckbox));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 300));
@@ -807,7 +830,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byType(Checkbox));
+      await tester.tap(find.byType(DesignSystemCheckbox));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 300));
@@ -833,7 +856,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byType(Checkbox));
+      await tester.tap(find.byType(DesignSystemCheckbox));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 300));
@@ -861,7 +884,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byType(Checkbox));
+      await tester.tap(find.byType(DesignSystemCheckbox));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 300));
@@ -907,7 +930,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byType(Checkbox));
+      await tester.tap(find.byType(DesignSystemCheckbox));
       await tester.pump();
       expect(haptics, isEmpty);
 
@@ -917,11 +940,34 @@ void main() {
     testWidgets('checkbox is disabled when item is archived', (tester) async {
       await _pump(tester, item: _makeItem(isArchived: true));
 
-      final checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
+      final checkbox = tester.widget<DesignSystemCheckbox>(
+        find.byType(DesignSystemCheckbox),
+      );
       expect(checkbox.onChanged, isNull);
     });
 
     // ── Swipe to archive ───────────────────────────────────────────────────
+
+    testWidgets('each swipe band names what letting go will do', (
+      tester,
+    ) async {
+      await _pumpWithControllers(tester);
+      await tester.pump();
+      final swipe = tester.widget<DesignSystemSwipeActions>(
+        find.byType(DesignSystemSwipeActions),
+      );
+      expect(swipe.startToEnd!.label, 'Archive');
+      expect(swipe.endToStart!.label, 'Delete');
+    });
+
+    testWidgets('an archived item swipes to restore', (tester) async {
+      await _pumpWithControllers(tester, item: _makeItem(isArchived: true));
+      await tester.pump();
+      final swipe = tester.widget<DesignSystemSwipeActions>(
+        find.byType(DesignSystemSwipeActions),
+      );
+      expect(swipe.startToEnd!.label, 'Restore');
+    });
 
     testWidgets('swipe right archives item and shows snackbar', (
       tester,
@@ -932,7 +978,7 @@ void main() {
       // Swipe right (startToEnd)
       await tester.drag(
         find.byType(Dismissible),
-        const Offset(300, 0),
+        const Offset(500, 0),
       );
       await tester.pumpAndSettle();
 
@@ -951,7 +997,7 @@ void main() {
 
       await tester.drag(
         find.byType(Dismissible),
-        const Offset(300, 0),
+        const Offset(500, 0),
       );
       await tester.pumpAndSettle();
 
@@ -963,7 +1009,7 @@ void main() {
     /// Swipes the row away to the left and lets the dismiss animation run,
     /// staying well inside the undo window.
     Future<void> swipeToDelete(WidgetTester tester) async {
-      await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
+      await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
       // Frame by frame: the slide-out, then the resize, then onDismissed.
       for (var i = 0; i < 5; i++) {
         await tester.pump(const Duration(milliseconds: 200));
@@ -990,6 +1036,60 @@ void main() {
         // window, and the deletion is never undone.
         await tester.pump(kChecklistDeleteDuration * 2);
         expect(tracker.undoneDeletion, isNull);
+      },
+    );
+
+    testWidgets(
+      'a second swipe while the first deletion is pending starts nothing',
+      (tester) async {
+        final ctrls = await _pumpWithControllers(tester);
+        final gate = Completer<void>();
+        final tracker = ctrls.checklistTracker..deletionGate = gate;
+        await tester.pump();
+
+        await swipeToDelete(tester);
+        // The delete band is gone while the first deletion is pending.
+        expect(
+          tester
+              .widget<DesignSystemSwipeActions>(
+                find.byType(DesignSystemSwipeActions),
+              )
+              .endToStart,
+          isNull,
+        );
+        await swipeToDelete(tester);
+        expect(tracker.deletionBegins, 1);
+
+        gate.complete();
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 200));
+        }
+        expect(find.text('Item deleted'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a deletion that failed to start leaves the row deletable again',
+      (tester) async {
+        final ctrls = await _pumpWithControllers(tester);
+        final tracker = ctrls.checklistTracker
+          ..deletionError = StateError('write failed');
+        await tester.pump();
+
+        // The failure is rethrown to the zone, not swallowed: the test zone
+        // records it, and this guard collects it.
+        final errors = <Object>[];
+        await runZonedGuarded(
+          () => swipeToDelete(tester),
+          (error, _) => errors.add(error),
+        );
+        await tester.pump();
+        expect(errors.whereType<StateError>(), isNotEmpty);
+
+        tracker.deletionError = null;
+        await swipeToDelete(tester);
+        expect(tracker.deletionBegins, 2);
+        expect(find.text('Item deleted'), findsOneWidget);
       },
     );
 
@@ -1027,7 +1127,7 @@ void main() {
         // Second pump: rebuild after async providers resolved.
         await tester.pump();
 
-        await tester.tap(find.byType(Checkbox));
+        await tester.tap(find.byType(DesignSystemCheckbox));
         await tester.pump();
 
         expect(ctrls.completionService.clearedItemId, 'item-1');
@@ -1053,7 +1153,7 @@ void main() {
           expect(crossFadeBefore.collapsed, isFalse);
 
           // Tap checkbox to check the item.
-          await tester.tap(find.byType(Checkbox));
+          await tester.tap(find.byType(DesignSystemCheckbox));
           await tester.pump();
 
           // After the hold timer (1150ms) fires, the row hides. Pump past it.
@@ -1131,7 +1231,7 @@ void main() {
           expect(find.byType(SizeFadeCollapse), findsNothing);
 
           // The row content should be visible.
-          expect(find.byType(Checkbox), findsOneWidget);
+          expect(find.byType(DesignSystemCheckbox), findsOneWidget);
         },
       );
 
@@ -1404,7 +1504,7 @@ void main() {
 
           await openSuggestionDialog(tester);
 
-          expect(find.byType(AlertDialog), findsOneWidget);
+          expect(find.byType(DesignSystemModalActionBar), findsOneWidget);
           expect(find.text('AI Suggestion'), findsOneWidget);
           expect(find.text('Journal mentions completion'), findsOneWidget);
           expect(find.text('Confidence: high'), findsOneWidget);
@@ -1551,7 +1651,7 @@ void main() {
         await tester.pump();
 
         // Swipe right to archive.
-        await tester.drag(find.byType(Dismissible), const Offset(300, 0));
+        await tester.drag(find.byType(Dismissible), const Offset(500, 0));
         await tester.pumpAndSettle();
 
         expect(ctrls.itemController.archiveCalled, isTrue);
@@ -1831,7 +1931,7 @@ void main() {
         WidgetTester tester,
         double fraction,
       ) async {
-        await tester.tap(find.byType(Checkbox));
+        await tester.tap(find.byType(DesignSystemCheckbox));
         await tester.pump();
         // Sit out the hold (and the 320ms check "pop", so the checkbox is back
         // at rest scale) before the collapse starts.
@@ -1842,7 +1942,7 @@ void main() {
         await tester.pump(checklistCompletionFadeDuration * fraction);
         return (
           row: tester.getRect(find.byType(ChecklistItemRow)),
-          checkbox: tester.getRect(find.byType(Checkbox)),
+          checkbox: tester.getRect(find.byType(DesignSystemCheckbox)),
         );
       }
 
@@ -1853,7 +1953,9 @@ void main() {
           await tester.pump();
 
           final restRow = tester.getRect(find.byType(ChecklistItemRow));
-          final restCheckbox = tester.getRect(find.byType(Checkbox));
+          final restCheckbox = tester.getRect(
+            find.byType(DesignSystemCheckbox),
+          );
           expect(restRow.height, greaterThan(0));
           expect(restCheckbox.height, greaterThan(0));
 
@@ -1889,7 +1991,7 @@ void main() {
           ) {
             await tester.pump(step);
             final row = tester.getRect(find.byType(ChecklistItemRow));
-            final checkbox = tester.getRect(find.byType(Checkbox));
+            final checkbox = tester.getRect(find.byType(DesignSystemCheckbox));
 
             expect(
               checkbox.top,
@@ -1915,7 +2017,9 @@ void main() {
           await tester.pump();
 
           final restRow = tester.getRect(find.byType(ChecklistItemRow));
-          final restCheckbox = tester.getRect(find.byType(Checkbox));
+          final restCheckbox = tester.getRect(
+            find.byType(DesignSystemCheckbox),
+          );
           final mid = await collapseTo(tester, 0.3);
 
           // The reserved box keeps its full width and leading edge. The old
@@ -1950,7 +2054,7 @@ void main() {
           final fades = tester
               .widgetList<FadeTransition>(
                 find.ancestor(
-                  of: find.byType(Checkbox),
+                  of: find.byType(DesignSystemCheckbox),
                   matching: find.byType(FadeTransition),
                 ),
               )

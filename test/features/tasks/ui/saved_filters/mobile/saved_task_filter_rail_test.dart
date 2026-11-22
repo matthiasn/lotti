@@ -29,7 +29,7 @@ import '../../../../categories/test_utils.dart';
 
 const _f1 = SavedTaskFilter(
   id: 'f1',
-  name: 'In Progress',
+  name: 'In progress',
   filter: TasksFilter(selectedTaskStatuses: {'IN_PROGRESS'}),
 );
 const _f2 = SavedTaskFilter(

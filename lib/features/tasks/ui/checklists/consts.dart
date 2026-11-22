@@ -1,15 +1,16 @@
-const checklistActionIconFadeDuration = Duration(milliseconds: 300);
+import 'package:lotti/features/design_system/theme/motion_tokens.dart';
+
+const Duration checklistActionIconFadeDuration = MotionDurations.medium2;
 
 /// How long a just-checked item lingers (showing its checkmark + strike-through)
 /// before the Open filter hides it. Held a touch past 1s so the completed state
 /// is legible — the checkbox doesn't vanish the instant it's ticked — without
 /// stalling the list.
 const checklistCompletionAnimationDuration = Duration(milliseconds: 1150);
-const checklistCompletionFadeDuration = Duration(milliseconds: 300);
+const Duration checklistCompletionFadeDuration = MotionDurations.medium2;
 
-// Nano Banana design animations
-const checklistChevronRotationDuration = Duration(milliseconds: 200);
-const checklistCardCollapseAnimationDuration = Duration(milliseconds: 250);
+const Duration checklistChevronRotationDuration = MotionDurations.short4;
+const Duration checklistCardCollapseAnimationDuration = MotionDurations.medium1;
 
 /// Filter mode for checklist items.
 enum ChecklistFilter {

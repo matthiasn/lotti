@@ -23,7 +23,7 @@ import '../../../../categories/test_utils.dart';
 
 const _f1 = SavedTaskFilter(
   id: 'f1',
-  name: 'In Progress',
+  name: 'In progress',
   filter: TasksFilter(selectedTaskStatuses: {'IN_PROGRESS'}),
 );
 const _f2 = SavedTaskFilter(
@@ -588,7 +588,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Rename In Progress'), findsOneWidget);
+    expect(find.text('Rename In progress'), findsOneWidget);
     await tester.enterText(
       nameTextField(),
       'Doing now',
@@ -804,7 +804,7 @@ void main() {
       expect(
         tester.getSemantics(find.byKey(SavedTaskFiltersSheetBarKeys.pin('f1'))),
         matchesSemantics(
-          label: 'Pin In Progress',
+          label: 'Pin In progress',
           isButton: true,
           hasToggledState: true,
           hasTapAction: true,

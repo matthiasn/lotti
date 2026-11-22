@@ -41,11 +41,13 @@ import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_r
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item_rows.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_due_views_strip.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_list_states.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -225,6 +227,8 @@ void main() {
     ...getItServiceOverrides(),
     journalPageScopeProvider.overrideWithValue(true),
     journalPageControllerProvider(true).overrideWith(() => fakeController),
+    // The page asks the cache whether any category exists at all.
+    entitiesCacheServiceProvider.overrideWithValue(mockEntitiesCacheService),
     fakeRecentSearches(fakeRecents = FakeRecentSearchesController()),
     taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
     taskDueViewCountsProvider.overrideWith((ref) async => dueViewCounts),
@@ -636,7 +640,7 @@ void main() {
     await tester.pumpWidget(buildSubject(state: nullPagingState));
     await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(TaskListSpinner), findsOneWidget);
   });
 
   testWidgets('renders compact header padding at narrow width', (
@@ -1237,8 +1241,11 @@ void main() {
             ))
               chip.label: chip,
           };
-          expect(chips.keys, containsAll(['Has Agent', 'Open', 'P1', 'Work']));
-          for (final label in ['Has Agent', 'Open', 'P1']) {
+          expect(
+            chips.keys,
+            containsAll(['Has agent', 'Open', 'High', 'Work']),
+          );
+          for (final label in ['Has agent', 'Open', 'High']) {
             expect(chips[label]!.muted, query.isNotEmpty, reason: label);
             expect(
               chips[label]!.mutedReason,
@@ -1272,7 +1279,7 @@ void main() {
           find.byType(ActiveFilterChip),
         );
         expect(chip.leadingIcon, LottiIcons.aiModel);
-        expect(chip.label, 'Has Agent');
+        expect(chip.label, 'Has agent');
 
         await tester.tap(find.byType(ActiveFilterChip));
         await tester.pump();
@@ -1360,7 +1367,7 @@ void main() {
 
       expect(
         tester.widget<ActiveFilterChip>(find.byType(ActiveFilterChip)).label,
-        'No Agent',
+        'No agent',
       );
     });
 
@@ -1509,7 +1516,7 @@ void main() {
         final chip = tester.widget<ActiveFilterChip>(
           find.byType(ActiveFilterChip),
         );
-        expect(chip.label, 'P0');
+        expect(chip.label, 'Urgent');
         // Priority chips use the shared TaskShowcasePriorityGlyph via the
         // [avatar] slot — no leadingIcon set.
         expect(chip.avatar, isNotNull);
@@ -1991,7 +1998,9 @@ void main() {
   });
 
   group('no-results empty state', () {
-    const message = 'No tasks match your search.';
+    // The fixture's default state narrows the list (a category and a
+    // status), so its empty page is a filter miss.
+    const message = 'No tasks match these filters';
 
     setUp(() {
       pagingController.value = PagingState<int, JournalEntity>(
@@ -2005,10 +2014,11 @@ void main() {
       WidgetTester tester, {
       MediaQueryData? mediaQueryData,
       String match = '',
+      JournalPageState? pageState,
     }) async {
       await tester.pumpWidget(
         buildSubject(
-          state: state(match: match),
+          state: pageState ?? state(match: match),
           mediaQueryData: mediaQueryData,
         ),
       );
@@ -2034,13 +2044,81 @@ void main() {
       },
     );
 
+    testWidgets('a list nothing narrows says there are no open tasks', (
+      tester,
+    ) async {
+      await pumpEmpty(
+        tester,
+        pageState: state(
+          selectedCategoryIds: const <String>{},
+          selectedTaskStatuses: defaultSelectedTaskStatuses,
+        ),
+      );
+
+      expect(
+        tester
+            .widget<DesignSystemEmptyState>(find.byType(DesignSystemEmptyState))
+            .title,
+        'No open tasks',
+      );
+      expect(find.text('Clear filters'), findsNothing);
+      expect(find.text('Clear search'), findsNothing);
+    });
+
+    testWidgets(
+      'with no categories at all, the self-selected Unassigned category is '
+      'not a filter: a fresh install sees no open tasks, not a filter miss',
+      (tester) async {
+        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+        await pumpEmpty(
+          tester,
+          pageState: state(
+            selectedCategoryIds: const {''},
+            selectedTaskStatuses: defaultSelectedTaskStatuses,
+          ),
+        );
+
+        expect(
+          tester
+              .widget<DesignSystemEmptyState>(
+                find.byType(DesignSystemEmptyState),
+              )
+              .title,
+          'No open tasks',
+        );
+        expect(find.text('Clear filters'), findsNothing);
+      },
+    );
+
+    testWidgets('a filter miss offers to reset the filters, search untouched', (
+      tester,
+    ) async {
+      await pumpEmpty(tester);
+
+      await tester.tap(find.text('Clear filters'));
+      await tester.pump();
+
+      expect(fakeController.applyBatchFilterUpdateCalled, 1);
+      expect(fakeController.searchStringCalls, isEmpty);
+    });
+
+    testWidgets('a search miss offers to clear the search', (tester) async {
+      await pumpEmpty(tester, match: 'penguin census');
+
+      await tester.tap(find.text('Clear search'));
+      await tester.pump();
+
+      expect(fakeController.searchStringCalls.last, '');
+      expect(fakeController.applyBatchFilterUpdateCalled, 0);
+    });
+
     for (final (match, shown) in [
       (
         'https://github.com/matthiasn/lotti/pull/42',
         'No linked tasks found for this pull request.',
       ),
-      ('matthiasn/lotti#42', message),
-      ('penguin census', message),
+      ('matthiasn/lotti#42', 'Nothing matches “matthiasn/lotti#42”'),
+      ('penguin census', 'Nothing matches “penguin census”'),
     ]) {
       testWidgets('a search for "$match" that finds nothing says "$shown"', (
         tester,
@@ -2302,14 +2380,13 @@ void main() {
       final chip = tester.widget<ActiveFilterChip>(
         find.byType(ActiveFilterChip),
       );
-      expect(chip.label, 'P3');
+      expect(chip.label, 'Low');
       expect(chip.avatar, isNotNull);
     },
   );
 
   testWidgets(
-    'first-page and new-page progress indicators delegate to '
-    'CircularProgressIndicator.adaptive',
+    "loading and error builders are the task list's own states",
     (tester) async {
       // The two builders never fire on their own without a real paging
       // lifecycle, but coverage just needs the closures invoked once.
@@ -2328,20 +2405,20 @@ void main() {
         find.byType(PagedSliverList<int, JournalEntity>),
       );
 
-      final firstPageWidget = delegate.firstPageProgressIndicatorBuilder!(
-        ctx,
+      final firstPage =
+          delegate.firstPageProgressIndicatorBuilder!(ctx) as TaskListSpinner;
+      final newPage =
+          delegate.newPageProgressIndicatorBuilder!(ctx) as TaskListSpinner;
+      expect(firstPage.inline, isFalse);
+      expect(newPage.inline, isTrue);
+      expect(
+        delegate.firstPageErrorIndicatorBuilder!(ctx),
+        isA<TaskListErrorState>(),
       );
-      final newPageWidget = delegate.newPageProgressIndicatorBuilder!(ctx);
-
-      Widget unwrapToCenter(Widget w) {
-        expect(w, isA<Padding>());
-        final padding = w as Padding;
-        expect(padding.child, isA<Center>());
-        return (padding.child! as Center).child!;
-      }
-
-      expect(unwrapToCenter(firstPageWidget), isA<CircularProgressIndicator>());
-      expect(unwrapToCenter(newPageWidget), isA<CircularProgressIndicator>());
+      expect(
+        delegate.newPageErrorIndicatorBuilder!(ctx),
+        isA<TaskListErrorState>(),
+      );
     },
   );
 

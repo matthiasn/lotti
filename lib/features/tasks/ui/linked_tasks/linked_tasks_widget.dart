@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/agents/ui/agent_surface_menu.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
@@ -480,16 +481,12 @@ class _LinkedTasksHeader extends ConsumerWidget {
                           onTap: notifier.toggleManageMode,
                         ),
                     ],
-                    triggerBuilder: (context, open) => IconButton(
+                    // The overflow is the least important control in the
+                    // header: the design system's quiet icon action.
+                    triggerBuilder: (context, open) => DesignSystemIconAction(
+                      icon: LottiIcons.moreVertical,
                       tooltip: context.messages.linkedTasksMenuTooltip,
                       onPressed: open,
-                      icon: Icon(
-                        LottiIcons.moreVertical,
-                        // The overflow is the least important control in the
-                        // header; it was also the heaviest mark in it.
-                        color: tokens.colors.text.mediumEmphasis,
-                        size: tokens.spacing.step5,
-                      ),
                     ),
                   ),
               ],

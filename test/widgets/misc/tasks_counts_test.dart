@@ -39,7 +39,7 @@ void main() {
 
       expect(find.text('Tasks:'), findsOneWidget);
       expect(find.text('3 Open'), findsOneWidget);
-      expect(find.text('2 In Progress'), findsOneWidget);
+      expect(find.text('2 In progress'), findsOneWidget);
       expect(find.text('5 On Hold'), findsOneWidget);
       expect(find.text('0 Blocked'), findsOneWidget);
       expect(find.text('42 Done'), findsOneWidget);

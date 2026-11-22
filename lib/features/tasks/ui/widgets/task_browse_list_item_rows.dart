@@ -410,7 +410,7 @@ class _PriorityMeta extends StatelessWidget {
         SizedBox(width: context.designTokens.spacing.step2),
         Flexible(
           child: Text(
-            priorityLabel(context, priority),
+            priority.localizedLabel(context),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: textStyle,
@@ -420,16 +420,6 @@ class _PriorityMeta extends StatelessWidget {
     );
   }
 }
-
-/// The localized word for [priority] ("High"), the one vocabulary the row,
-/// the section header and the detail chip share.
-String priorityLabel(BuildContext context, TaskPriority priority) =>
-    switch (priority) {
-      TaskPriority.p0Urgent => context.messages.tasksPriorityP0,
-      TaskPriority.p1High => context.messages.tasksPriorityP1,
-      TaskPriority.p2Medium => context.messages.tasksPriorityP2,
-      TaskPriority.p3Low => context.messages.tasksPriorityP3,
-    };
 
 /// A glyph and a caption in medium ink: one quiet item of the row's meta line.
 class _MetaText extends StatelessWidget {
@@ -622,4 +612,4 @@ String _sectionTitle(BuildContext context, TaskBrowseSectionKey sectionKey) {
 }
 
 String _prioritySectionTitle(BuildContext context, TaskPriority priority) =>
-    '${priority.short} ${priorityLabel(context, priority)}';
+    '${priority.short} ${priority.localizedLabel(context)}';

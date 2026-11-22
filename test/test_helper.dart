@@ -84,7 +84,9 @@ class DarkWidgetTestBench extends StatelessWidget {
         data: mediaQuery,
         child: MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.dark(),
+          // Dark design tokens too, as the light bench has: a widget that
+          // reads them must not throw only in dark mode.
+          theme: resolveTestTheme(ThemeData.dark()),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             ...GlobalMaterialLocalizations.delegates,

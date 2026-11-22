@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_label.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -119,6 +120,21 @@ class AiRunningDecoderBars extends ConsumerWidget {
       return bars;
     }
 
+    // Which job is in flight, so the band can name it — read from the same
+    // per-type status that makes the band run at all. Every type is watched
+    // on every build, so the subscriptions never depend on order.
+    final running = [
+      for (final type in responseTypes)
+        if (ref.watch(
+              inferenceStatusControllerProvider((
+                id: entryId,
+                aiResponseType: type,
+              )),
+            ) ==
+            InferenceStatus.running)
+          type,
+    ];
+
     return Semantics(
       button: true,
       label: context.messages.aiRunningActivityOpenProgress,
@@ -130,7 +146,19 @@ class AiRunningDecoderBars extends ConsumerWidget {
           entryId: entryId,
           responseTypes: responseTypes,
         ),
-        child: bars,
+        // Positioned, so an idle band still collapses to the bars' zero
+        // height instead of to the label's.
+        child: Stack(
+          children: [
+            bars,
+            if (isRunning)
+              Positioned.fill(
+                child: Center(
+                  child: AiRunningLabel(type: running.firstOrNull),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

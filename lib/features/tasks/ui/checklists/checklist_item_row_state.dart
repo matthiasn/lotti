@@ -6,8 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_swipe_actions.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/components/motion/strikethrough_wipe.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -35,6 +40,11 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     with TickerProviderStateMixin {
   bool _isEditing = false;
+
+  /// A delete swipe has started and its deletion is not recorded yet. The
+  /// row snaps back while the write runs, so without this a second swipe
+  /// would start a second deletion whose timer outlives the first Undo.
+  bool _deletionPending = false;
   bool _showRow = true;
   Timer? _holdTimer;
 
@@ -427,13 +437,11 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                   // checking the LAST item collapses the row, and the data
                   // listener fires it for external check-offs (accepted AI
                   // proposals) too. Reduced motion suppresses the sparks + pop.
-                  // The visual checkbox stays a compact 20×20, but a 44×44
-                  // InkWell around it provides a Material-compliant tap
-                  // target so users with reduced motor precision can hit it
-                  // without aiming at the tiny box. A centre tap lands on the
-                  // Checkbox itself (keeping its native gesture + a11y
-                  // semantics); the surrounding ring is caught by the
-                  // InkWell. Both route through [applyCheck].
+                  // One shape for one control: the design system's checkbox,
+                  // inside a 44×44 target that lights up under a pointer or a
+                  // press. It used to sit in a resting circular "well" — a
+                  // square inside a circle, two shapes for one checkbox. Both
+                  // the ring and the box route through [applyCheck].
                   InkWell(
                     onTap: canToggle
                         ? () => applyCheck(checked: !item.data.isChecked)
@@ -441,57 +449,23 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                     borderRadius: BorderRadius.circular(
                       tokens.radii.badgesPills,
                     ),
-                    // Light up the whole 44×44 zone on hover / press so the
-                    // forgiving tap area is *visible*, not just promised —
-                    // users can see where it is safe to tap rather than
-                    // having to aim at the tiny box.
                     hoverColor: tokens.colors.surface.hover,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      alignment: Alignment.center,
-                      // A faint resting "well" (the same filled+bordered
-                      // language as the metadata chips) makes the 44px tap
-                      // zone visible at REST — on touch there is no hover, so
-                      // the hover highlight alone left the forgiving area
-                      // invisible where most users tap.
-                      decoration: BoxDecoration(
-                        color: tokens.colors.surface.enabled,
-                        borderRadius: BorderRadius.circular(
-                          tokens.radii.badgesPills,
-                        ),
-                        border: Border.all(
-                          color: tokens.colors.decorative.level02,
-                        ),
-                      ),
-                      child: SizedBox(
-                        key: _checkboxKey,
-                        width: 20,
-                        height: 20,
-                        child: ScaleTransition(
-                          scale: _checkPopScale,
-                          child: Checkbox(
-                            value: item.data.isChecked,
-                            onChanged: canToggle
-                                ? (value) => applyCheck(checked: value ?? false)
-                                : null,
-                            activeColor: tokens.colors.interactive.enabled,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
+                    child: SizedBox.square(
+                      dimension: TapTargets.compact,
+                      child: Center(
+                        child: SizedBox.square(
+                          key: _checkboxKey,
+                          dimension: ControlSizes.checkbox,
+                          child: ScaleTransition(
+                            scale: _checkPopScale,
+                            child: DesignSystemCheckbox(
+                              value: item.data.isChecked,
+                              semanticsLabel: item.data.title,
+                              onChanged: canToggle
+                                  ? (value) =>
+                                        applyCheck(checked: value ?? false)
+                                  : null,
                             ),
-                            // Medium emphasis (not low) at 2px: an empty
-                            // checkbox is a control the user must be able to
-                            // SEE — a faint low-emphasis outline nearly
-                            // vanished against the dark card for low-vision
-                            // users. This is control legibility, not the
-                            // metadata-chip emphasis tiering.
-                            side: BorderSide(
-                              color: tokens.colors.text.mediumEmphasis,
-                              width: 2,
-                            ),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
                           ),
                         ),
                       ),
@@ -643,7 +617,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                   child: child,
                 ),
                 child: GestureDetector(
-                  onTap: () => _showSuggestionDialog(context, suggestion),
+                  onTap: () async => _showSuggestionDialog(context, suggestion),
                   child: Container(
                     width: 8,
                     decoration: BoxDecoration(
@@ -658,102 +632,107 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
         );
       }
 
-      // Wrap in Dismissible for swipe actions.
-      Widget child = Dismissible(
-        key: Key('dismissible-${item.id}'),
-        dismissThresholds: const {
-          DismissDirection.endToStart: 0.25,
-          DismissDirection.startToEnd: 0.25,
-        },
-        confirmDismiss: (direction) async {
-          if (direction == DismissDirection.startToEnd) {
-            // Swipe right → toggle archive
-            if (item.data.isArchived) {
-              itemNotifier.unarchive();
-            } else {
-              itemNotifier.archive();
-              messenger.showDesignSystemToast(
-                tone: DesignSystemToastTone.warning,
-                title: context.messages.checklistItemArchived,
-                duration: kChecklistArchiveDuration,
-                countdown: true,
-                replaceCurrent: true,
-                action: ToastAction(
-                  label: context.messages.checklistItemArchiveUndo,
-                  onPressed: () {
-                    itemNotifier.unarchive();
-                    messenger.hideCurrentSnackBar();
-                  },
-                ),
-              );
-            }
-            return false;
-          }
-          // Swipe left → confirm delete
-          return true;
-        },
-        onDismissed: (_) async {
-          // Capture the message strings from `context` BEFORE the await:
-          // `beginItemDeletion` removes this row from the checklist's items,
-          // which unmounts the row and invalidates `context`. The
-          // `messenger` reference is captured higher up and survives.
-          final deletedMessage = context.messages.checklistItemDeleted;
-          final undoLabel = context.messages.checklistItemArchiveUndo;
-
-          // The repository deletes the item when the undo window closes —
-          // this row is gone by then — and records the deletion, so it
-          // completes even if the app dies meanwhile.
-          final key = await checklistNotifier.beginItemDeletion(
-            widget.itemId,
-            undoWindow: kChecklistDeleteDuration,
-          );
-          if (key == null) return;
-
+      // Swipe right toggles archive, swipe left deletes with an undo window:
+      // the design system's one swipe mechanic, its band naming the action.
+      void toggleArchive() {
+        // Swipe right → toggle archive
+        if (item.data.isArchived) {
+          itemNotifier.unarchive();
+        } else {
+          itemNotifier.archive();
           messenger.showDesignSystemToast(
             tone: DesignSystemToastTone.warning,
-            title: deletedMessage,
-            duration: kChecklistDeleteDuration,
+            title: context.messages.checklistItemArchived,
+            duration: kChecklistArchiveDuration,
             countdown: true,
             replaceCurrent: true,
             action: ToastAction(
-              label: undoLabel,
+              label: context.messages.checklistItemArchiveUndo,
               onPressed: () {
-                unawaited(
-                  checklistNotifier.undoItemDeletion(
-                    key: key,
-                    checklistItemId: widget.itemId,
-                  ),
-                );
+                itemNotifier.unarchive();
                 messenger.hideCurrentSnackBar();
               },
             ),
           );
-        },
-        background: ColoredBox(
-          color: Colors.amber.shade700,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: EdgeInsets.only(left: tokens.spacing.step5),
-              child: Icon(
-                item.data.isArchived
-                    ? LottiIcons.unarchive
-                    : LottiIcons.archive,
-                color: Colors.white,
+        }
+      }
+
+      Future<void> deleteWithUndo() async {
+        if (_deletionPending) return;
+        setState(() => _deletionPending = true);
+        // Capture the message strings from `context` BEFORE the await:
+        // `beginItemDeletion` removes this row from the checklist's items,
+        // which unmounts the row and invalidates `context`. The
+        // `messenger` reference is captured higher up and survives.
+        final deletedMessage = context.messages.checklistItemDeleted;
+        final undoLabel = context.messages.checklistItemArchiveUndo;
+
+        // The repository deletes the item when the undo window closes —
+        // this row is gone by then — and records the deletion, so it
+        // completes even if the app dies meanwhile.
+        final String? key;
+        try {
+          key = await checklistNotifier.beginItemDeletion(
+            widget.itemId,
+            undoWindow: kChecklistDeleteDuration,
+          );
+        } catch (_) {
+          // A failed start leaves the row deletable again; the error still
+          // reaches the zone's reporting.
+          if (mounted) setState(() => _deletionPending = false);
+          rethrow;
+        }
+        if (key == null) {
+          if (mounted) setState(() => _deletionPending = false);
+          return;
+        }
+        final deletionKey = key;
+
+        messenger.showDesignSystemToast(
+          tone: DesignSystemToastTone.warning,
+          title: deletedMessage,
+          duration: kChecklistDeleteDuration,
+          countdown: true,
+          replaceCurrent: true,
+          action: ToastAction(
+            label: undoLabel,
+            onPressed: () {
+              unawaited(
+                checklistNotifier.undoItemDeletion(
+                  key: deletionKey,
+                  checklistItemId: widget.itemId,
+                ),
+              );
+              messenger.hideCurrentSnackBar();
+            },
+          ),
+        );
+      }
+
+      final colors = tokens.colors;
+      Widget child = DesignSystemSwipeActions(
+        swipeKey: Key('dismissible-${item.id}'),
+        borderRadius: BorderRadius.zero,
+        startToEnd: DesignSystemSwipeAction(
+          color: colors.alert.warning.defaultColor,
+          foregroundColor: colors.text.onInteractiveAlert,
+          icon: item.data.isArchived
+              ? LottiIcons.unarchive
+              : LottiIcons.archive,
+          label: item.data.isArchived
+              ? context.messages.checklistItemSwipeRestore
+              : context.messages.checklistItemSwipeArchive,
+          onTrigger: toggleArchive,
+        ),
+        endToStart: _deletionPending
+            ? null
+            : DesignSystemSwipeAction(
+                color: colors.alert.error.defaultColor,
+                foregroundColor: colors.text.onInteractiveAlert,
+                icon: LottiIcons.delete,
+                label: context.messages.checklistItemSwipeDelete,
+                onTrigger: () async => deleteWithUndo(),
               ),
-            ),
-          ),
-        ),
-        secondaryBackground: ColoredBox(
-          color: Colors.red,
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: EdgeInsets.only(right: tokens.spacing.step5),
-              child: const Icon(LottiIcons.delete, color: Colors.white),
-            ),
-          ),
-        ),
         child: rowContent,
       );
 
@@ -799,86 +778,93 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   }
 
   Color _getSuggestionColor(ChecklistCompletionConfidence confidence) {
-    final colorScheme = Theme.of(context).colorScheme;
+    // An agent's suggestion speaks in agent violet; less confidence recedes
+    // to neutral ink rather than borrowing unrelated scheme roles.
+    final colors = context.designTokens.colors;
     return switch (confidence) {
-      ChecklistCompletionConfidence.high => colorScheme.primary,
-      ChecklistCompletionConfidence.medium => colorScheme.secondary,
-      ChecklistCompletionConfidence.low => colorScheme.tertiary,
+      ChecklistCompletionConfidence.high => colors.aiCard.accent,
+      ChecklistCompletionConfidence.medium => colors.text.mediumEmphasis,
+      ChecklistCompletionConfidence.low => colors.text.lowEmphasis,
     };
   }
 
-  void _showSuggestionDialog(
+  Future<void> _showSuggestionDialog(
     BuildContext context,
     ChecklistCompletionSuggestion suggestion,
-  ) {
+  ) async {
     final tokens = context.designTokens;
+    final completion = ref.read(checklistCompletionServiceProvider.notifier);
 
-    showDialog<void>(
+    await DsActionModal.show<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.messages.checklistAiSuggestionTitle),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.messages.checklistAiSuggestionBody,
-              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                color: tokens.colors.text.highEmphasis,
-              ),
+      title: context.messages.checklistAiSuggestionTitle,
+      builder: (modalContext) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.messages.checklistAiSuggestionBody,
+            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+              color: tokens.colors.text.highEmphasis,
             ),
-            SizedBox(height: tokens.spacing.step3),
-            Text(suggestion.reason),
-            SizedBox(height: tokens.spacing.step5),
-            Row(
-              children: [
-                Icon(
-                  LottiIcons.insights,
-                  size: 16,
-                  color: _getSuggestionColor(suggestion.confidence),
-                ),
-                SizedBox(width: tokens.spacing.step2),
-                Text(
-                  context.messages.checklistAiConfidenceLabel(
-                    suggestion.confidence.name,
-                  ),
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              ref
-                  .read(checklistCompletionServiceProvider.notifier)
-                  .clearSuggestion(widget.itemId);
-            },
-            child: Text(context.messages.cancelButton),
           ),
-          FilledButton.icon(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              _suppressDataCheckCelebration = true;
-              ref
-                  .read(
-                    checklistItemControllerProvider((
-                      id: widget.itemId,
-                      taskId: widget.taskId,
-                    )).notifier,
-                  )
-                  .updateChecked(checked: true);
-              _celebrateCheck(interactive: true);
-              ref
-                  .read(checklistCompletionServiceProvider.notifier)
-                  .clearSuggestion(widget.itemId);
-            },
-            icon: const Icon(LottiIcons.confirmCircled, size: 18),
-            label: Text(context.messages.checklistAiMarkComplete),
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            suggestion.reason,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step5),
+          Row(
+            children: [
+              Icon(
+                LottiIcons.insights,
+                size: IconSizes.s,
+                color: _getSuggestionColor(suggestion.confidence),
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              Text(
+                context.messages.checklistAiConfidenceLabel(
+                  suggestion.confidence.name,
+                ),
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step6),
+          DesignSystemModalActionBar(
+            secondary: [
+              DesignSystemButton(
+                label: context.messages.cancelButton,
+                variant: DesignSystemButtonVariant.secondary,
+                onPressed: () {
+                  Navigator.of(modalContext).pop();
+                  completion.clearSuggestion(widget.itemId);
+                },
+              ),
+            ],
+            primary: DesignSystemButton(
+              label: context.messages.checklistAiMarkComplete,
+              leadingIcon: LottiIcons.confirmCircled,
+              fullWidth: true,
+              onPressed: () {
+                Navigator.of(modalContext).pop();
+                _suppressDataCheckCelebration = true;
+                ref
+                    .read(
+                      checklistItemControllerProvider((
+                        id: widget.itemId,
+                        taskId: widget.taskId,
+                      )).notifier,
+                    )
+                    .updateChecked(checked: true);
+                _celebrateCheck(interactive: true);
+                completion.clearSuggestion(widget.itemId);
+              },
+            ),
           ),
         ],
       ),

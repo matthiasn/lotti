@@ -160,7 +160,7 @@ void main() {
 
       expect(
         subtitleOf(tester, 'c3'),
-        'Done → In Progress · Sun, Nov 8    Colony',
+        'Done → In progress · Sun, Nov 8    Colony',
       );
       expect(
         tester

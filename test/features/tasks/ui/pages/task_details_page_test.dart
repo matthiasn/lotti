@@ -24,6 +24,7 @@ import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/checklist/ui/correction_undo_snackbar.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/ui/task_pull_requests_section.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -49,6 +50,7 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/widgets/layout/empty_scaffold.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -591,6 +593,79 @@ void main() {
         expect(find.byType(SliverLayoutBuilder), findsWidgets);
       },
     );
+
+    testWidgets('a task that no longer exists says so', (tester) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          TaskDetailsPage(taskId: testTask.id),
+          overrides: hTaskDetailsPageOverrides(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        tester
+            .widget<DesignSystemEmptyState>(find.byType(DesignSystemEmptyState))
+            .title,
+        'This task no longer exists',
+      );
+    });
+
+    testWidgets(
+      'a failed load says it failed — never that the task is gone — and '
+      'tries again',
+      (tester) async {
+        var reads = 0;
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async {
+          reads++;
+          throw StateError('database unavailable');
+        });
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: hTaskDetailsPageOverrides(),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text("Couldn't load this task"), findsOneWidget);
+        expect(find.text('This task no longer exists'), findsNothing);
+
+        await tester.tap(find.text('Try again'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(reads, 2);
+      },
+    );
+
+    testWidgets('while the task loads, the page keeps its quiet shell', (
+      tester,
+    ) async {
+      final pending = Completer<JournalEntity?>();
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) => pending.future);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          TaskDetailsPage(taskId: testTask.id),
+          overrides: hTaskDetailsPageOverrides(),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(EmptyScaffoldWithTitle), findsOneWidget);
+      expect(find.byType(DesignSystemEmptyState), findsNothing);
+    });
 
     testWidgets('Task Entry is rendered', (tester) async {
       when(

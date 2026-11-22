@@ -722,7 +722,7 @@ void main() {
       final loader = svg.bytesLoader as SvgAssetLoader;
       final context = tester.element(find.byType(TaskStatePill));
 
-      expect(find.text('In Progress'), findsOneWidget);
+      expect(find.text('In progress'), findsOneWidget);
       expect(
         loader.assetName,
         'assets/design_system/project_status_active.svg',

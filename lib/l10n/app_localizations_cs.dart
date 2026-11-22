@@ -2572,6 +2572,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Zobrazit průběh AI';
 
   @override
+  String get aiRunningAnalyzingImage => 'Analyzuji obrázek';
+
+  @override
+  String get aiRunningGeneratingImage => 'Generuji obrázek';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Shrnuji nahrávku';
+
+  @override
+  String get aiRunningTranscribingAudio => 'Přepisuji zvuk';
+
+  @override
+  String get aiRunningWorking => 'AI pracuje';
+
+  @override
+  String get aiRunningWritingPrompt => 'Píšu prompt';
+
+  @override
   String get aiSettingsAddedLabel => 'Přidáno';
 
   @override
@@ -2836,10 +2854,16 @@ class AppLocalizationsCs extends AppLocalizations {
       'Pro tento záznam není nastavený žádný AI profil, takže se nedalo nic spustit.';
 
   @override
+  String get aiSummaryLoadFailed => 'Agenta tohoto úkolu se nepodařilo načíst';
+
+  @override
   String get aiSummaryPlayTooltip => 'Přečíst shrnutí';
 
   @override
   String get aiSummaryPreparingTooltip => 'Příprava zvuku';
+
+  @override
+  String get aiSummaryRetry => 'Zkusit znovu';
 
   @override
   String get aiSummarySpeakTooltip => 'Přečíst souhrn nahlas lokálně';
@@ -3434,7 +3458,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Viditelné pouze při zobrazení soukromých záznamů';
 
   @override
-  String get categorySearchPlaceholder => 'Vyhledávat kategorie...';
+  String get categorySearchPlaceholder => 'Vyhledávat kategorie…';
 
   @override
   String get changeSetCardTitle => 'Navržené změny';
@@ -3894,6 +3918,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checklistItemDeleteWarning => 'Tuto akci nelze vrátit zpět.';
+
+  @override
+  String get checklistItemSwipeArchive => 'Archivovat';
+
+  @override
+  String get checklistItemSwipeDelete => 'Smazat';
+
+  @override
+  String get checklistItemSwipeRestore => 'Obnovit';
 
   @override
   String get checklistMarkdownCopied =>
@@ -7005,6 +7038,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemTabBarTitle => 'Panel záložek';
 
   @override
+  String get designSystemTabHeaderFiltersLabel => 'Filtry';
+
+  @override
   String get designSystemTabPendingLabel => 'Čekající';
 
   @override
@@ -7168,7 +7204,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get editorMoreFormatting => 'Více formátování';
 
   @override
-  String get editorPlaceholder => 'Zadej poznámky...';
+  String get editorPlaceholder => 'Zadej poznámky…';
 
   @override
   String get embeddingModelCheckFailed =>
@@ -18144,6 +18180,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'nepřiřazeno';
 
   @override
+  String get taskDetailLoadFailed => 'Tento úkol se nepodařilo načíst';
+
+  @override
+  String get taskDetailNotFound => 'Tento úkol už neexistuje';
+
+  @override
+  String get taskDetailRetry => 'Zkusit znovu';
+
+  @override
   String get taskDueDateLabel => 'Datum splnění';
 
   @override
@@ -18492,6 +18537,23 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksDueViewsSemantics => 'Zobrazení podle termínu';
 
   @override
+  String get tasksEmptyClearFilters => 'Zrušit filtry';
+
+  @override
+  String get tasksEmptyClearSearch => 'Vymazat hledání';
+
+  @override
+  String get tasksEmptyFilterMiss => 'Těmto filtrům neodpovídá žádný úkol';
+
+  @override
+  String get tasksEmptyNoOpenTasks => 'Žádné otevřené úkoly';
+
+  @override
+  String tasksEmptySearchMiss(String query) {
+    return 'Nic neodpovídá „$query“';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Nastavit kategorii';
 
   @override
@@ -18601,31 +18663,25 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksListExpandedModeTooltip => 'Podrobný seznam';
 
   @override
+  String get tasksListLoadFailed => 'Tvoje úkoly se nepodařilo načíst';
+
+  @override
+  String get tasksListRetry => 'Zkusit znovu';
+
+  @override
   String get tasksPriorityFilterAll => 'Vše';
 
   @override
   String get tasksPriorityFilterTitle => 'Priorita';
 
   @override
-  String get tasksPriorityP0 => 'Naléhavé';
-
-  @override
   String get tasksPriorityP0Description => 'Naléhavé (co nejdříve)';
-
-  @override
-  String get tasksPriorityP1 => 'Vysoká';
 
   @override
   String get tasksPriorityP1Description => 'Vysoká (brzy)';
 
   @override
-  String get tasksPriorityP2 => 'Střední';
-
-  @override
   String get tasksPriorityP2Description => 'Střední (výchozí)';
-
-  @override
-  String get tasksPriorityP3 => 'Nízká';
 
   @override
   String get tasksPriorityP3Description => 'Nízká (kdykoliv)';

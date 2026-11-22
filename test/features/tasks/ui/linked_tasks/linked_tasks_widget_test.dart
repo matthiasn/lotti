@@ -434,7 +434,7 @@ void main() {
       (tester) async {
         await pumpWidget(tester, incoming: [], outgoing: []);
 
-        expect(find.text('Linked Tasks'), findsOneWidget);
+        expect(find.text('Linked tasks'), findsOneWidget);
         // A worded action, not a bare icon in an empty bordered box.
         expect(find.text('Link a task…'), findsOneWidget);
         expect(
@@ -467,7 +467,7 @@ void main() {
         // screen and it taught blockers and duplicates to someone who had
         // exactly one task and could not link it to anything.
         expect(find.byType(DesignSystemListItem), findsNothing);
-        expect(find.text('Linked Tasks'), findsNothing);
+        expect(find.text('Linked tasks'), findsNothing);
         expect(find.text('Link a task…'), findsNothing);
         expect(find.byIcon(LottiIcons.link), findsNothing);
         expect(
@@ -494,7 +494,7 @@ void main() {
           linkableTasksExist: false,
         );
 
-        expect(find.text('Linked Tasks'), findsOneWidget);
+        expect(find.text('Linked tasks'), findsOneWidget);
         expect(find.text('Already linked'), findsOneWidget);
       },
     );
@@ -525,7 +525,7 @@ void main() {
         ],
       );
 
-      expect(find.text('Linked Tasks'), findsOneWidget);
+      expect(find.text('Linked tasks'), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
       expect(find.byIcon(LottiIcons.moreVertical), findsOneWidget);
     });
@@ -622,7 +622,7 @@ void main() {
           createdAt: now,
           utcOffset: 0,
         ),
-        'In Progress': TaskStatus.inProgress(
+        'In progress': TaskStatus.inProgress(
           id: 's-progress',
           createdAt: now,
           utcOffset: 0,
@@ -802,7 +802,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Collapse for task-a.
-      await tester.tap(find.text('Linked Tasks'));
+      await tester.tap(find.text('Linked tasks'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Task A linked'), findsNothing);
@@ -846,13 +846,13 @@ void main() {
 
       Color? chevronColor() =>
           tester.widget<Icon>(find.byIcon(LottiIcons.chevronDown)).color;
-      final tokens = tester.element(find.text('Linked Tasks')).designTokens;
+      final tokens = tester.element(find.text('Linked tasks')).designTokens;
       expect(chevronColor(), tokens.colors.text.mediumEmphasis);
 
       final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
       addTearDown(gesture.removePointer);
       await gesture.addPointer(location: Offset.zero);
-      await gesture.moveTo(tester.getCenter(find.text('Linked Tasks')));
+      await gesture.moveTo(tester.getCenter(find.text('Linked tasks')));
       await tester.pump();
 
       expect(chevronColor(), tokens.colors.text.highEmphasis);
@@ -868,14 +868,14 @@ void main() {
       expect(find.text('Outgoing Task'), findsOneWidget);
       expect(find.byIcon(LottiIcons.chevronDown), findsOneWidget);
 
-      await tester.tap(find.text('Linked Tasks'));
+      await tester.tap(find.text('Linked tasks'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Outgoing Task'), findsNothing);
       expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
 
-      await tester.tap(find.text('Linked Tasks'));
+      await tester.tap(find.text('Linked tasks'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -962,7 +962,7 @@ void main() {
             mediaQueryData: const MediaQueryData(size: Size(390, 844)),
           );
 
-          final titleFinder = find.text('Linked Tasks');
+          final titleFinder = find.text('Linked tasks');
           expect(titleFinder, findsOneWidget);
 
           final painted = tester.renderObject<RenderParagraph>(titleFinder);

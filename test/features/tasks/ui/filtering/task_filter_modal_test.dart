@@ -335,7 +335,7 @@ void main() {
           matching: find.byType(DesignSystemSelectionRow),
         ),
       );
-      expect(statusRow.subtitle, 'Open, In Progress +1');
+      expect(statusRow.subtitle, 'Open, In progress +1');
 
       await tester.tap(find.text('Apply'));
       await tester.pumpAndSettle();

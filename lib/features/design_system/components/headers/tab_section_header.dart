@@ -1,7 +1,9 @@
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// How far a tab header's trailing controls reach into the content gutter.
@@ -61,14 +63,17 @@ class TabHeaderIconButton extends StatelessWidget {
   }
 }
 
-/// Compact header used by the Tasks and Projects tabs: a title row (with
-/// optional leading and trailing controls) and a search row with an optional
-/// trailing filter button.
+/// Compact header used by the Tasks, Projects, Logbook and Events tabs: a
+/// title row (with optional leading and trailing controls), a full-width
+/// search row, and a *Filters* chip leading the chip lane beneath it.
 ///
 /// The two rows are wrapped in [DetailContentWidth] so they align
 /// with the list content below — any full-bleed element (divider, chip row,
 /// etc.) is expected to be rendered outside this widget so it can span the
 /// full pane width.
+/// The header's *Filters* chip, for tests and for hosts that focus it.
+const Key tabSectionHeaderFiltersKey = ValueKey('tab-section-header-filters');
+
 class TabSectionHeader extends StatelessWidget {
   const TabSectionHeader({
     required this.title,
@@ -171,35 +176,35 @@ class TabSectionHeader extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spacing.step5),
+          // The search field keeps the row to itself: nothing in or beside
+          // it takes its width.
           DetailContentWidth(
             endBleed: trailingBleed,
-            child: Row(
-              children: [
-                Expanded(
-                  child: DesignSystemSearch(
-                    focusNode: searchFocusNode,
-                    hintText: searchHint,
-                    size: DesignSystemSearchSize.small,
-                    initialText: query,
-                    onChanged: onSearchChanged,
-                    onClear: onSearchCleared,
-                    onSearchPressed: onSearchPressed,
-                  ),
-                ),
-                // No gap: the slot's own blank inset beside the glyph is the
-                // air between the field and the funnel.
-                SizedBox.square(
-                  dimension: TapTargets.minimum,
-                  child: Center(
-                    child: TabHeaderIconButton(
-                      icon: LottiIcons.filter,
-                      tooltip: filterTooltip,
-                      onPressed: onFilterPressed,
-                      active: filtersActive,
-                    ),
-                  ),
-                ),
-              ],
+            child: DesignSystemSearch(
+              focusNode: searchFocusNode,
+              hintText: searchHint,
+              size: DesignSystemSearchSize.small,
+              initialText: query,
+              onChanged: onSearchChanged,
+              onClear: onSearchCleared,
+              onSearchPressed: onSearchPressed,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          // The filter entry leads the chip lane under the field, selected
+          // while any filter narrows the list.
+          DetailContentWidth(
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: DesignSystemChip(
+                key: tabSectionHeaderFiltersKey,
+                label: context.messages.designSystemTabHeaderFiltersLabel,
+                semanticsLabel: filterTooltip,
+                leadingIcon: LottiIcons.filter,
+                selected: filtersActive,
+                size: DesignSystemChipSize.compactPill,
+                onPressed: onFilterPressed,
+              ),
             ),
           ),
           SizedBox(height: tokens.spacing.step3),
