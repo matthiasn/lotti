@@ -8441,6 +8441,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInsLoadFailed => 'Your check-ins didn\'t load.';
+
+  @override
   String get goalCheckInsSeeAll => 'See all check-ins';
 
   @override
@@ -9162,6 +9165,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goalPageLoadFailed => 'This goal\'s page didn\'t load.';
+
+  @override
   String goalPatternBusiestHour(String hour) {
     return 'Most sessions start around $hour:00. Open Insights for deeper analysis.';
   }
@@ -9315,12 +9321,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalReportSectionWindow => 'The wider window';
 
   @override
+  String get goalsLoadFailed => 'Your goals didn\'t load.';
+
+  @override
   String goalTodayBriefingNext(String step) {
     return 'Next: $step';
   }
 
   @override
   String get goalTodayBriefingTitle => 'Today';
+
+  @override
+  String get goalTryAgain => 'Try again';
 
   @override
   String get goalUnitHours => 'h';
@@ -9716,16 +9728,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitSectionOptionsTitle => 'Options';
 
   @override
-  String get habitsFilterAll => 'all';
+  String get habitsFilterAll => 'All';
 
   @override
-  String get habitsFilterCompleted => 'done';
+  String get habitsFilterCompleted => 'Done';
 
   @override
-  String get habitsFilterOpenNow => 'due';
+  String get habitsFilterOpenNow => 'Due';
 
   @override
-  String get habitsFilterPendingLater => 'later';
+  String get habitsFilterPendingLater => 'Later';
 
   @override
   String get habitsGoalLineLabel => 'Goal';
@@ -19108,16 +19120,16 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get habitsCompletedHeader => 'Completed';
 
   @override
-  String get habitsFilterAll => 'all';
+  String get habitsFilterAll => 'All';
 
   @override
-  String get habitsFilterCompleted => 'done';
+  String get habitsFilterCompleted => 'Done';
 
   @override
-  String get habitsFilterOpenNow => 'due';
+  String get habitsFilterOpenNow => 'Due';
 
   @override
-  String get habitsFilterPendingLater => 'later';
+  String get habitsFilterPendingLater => 'Later';
 
   @override
   String get habitShowAlertAtLabel => 'Show alert at';

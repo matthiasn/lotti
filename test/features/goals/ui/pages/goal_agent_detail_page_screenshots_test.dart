@@ -319,6 +319,9 @@ Future<void> _capture(
             goalTimelineItemsProvider(
               _agentId,
             ).overrideWith((ref) => journal ? _journalCheckIns : const []),
+            goalCheckInsLoadProvider(
+              _agentId,
+            ).overrideWithValue(GoalCheckInsLoad.settled),
           ],
         ),
       ),

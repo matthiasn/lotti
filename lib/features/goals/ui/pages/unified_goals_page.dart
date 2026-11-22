@@ -7,6 +7,7 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/cards/ds_rows_card.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/motion/on_screen_ticker_mode.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -356,18 +357,26 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
                           ),
                         ),
                         SizedBox(height: tokens.spacing.step5),
+                        // A first load that failed says so and offers the
+                        // read again; a failed background reload keeps the
+                        // goals it has.
                         if (failedFirstLoad)
                           Padding(
-                            padding: EdgeInsets.only(
-                              top: tokens.spacing.sectionGap,
+                            padding: EdgeInsets.symmetric(
+                              vertical: tokens.spacing.sectionGap,
                             ),
-                            child: Text(
-                              messages.agentsPageLoadFailed,
-                              textAlign: TextAlign.center,
-                              style: tokens.typography.styles.body.bodyMedium
-                                  .copyWith(
-                                    color: tokens.colors.text.mediumEmphasis,
-                                  ),
+                            child: DesignSystemEmptyState(
+                              key: const ValueKey('unified-goals-load-failed'),
+                              icon: LottiIcons.warning,
+                              title: messages.goalsLoadFailed,
+                              action: DesignSystemButton(
+                                key: const ValueKey('unified-goals-retry'),
+                                label: messages.goalTryAgain,
+                                variant: DesignSystemButtonVariant.secondary,
+                                onPressed: () => ref
+                                  ..invalidate(activeGoalAgentsProvider)
+                                  ..invalidate(dormantGoalAgentsProvider),
+                              ),
                             ),
                           ),
                         // The page's own first run gets the same designed
@@ -449,7 +458,7 @@ List<Widget> _paintedApart(List<Widget> children) => [
 
 /// An invitation, not an apology (the check-in rail's own empty-state
 /// pattern): says what a goal is for and offers the one action that starts
-/// one, so the page's first run is as designed as its mid-life.
+/// one, in the design system's one empty-state grammar.
 class _NoGoalsYet extends StatelessWidget {
   const _NoGoalsYet();
 
@@ -458,30 +467,16 @@ class _NoGoalsYet extends StatelessWidget {
     final tokens = context.designTokens;
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.sectionGap),
-      child: Column(
-        children: [
-          Icon(
-            LottiIcons.flag,
-            size: IconSizes.l,
-            color: tokens.colors.text.lowEmphasis,
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          Text(
-            context.messages.unifiedGoalsEmptyInvitation,
-            textAlign: TextAlign.center,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step4),
-          DesignSystemButton(
-            key: const ValueKey('unified-goals-empty-cta'),
-            label: context.messages.agentsCreateGoal,
-            leadingIcon: LottiIcons.add,
-            variant: DesignSystemButtonVariant.secondary,
-            onPressed: createGoalFromGoalsList,
-          ),
-        ],
+      child: DesignSystemEmptyState(
+        icon: LottiIcons.flag,
+        hint: context.messages.unifiedGoalsEmptyInvitation,
+        action: DesignSystemButton(
+          key: const ValueKey('unified-goals-empty-cta'),
+          label: context.messages.agentsCreateGoal,
+          leadingIcon: LottiIcons.add,
+          variant: DesignSystemButtonVariant.secondary,
+          onPressed: createGoalFromGoalsList,
+        ),
       ),
     );
   }

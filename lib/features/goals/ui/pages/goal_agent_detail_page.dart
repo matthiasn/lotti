@@ -57,6 +57,7 @@ import 'package:lotti/features/goals/ui/goal_health_direction.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/knowledge/goal_knowledge_section.dart';
+import 'package:lotti/features/goals/ui/pages/goal_page_state.dart';
 import 'package:lotti/features/goals/ui/pages/goal_report_sections.dart';
 import 'package:lotti/features/goals/ui/unified/goal_companion.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
@@ -336,12 +337,15 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
       },
       child: child,
     );
+    // The error is read before the loading flag throughout: while Riverpod
+    // retries a failed read the state is loading AND errored, and the
+    // retry's backoff must not read as a load still on its way.
     if ((!healthAsync.hasValue && !healthAsync.hasError) ||
         (!identityAsync.hasValue && !identityAsync.hasError)) {
       return popSafe(
-        Scaffold(
-          appBar: AppBar(leading: backToList, title: const Text('')),
-          body: const Center(child: CircularProgressIndicator()),
+        GoalPageState(
+          kind: GoalPageStateKind.loading,
+          onBack: () => beamToNamed(goalsRootPath),
         ),
       );
     }
@@ -350,31 +354,27 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     // goal were healthy. A background reload error with a retained
     // identity keeps the established page (the no-flash rule).
     final identity = identityAsync.value;
-    if ((identityAsync.hasError && !identityAsync.hasValue) ||
-        (identityAsync.hasValue &&
-            (identity is! AgentIdentityEntity ||
-                identity.kind != AgentKinds.goalAgent))) {
+    if (identityAsync.hasError && !identityAsync.hasValue) {
       return popSafe(
-        Scaffold(
-          appBar: AppBar(leading: backToList, title: const Text('')),
-          body: Center(
-            child: Padding(
-              padding: EdgeInsets.all(tokens.spacing.step5),
-              child: Text(
-                identityAsync.hasError && !identityAsync.hasValue
-                    ? context.messages.goalDetailHealthUnavailable
-                    : context.messages.goalDetailNotFound,
-                textAlign: TextAlign.center,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-              ),
-            ),
-          ),
+        GoalPageState(
+          kind: GoalPageStateKind.failed,
+          onBack: () => beamToNamed(goalsRootPath),
+          onRetry: () => ref
+            ..invalidate(agentIdentityProvider(agentId))
+            ..invalidate(goalAgentHealthProvider(agentId)),
         ),
       );
     }
-    final goalIdentity = identity! as AgentIdentityEntity;
+    if (identity is! AgentIdentityEntity ||
+        identity.kind != AgentKinds.goalAgent) {
+      return popSafe(
+        GoalPageState(
+          kind: GoalPageStateKind.notFound,
+          onBack: () => beamToNamed(goalsRootPath),
+        ),
+      );
+    }
+    final goalIdentity = identity;
     final isActive = goalIdentity.lifecycle == AgentLifecycle.active;
     final health = healthAsync.value;
     final spec = health?.spec;

@@ -8476,6 +8476,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInsLoadFailed => 'Dine check-ins blev ikke indlæst.';
+
+  @override
   String get goalCheckInsSeeAll => 'Se alle check-ins';
 
   @override
@@ -9197,6 +9200,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalPageLoadFailed => 'Siden for dette mål blev ikke indlæst.';
+
+  @override
   String goalPatternBusiestHour(String hour) {
     return 'De fleste sessioner starter omkring $hour:00. Åben indsigt for dybere analyse.';
   }
@@ -9350,12 +9356,18 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalReportSectionWindow => 'Det bredere vindue';
 
   @override
+  String get goalsLoadFailed => 'Dine mål blev ikke indlæst.';
+
+  @override
   String goalTodayBriefingNext(String step) {
     return 'Næste: $step';
   }
 
   @override
   String get goalTodayBriefingTitle => 'I dag';
+
+  @override
+  String get goalTryAgain => 'Prøv igen';
 
   @override
   String get goalUnitHours => 'h';

@@ -58,6 +58,7 @@ void main() {
     String? failedAudioId,
     String? durableFailedAudioId,
     ValueChanged<TriggerSkillParams>? onTrigger,
+    GoalCheckInsLoad load = GoalCheckInsLoad.settled,
   }) => withClock(
     Clock.fixed(today.add(const Duration(hours: 3))),
     // The settle pump belongs INSIDE the fixed clock. The transcription-failure
@@ -78,6 +79,7 @@ void main() {
           ),
           overrides: [
             goalTimelineItemsProvider('goal-1').overrideWithValue(items),
+            goalCheckInsLoadProvider('goal-1').overrideWithValue(load),
             for (final item in items.whereType<GoalAudioCheckIn>())
               goalAudioTranscriptionFailedProvider(item.id).overrideWith(
                 (ref) async => item.id == durableFailedAudioId,
@@ -136,6 +138,25 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('an empty rail still loading shows a quiet spinner, never the '
+      'invitation to record', (tester) async {
+    await pump(tester, const [], load: GoalCheckInsLoad.loading);
+
+    expect(find.byKey(const ValueKey('goal-checkin-loading')), findsOneWidget);
+    expect(find.byKey(const ValueKey('goal-checkin-empty')), findsNothing);
+  });
+
+  testWidgets('an empty rail whose read failed says so and offers Try again, '
+      'never the invitation to record', (tester) async {
+    await pump(tester, const [], load: GoalCheckInsLoad.failed);
+
+    expect(find.text("Your check-ins didn't load."), findsOneWidget);
+    expect(find.byKey(const ValueKey('goal-checkin-empty')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('goal-checkin-retry')));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('an empty rail invites rather than apologises', (tester) async {

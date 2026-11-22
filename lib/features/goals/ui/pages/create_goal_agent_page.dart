@@ -37,6 +37,7 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
+import 'package:lotti/features/goals/ui/pages/goal_page_state.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -597,14 +598,25 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
       if (isActiveGoal && editSpec != null) {
         _initializeEdit(identity, editSpec);
       } else {
+        // The error first: a Riverpod retry is loading and errored at once,
+        // and its backoff must not read as a load still on its way.
+        final failed =
+            (identityAsync.hasError && identity == null) ||
+            (healthAsync.hasError && editSpec == null);
+        final gone =
+            (identity != null && !isActiveGoal) ||
+            (!identityAsync.isLoading && identity == null) ||
+            (!healthAsync.isLoading && editSpec == null);
         return _EditLoadScaffold(
           onBack: _back,
-          unavailable:
-              identityAsync.hasError ||
-              healthAsync.hasError ||
-              (identity != null && !isActiveGoal) ||
-              (!identityAsync.isLoading && identity == null) ||
-              (!healthAsync.isLoading && editSpec == null),
+          kind: failed
+              ? GoalPageStateKind.failed
+              : gone
+              ? GoalPageStateKind.notFound
+              : GoalPageStateKind.loading,
+          onRetry: () => ref
+            ..invalidate(agentIdentityProvider(widget.agentId!))
+            ..invalidate(goalAgentHealthProvider(widget.agentId!)),
         );
       }
     }

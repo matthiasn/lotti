@@ -14333,6 +14333,12 @@ abstract class AppLocalizations {
   /// **'Reflecting · {elapsed}'**
   String goalCheckInSessionRunning(String elapsed);
 
+  /// A goal's check-in history could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Your check-ins didn\'t load.'**
+  String get goalCheckInsLoadFailed;
+
   /// No description provided for @goalCheckInsSeeAll.
   ///
   /// In en, this message translates to:
@@ -15444,6 +15450,12 @@ abstract class AppLocalizations {
   /// **'{goal} is off track'**
   String goalOffTrackNotificationTitle(String goal);
 
+  /// A goal page (detail, timeline, chat): reading the goal failed.
+  ///
+  /// In en, this message translates to:
+  /// **'This goal\'s page didn\'t load.'**
+  String get goalPageLoadFailed;
+
   /// No description provided for @goalPatternBusiestHour.
   ///
   /// In en, this message translates to:
@@ -15660,6 +15672,12 @@ abstract class AppLocalizations {
   /// **'The wider window'**
   String get goalReportSectionWindow;
 
+  /// Goals list: the first load of the goals failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Your goals didn\'t load.'**
+  String get goalsLoadFailed;
+
   /// A goal's first next step in the Today card.
   ///
   /// In en, this message translates to:
@@ -15671,6 +15689,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Today'**
   String get goalTodayBriefingTitle;
+
+  /// Button that repeats a failed read on the Goals surfaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get goalTryAgain;
 
   /// Abbreviated unit after a tracked-time value on a goal dimension, e.g. 3.5 h.
   ///
@@ -16359,25 +16383,25 @@ abstract class AppLocalizations {
   /// No description provided for @habitsFilterAll.
   ///
   /// In en, this message translates to:
-  /// **'all'**
+  /// **'All'**
   String get habitsFilterAll;
 
   /// No description provided for @habitsFilterCompleted.
   ///
   /// In en, this message translates to:
-  /// **'done'**
+  /// **'Done'**
   String get habitsFilterCompleted;
 
   /// No description provided for @habitsFilterOpenNow.
   ///
   /// In en, this message translates to:
-  /// **'due'**
+  /// **'Due'**
   String get habitsFilterOpenNow;
 
   /// No description provided for @habitsFilterPendingLater.
   ///
   /// In en, this message translates to:
-  /// **'later'**
+  /// **'Later'**
   String get habitsFilterPendingLater;
 
   /// No description provided for @habitsGoalLineLabel.

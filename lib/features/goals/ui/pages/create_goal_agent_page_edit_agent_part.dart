@@ -89,35 +89,22 @@ class _EditAgentSection extends StatelessWidget {
 }
 
 /// The edit page before the goal it edits has loaded, or once it cannot be:
-/// the page's own title and way back over a spinner, or over the reason.
+/// the goal pages' shared states ([GoalPageState]) — the spinner, a failed
+/// read with Try again, or a goal that is gone or archived.
 class _EditLoadScaffold extends StatelessWidget {
-  const _EditLoadScaffold({required this.onBack, required this.unavailable});
+  const _EditLoadScaffold({
+    required this.onBack,
+    required this.kind,
+    this.onRetry,
+  });
 
   final VoidCallback onBack;
-  final bool unavailable;
+  final GoalPageStateKind kind;
+  final VoidCallback? onRetry;
 
   @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    return Scaffold(
-      appBar: AppBar(
-        leading: BackButton(onPressed: onBack),
-        title: Text(messages.goalFormEditTitle),
-      ),
-      body: Center(
-        child: unavailable
-            ? Padding(
-                padding: EdgeInsets.all(tokens.spacing.step5),
-                child: Text(
-                  messages.goalDetailHealthUnavailable,
-                  textAlign: TextAlign.center,
-                ),
-              )
-            : const CircularProgressIndicator(),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      GoalPageState(kind: kind, onBack: onBack, onRetry: onRetry);
 }
 
 /// Leaving the single edit page with changes on it asks first, as the person

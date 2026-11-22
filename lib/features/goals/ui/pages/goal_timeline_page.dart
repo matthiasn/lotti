@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_timeline.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
+import 'package:lotti/features/goals/ui/pages/goal_page_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/goal_routes.dart';
@@ -29,11 +32,33 @@ class GoalTimelinePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final identity = ref.watch(agentIdentityProvider(agentId)).value;
-    final goalIdentity = identity is AgentIdentityEntity ? identity : null;
-    final isActive = goalIdentity?.lifecycle == AgentLifecycle.active;
+    final identityAsync = ref.watch(agentIdentityProvider(agentId));
+    final identity = identityAsync.value;
+    // The same three states the goal's page shows before it has a goal: a
+    // first load, a failed read with Try again, and a link to a goal that
+    // is gone — never a history page with an empty title over an
+    // invitation to record.
+    void back() => beamToNamed(goalDetailPath(agentId));
+    // The error first: a Riverpod retry is loading and errored at once. A
+    // read that resolved to nothing is a goal that is gone, not a load.
+    if (!identityAsync.hasValue && identityAsync.hasError) {
+      return GoalPageState(
+        kind: GoalPageStateKind.failed,
+        onBack: back,
+        onRetry: () => ref.invalidate(agentIdentityProvider(agentId)),
+      );
+    }
+    if (!identityAsync.hasValue) {
+      return GoalPageState(kind: GoalPageStateKind.loading, onBack: back);
+    }
+    if (identity is! AgentIdentityEntity ||
+        identity.kind != AgentKinds.goalAgent) {
+      return GoalPageState(kind: GoalPageStateKind.notFound, onBack: back);
+    }
+    final goalIdentity = identity;
+    final isActive = goalIdentity.lifecycle == AgentLifecycle.active;
     final health = ref.watch(goalAgentHealthProvider(agentId)).value;
-    final title = health?.spec?.title ?? goalIdentity?.displayName ?? '';
+    final title = health?.spec?.title ?? goalIdentity.displayName;
     final spec = health?.spec;
     final progress = spec == null
         ? null
@@ -47,7 +72,7 @@ class GoalTimelinePage extends ConsumerWidget {
       context,
       agentId: agentId,
       goalTitle: title,
-      personaName: goalIdentity?.displayName,
+      personaName: goalIdentity.displayName,
       // The goal row's category, so a check-in is filed with its goal.
       categoryId: goalCategoryId,
     );
@@ -67,9 +92,12 @@ class GoalTimelinePage extends ConsumerWidget {
           // Creating stays reachable without scrolling to the bottom of a
           // history that may be months long.
           if (isActive)
-            IconButton(
+            // The LIVE mic, as on the goal's page: `micIdle` is Lucide's
+            // slashed mic-off, which on an enabled action reads as
+            // "recording unavailable".
+            DesignSystemIconAction(
               key: const ValueKey('goal-timeline-checkin-action'),
-              icon: const Icon(LottiIcons.micIdle),
+              icon: LottiIcons.mic,
               tooltip: context.messages.goalCheckInRecordCta,
               onPressed: openComposer,
             ),

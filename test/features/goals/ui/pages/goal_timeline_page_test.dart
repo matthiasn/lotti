@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -8,6 +10,9 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -18,6 +23,7 @@ import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/pages/goal_timeline_page.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -50,6 +56,7 @@ void main() {
     WidgetTester tester, {
     AgentLifecycle lifecycle = AgentLifecycle.active,
     void Function(String)? onBeam,
+    Future<AgentDomainEntity?> Function()? identityRead,
   }) {
     beamToNamedOverride = onBeam;
     return withClock(
@@ -58,10 +65,15 @@ void main() {
         makeTestableWidgetWithScaffold(
           const GoalTimelinePage(agentId: 'agent-1'),
           overrides: [
-            agentIdentityProvider(
-              'agent-1',
-            ).overrideWith((ref) async => identity(lifecycle)),
+            agentIdentityProvider('agent-1').overrideWith(
+              (ref) => identityRead != null
+                  ? identityRead()
+                  : Future.value(identity(lifecycle)),
+            ),
             goalTimelineItemsProvider('agent-1').overrideWithValue(const []),
+            goalCheckInsLoadProvider(
+              'agent-1',
+            ).overrideWithValue(GoalCheckInsLoad.settled),
             goalCaptureTargetProvider(
               'agent-1',
             ).overrideWith((ref) async => 'goal-1'),
@@ -80,6 +92,62 @@ void main() {
       find.textContaining('Tell your agent what is actually going on'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('before the goal has loaded: the spinner under the way back, '
+      'never an untitled history inviting a recording', (tester) async {
+    final never = Completer<AgentDomainEntity?>();
+    await pump(tester, identityRead: () => never.future);
+    await tester.pump();
+
+    expect(find.byType(DesignSystemSpinner), findsOneWidget);
+    expect(
+      find.textContaining('Tell your agent what is actually going on'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('a failed read says so and Try again reads the goal again', (
+    tester,
+  ) async {
+    var reads = 0;
+    await pump(
+      tester,
+      identityRead: () async {
+        reads++;
+        throw StateError('agent database unavailable');
+      },
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text("This goal's page didn't load."), findsOneWidget);
+    final before = reads;
+    await tester.tap(find.byKey(const ValueKey('goal-page-retry')));
+    await tester.pumpAndSettle();
+    expect(reads, greaterThan(before));
+  });
+
+  testWidgets('a link to a goal that is gone says so, and back returns to '
+      'its page', (tester) async {
+    final beamed = <String>[];
+    await pump(tester, identityRead: () async => null, onBeam: beamed.add);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('goal-page-not-found')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('goal-page-state-back')));
+    expect(beamed.last, goalDetailPath('agent-1'));
+  });
+
+  testWidgets('the record action is the live mic, not the slashed mic-off', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.pumpAndSettle();
+
+    final action = tester.widget<DesignSystemIconAction>(
+      find.byKey(const ValueKey('goal-timeline-checkin-action')),
+    );
+    expect(action.icon, LottiIcons.mic);
   });
 
   testWidgets('an active goal can record without scrolling', (tester) async {

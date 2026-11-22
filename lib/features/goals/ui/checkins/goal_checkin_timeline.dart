@@ -11,12 +11,15 @@ import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/logic/goal_timeline_projection.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
+import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_duration.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording_playback.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -85,7 +88,41 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
   Widget build(BuildContext context) {
     final items = ref.watch(goalTimelineItemsProvider(widget.agentId));
     _nextGraceExpiry = null;
-    if (items.isEmpty) return _Empty(action: widget.emptyAction);
+    if (items.isEmpty) {
+      // An empty list is only "no check-ins yet" once the history has been
+      // read: a first load and a failed read both arrive here as `[]`.
+      return switch (ref.watch(goalCheckInsLoadProvider(widget.agentId))) {
+        GoalCheckInsLoad.loading => Padding(
+          key: const ValueKey('goal-checkin-loading'),
+          padding: EdgeInsets.symmetric(
+            vertical: context.designTokens.spacing.step5,
+          ),
+          child: Center(
+            child: DesignSystemSpinner(
+              semanticsLabel: context.messages.commonLoading,
+            ),
+          ),
+        ),
+        GoalCheckInsLoad.failed => DesignSystemEmptyState(
+          key: const ValueKey('goal-checkin-load-failed'),
+          icon: LottiIcons.warning,
+          hint: context.messages.goalCheckInsLoadFailed,
+          action: DesignSystemButton(
+            key: const ValueKey('goal-checkin-retry'),
+            label: context.messages.goalTryAgain,
+            variant: DesignSystemButtonVariant.secondary,
+            onPressed: () {
+              ref.invalidate(goalAssessmentHistoryProvider(widget.agentId));
+              final goalId = ref.read(goalEntryIdProvider(widget.agentId));
+              if (goalId != null) {
+                ref.invalidate(linkedEntriesControllerProvider(goalId));
+              }
+            },
+          ),
+        ),
+        GoalCheckInsLoad.settled => _Empty(action: widget.emptyAction),
+      };
+    }
     final cap = widget.maxBeats ?? _visibleCount;
     final visible = items.length <= cap ? items : items.sublist(0, cap);
     final hasOlder = widget.maxBeats == null && visible.length < items.length;
@@ -353,7 +390,9 @@ class _Empty extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DesignSystemEmptyState(
     key: const ValueKey('goal-checkin-empty'),
-    icon: LottiIcons.micIdle,
+    // The person timeline's empty glyph, so the two histories look alike —
+    // and not `micIdle`, Lucide's slashed mic-off, beside a call to record.
+    icon: LottiIcons.timeline,
     hint: context.messages.goalCheckInsEmptyInvitation,
     action: action,
   );

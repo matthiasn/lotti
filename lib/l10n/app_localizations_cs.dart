@@ -8585,6 +8585,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInsLoadFailed => 'Tvoje hlášení se nenačetla.';
+
+  @override
   String get goalCheckInsSeeAll => 'Zobrazit všechna hlášení';
 
   @override
@@ -9315,6 +9318,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalPageLoadFailed => 'Stránka tohoto cíle se nenačetla.';
+
+  @override
   String goalPatternBusiestHour(String hour) {
     return 'Většina relací začíná kolem $hour:00. Pro podrobnější analýzu otevři Přehledy.';
   }
@@ -9469,12 +9475,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalReportSectionWindow => 'Širší okno';
 
   @override
+  String get goalsLoadFailed => 'Tvoje cíle se nenačetly.';
+
+  @override
   String goalTodayBriefingNext(String step) {
     return 'Dál: $step';
   }
 
   @override
   String get goalTodayBriefingTitle => 'Dnes';
+
+  @override
+  String get goalTryAgain => 'Zkusit znovu';
 
   @override
   String get goalUnitHours => 'h';
@@ -9873,16 +9885,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitSectionOptionsTitle => 'Možnosti';
 
   @override
-  String get habitsFilterAll => 'všechny';
+  String get habitsFilterAll => 'Všechny';
 
   @override
-  String get habitsFilterCompleted => 'hotovo';
+  String get habitsFilterCompleted => 'Hotovo';
 
   @override
-  String get habitsFilterOpenNow => 'nyní';
+  String get habitsFilterOpenNow => 'Nyní';
 
   @override
-  String get habitsFilterPendingLater => 'později';
+  String get habitsFilterPendingLater => 'Později';
 
   @override
   String get habitsGoalLineLabel => 'Cíl';

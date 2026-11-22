@@ -55,6 +55,9 @@ void main() {
         ),
         overrides: [
           goalTimelineItemsProvider('agent-1').overrideWithValue(items),
+          goalCheckInsLoadProvider(
+            'agent-1',
+          ).overrideWithValue(GoalCheckInsLoad.settled),
         ],
       ),
     ),

@@ -1,18 +1,31 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai_attribution.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_data.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fake_entry_controller.dart';
+import '../../../helpers/fake_linked_entries_controller.dart';
 import '../../../helpers/service_overrides.dart';
+import '../../../helpers/test_get_it.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -180,6 +193,128 @@ void main() {
     });
   });
 
+  group('goalCheckInsLoadProvider', () {
+    // An entry controller reads its services from GetIt as it is built.
+    setUp(
+      () => setUpTestGetIt(
+        additionalSetup: () => getIt.registerSingleton<EditorStateService>(
+          MockEditorStateService(),
+        ),
+      ),
+    );
+    tearDown(tearDownTestGetIt);
+
+    final link = EntryLink.basic(
+      id: 'link-1',
+      fromId: 'goal-1',
+      toId: 'note-1',
+      createdAt: at,
+      updatedAt: at,
+      vectorClock: null,
+    );
+    final note = JournalEntry(
+      meta: meta('note-1'),
+      entryText: const EntryText(plainText: 'Gym bag packed.'),
+    );
+
+    Future<GoalCheckInsLoad> loadWith(
+      List<Override> overrides, {
+      bool withJournal = true,
+    }) async {
+      final c = ProviderContainer(
+        overrides: withServiceOverrides([
+          goalRepositoryProvider.overrideWithValue(withJournal ? goals : null),
+          goalMirrorServiceProvider.overrideWithValue(
+            withJournal ? mirror : null,
+          ),
+          ...overrides,
+        ]),
+      );
+      addTearDown(c.dispose);
+      final sub = c.listen(goalCheckInsLoadProvider('agent-1'), (_, _) {});
+      addTearDown(sub.close);
+      // Let the futures behind it settle (or fail) first.
+      await Future<void>.value();
+      await Future<void>.value();
+      await Future<void>.value();
+      return c.read(goalCheckInsLoadProvider('agent-1'));
+    }
+
+    test('settled once the links, their entries and the assessments have '
+        'all been read', () async {
+      expect(
+        await loadWith([
+          goalAssessmentHistoryProvider(
+            'agent-1',
+          ).overrideWith((ref) async => []),
+          linkedEntriesControllerProvider(
+            'goal-1',
+          ).overrideWith(() => FakeLinkedEntriesController(links: [link])),
+          createEntryControllerOverride(note),
+        ]),
+        GoalCheckInsLoad.settled,
+      );
+    });
+
+    test('loading while the assessments are still on their way', () async {
+      final never = Completer<List<GoalAssessmentRecord>>();
+      expect(
+        await loadWith([
+          goalAssessmentHistoryProvider(
+            'agent-1',
+          ).overrideWith((ref) => never.future),
+          linkedEntriesControllerProvider(
+            'goal-1',
+          ).overrideWith(FakeLinkedEntriesController.new),
+        ]),
+        GoalCheckInsLoad.loading,
+      );
+    });
+
+    test('loading while a linked entry is still on its way', () async {
+      expect(
+        await loadWith([
+          goalAssessmentHistoryProvider(
+            'agent-1',
+          ).overrideWith((ref) async => []),
+          linkedEntriesControllerProvider(
+            'goal-1',
+          ).overrideWith(() => FakeLinkedEntriesController(links: [link])),
+          entryControllerProvider('note-1').overrideWith(_PendingEntry.new),
+        ]),
+        GoalCheckInsLoad.loading,
+      );
+    });
+
+    test(
+      'failed when a read failed, so the rail never calls it empty',
+      () async {
+        expect(
+          await loadWith([
+            goalAssessmentHistoryProvider(
+              'agent-1',
+            ).overrideWith((ref) async => throw StateError('db gone')),
+            linkedEntriesControllerProvider(
+              'goal-1',
+            ).overrideWith(FakeLinkedEntriesController.new),
+          ]),
+          GoalCheckInsLoad.failed,
+        );
+      },
+    );
+
+    test('settled with no goal row: nothing is linked to read', () async {
+      expect(
+        await loadWith([
+          goalAssessmentHistoryProvider(
+            'agent-1',
+          ).overrideWith((ref) async => []),
+        ], withJournal: false),
+        GoalCheckInsLoad.settled,
+      );
+    });
+  });
+
   group('goalCheckInEntriesProvider', () {
     test('resolves the entries linked to the goal row', () {
       final entry = JournalEntry(
@@ -296,4 +431,10 @@ void main() {
       );
     });
   });
+}
+
+/// An entry whose read never finishes: the rail must wait for it.
+class _PendingEntry extends EntryController {
+  @override
+  Future<EntryState?> build() => Completer<EntryState?>().future;
 }

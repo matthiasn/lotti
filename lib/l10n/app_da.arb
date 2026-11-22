@@ -3814,6 +3814,7 @@
   "goalCheckInSessionPaused": "Sat på pause · {elapsed}",
   "goalCheckInSessionResume": "Fortsæt",
   "goalCheckInSessionRunning": "Reflekterer · {elapsed}",
+  "goalCheckInsLoadFailed": "Dine check-ins blev ikke indlæst.",
   "goalCheckInsSeeAll": "Se alle check-ins",
   "goalCheckInsTitle": "Check-ins",
   "goalCheckInsTitleWithCount": "Check-ins · {count}",
@@ -4000,6 +4001,7 @@
       }
     }
   },
+  "goalPageLoadFailed": "Siden for dette mål blev ikke indlæst.",
   "goalPatternBusiestHour": "De fleste sessioner starter omkring {hour}:00. Åben indsigt for dybere analyse.",
   "goalPatternTitle": "Timing mønster",
   "goalPendingProposalBadge": "Forslag afventer",
@@ -4043,8 +4045,10 @@
   "goalReportSectionReflection": "Fra dine check-ins",
   "goalReportSectionStanding": "Sådan står det",
   "goalReportSectionWindow": "Det bredere vindue",
+  "goalsLoadFailed": "Dine mål blev ikke indlæst.",
   "goalTodayBriefingNext": "Næste: {step}",
   "goalTodayBriefingTitle": "I dag",
+  "goalTryAgain": "Prøv igen",
   "goalUnitHours": "h",
   "goalUnitMinutes": "min",
   "goalUnsupportedCriterionBody": "Dette mål måler noget, denne version af Lotti endnu ikke kan læse, så dets fremskridt opdateres ikke her, og det kan ikke redigeres på denne enhed. Dine andre enheder holder det opdateret.",

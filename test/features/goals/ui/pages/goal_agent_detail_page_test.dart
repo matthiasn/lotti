@@ -42,6 +42,7 @@ import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -1796,7 +1797,10 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    // The design system's spinner, under the page's own way back.
+    expect(find.byType(DesignSystemSpinner), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byKey(const ValueKey('goal-page-state-back')), findsOneWidget);
     expect(find.textContaining('No report yet'), findsNothing);
   });
 
@@ -1825,10 +1829,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(
-      find.text("Couldn't load this goal's health right now."),
-      findsOneWidget,
-    );
+    expect(find.text("This goal's page didn't load."), findsOneWidget);
+    expect(find.byKey(const ValueKey('goal-page-retry')), findsOneWidget);
     expect(find.textContaining('No report yet'), findsNothing);
   });
 

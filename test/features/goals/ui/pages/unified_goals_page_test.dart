@@ -412,7 +412,7 @@ void main() {
 
     // The segmented toggle renders a sizing/active text pair per segment —
     // both share the same hit area, so tapping the first is unambiguous.
-    await tester.tap(find.text('done').first);
+    await tester.tap(find.text('Done').first);
     await tester.pump();
 
     expect(
@@ -595,7 +595,7 @@ void main() {
 
     // Folded: the tabs sit BELOW the title instead of beside it.
     final titleRect = tester.getRect(find.text('Goals'));
-    final tabsRect = tester.getRect(find.text('due').first);
+    final tabsRect = tester.getRect(find.text('Due').first);
     expect(tabsRect.top, greaterThan(titleRect.bottom - 1));
   });
 
@@ -603,11 +603,14 @@ void main() {
       'goals and ungrouped habits', (tester) async {
     await pump(tester, baseState(), agentsFail: true);
 
-    expect(
-      find.text("Couldn't load your agents right now."),
-      findsOneWidget,
-    );
+    expect(find.text("Your goals didn't load."), findsOneWidget);
+    expect(find.byKey(const ValueKey('unified-goals-retry')), findsOneWidget);
     expect(find.byType(UnifiedGoalRow), findsNothing);
+    // Try again reads the goals again; the read still fails here, so the
+    // failure stays rather than an empty list.
+    await tester.tap(find.byKey(const ValueKey('unified-goals-retry')));
+    await tester.pumpAndSettle();
+    expect(find.text("Your goals didn't load."), findsOneWidget);
     // Without the goal claims, orphan classification would be guesswork —
     // the error line carries the state instead of a misgrouped list.
     expect(find.text('Not in a goal'), findsNothing);
