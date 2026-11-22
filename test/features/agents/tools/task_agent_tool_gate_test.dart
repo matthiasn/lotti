@@ -165,6 +165,36 @@ void main() {
       );
     });
 
+    test('hides both document tools where the documents feature is not '
+        'wired', () {
+      expect(
+        visibleTaskAgentToolNames(TaskAgentWakeFacts.permissive).difference(
+          visibleTaskAgentToolNames(
+            const TaskAgentWakeFacts(hasDocumentSource: false),
+          ),
+        ),
+        {
+          TaskAgentToolNames.readDocument,
+          TaskAgentToolNames.proposeDocumentVersion,
+        },
+      );
+    });
+
+    test(
+      'hides only the read on a task with no document: the first can still '
+      'be proposed',
+      () {
+        expect(
+          visibleTaskAgentToolNames(TaskAgentWakeFacts.permissive).difference(
+            visibleTaskAgentToolNames(
+              const TaskAgentWakeFacts(hasDocuments: false),
+            ),
+          ),
+          {TaskAgentToolNames.readDocument},
+        );
+      },
+    );
+
     test('hides exactly the refresh tool without a linked pull request', () {
       expect(
         visibleTaskAgentToolNames(TaskAgentWakeFacts.permissive).difference(

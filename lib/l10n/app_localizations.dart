@@ -1807,6 +1807,12 @@ abstract class AppLocalizations {
   /// **'Check: \"{title}\"'**
   String agentSummaryCheckItem(Object title);
 
+  /// Proposal row: the task agent proposes a new document.
+  ///
+  /// In en, this message translates to:
+  /// **'Create document \"{title}\"'**
+  String agentSummaryCreateDocument(String title);
+
   /// No description provided for @agentSummaryCreateFollowUp.
   ///
   /// In en, this message translates to:
@@ -1830,6 +1836,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create task: {title}'**
   String agentSummaryCreateTask(Object title);
+
+  /// Proposal row: the task agent proposes a new version of a document.
+  ///
+  /// In en, this message translates to:
+  /// **'New version of \"{title}\"'**
+  String agentSummaryDocumentVersion(String title);
 
   /// No description provided for @agentSummaryFollowUpTask.
   ///

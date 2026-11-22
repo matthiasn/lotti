@@ -206,6 +206,7 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
     required ProposalLedger ledger,
     required SuggestionRetractionService retractionService,
     RelatedTaskLookup? relatedTasks,
+    List<TaskDocumentSummary> documents = const [],
     List<String> priorObservationTexts = const [],
   }) {
     final pendingSets = ledger.pendingSets;
@@ -361,6 +362,22 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
           taskId,
         ),
         null => null,
+      },
+      // The task's documents as listed, the reader for `read_document`, and
+      // the documents with a version already waiting for the user.
+      taskDocuments: documents,
+      readTaskDocument: switch (taskDocuments) {
+        final TaskDocumentSource source => (documentId) => source.read(
+          taskId: taskId,
+          documentId: documentId,
+        ),
+        null => null,
+      },
+      pendingDocumentProposalIds: {
+        for (final entry in ledger.open)
+          if (entry.toolName == TaskAgentToolNames.proposeDocumentVersion &&
+              entry.args['documentId'] is String)
+            entry.args['documentId'] as String,
       },
       // Canonical triples of every live link touching this task, so an
       // already-existing relationship is suppressed instead of re-proposed.

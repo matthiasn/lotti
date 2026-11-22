@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/pull_request_link_source.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/get_it.dart';
@@ -18,6 +19,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../mocks/mocks.dart';
 import '../../github/pull_request_fixtures.dart';
 import '../../projects/test_utils.dart' show makeTestProject;
+import '../fake_task_document_source.dart';
 import 'task_agent_workflow_test_helpers.dart';
 
 /// Covers the agenda-gated tool surface of a wake: which tools
@@ -382,6 +384,64 @@ void main() {
         ).called(1);
       },
     );
+
+    group('document tools', () {
+      const documentToolNames = <String>[
+        TaskAgentToolNames.readDocument,
+        TaskAgentToolNames.proposeDocumentVersion,
+      ];
+
+      for (final narrowToolSurface in [false, true]) {
+        test(
+          'are withheld without the documents feature '
+          '(narrowToolSurface: $narrowToolSurface)',
+          () async {
+            final bench = createTaskAgentWorkflowTestBench(
+              narrowToolSurface: narrowToolSurface,
+            );
+
+            final perTurn = await exposedToolNamesPerTurn(bench);
+
+            for (final name in documentToolNames) {
+              expect(perTurn.first.handedOver, isNot(contains(name)));
+            }
+          },
+        );
+
+        test(
+          'offer only the proposal on a task with no document, both once it '
+          'holds one (narrowToolSurface: $narrowToolSurface)',
+          () async {
+            final documents = FakeTaskDocumentSource();
+            final empty = await exposedToolNamesPerTurn(
+              createTaskAgentWorkflowTestBench(
+                narrowToolSurface: narrowToolSurface,
+                taskDocuments: documents,
+              ),
+            );
+            expect(
+              empty.first.handedOver,
+              contains(TaskAgentToolNames.proposeDocumentVersion),
+            );
+            expect(
+              empty.first.handedOver,
+              isNot(contains(TaskAgentToolNames.readDocument)),
+            );
+
+            documents.documents = const [
+              TaskDocumentSummary(id: 'doc-1', title: 'Launch brief'),
+            ];
+            final holding = await exposedToolNamesPerTurn(
+              createTaskAgentWorkflowTestBench(
+                narrowToolSurface: narrowToolSurface,
+                taskDocuments: documents,
+              ),
+            );
+            expect(holding.first.handedOver, containsAll(documentToolNames));
+          },
+        );
+      }
+    });
 
     test('offers the pull request tools with the flag off once the task has '
         'a repository and a linked pull request', () async {

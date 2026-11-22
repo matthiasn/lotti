@@ -1015,6 +1015,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateDocument(String title) {
+    return 'Crea il documento \"$title\"';
+  }
+
+  @override
   String agentSummaryCreateFollowUp(Object title) {
     return 'Crea attività di follow-up: \"$title\"';
   }
@@ -1032,6 +1037,11 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String agentSummaryCreateTask(Object title) {
     return 'Crea attività: $title';
+  }
+
+  @override
+  String agentSummaryDocumentVersion(String title) {
+    return 'Nuova versione di \"$title\"';
   }
 
   @override

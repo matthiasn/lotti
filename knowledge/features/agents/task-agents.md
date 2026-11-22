@@ -5,7 +5,7 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-15T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-23T09:00:00Z }
 stale_after: 2027-02-01
 sources:
   - id: adr-0166
@@ -960,6 +960,8 @@ of the payload.
 | `resolve_attention_request` | this agent holds no active attention claim on the task |
 | `get_category_projects`, `set_task_project` | the task's category has no projects, or the workflow has no `ProjectRepository` |
 | `get_unlinked_pull_requests`, `link_pull_request` | the task's category names no GitHub repository, this device holds no token, or the workflow has no `PullRequestLinkSource` (`canListFor`, local reads only) |
+| `read_document`, `propose_document_version` | the workflow has no `TaskDocumentSource` — the documents feature is not wired (`hasDocumentSource`) |
+| `read_document` | the task holds no document (`hasDocuments`); the proposal stays offered, since it can create the first |
 | `refresh_pull_requests` | the task links no pull request, or the workflow has no `PullRequestContextSource`. A merged one keeps it offered: the wake's own refresh may have timed out and shown it as not refreshed, then stored it as merged in the background before the facts were read |
 | `find_related_tasks` | search by meaning cannot run on this device (`hasRelatedTaskSearch`) |
 | `get_task_tldr`, `get_task_report` | search by meaning cannot run *and* the wake's Linked Tasks section lists no task (`hasLinkedTasks`) — there is then no task they may read |
@@ -1034,7 +1036,8 @@ Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatche
 `set_task_status`, `set_task_language`, `add_multiple_checklist_items`,
 `update_checklist_items`, `assign_task_labels`, `create_follow_up_task`,
 `link_task`, `set_task_project`, `create_task_project`, `link_pull_request`,
-`migrate_checklist_items`, `create_time_entry`, `update_time_entry`.
+`propose_document_version`, `migrate_checklist_items`, `create_time_entry`,
+`update_time_entry`.
 
 `set_task_status` may propose DONE — the user saying the task is done or closed
 is their decision, so the agent proposes it instead of flagging an unmet
@@ -1353,12 +1356,43 @@ sequenceDiagram
 ## Task documents
 
 A task's markdown documents are owned by the documents feature, which ranks
-above agents. The dispatcher already applies a confirmed
-`propose_document_version` through the `TaskDocumentSource` port
-(`lib/features/agents/model/task_document_source.dart`), once per
-confirmation and never over a newer version; a stale one is withdrawn
-`nonRetryable`. The agent is not offered the document tools yet. See
-[Task documents](../documents.md#applying-a-confirmed-proposal).
+above agents; the agent reaches them through the `TaskDocumentSource` port
+(`lib/features/agents/model/task_document_source.dart`), wired in
+`app_bootstrap.dart`. See [Task documents](../documents.md) for the documents
+themselves (ADR 0166).
+
+- **Context.** The wake reads the task's documents once
+  (`_taskDocumentDirectory`, empty when unwired or the read fails) and lists
+  them by id, quoted title and version in a `## Documents` section in the
+  volatile tail, after Pull Requests (`renderTaskDocumentDirectory`). Their
+  text never enters the context unread — a deliberate exception to omitting
+  the prior report's prose, since a document is text the user confirmed or
+  wrote.
+- **`read_document {documentId}`** is **read-only**, handled in the strategy
+  (`task_agent_document_handlers.dart`). It answers with the version's
+  markdown fenced as the user's data, or a sentence for an unknown id or a
+  failed read.
+- **`propose_document_version {documentId | newTitle, markdown,
+  changeSummary}`** is **deferred**, repeatable within a wake (one per
+  document), and in `individualConfirmTools`: the user reads a whole text, so
+  Confirm all never takes it. It is validated fail-closed at queue time: the
+  text must be there, exactly one of `documentId` (a document the section
+  listed) or `newTitle`, and no version of that document may already wait for
+  the user — from an earlier wake (`pendingDocumentProposalIds`, from the
+  ledger's open items) or this one. The handler fills `baseVersionId` from the
+  listing, never from the model, and records the `title` for the review row
+  ("New version of “Launch brief”", or "Create document “…”" in the reader's
+  language; the row's kind is Add for a new document, Update for a version).
+- **Only when asked.** The system prompt's `## Documents` rules and the tool
+  description say so: a request in a note, voice note or chat message, never
+  new material on its own. Proposing or reading a document does not by
+  itself require a new report (`TaskAgentReportPolicy`).
+- **Confirmation** applies it through the same port, once per confirmation
+  and never over a newer version; a stale one is withdrawn `nonRetryable`
+  ([Applying a confirmed proposal](../documents.md#applying-a-confirmed-proposal)).
+- **Gating.** Both tools need the port; `read_document` also needs a
+  document. The query chat's planner withholds the proposal (see
+  [Query chat](query-chat.md)).
 
 ## Linked and related tasks are read on demand
 

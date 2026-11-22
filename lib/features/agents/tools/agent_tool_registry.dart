@@ -197,6 +197,7 @@ abstract final class AgentToolRegistry {
     TaskAgentToolNames.setTaskProject,
     TaskAgentToolNames.createTaskProject,
     TaskAgentToolNames.linkPullRequest,
+    TaskAgentToolNames.proposeDocumentVersion,
     TaskAgentToolNames.migrateChecklistItems,
     TaskAgentToolNames.createTimeEntry,
     TaskAgentToolNames.updateTimeEntry,
@@ -204,9 +205,11 @@ abstract final class AgentToolRegistry {
 
   /// Deferred tools the user confirms one at a time, never through a
   /// "Confirm all" gesture: a status change moves the task between lists, and
-  /// DONE takes it off every open-task view.
+  /// DONE takes it off every open-task view; a document version is a whole
+  /// text, which the user reads before it becomes the document.
   static const individualConfirmTools = <String>{
     TaskAgentToolNames.setTaskStatus,
+    TaskAgentToolNames.proposeDocumentVersion,
   };
 
   /// Batch tools that should be exploded into individual change item entries.
@@ -238,6 +241,8 @@ abstract final class AgentToolRegistry {
     TaskAgentToolNames.createFollowUpTask,
     TaskAgentToolNames.linkTask,
     TaskAgentToolNames.updateTimeEntry,
+    // A wake may draft for more than one document.
+    TaskAgentToolNames.proposeDocumentVersion,
   };
 
   /// All tools available to the Task Agent.

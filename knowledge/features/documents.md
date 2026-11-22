@@ -1,13 +1,25 @@
 ---
 type: Feature Module
 title: Task documents
-description: Markdown documents a task holds, drafted and revised by its agent through proposals and edited by hand — designed, not yet built.
+description: Markdown documents a task holds, drafted and revised by its agent through proposals and edited by hand — partly built.
 resource: ../../lib/features/documents
 tags: [documents, tasks, agents, proposals, markdown, versions, review]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-23T05:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-23T09:00:00Z }
 stale_after: 2027-04-03
 sources:
+  - id: tool-definitions
+    resource: ../../lib/features/agents/tools/task_document_tool_definitions.dart
+    title: read_document and propose_document_version
+    last_modified: 2026-11-23
+  - id: strategy-handlers
+    resource: ../../lib/features/agents/workflow/task_agent_document_handlers.dart
+    title: The strategy's document handlers
+    last_modified: 2026-11-23
+  - id: document-context
+    resource: ../../lib/features/agents/workflow/task_document_context.dart
+    title: The wake's Documents section and the read answer
+    last_modified: 2026-11-23
   - id: source-port
     resource: ../../lib/features/agents/model/task_document_source.dart
     title: TaskDocumentSource — the port the documents feature implements
@@ -125,14 +137,13 @@ sources:
 > What runs today: the two journal variants, their merge, the repository,
 > the user's side of the UI — the Documents section, the Add sheet row, the
 > editor, and the document page with history, restore and delete — and the
-> apply path of an agent proposal: a confirmed `propose_document_version` is
-> written through the documents feature ([Entities](#entities),
-> [The repository](#the-repository), [Where it shows](#where-it-shows),
-> [Applying a confirmed proposal](#applying-a-confirmed-proposal)). Nothing
-> proposes one yet: the agent is not offered the document tools, and the
-> chat path and side-by-side review are not built. Each implementation step
-> rewrites the part it lands, and the page moves to `stable` when the last
-> part does.
+> task agent's side: it lists the task's documents, reads one on request,
+> proposes versions when asked, and a confirmed proposal is written
+> ([How a version is made](#how-a-version-is-made),
+> [Applying a confirmed proposal](#applying-a-confirmed-proposal)). The chat
+> path and the side-by-side review are not built yet. Each implementation
+> step rewrites the part it lands, and the page moves to `stable` when the
+> last part does.
 
 A task can hold several markdown documents, such as a client one-pager, a
 meeting summary or a follow-up email. The task agent drafts and revises them
@@ -242,15 +253,23 @@ flowchart TD
 
 - **The agent proposes only when asked.** A voice note, text entry or chat
   message has to ask for a document or name one. New material on the task
-  does not revise documents by itself.
+  does not revise documents by itself. The system prompt's `## Documents`
+  rules and the tool description carry this; nothing in code can tell a
+  request from other text, so the proposal step is the backstop: nothing
+  reaches the document unconfirmed.
 - **What the agent reads.** Every wake gets a directory of the task's
-  documents (id, title, current version, one line). Full text comes only
+  documents (id, quoted title, version). Full text comes only
   through the local read tool `read_document(id)`. This is a deliberate
   exception to the task agent omitting its prior report's prose (see
   [Task agents](agents/task-agents.md)), and the ADR gives the reason.
 - **The proposal** carries `documentId` (or `newTitle` for a first draft),
   the full `markdown`, a `changeSummary`, and `baseVersionId`, the version
-  it was drafted against.
+  it was drafted against — filled in from the wake's listing, never taken
+  from the model — plus the document's `title` for the review row. One
+  version per document waits for the user at a time; the agent is told to
+  retract a pending one before proposing its replacement. The tools, their
+  gating and the validation are in
+  [Task agents](agents/task-agents.md#task-documents).
 - **The write** is [Applying a confirmed proposal](#applying-a-confirmed-proposal),
   below.
 - **Hand edits** are the user's own writes and skip the proposal.
@@ -302,7 +321,7 @@ stateDiagram-v2
   pending --> rejected: user dismisses, with an optional reason
   pending --> deferred: user decides later
   deferred --> pending: user reopens it
-  pending --> retracted: a newer proposal for the same document
+  pending --> retracted: the agent retracts it, or confirming finds it stale
   confirmed --> [*]
   rejected --> [*]
   retracted --> [*]
@@ -312,8 +331,7 @@ stateDiagram-v2
   good: the dispatch fails `nonRetryable`, and the confirmation service
   records that as a retraction, so it leaves the open list instead of
   failing again on every tap. The side-by-side review (not built yet) is to
-  catch it before that, offering "Ask the agent to redo" instead of Confirm;
-  the redo produces a new proposal, which retracts the stale one.
+  catch it before that, offering "Ask the agent to redo" instead of Confirm.
 - **A dismiss reason is feedback.** It reaches the next draft the way
   rejection reasons already reach the task agent.
 

@@ -1010,6 +1010,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateDocument(String title) {
+    return 'Skapa dokumentet ”$title”';
+  }
+
+  @override
   String agentSummaryCreateFollowUp(Object title) {
     return 'Skapa uppföljningsuppgift: ”$title”';
   }
@@ -1027,6 +1032,11 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String agentSummaryCreateTask(Object title) {
     return 'Skapa uppgift: $title';
+  }
+
+  @override
+  String agentSummaryDocumentVersion(String title) {
+    return 'Ny version av ”$title”';
   }
 
   @override

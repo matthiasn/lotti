@@ -1016,6 +1016,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateDocument(String title) {
+    return 'Creați documentul „$title”';
+  }
+
+  @override
   String agentSummaryCreateFollowUp(Object title) {
     return 'Creați sarcină ulterioară: „$title”';
   }
@@ -1033,6 +1038,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String agentSummaryCreateTask(Object title) {
     return 'Creați sarcină: $title';
+  }
+
+  @override
+  String agentSummaryDocumentVersion(String title) {
+    return 'Versiune nouă a „$title”';
   }
 
   @override

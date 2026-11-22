@@ -568,6 +568,15 @@
       "title": {}
     }
   },
+  "agentSummaryCreateDocument": "Create document \"{title}\"",
+  "@agentSummaryCreateDocument": {
+    "description": "Proposal row: the task agent proposes a new document.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "agentSummaryCreateFollowUp": "Create follow-up task: \"{title}\"",
   "@agentSummaryCreateFollowUp": {
     "placeholders": {
@@ -591,6 +600,15 @@
   "@agentSummaryCreateTask": {
     "placeholders": {
       "title": {}
+    }
+  },
+  "agentSummaryDocumentVersion": "New version of \"{title}\"",
+  "@agentSummaryDocumentVersion": {
+    "description": "Proposal row: the task agent proposes a new version of a document.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
     }
   },
   "agentSummaryFollowUpTask": "Follow-up task: {title}",

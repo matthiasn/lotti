@@ -1056,6 +1056,22 @@ void main() {
       );
     });
 
+    test('withholds propose_document_version until the chat context lists '
+        "the task's documents", () async {
+      expect(
+        QueryTaskActionPlanner.tools.map((t) => t.name),
+        isNot(contains('propose_document_version')),
+      );
+      await expectLater(
+        QueryTaskActionPlanner.validate(
+          'propose_document_version',
+          {'documentId': 'doc-1', 'markdown': '# Brief'},
+          context,
+        ),
+        throwsFormatException,
+      );
+    });
+
     test('withholds link_pull_request, whose numbers the chat context '
         'lacks', () async {
       expect(

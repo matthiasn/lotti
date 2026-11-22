@@ -542,6 +542,7 @@ class TaskAgentContextBuilder {
     String? compactedTaskLog,
     String? categoryKnowledge,
     String? pullRequestsContext,
+    String? documentsContext,
     List<ReportFactDrift> reportFactDrifts = const [],
     List<TaskProjectOption> projectCandidates = const [],
     AgentStateEntity? agentState,
@@ -689,6 +690,15 @@ class TaskAgentContextBuilder {
       buffer
         ..writeln('## Pull Requests')
         ..writeln(pullRequestsContext)
+        ..writeln();
+    }
+
+    // The task's documents by id and title, never their text (ADR 0166):
+    // a rename or a new version rewrites it, so it sits in the tail too.
+    if (documentsContext != null && documentsContext.isNotEmpty) {
+      buffer
+        ..writeln('## Documents')
+        ..writeln(documentsContext)
         ..writeln();
     }
 

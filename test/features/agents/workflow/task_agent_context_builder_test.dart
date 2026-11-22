@@ -579,6 +579,7 @@ void main() {
       String? compactedTaskLog,
       String? categoryKnowledge,
       String? pullRequestsContext,
+      String? documentsContext,
       List<ReportFactDrift> reportFactDrifts = const [],
       List<TaskProjectOption> projectCandidates = const [],
       AgentStateEntity? agentState,
@@ -604,6 +605,7 @@ void main() {
           compactedTaskLog: compactedTaskLog,
           categoryKnowledge: categoryKnowledge,
           pullRequestsContext: pullRequestsContext,
+          documentsContext: documentsContext,
           reportFactDrifts: reportFactDrifts,
           projectCandidates: projectCandidates,
           agentState: agentState,
@@ -715,6 +717,38 @@ void main() {
           text.substring(0, withPullRequests.logEnd),
           without.text.substring(0, without.logEnd),
         );
+      },
+    );
+
+    test(
+      'puts the documents after the pull requests, in the volatile tail, '
+      'and omits them when the task has none',
+      () async {
+        const log = 'event A\nevent B';
+        const documents =
+            'The documents this task holds.\n'
+            '- id `doc-1`, title "Launch brief", version 3';
+        final withDocuments = await build(
+          compactedTaskLog: log,
+          pullRequestsContext: 'Pull requests linked to this task.',
+          documentsContext: documents,
+        );
+        final without = await build(compactedTaskLog: log);
+
+        final text = withDocuments.text;
+        expect(text, contains('## Documents\n$documents\n'));
+        expect(
+          text.indexOf('## Documents'),
+          greaterThan(text.indexOf('## Pull Requests')),
+        );
+        expect(
+          text.substring(0, withDocuments.logEnd),
+          without.text.substring(0, without.logEnd),
+        );
+        for (final empty in [null, '']) {
+          final result = await build(documentsContext: empty);
+          expect(result.text, isNot(contains('## Documents')));
+        }
       },
     );
 

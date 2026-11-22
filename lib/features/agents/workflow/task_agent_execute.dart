@@ -237,6 +237,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       linkedTasks,
       categoryKnowledge,
       pullRequestsContext,
+      documents,
     ) = await (
       // Compacted wakes get the task STATE as compact markdown (the log is
       // event material supplied separately); legacy wakes keep the full JSON
@@ -248,6 +249,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       _buildLinkedTasksContext(taskId),
       this.aiInputRepository.buildCategoryKnowledge(taskId),
       _buildPullRequestsContext(taskId),
+      _taskDocumentDirectory(taskId),
     ).wait;
 
     if (taskDetails == null) {
@@ -299,6 +301,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       linkedTasksJson: linkedTasks.json,
       categoryKnowledge: categoryKnowledge,
       pullRequestsContext: pullRequestsContext,
+      documentsContext: renderTaskDocumentDirectory(documents),
       triggerTokens: triggerTokens,
       taskId: taskId,
       ledger: ledger,
@@ -384,12 +387,15 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               pullRequests: pullRequests,
               hasRelatedTaskSearch: relatedTasks.canSearch,
               hasLinkedTasks: linkedTasks.taskIds.isNotEmpty,
+              hasDocuments: documents.isNotEmpty,
             )
           : TaskAgentWakeFacts(
               hasPullRequestRepository: pullRequests.repository,
               hasLinkedPullRequests: pullRequests.linked,
               hasRelatedTaskSearch: relatedTasks.canSearch,
               hasLinkedTasks: linkedTasks.taskIds.isNotEmpty,
+              hasDocumentSource: taskDocuments != null,
+              hasDocuments: documents.isNotEmpty,
             );
       final tools = _contextBuilder.buildToolDefinitions(facts: wakeFacts);
       // Names the block that changed when a wake's opening request misses
@@ -417,6 +423,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         ledger: ledger,
         retractionService: retractionService,
         relatedTasks: relatedTasks,
+        documents: documents,
         priorObservationTexts: [
           for (final observation in journalObservations) observation.text,
         ],
@@ -738,6 +745,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     required ({bool repository, bool linked}) pullRequests,
     required bool hasRelatedTaskSearch,
     required bool hasLinkedTasks,
+    required bool hasDocuments,
   }) async {
     final entity = await journalDb.journalEntityById(taskId);
     final task = entity is Task ? entity : null;
@@ -765,6 +773,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       hasLinkedPullRequests: pullRequests.linked,
       hasRelatedTaskSearch: hasRelatedTaskSearch,
       hasLinkedTasks: hasLinkedTasks,
+      hasDocumentSource: taskDocuments != null,
+      hasDocuments: hasDocuments,
     );
   }
 

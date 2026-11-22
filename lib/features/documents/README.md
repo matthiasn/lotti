@@ -8,7 +8,8 @@ restore an older version, and copy the markdown out.
 
 The feature is being built in steps (ADR 0166). Today a user can write a
 document by hand, read it, edit it, look back through its versions, restore
-one, delete it and copy it out; the agent does not draft yet.
+one, delete it and copy it out, and the task's agent drafts and revises
+documents when a voice note or note asks it to; chat cannot ask yet.
 
 ## What it does
 
@@ -54,8 +55,13 @@ indexed query on `JournalDb`, and `updateJournalEntity` merges two
 concurrent versions of a document with `mergeConcurrentTaskDocumentVersions`
 instead of raising a conflict.
 
-Still to come: the side-by-side review of a proposed version, and the agent
-and chat paths that propose versions.
+It implements the task agent's `TaskDocumentSource` port
+(`service/task_document_agent_source.dart`), through which the agent lists
+and reads a task's documents and a version the user confirmed is written;
+the agent's tools and their rules live in the agents feature.
+
+Still to come: the side-by-side review of a proposed version, and proposing
+versions from the task's chat.
 
 ## Where it sits
 

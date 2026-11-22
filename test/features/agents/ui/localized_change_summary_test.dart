@@ -455,6 +455,39 @@ void main() {
     });
   });
 
+  group('document proposal', () {
+    test("names a new document by its title, in the reader's language", () {
+      const args = {'newTitle': ' Meeting summary ', 'markdown': '# x'};
+      expect(
+        summary(TaskAgentToolNames.proposeDocumentVersion, args),
+        'Create document "Meeting summary"',
+      );
+      expect(
+        summary(TaskAgentToolNames.proposeDocumentVersion, args, messages: de),
+        'Dokument „Meeting summary“ anlegen',
+      );
+    });
+
+    test('names a revised document by the title the proposal recorded', () {
+      const args = {'documentId': 'doc-1', 'title': 'Launch brief'};
+      expect(
+        summary(TaskAgentToolNames.proposeDocumentVersion, args),
+        'New version of "Launch brief"',
+      );
+      expect(
+        summary(TaskAgentToolNames.proposeDocumentVersion, args, messages: ro),
+        'Versiune nouă a „Launch brief”',
+      );
+    });
+
+    test('one naming no document keeps the persisted wording', () {
+      expect(
+        summary(TaskAgentToolNames.proposeDocumentVersion, {'title': ' '}),
+        isNull,
+      );
+    });
+  });
+
   group('time entries', () {
     test('a closed entry states both ends', () {
       expect(

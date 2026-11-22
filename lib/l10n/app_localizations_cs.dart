@@ -1007,6 +1007,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateDocument(String title) {
+    return 'Vytvořit dokument „$title“';
+  }
+
+  @override
   String agentSummaryCreateFollowUp(Object title) {
     return 'Vytvořit navazující úkol: „$title“';
   }
@@ -1024,6 +1029,11 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String agentSummaryCreateTask(Object title) {
     return 'Vytvořit úkol: $title';
+  }
+
+  @override
+  String agentSummaryDocumentVersion(String title) {
+    return 'Nová verze „$title“';
   }
 
   @override

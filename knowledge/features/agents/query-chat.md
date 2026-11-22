@@ -478,7 +478,11 @@ live task metadata from `QueryTaskActionContextLoader`: owned checklist items,
 linked time entries, visible same-category task targets, eligible labels and
 the current timer when it belongs to the task. No neighbour raw entries are
 loaded. This supports checklist additions/updates, time recording and timer
-text, task fields, labels, follow-up tasks, relationships and migrations.
+text, task fields, labels, follow-up tasks, relationships and migrations. It is
+not given `set_task_project`, `create_task_project`, `link_pull_request` or
+`propose_document_version`: the chat's context carries no project directory, no
+pull request listing and no list of the task's documents, so an id there could
+only be invented.
 Checklist targets use the journal metadata ID; nullable or stale legacy IDs
 inside checklist data cannot overwrite it. Chat-specific guidance allows
 migration to a supplied existing task as well as a newly proposed follow-up.

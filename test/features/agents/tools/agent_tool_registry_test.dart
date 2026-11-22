@@ -56,9 +56,31 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 29 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(29));
+    test('contains exactly 31 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(31));
     });
+
+    test(
+      'offers the two document tools: the read immediate, the proposal '
+      'deferred, confirmed one at a time and repeatable within a wake',
+      () {
+        expect(
+          AgentToolRegistry.taskAgentTools.map((t) => t.name),
+          containsAll(<String>[
+            TaskAgentToolNames.readDocument,
+            TaskAgentToolNames.proposeDocumentVersion,
+          ]),
+        );
+        expect(
+          AgentToolRegistry.deferredTools,
+          isNot(contains(TaskAgentToolNames.readDocument)),
+        );
+        expect(
+          AgentToolRegistry.individualConfirmTools,
+          contains(TaskAgentToolNames.proposeDocumentVersion),
+        );
+      },
+    );
 
     test('offers the three pull request tools, only the link deferred', () {
       expect(
@@ -162,8 +184,8 @@ void main() {
   });
 
   group('AgentToolRegistry.deferredTools', () {
-    test('contains exactly 17 deferred tool names', () {
-      expect(AgentToolRegistry.deferredTools, hasLength(17));
+    test('contains exactly 18 deferred tool names', () {
+      expect(AgentToolRegistry.deferredTools, hasLength(18));
     });
 
     test('includes all expected deferred tool names', () {
@@ -184,6 +206,7 @@ void main() {
           TaskAgentToolNames.setTaskProject,
           TaskAgentToolNames.createTaskProject,
           TaskAgentToolNames.linkPullRequest,
+          TaskAgentToolNames.proposeDocumentVersion,
           TaskAgentToolNames.migrateChecklistItems,
           TaskAgentToolNames.createTimeEntry,
           TaskAgentToolNames.updateTimeEntry,
@@ -280,6 +303,7 @@ void main() {
         TaskAgentToolNames.createFollowUpTask,
         TaskAgentToolNames.linkTask,
         TaskAgentToolNames.updateTimeEntry,
+        TaskAgentToolNames.proposeDocumentVersion,
       });
     });
 

@@ -57,6 +57,11 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
       return _queueLinkPullRequestProposal(csBuilder, args);
     }
 
+    // propose_document_version: a listed document, or a new one's title.
+    if (toolName == TaskAgentToolNames.proposeDocumentVersion) {
+      return _queueDocumentProposal(csBuilder, args);
+    }
+
     // Route create_follow_up_task to the dedicated builder method that
     // injects a placeholder ID and returns it for migrate_checklist_items.
     if (toolName == TaskAgentToolNames.createFollowUpTask) {
@@ -645,6 +650,10 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
       TaskAgentToolNames.linkPullRequest =>
         'Link pull request ${args['owner'] ?? '?'}/${args['repo'] ?? '?'}'
             '#${args['number'] ?? '?'} "${args['title'] ?? ''}"',
+      TaskAgentToolNames.proposeDocumentVersion => switch (args['newTitle']) {
+        final String title => 'Create document "$title"',
+        _ => 'New version of document "${args['title'] ?? ''}"',
+      },
       TaskAgentToolNames.createFollowUpTask => () {
         final rawRelation = args['relation'];
         final relation = rawRelation is String

@@ -8,6 +8,7 @@ import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/pull_request_link_source.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -178,6 +179,9 @@ ChatCompletionMessageToolCall _toolCall({
   Future<List<TaskProjectOption>> Function()? resolveCategoryProjects,
   Future<TaskPullRequestListing> Function()? resolveUnlinkedPullRequests,
   Future<String> Function()? refreshLinkedPullRequests,
+  List<TaskDocumentSummary> taskDocuments = const [],
+  Future<TaskDocumentText?> Function(String documentId)? readTaskDocument,
+  Set<String> pendingDocumentProposalIds = const {},
   Future<void> Function()? flushChangeSet,
   TaskAgentStagedToolExposure? stagedToolExposure,
   DomainLogger? domainLogger,
@@ -228,6 +232,9 @@ ChatCompletionMessageToolCall _toolCall({
     resolveCategoryProjects: resolveCategoryProjects,
     resolveUnlinkedPullRequests: resolveUnlinkedPullRequests,
     refreshLinkedPullRequests: refreshLinkedPullRequests,
+    taskDocuments: taskDocuments,
+    readTaskDocument: readTaskDocument,
+    pendingDocumentProposalIds: pendingDocumentProposalIds,
     flushChangeSet: flushChangeSet,
     stagedToolExposure: stagedToolExposure,
     priorObservationTexts: priorObservationTexts,
@@ -3531,6 +3538,219 @@ void main() {
           expect(
             responseTo('call-1'),
             'Error: refresh_pull_requests is not available.',
+          );
+        });
+      });
+
+      group('document tools', () {
+        const brief = TaskDocumentSummary(
+          id: 'doc-1',
+          title: 'Launch brief',
+          versionId: 'version-3',
+          versionNumber: 3,
+        );
+
+        ({TaskAgentStrategy strategy, ChangeSetBuilder builder}) docBench({
+          Future<TaskDocumentText?> Function(String id)? read,
+          Set<String> pending = const {},
+        }) => _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          taskDocuments: const [brief],
+          readTaskDocument: read,
+          pendingDocumentProposalIds: pending,
+          executeToolHandler: (toolName, _, _) =>
+              fail('$toolName must not execute during the wake'),
+        );
+
+        test('read_document answers with the text as fenced user data, '
+            'proposing nothing', () async {
+          final b = docBench(
+            read: (id) async => id == 'doc-1'
+                ? const TaskDocumentText(summary: brief, markdown: '# Brief')
+                : null,
+          );
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('read_document', {'documentId': ' doc-1 '}),
+              call('read_document', {'documentId': 'doc-9'}, id: 'call-2'),
+            ],
+            manager: mockManager,
+          );
+
+          expect(responseTo('call-1'), contains('```markdown\n# Brief\n```'));
+          expect(
+            responseTo('call-2'),
+            startsWith('Error: this task holds no document `doc-9`'),
+          );
+          expect(b.builder.items, isEmpty);
+        });
+
+        test('read_document answers with a sentence when the read fails or '
+            'nothing is wired', () async {
+          await docBench(
+            read: (_) async => throw Exception('db'),
+          ).strategy.processToolCalls(
+            toolCalls: [
+              call('read_document', {'documentId': 'doc-1'}),
+            ],
+            manager: mockManager,
+          );
+          expect(
+            responseTo('call-1'),
+            'Error: the document could not be read right now.',
+          );
+
+          reset(mockManager);
+          await docBench().strategy.processToolCalls(
+            toolCalls: [
+              call('read_document', {'documentId': 'doc-1'}),
+            ],
+            manager: mockManager,
+          );
+          expect(
+            responseTo('call-1'),
+            'Error: read_document is not available.',
+          );
+        });
+
+        test('a new version of a listed document is queued over the version '
+            'the wake listed, never one the model names', () async {
+          final b = docBench();
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('propose_document_version', {
+                'documentId': 'doc-1',
+                'markdown': '# Brief v4',
+                'changeSummary': ' Adds dates. ',
+                'baseVersionId': 'invented',
+              }),
+            ],
+            manager: mockManager,
+          );
+
+          final item = b.builder.items.single;
+          expect(item.toolName, 'propose_document_version');
+          expect(item.args, {
+            'documentId': 'doc-1',
+            'title': 'Launch brief',
+            'baseVersionId': 'version-3',
+            'markdown': '# Brief v4',
+            'changeSummary': 'Adds dates.',
+          });
+          expect(item.humanSummary, 'New version of document "Launch brief"');
+          expect(
+            responseTo('call-1'),
+            startsWith('OK — propose_document_version proposal recorded'),
+          );
+        });
+
+        test('a new document is queued under its title', () async {
+          final b = docBench();
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('propose_document_version', {
+                'newTitle': ' Meeting summary ',
+                'markdown': '# Summary',
+                'changeSummary': 'The summary of the 19 Nov meeting.',
+              }),
+            ],
+            manager: mockManager,
+          );
+
+          final item = b.builder.items.single;
+          expect(item.args, {
+            'newTitle': 'Meeting summary',
+            'markdown': '# Summary',
+            'changeSummary': 'The summary of the 19 Nov meeting.',
+          });
+          expect(item.humanSummary, 'Create document "Meeting summary"');
+        });
+
+        for (final (label, args, error)
+            in <(String, Map<String, dynamic>, String)>[
+              (
+                'no text',
+                {'documentId': 'doc-1', 'markdown': ' ', 'changeSummary': 'x'},
+                'ERROR: propose_document_version requires the complete',
+              ),
+              (
+                'both a document and a new title',
+                {
+                  'documentId': 'doc-1',
+                  'newTitle': 'Other',
+                  'markdown': 'x',
+                  'changeSummary': 'x',
+                },
+                'ERROR: give either "documentId"',
+              ),
+              (
+                'neither a document nor a new title',
+                {'markdown': 'x', 'changeSummary': 'x'},
+                'ERROR: give either "documentId"',
+              ),
+              (
+                'a document the wake did not list',
+                {'documentId': 'doc-9', 'markdown': 'x', 'changeSummary': 'x'},
+                'ERROR: this task holds no document `doc-9`',
+              ),
+            ]) {
+          test('refuses $label, queueing nothing', () async {
+            final b = docBench();
+
+            await b.strategy.processToolCalls(
+              toolCalls: [call('propose_document_version', args)],
+              manager: mockManager,
+            );
+
+            expect(b.builder.items, isEmpty);
+            expect(responseTo('call-1'), startsWith(error));
+          });
+        }
+
+        test('refuses a second version of a document while one waits for the '
+            'user — from an earlier wake or this one', () async {
+          final pending = docBench(pending: const {'doc-1'});
+          await pending.strategy.processToolCalls(
+            toolCalls: [
+              call('propose_document_version', {
+                'documentId': 'doc-1',
+                'markdown': 'x',
+                'changeSummary': 'x',
+              }),
+            ],
+            manager: mockManager,
+          );
+          expect(pending.builder.items, isEmpty);
+          expect(
+            responseTo('call-1'),
+            contains('is already waiting for the user'),
+          );
+
+          reset(mockManager);
+          final b = docBench();
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('propose_document_version', {
+                'documentId': 'doc-1',
+                'markdown': 'first',
+                'changeSummary': 'x',
+              }),
+              call('propose_document_version', {
+                'documentId': 'doc-1',
+                'markdown': 'second',
+                'changeSummary': 'x',
+              }, id: 'call-2'),
+            ],
+            manager: mockManager,
+          );
+          expect(b.builder.items.single.args['markdown'], 'first');
+          expect(
+            responseTo('call-2'),
+            contains('is already waiting for the user'),
           );
         });
       });
