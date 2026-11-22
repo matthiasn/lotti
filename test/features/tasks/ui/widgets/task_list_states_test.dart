@@ -22,8 +22,8 @@ void main() {
             query: query,
             filtersActive: filtersActive,
             pullRequestSearch: pullRequestSearch,
-            onClearSearch: () => cleared.add('search'),
-            onClearFilters: () => reset.add('filters'),
+            onClearSearch: () async => cleared.add('search'),
+            onClearFilters: () async => reset.add('filters'),
           ),
         ),
       );

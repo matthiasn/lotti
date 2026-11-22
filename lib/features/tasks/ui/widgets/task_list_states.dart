@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
@@ -27,8 +29,8 @@ class TaskListEmptyState extends StatelessWidget {
 
   /// Whether any filter narrows the list.
   final bool filtersActive;
-  final VoidCallback onClearSearch;
-  final VoidCallback onClearFilters;
+  final Future<void> Function() onClearSearch;
+  final Future<void> Function() onClearFilters;
 
   /// The search is a pull request link, whose miss says no task is linked.
   final bool pullRequestSearch;
@@ -107,12 +109,12 @@ class _Action extends StatelessWidget {
   const _Action({required this.label, required this.onPressed});
 
   final String label;
-  final VoidCallback onPressed;
+  final FutureOr<void> Function() onPressed;
 
   @override
   Widget build(BuildContext context) => DesignSystemButton(
     label: label,
-    onPressed: onPressed,
+    onPressed: () async => onPressed(),
     variant: DesignSystemButtonVariant.secondary,
   );
 }

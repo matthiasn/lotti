@@ -612,7 +612,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                   child: child,
                 ),
                 child: GestureDetector(
-                  onTap: () => _showSuggestionDialog(context, suggestion),
+                  onTap: () async => _showSuggestionDialog(context, suggestion),
                   child: Container(
                     width: 8,
                     decoration: BoxDecoration(
@@ -710,7 +710,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
           foregroundColor: colors.text.onInteractiveAlert,
           icon: LottiIcons.delete,
           label: context.messages.checklistItemSwipeDelete,
-          onTrigger: () => unawaited(deleteWithUndo()),
+          onTrigger: () async => deleteWithUndo(),
         ),
         child: rowContent,
       );
@@ -767,87 +767,85 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     };
   }
 
-  void _showSuggestionDialog(
+  Future<void> _showSuggestionDialog(
     BuildContext context,
     ChecklistCompletionSuggestion suggestion,
-  ) {
+  ) async {
     final tokens = context.designTokens;
     final completion = ref.read(checklistCompletionServiceProvider.notifier);
 
-    unawaited(
-      DsActionModal.show<void>(
-        context: context,
-        title: context.messages.checklistAiSuggestionTitle,
-        builder: (modalContext) => Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.messages.checklistAiSuggestionBody,
-              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                color: tokens.colors.text.highEmphasis,
+    await DsActionModal.show<void>(
+      context: context,
+      title: context.messages.checklistAiSuggestionTitle,
+      builder: (modalContext) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.messages.checklistAiSuggestionBody,
+            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            suggestion.reason,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step5),
+          Row(
+            children: [
+              Icon(
+                LottiIcons.insights,
+                size: IconSizes.s,
+                color: _getSuggestionColor(suggestion.confidence),
               ),
-            ),
-            SizedBox(height: tokens.spacing.step3),
-            Text(
-              suggestion.reason,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.highEmphasis,
+              SizedBox(width: tokens.spacing.step2),
+              Text(
+                context.messages.checklistAiConfidenceLabel(
+                  suggestion.confidence.name,
+                ),
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
               ),
-            ),
-            SizedBox(height: tokens.spacing.step5),
-            Row(
-              children: [
-                Icon(
-                  LottiIcons.insights,
-                  size: IconSizes.s,
-                  color: _getSuggestionColor(suggestion.confidence),
-                ),
-                SizedBox(width: tokens.spacing.step2),
-                Text(
-                  context.messages.checklistAiConfidenceLabel(
-                    suggestion.confidence.name,
-                  ),
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: tokens.spacing.step6),
-            DesignSystemModalActionBar(
-              secondary: [
-                DesignSystemButton(
-                  label: context.messages.cancelButton,
-                  variant: DesignSystemButtonVariant.secondary,
-                  onPressed: () {
-                    Navigator.of(modalContext).pop();
-                    completion.clearSuggestion(widget.itemId);
-                  },
-                ),
-              ],
-              primary: DesignSystemButton(
-                label: context.messages.checklistAiMarkComplete,
-                leadingIcon: LottiIcons.confirmCircled,
-                fullWidth: true,
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step6),
+          DesignSystemModalActionBar(
+            secondary: [
+              DesignSystemButton(
+                label: context.messages.cancelButton,
+                variant: DesignSystemButtonVariant.secondary,
                 onPressed: () {
                   Navigator.of(modalContext).pop();
-                  _suppressDataCheckCelebration = true;
-                  ref
-                      .read(
-                        checklistItemControllerProvider((
-                          id: widget.itemId,
-                          taskId: widget.taskId,
-                        )).notifier,
-                      )
-                      .updateChecked(checked: true);
-                  _celebrateCheck(interactive: true);
                   completion.clearSuggestion(widget.itemId);
                 },
               ),
+            ],
+            primary: DesignSystemButton(
+              label: context.messages.checklistAiMarkComplete,
+              leadingIcon: LottiIcons.confirmCircled,
+              fullWidth: true,
+              onPressed: () {
+                Navigator.of(modalContext).pop();
+                _suppressDataCheckCelebration = true;
+                ref
+                    .read(
+                      checklistItemControllerProvider((
+                        id: widget.itemId,
+                        taskId: widget.taskId,
+                      )).notifier,
+                    )
+                    .updateChecked(checked: true);
+                _celebrateCheck(interactive: true);
+                completion.clearSuggestion(widget.itemId);
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

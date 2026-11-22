@@ -670,12 +670,10 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                                   state.match,
                                                 ) !=
                                                 null,
-                                            onClearSearch: () => unawaited(
-                                              controller.setSearchString(''),
-                                            ),
-                                            onClearFilters: () => unawaited(
-                                              _clearAll(controller, false),
-                                            ),
+                                            onClearSearch: () =>
+                                                controller.setSearchString(''),
+                                            onClearFilters: () =>
+                                                _clearAll(controller, false),
                                           ),
                                         ),
                                     itemBuilder: (context, item, index) {
