@@ -18,6 +18,7 @@ what it does for a user; these describe how it runs.
 * [Journal](journal/) - the shared entry substrate: detail, browse, search, linking.
 * [Tasks](tasks/) - the task layer on the journal substrate: checklists, relationships, filters.
 * [Speech](speech/) - audio capture, playback, waveforms, transcripts.
+* [Task documents](documents.md) - markdown documents a task holds, drafted by its agent through proposals and edited by hand; designed, not yet built.
 * [Events](events.md) - a first-class destination for meaningful moments.
 * [Habits](habits.md) - recurring definitions reconciled with completion entries.
 * [Ratings](ratings.md) - catalog-driven structured judgments.

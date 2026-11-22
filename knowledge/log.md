@@ -1,5 +1,11 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-22
+* **New**: [Task documents](features/documents.md), a draft concept for a
+  feature not built yet: journal-stored documents with append-only versions,
+  agent versions only through proposals, the side-by-side review and how it
+  borrows width
+  ([ADR 0166](../docs/adr/0166-task-documents-are-journal-entries-revised-by-proposal.md)).
 ## 2026-11-03
 * **Update**: [GitHub pull requests](features/github.md) — the settings page
   opens GitHub's token form pre-filled with Lotti's read-only permissions
