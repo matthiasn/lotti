@@ -203,12 +203,14 @@ void main() {
       controller.emitError(
         'HTTP 503: all transcription providers failed',
         kind: ChatRecorderErrorKind.transcriptionFailed,
+        keptInJournal: true,
       );
       await tester.pump();
 
-      // The diagnostic English belongs in the log, not in the user's toast.
+      // The diagnostic English belongs in the log, not in the user's toast —
+      // which says where the recording is, not to say it all again.
       expect(
-        find.textContaining('transcribing it failed'),
+        find.textContaining('Your recording is saved in the logbook'),
         findsOneWidget,
       );
       expect(

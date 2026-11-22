@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:file_selector/file_selector.dart' show XFile;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/chat/chat_amplitude_history.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_state.dart';
@@ -11,6 +12,8 @@ import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
+import 'package:lotti/logic/audio_import.dart';
+import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:path_provider/path_provider.dart';
@@ -38,8 +41,20 @@ typedef ChatTranscriptCorrector =
       ResolvedInferenceProvider heardBy,
     );
 
+/// Saves the take at a temp path to the journal as a recording, answering
+/// whether it is now safely there.
+typedef ChatFailedTakeKeeper = Future<bool> Function(String filePath);
+
 /// Drives the shared AI voice-input recorder — record to a temp `.m4a` file,
 /// then batch-transcribe — exposing a single [ChatRecorderState] to the UI.
+///
+/// **A take is never thrown away because its words could not be read.** The
+/// temp file exists only to be transcribed, and is deleted once its words
+/// have been handed back or the user cancelled. When transcription fails it
+/// is first saved to the journal as a recording
+/// ([ChatRecorderState.keptInJournal]), where it can be played and
+/// transcribed again; if even that fails the file is moved out of the
+/// directory cleanup clears and left on disk.
 ///
 /// Race model: every recording session captures a monotonically increasing
 /// `_operationId` before its first startup await (see [start]). Async callbacks (amplitude
@@ -59,7 +74,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     Future<Directory> Function()? tempDirectoryProvider,
     ChatRecorderConfig? config,
     AudioTranscriptionService? transcriptionService,
-  }) : _recorderFactory = recorderFactory ?? record.AudioRecorder.new,
+    ChatFailedTakeKeeper? keepFailedTake,
+  }) : _keepFailedTakeOverride = keepFailedTake,
+       _recorderFactory = recorderFactory ?? record.AudioRecorder.new,
        _nowMillisProvider =
            nowMillisProvider ?? (() => DateTime.now().millisecondsSinceEpoch),
        _tempDirectoryProvider =
@@ -73,6 +90,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   final ChatRecorderConfig _config;
   final AudioTranscriptionService? _transcriptionServiceOverride;
   late final AudioTranscriptionService _transcriptionService;
+  final ChatFailedTakeKeeper? _keepFailedTakeOverride;
 
   late DomainLogger _logger;
 
@@ -374,6 +392,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         subDomain: 'stopAndTranscribe.transcription',
         message: 'Voice transcription failed',
       );
+      // Before the cleanup below deletes it: the recording is the user's.
+      final kept = filePath != null && await _keepFailedTake(filePath);
+      if (currentOpId != _operationId || !ref.mounted) return;
       completed = state.copyWith(
         status: ChatRecorderStatus.idle,
         error: switch (e) {
@@ -383,6 +404,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         errorKind: e.toString().contains('No audio-capable models')
             ? ChatRecorderErrorKind.noAudioModel
             : ChatRecorderErrorKind.transcriptionFailed,
+        keptInJournal: kept,
       );
     } finally {
       if (currentOpId == _operationId) {
@@ -393,6 +415,53 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       }
     }
   }
+
+  /// Saves a take whose transcription failed to the journal, unlinked — it
+  /// was words for a text field, not a check-in on anything. Never throws.
+  /// When the journal cannot take it either, the file is moved beside the
+  /// recorder's temp directory, out of reach of every cleanup here, so the
+  /// audio is still on disk rather than gone.
+  Future<bool> _keepFailedTake(String filePath) async {
+    try {
+      final keep = _keepFailedTakeOverride ?? _keepInJournal;
+      if (await keep(filePath)) return true;
+    } catch (e, s) {
+      _logger.error(
+        LogDomain.chat,
+        e,
+        stackTrace: s,
+        subDomain: 'keepFailedTake',
+        message: 'Could not save a failed dictation take to the journal',
+      );
+    }
+    try {
+      final file = File(filePath);
+      final aside =
+          '${file.parent.parent.path}/lotti_unsaved_${file.uri.pathSegments.last}';
+      await file.rename(aside);
+      _logger.error(
+        LogDomain.chat,
+        'A dictation take could not be saved to the journal; left at $aside',
+        subDomain: 'keepFailedTake',
+      );
+    } catch (e, s) {
+      _logger.error(
+        LogDomain.chat,
+        e,
+        stackTrace: s,
+        subDomain: 'keepFailedTake.setAside',
+      );
+    }
+    return false;
+  }
+
+  Future<bool> _keepInJournal(String filePath) async =>
+      await importAudioXFiles(
+        [XFile(filePath)],
+        speechRepository: ref.read(speechRepositoryProvider),
+        domainLogger: _logger,
+      ) ==
+      1;
 
   /// Cancels the current operation and joins any cancellation already running.
   /// Idle is published only after its resources have been released.

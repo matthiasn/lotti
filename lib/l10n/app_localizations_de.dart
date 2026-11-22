@@ -3537,6 +3537,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Es ist noch kein Transkriptionsmodell eingerichtet. Füge in den KI-Einstellungen ein Modell mit Audio-Unterstützung hinzu.';
 
   @override
+  String get chatInputRecordingNoAudioModelKept =>
+      'Es ist noch kein Transkriptionsmodell eingerichtet. Deine Aufnahme ist im Logbuch gespeichert. Füge in den KI-Einstellungen ein Modell mit Audio-Unterstützung hinzu.';
+
+  @override
   String get chatInputRecordingNoMicPermission =>
       'Lotti kann das Mikrofon nicht nutzen. Erlaube Lotti den Mikrofonzugriff in deinen Systemeinstellungen.';
 
@@ -3554,7 +3558,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get chatInputTranscriptionFailed =>
-      'Die Aufnahme wurde gespeichert, aber die Transkription ist fehlgeschlagen. Bitte versuche es erneut.';
+      'Die Transkription der Aufnahme ist fehlgeschlagen. Bitte versuche es erneut.';
+
+  @override
+  String get chatInputTranscriptionFailedKept =>
+      'Die Transkription ist fehlgeschlagen. Deine Aufnahme ist im Logbuch gespeichert, es ist also nichts verloren.';
 
   @override
   String get checkInAddNoteHint => 'Notiz hinzufügen…';
@@ -8404,6 +8412,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalCharterRecord => 'Über dieses Ziel sprechen';
+
+  @override
+  String get goalCharterRecordingKept =>
+      'Das konnte diesem Ziel nicht hinzugefügt werden. Deine Aufnahme ist im Logbuch gespeichert.';
 
   @override
   String get goalCharterSaveFailed =>

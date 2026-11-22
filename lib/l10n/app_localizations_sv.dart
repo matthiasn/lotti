@@ -3515,6 +3515,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ingen transkriberingsmodell är uppsatt än. Lägg till en modell med ljudstöd i AI-inställningarna.';
 
   @override
+  String get chatInputRecordingNoAudioModelKept =>
+      'Ingen transkriberingsmodell är uppsatt än. Din inspelning är sparad i loggboken. Lägg till en modell med ljudstöd i AI-inställningarna.';
+
+  @override
   String get chatInputRecordingNoMicPermission =>
       'Lotti kan inte använda mikrofonen. Ge Lotti åtkomst till mikrofonen i systeminställningarna.';
 
@@ -3532,7 +3536,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get chatInputTranscriptionFailed =>
-      'Inspelningen gjordes, men transkriberingen misslyckades. Försök igen.';
+      'Transkriberingen av inspelningen misslyckades. Försök igen.';
+
+  @override
+  String get chatInputTranscriptionFailedKept =>
+      'Transkriberingen misslyckades. Din inspelning är sparad i loggboken, så inget har gått förlorat.';
 
   @override
   String get checkInAddNoteHint => 'Lägg till en anteckning…';
@@ -8360,7 +8368,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'Din agent kan bara läsa den första delen. Korta ner eller slå ihop inlägg så att den läser allt.';
 
   @override
-  String get goalCharterRecord => 'Spela in om det här målet';
+  String get goalCharterRecord => 'Prata om det här målet';
+
+  @override
+  String get goalCharterRecordingKept =>
+      'Det gick inte att lägga till i det här målet. Din inspelning är sparad i loggboken.';
 
   @override
   String get goalCharterSaveFailed => 'Det sparades inte. Försök igen.';

@@ -191,9 +191,10 @@ class GoalRepository {
   ///
   /// The recording is saved with no parent first — a recording linked FROM
   /// the goal, the way the recorder links one, would be a check-in — and only
-  /// then linked into the goal. A recording that cannot be linked is deleted
-  /// again rather than left in the journal where the goal page never shows
-  /// it. Returns whether it is now part of the charter.
+  /// then linked into the goal. A recording that cannot be linked stays in
+  /// the journal, unlinked: it is the user's own and exists nowhere else, so
+  /// a failed link write must not cost it. Returns whether it is now part of
+  /// the charter.
   Future<bool> attachCharterRecording({
     required String agentId,
     required String audioId,
@@ -201,15 +202,13 @@ class GoalRepository {
     final goal = await getGoalForAgent(agentId);
     final audio = await _journalDb.journalEntityById(audioId);
     if (audio is! JournalAudio || audio.isDeleted) return false;
-    if (goal == null) {
-      await _deleteEntry(audio, goalId: goalIdForAgent(agentId));
-      return false;
-    }
+    if (goal == null) return false;
     return _linkIntoCharter(audio, goalId: goal.meta.id);
   }
 
-  /// Links [entry] into [goalId]'s charter, deleting it again when the link
-  /// is refused or throws.
+  /// Links [entry] into [goalId]'s charter. When the link is refused or
+  /// throws, a written note is deleted again — its words are still in the
+  /// sheet that asked, to be saved once more — but a recording is kept.
   Future<bool> _linkIntoCharter(
     JournalEntity entry, {
     required String goalId,
@@ -226,7 +225,7 @@ class GoalRepository {
       linked = false;
     }
     if (linked) return true;
-    await _deleteEntry(entry, goalId: goalId);
+    if (entry is! JournalAudio) await _deleteEntry(entry, goalId: goalId);
     return false;
   }
 

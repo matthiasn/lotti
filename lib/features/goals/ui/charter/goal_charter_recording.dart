@@ -42,9 +42,9 @@ Future<String?> _recordWithSheet(BuildContext context, {String? categoryId}) =>
 ///    have. Recording for the charter is the consent — the goal's automatic
 ///    updates switch governs check-ins, not this.
 ///
-/// A recording that cannot be linked is gone again and the reason shown; a
-/// transcription that fails records its failure on the recording, where the
-/// card offers Retry.
+/// A recording that cannot be linked stays in the journal and the toast
+/// says so — it is never deleted for a failed link; a transcription that
+/// fails records its failure on the recording, where the card offers Retry.
 Future<void> recordGoalCharterEntry(
   BuildContext context, {
   required String agentId,
@@ -85,7 +85,7 @@ Future<void> recordGoalCharterEntry(
     if (context.mounted) {
       context.showToast(
         tone: DesignSystemToastTone.error,
-        title: messages.goalCharterSaveFailed,
+        title: messages.goalCharterRecordingKept,
       );
     }
     return;

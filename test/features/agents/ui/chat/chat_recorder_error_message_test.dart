@@ -9,14 +9,19 @@ void main() {
   /// Resolves the mapping against a real localized context.
   Future<String> resolve(
     WidgetTester tester,
-    ChatRecorderErrorKind? kind,
-  ) async {
+    ChatRecorderErrorKind? kind, {
+    bool keptInJournal = false,
+  }) async {
     late String message;
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         Builder(
           builder: (context) {
-            message = chatRecorderErrorMessage(context, kind);
+            message = chatRecorderErrorMessage(
+              context,
+              kind,
+              keptInJournal: keptInJournal,
+            );
             return const SizedBox.shrink();
           },
         ),
@@ -43,13 +48,51 @@ void main() {
     );
   });
 
-  testWidgets('a failed transcription says the audio was captured', (
+  testWidgets('a failed transcription whose take could not be kept claims '
+      'nothing about the recording', (tester) async {
+    expect(
+      await resolve(tester, ChatRecorderErrorKind.transcriptionFailed),
+      'Transcribing the recording failed. Please try again.',
+    );
+  });
+
+  testWidgets('a failed transcription whose take was kept says where it is', (
     tester,
   ) async {
     expect(
-      await resolve(tester, ChatRecorderErrorKind.transcriptionFailed),
-      'The recording was captured, but transcribing it failed. Please try '
-      'again.',
+      await resolve(
+        tester,
+        ChatRecorderErrorKind.transcriptionFailed,
+        keptInJournal: true,
+      ),
+      'Transcribing failed. Your recording is saved in the logbook, so '
+      'nothing is lost.',
+    );
+  });
+
+  testWidgets('a missing audio model with the take kept says so before '
+      'pointing at AI settings', (tester) async {
+    expect(
+      await resolve(
+        tester,
+        ChatRecorderErrorKind.noAudioModel,
+        keptInJournal: true,
+      ),
+      'No transcription model is set up yet. Your recording is saved in the '
+      'logbook. Add an audio-capable model in AI settings.',
+    );
+  });
+
+  testWidgets('kept or not changes nothing about the other reasons', (
+    tester,
+  ) async {
+    expect(
+      await resolve(
+        tester,
+        ChatRecorderErrorKind.noAudioFile,
+        keptInJournal: true,
+      ),
+      'No audio was recorded. Try again.',
     );
   });
 

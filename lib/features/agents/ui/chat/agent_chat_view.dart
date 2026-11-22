@@ -157,7 +157,11 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
       context.showToast(
         tone: DesignSystemToastTone.error,
         title: context.messages.commonError,
-        description: chatRecorderErrorMessage(context, next.errorKind),
+        description: chatRecorderErrorMessage(
+          context,
+          next.errorKind,
+          keptInJournal: next.keptInJournal,
+        ),
         duration: const Duration(seconds: 8),
         replaceCurrent: true,
       );

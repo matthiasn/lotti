@@ -3044,6 +3044,184 @@ void main() {
       expect(withError.transcript, isNull);
     });
   });
+
+  group('a take whose transcription failed is never thrown away', () {
+    late Directory baseTemp;
+    late MockAudioRecorder mockRecorder;
+    late MockAudioTranscriptionService transcription;
+
+    setUp(() {
+      baseTemp = Directory.systemTemp.createTempSync('chat_recorder_keep');
+      addTearDown(() => baseTemp.deleteSync(recursive: true));
+      mockRecorder = MockAudioRecorder();
+      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+      // A real recorder leaves a real file: the take this group is about.
+      when(
+        () => mockRecorder.start(
+          any<record.RecordConfig>(),
+          path: any(named: 'path'),
+        ),
+      ).thenAnswer((invocation) async {
+        File(
+          invocation.namedArguments[#path] as String,
+        ).writeAsStringSync('the take');
+      });
+      when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+      when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
+        (_) => const Stream<record.Amplitude>.empty(),
+      );
+      transcription = MockAudioTranscriptionService();
+    });
+
+    Future<ChatRecorderState> dictate({
+      required ChatFailedTakeKeeper keep,
+    }) async {
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => baseTemp,
+              transcriptionService: transcription,
+              keepFailedTake: keep,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
+      await controller.stopAndTranscribe();
+      return container.read(chatRecorderControllerProvider);
+    }
+
+    List<String> filesUnder(Directory directory) => [
+      for (final entity in directory.listSync(recursive: true))
+        if (entity is File) entity.uri.pathSegments.last,
+    ];
+
+    for (final (name, error, kind) in [
+      (
+        'a failed request',
+        Exception('network down'),
+        ChatRecorderErrorKind.transcriptionFailed,
+      ),
+      (
+        'a missing audio model',
+        Exception('No audio-capable models configured'),
+        ChatRecorderErrorKind.noAudioModel,
+      ),
+    ]) {
+      test('$name: the take is handed to the journal while its file still '
+          'exists, and the state says it was kept', () async {
+        when(
+          () => transcription.transcribeStream(any()),
+        ).thenAnswer((_) => Stream.error(error));
+        final keptWith = <String>[];
+
+        final state = await dictate(
+          keep: (path) async {
+            // Still on disk when the keeper is asked: nothing deleted it
+            // first.
+            keptWith.add(File(path).readAsStringSync());
+            return true;
+          },
+        );
+
+        expect(keptWith, ['the take']);
+        expect(state.errorKind, kind);
+        expect(state.keptInJournal, isTrue);
+        // Safely in the journal, so the temp copy is cleaned up as before.
+        expect(filesUnder(baseTemp), isEmpty);
+      });
+    }
+
+    for (final (name, keep) in <(String, ChatFailedTakeKeeper)>[
+      ('answers that it could not', (_) async => false),
+      ('throws', (_) async => throw StateError('journal unavailable')),
+    ]) {
+      test('when the journal $name take it, the audio is moved out of the '
+          "cleanup's reach and left on disk — and nothing claims it was "
+          'kept', () async {
+        when(
+          () => transcription.transcribeStream(any()),
+        ).thenAnswer((_) => Stream.error(Exception('network down')));
+
+        final state = await dictate(keep: keep);
+
+        expect(state.errorKind, ChatRecorderErrorKind.transcriptionFailed);
+        expect(state.keptInJournal, isFalse);
+        final left = filesUnder(baseTemp);
+        expect(left, hasLength(1));
+        expect(left.single, startsWith('lotti_unsaved_chat_'));
+        expect(
+          File('${baseTemp.path}/${left.single}').readAsStringSync(),
+          'the take',
+        );
+      });
+    }
+
+    test('words that arrive need no keeping: the take is deleted, as '
+        'dictation always was', () async {
+      when(
+        () => transcription.transcribeStream(any()),
+      ).thenAnswer((_) => Stream.value('hello'));
+      var asked = 0;
+
+      final state = await dictate(
+        keep: (_) async {
+          asked++;
+          return true;
+        },
+      );
+
+      expect(state.transcript, 'hello');
+      expect(state.keptInJournal, isFalse);
+      expect(asked, 0);
+      expect(filesUnder(baseTemp), isEmpty);
+    });
+
+    test('clearing a consumed failure clears the kept flag with it', () async {
+      when(
+        () => transcription.transcribeStream(any()),
+      ).thenAnswer((_) => Stream.error(Exception('network down')));
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => baseTemp,
+              transcriptionService: transcription,
+              keepFailedTake: (_) async => true,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
+      await controller.stopAndTranscribe();
+      expect(
+        container.read(chatRecorderControllerProvider).keptInJournal,
+        isTrue,
+      );
+
+      controller.clearResult();
+
+      final cleared = container.read(chatRecorderControllerProvider);
+      expect(cleared.error, isNull);
+      expect(cleared.keptInJournal, isFalse);
+    });
+  });
 }
 
 /// The voice as the recorder sees it: busy or not, and how often it was

@@ -572,31 +572,40 @@ void main() {
         ).called(1);
       });
 
-      test('a recording whose link is refused is deleted again', () async {
-        stubGoal();
-        stubUpdate();
-        when(
-          () => mockDb.journalEntityById('audio-1'),
-        ).thenAnswer((_) async => audio('audio-1'));
-        stubCreateLink(() async => false);
+      for (final (how, link) in <(String, Future<bool> Function())>[
+        ('is refused', () async => false),
+        ('throws', () async => throw StateError('link write failed')),
+      ]) {
+        test('a recording whose link $how stays in the journal: it is the '
+            "user's own and exists nowhere else", () async {
+          stubGoal();
+          stubUpdate();
+          when(
+            () => mockDb.journalEntityById('audio-1'),
+          ).thenAnswer((_) async => audio('audio-1'));
+          stubCreateLink(link);
 
-        final attached = await withClock(
-          Clock.fixed(testDate),
-          () => repository.attachCharterRecording(
-            agentId: 'agent-1',
-            audioId: 'audio-1',
-          ),
-        );
+          final attached = await withClock(
+            Clock.fixed(testDate),
+            () => repository.attachCharterRecording(
+              agentId: 'agent-1',
+              audioId: 'audio-1',
+            ),
+          );
 
-        expect(attached, isFalse);
-        final deleted = verify(
-          () => mockPersistence.updateDbEntity(captureAny(), linkedId: goalId),
-        ).captured;
-        expect((deleted.single as JournalAudio).meta.deletedAt, testDate);
-      });
+          expect(attached, isFalse);
+          // Never soft-deleted: no write touches the recording at all.
+          verifyNever(
+            () => mockPersistence.updateDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+            ),
+          );
+        });
+      }
 
-      test('a recording for a goal with no journal row is deleted rather '
-          'than left where no page shows it', () async {
+      test('a recording for a goal with no journal row is left in the '
+          'journal, not deleted', () async {
         stubUpdate();
         when(
           () => mockDb.journalEntityById(goalId),
@@ -614,9 +623,12 @@ void main() {
         );
 
         expect(attached, isFalse);
-        verify(
-          () => mockPersistence.updateDbEntity(any(), linkedId: goalId),
-        ).called(1);
+        verifyNever(
+          () => mockPersistence.updateDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+          ),
+        );
       });
 
       test('only a live recording can join the charter', () async {

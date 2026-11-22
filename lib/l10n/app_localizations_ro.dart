@@ -3565,6 +3565,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Încă nu este configurat niciun model de transcriere. Vă rugăm să adăugați un model compatibil audio în setările AI.';
 
   @override
+  String get chatInputRecordingNoAudioModelKept =>
+      'Încă nu este configurat niciun model de transcriere. Înregistrarea dumneavoastră este salvată în jurnal. Vă rugăm să adăugați un model compatibil audio în setările AI.';
+
+  @override
   String get chatInputRecordingNoMicPermission =>
       'Lotti nu poate folosi microfonul. Vă rugăm să activați accesul la microfon pentru Lotti în setările sistemului.';
 
@@ -3582,7 +3586,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get chatInputTranscriptionFailed =>
-      'Înregistrarea a fost captată, dar transcrierea a eșuat. Vă rugăm să încercați din nou.';
+      'Transcrierea înregistrării a eșuat. Vă rugăm să încercați din nou.';
+
+  @override
+  String get chatInputTranscriptionFailedKept =>
+      'Transcrierea a eșuat. Înregistrarea dumneavoastră este salvată în jurnal, așa că nu s-a pierdut nimic.';
 
   @override
   String get checkInAddNoteHint => 'Adăugați o notă…';
@@ -8488,7 +8496,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Agentul poate citi doar prima parte. Scurtați sau combinați înregistrările ca să le citească pe toate.';
 
   @override
-  String get goalCharterRecord => 'Înregistrați despre acest obiectiv';
+  String get goalCharterRecord => 'Vorbiți despre acest obiectiv';
+
+  @override
+  String get goalCharterRecordingKept =>
+      'Nu s-a putut adăuga la acest obiectiv. Înregistrarea dumneavoastră este salvată în jurnal.';
 
   @override
   String get goalCharterSaveFailed => 'Nu s-a salvat. Încercați din nou.';

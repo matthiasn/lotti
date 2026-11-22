@@ -2350,12 +2350,20 @@
   "chatInputProcessing": "Processing...",
   "chatInputRecordingFailed": "Recording failed. Please try again.",
   "chatInputRecordingNoAudioModel": "No transcription model is set up yet. Add an audio-capable model in AI settings.",
+  "chatInputRecordingNoAudioModelKept": "No transcription model is set up yet. Your recording is saved in the logbook. Add an audio-capable model in AI settings.",
+  "@chatInputRecordingNoAudioModelKept": {
+    "description": "Toast when dictation could not be transcribed because no audio-capable model is set up, and the recording was saved to the journal."
+  },
   "chatInputRecordingNoMicPermission": "Lotti can't use the microphone. Enable microphone access for Lotti in your system settings.",
   "chatInputRecordVoice": "Record voice message",
   "chatInputSendTooltip": "Send message",
   "chatInputStopRealtime": "Stop live transcription",
   "chatInputStopTranscribe": "Stop and transcribe",
-  "chatInputTranscriptionFailed": "The recording was captured, but transcribing it failed. Please try again.",
+  "chatInputTranscriptionFailed": "Transcribing the recording failed. Please try again.",
+  "chatInputTranscriptionFailedKept": "Transcribing failed. Your recording is saved in the logbook, so nothing is lost.",
+  "@chatInputTranscriptionFailedKept": {
+    "description": "Toast when dictation into a text field could not be transcribed and the recording was saved to the journal instead of being discarded."
+  },
   "checkInAddNoteHint": "Add a note…",
   "@checkInAddNoteHint": {
     "description": "The empty note's placeholder beside a recording in the check-in composer"
@@ -5356,7 +5364,11 @@
   "goalCharterEmpty": "Tell your agent what this goal is for and how you want to be coached. It reads this every time it writes to you.",
   "goalCharterHint": "What is this goal for, what matters to you, and how should your agent coach you? For example: ask me one guided question each morning.",
   "goalCharterOverBudget": "Your agent can only read the first part of this. Shorten or combine entries so it reads all of it.",
-  "goalCharterRecord": "Record about this goal",
+  "goalCharterRecord": "Speak about this goal",
+  "goalCharterRecordingKept": "That couldn't be added to this goal. Your recording is saved in the logbook.",
+  "@goalCharterRecordingKept": {
+    "description": "Toast when a recording made for a goal's 'About this goal' could not be linked to the goal; the recording stays in the journal."
+  },
   "goalCharterSaveFailed": "That didn't save. Try again.",
   "goalCharterTitle": "About this goal",
   "goalChartSevenDayAverage": "7-day average",

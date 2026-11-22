@@ -85,7 +85,11 @@ class _GoalCharterFormState extends ConsumerState<GoalCharterForm> {
       if (!_ownsRecording) return;
       if (next.error != null && next.error != previous?.error) {
         setState(() {
-          _error = chatRecorderErrorMessage(context, next.errorKind);
+          _error = chatRecorderErrorMessage(
+            context,
+            next.errorKind,
+            keptInJournal: next.keptInJournal,
+          );
           _ownsRecording = false;
         });
         Future.microtask(_recorder.clearResult);

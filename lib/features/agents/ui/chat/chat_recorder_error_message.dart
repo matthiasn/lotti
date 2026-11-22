@@ -10,18 +10,27 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// and a single "Recording failed" toast for all of them tells the user
 /// nothing they can act on. The diagnostic English in
 /// [ChatRecorderState.error] stays in the log; this is what reaches the UI.
+///
+/// [keptInJournal] is the recorder's word that the take behind a failed
+/// transcription was saved as a recording; the message then says where it
+/// is, instead of asking the user to say it all again.
 String chatRecorderErrorMessage(
   BuildContext context,
-  ChatRecorderErrorKind? kind,
-) {
+  ChatRecorderErrorKind? kind, {
+  bool keptInJournal = false,
+}) {
   final messages = context.messages;
   return switch (kind) {
     ChatRecorderErrorKind.permissionDenied =>
       messages.chatInputRecordingNoMicPermission,
     ChatRecorderErrorKind.noAudioModel =>
-      messages.chatInputRecordingNoAudioModel,
+      keptInJournal
+          ? messages.chatInputRecordingNoAudioModelKept
+          : messages.chatInputRecordingNoAudioModel,
     ChatRecorderErrorKind.transcriptionFailed =>
-      messages.chatInputTranscriptionFailed,
+      keptInJournal
+          ? messages.chatInputTranscriptionFailedKept
+          : messages.chatInputTranscriptionFailed,
     ChatRecorderErrorKind.noAudioFile => messages.chatInputNoAudioRecorded,
     // Busy and start failures are transient: the generic retry line is the
     // honest thing to say about them.

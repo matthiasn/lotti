@@ -2172,11 +2172,13 @@ void main() {
       controller.emitError(
         'network down',
         kind: ChatRecorderErrorKind.transcriptionFailed,
+        keptInJournal: true,
       );
       await tester.pump();
       await tester.pump();
+      // The take is not lost: the toast says where it is.
       expect(
-        find.textContaining('transcribing it failed'),
+        find.textContaining('Your recording is saved in the logbook'),
         findsOneWidget,
       );
       // The raw diagnostic English never reaches the toast.

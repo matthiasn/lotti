@@ -35,7 +35,8 @@ enum ChatRecorderErrorKind {
 /// Carries the [status], the rolling dBFS [amplitudeHistory] for the waveform,
 /// and at most one of [transcript] (finished, awaiting consumption) /
 /// [partialTranscript] (in-progress streaming text) / [error] plus its
-/// [errorKind]. Produced by `ChatRecorderController`.
+/// [errorKind] and whether the take was [keptInJournal]. Produced by
+/// `ChatRecorderController`.
 class ChatRecorderState {
   // Constructors first per lint
   const ChatRecorderState({
@@ -45,6 +46,7 @@ class ChatRecorderState {
     this.partialTranscript,
     this.error,
     this.errorKind,
+    this.keptInJournal = false,
     this.elapsed = Duration.zero,
   });
 
@@ -55,6 +57,7 @@ class ChatRecorderState {
       partialTranscript = null,
       error = null,
       errorKind = null,
+      keptInJournal = false,
       elapsed = Duration.zero;
 
   // Fields
@@ -70,8 +73,14 @@ class ChatRecorderState {
   /// The localizable reason behind [error]; null whenever [error] is null.
   final ChatRecorderErrorKind? errorKind;
 
+  /// Whether the take behind a failed transcription was saved to the journal
+  /// as a recording. A recording is the user's own: it is never thrown away
+  /// because its words could not be read. False whenever [error] is null.
+  final bool keptInJournal;
+
   // Methods
-  /// Footgun: [transcript], [partialTranscript], and [error] are
+  /// Footgun: [transcript], [partialTranscript], [error], [errorKind] and
+  /// [keptInJournal] are
   /// NOT preserved when omitted — passing nothing resets them to null. This is
   /// deliberate (each new status implies a fresh result), so callers that want
   /// to keep a value must pass it explicitly (e.g. re-passing
@@ -84,6 +93,7 @@ class ChatRecorderState {
     String? partialTranscript,
     String? error,
     ChatRecorderErrorKind? errorKind,
+    bool keptInJournal = false,
     Duration? elapsed,
   }) {
     return ChatRecorderState(
@@ -94,6 +104,7 @@ class ChatRecorderState {
       partialTranscript: partialTranscript,
       error: error,
       errorKind: errorKind,
+      keptInJournal: keptInJournal,
     );
   }
 }
