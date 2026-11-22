@@ -1715,9 +1715,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiCardMenuTooltip => 'Meer acties';
 
   @override
-  String get aiCardOpenAgentInternals => 'Interne details van agent openen';
-
-  @override
   String get aiCardProposalConfirmed => 'Bevestigd';
 
   @override
@@ -2104,7 +2101,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiInferenceErrorUnknownTitle => 'Fout';
 
   @override
-  String get aiInternalsTitle => 'Interne details van agent';
+  String get aiInternalsTitle => 'Agentdetails';
 
   @override
   String get aiModelCardDeleteTooltip => 'Model verwijderen';

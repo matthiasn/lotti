@@ -248,6 +248,22 @@ sources:
     resource: ../../lib/features/front_agent/workflow/front_pull_request_lookups.dart
     title: FrontPullRequestLookups — find_pull_requests and read_pull_requests for one turn
     last_modified: 2026-11-15
+  - id: report-lookups
+    resource: ../../lib/features/front_agent/workflow/front_report_lookups.dart
+    title: FrontReportLookups — read_report for one turn, and the reports her reply may quote
+    last_modified: 2026-11-22
+  - id: report-quote
+    resource: ../../lib/features/front_agent/model/front_report_quote.dart
+    title: FrontReportQuote — report sections pinned to the report she read
+    last_modified: 2026-11-22
+  - id: report-sections-card
+    resource: ../../lib/features/front_agent/ui/front_report_sections_card.dart
+    title: FrontReportSectionsCard — quoted report sections under her reply
+    last_modified: 2026-11-22
+  - id: adr-0166
+    resource: ../../docs/adr/0166-the-task-agent-writes-its-report-as-sections.md
+    title: ADR 0166 — The task agent writes its report as sections
+    last_modified: 2026-11-22
   - id: pull-request-cards
     resource: ../../lib/features/front_agent/ui/front_pull_request_cards.dart
     title: FrontPullRequestCards — the task page's pull request card under her reply, per holding task
@@ -477,7 +493,7 @@ entries for the pull request: one the task no longer holds is left out.
 
 # The contract
 
-Ten tools, never fewer (a single tool makes DeepSeek rewrite
+Eleven tools, never fewer (a single tool makes DeepSeek rewrite
 `tool_choice`), in a fixed order:
 
 | Tool | Ends the turn | Cap | Over the cap |
@@ -491,6 +507,7 @@ Ten tools, never fewer (a single tool makes DeepSeek rewrite
 | `summarize_pull_requests(period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestSummaryExhaustedAnswer`; unavailable when no summarizer is wired |
 | `find_pull_requests(topic? and/or largest?, count? 1–5, period \| pastDays \| from+through)` | no | 1 per turn | `frontPullRequestFindExhaustedAnswer`; unavailable without a pull request repository, or without a filter when a `topic` is given |
 | `read_pull_requests(ids ≤ 3)` | no | 1 per turn | `frontPullRequestReadExhaustedAnswer`; only keys `<conversation_pull_requests>` lists or this turn found |
+| `read_report(ids ≤ 3)` | no | 1 per turn | refused; unavailable when no report reader is wired; only listed tasks |
 | `ask_user(question, options ≤ 3)` | yes | once | refused |
 
 Lookups are capped by **count-and-refuse**, not by removing the tool:
@@ -952,6 +969,43 @@ sequenceDiagram
   Lookups-->>Her: only the kept ones, with their tasks
   Her->>Reply: prose and PullRequestCards(ids)
   Reply-->>Her: cards of known keys, found ones appended
+```
+
+### Where a task stands: its report, quoted
+
+A question about where a listed task stands as its agent last reported it —
+*"what's next on the habitat task?"*, *"what's blocking me on X and Y?"* —
+is rule 17: `read_report` with up to three listed tasks. `FrontReportLookups`
+asks the repository for each task's newest usable report
+(`getUsableTaskReportsForTaskIds`, the same read the task agent's drill-down
+uses) and answers with each report's sections, numbered from one, with their
+kind and rows. A report written as Markdown (before ADR 0166, or by a model
+that ignored the schema) comes back as its text, marked as one
+`ReportSections` cannot show; she answers from its words.
+
+Her reply places sections with `ReportSections(caption, task, sections)`:
+the task as listed and the section numbers, never their words.
+`readFrontReply` accepts only a task whose sectioned report this turn read
+and stores the picked sections themselves as a `FrontReportQuote`, pinned to
+the report's id and date. Reports are immutable snapshots, so a later update
+of the task's summary never changes an answer already given; the card says
+how old its report is. `FrontReportSectionsCard` draws a quote in the AI
+summary's violet card: the task as its header, which opens it, *AI summary ·
+2 days ago* under it, then the same `AgentReportSectionsView` the task page
+draws.
+
+```mermaid
+sequenceDiagram
+  participant Her as Her turn
+  participant Lookups as FrontReportLookups
+  participant Repo as AgentRepository
+  participant Reply as readFrontReply
+  Her->>Lookups: read_report(task ids)
+  Lookups->>Repo: getUsableTaskReportsForTaskIds
+  Repo-->>Lookups: newest usable report per task
+  Lookups-->>Her: numbered sections, or the text of a Markdown report
+  Her->>Reply: prose and ReportSections(task, numbers)
+  Reply-->>Her: the picked sections stored as a quote of that report
 ```
 
 Her own words name a task or a project as a Markdown link titled as listed:
@@ -1715,7 +1769,7 @@ never a filled twin of the user's own bubble —
 under her **latest** question only (an older question's options would answer
 a question nobody is asking). The thread shows only what was said: no cost
 line under her words — what the open conversation has cost is the drawer's
-*Agent internals* row to say (`frontConversationCostProvider`, every run
+*Agent details* row to say (`frontConversationCostProvider`, every run
 of hers in the conversation — `FrontChatThread.runKeys`, gathered before the
 thread's fifty-message window, so the total never shrinks as it moves —
 summed from `agentRunConsumptionTotalsProvider`,
@@ -1827,7 +1881,7 @@ on, with the way to have her say her latest answer again
 conversation; *Reading speed* (`FrontVoiceSpeedRow`) under it while she
 answers aloud, a tap stepping to the next speed; *AI profile*, once she exists and the profiles are loaded,
 naming the profile she has of her own, else the Settings default she follows
-(`FrontProfileChoice`); and *Agent internals*, with what the open
+(`FrontProfileChoice`); and *Agent details*, with what the open
 conversation has cost (none in the inbox), opening `AgentInternalsPanel`.
 
 A conversation not begun opens on her invitation, centred where the thread
@@ -1930,7 +1984,8 @@ Two things are due today, and the ice survey is the one that cannot wait.
 what she may write — `Reply` (children, top to bottom), `Text` (a short
 label between parts), `TaskCards(caption, ids, notes?)`,
 `PullRequestCards(caption, ids)`, `ClosedTasks(caption)`, `LoggedTimeChart(caption)`,
-`PullRequestChart(caption)`, `QuickReplies(options)` and
+`PullRequestChart(caption)`, `ReportSections(caption, task, sections)`,
+`QuickReplies(options)` and
 `InboxWays(part, ways)`, which goes with a dispatch and is never drawn in
 her reply — flat, with no
 data in it: **she never passes data to a component**. The catalog has one
@@ -2056,7 +2111,8 @@ task as `FrontEntityPreviewCompactCard`, a project as
 `FrontPullRequestCards`, one task page pull request card per holding task:
 the task as its header, which opens it, over that task's own
 `PullRequestRow`s read live, a pull request the task no longer holds left
-out — the lookups' components as
+out — `ReportSections` as `FrontReportSectionsCard`, the stored quote in
+the AI summary's violet card, the lookups' components as
 the closed-task card and the charts, and `QuickReplies` as design-system
 chips. What a tap does comes from the scope (a task opens on top of her, a
 project after closing her), so the catalog itself is static; a card a

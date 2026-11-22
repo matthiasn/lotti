@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -15,10 +16,12 @@ import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
+import 'package:lotti/features/front_agent/model/front_report_quote.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
 import 'package:lotti/features/front_agent/workflow/front_pull_request_lookups.dart';
+import 'package:lotti/features/front_agent/workflow/front_report_lookups.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:mocktail/mocktail.dart';
@@ -85,6 +88,7 @@ void main() {
     FrontRoutingIndex? routingIndex,
     List<FrontIndexRow> conversationTasks = const [],
     FrontPullRequestLookups? pullRequests,
+    FrontReportLookups? reports,
   }) => FrontAgentStrategy(
     syncService: syncService,
     domainLogger: domainLogger,
@@ -101,6 +105,7 @@ void main() {
     pullRequestSummarizer: pullRequestSummarizer,
     conversationTasks: conversationTasks,
     pullRequests: pullRequests,
+    reports: reports,
   );
 
   Map<String, dynamic> segment({
@@ -1371,6 +1376,88 @@ Here it is again.''');
         contains(FrontReplyComponents.pullRequestCards),
       );
     });
+  });
+
+  group('read_report', () {
+    final report =
+        AgentDomainEntity.agentReport(
+              id: 'r-garden',
+              agentId: 'agent-garden',
+              scope: 'current',
+              createdAt: DateTime(2026, 11, 1, 9),
+              vectorClock: null,
+              content: '## Next actions\n\n- [ ] Water the seedlings',
+              sections: const [
+                AgentReportSection(
+                  kind: AgentReportSectionKind.points,
+                  title: 'Progress',
+                  items: [AgentReportSectionItem(text: 'Beds dug')],
+                ),
+                AgentReportSection(
+                  kind: AgentReportSectionKind.checklist,
+                  title: 'Next actions',
+                  items: [AgentReportSectionItem(text: 'Water the seedlings')],
+                ),
+              ],
+            )
+            as AgentReportEntity;
+
+    test("reads a listed task's report, counts as an answer lookup, and "
+        'lets her reply quote its sections', () async {
+      final s = strategy(
+        reports: FrontReportLookups(
+          reader: (ids) async => {
+            for (final id in ids)
+              if (id == 'garden') id: report,
+          },
+        ),
+      );
+      await s.processToolCalls(
+        toolCalls: [
+          _call('read_report', {
+            'ids': ['task:garden'],
+          }),
+        ],
+        manager: manager,
+      );
+
+      expect(responses().single, contains('2. Next actions (checklist)'));
+      expect(s.answerLookupCalls, 1);
+      expect(s.lookupCalls, 1);
+
+      expect(
+        s.acceptAnswer('''
+<a2ui>
+surface("reply")
+root = ReportSections("Next in the garden", "task:garden", [2])
+</a2ui>
+Watering is next.'''),
+        isTrue,
+      );
+      final quoted = s.replyComponents.singleWhere(
+        (c) => c['component'] == FrontReplyComponents.reportSections,
+      );
+      final quote = FrontReportQuote.fromJson(quoted['quote'])!;
+      expect(quote.reportId, 'r-garden');
+      expect(quote.sections.single.title, 'Next actions');
+    });
+
+    test(
+      'a refused read is answered and logged as an error, uncounted',
+      () async {
+        final s = strategy();
+        await s.processToolCalls(
+          toolCalls: [
+            _call('read_report', {
+              'ids': ['task:garden'],
+            }),
+          ],
+          manager: manager,
+        );
+        expect(responses().single, contains('cannot be read this turn'));
+        expect(s.lookupCalls, 0);
+      },
+    );
   });
 
   group('summarize_pull_requests', () {

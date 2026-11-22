@@ -32,8 +32,8 @@ void main() {
       expect(
         directive,
         allOf(
-          contains('Write free-form Markdown'),
-          contains('headings are optional'),
+          contains('Write the report as sections'),
+          contains('a lead paragraph may go untitled'),
           contains('Never create a section merely'),
           contains('A checked item proves only'),
           contains('previous report'),
@@ -125,12 +125,12 @@ void main() {
             'type': 'string',
             'description': 'Original TLDR.',
           },
-          'content': <String, dynamic>{
-            'type': 'string',
-            'description': 'Original content.',
+          'sections': <String, dynamic>{
+            'type': 'array',
+            'description': 'Original sections.',
           },
         },
-        'required': <String>['oneLiner', 'tldr', 'content'],
+        'required': <String>['oneLiner', 'tldr', 'sections'],
         'additionalProperties': false,
       };
 
@@ -153,25 +153,25 @@ void main() {
         expect(optimizedProperty['type'], baseProperty['type']);
       }
       expect(
-        (optimizedProperties['content']!
+        (optimizedProperties['sections']!
             as Map<String, dynamic>)['description'],
-        contains('free-form Markdown'),
+        contains('as sections, titles in the task language'),
       );
       expect(
-        (optimizedProperties['content']!
+        (optimizedProperties['sections']!
             as Map<String, dynamic>)['description'],
         contains('omit Progress or Achieved entirely'),
       );
-      final contentDescription =
-          (optimizedProperties['content']!
+      final sectionsDescription =
+          (optimizedProperties['sections']!
               as Map<String, dynamic>)['description'];
-      expect(contentDescription, contains('active report directive'));
-      expect(contentDescription, contains('heading must be present'));
-      expect(contentDescription, contains('with its exact spelling'));
-      expect(contentDescription, contains('inline link elsewhere'));
+      expect(sectionsDescription, contains('active report directive'));
+      expect(sectionsDescription, contains('heading must be present'));
+      expect(sectionsDescription, contains('with its exact spelling'));
+      expect(sectionsDescription, contains('inline link elsewhere'));
       expect(
-        (baseProperties['content']! as Map<String, dynamic>)['description'],
-        'Original content.',
+        (baseProperties['sections']! as Map<String, dynamic>)['description'],
+        'Original sections.',
       );
     });
 
@@ -226,15 +226,15 @@ void main() {
         'qwen3.5-122b-a10b',
       );
 
-      expect(mistral, contains('Include only sections that'));
+      expect(mistral, contains('Include only sections'));
       expect(mistral, contains('include it and state what it is for'));
-      expect(qwen, contains('Write free-form Markdown'));
-      expect(qwen, contains('headings are optional'));
+      expect(qwen, contains('Write the report as sections'));
+      expect(qwen, contains('a lead paragraph may go untitled'));
       // The English heading names are meanings, not wording: a German task
       // gets German headings, and an empty Links section is never written.
-      expect(mistral, contains('in\nthe task language rather than in English'));
-      expect(mistral, contains('including `## Links` when there is no URL'));
-      expect(qwen, contains("task's `languageCode`, headings included"));
+      expect(mistral, contains('the task language rather than in English'));
+      expect(mistral, contains('including `Links` when there is no URL'));
+      expect(qwen, contains("task's `languageCode`, titles included"));
     });
   });
 }

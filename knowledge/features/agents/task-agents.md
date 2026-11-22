@@ -8,6 +8,14 @@ status: stable
 generated: { by: claude-code/opus-5.5, at: 2026-11-15T12:00:00Z }
 stale_after: 2027-02-01
 sources:
+  - id: adr-0166
+    resource: ../../../docs/adr/0166-the-task-agent-writes-its-report-as-sections.md
+    title: ADR 0166 — The task agent writes its report as sections
+    last_modified: 2026-11-22
+  - id: report-sections
+    resource: ../../../lib/classes/agents/agent_report_section.dart
+    title: AgentReportSection — the report body as sections, and its Markdown form
+    last_modified: 2026-11-22
   - id: adr-0159
     resource: ../../../docs/adr/0159-the-task-agent-says-when-it-could-not-meet-a-request.md
     title: ADR 0159 — The task agent says when it could not meet a request
@@ -841,6 +849,38 @@ yet every efficient model still wrote them; on 2026-09-15..18 that single
 sentence failed 7 of the 12 failed `task-workflow` gym samples across all three
 models. Prompt wording did not move it, so the filter cleans the published text
 instead of rejecting the report.
+
+## The report is written as sections
+
+`update_report` takes `oneLiner`, `tldr` and `sections` (ADR 0166). A section
+has a `kind` — `points`, `checklist` or `text` — an optional `title`, and
+either `items` (`{text, done}`) or `text`; row and paragraph text is inline
+Markdown. Both built-in directives describe the report in sections, and a
+heading a custom directive names becomes a section title.
+
+```mermaid
+flowchart LR
+  Tool["update_report(sections)"] --> Parse["parseAgentReportSections"]
+  Raw["update_report(content) — schema ignored"] --> Draft
+  Parse --> Draft["TaskAgentReportDraft: sections + Markdown content"]
+  Draft --> Editor{"Report editor route?"}
+  Editor -->|edited| Draft
+  Editor -->|as written| Clean["withoutPublicationNoiseSections"]
+  Clean --> Writer["WakeOutputWriter: sanitize, content = rendered sections"]
+  Writer --> Entity["AgentReportEntity(content, sections)"]
+```
+
+- `TaskAgentStrategy` keeps the parsed sections; `content` becomes their
+  Markdown (`renderAgentReportSectionsMarkdown`). A call carrying only a
+  `content` string still yields a Markdown report with no sections, and the
+  last call of a wake wins either way.
+- The report editor reads the draft as Markdown and answers with sections, so
+  its regression checks keep reading `content`.
+- `TaskAgentReportPolicy.withoutPublicationNoiseSections` applies the Markdown
+  noise filters section by section; the stored text is then rendered from the
+  cleaned, sanitized sections, so the card and every text reader agree.
+- Every other reader — internals, embeddings, read-aloud, the companion's
+  report tools — reads `content`, unchanged in form.
 
 ## The isolated report editor
 

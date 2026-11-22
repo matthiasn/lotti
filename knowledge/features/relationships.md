@@ -1398,7 +1398,7 @@ removed:
   record itself — that a name was misheard, that the user found a briefing
   wrong, how the user feels about the relationship. Without a place for that,
   a correction check-in was narrated once and forgotten, and the
-  *Observations* tab under *Agent internals* stayed empty because the agent
+  *Observations* tab under *Agent details* stayed empty because the agent
   had no tool that writes there. `record_relationship_observations` takes
   notes with the shared priority and category (a complaint about the agent
   is category `grievance`); `persistOutputs` writes them as observation
@@ -1522,7 +1522,7 @@ rather than from any relationship-specific code:
   own body tier (`bodyMedium`), so the reading faces sit at the same size as
   the waiting faces' prose; the task and goal cards keep the compact
   default.
-* *Read more* / *Show less* and *Open agent internals* are the same control,
+* *Read more* / *Show less* and *Agent details* are the same control,
   in the same place, with the same behaviour as on a task. `TldrBody` takes a
   `disclosureKey` so a failing expectation still names the surface it fired
   on; everything else is shared verbatim.
@@ -1647,7 +1647,7 @@ somewhere it can be explained, not in a caption that expires on tap.
 | No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Update now* would read, and that it never sees a channel · the footer line |
 | Running | `agentIsRunningProvider` | with a briefing on file, the current face's `{band} · as of {ago}` and that briefing, still readable; before the first — and on a folded card, whose footer is not on screen — a spinner and `Writing the briefing…` — never a duration estimate · the footer line, its trigger reading *Thinking…*, disabled |
 | Failed | `lastWakeFailed` — the state row's failed watermark is newer than its completed one — and newer than the report | error glyph · `Last run failed · {ago}` · the provider returned an error, your check-ins are unchanged — or that no model is set up, choose one in the model row — as a caption above the briefing it failed to replace, if there is one, which keeps its age · the footer line |
-| Current | report, not stale | band dot · `{band} · as of {ago}` · TL;DR + *Read more* + *Open agent internals* · the footer line · the band's reason and the sources line as one footnote with the full briefing: behind *Read more*, or at once when the TL;DR is the whole of it |
+| Current | report, not stale | band dot · `{band} · as of {ago}` · TL;DR + *Read more* + *Agent details* · the footer line · the band's reason and the sources line as one footnote with the full briefing: behind *Read more*, or at once when the TL;DR is the whole of it |
 | Out of date | `AgentStateEntity.isReportStale` | warning glyph · `Out of date · new check-in {day}`, ` · {n} days old` once a day old · body · the footer line — no sources line, since the count would include the check-in it missed |
 
 **The footer line** is the same on every enrolled face, the task card's:
@@ -1665,7 +1665,7 @@ of the full reading — it appears with the whole briefing, behind *Read more*
 or at once when the TL;DR is all there is — so the folded card stays status ·
 TL;DR · one next step. Logging a check-in and calling are the page's verbs,
 held by its sticky action bar, not the card's. No face has a menu or a
-*See activity* button: the header and *Open agent internals* beside *Read
+*See activity* button: the header and *Agent details* beside *Read
 more* open the agent's activity, as on the task card, and the model row opens
 the model setup.
 
@@ -2260,7 +2260,7 @@ changed colour the moment they were imported.)
 [`RelationshipChatPane`](../../lib/features/relationships/ui/widgets/relationship_chat_pane.dart)
 is the shared `AgentChatView` under an identity header — sparkle, "<name> ·
 briefing agent", and the line naming the boundary the agent works within
-(ADR 0041 §5) — with *Agent internals* labelled where there is room and an
+(ADR 0041 §5) — with *Agent details* labelled where there is room and an
 icon where there is not. The agent is named after the person, but the person
 is never the one addressed: the pane passes `AgentChatView` the localized
 *Briefing agent* as its `agentName`, so replies are signed by the agent, and
@@ -2316,7 +2316,7 @@ address never claims a chat the screen is not showing. The sheet offers
 of its own — the phone route and the sheet each supply one, which the
 composer's field needs.
 
-The person hero's overflow menu offers *Agent internals* whenever the person
+The person hero's overflow menu offers *Agent details* whenever the person
 has an agent, opening `AgentInternalsPanel` in the same side sheet — reports,
 conversations, activity, the agent's lifetime cost and its AI setup (the
 route that runs, one tap from `AgentModelSheet`), without a trip to Settings.

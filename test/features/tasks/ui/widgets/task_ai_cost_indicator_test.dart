@@ -174,7 +174,7 @@ void main() {
     // The task's maintenance band rides along, as from the summary card.
     expect(panel.maintenance?.kind, AgentMaintenanceKind.task);
     expect(panel.maintenance?.entityId, taskId);
-    expect(find.text('Agent internals'), findsOneWidget);
+    expect(find.text('Agent details'), findsOneWidget);
     expect(find.text('Task details'), findsNothing);
   }
 

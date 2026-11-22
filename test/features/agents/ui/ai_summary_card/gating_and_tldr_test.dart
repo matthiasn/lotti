@@ -1,12 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_body.dart';
+import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/agent_report_sections_view.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/state/skill_entity_provider.dart';
@@ -242,17 +245,17 @@ void main() {
       // The internals link rides the same row in both states: it is the only
       // door to the agent's schedule and AI setup, so collapsing the report
       // must not take it away.
-      expect(find.text('Open agent internals'), findsOneWidget);
+      expect(find.text('Agent details'), findsOneWidget);
 
       await tester.tap(find.text('Read more'));
       await tester.pumpAndSettle();
       expect(find.text('Show less'), findsOneWidget);
-      expect(find.text('Open agent internals'), findsOneWidget);
+      expect(find.text('Agent details'), findsOneWidget);
 
       await tester.tap(find.text('Show less'));
       await tester.pumpAndSettle();
       expect(find.text('Read more'), findsOneWidget);
-      expect(find.text('Open agent internals'), findsOneWidget);
+      expect(find.text('Agent details'), findsOneWidget);
     });
 
     testWidgets('Read more pill is hidden when there is no TLDR or report', (
@@ -285,7 +288,14 @@ void main() {
       await tester.tap(find.text(makeTestIdentity().displayName));
       await tester.pumpAndSettle();
 
-      expect(find.text('Agent internals'), findsOneWidget);
+      // The card's link carries the panel's title, so look inside the panel.
+      expect(
+        find.descendant(
+          of: find.byType(AgentInternalsPanel),
+          matching: find.text('Agent details'),
+        ),
+        findsOneWidget,
+      );
       // The panel is where the card's maintenance band went: the switch,
       // the schedule and the model identity are all behind this tap.
       expect(find.text('Automatic updates'), findsOneWidget);
@@ -294,7 +304,36 @@ void main() {
       expect(find.text('test-model · via Test Provider'), findsWidgets);
     });
 
-    testWidgets('Open agent internals pill (under expanded report) opens it', (
+    testWidgets('Read more opens the report drawn from its sections', (
+      tester,
+    ) async {
+      final bench = AgentTestBench(
+        report: makeTestReport(
+          tldr: 'Tldr.',
+          content: '## Next actions\n\n- [ ] Ship it',
+          sections: const [
+            AgentReportSection(
+              kind: AgentReportSectionKind.checklist,
+              title: 'Next actions',
+              items: [AgentReportSectionItem(text: 'Ship it')],
+            ),
+          ],
+        ),
+      );
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Read more'));
+      await tester.pumpAndSettle();
+
+      final view = tester.widget<AgentReportSectionsView>(
+        find.byType(AgentReportSectionsView),
+      );
+      expect(view.sections.single.title, 'Next actions');
+      expect(find.text('Ship it'), findsOneWidget);
+    });
+
+    testWidgets('Agent details pill (under expanded report) opens it', (
       tester,
     ) async {
       final bench = AgentTestBench(
@@ -309,11 +348,18 @@ void main() {
 
       await tester.tap(find.text('Read more'));
       await tester.pumpAndSettle();
-      expect(find.text('Open agent internals'), findsOneWidget);
-      await tester.tap(find.text('Open agent internals'));
+      expect(find.text('Agent details'), findsOneWidget);
+      await tester.tap(find.text('Agent details'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Agent internals'), findsOneWidget);
+      // The card's link carries the panel's title, so look inside the panel.
+      expect(
+        find.descendant(
+          of: find.byType(AgentInternalsPanel),
+          matching: find.text('Agent details'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Automatic updates'), findsOneWidget);
     });
   });
@@ -471,7 +517,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Agent internals'), findsOneWidget);
+      expect(find.text('Agent details'), findsOneWidget);
       expect(
         tester
             .widget<AgentInternalsBody>(find.byType(AgentInternalsBody))

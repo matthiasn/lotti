@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/agents/attention_negotiation.dart';
 import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
@@ -172,14 +173,10 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = AgentMessagePayloadEntity;
 
-  /// Immutable report snapshot.
-  ///
-  /// The [content] field holds the full markdown report body. The [tldr]
-  /// field is a short summary populated by newer agent versions via the
-  /// `update_report` tool. The [oneLiner] field is a compact task-card
-  /// subtitle/tagline used in project detail task lists. For older reports
-  /// where [tldr] is null, the UI extracts a synthetic TLDR from the first
-  /// paragraph of [content].
+  /// Immutable report snapshot: [content] is the Markdown body, [tldr] the
+  /// short summary (null on old reports, whose UI takes the first paragraph),
+  /// [oneLiner] the task-card tagline, and [sections] the body as a task
+  /// agent wrote it, which [content] then renders (empty for Markdown ones).
   const factory AgentDomainEntity.agentReport({
     required String id,
     required String agentId,
@@ -187,15 +184,9 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required DateTime createdAt,
     required VectorClock? vectorClock,
     @Default('') String content,
-
-    /// Short summary, populated by `update_report(tldr:, content:)`.
-    /// Null for reports created before this field was added.
     String? tldr,
-
-    /// Compact task tagline, populated by
-    /// `update_report(oneLiner:, tldr:, content:)`.
-    /// Null for reports created before this field was added.
     String? oneLiner,
+    @Default(<AgentReportSection>[]) List<AgentReportSection> sections,
     double? confidence,
     @Default({}) Map<String, Object?> provenance,
     DateTime? deletedAt,

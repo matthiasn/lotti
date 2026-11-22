@@ -1719,9 +1719,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiCardMenuTooltip => 'Další akce';
 
   @override
-  String get aiCardOpenAgentInternals => 'Otevřít interní informace agenta';
-
-  @override
   String get aiCardProposalConfirmed => 'Potvrzeno';
 
   @override
@@ -2108,7 +2105,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiInferenceErrorUnknownTitle => 'Chyba';
 
   @override
-  String get aiInternalsTitle => 'Interní informace agenta';
+  String get aiInternalsTitle => 'Podrobnosti agenta';
 
   @override
   String get aiModelCardDeleteTooltip => 'Smazat model';

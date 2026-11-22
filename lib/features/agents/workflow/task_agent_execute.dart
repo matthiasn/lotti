@@ -562,9 +562,17 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // 7–11. Persist all wake outputs atomically. Wrapping in a transaction
       // ensures the state revision is only bumped if all outputs (thought,
       // report, observations) are successfully written.
-      final reportContent = TaskAgentReportPolicy.withoutPublicationNoise(
-        effectiveReport?.content ?? strategy.extractReportContent(),
-      );
+      final reportSections =
+          TaskAgentReportPolicy.withoutPublicationNoiseSections(
+            effectiveReport?.sections ?? strategy.extractReportSections(),
+          );
+      // Sectioned reports store their cleaned sections' Markdown, so the
+      // stored text and the card's sections say the same thing.
+      final reportContent = reportSections.isEmpty
+          ? TaskAgentReportPolicy.withoutPublicationNoise(
+              effectiveReport?.content ?? strategy.extractReportContent(),
+            )
+          : renderAgentReportSectionsMarkdown(reportSections);
       final draftTldr = effectiveReport?.tldr ?? strategy.extractReportTldr();
       final reportTldr = draftTldr == null
           ? null
@@ -590,6 +598,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           ).persist(
             strategy: strategy,
             reportContent: reportContent,
+            reportSections: reportSections,
             reportTldr: reportTldr,
             reportOneLiner: reportOneLiner,
             observations: observations,

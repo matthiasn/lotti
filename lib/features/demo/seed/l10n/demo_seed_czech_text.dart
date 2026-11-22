@@ -25,7 +25,7 @@ const _copy = <String, String>{
   'AI summary': 'Souhrn AI',
   'Automatic updates': 'Automatické aktualizace',
   'Read more': 'Číst více',
-  'Open agent internals': 'Otevřít interní informace agenta',
+  'Agent details': 'Podrobnosti agenta',
   'Show less': 'Skrýt podrobnosti',
   '"Run zero-gravity sardine feeder test"':
       '"Provést test sardinkového krmítka v beztíži"',

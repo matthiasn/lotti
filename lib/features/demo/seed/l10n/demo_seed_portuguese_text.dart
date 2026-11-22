@@ -26,7 +26,7 @@ const _copy = <String, String>{
   'Bundle task changes and update after two minutes.':
       'Agrupe alterações de tarefas e atualize após dois minutos.',
   'Read more': 'Leia mais',
-  'Open agent internals': 'Abra os internos do agente',
+  'Agent details': 'Detalhes do agente',
   'Show less': 'Mostrar menos',
   '"Run zero-gravity sardine feeder test"':
       '"Executar teste de alimentador de sardinha em gravidade zero"',

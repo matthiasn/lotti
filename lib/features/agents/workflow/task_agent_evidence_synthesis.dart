@@ -5,7 +5,7 @@ import 'package:lotti/features/ai/util/known_models.dart';
 /// Shared prompt and tool-description adjustments for the validated
 /// evidence-first task-agent configuration.
 abstract final class TaskAgentEvidenceSynthesis {
-  /// Compact Markdown report contract used in place of Lotti's built-in
+  /// Compact sectioned report contract used in place of Lotti's built-in
   /// decorative report template. Explicitly customized template directives
   /// remain authoritative.
   static const reportDirective =
@@ -26,11 +26,12 @@ In one or two concise sentences, state the current outcome and the most
 important next action, deadline, or blocker. Do not repeat the one-liner and do
 not use emojis.
 
-### `content`
+### `sections`
 
-Write free-form Markdown in the task's `languageCode`, headings included.
-Choose the structure that best fits the facts; headings are optional. Do not add
-a title because the task title is already visible.
+Write the report as sections in the task's `languageCode`, titles included:
+`points` for a list, `checklist` for to-dos, `text` for a paragraph. Choose the
+sections that best fit the facts; a lead paragraph may go untitled. Do not add
+a report title because the task title is already visible.
 
 Lead with the current real-world situation, decision, deadline, or risk, then
 surface the few actions that matter next. Include an outcome only when the
@@ -63,20 +64,21 @@ In one or two concise sentences, state the current outcome and the most
 important next action, deadline, or blocker. Do not repeat the one-liner and do
 not use emojis.
 
-### `content`
+### `sections`
 
 Write a compact current-state report in the task's `languageCode`. Do not add a
-title because the task title is already visible. Include only sections that
-contain useful, evidence-backed information, and write each heading below in
-the task language rather than in English:
+report title because the task title is already visible. Include only sections
+that contain useful, evidence-backed information, and write each section title
+below in the task language rather than in English:
 
-- `## Progress`: meaningful completed outcomes, not analysis, transcription,
-  checklist creation, metadata changes, or other agent activity.
-- `## Next actions`: the few concrete pending actions that matter now.
-- `## Blockers`: only active blockers or delivery risks.
-- `## Links`: only real external URLs with descriptive link text.
+- `Progress` (`points`): meaningful completed outcomes, not analysis,
+  transcription, checklist creation, metadata changes, or other agent activity.
+- `Next actions` (`checklist`): the few concrete pending actions that matter
+  now.
+- `Blockers` (`points`): only active blockers or delivery risks.
+- `Links` (`points`): only real external URLs with descriptive link text.
 
-Omit empty sections, including `## Links` when there is no URL. Use
+Omit empty sections, including `Links` when there is no URL. Use
 human-readable labels instead of internal IDs. Every claim must describe current
 active task state. If the task has a current due
 date or deadline, include it and state what it is for.
@@ -317,7 +319,7 @@ ${TaskAgentReportPolicy.decisionSectionRule}''';
       '$baseDescription$updateReportDescriptionSuffix';
 
   /// Aligns report-field descriptions with the evidence-first contract while
-  /// preserving the original JSON schema shape and free-form Markdown value.
+  /// preserving the original JSON schema shape.
   static Map<String, dynamic> updateReportParameters(
     Map<String, dynamic> baseParameters,
   ) {
@@ -343,10 +345,10 @@ ${TaskAgentReportPolicy.decisionSectionRule}''';
           'checked item means only user-marked complete unless separate '
           'evidence records the outcome. Never repeat excluded work.',
     };
-    properties['content'] = {
-      ...properties['content']! as Map<String, dynamic>,
+    properties['sections'] = {
+      ...properties['sections']! as Map<String, dynamic>,
       'description':
-          'A free-form Markdown current-state report in the task language. '
+          'The current-state report as sections, titles in the task language. '
           '${TaskAgentReportPolicy.conditionalSectionRule} '
           'Use the following stock headings only when the active directive '
           'requests them. '

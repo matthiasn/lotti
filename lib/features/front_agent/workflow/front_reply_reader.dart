@@ -3,6 +3,7 @@ import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
+import 'package:lotti/features/front_agent/model/front_report_quote.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 
 /// A reply the reader refused: one without prose, which leaves nothing to
@@ -39,6 +40,9 @@ const int frontQuickRepliesMax = 3;
 /// spoken; `TaskCards` with `ids`, each `task:<id>`, `project:<id>` or a
 /// task's bare id, and optionally `notes`, a few words per id for its card;
 /// `PullRequestCards` with `ids`, each `owner/repo#number`;
+/// `ReportSections` with a `task` and the `sections` numbers of a report
+/// read this turn — one of [reports], by task id — stored as those
+/// sections themselves (`quote`);
 /// `ClosedTasks`, `LoggedTimeChart` and `PullRequestChart`, placing what a
 /// lookup made; and `QuickReplies` with up to [frontQuickRepliesMax]
 /// `options`. A `caption`, where she gave one, is kept as the component's
@@ -79,6 +83,7 @@ FrontReply readFrontReply({
   bool proseRequired = true,
   Map<String, FrontFoundPullRequest> pullRequests = const {},
   List<FrontFoundPullRequest> foundPullRequests = const [],
+  Map<String, FrontReportQuote> reports = const {},
 }) {
   if (proseRequired && prose.trim().isEmpty) {
     throw const FrontReplyException('The reply has no prose.');
@@ -174,6 +179,29 @@ FrontReply readFrontReply({
           }
         }
         pullRequestCards(found, caption: component['caption']);
+      case {'task': final Object? task, 'sections': final List<Object?> numbers}
+          when type == FrontReplyComponents.reportSections:
+        final ref = task is String ? task.trim() : '';
+        final report =
+            reports[ref.startsWith('task:') ? ref.substring(5) : ref];
+        final quote = report?.pick([
+          // A model may send 2.0 for 2.
+          for (final number in numbers)
+            if (number is num && number == number.roundToDouble())
+              number.toInt(),
+        ]);
+        if (quote == null) {
+          dropped.add(
+            '$component, not sections of a report read_report returned '
+            'this turn',
+          );
+        } else {
+          read.add({
+            'component': FrontReplyComponents.reportSections,
+            'quote': quote.toJson(),
+            'caption': ?_caption(component['caption']),
+          });
+        }
       case {'options': final List<Object?> options}
           when type == FrontReplyComponents.quickReplies:
         final replies = [

@@ -134,7 +134,7 @@ void main() {
         );
 
         final header = find.ancestor(
-          of: find.text('Agent internals'),
+          of: find.text('Agent details'),
           matching: find.byType(Row),
         );
         final stop = find.descendant(
@@ -163,7 +163,7 @@ void main() {
         ],
       );
 
-      expect(find.text('Agent internals'), findsOneWidget);
+      expect(find.text('Agent details'), findsOneWidget);
       expect(find.text('Test Agent'), findsOneWidget);
     });
 
@@ -177,8 +177,8 @@ void main() {
         ],
       );
 
-      final title = tester.widget<Text>(find.text('Agent internals'));
-      final tokens = tester.element(find.text('Agent internals')).designTokens;
+      final title = tester.widget<Text>(find.text('Agent details'));
+      final tokens = tester.element(find.text('Agent details')).designTokens;
       // A fixed white vanished on the light theme's pale panel.
       expect(title.style?.color, tokens.colors.aiCard.titleText);
     });
@@ -226,12 +226,12 @@ void main() {
           agentStateProvider.overrideWith((ref, agentId) async => null),
         ],
       );
-      expect(find.text('Agent internals'), findsOneWidget);
+      expect(find.text('Agent details'), findsOneWidget);
 
       await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pumpAndSettle();
 
-      expect(find.text('Agent internals'), findsNothing);
+      expect(find.text('Agent details'), findsNothing);
       expect(find.text('open'), findsOneWidget);
     });
 
@@ -245,13 +245,13 @@ void main() {
           agentStateProvider.overrideWith((ref, agentId) async => null),
         ],
       );
-      expect(find.text('Agent internals'), findsOneWidget);
+      expect(find.text('Agent details'), findsOneWidget);
 
       // Left of the panel: the dimmed page.
       await tester.tapAt(const Offset(40, 450));
       await tester.pumpAndSettle();
 
-      expect(find.text('Agent internals'), findsNothing);
+      expect(find.text('Agent details'), findsNothing);
       expect(find.text('open'), findsOneWidget);
     });
 
@@ -323,12 +323,12 @@ void main() {
           agentStateProvider.overrideWith((ref, agentId) async => null),
         ],
       );
-      expect(find.text('Agent internals'), findsOneWidget);
+      expect(find.text('Agent details'), findsOneWidget);
 
       await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pumpAndSettle();
 
-      expect(find.text('Agent internals'), findsNothing);
+      expect(find.text('Agent details'), findsNothing);
       expect(find.text('open'), findsOneWidget);
     });
   });

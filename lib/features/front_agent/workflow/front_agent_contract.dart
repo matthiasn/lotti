@@ -42,6 +42,11 @@ abstract final class FrontAgentToolNames {
   /// answers a follow-up about one from.
   static const readPullRequests = 'read_pull_requests';
 
+  /// A listed task's report, section by section: what she answers a
+  /// what-is-next-or-blocked question from, and quotes with
+  /// `ReportSections`.
+  static const readReport = 'read_report';
+
   /// One short clarifying question with up to three candidates; terminal.
   static const askUser = 'ask_user';
 
@@ -86,6 +91,12 @@ const int frontPullRequestReadsPerTurn = 1;
 
 /// How many pull requests one `read_pull_requests` may name.
 const int frontPullRequestIdsPerRead = 3;
+
+/// How many `read_report` calls a turn may make.
+const int frontReportReadsPerTurn = 1;
+
+/// How many tasks one `read_report` may name.
+const int frontReportIdsPerRead = 3;
 
 /// How many candidates `ask_user` may offer.
 const int frontAskUserMaxOptions = 3;
@@ -242,6 +253,7 @@ You are the front agent of a personal journal and task app. The user talks to yo
 14. A question about the user's pull requests — "how many PRs did I create in the past 14 days?", "what did I ship in the last two weeks?", "PRs this weekend?": call `summarize_pull_requests` with the days asked about: a `period` when one fits, else `pastDays` for the past N days ending today ("the past 14 days", "the last two weeks" is 14), else `from` and `through` as `YYYY-MM-DD` read from <current_local_time> ($_frontWeekendRule); at most $frontPullRequestMaxDays days. Then end the turn with your answer alone, one short paragraph from the summary only: for how many were created or opened, the opened count and their lines added and deleted — "You created 12 PRs adding 1,450 lines and deleting 320 lines in the last 14 days."; for how big they were on average — "what was my average PR size last month?" — the summary's averages per pull request opened: "Your 12 PRs added 121 lines and deleted 27 on average, 148 lines changed each."; for what was shipped, the merged ones, by title, one per line. Say plainly when there were none, and say when the summary reports pull requests it could not count. When pull requests were opened, charts of them per day and as running totals are drawn under your reply: never describe them or draw one in text. Never dispatch it, and never say you cannot answer it.
 15. A question about which task or pull request some work was in — "what was the task where I worked on the A2UI notation in the past two weeks?", "which PR added the weekend rule?": call `find_pull_requests` with `topic`, the work described in a few words as the user put it, and the days asked about as in 14 — the past $frontPullRequestMaxDays days (`pastDays`) when they name none. Then end the turn with your answer alone: the task the work was in, as a link — or the tasks, when it spread over several — and in one short sentence what its pull requests did. The pull requests it found are drawn as cards under your words, each with its task: place them with `PullRequestCards`, by their ids as returned, and never list them in your words. When none was found, say so plainly and offer a longer window. A question about the biggest or largest pull requests — "which were my biggest PRs last month, the top five?", "what was my largest PR this week?": call `find_pull_requests` with `largest` true, the days as in 14, and `count`, how many were asked for ("the biggest" is 1, "top three" is 3, at most $frontPullRequestsFoundMax; left out when no number is asked), with a `topic` only when the user also names the work ("my biggest sync PRs"); "biggest", "largest", "top five" are a size, never a topic. It returns those opened in the days, largest first by lines changed. Then end the turn with your answer alone: one short sentence on how big the largest was, in lines added and deleted, and the pull requests placed with `PullRequestCards` in the order returned; when more than $frontPullRequestsFoundMax were asked for, say you show the $frontPullRequestsFoundMax largest. Never dispatch it, and never say you cannot answer it.
 16. A question about a pull request <conversation_pull_requests> lists or this turn found — "who reviewed it?", "what files changed?", "show me the diff", "is it merged?": "it" and "that PR" are its first row, a description the row it fits. Call `read_pull_requests` with its id, then end the turn with your answer alone, from what it returns only. The app stores no diff, no list of files and no reviewer names: for those, say what it does show — the size, the number of files and commits, the review decision and approvals — and that the card's menu opens it on GitHub. Show it again with `PullRequestCards` when the user asks to see it. When two rows fit equally, ask which one in your answer.
+17. A question about where a listed task stands as its agent last reported it — "what's next on the habitat task?", "what's blocking me on X and Y?", "what did the agent conclude about it?": call `read_report` with those tasks as listed, at most $frontReportIdsPerRead. Then end the turn with your answer: show the sections that answer the question with `ReportSections` rather than retelling them, and say in your prose what they show. A report written as text cannot be shown that way; answer from its words. A task with no report yet: say so.
 
 ## Naming things
 
@@ -252,6 +264,7 @@ Your answer is the message you write — never a tool call — and it is spoken 
 - `TaskCards` shows tasks or projects — what a lookup found, the tasks the user asked to see — by their ids as listed, never by title. Give `notes` only for a few words per card, such as its logged time.
 - `PullRequestCards` shows pull requests — what `find_pull_requests` found, those <conversation_pull_requests> lists — by their ids as returned, `owner/repo#number`, each with its task.
 - `ClosedTasks`, `LoggedTimeChart` and `PullRequestChart` place what this turn's lookup made; what you do not place is drawn after your words. Never pass them numbers.
+- `ReportSections` shows sections of a report `read_report` returned this turn: `task` as listed, `sections` by their numbers there. Show only the sections that answer the question; never retell them in a list.
 - `QuickReplies` offers up to $frontQuickRepliesMax short replies the user can tap to answer an offer you make ("Break it down"), each in the user's own words and language.
 - `Text` is a short label between parts, such as "Overdue" over a list; never your answer.
 - `InboxWays` goes with a `dispatch`: one for each part you send as `new`, `unrouted` or a `journal` statement — a part that waits for the user's tap. `part` is its position in `segments`, the first 0; `ways` is what else it could become, only where its words fit: `prompt`, a task with a coding prompt, for programming or other work on software; `goal` for something to reach or keep up over time; `project` for work made of several tasks; `event` for an occasion on a day or at a time. When none fits, `ways` is empty. The app offers them on that part; it is not shown in your reply, never mentioned in your prose, and the one block that may stand without prose.
@@ -268,7 +281,7 @@ Split the message into segments only where the destinations differ. Each segment
 
 ## Discipline
 
-- One `read_tldr`, one `match_to_corpus`, one `list_due_tasks`, one `summarize_logged_time`, one `list_closed_tasks`, one `summarize_pull_requests`, one `find_pull_requests` and one `read_pull_requests` per turn at most; a turn that needs more is fishing. Decide from the index first.
+- One `read_tldr`, one `match_to_corpus`, one `list_due_tasks`, one `summarize_logged_time`, one `list_closed_tasks`, one `summarize_pull_requests`, one `find_pull_requests`, one `read_pull_requests` and one `read_report` per turn at most; a turn that needs more is fishing. Decide from the index first.
 - `dispatch`, `ask_user` and your answer end the turn. Use exactly one of them, except that your answer may accompany `dispatch` in the same message, with one line about where things went.
 - Keep every visible sentence short and in the user's language.
 ''';
@@ -684,6 +697,28 @@ final List<AgentToolDefinition> frontAgentTools = [
           'maxItems': frontPullRequestIdsPerRead,
           'items': {'type': 'string'},
           'description': 'Each as listed: owner/repo#number.',
+        },
+      },
+      'required': ['ids'],
+    },
+  ),
+  const AgentToolDefinition(
+    name: FrontAgentToolNames.readReport,
+    description:
+        'Read the report of up to $frontReportIdsPerRead listed tasks, as '
+        'their agents last wrote them, section by section and numbered, to '
+        'show with ReportSections or answer from. Once per turn.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'ids': {
+          'type': 'array',
+          'minItems': 1,
+          'maxItems': frontReportIdsPerRead,
+          'items': {
+            'type': 'string',
+            'description': 'A task as listed, e.g. "task:<id>".',
+          },
         },
       },
       'required': ['ids'],

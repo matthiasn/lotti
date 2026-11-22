@@ -33,6 +33,7 @@ extension _TaskAgentExecuteReport on TaskAgentWorkflow {
       'oneLiner': strategy.extractReportOneLiner(),
       'tldr': strategy.extractReportTldr(),
       'content': strategy.extractReportContent(),
+      'sections': strategy.extractReportSections(),
     });
     InferenceUsage? reportEditorUsage;
     ReportFinalizerOutcome? reportFinalizerOutcome;

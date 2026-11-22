@@ -41,6 +41,11 @@ abstract final class FrontReplyComponents {
   /// Short replies the user can tap to answer (`options`).
   static const quickReplies = 'QuickReplies';
 
+  /// Sections of a task's report that `read_report` returned: she names the
+  /// task and the section numbers (`task`, `sections`); the app stores the
+  /// sections themselves (`quote`), pinned to the report she read.
+  static const reportSections = 'ReportSections';
+
   /// A journal answer's points, each with the entries it rests on (`data`,
   /// bound at `/answer`). Never hers to write: the app composes a journal
   /// answer's surface from what the journal search verified
@@ -62,6 +67,7 @@ abstract final class FrontReplyComponents {
     closedTasks,
     loggedTimeChart,
     pullRequestChart,
+    reportSections,
     quickReplies,
     inboxWays,
   ];

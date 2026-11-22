@@ -550,7 +550,7 @@ flowchart TD
 - A refused job completes `aborted` with `WakeRefusedError(cause)`; one
   refused after its run row was written records `wake refused: <cause>` as the
   row's error.
-- Agent internals render the budget for project agents
+- Agent details render the budget for project agents
   (`AgentWakeBudgetRow`): "3 of 10 used today", "Limit reached — automatic
   updates resume tomorrow" once it is, and a stepper over `WakeBudget.choices`
   that writes through `AgentService.updateMaxWakesPerDay`.

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
@@ -618,6 +619,74 @@ void main() {
         isEmpty,
       );
       expect(TaskAgentReportPolicy.withoutAbsentMetadataNotes(''), isEmpty);
+    });
+  });
+
+  group('withoutPublicationNoiseSections', () {
+    AgentReportSection points(String title, List<String> rows) =>
+        AgentReportSection(
+          kind: AgentReportSectionKind.points,
+          title: title,
+          items: [for (final row in rows) AgentReportSectionItem(text: row)],
+        );
+
+    test('drops what the Markdown filter drops, section by section', () {
+      final cleaned = TaskAgentReportPolicy.withoutPublicationNoiseSections([
+        const AgentReportSection(
+          kind: AgentReportSectionKind.text,
+          text: 'Fix the seeding. No estimate or due date is set.',
+        ),
+        points('Next actions', [
+          'Run the migration',
+          'No estimate or due date is set.',
+        ]),
+        const AgentReportSection(
+          kind: AgentReportSectionKind.text,
+          title: 'Decision needed',
+          text: 'None right now.',
+        ),
+        points('Links', ['Keine Links gefunden']),
+        points('Sources', ['[Spec](https://example.com/spec)']),
+      ]);
+
+      expect(cleaned, [
+        const AgentReportSection(
+          kind: AgentReportSectionKind.text,
+          text: 'Fix the seeding.',
+        ),
+        points('Next actions', ['Run the migration']),
+        points('Sources', ['[Spec](https://example.com/spec)']),
+      ]);
+    });
+
+    test('a report that is only noise keeps its sections', () {
+      final noise = [
+        const AgentReportSection(
+          kind: AgentReportSectionKind.text,
+          title: 'Decision needed',
+          text: 'None right now.',
+        ),
+      ];
+      expect(
+        TaskAgentReportPolicy.withoutPublicationNoiseSections(noise),
+        noise,
+      );
+      expect(
+        TaskAgentReportPolicy.withoutPublicationNoiseSections([]),
+        isEmpty,
+      );
+    });
+
+    test('a section left without rows is dropped', () {
+      expect(
+        TaskAgentReportPolicy.withoutPublicationNoiseSections([
+          points('Progress', ['No estimate or due date is set.']),
+          points('Next actions', ['Run the migration']),
+        ]),
+        [
+          points('Next actions', ['Run the migration']),
+        ],
+      );
     });
   });
 

@@ -7,7 +7,7 @@ description: Dale a una tarea su propio asistente de IA con un informe, un estad
 
 Una tarea puede tener un agente de tarea. Al asignarlo, esa tarea obtiene un asistente de IA persistente con su propia configuración de inferencia, informe, estado de activación e historial de propuestas. El agente lee la tarea y su contexto vinculado, sintetiza la situación actual en un informe breve y puede mostrar cambios propuestos para la tarea o la lista de verificación que puedes confirmar o rechazar. Para tener una vista de todo el sistema con todos los agentes en ejecución, consulta [Ejecuta y supervisa agentes](../ai-and-automation/agents.mdx).
 
-La tarjeta **Resumen de IA** del agente asignado está en la parte superior de la tarea, bajo sus notas y por encima de sus listas de verificación y tareas vinculadas. La tarjeta mantiene el último resumen, los cambios propuestos y una acción **Actualizar ahora**. Sus ajustes de actualización y su configuración de IA viven detrás de **Abrir interior del agente**, de modo que la página de tareas se lee como una tarea y no como una consola de IA.
+La tarjeta **Resumen de IA** del agente asignado está en la parte superior de la tarea, bajo sus notas y por encima de sus listas de verificación y tareas vinculadas. La tarjeta mantiene el último resumen, los cambios propuestos y una acción **Actualizar ahora**. Sus ajustes de actualización y su configuración de IA viven detrás de **Detalles del agente**, de modo que la página de tareas se lee como una tarea y no como una consola de IA.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
@@ -17,7 +17,7 @@ La tarjeta **Resumen de IA** del agente asignado está en la parte superior de l
 
 En cualquier tamaño de pantalla, la tarjeta sigue un único orden de lectura: identidad, informe y, después, cambios propuestos e historial. Entre el informe y las propuestas, una línea indica hace cuánto se escribió el informe y ofrece **Actualizar ahora**; cuando el resumen se ha quedado atrás respecto a la tarea, esa línea dice **Desactualizado** en su lugar.
 
-Elige **Leer más** para desplegar el informe completo en el mismo lugar. La tarjeta ampliada mantiene la tarea a la vista, añade la evaluación que sustenta el informe y el siguiente paso recomendado, y ofrece **Abrir interior del agente** cuando necesitas los controles de actualización y la configuración de IA del agente, o sus informes, conversaciones, observaciones y detalles de ejecución.
+Elige **Leer más** para desplegar el informe completo en el mismo lugar. La tarjeta ampliada mantiene la tarea a la vista, añade la evaluación que sustenta el informe y el siguiente paso recomendado, y ofrece **Detalles del agente** cuando necesitas los controles de actualización y la configuración de IA del agente, o sus informes, conversaciones, observaciones y detalles de ejecución.
 
 <ManualScreenshot
   caseId="tasks/agent-card-expanded"
@@ -27,7 +27,7 @@ Elige **Leer más** para desplegar el informe completo en el mismo lugar. La tar
 
 ## Elige la configuración de IA del agente
 
-Abre **Abrir interior del agente** — desde el nombre del agente en la cabecera de la tarjeta o desde el enlace bajo el informe ampliado: allí la fila **Configuración actual** identifica el perfil, el modelo y el proveedor que se usarán en la próxima ejecución. Selecciónala para elegir un perfil de inferencia guardado, sobrescribir solo el modelo de razonamiento, volver al valor predeterminado del perfil, copiar la configuración actual de la categoría o desactivar la IA solo para este agente. La elección se queda con ese agente para futuras actualizaciones; copiar la configuración de una categoría es una instantánea, no un enlace que cambie en silencio más adelante.
+Abre **Detalles del agente** — desde el nombre del agente en la cabecera de la tarjeta o desde el enlace bajo el informe ampliado: allí la fila **Configuración actual** identifica el perfil, el modelo y el proveedor que se usarán en la próxima ejecución. Selecciónala para elegir un perfil de inferencia guardado, sobrescribir solo el modelo de razonamiento, volver al valor predeterminado del perfil, copiar la configuración actual de la categoría o desactivar la IA solo para este agente. La elección se queda con ese agente para futuras actualizaciones; copiar la configuración de una categoría es una instantánea, no un enlace que cambie en silencio más adelante.
 
 Si un informe se produjo por otra ruta, Lotti conserva una atribución separada **Este informe** en lugar de reetiquetar el historial con la configuración actual. Desactivar la IA deja legible el informe existente, pero impide nuevas ejecuciones hasta que vuelvas a seleccionar una configuración funcional. Las actualizaciones automáticas no se pueden activar mientras el agente no tenga una configuración de IA funcional.
 
@@ -49,7 +49,7 @@ La acción manual **Actualizar ahora** puede generar los mismos tipos de informe
 
 ## Elige actualizaciones automáticas o manuales
 
-Los nuevos agentes de tarea empiezan con **Actualizaciones automáticas desactivadas**. La asignación por sí sola no consume tokens en segundo plano. El interruptor, la cuenta atrás hasta la próxima actualización y **Omitir una vez** viven todos en **Abrir interior del agente**, junto al historial de informes y la actividad del agente. Mientras están desactivadas, Lotti sigue detectando cambios relevantes en la tarea y sus entradas vinculadas, marca en la propia tarjeta un resumen anterior como desactualizado y espera a que elijas **Actualizar ahora**. La ejecución manual sigue disponible siempre que el agente tenga una configuración de IA funcional.
+Los nuevos agentes de tarea empiezan con **Actualizaciones automáticas desactivadas**. La asignación por sí sola no consume tokens en segundo plano. El interruptor, la cuenta atrás hasta la próxima actualización y **Omitir una vez** viven todos en **Detalles del agente**, junto al historial de informes y la actividad del agente. Mientras están desactivadas, Lotti sigue detectando cambios relevantes en la tarea y sus entradas vinculadas, marca en la propia tarjeta un resumen anterior como desactualizado y espera a que elijas **Actualizar ahora**. La ejecución manual sigue disponible siempre que el agente tenga una configuración de IA funcional.
 
 <ManualScreenshot
   caseId="tasks/agent-card-manual"

@@ -68,7 +68,7 @@ Use the task language and omit empty sections.
           ),
           modelId: 'mistral-small-4-119b-instruct',
         ),
-        contains('## Progress'),
+        contains('`Progress` (`points`)'),
       );
     });
 
@@ -121,7 +121,7 @@ Use the task language and omit empty sections.
         );
 
         expect(prompt, contains('## Report Directive'));
-        expect(prompt, contains('Write free-form Markdown'));
+        expect(prompt, contains('Write the report as sections'));
         expect(prompt, isNot(contains('Include 1-2 relevant emojis')));
         expect(prompt, contains('Stay terse.'));
       },
@@ -259,7 +259,7 @@ Use the task language and omit empty sections.
         );
         expect(
           afterDirective,
-          contains('check the content against that outline'),
+          contains('check the sections against that outline'),
         );
         expect(
           afterDirective,
@@ -300,8 +300,8 @@ Use the task language and omit empty sections.
           soulVersion: null,
         );
 
-        expect(prompt, contains('Write free-form Markdown'));
-        expect(prompt, contains('headings are optional'));
+        expect(prompt, contains('Write the report as sections'));
+        expect(prompt, contains('a lead paragraph may go untitled'));
         expect(prompt, isNot(contains('Include 1-2 relevant emojis')));
         expect(prompt, isNot(contains('### Required Sections')));
       },
@@ -356,9 +356,9 @@ Use the task language and omit empty sections.
         mistralPrompt,
         contains('Only an explicit request to transition status'),
       );
-      expect(mistralPrompt, contains('Include only sections that'));
+      expect(mistralPrompt, contains('Include only sections'));
       expect(qwenPrompt, isNot(contains('Maybe revisit catering later')));
-      expect(qwenPrompt, contains('Write free-form Markdown'));
+      expect(qwenPrompt, contains('Write the report as sections'));
       expect(qwenPrompt, contains('## Scope Erasure'));
       expect(qwenPrompt, contains('## Direct Report Grounding'));
       expect(qwenPrompt, contains('invent a root cause'));

@@ -4,6 +4,7 @@ import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
@@ -178,6 +179,7 @@ void main() {
     AgentStateEntity? persistedState,
     Map<String, Object?>? reportTaskFacts,
     DateTime? nextScheduledWakeAt,
+    List<AgentReportSection> reportSections = const [],
   }) {
     final wakeState = state ?? _state();
     // The row as it is when the wake ends: the wake-start state unless a
@@ -190,6 +192,7 @@ void main() {
       reportContent: reportContent,
       reportTldr: reportTldr,
       reportOneLiner: reportOneLiner,
+      reportSections: reportSections,
       observations: observations,
       retractionService: retraction,
       changeSetBuilder: builder,
@@ -619,6 +622,46 @@ void main() {
         result!.reportContent,
         '## 📌 What is left to do\n- [ ] Ship the API',
       );
+    });
+  });
+
+  group('report sections', () {
+    test('are stored sanitized, with their Markdown as the content', () async {
+      when(
+        () => repo.getReportHead(_agentId, AgentReportScopes.current),
+      ).thenAnswer((_) async => null);
+
+      final result = await run(
+        // The writer stores the sections' own Markdown, not this text.
+        reportContent: 'stale',
+        reportTldr: 'API work remains',
+        reportSections: const [
+          AgentReportSection(
+            kind: AgentReportSectionKind.checklist,
+            title: 'What is left to do',
+            items: [
+              AgentReportSectionItem(
+                text: 'Ship the API (id: 6af9c4b0-7a1d-11f1-aaec-bffd4abbb1e1)',
+              ),
+            ],
+          ),
+        ],
+        uuid: _SequentialUuid(['report-id', 'head-id']),
+      );
+
+      final report = verify(() => sync.upsertEntity(captureAny())).captured
+          .cast<AgentDomainEntity>()
+          .whereType<AgentReportEntity>()
+          .single;
+      expect(report.sections, const [
+        AgentReportSection(
+          kind: AgentReportSectionKind.checklist,
+          title: 'What is left to do',
+          items: [AgentReportSectionItem(text: 'Ship the API')],
+        ),
+      ]);
+      expect(report.content, '## What is left to do\n\n- [ ] Ship the API');
+      expect(result!.reportContent, report.content);
     });
   });
 

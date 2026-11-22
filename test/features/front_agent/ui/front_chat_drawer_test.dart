@@ -319,7 +319,7 @@ void main() {
       expect(profile.bottom, lessThanOrEqualTo(internals.top));
       // Settings: one quiet label style, and one row size, on all three.
       final tokens = tester.element(find.byType(FrontChatDrawer)).designTokens;
-      for (final label in ['Spoken answers', 'AI profile', 'Agent internals']) {
+      for (final label in ['Spoken answers', 'AI profile', 'Agent details']) {
         final style = tester.widget<Text>(find.text(label)).style!;
         expect(
           style.fontWeight,

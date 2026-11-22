@@ -23,7 +23,7 @@ following overrides are applied on top of the base typography tokens:
 | TLDR title ("AI summary")                          | `subtitle.subtitle2`                        | `height: 1.1`                     |
 | TLDR body markdown                                 | `body.bodySmall`                            | `height: 1.55`                    |
 | Read more / Show less pill label                   | `others.caption`                            | `height: 1`                       |
-| Open agent internals pill label                    | `others.caption`                            | `height: 1`                       |
+| Agent details pill label                    | `others.caption`                            | `height: 1`                       |
 | Proposed changes section title                     | `body.bodySmall`                            | `height: 1.1`                     |
 | `N pending` count badge                            | `others.caption`                            | `height: 1.1`                     |
 | Confirm all button label                           | `others.caption`                            | `height: 1.1`                     |

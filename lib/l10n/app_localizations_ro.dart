@@ -1729,10 +1729,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiCardMenuTooltip => 'Mai multe acțiuni';
 
   @override
-  String get aiCardOpenAgentInternals =>
-      'Deschideți componentele interne ale agentului';
-
-  @override
   String get aiCardProposalConfirmed => 'Confirmată';
 
   @override
@@ -2122,7 +2118,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiInferenceErrorUnknownTitle => 'Eroare';
 
   @override
-  String get aiInternalsTitle => 'Componente interne ale agentului';
+  String get aiInternalsTitle => 'Detaliile agentului';
 
   @override
   String get aiModelCardDeleteTooltip => 'Ștergeți modelul';

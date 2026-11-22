@@ -1730,10 +1730,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiCardMenuTooltip => 'Plus d\'actions';
 
   @override
-  String get aiCardOpenAgentInternals =>
-      'Ouvrir les détails internes de l\'agent';
-
-  @override
   String get aiCardProposalConfirmed => 'Confirmée';
 
   @override
@@ -2123,7 +2119,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiInferenceErrorUnknownTitle => 'Erreur';
 
   @override
-  String get aiInternalsTitle => 'Détails internes de l\'agent';
+  String get aiInternalsTitle => 'Détails de l\'agent';
 
   @override
   String get aiModelCardDeleteTooltip => 'Supprimer le modèle';

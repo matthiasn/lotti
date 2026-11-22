@@ -1489,19 +1489,20 @@ In one or two concise sentences, state the current outcome and the most
 important next action, deadline, or blocker. Do not repeat the one-liner and do
 not use emojis.
 
-### `content`
+### `sections`
 
 Write a compact current-state report in the task's `languageCode`. Do not add a
-title because the task title is already visible. Include only sections that
-contain useful, evidence-backed information:
+report title because the task title is already visible. Include only sections
+that contain useful, evidence-backed information:
 
-- `## Progress`: meaningful completed outcomes, not analysis, transcription,
-  checklist creation, metadata changes, or other agent activity.
-- `## Next actions`: the few concrete pending actions that matter now. Do not
-  reproduce the entire checklist when a shorter synthesis is clearer.
-- `## Blockers`: only active blockers or delivery risks.
-- `## Links`: only real external URLs from the task context, using descriptive
-  Markdown link text.
+- `Progress` (`points`): meaningful completed outcomes, not analysis,
+  transcription, checklist creation, metadata changes, or other agent activity.
+- `Next actions` (`checklist`): the few concrete pending actions that matter
+  now. Do not reproduce the entire checklist when a shorter synthesis is
+  clearer.
+- `Blockers` (`points`): only active blockers or delivery risks.
+- `Links` (`points`): only real external URLs from the task context, using
+  descriptive Markdown link text.
 
 Omit empty sections. Use human-readable labels instead of internal IDs. Every
 claim must be evidence-backed and describe the current active task state.
@@ -3000,12 +3001,12 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
     for (final call in _toolCalls.reversed) {
       if (call.name == TaskAgentToolNames.updateReport) {
         final arguments = call.jsonObjectArguments;
-        if (arguments != null &&
-            _hasNonEmptyString(arguments, 'oneLiner') &&
-            _hasNonEmptyString(arguments, 'tldr') &&
-            _hasNonEmptyString(arguments, 'content')) {
-          return arguments;
-        }
+        // Sections or a plain Markdown body: the draft carries both as the
+        // Markdown `content` the editor and the detector read.
+        final draft = arguments == null
+            ? null
+            : TaskAgentReportDraft.fromJson(arguments);
+        if (draft != null) return draft.toJson();
       }
     }
     return null;
@@ -3055,9 +3056,7 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
       if (isKnownTool &&
           recorded.name == TaskAgentToolNames.updateReport &&
           args != null &&
-          _hasNonEmptyString(args, 'oneLiner') &&
-          _hasNonEmptyString(args, 'tldr') &&
-          _hasNonEmptyString(args, 'content')) {
+          TaskAgentReportDraft.fromJson(args) != null) {
         hasReport = true;
       }
 
@@ -3083,7 +3082,7 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
   String? getContinuationPrompt(ConversationManager manager) {
     if (hasReport) return null;
     return 'Continue. If you have finished your analysis, call '
-        '`update_report` with `oneLiner`, `tldr`, and `content` if the '
+        '`update_report` with `oneLiner`, `tldr`, and `sections` if the '
         'report would materially change; otherwise finish with a brief '
         'plain-text note.';
   }
@@ -3247,11 +3246,6 @@ String? _extractFinalAssistantContent(ConversationManager? manager) {
     }
   }
   return null;
-}
-
-bool _hasNonEmptyString(Map<String, dynamic> args, String key) {
-  final value = args[key];
-  return value is String && value.trim().isNotEmpty;
 }
 
 bool _containsExpectedValues(
