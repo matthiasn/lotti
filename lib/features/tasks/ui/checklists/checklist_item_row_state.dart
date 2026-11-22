@@ -670,14 +670,23 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
         // The repository deletes the item when the undo window closes —
         // this row is gone by then — and records the deletion, so it
         // completes even if the app dies meanwhile.
-        final key = await checklistNotifier.beginItemDeletion(
-          widget.itemId,
-          undoWindow: kChecklistDeleteDuration,
-        );
+        final String? key;
+        try {
+          key = await checklistNotifier.beginItemDeletion(
+            widget.itemId,
+            undoWindow: kChecklistDeleteDuration,
+          );
+        } catch (_) {
+          // A failed start leaves the row deletable again; the error still
+          // reaches the zone's reporting.
+          if (mounted) setState(() => _deletionPending = false);
+          rethrow;
+        }
         if (key == null) {
           if (mounted) setState(() => _deletionPending = false);
           return;
         }
+        final deletionKey = key;
 
         messenger.showDesignSystemToast(
           tone: DesignSystemToastTone.warning,
@@ -690,7 +699,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
             onPressed: () {
               unawaited(
                 checklistNotifier.undoItemDeletion(
-                  key: key,
+                  key: deletionKey,
                   checklistItemId: widget.itemId,
                 ),
               );

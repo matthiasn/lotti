@@ -120,6 +120,9 @@ class ChecklistControllerCallTracker {
   /// write open, so a test can swipe again while one is pending.
   int deletionBegins = 0;
   Completer<void>? deletionGate;
+
+  /// Thrown by `beginItemDeletion` when set: a failed write.
+  Error? deletionError;
   ({String key, String itemId})? undoneDeletion;
   Object? droppedLocalData;
   int? droppedTargetIndex;
@@ -145,6 +148,7 @@ class FakeChecklistController extends ChecklistController {
       ..deletionUndoWindow = undoWindow
       ..deletionBegins += 1;
     await _tracker?.deletionGate?.future;
+    if (_tracker?.deletionError case final error?) throw error;
     return _tracker?.deletionKey;
   }
 
@@ -1060,6 +1064,31 @@ void main() {
         for (var i = 0; i < 5; i++) {
           await tester.pump(const Duration(milliseconds: 200));
         }
+        expect(find.text('Item deleted'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a deletion that failed to start leaves the row deletable again',
+      (tester) async {
+        final ctrls = await _pumpWithControllers(tester);
+        final tracker = ctrls.checklistTracker
+          ..deletionError = StateError('write failed');
+        await tester.pump();
+
+        // The failure is rethrown to the zone, not swallowed: the test zone
+        // records it, and this guard collects it.
+        final errors = <Object>[];
+        await runZonedGuarded(
+          () => swipeToDelete(tester),
+          (error, _) => errors.add(error),
+        );
+        await tester.pump();
+        expect(errors.whereType<StateError>(), isNotEmpty);
+
+        tracker.deletionError = null;
+        await swipeToDelete(tester);
+        expect(tracker.deletionBegins, 2);
         expect(find.text('Item deleted'), findsOneWidget);
       },
     );
