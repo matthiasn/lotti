@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
+import 'package:lotti/features/front_agent/model/front_report_quote.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_reply_reader.dart';
 
@@ -59,6 +61,7 @@ void main() {
     Set<String> closedTaskIds = const {},
     List<FrontFoundPullRequest> shownPullRequests = const [],
     List<FrontFoundPullRequest> foundPullRequests = const [],
+    Map<String, FrontReportQuote> reports = const {},
   }) => readFrontReply(
     prose: prose,
     components: components,
@@ -71,6 +74,7 @@ void main() {
       for (final pr in [...shownPullRequests, ...foundPullRequests]) pr.key: pr,
     },
     foundPullRequests: foundPullRequests,
+    reports: reports,
   );
 
   group('the ways of a dispatch', () {
@@ -574,5 +578,91 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+  group('report sections', () {
+    final habitat = FrontReportQuote(
+      taskId: 'habitat',
+      title: 'Inspect orbital penguin habitat',
+      reportId: 'r-habitat',
+      at: DateTime.utc(2026, 11, 20, 9),
+      sections: const [
+        AgentReportSection(
+          kind: AgentReportSectionKind.points,
+          title: 'Latest assessment',
+          items: [AgentReportSectionItem(text: 'Seals A–F held')],
+        ),
+        AgentReportSection(
+          kind: AgentReportSectionKind.checklist,
+          title: 'Next actions',
+          items: [AgentReportSectionItem(text: 'Run the feeder test')],
+        ),
+      ],
+    );
+
+    test('stores the sections she named, from the report she read', () {
+      final reply = read(
+        components: const [
+          {
+            'component': 'ReportSections',
+            'caption': 'Next on the habitat',
+            'task': 'task:habitat',
+            // A model may send 2.0 for 2.
+            'sections': [2.0],
+          },
+        ],
+        reports: {'habitat': habitat},
+      );
+
+      expect(reply.dropped, isEmpty);
+      final drawn = reply.components.singleWhere(
+        (c) => c['component'] == 'ReportSections',
+      );
+      expect(drawn['caption'], 'Next on the habitat');
+      final quote = FrontReportQuote.fromJson(drawn['quote'])!;
+      expect(quote.reportId, 'r-habitat');
+      expect(quote.sections, [habitat.sections[1]]);
+    });
+
+    test('a task id without its kind is read the same', () {
+      final reply = read(
+        components: const [
+          {
+            'component': 'ReportSections',
+            'task': 'habitat',
+            'sections': [1],
+          },
+        ],
+        reports: {'habitat': habitat},
+      );
+      expect(
+        reply.components.where((c) => c['component'] == 'ReportSections'),
+        hasLength(1),
+      );
+    });
+
+    test('a report not read this turn, or sections it lacks, draw nothing', () {
+      final reply = read(
+        components: const [
+          {
+            'component': 'ReportSections',
+            'task': 'task:feeder',
+            'sections': [1],
+          },
+          {
+            'component': 'ReportSections',
+            'task': 'task:habitat',
+            'sections': [3, 'two'],
+          },
+        ],
+        reports: {'habitat': habitat},
+      );
+
+      expect(
+        reply.components.where((c) => c['component'] == 'ReportSections'),
+        isEmpty,
+      );
+      expect(reply.dropped, hasLength(2));
+      expect(reply.dropped, everyElement(contains('read_report')));
+    });
   });
 }

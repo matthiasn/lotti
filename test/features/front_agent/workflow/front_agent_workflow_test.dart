@@ -484,6 +484,7 @@ Filed under Garden.'''),
                 'summarize_pull_requests',
                 'find_pull_requests',
                 'read_pull_requests',
+                'read_report',
                 // Her answer is the message she writes, not a tool.
                 'ask_user',
               ]);
@@ -1510,6 +1511,48 @@ Filed under Garden.'''),
       // No time was summed: nothing else to chart.
       expect(_replyData(payload).keys, ['pullRequests']);
     });
+  });
+
+  test('read_report is wired to the stored reports, newest usable one per '
+      'task', () async {
+    when(
+      () => repository.getUsableTaskReportsForTaskIds(any()),
+    ).thenAnswer((_) async => {});
+    seedMessage(chips: ['home']);
+    String? read;
+    stubModel(
+      (_) => [
+        call('read_report', {
+          'ids': ['task:penguin-ledger'],
+        }),
+        answer('That task has no report I can see.'),
+      ],
+    );
+    when(
+      () => manager.addToolResponse(
+        toolCallId: 'call-read_report',
+        response: any(named: 'response'),
+      ),
+    ).thenAnswer((invocation) {
+      read = invocation.namedArguments[#response] as String;
+    });
+
+    final result = await withClock(
+      Clock.fixed(DateTime(2026, 11, 2, 9)),
+      () => run(
+        agentIdentity: makeTestIdentity(
+          id: frontAgentId,
+          agentId: frontAgentId,
+          kind: AgentKinds.frontAgent,
+          allowedCategoryIds: {'work', 'home'},
+        ),
+      ),
+    );
+
+    expect(result.success, isTrue);
+    // Wired, the repository is asked; unwired, the tool says it cannot read.
+    verify(() => repository.getUsableTaskReportsForTaskIds(any())).called(1);
+    expect(read, 'task:penguin-ledger: not a listed task');
   });
 
   group('which task some work was in', () {

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-22
-- Concepts: [task agents](../../knowledge/features/agents/task-agents.md), [agent UI surfaces](../../knowledge/features/agents/ui-surfaces.md)
+- Concepts: [task agents](../../knowledge/features/agents/task-agents.md), [agent UI surfaces](../../knowledge/features/agents/ui-surfaces.md), [front agent](../../knowledge/features/front_agent.md)
 
 ## Context
 
@@ -48,6 +48,12 @@ Markdown text.
    model that sent `content` anyway) still renders as Markdown.
 5. **A plain `content` string is still accepted** from a model that ignores
    the schema, and becomes a Markdown report.
+6. **The companion quotes sections, pinned to the report she read.**
+   `read_report` hands her a listed task's report section by section,
+   numbered; her reply's `ReportSections` names the task and the numbers,
+   and the app stores those sections themselves with the report's id and
+   date. She never writes a section's words, and a later report never
+   changes an answer already given: the quote says how old it is.
 
 ## Consequences
 
@@ -55,8 +61,12 @@ Markdown text.
   and shows `content`, which is unchanged in form.
 - Only the task card draws sections. The relationship briefing and the event
   summary share the card body, but their agents still write Markdown.
-- The sections are not A2UI. ADR 0163 covers surfaces the model composes in a
-  chat turn; here the app renders stored data, so plain design-system widgets
-  draw it without a surface message in between.
+- On the task card the sections are not A2UI: the app renders stored data,
+  so plain design-system widgets draw it. In the chat they are a component
+  of her reply catalog (ADR 0163), drawn by the same widget.
 - Custom and evolved report directives that name Markdown headings still work:
   each heading becomes a section title.
+- A quote in the chat can be older than the task's current summary. That is
+  deliberate: it is what she answered from. Pointing at a section of the
+  current report instead would break, since section titles change from one
+  update to the next.

@@ -20,6 +20,7 @@ import 'package:lotti/features/front_agent/workflow/front_dispatch_validator.dar
 import 'package:lotti/features/front_agent/workflow/front_pull_request_lookups.dart';
 import 'package:lotti/features/front_agent/workflow/front_reply_reader.dart';
 import 'package:lotti/features/front_agent/workflow/front_reply_stream.dart';
+import 'package:lotti/features/front_agent/workflow/front_report_lookups.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -90,7 +91,9 @@ class FrontAgentStrategy extends ConversationStrategy
     this.conversationTasks = const [],
     this.onAnswerProgress,
     FrontPullRequestLookups? pullRequests,
-  }) : pullRequests = pullRequests ?? FrontPullRequestLookups(now: now);
+    FrontReportLookups? reports,
+  }) : pullRequests = pullRequests ?? FrontPullRequestLookups(now: now),
+       reports = reports ?? FrontReportLookups();
 
   /// Told what her answer says and draws so far, each time more of the
   /// message she is writing arrives; null when nothing shows it live.
@@ -143,6 +146,9 @@ class FrontAgentStrategy extends ConversationStrategy
 
   /// `find_pull_requests` and `read_pull_requests`, and what they found.
   final FrontPullRequestLookups pullRequests;
+
+  /// `read_report`, and the reports it read.
+  final FrontReportLookups reports;
 
   FrontDispatch? _dispatch;
   FrontAskUser? _askUser;
@@ -211,18 +217,20 @@ class FrontAgentStrategy extends ConversationStrategy
       _timeSummaries +
       _closedLists +
       _pullRequestSummaries +
-      pullRequests.calls;
+      pullRequests.calls +
+      reports.calls;
 
   /// How many of those looked something up to answer with — due or closed
   /// tasks, logged time, pull requests counted, found or read. Reading a
   /// TLDR or matching the corpus serves routing as much as answering, so
-  /// those are not counted.
+  /// those are not counted; reading a report is answering.
   int get answerLookupCalls =>
       _dueLists +
       _timeSummaries +
       _closedLists +
       _pullRequestSummaries +
-      pullRequests.calls;
+      pullRequests.calls +
+      reports.calls;
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -275,6 +283,12 @@ class FrontAgentStrategy extends ConversationStrategy
           await _answerPullRequests(call, manager, pullRequests.find(args));
         case FrontAgentToolNames.readPullRequests:
           await _answerPullRequests(call, manager, pullRequests.read(args));
+        case FrontAgentToolNames.readReport:
+          final (:response, :accepted) = await reports.read(
+            args,
+            rowOf: _rowByRef,
+          );
+          await (accepted ? _accept : _reject)(call, manager, response);
         case FrontAgentToolNames.askUser:
           await _handleAskUser(call, args, manager);
         default:
@@ -894,6 +908,7 @@ class FrontAgentStrategy extends ConversationStrategy
       proseRequired: proseRequired,
       pullRequests: pullRequests.shown,
       foundPullRequests: pullRequests.found,
+      reports: reports.quotes,
     );
   }
 

@@ -20,6 +20,8 @@ enum AgentReportSectionKind {
 /// links and emphasis survive; the block structure is data, not Markdown.
 @freezed
 abstract class AgentReportSection with _$AgentReportSection {
+  // Nested items serialize as maps, so a stored copy reads back as JSON.
+  @JsonSerializable(explicitToJson: true)
   const factory AgentReportSection({
     required AgentReportSectionKind kind,
 

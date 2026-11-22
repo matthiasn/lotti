@@ -116,6 +116,24 @@ frontReplyAuthoringCatalog = Catalog(
       'The charts of what summarize_pull_requests counted this turn.',
     ),
     ComponentApi(
+      name: FrontReplyComponents.reportSections,
+      schema: S.object(
+        description:
+            'Sections of a task report read_report returned this turn, '
+            'shown as the agent wrote them. Pass the task and the section '
+            'numbers only.',
+        properties: {
+          'caption': _caption(),
+          'task': S.string(description: 'The task as listed: task:<id>.'),
+          'sections': S.list(
+            items: S.integer(),
+            description: 'The section numbers read_report listed.',
+          ),
+        },
+        required: ['caption', 'task', 'sections'],
+      ),
+    ),
+    ComponentApi(
       name: FrontReplyComponents.quickReplies,
       schema: S.object(
         description:

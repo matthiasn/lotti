@@ -11,12 +11,14 @@ import 'package:lotti/features/front_agent/model/front_entity_preview.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
+import 'package:lotti/features/front_agent/model/front_report_quote.dart';
 import 'package:lotti/features/front_agent/ui/front_cited_source_row.dart';
 import 'package:lotti/features/front_agent/ui/front_door_ways.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_cards.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
+import 'package:lotti/features/front_agent/ui/front_report_sections_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -203,6 +205,33 @@ final _pullRequestCards = ComponentImplementation(
   },
 );
 
+/// Report sections she quoted, as the reply reader stored them (`quote`):
+/// never her words, so a section is drawn exactly as the agent wrote it.
+final _reportSections = ComponentImplementation(
+  name: FrontReplyComponents.reportSections,
+  schema: S.object(
+    properties: {
+      'quote': S.object(
+        description: 'The task, the report and the sections quoted',
+      ),
+      'caption': _captionSchema,
+    },
+    required: ['quote'],
+  ),
+  builder: (context, node, props, _) {
+    final quote = FrontReportQuote.fromJson(props.value('quote'));
+    if (quote == null) return const SizedBox.shrink();
+    return _captioned(
+      props.string('caption'),
+      FrontReportSectionsCard(
+        key: _key(context, node),
+        quote: quote,
+        onOpenTask: FrontReplyScope.of(context).onOpenTask,
+      ),
+    );
+  },
+);
+
 /// A component drawn from what a lookup made, bound at `data`.
 ComponentImplementation _fromLookup(
   String name,
@@ -382,6 +411,7 @@ final CatalogImplementation frontReplyCatalog = CatalogImplementation(
     _closedTasks,
     _loggedTimeChart,
     _pullRequestChart,
+    _reportSections,
     _quickReplies,
     _citedPoints,
     _inboxWays,

@@ -26,7 +26,7 @@ Map<String, dynamic> _$AgentReportSectionToJson(_AgentReportSection instance) =>
       'kind': _$AgentReportSectionKindEnumMap[instance.kind]!,
       'title': instance.title,
       'text': instance.text,
-      'items': instance.items,
+      'items': instance.items.map((e) => e.toJson()).toList(),
     };
 
 const _$AgentReportSectionKindEnumMap = {

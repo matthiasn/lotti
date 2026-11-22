@@ -1,6 +1,7 @@
 import 'package:a2ui_core/a2ui_core.dart';
 import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/front_agent/model/front_inbox_way.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_pull_requests.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
+import 'package:lotti/features/front_agent/model/front_report_quote.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_surfaces.dart';
@@ -21,6 +23,7 @@ import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_cards.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
+import 'package:lotti/features/front_agent/ui/front_report_sections_card.dart';
 import 'package:lotti/features/front_agent/ui/front_task_list.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:material_ui/material_ui.dart';
@@ -180,6 +183,46 @@ void main() {
       tester.getSemantics(part('c0')),
       matchesSemantics(label: 'Pull requests found'),
     );
+  });
+
+  testWidgets('report sections draw the quote the reader stored, its task '
+      'header opening the task; a broken quote draws nothing', (tester) async {
+    final taps = FrontReplyTaps();
+    final quote = FrontReportQuote(
+      taskId: 'habitat',
+      title: 'Inspect orbital penguin habitat',
+      reportId: 'r-habitat',
+      at: DateTime.utc(2026, 11, 20, 9),
+      sections: const [
+        AgentReportSection(
+          kind: AgentReportSectionKind.checklist,
+          title: 'Next actions',
+          items: [AgentReportSectionItem(text: 'Run the feeder test')],
+        ),
+      ],
+    );
+    await pumpReplySurfaces(tester, {
+      'a1': FrontReplySurface.compose(
+        surfaceId: 'a1',
+        components: [
+          {
+            'component': FrontReplyComponents.reportSections,
+            'quote': quote.toJson(),
+          },
+          const {
+            'component': FrontReplyComponents.reportSections,
+            'quote': {'taskId': 'habitat'},
+          },
+        ],
+      ),
+    }, taps: taps);
+
+    final drawn = tester.widget<FrontReportSectionsCard>(part('c0'));
+    expect(drawn.quote.reportId, 'r-habitat');
+    expect(find.text('Run the feeder test'), findsOneWidget);
+    drawn.onOpenTask('habitat');
+    expect(taps.openedTasks, ['habitat']);
+    expect(find.byType(FrontReportSectionsCard), findsOneWidget);
   });
 
   testWidgets('a caption she gave is the screen-reader label of its '

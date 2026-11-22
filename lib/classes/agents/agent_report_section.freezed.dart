@@ -212,8 +212,8 @@ return $default(_that.kind,_that.title,_that.text,_that.items);case _:
 }
 
 /// @nodoc
-@JsonSerializable()
 
+@JsonSerializable(explicitToJson: true)
 class _AgentReportSection implements AgentReportSection {
   const _AgentReportSection({required this.kind, this.title = '', this.text = '', final  List<AgentReportSectionItem> items = const <AgentReportSectionItem>[]}): _items = items;
   factory _AgentReportSection.fromJson(Map<String, dynamic> json) => _$AgentReportSectionFromJson(json);

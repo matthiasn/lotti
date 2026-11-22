@@ -36,6 +36,7 @@ import 'package:lotti/features/front_agent/workflow/front_conversation_tasks.dar
 import 'package:lotti/features/front_agent/workflow/front_inference_stall_guard.dart';
 import 'package:lotti/features/front_agent/workflow/front_pull_request_filter.dart';
 import 'package:lotti/features/front_agent/workflow/front_pull_request_lookups.dart';
+import 'package:lotti/features/front_agent/workflow/front_report_lookups.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
@@ -323,6 +324,9 @@ class FrontAgentWorkflow with AgentErrorLogging {
             subDomain: 'frontAgent',
             level: InsightLevel.warn,
           ),
+        ),
+        reports: FrontReportLookups(
+          reader: _indexBuilder.agentRepository.getUsableTaskReportsForTaskIds,
         ),
       );
       final tools = [

@@ -11,7 +11,7 @@ import 'package:lotti/features/front_agent/workflow/front_reply_stream.dart';
 
 void main() {
   test(
-    'ten tools, never one, in a fixed order; her answer is not one of them',
+    'eleven tools, never one, in a fixed order; her answer is not one of them',
     () {
       // A single tool makes DeepSeek rewrite tool_choice; the list is fixed
       // so the request prefix stays byte-stable across turns.
@@ -25,6 +25,7 @@ void main() {
         FrontAgentToolNames.summarizePullRequests,
         FrontAgentToolNames.findPullRequests,
         FrontAgentToolNames.readPullRequests,
+        FrontAgentToolNames.readReport,
         FrontAgentToolNames.askUser,
       ]);
     },
@@ -236,7 +237,7 @@ void main() {
       ((readTldr.parameters['properties'] as Map)['ids'] as Map)['maxItems'],
       frontTldrIdsPerRead,
     );
-    final askUser = frontAgentTools[9];
+    final askUser = frontAgentTools[10];
     expect(
       ((askUser.parameters['properties'] as Map)['options'] as Map)['maxItems'],
       frontAskUserMaxOptions,
@@ -615,8 +616,8 @@ void main() {
       expect(
         frontAgentSystemPrompt,
         contains(
-          'one `find_pull_requests` and one `read_pull_requests` per '
-          'turn at most',
+          'one `find_pull_requests`, one `read_pull_requests` and one '
+          '`read_report` per turn at most',
         ),
       );
     });
