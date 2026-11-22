@@ -9,8 +9,10 @@ briefings from captured check-ins.
 
 The feature is behind `enable_relationships`. The **People** tab (`/people`)
 groups people into *Due*, *On track* and *No reminders*, with a summary of
-who is due and who lapses next. Rows show the last contact and, where there
-is one, how often a reminder comes. Turning reminders on — in the person
+who is due and who lapses next; each group is one card of rows, and a search
+field over the list finds a person by name or nickname. Rows lead with the
+name, with the state (overdue, due this week) and the last contact under it
+and, where there is one, how often a reminder comes. Turning reminders on — in the person
 editor, the contact-import review or the person page's card — always shows
 how often, with monthly preselected, and stores what it shows.
 Desktop uses a list/detail split; phones open a dedicated person page. A
@@ -182,7 +184,8 @@ agent reads.
 People live in the People tab. Their check-ins also appear in the Logbook,
 as a filter type of their own, named for the person and opening on the
 person's page. Check-ins are found by a Logbook search like any entry;
-a person's name alone is not a search term. Data stays on-device and syncs through the user's own end-to-end
+a person's name alone is not a search term there — the People tab's own
+search finds people. Data stays on-device and syncs through the user's own end-to-end
 encrypted Matrix rooms. Private people are hidden from both list and detail
 routes when private entries are hidden; new check-ins inherit that privacy.
 Contact channels never enter agent context.
