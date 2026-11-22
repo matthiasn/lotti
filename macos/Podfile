@@ -32,6 +32,9 @@ target 'Runner' do
 
   flutter_install_all_macos_pods File.dirname(File.realpath(__FILE__))
   pod 'OpenSSL-Universal'
+  # Microsoft's pod archive host is gone; see third_party/onnxruntime_apple/README.md.
+  pod 'onnxruntime-c', :podspec => '../third_party/onnxruntime_apple/onnxruntime-c.podspec.json'
+  pod 'onnxruntime-objc', :podspec => '../third_party/onnxruntime_apple/onnxruntime-objc.podspec.json'
 end
 
 # The flutter_onnxruntime plugin vendors onnxruntime-objc/-c as statically

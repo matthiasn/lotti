@@ -416,6 +416,13 @@ the `flutter_onnxruntime` plugin and its `onnxruntime-*` dependencies.
 That narrowness is the point: the workaround is scoped to the one plugin that
 needs it, so the rest of the project keeps dynamic frameworks.
 
+The `onnxruntime-c` and `onnxruntime-objc` pods do not come from the CocoaPods
+trunk. Their upstream host `download.onnxruntime.ai` went away in November 2026,
+so both Podfiles pin the pods to local specs in
+[`third_party/onnxruntime_apple/`](../../third_party/onnxruntime_apple/README.md).
+Those specs fetch the same binary and sources from a mirror, verified by
+Microsoft's own checksum and commit hash.
+
 # Gating
 
 Task-card and query-answer speak buttons are hidden unless `enable_ai_summary_tts` is enabled in
