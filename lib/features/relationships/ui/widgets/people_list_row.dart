@@ -1,9 +1,12 @@
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
-import 'package:lotti/features/relationships/ui/shared/cadence_pill.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
@@ -11,19 +14,23 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_form.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// One person on the People list (design 2026-09-06 §2): the persona
-/// avatar, the name — no marker beside it, since the band it sits in says
-/// whether reminders are on (design review 2026-10-16) — one status line
-/// (`Call · Today 12:44 · Weekly`) whose timestamp alone wears the mono
-/// voice, and the truthful cadence pill — shown only when it says something
-/// the band heading has not ([peopleCadencePillRestatesBand]).
+/// One person on the People list, in the task row's anatomy (DESIGN.md,
+/// *People Row*): the persona avatar, then two tiers so one thing leads —
+/// the name in Subtitle 1, alone on its line, and one caption line under it.
 ///
-/// The row is top-aligned and its status line is capped at one line, so the
-/// pill sits on the name's own line box and rows stack at a steady rhythm
-/// instead of each one finding its own height.
+/// The caption line opens with the person's state when the band heading has
+/// not already said it ([peopleCadencePillRestatesBand]): *5 days overdue*
+/// behind the warning glyph in the warning ink, or a quiet *Due Wed*,
+/// *Dormant*, *Archived*. The status line follows
+/// (`Call · Today 12:44 · Weekly`). The state used to be a tag on the name's
+/// line, where it took the name's width and outweighed the person it
+/// belonged to; as a glyph and a word it reads the way a task row's status
+/// and due date do.
 ///
-/// On desktop the row of the person whose page fills the detail pane wears
-/// the selected wash; on phones nothing is ever selected.
+/// The row is a [GroupedCardRowSurface]: one button to assistive tech,
+/// `selected` while the person's page fills the desktop detail pane, and the
+/// shared hover and focus fill. Its label is one sentence — name, state,
+/// status line — rather than three fragments read one by one.
 class PeopleListRow extends StatelessWidget {
   const PeopleListRow({
     required this.item,
@@ -46,91 +53,149 @@ class PeopleListRow extends StatelessWidget {
     final relationship = item.relationship;
     final data = relationship.data;
     final pill = peopleCadencePillOf(item);
+    final state = peopleCadencePillRestatesBand(pill.kind)
+        ? null
+        : peopleCadencePillLabel(context, pill);
+    final status = peopleStatusPartsOf(context, item);
+    final overdue = pill.kind == PeopleCadencePillKind.overdue;
 
-    return Material(
-      color: selected
-          ? tokens.colors.surface.selected
-          : tokens.colors.background.level01,
-      borderRadius: BorderRadius.circular(tokens.radii.m),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step4,
-            vertical: tokens.spacing.step3,
-          ),
-          child: Row(
-            // The row's default cross alignment: the avatar is centred on
-            // the text block — the Check-ins rows' rule — while the pill,
-            // inside that block, still rides the name's own line rather
-            // than the row's centre.
-            children: [
-              PersonaAvatar(
-                initial: personaInitial(data.title),
-                id: relationship.id,
-                imageId: data.avatarImageId,
-                crop: data.avatarCrop,
-              ),
-              SizedBox(width: tokens.spacing.step4),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Expanded, not Flexible: the name takes the line
-                        // and the pill sits on the row's trailing rail, one
-                        // column down the list, rather than wherever each
-                        // name happens to end.
-                        Expanded(
-                          // No marker beside the name: the band the row
-                          // sits in already says whether reminders are on.
-                          child: Text(
-                            data.title,
-                            key: const ValueKey('people-row-name'),
-                            // The name is the row. It wraps rather than
-                            // truncating, because `Commander Pip Fr…` is the one
-                            // string on this row the reader cannot reconstruct
-                            // from anything else on it.
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: tokens.typography.styles.body.bodySmall
-                                .copyWith(
-                                  fontWeight: tokens.typography.weight.semiBold,
-                                  color: tokens.colors.text.highEmphasis,
-                                ),
-                          ),
-                        ),
-                        if (!peopleCadencePillRestatesBand(pill.kind)) ...[
-                          SizedBox(width: tokens.spacing.step3),
-                          PeopleCadencePillWidget(pill: pill),
-                        ],
-                      ],
+    final row = GroupedCardRowSurface(
+      rowKey: ValueKey('people-row-surface-${relationship.id}'),
+      selected: selected,
+      hoverColor: tokens.colors.surface.hover,
+      selectedColor: tokens.colors.surface.selected,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step4,
+        vertical: tokens.spacing.step4,
+      ),
+      onTap: onTap,
+      child: Semantics(
+        label: [data.title, ?state, status.text].join(', '),
+        excludeSemantics: true,
+        child: Row(
+          // The avatar is centred on the text block — the Check-ins rows'
+          // rule.
+          children: [
+            PersonaAvatar(
+              initial: personaInitial(data.title),
+              id: relationship.id,
+              imageId: data.avatarImageId,
+              crop: data.avatarCrop,
+            ),
+            SizedBox(width: tokens.spacing.step4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    data.title,
+                    key: const ValueKey('people-row-name'),
+                    // The name is the row. It wraps rather than truncating,
+                    // because `Commander Pip Fr…` is the one string on this
+                    // row the reader cannot reconstruct from anything else.
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                      color: tokens.colors.text.highEmphasis,
                     ),
-                    // step2, not step1: the design system records this gap
-                    // between a row's name and its caption
-                    // (design_system_list_item.dart), and at step1 the two
-                    // lines read as one block.
-                    SizedBox(height: tokens.spacing.step2),
-                    // Full column width — the pill is on the line above, so
-                    // it no longer takes its measure out of the cadence.
-                    _StatusLine(item: item),
-                  ],
-                ),
+                  ),
+                  // step2: the design system's gap between a row's title
+                  // and its caption (design_system_list_item.dart).
+                  SizedBox(height: tokens.spacing.step2),
+                  // A Wrap, like the task row's meta line: when the state
+                  // and the status line do not share one line — a narrow
+                  // pane, German, large text — the status line takes the
+                  // next one whole instead of being cut to an ellipsis.
+                  Wrap(
+                    spacing: tokens.spacing.step4,
+                    runSpacing: tokens.spacing.step2,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (state != null)
+                        _StateSegment(label: state, overdue: overdue),
+                      RelationshipLineWithDate(
+                        key: const ValueKey('people-row-status'),
+                        text: status.text,
+                        date: status.date,
+                        maxLines: 1,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+
+    final pressable = onLongPress == null
+        ? row
+        : GestureDetector(onLongPress: onLongPress, child: row);
+    // One node: the surface's button and selected flags, the tap, the long
+    // press and the sentence above.
+    final merged = MergeSemantics(child: pressable);
+
+    // In the desktop split the expand command opens the person and moves
+    // focus into their page, as it does on a task or project row.
+    final detailFocus = ListDetailFocusTraversal.maybeOf(context);
+    if (detailFocus == null) return merged;
+    return AppCommandScope(
+      handlers: {
+        AppCommandId.expand: AppCommandHandler(
+          invoke: (_) {
+            onTap();
+            detailFocus.focusDetails();
+          },
+        ),
+      },
+      child: merged,
     );
   }
 }
 
-/// The row's status line and the date inside it: the last contact
+/// The row's state at the head of its caption line. Overdue wears the
+/// warning glyph and the warning ink — the timeline's overdue task line and
+/// the person page's pill use the same — and every other state is a quiet
+/// word in the line's medium ink.
+class _StateSegment extends StatelessWidget {
+  const _StateSegment({required this.label, required this.overdue});
+
+  final String label;
+  final bool overdue;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final ink = overdue
+        ? tokens.colors.alert.warning.ink
+        : tokens.colors.text.mediumEmphasis;
+    return Row(
+      key: ValueKey(overdue ? 'people-row-overdue' : 'people-row-state'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (overdue) ...[
+          Icon(LottiIcons.warning, size: IconSizes.xs, color: ink),
+          SizedBox(width: tokens.spacing.step2),
+        ],
+        Text(
+          label,
+          maxLines: 1,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: ink,
+            fontWeight: overdue ? tokens.typography.weight.semiBold : null,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The status line and the date inside it: the last contact
 /// (`Call · Today 12:44 · Weekly`) or `Just added · Monthly · first due
 /// Sun 16 Aug`. Each line is one catalog message, so a locale can reorder
 /// its parts — which is why the date is handed back as the substring to
@@ -186,73 +251,23 @@ PeopleStatusLine peopleStatusPartsOf(
   );
 }
 
-/// The status line with the mono voice confined to the date.
-class _StatusLine extends StatelessWidget {
-  const _StatusLine({required this.item});
-
-  final RelationshipListItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final parts = peopleStatusPartsOf(context, item);
-    return RelationshipLineWithDate(
-      key: const ValueKey('people-row-status'),
-      text: parts.text,
-      date: parts.date,
-      maxLines: 1,
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: tokens.colors.text.mediumEmphasis,
-      ),
-    );
-  }
-}
-
-/// The truthful cadence pill: warning-tinted `{n} days overdue` when the cadence
-/// lapsed, and a quiet read-out otherwise (`Due Thu`, `On track`,
-/// `Not enrolled`, `Dormant`, `Archived`).
-class PeopleCadencePillWidget extends StatelessWidget {
-  const PeopleCadencePillWidget({required this.pill, super.key});
-
-  final PeopleCadencePill pill;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final label = switch (pill.kind) {
-      PeopleCadencePillKind.overdue when pill.daysOver == 0 =>
-        messages.relationshipDueToday,
-      PeopleCadencePillKind.overdue => messages.relationshipDaysOver(
-        pill.daysOver,
-      ),
-      PeopleCadencePillKind.dueSoon => messages.relationshipDueDay(
-        relationshipWeekdayLabelOf(context, pill.dueAt!),
-      ),
-      PeopleCadencePillKind.onTrack => messages.relationshipCadenceOnTrack,
-      PeopleCadencePillKind.notEnrolled => messages.relationshipNotEnrolled,
-      PeopleCadencePillKind.dormant => messages.relationshipStatusDormant,
-      PeopleCadencePillKind.archived => messages.relationshipStatusArchived,
-    };
-    if (pill.kind == PeopleCadencePillKind.overdue) {
-      return relationshipOverduePill(
-        context,
-        label: label,
-        pillKey: const ValueKey('people-row-pill-overdue'),
-      );
-    }
-    // A quiet read-out on the solid surface fill, never the dashed `muted`
-    // shell — that one says "unset", and a cadence that is on track is set.
-    //
-    // High-emphasis ink, like the overdue pill beside it in the same slot:
-    // at medium emphasis `Due Wed` read as a *disabled control* rather than
-    // a read-out, and the two pills differed in two channels at once. Tint
-    // is the only thing that should separate them.
-    return DsPill(
-      variant: DsPillVariant.filled,
-      shape: DsPillShape.tag,
-      labelColor: tokens.colors.text.highEmphasis,
-      label: label,
-    );
-  }
+/// The words for a row's cadence state: `5 days overdue` (or `Due today`
+/// the day it lapses), `Due Thu` within the week, and the plain status
+/// words otherwise.
+String peopleCadencePillLabel(BuildContext context, PeopleCadencePill pill) {
+  final messages = context.messages;
+  return switch (pill.kind) {
+    PeopleCadencePillKind.overdue when pill.daysOver == 0 =>
+      messages.relationshipDueToday,
+    PeopleCadencePillKind.overdue => messages.relationshipDaysOver(
+      pill.daysOver,
+    ),
+    PeopleCadencePillKind.dueSoon => messages.relationshipDueDay(
+      relationshipWeekdayLabelOf(context, pill.dueAt!),
+    ),
+    PeopleCadencePillKind.onTrack => messages.relationshipCadenceOnTrack,
+    PeopleCadencePillKind.notEnrolled => messages.relationshipNotEnrolled,
+    PeopleCadencePillKind.dormant => messages.relationshipStatusDormant,
+    PeopleCadencePillKind.archived => messages.relationshipStatusArchived,
+  };
 }

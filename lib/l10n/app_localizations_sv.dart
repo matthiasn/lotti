@@ -14665,6 +14665,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipNotFound => 'Den här personen följs inte längre.';
 
   @override
+  String get relationshipPageLoadFailed =>
+      'Den här personens sida kunde inte laddas.';
+
+  @override
   String get relationshipPayAttentionTo => 'Var uppmärksam på';
 
   @override
@@ -14812,6 +14816,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipsGroupDue => 'Dags';
 
   @override
+  String get relationshipsLoadFailed => 'Dina personer kunde inte laddas.';
+
+  @override
   String get relationshipSortThis => 'Sortera';
 
   @override
@@ -14819,6 +14826,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipSpeak => 'Prata';
+
+  @override
+  String relationshipsSearchNoMatch(String query) {
+    return 'Ingen matchar ”$query”';
+  }
 
   @override
   String get relationshipsSelectPersonHint =>
@@ -14902,6 +14914,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipTimelineFilterAll => 'Alla';
 
   @override
+  String get relationshipTimelineFilterEmpty =>
+      'Inget under det här filtret än.';
+
+  @override
   String get relationshipTimelineFilterMeetings => 'Möten';
 
   @override
@@ -14923,6 +14939,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String relationshipTimelineRowLabel(String kind, String time, String text) {
     return '$kind, $time. $text';
   }
+
+  @override
+  String get relationshipTimelineShowAll => 'Visa alla';
 
   @override
   String get relationshipTimelineTask => 'Uppgift';
@@ -14957,6 +14976,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipTimestampYesterday => 'Igår';
+
+  @override
+  String get relationshipTryAgain => 'Försök igen';
 
   @override
   String get relationshipTurnOnReminders => 'Slå på påminnelser';

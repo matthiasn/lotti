@@ -14863,6 +14863,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipNotFound => 'Tahle osoba už není sledovaná.';
 
   @override
+  String get relationshipPageLoadFailed => 'Stránka této osoby se nenačetla.';
+
+  @override
   String get relationshipPayAttentionTo => 'Dávej pozor na';
 
   @override
@@ -15010,6 +15013,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipsGroupDue => 'Na řadě';
 
   @override
+  String get relationshipsLoadFailed => 'Tvoji lidé se nenačetli.';
+
+  @override
   String get relationshipSortThis => 'Roztřídit';
 
   @override
@@ -15017,6 +15023,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipSpeak => 'Mluvit';
+
+  @override
+  String relationshipsSearchNoMatch(String query) {
+    return 'Nikdo neodpovídá „$query“';
+  }
 
   @override
   String get relationshipsSelectPersonHint =>
@@ -15101,6 +15112,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipTimelineFilterAll => 'Vše';
 
   @override
+  String get relationshipTimelineFilterEmpty =>
+      'S tímto filtrem tu zatím nic není.';
+
+  @override
   String get relationshipTimelineFilterMeetings => 'Schůzky';
 
   @override
@@ -15122,6 +15137,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String relationshipTimelineRowLabel(String kind, String time, String text) {
     return '$kind, $time. $text';
   }
+
+  @override
+  String get relationshipTimelineShowAll => 'Zobrazit vše';
 
   @override
   String get relationshipTimelineTask => 'Úkol';
@@ -15156,6 +15174,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipTimestampYesterday => 'Včera';
+
+  @override
+  String get relationshipTryAgain => 'Zkusit znovu';
 
   @override
   String get relationshipTurnOnReminders => 'Zapnout připomínky';

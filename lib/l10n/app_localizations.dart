@@ -24193,6 +24193,12 @@ abstract class AppLocalizations {
   /// **'This person is no longer tracked.'**
   String get relationshipNotFound;
 
+  /// Person page: reading the person failed.
+  ///
+  /// In en, this message translates to:
+  /// **'This person\'s page didn\'t load.'**
+  String get relationshipPageLoadFailed;
+
   /// No description provided for @relationshipPayAttentionTo.
   ///
   /// In en, this message translates to:
@@ -24421,6 +24427,12 @@ abstract class AppLocalizations {
   /// **'Due'**
   String get relationshipsGroupDue;
 
+  /// People list: the first load failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Your people didn\'t load.'**
+  String get relationshipsLoadFailed;
+
   /// Action on a voice-note row of a person's timeline: sort its words into check-ins, notes, meetings or tasks.
   ///
   /// In en, this message translates to:
@@ -24438,6 +24450,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Speak'**
   String get relationshipSpeak;
+
+  /// People list: the search found nobody. {query} is what the user typed.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody matches “{query}”'**
+  String relationshipsSearchNoMatch(String query);
 
   /// No description provided for @relationshipsSelectPersonHint.
   ///
@@ -24551,6 +24569,12 @@ abstract class AppLocalizations {
   /// **'All'**
   String get relationshipTimelineFilterAll;
 
+  /// Person timeline: the selected filter matches no rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing under this filter yet.'**
+  String get relationshipTimelineFilterEmpty;
+
   /// No description provided for @relationshipTimelineFilterMeetings.
   ///
   /// In en, this message translates to:
@@ -24592,6 +24616,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{kind}, {time}. {text}'**
   String relationshipTimelineRowLabel(String kind, String time, String text);
+
+  /// Person timeline: resets the filter to All.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get relationshipTimelineShowAll;
 
   /// No description provided for @relationshipTimelineTask.
   ///
@@ -24652,6 +24682,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yesterday'**
   String get relationshipTimestampYesterday;
+
+  /// Button that repeats a failed read on the People surfaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get relationshipTryAgain;
 
   /// Button on the person page's offer card that enrols the person in reminders and briefings at the chosen interval.
   ///
