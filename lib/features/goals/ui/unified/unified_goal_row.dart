@@ -132,13 +132,7 @@ class UnifiedGoalRow extends ConsumerWidget {
     final semanticsLabel = [
       title,
       if (showPill)
-        [
-          unifiedGoalStatusLabel(messages, status),
-          if (recoveryHint != null &&
-              (status == UnifiedGoalStatus.behind ||
-                  status == UnifiedGoalStatus.atRisk))
-            recoveryHint,
-        ].join(' · '),
+        unifiedGoalStatusText(messages, status, recoveryHint: recoveryHint),
       if (failed) messages.goalDetailHealthUnavailable,
       ?summary,
     ].join(', ');

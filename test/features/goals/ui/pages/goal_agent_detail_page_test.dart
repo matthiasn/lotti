@@ -82,6 +82,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
@@ -1803,6 +1804,52 @@ void main() {
     expect(find.byKey(const ValueKey('goal-page-state-back')), findsOneWidget);
     expect(find.textContaining('No report yet'), findsNothing);
   });
+
+  for (final (name, read) in <(String, Future<AgentDomainEntity?> Function())>[
+    ('loading', () => Completer<AgentDomainEntity?>().future),
+    ('failed', () async => throw StateError('agent database unavailable')),
+    ('not found', () async => null),
+  ]) {
+    testWidgets('a $name page keeps its way back to the goals list', (
+      tester,
+    ) async {
+      final beamed = <String>[];
+      beamToNamedOverride = beamed.add;
+      addTearDown(() => beamToNamedOverride = null);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider('goal-1').overrideWith((ref) => read()),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => throw StateError('health unavailable'),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      if (name == 'failed') {
+        expect(find.text("This goal's page didn't load."), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('goal-page-retry')));
+        await tester.pump();
+      }
+      if (name == 'not found') {
+        expect(
+          find.byKey(const ValueKey('goal-page-not-found')),
+          findsOneWidget,
+        );
+      }
+      await tester.tap(find.byKey(const ValueKey('goal-page-state-back')));
+      expect(beamed, contains(goalsRootPath));
+    });
+  }
 
   testWidgets('a failed health load says so instead of claiming there is '
       'no report', (tester) async {

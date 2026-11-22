@@ -170,6 +170,9 @@ void main() {
   });
 
   testWidgets('a failed read says so and offers Try again', (tester) async {
+    final beamed = <String>[];
+    beamToNamedOverride = beamed.add;
+    addTearDown(() => beamToNamedOverride = null);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const GoalAgentChatPage(agentId: 'goal-1'),
@@ -185,6 +188,9 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('goal-page-retry')));
     await tester.pumpAndSettle();
     expect(find.text("This goal's page didn't load."), findsOneWidget);
+    // The way back returns to the goal's page.
+    await tester.tap(find.byKey(const ValueKey('goal-page-state-back')));
+    expect(beamed, isNotEmpty);
   });
 
   testWidgets('a goal that is gone says so, never a spinner', (tester) async {

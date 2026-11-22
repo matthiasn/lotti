@@ -106,6 +106,25 @@ String? unifiedGoalSummary(
   return messages.unifiedGoalSummaryPartial(onTrackCount, habits.length);
 }
 
+/// The status in words, with the recovery hint folded in for the two states
+/// that have a way back ("Behind · 1 day to recover"). A hint on an
+/// on-track status would blow the glance budget for no decision value. The
+/// status mark shows it and a goal row's spoken label says it, so the two
+/// can never word it differently.
+String unifiedGoalStatusText(
+  AppLocalizations messages,
+  UnifiedGoalStatus status, {
+  String? recoveryHint,
+}) {
+  final hint =
+      recoveryHint != null &&
+          (status == UnifiedGoalStatus.behind ||
+              status == UnifiedGoalStatus.atRisk)
+      ? recoveryHint
+      : null;
+  return [unifiedGoalStatusLabel(messages, status), ?hint].join(' · ');
+}
+
 /// The goal's status as a glyph and a word, the way a People row carries
 /// *5 days overdue* and a task row its status: never a filled block, and
 /// never on the title's line. An off-track or at-risk status folds its
@@ -138,16 +157,11 @@ class UnifiedGoalStatusMark extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final colors = tokens.colors;
-    final hint =
-        recoveryHint != null &&
-            (status == UnifiedGoalStatus.behind ||
-                status == UnifiedGoalStatus.atRisk)
-        ? recoveryHint
-        : null;
-    final label = [
-      unifiedGoalStatusLabel(context.messages, status),
-      ?hint,
-    ].join(' · ');
+    final label = unifiedGoalStatusText(
+      context.messages,
+      status,
+      recoveryHint: recoveryHint,
+    );
     final (glyph, glyphColor) = switch (status) {
       UnifiedGoalStatus.behind => (
         LottiIcons.warning,
