@@ -151,7 +151,7 @@ void main() {
     await withClock(Clock(() => now), () async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
-          Scaffold(
+          const Scaffold(
             body: SingleChildScrollView(
               child: GoalCheckInTimeline(agentId: 'goal-1'),
             ),
