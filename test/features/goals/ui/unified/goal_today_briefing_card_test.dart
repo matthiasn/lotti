@@ -98,7 +98,7 @@ void main() {
       lessThan(tester.getTopLeft(find.text('Agent walk')).dy),
     );
     // Each line wears the page's own status vocabulary.
-    expect(find.byType(UnifiedGoalStatusPill), findsNWidgets(2));
+    expect(find.byType(UnifiedGoalStatusMark), findsNWidgets(2));
 
     await tester.tap(find.byKey(const ValueKey('goal-today-briefing-walk')));
     expect(navigated, ['/goals/details/walk']);

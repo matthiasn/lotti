@@ -1,12 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/ai_attribution.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/goals/logic/goal_timeline_projection.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 
 /// Whether the latest durable transcription attempt for `entryId` failed.
@@ -101,3 +103,51 @@ final FutureProviderFamily<String?, String> goalCategoryIdProvider =
           ?.getGoalForAgent(agentId);
       return goal?.meta.categoryId;
     }, name: 'goalCategoryIdProvider');
+
+/// Where the goal's check-in history stands before it has anything to show.
+enum GoalCheckInsLoad {
+  /// A read is still on its way: the history may well hold check-ins.
+  loading,
+
+  /// A read failed: the history cannot say whether there are any.
+  failed,
+
+  /// Everything is read: an empty history really is empty.
+  settled,
+}
+
+/// Whether the goal's check-in history has settled, so the rail can tell
+/// "no check-ins yet" from "not read yet" and "could not read".
+///
+/// [goalTimelineItemsProvider] is a plain list over the shared linked-entries
+/// projection, which turns a first load and a failure alike into `[]`; on
+/// its own the rail showed its invitation to record to someone with fifty
+/// check-ins while they loaded. The history reads the goal's links, each
+/// link's entry and the assessments, so it has settled once all three have:
+/// a link whose entry is still loading is a not-yet, not a fact (the task
+/// page's first-run rule).
+final ProviderFamily<GoalCheckInsLoad, String> goalCheckInsLoadProvider =
+    Provider.autoDispose.family<GoalCheckInsLoad, String>((ref, agentId) {
+      final assessments = ref.watch(goalAssessmentHistoryProvider(agentId));
+      final goalId = ref.watch(goalEntryIdProvider(agentId));
+      final links = goalId == null
+          ? null
+          : ref.watch(linkedEntriesControllerProvider(goalId));
+      if ((links != null && links.hasError && !links.hasValue) ||
+          (assessments.hasError && !assessments.hasValue)) {
+        return GoalCheckInsLoad.failed;
+      }
+      if ((links != null && !links.hasValue) || !assessments.hasValue) {
+        return GoalCheckInsLoad.loading;
+      }
+      // An entry still on its way holds the rail and one whose read failed
+      // fails it; one that resolved to nothing (deleted, private) must not
+      // keep it spinning forever.
+      for (final link in links?.value ?? const <EntryLink>[]) {
+        final entry = ref.watch(entryControllerProvider(link.toId));
+        if (!entry.hasValue && !entry.hasError) return GoalCheckInsLoad.loading;
+        // A read that failed cannot say the history is empty either.
+        if (entry.hasError && !entry.hasValue) return GoalCheckInsLoad.failed;
+      }
+      return GoalCheckInsLoad.settled;
+    }, name: 'goalCheckInsLoadProvider');

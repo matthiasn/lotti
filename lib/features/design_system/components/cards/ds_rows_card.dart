@@ -16,9 +16,14 @@ import 'package:material_ui/material_ui.dart';
 /// row is inserted or removed above them, instead of each being rebuilt as
 /// the row that now sits in its slot.
 class DsRowsCard extends StatelessWidget {
-  const DsRowsCard({required this.rows, super.key});
+  const DsRowsCard({required this.rows, this.color, super.key});
 
   final List<Widget> rows;
+
+  /// The card's fill; `background.level02` when null. A page on
+  /// `dsPageSurface` passes `dsCardSurface`, so the card still sits one step
+  /// lighter than the page in light mode, where that page is `level02`.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +32,7 @@ class DsRowsCard extends StatelessWidget {
     // title) paints on the card itself instead of on whatever lies behind
     // the opaque fill.
     return Material(
-      color: tokens.colors.background.level02,
+      color: color ?? tokens.colors.background.level02,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(tokens.radii.l),
       ),

@@ -81,16 +81,16 @@ class _GoalChatDrawer extends StatelessWidget {
                               ),
                         ),
                         if (showPill)
-                          UnifiedGoalStatusPill(
+                          UnifiedGoalStatusMark(
                             status: status,
                             recoveryHint: recoveryHint,
                           ),
                       ],
                     ),
                   ),
-                  IconButton(
+                  DesignSystemIconAction(
                     key: const ValueKey('goal-chat-drawer-close'),
-                    icon: const Icon(LottiIcons.close),
+                    icon: LottiIcons.close,
                     tooltip: MaterialLocalizations.of(
                       context,
                     ).closeButtonTooltip,
@@ -195,7 +195,7 @@ class _GoalHeader extends StatelessWidget {
               style: calmPageTitleStyle(tokens),
             ),
             if (showPill)
-              UnifiedGoalStatusPill(
+              UnifiedGoalStatusMark(
                 status: status,
                 recoveryHint: recoveryHint,
               ),

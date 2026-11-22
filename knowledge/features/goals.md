@@ -1139,7 +1139,8 @@ handler would retract it; that wiring is a follow-up.
   and snooze tap targets from creating a visually double-padded top edge.
 - **The goal detail surface** (hosted by the unified Goals tab under
   `/goals/details/:agentId`): per-goal health at a glance — the same four-state
-  chip used by the Goals list and chat (On track / At risk / Behind / No data;
+  status mark used by the Goals list and chat (`UnifiedGoalStatusMark`: On
+  track / At risk / Behind / No data as a glyph and a word under the title;
   `recovering` reads At risk), the report one-liner, a pending-proposal badge and a trend
   arrow (`GoalHealthDirection`, computed in `goalAgentHealthProvider` from the
   two most-recent non-deleted registers for the ACTIVE spec version with a
@@ -1768,23 +1769,36 @@ handler would retract it; that wiring is a follow-up.
 - **The unified Goals surface (phase 1, flag `enable_unified_goals`)**:
   `ui/pages/unified_goals_page.dart` merges the Habits and Goal Agents
   tabs into one goal-centric list at `/goals`, in the Habits nav slot —
-  the Habits page's visual language (Done-today card, due/later/done/all
-  filter tabs, consistency heatmap, completion-rate chart) with one
-  header-only card per goal (`ui/unified/unified_goal_card.dart`). Cards
-  use the same `dsCardSurface`, medium radius and subtle decorative border as
-  the habit rows below them in both light and dark themes. With
+  the Habits page's visual language (Done-today card, Due/Later/Done/All
+  filter tabs in sentence case, consistency heatmap, completion-rate chart)
+  with the goals as one rows card (`DsRowsCard` on `dsCardSurface`, so it
+  sits a step lighter than the page in both themes, no border, a divider
+  between goals) of `UnifiedGoalRow`s (`ui/unified/unified_goal_row.dart`,
+  DESIGN.md *Goal Row*): the goal's face, the title alone on its line in
+  Subtitle 1, then one caption line — the status mark, the trend and a
+  pending proposal in a `Wrap` — the templated summary and the 7-day strip
+  (beside the words when wide, under them when narrow or at large text).
+  Each row is a `GroupedCardRowSurface`: one button whose label is the
+  title, the status and the summary as a sentence. A health read that
+  failed says so on the caption line instead of leaving the row blank.
+  Archived goals keep their own rows card inside the archive. With
   `enable_companion` on, the companion's bust stands in for the persona
   monogram on the same status wash, her held gesture and mood following
   the goal's `GoalTrackStatus` (`ui/unified/goal_companion.dart`; the
   mapping is in [the companion concept](companion.md)). They
-  carry a four-pill status vocabulary
+  carry a four-status vocabulary
   (`ui/unified/unified_goal_status.dart`: On track / At risk / Behind /
   No data, collapsed from `GoalTrackStatus`; `recovering` reads as At
-  risk with the deterministic recovery hint folded into the pill), a
+  risk with the deterministic recovery hint folded into the words). The
+  status is never a pill on the title's line: Behind is the warning glyph
+  and its words in the warning ink, semibold — it used to be a solid amber
+  block, the loudest thing on the page — At risk the clock in the warning
+  ink, On track the circled check, No data the word alone (Goals V2,
+  2026-11-22). Then a
   templated summary computed locally (never generated prose — it cannot
   go stale). It carries NO habit rows: embedding one per dimension — glyph,
   streak chain, flame count, window fraction, check circle — spent several
-  rows of a list card restating what the pill says in two words, and a
+  rows of a list card restating what the status says in two words, and a
   habit's own record is read on the goal's page. The card therefore takes no
   habits-side state at all, and the "not in a goal" group below is the only
   place a `HabitActionRow` remains — which is exactly the Habits-tab daily
@@ -1808,6 +1822,18 @@ handler would retract it; that wiring is a follow-up.
   pages, all under `/goals/...` paths built by the plain helpers in
   `goal_routes.dart` (see [navigation](../architecture/navigation.md)); the
   never-released `/agents` twin tab was removed after this surface landed.
+  A first load of the goals that failed says *Your goals didn't load.* with
+  *Try again*, which reads the active and archived goals again; a failed
+  background reload keeps the goals it has.
+- **A goal page with nothing to show says which state it is in.** The detail,
+  timeline and chat pages and the editor's load shell share `GoalPageState`
+  (`ui/pages/goal_page_state.dart`): the page's own way back over the design
+  system's spinner on a first load, *This goal's page didn't load.* with *Try
+  again* when the read failed, or *This goal agent no longer exists.* when it
+  resolved to no goal. The error is read before the loading flag, because a
+  Riverpod retry is loading and errored at once. The detail page and the chat
+  watch `taskDueDayProvider`, so their day words and this-week figures turn
+  over at midnight.
 - **The Goals list is built whole and stays resident.** Its body is one
   `Column` in a `SliverToBoxAdapter`, not a lazy `SliverList`: the page is a
   bounded stack of heavy cards, and the lazy list built the bottom ones (the
@@ -2179,6 +2205,20 @@ and in its body:
 
 A check-in row opens its journal entry; a reflection reopens its day's sheet.
 The time chip (`GoalCheckInTimeChip`) is the check-in rows' trailing control.
+A row speaks as the person rows do — kind, time and the words, in one
+catalog message (`goalTimelineRowLabel`). Day headings past *Yesterday* come
+from a localized skeleton (`DateFormat.MMMMEEEEd`), so each locale orders and
+separates them its own way, and the rail watches `taskDueDayProvider`, so
+*Today* becomes *Yesterday* at midnight.
+
+**An empty rail is empty only once it has been read.** The rail's items are a
+plain list over the shared linked-entries projection, which turns a first load
+and a failure alike into `[]`. `goalCheckInsLoadProvider` reads the goal's
+links, each linked entry and the assessments: while any is on its way the rail
+shows a quiet spinner, a failed read says *Your check-ins didn't load.* with
+*Try again*, and only a settled empty history shows the invitation to record
+(with the person timeline's empty glyph, not the slashed mic). An entry that
+resolved to nothing does not hold the rail.
 
 **A goal is filed in a category.** The goal page names it above the title
 with the person page's selector (`CategoryCrumb`), which moves the goal row

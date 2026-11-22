@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/goals/logic/goal_charter.dart';
 import 'package:lotti/features/goals/state/goal_charter_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
@@ -372,7 +373,9 @@ void main() {
 
     expect(
       tester
-          .widget<IconButton>(find.byKey(const ValueKey('goal-charter-record')))
+          .widget<DesignSystemIconAction>(
+            find.byKey(const ValueKey('goal-charter-record')),
+          )
           .tooltip,
       'Record about this goal',
     );

@@ -3379,15 +3379,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.text("Couldn't load this goal's health right now."),
-        findsOneWidget,
-      );
+      // A failed read says so and offers the read again.
+      expect(find.text("This goal's page didn't load."), findsOneWidget);
+      expect(find.byKey(const ValueKey('goal-page-retry')), findsOneWidget);
       expect(
         find.byKey(const ValueKey('goal-form-intention')),
         findsNothing,
       );
       expect(find.text('Save new version'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('goal-page-retry')));
+      await tester.pumpAndSettle();
+      expect(find.text("This goal's page didn't load."), findsOneWidget);
     });
   }
 
@@ -3408,10 +3410,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.text("Couldn't load this goal's health right now."),
-        findsOneWidget,
-      );
+      expect(find.byKey(const ValueKey('goal-page-not-found')), findsOneWidget);
+      expect(find.byKey(const ValueKey('goal-page-retry')), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
   }
@@ -3429,10 +3429,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.text("Couldn't load this goal's health right now."),
-        findsOneWidget,
-      );
+      expect(find.byKey(const ValueKey('goal-page-not-found')), findsOneWidget);
       expect(
         find.byKey(const ValueKey('goal-form-intention')),
         findsNothing,

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -62,14 +63,12 @@ class GoalCheckInsCard extends ConsumerWidget {
                 ),
               ),
               if (onCreate != null)
-                IconButton(
+                DesignSystemIconAction(
                   key: const ValueKey('goal-checkin-create'),
                   onPressed: onCreate,
                   tooltip: context.messages.goalCheckInRecordCta,
-                  icon: Icon(
-                    LottiIcons.addCircled,
-                    color: tokens.colors.interactive.enabled,
-                  ),
+                  icon: LottiIcons.addCircled,
+                  tone: tokens.colors.interactive.enabled,
                 ),
             ],
           ),

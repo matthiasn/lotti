@@ -138,11 +138,11 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     }
     if (!mounted) return;
     if (!saved) {
-      ScaffoldMessenger.maybeOf(context)
-        ?..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(context.messages.saveFailedRetry)),
-        );
+      ScaffoldMessenger.maybeOf(context)?.showDesignSystemToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.saveFailedRetry,
+        replaceCurrent: true,
+      );
     }
   }
 
@@ -507,11 +507,9 @@ class _ProgressDayCell extends StatelessWidget {
           onSelected: callback,
           child: Center(
             child: saving
-                ? SizedBox.square(
-                    dimension: size,
-                    child: const CircularProgressIndicator(
-                      strokeWidth: BorderWidths.emphasis,
-                    ),
+                ? DesignSystemSpinner(
+                    size: size,
+                    strokeWidth: BorderWidths.emphasis,
                   )
                 : cell,
           ),

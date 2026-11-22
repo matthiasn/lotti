@@ -72,6 +72,21 @@ void main() {
     expect(material.clipBehavior, Clip.antiAlias);
   });
 
+  testWidgets('a page on its own surface can set the fill', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const DsRowsCard(color: Color(0xFF123456), rows: [Text('a')]),
+      ),
+    );
+    final material = tester.widget<Material>(
+      find.descendant(
+        of: find.byType(DsRowsCard),
+        matching: find.byType(Material),
+      ),
+    );
+    expect(material.color, const Color(0xFF123456));
+  });
+
   testWidgets('ink from a row paints on the card, not behind it', (
     tester,
   ) async {

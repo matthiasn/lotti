@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_measurable_record_offer.dart';
@@ -337,17 +338,15 @@ class _RecordOfferRow extends StatelessWidget {
     final tokens = context.designTokens;
     return Row(
       children: [
-        IconButton(
+        DesignSystemIconAction(
           onPressed: () => onSelectionChanged(!selected),
           tooltip: selected
               ? context.messages.goalRecordOfferDeselectRow
               : context.messages.goalRecordOfferSelectRow,
-          icon: Icon(
-            selected ? LottiIcons.confirmCircled : LottiIcons.closeCircled,
-            color: selected
-                ? tokens.colors.alert.success.defaultColor
-                : tokens.colors.text.lowEmphasis,
-          ),
+          icon: selected ? LottiIcons.confirmCircled : LottiIcons.closeCircled,
+          tone: selected
+              ? tokens.colors.alert.success.defaultColor
+              : tokens.colors.text.lowEmphasis,
         ),
         Expanded(
           child: Column(

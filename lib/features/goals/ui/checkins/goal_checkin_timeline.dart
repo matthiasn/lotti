@@ -11,13 +11,17 @@ import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/logic/goal_timeline_projection.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
+import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_duration.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording_playback.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme_text_styles.dart';
@@ -84,8 +88,45 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
   @override
   Widget build(BuildContext context) {
     final items = ref.watch(goalTimelineItemsProvider(widget.agentId));
+    // The day headings say Today and Yesterday: rebuild when the day turns,
+    // as the person timeline does.
+    ref.watch(taskDueDayProvider);
     _nextGraceExpiry = null;
-    if (items.isEmpty) return _Empty(action: widget.emptyAction);
+    if (items.isEmpty) {
+      // An empty list is only "no check-ins yet" once the history has been
+      // read: a first load and a failed read both arrive here as `[]`.
+      return switch (ref.watch(goalCheckInsLoadProvider(widget.agentId))) {
+        GoalCheckInsLoad.loading => Padding(
+          key: const ValueKey('goal-checkin-loading'),
+          padding: EdgeInsets.symmetric(
+            vertical: context.designTokens.spacing.step5,
+          ),
+          child: Center(
+            child: DesignSystemSpinner(
+              semanticsLabel: context.messages.commonLoading,
+            ),
+          ),
+        ),
+        GoalCheckInsLoad.failed => DesignSystemEmptyState(
+          key: const ValueKey('goal-checkin-load-failed'),
+          icon: LottiIcons.warning,
+          hint: context.messages.goalCheckInsLoadFailed,
+          action: DesignSystemButton(
+            key: const ValueKey('goal-checkin-retry'),
+            label: context.messages.goalTryAgain,
+            variant: DesignSystemButtonVariant.secondary,
+            onPressed: () {
+              ref.invalidate(goalAssessmentHistoryProvider(widget.agentId));
+              final goalId = ref.read(goalEntryIdProvider(widget.agentId));
+              if (goalId != null) {
+                ref.invalidate(linkedEntriesControllerProvider(goalId));
+              }
+            },
+          ),
+        ),
+        GoalCheckInsLoad.settled => _Empty(action: widget.emptyAction),
+      };
+    }
     final cap = widget.maxBeats ?? _visibleCount;
     final visible = items.length <= cap ? items : items.sublist(0, cap);
     final hasOlder = widget.maxBeats == null && visible.length < items.length;
@@ -149,8 +190,9 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
     final difference = today.difference(day).inDays;
     if (difference == 0) return context.messages.timelineDayToday;
     if (difference == 1) return context.messages.timelineDayYesterday;
-    return DateFormat(
-      'EEEE · d MMM',
+    // A localized skeleton: the weekday, day and month in the order and
+    // with the separators each locale writes them, not one fixed pattern.
+    return DateFormat.MMMMEEEEd(
       Localizations.localeOf(context).toLanguageTag(),
     ).format(day);
   }
@@ -231,7 +273,11 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
           key: ValueKey('goal-checkin-row-${checkIn.id}'),
           leading: const DesignSystemTimelineTile(icon: LottiIcons.mic),
           meta: _meta(context, time, kind),
-          semanticsLabel: '$kind, $time',
+          semanticsLabel: messages.goalTimelineRowLabel(
+            kind,
+            time,
+            checkIn.transcript?.trim() ?? '',
+          ),
           // The time this check-in counts for, correctable in place — the
           // recording's own length until the user says otherwise.
           trailing: GoalCheckInTimeChip(checkIn: checkIn),
@@ -266,7 +312,11 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
           key: ValueKey('goal-checkin-row-${checkIn.id}'),
           leading: const DesignSystemTimelineTile(icon: LottiIcons.note),
           meta: _meta(context, time, kind),
-          semanticsLabel: '$kind, $time',
+          semanticsLabel: messages.goalTimelineRowLabel(
+            kind,
+            time,
+            checkIn.text.trim(),
+          ),
           trailing: GoalCheckInTimeChip(checkIn: checkIn),
           body: FoldedWords(id: checkIn.id, words: checkIn.text.trim()),
           onTap: () => _open(checkIn.id),
@@ -287,8 +337,13 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
             icon: dayVerdictGlyph(record.rating),
           ),
           meta: _meta(context, time, kind),
-          semanticsLabel:
-              '$kind, $time, ${dayVerdictLabel(context, record.rating)}',
+          semanticsLabel: messages.goalTimelineRowLabel(
+            kind,
+            time,
+            note == null || note.isEmpty
+                ? dayVerdictLabel(context, record.rating)
+                : '${dayVerdictLabel(context, record.rating)}. $note',
+          ),
           // No "Rated by you"-style attribution — the provenance stays on
           // the record, it is not day-to-day reading.
           trailing: _VerdictPill(rating: record.rating),
@@ -324,7 +379,10 @@ class _VerdictPill extends StatelessWidget {
         vertical: tokens.spacing.step1,
       ),
       decoration: BoxDecoration(
-        color: dayVerdictFill(tokens, rating).withValues(alpha: 0.16),
+        color: dayVerdictFill(
+          tokens,
+          rating,
+        ).withValues(alpha: SurfaceAlphas.washChip),
         // Informative, not tappable: the small-chip radius, never the pill —
         // full rounding is reserved for clickable elements on this surface.
         borderRadius: BorderRadius.circular(tokens.radii.smallChips),
@@ -353,7 +411,9 @@ class _Empty extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DesignSystemEmptyState(
     key: const ValueKey('goal-checkin-empty'),
-    icon: LottiIcons.micIdle,
+    // The person timeline's empty glyph, so the two histories look alike —
+    // and not `micIdle`, Lucide's slashed mic-off, beside a call to record.
+    icon: LottiIcons.timeline,
     hint: context.messages.goalCheckInsEmptyInvitation,
     action: action,
   );

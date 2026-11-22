@@ -37,7 +37,7 @@ class _GoalReportCardState extends State<_GoalReportCard>
   );
   late final Animation<double> _revealCurve = CurvedAnimation(
     parent: _reveal,
-    curve: Curves.easeOutCubic,
+    curve: MotionCurves.emphasizedDecelerate,
   );
 
   @override
@@ -274,11 +274,11 @@ class _GoalActionsMenuButton extends ConsumerWidget {
                   );
             } catch (_) {
               if (!context.mounted) return;
-              ScaffoldMessenger.maybeOf(context)
-                ?..hideCurrentSnackBar()
-                ..showSnackBar(
-                  SnackBar(content: Text(messages.saveFailedRetry)),
-                );
+              ScaffoldMessenger.maybeOf(context)?.showDesignSystemToast(
+                tone: DesignSystemToastTone.error,
+                title: messages.saveFailedRetry,
+                replaceCurrent: true,
+              );
             }
           }
         case _GoalDetailMenuAction.internals:
@@ -343,10 +343,10 @@ class _GoalActionsMenuButton extends ConsumerWidget {
           startsGroup: true,
         ),
       ],
-      triggerBuilder: (context, open) => IconButton(
+      triggerBuilder: (context, open) => DesignSystemIconAction(
         key: const ValueKey('goal-menu-trigger'),
         tooltip: MaterialLocalizations.of(context).showMenuTooltip,
-        icon: const Icon(LottiIcons.moreVertical),
+        icon: LottiIcons.moreVertical,
         onPressed: open,
       ),
     );
@@ -370,11 +370,11 @@ class _GoalActionsMenuButton extends ConsumerWidget {
         beamToNamed(goalsRootPath);
       } catch (_) {
         if (!context.mounted) return;
-        ScaffoldMessenger.maybeOf(context)
-          ?..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(content: Text(context.messages.saveFailedRetry)),
-          );
+        ScaffoldMessenger.maybeOf(context)?.showDesignSystemToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.saveFailedRetry,
+          replaceCurrent: true,
+        );
       }
     }
   }

@@ -1,4 +1,3 @@
-import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -61,14 +60,16 @@ class GoalAgentChatPane extends ConsumerWidget {
         : null;
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final now = clock.now();
     final shortDay = DateFormat.E(locale);
     final longDay = DateFormat.EEEE(locale);
-    final recentDayLabels = <DateTime, List<String>>{
+    // The day words a message names ("today", "Tuesday") are resolved
+    // against when that message was SENT, never the clock now: "I ran 5 km
+    // today" must not move to tomorrow when the pane rebuilds after midnight.
+    Map<DateTime, List<String>> recentDayLabels(DateTime sentAt) => {
       for (var offset = 0; offset < 7; offset++)
-        now.subtract(Duration(days: offset)): [
-          shortDay.format(now.subtract(Duration(days: offset))),
-          longDay.format(now.subtract(Duration(days: offset))),
+        sentAt.subtract(Duration(days: offset)): [
+          shortDay.format(sentAt.subtract(Duration(days: offset))),
+          longDay.format(sentAt.subtract(Duration(days: offset))),
           if (offset == 0) context.messages.calendarTodayLabel,
           if (offset == 1) context.messages.knowledgeGraphAgeYesterday,
         ],
@@ -98,8 +99,8 @@ class GoalAgentChatPane extends ConsumerWidget {
         message: message,
         criteria: spec.criteria,
         measurables: measurables,
-        reference: now,
-        recentDayLabels: recentDayLabels,
+        reference: message.createdAt,
+        recentDayLabels: recentDayLabels(message.createdAt),
       );
       if (offer == null) return null;
       final measurable = measurables
@@ -157,7 +158,7 @@ class GoalAgentChatPane extends ConsumerWidget {
                             ),
                             child: Align(
                               alignment: AlignmentDirectional.centerStart,
-                              child: UnifiedGoalStatusPill(status: status),
+                              child: UnifiedGoalStatusMark(status: status),
                             ),
                           ),
                       ],

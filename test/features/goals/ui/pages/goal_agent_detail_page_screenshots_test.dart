@@ -198,6 +198,7 @@ Future<void> _capture(
   required bool companion,
   bool journal = false,
   bool menuOpen = false,
+  bool loadFailed = false,
 }) async {
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pump();
@@ -282,7 +283,9 @@ Future<void> _capture(
               ),
             ),
             agentIdentityProvider(_agentId).overrideWith(
-              (ref) async => journal
+              (ref) async => loadFailed
+                  ? throw StateError('agent database unavailable')
+                  : journal
                   ? _identity.copyWith(displayName: 'Journal coach')
                   : _identity,
             ),
@@ -319,6 +322,9 @@ Future<void> _capture(
             goalTimelineItemsProvider(
               _agentId,
             ).overrideWith((ref) => journal ? _journalCheckIns : const []),
+            goalCheckInsLoadProvider(
+              _agentId,
+            ).overrideWithValue(GoalCheckInsLoad.settled),
           ],
         ),
       ),
@@ -335,7 +341,9 @@ Future<void> _capture(
   final theme = brightness == Brightness.dark ? 'dark' : 'light';
   await captureScreenshot(
     tester,
-    journal
+    loadFailed
+        ? 'load_failed_${device.name}_$theme'
+        : journal
         ? 'journal_report_${device.name}_$theme'
         : menuOpen
         ? 'menu_${device.name}_$theme'
@@ -380,6 +388,15 @@ void main() {
           brightness: brightness,
           companion: false,
           menuOpen: true,
+        );
+      });
+      testWidgets('${device.name} load failed $theme', (tester) async {
+        await _capture(
+          tester,
+          device: device,
+          brightness: brightness,
+          companion: false,
+          loadFailed: true,
         );
       });
       testWidgets('${device.name} journal report $theme', (tester) async {

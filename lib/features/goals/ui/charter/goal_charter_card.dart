@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
@@ -81,17 +82,19 @@ class GoalCharterCard extends ConsumerWidget {
                   ),
                 ),
                 if (editable && entries.isNotEmpty) ...[
-                  IconButton(
+                  DesignSystemIconAction(
                     key: const ValueKey('goal-charter-record'),
                     onPressed: record,
                     tooltip: messages.goalCharterRecord,
-                    icon: Icon(LottiIcons.mic, color: interactive),
+                    icon: LottiIcons.mic,
+                    tone: interactive,
                   ),
-                  IconButton(
+                  DesignSystemIconAction(
                     key: const ValueKey('goal-charter-add'),
                     onPressed: write,
                     tooltip: messages.goalCharterAdd,
-                    icon: Icon(LottiIcons.addCircled, color: interactive),
+                    icon: LottiIcons.addCircled,
+                    tone: interactive,
                   ),
                 ],
               ],

@@ -8493,6 +8493,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInsLoadFailed => 'Dina avstämningar kunde inte laddas.';
+
+  @override
   String get goalCheckInsSeeAll => 'Visa alla avstämningar';
 
   @override
@@ -9215,6 +9218,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalPageLoadFailed => 'Sidan för det här målet kunde inte laddas.';
+
+  @override
   String goalPatternBusiestHour(String hour) {
     return 'De flesta sessioner börjar runt $hour:00. Öppna insikter för djupare analys.';
   }
@@ -9369,12 +9375,23 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalReportSectionWindow => 'Det bredare fönstret';
 
   @override
+  String get goalsLoadFailed => 'Dina mål kunde inte laddas.';
+
+  @override
+  String goalTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
   String goalTodayBriefingNext(String step) {
     return 'Nästa: $step';
   }
 
   @override
   String get goalTodayBriefingTitle => 'Idag';
+
+  @override
+  String get goalTryAgain => 'Försök igen';
 
   @override
   String get goalUnitHours => 'h';
@@ -9772,7 +9789,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitSectionOptionsTitle => 'Alternativ';
 
   @override
-  String get habitsFilterAll => 'alla';
+  String get habitsFilterAll => 'Alla';
 
   @override
   String get habitsFilterCompleted => 'Klart';

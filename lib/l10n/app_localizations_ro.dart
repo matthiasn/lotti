@@ -8622,6 +8622,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInsLoadFailed =>
+      'Raportările dumneavoastră nu s-au încărcat.';
+
+  @override
   String get goalCheckInsSeeAll => 'Vedeți toate raportările';
 
   @override
@@ -9366,6 +9370,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalPageLoadFailed => 'Pagina acestui obiectiv nu s-a încărcat.';
+
+  @override
   String goalPatternBusiestHour(String hour) {
     return 'Cele mai multe sesiuni încep în jurul $hour:00. Deschideți Perspective pentru o analiză mai profundă.';
   }
@@ -9522,12 +9529,23 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalReportSectionWindow => 'Fereastra mai largă';
 
   @override
+  String get goalsLoadFailed => 'Obiectivele dumneavoastră nu s-au încărcat.';
+
+  @override
+  String goalTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
   String goalTodayBriefingNext(String step) {
     return 'Următorul pas: $step';
   }
 
   @override
   String get goalTodayBriefingTitle => 'Astăzi';
+
+  @override
+  String get goalTryAgain => 'Încercați din nou';
 
   @override
   String get goalUnitHours => 'h';
@@ -9936,16 +9954,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitSectionOptionsTitle => 'Opțiuni';
 
   @override
-  String get habitsFilterAll => 'toate';
+  String get habitsFilterAll => 'Toate';
 
   @override
-  String get habitsFilterCompleted => 'finalizate';
+  String get habitsFilterCompleted => 'Finalizate';
 
   @override
-  String get habitsFilterOpenNow => 'scadente';
+  String get habitsFilterOpenNow => 'Scadente';
 
   @override
-  String get habitsFilterPendingLater => 'mai târziu';
+  String get habitsFilterPendingLater => 'Mai târziu';
 
   @override
   String get habitsGoalLineLabel => 'Obiectiv';

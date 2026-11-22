@@ -8537,6 +8537,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInsLoadFailed => 'Deine Check-ins wurden nicht geladen.';
+
+  @override
   String get goalCheckInsSeeAll => 'Alle Check-ins ansehen';
 
   @override
@@ -9263,6 +9266,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get goalPageLoadFailed =>
+      'Die Seite dieses Ziels wurde nicht geladen.';
+
+  @override
   String goalPatternBusiestHour(String hour) {
     return 'Die meisten Sitzungen beginnen gegen $hour:00. Öffne Insights für eine genauere Analyse.';
   }
@@ -9417,12 +9424,23 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalReportSectionWindow => 'Das größere Fenster';
 
   @override
+  String get goalsLoadFailed => 'Deine Ziele wurden nicht geladen.';
+
+  @override
+  String goalTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
   String goalTodayBriefingNext(String step) {
     return 'Als Nächstes: $step';
   }
 
   @override
   String get goalTodayBriefingTitle => 'Heute';
+
+  @override
+  String get goalTryAgain => 'Erneut versuchen';
 
   @override
   String get goalUnitHours => 'Std.';
@@ -9824,16 +9842,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitSectionOptionsTitle => 'Optionen';
 
   @override
-  String get habitsFilterAll => 'alle';
+  String get habitsFilterAll => 'Alle';
 
   @override
-  String get habitsFilterCompleted => 'erledigt';
+  String get habitsFilterCompleted => 'Erledigt';
 
   @override
-  String get habitsFilterOpenNow => 'fällig';
+  String get habitsFilterOpenNow => 'Fällig';
 
   @override
-  String get habitsFilterPendingLater => 'später';
+  String get habitsFilterPendingLater => 'Später';
 
   @override
   String get habitsGoalLineLabel => 'Ziel';

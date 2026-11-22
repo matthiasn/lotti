@@ -44,6 +44,7 @@ import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
@@ -81,6 +82,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
@@ -1796,9 +1798,58 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    // The design system's spinner, under the page's own way back.
+    expect(find.byType(DesignSystemSpinner), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byKey(const ValueKey('goal-page-state-back')), findsOneWidget);
     expect(find.textContaining('No report yet'), findsNothing);
   });
+
+  for (final (name, read) in <(String, Future<AgentDomainEntity?> Function())>[
+    ('loading', () => Completer<AgentDomainEntity?>().future),
+    ('failed', () async => throw StateError('agent database unavailable')),
+    ('not found', () async => null),
+  ]) {
+    testWidgets('a $name page keeps its way back to the goals list', (
+      tester,
+    ) async {
+      final beamed = <String>[];
+      beamToNamedOverride = beamed.add;
+      addTearDown(() => beamToNamedOverride = null);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider('goal-1').overrideWith((ref) => read()),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => throw StateError('health unavailable'),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      if (name == 'failed') {
+        expect(find.text("This goal's page didn't load."), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('goal-page-retry')));
+        await tester.pump();
+      }
+      if (name == 'not found') {
+        expect(
+          find.byKey(const ValueKey('goal-page-not-found')),
+          findsOneWidget,
+        );
+      }
+      await tester.tap(find.byKey(const ValueKey('goal-page-state-back')));
+      expect(beamed, contains(goalsRootPath));
+    });
+  }
 
   testWidgets('a failed health load says so instead of claiming there is '
       'no report', (tester) async {
@@ -1825,10 +1876,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(
-      find.text("Couldn't load this goal's health right now."),
-      findsOneWidget,
-    );
+    expect(find.text("This goal's page didn't load."), findsOneWidget);
+    expect(find.byKey(const ValueKey('goal-page-retry')), findsOneWidget);
     expect(find.textContaining('No report yet'), findsNothing);
   });
 
@@ -3344,10 +3393,10 @@ void main() {
     );
     // The sheet header carries the same computed pill as the page: the
     // same widget fed the same status, twice on screen, never disagreeing.
-    expect(find.byType(UnifiedGoalStatusPill), findsNWidgets(2));
+    expect(find.byType(UnifiedGoalStatusMark), findsNWidgets(2));
     expect(
       find.descendant(
-        of: find.byType(UnifiedGoalStatusPill),
+        of: find.byType(UnifiedGoalStatusMark),
         matching: find.text('On track'),
       ),
       findsNWidgets(2),
@@ -4672,7 +4721,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('goal-detail-talk-to')));
     await tester.pumpAndSettle();
     expect(find.byType(GoalAgentChatPane), findsOneWidget);
-    expect(find.byType(UnifiedGoalStatusPill), findsNothing);
+    expect(find.byType(UnifiedGoalStatusMark), findsNothing);
   });
 
   testWidgets('a narrow desktop pane keeps the drawer a pure overlay — the '

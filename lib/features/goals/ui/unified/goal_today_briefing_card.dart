@@ -113,7 +113,7 @@ class _BriefingRow extends StatelessWidget {
                 ),
                 if (status != null) ...[
                   SizedBox(width: tokens.spacing.step2),
-                  UnifiedGoalStatusPill(status: status),
+                  UnifiedGoalStatusMark(status: status),
                 ],
               ],
             ),

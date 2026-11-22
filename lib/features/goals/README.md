@@ -189,15 +189,18 @@ column.
 A **unified Goals page** is landing behind `enable_unified_goals` (Phase 1 of
 the Habits + Goal Agents merge; `ui/pages/unified_goals_page.dart`, `/goals`
 route in the Habits nav slot): one centered column carrying the reused
-Done-today card and due/later/done/all filter tabs, one expanded card per goal
-(`ui/unified/unified_goal_card.dart` — persona chip, four-pill status with the
-recovery hint folded in, deterministic templated summary, the goal's habit
-rows with one-tap quick-complete and "N of M this window" readings), a
-"not in a goal" group for unclaimed habits, and the aggregate consistency
-heatmap and completion-rate chart (whose dashed line is now labeled *Target*,
-never "Goal", to avoid colliding with this entity). The four-pill vocabulary
-and the criterion→habit-id join live in `ui/unified/unified_goal_status.dart`.
-Goal-card rows count only real successes as done (goal criteria ignore
+Done-today card and Due/Later/Done/All filter tabs, the goals as rows of one
+card (`ui/unified/unified_goal_row.dart` — the goal's face, the title leading,
+the status as a glyph and a word under it with the recovery hint folded in,
+a deterministic templated summary and the 7-day strip), a "not in a goal"
+group for unclaimed habits with their one-tap quick-complete, and the
+aggregate consistency heatmap and completion-rate chart (whose dashed line is
+now labeled *Target*, never "Goal", to avoid colliding with this entity). The
+four-status vocabulary and the criterion→habit-id join live in
+`ui/unified/unified_goal_status.dart`. A goal page that cannot show its goal
+says why — loading, a failed read with Try again, or a goal that is gone —
+and the check-in rail never calls a history empty before it has read it.
+Habit completions count only real successes for goals (goal criteria ignore
 skips), and the page reads the category-unfiltered habit buckets so it never
 inherits the Habits tab's hidden category filter. `GoalsLocation` is the
 sole host of the detail, chat and wizard pages under `/goals/...`, built by

@@ -1,3 +1,4 @@
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -10,15 +11,15 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
+import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_health_direction.dart';
 import 'package:lotti/features/goals/ui/unified/goal_companion.dart';
-import 'package:lotti/features/goals/ui/unified/unified_goal_card.dart';
+import 'package:lotti/features/goals/ui/unified/unified_goal_row.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
@@ -145,21 +146,24 @@ void main() {
     required GoalAgentHealth agentHealth,
     GoalProgressView? progressView,
     bool progressFails = false,
+    bool healthFails = false,
     ThemeData? theme,
     bool companion = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        UnifiedGoalCard(identity: identity('goal-1', 'Fitness')),
+        UnifiedGoalRow(identity: identity('goal-1', 'Fitness')),
         theme: theme,
         overrides: [
           if (companion)
             configFlagProvider.overrideWith(
               (ref, flagName) => Stream.value(flagName == enableCompanionFlag),
             ),
-          goalAgentHealthProvider(
-            'goal-1',
-          ).overrideWith((ref) async => agentHealth),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => healthFails
+                ? throw StateError('health read failed')
+                : agentHealth,
+          ),
           if (progressFails)
             goalAgentProgressViewProvider('goal-1').overrideWith(
               (ref) async => throw StateError('progress read failed'),
@@ -185,36 +189,120 @@ void main() {
   }
 
   for (final theme in [DesignSystemTheme.light(), DesignSystemTheme.dark()]) {
-    testWidgets(
-      'uses the habit-card frame in ${theme.brightness.name} mode',
-      (tester) async {
-        await pump(
-          tester,
-          agentHealth: health(
-            agentId: 'goal-1',
-            trackStatus: GoalTrackStatus.onTrack,
-          ),
-          progressView: progress(),
-          theme: theme,
-        );
+    testWidgets('draws no frame of its own in ${theme.brightness.name} mode '
+        "— the list's rows card is its surface", (tester) async {
+      await pump(
+        tester,
+        agentHealth: health(
+          agentId: 'goal-1',
+          trackStatus: GoalTrackStatus.onTrack,
+        ),
+        progressView: progress(),
+        theme: theme,
+      );
 
-        final finder = find.byKey(
-          const ValueKey('unified-goal-card-frame-goal-1'),
-        );
-        final context = tester.element(finder);
-        final material = tester.widget<Material>(finder);
-        final shape = material.shape! as RoundedRectangleBorder;
-        final tokens = context.designTokens;
-        expect(material.color, dsCardSurface(context));
-        expect(
-          shape.borderRadius,
-          BorderRadius.circular(tokens.radii.m),
-        );
-        expect(shape.side.color, tokens.colors.decorative.level01);
-        expect(shape.side.width, 1);
-      },
-    );
+      expect(find.byType(GroupedCardRowSurface), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(UnifiedGoalRow),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Material &&
+                widget.shape is RoundedRectangleBorder &&
+                (widget.shape! as RoundedRectangleBorder).side !=
+                    BorderSide.none,
+          ),
+        ),
+        findsNothing,
+      );
+    });
   }
+
+  testWidgets('the title has its line to itself: the status sits under it '
+      'as a glyph and a word, never a pill beside it', (tester) async {
+    await pump(
+      tester,
+      agentHealth: health(
+        agentId: 'goal-1',
+        trackStatus: GoalTrackStatus.offTrack,
+        deficit: 1,
+      ),
+      progressView: progress(),
+    );
+
+    final title = tester.getRect(
+      find.byKey(const ValueKey('unified-goal-row-title')),
+    );
+    final status = tester.getRect(find.byType(UnifiedGoalStatusMark));
+    expect(status.top, greaterThanOrEqualTo(title.bottom));
+    expect(find.textContaining('Behind'), findsOneWidget);
+  });
+
+  testWidgets('assistive tech meets the row as one button: title, status '
+      'and summary in one sentence', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pump(
+      tester,
+      agentHealth: health(
+        agentId: 'goal-1',
+        trackStatus: GoalTrackStatus.offTrack,
+        deficit: 1,
+      ),
+      progressView: progress(),
+    );
+
+    final node = tester.getSemantics(find.byType(GroupedCardRowSurface));
+    final data = node.getSemanticsData();
+    expect(data.flagsCollection.isButton, isTrue);
+    expect(data.hasAction(SemanticsAction.tap), isTrue);
+    expect(
+      data.label,
+      'Fitness, Behind · 1 successful day needed to recover, '
+      '1 of 2 habits on track',
+    );
+    handle.dispose();
+  });
+
+  testWidgets('the spoken label carries the trend and a waiting proposal, '
+      'which the caption line shows', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pump(
+      tester,
+      agentHealth: health(
+        agentId: 'goal-1',
+        trackStatus: GoalTrackStatus.onTrack,
+        direction: GoalHealthDirection.down,
+        pendingProposals: 1,
+      ),
+      progressView: progress(),
+    );
+
+    final label = tester
+        .getSemantics(find.byType(GroupedCardRowSurface))
+        .getSemanticsData()
+        .label;
+    expect(label, contains('Trending down'));
+    expect(label, contains('Proposal awaiting review'));
+    handle.dispose();
+  });
+
+  testWidgets('a failed health read says so on the row instead of leaving it '
+      'blank', (tester) async {
+    await pump(
+      tester,
+      agentHealth: health(
+        agentId: 'goal-1',
+        trackStatus: GoalTrackStatus.onTrack,
+      ),
+      healthFails: true,
+    );
+
+    expect(
+      find.byKey(const ValueKey('unified-goal-row-health-failed')),
+      findsOneWidget,
+    );
+    expect(find.byType(UnifiedGoalStatusMark), findsNothing);
+  });
 
   group('the companion', () {
     testWidgets('stands in for the persona chip, wearing its status wash, '
@@ -370,8 +458,7 @@ void main() {
     expect(navigated, ['/goals/details/goal-1']);
   });
 
-  testWidgets('the header paints no hover overlay — it is a card region, '
-      'not a button', (tester) async {
+  testWidgets('keyboard focus fills the row like hover does', (tester) async {
     await pump(
       tester,
       agentHealth: health(
@@ -380,33 +467,20 @@ void main() {
       ),
       progressView: progress(),
     );
-
-    final ink = tester.widget<InkWell>(
-      find
-          .ancestor(of: find.text('Fitness'), matching: find.byType(InkWell))
-          .first,
-    );
-    expect(ink.hoverColor, Colors.transparent);
-    expect(
-      ink.overlayColor?.resolve({WidgetState.hovered}),
-      Colors.transparent,
-    );
-
-    // No hover state does not mean invisible to keyboards: Tab landing on
-    // the header draws the quiet-ink focus ring.
-    Finder ring() => find.ancestor(
-      of: find.text('Fitness'),
+    final tokens = tester.element(find.byType(UnifiedGoalRow)).designTokens;
+    Finder fill() => find.descendant(
+      of: find.byType(GroupedCardRowSurface),
       matching: find.byWidgetPredicate(
         (widget) =>
             widget is DecoratedBox &&
-            widget.position == DecorationPosition.foreground &&
-            (widget.decoration as BoxDecoration).border != null,
+            (widget.decoration as BoxDecoration).color ==
+                tokens.colors.surface.hover,
       ),
     );
-    expect(ring(), findsNothing);
+    expect(fill(), findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
-    expect(ring(), findsOneWidget);
+    expect(fill(), findsOneWidget);
   });
 
   testWidgets('a significant trend renders the shared direction chip', (

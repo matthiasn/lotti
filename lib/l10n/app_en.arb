@@ -5490,6 +5490,10 @@
       }
     }
   },
+  "goalCheckInsLoadFailed": "Your check-ins didn't load.",
+  "@goalCheckInsLoadFailed": {
+    "description": "A goal's check-in history could not be read."
+  },
   "goalCheckInsSeeAll": "See all check-ins",
   "goalCheckInsTitle": "Check-ins",
   "goalCheckInsTitleWithCount": "Check-ins · {count}",
@@ -6184,6 +6188,10 @@
       }
     }
   },
+  "goalPageLoadFailed": "This goal's page didn't load.",
+  "@goalPageLoadFailed": {
+    "description": "A goal page (detail, timeline, chat): reading the goal failed."
+  },
   "goalPatternBusiestHour": "Most sessions start around {hour}:00. Open Insights for deeper analysis.",
   "@goalPatternBusiestHour": {
     "placeholders": {
@@ -6328,6 +6336,25 @@
   },
   "goalReportSectionStanding": "Where things stand",
   "goalReportSectionWindow": "The wider window",
+  "goalsLoadFailed": "Your goals didn't load.",
+  "@goalsLoadFailed": {
+    "description": "Goals list: the first load of the goals failed."
+  },
+  "goalTimelineRowLabel": "{kind}, {time}. {text}",
+  "@goalTimelineRowLabel": {
+    "description": "Screen-reader label of one goal check-in row: its kind, its time and what was said.",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
   "goalTodayBriefingNext": "Next: {step}",
   "@goalTodayBriefingNext": {
     "description": "A goal's first next step in the Today card.",
@@ -6340,6 +6367,10 @@
   "goalTodayBriefingTitle": "Today",
   "@goalTodayBriefingTitle": {
     "description": "Title of the Goals page card that rolls up each goal's daily briefing."
+  },
+  "goalTryAgain": "Try again",
+  "@goalTryAgain": {
+    "description": "Button that repeats a failed read on the Goals surfaces."
   },
   "goalUnitHours": "h",
   "@goalUnitHours": {
@@ -6598,10 +6629,10 @@
   },
   "habitsDoneTodayLabel": "Habits done today",
   "habitSectionOptionsTitle": "Options",
-  "habitsFilterAll": "all",
-  "habitsFilterCompleted": "done",
-  "habitsFilterOpenNow": "due",
-  "habitsFilterPendingLater": "later",
+  "habitsFilterAll": "All",
+  "habitsFilterCompleted": "Done",
+  "habitsFilterOpenNow": "Due",
+  "habitsFilterPendingLater": "Later",
   "habitsGoalLineLabel": "Goal",
   "habitsHeatmapEmpty": "Add a habit to start building your consistency",
   "habitsHeatmapLess": "Less",

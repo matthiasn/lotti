@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -8,6 +10,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_chat_page.dart';
@@ -141,10 +144,67 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(GoalAgentChatPane), findsNothing);
-    expect(
-      find.text("Couldn't load this goal's health right now."),
-      findsOneWidget,
+    // A link that names no goal says the goal is gone, under a way back.
+    expect(find.byKey(const ValueKey('goal-page-not-found')), findsOneWidget);
+    expect(find.byKey(const ValueKey('goal-page-state-back')), findsOneWidget);
+  });
+
+  testWidgets('before the goal has loaded: the spinner under the way back', (
+    tester,
+  ) async {
+    final never = Completer<AgentDomainEntity?>();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentChatPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) => never.future),
+        ],
+      ),
     );
+    await tester.pump();
+
+    expect(find.byType(DesignSystemSpinner), findsOneWidget);
+    expect(find.byType(GoalAgentChatPane), findsNothing);
+  });
+
+  testWidgets('a failed read says so and offers Try again', (tester) async {
+    final beamed = <String>[];
+    beamToNamedOverride = beamed.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentChatPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => throw StateError('db gone')),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text("This goal's page didn't load."), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('goal-page-retry')));
+    await tester.pumpAndSettle();
+    expect(find.text("This goal's page didn't load."), findsOneWidget);
+    // The way back returns to the goal's page.
+    await tester.tap(find.byKey(const ValueKey('goal-page-state-back')));
+    expect(beamed, isNotEmpty);
+  });
+
+  testWidgets('a goal that is gone says so, never a spinner', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentChatPage(agentId: 'goal-2'),
+        overrides: [
+          agentIdentityProvider('goal-2').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('goal-page-not-found')), findsOneWidget);
+    expect(find.byType(DesignSystemSpinner), findsNothing);
   });
 
   testWidgets('a completed system pop persists the detail route', (

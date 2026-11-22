@@ -5,6 +5,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
+import 'package:lotti/features/goals/ui/pages/goal_page_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/goal_routes.dart';
@@ -28,6 +29,31 @@ class GoalAgentChatPage extends ConsumerWidget {
         ? identity.displayName
         : context.messages.agentsPageTitle;
     final detailPath = goalDetailPath(agentId);
+    void back() => beamToNamed(detailPath);
+    // Before there is a goal to talk to: the goal pages' shared states — a
+    // first load, a failed read with Try again, a link that names no goal.
+    final GoalPageStateKind? state;
+    // The error first: a Riverpod retry is loading and errored at once. A
+    // read that resolved to nothing is a goal that is gone, not a load.
+    if (!identityAsync.hasValue) {
+      state = identityAsync.hasError
+          ? GoalPageStateKind.failed
+          : GoalPageStateKind.loading;
+    } else if (identity is! AgentIdentityEntity ||
+        identity.kind != AgentKinds.goalAgent) {
+      state = GoalPageStateKind.notFound;
+    } else {
+      state = null;
+    }
+    if (state != null) {
+      return GoalPageState(
+        kind: state,
+        onBack: back,
+        onRetry: state == GoalPageStateKind.failed
+            ? () => ref.invalidate(agentIdentityProvider(agentId))
+            : null,
+      );
+    }
     final page = Scaffold(
       appBar: AppBar(
         leading: BackButton(
@@ -44,9 +70,7 @@ class GoalAgentChatPage extends ConsumerWidget {
         ),
       ),
       body: SafeArea(
-        child: !identityAsync.hasValue && !identityAsync.hasError
-            ? const Center(child: CircularProgressIndicator())
-            : isActiveGoal
+        child: isActiveGoal
             ? Padding(
                 padding: EdgeInsets.only(
                   bottom: DesignSystemBottomNavigationBar.occupiedHeight(
@@ -57,6 +81,7 @@ class GoalAgentChatPage extends ConsumerWidget {
                   agentId: agentId,
                 ),
               )
+            // An archived goal has no conversation to continue.
             : Center(child: Text(context.messages.goalDetailHealthUnavailable)),
       ),
     );

@@ -30,9 +30,12 @@ import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/categories/ui/widgets/category_crumb.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -57,6 +60,7 @@ import 'package:lotti/features/goals/ui/goal_health_direction.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/knowledge/goal_knowledge_section.dart';
+import 'package:lotti/features/goals/ui/pages/goal_page_state.dart';
 import 'package:lotti/features/goals/ui/pages/goal_report_sections.dart';
 import 'package:lotti/features/goals/ui/unified/goal_companion.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
@@ -68,6 +72,7 @@ import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/ui/playback_failure_toast.dart';
@@ -310,6 +315,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // The page's this-week card, day strips and Today / Yesterday turn over
+    // at midnight with no write to say so: rebuild when the day turns.
+    ref.watch(taskDueDayProvider);
     final identityAsync = ref.watch(agentIdentityProvider(agentId));
     final healthAsync = ref.watch(goalAgentHealthProvider(agentId));
     final agentState = ref.watch(agentStateProvider(agentId)).value;
@@ -336,12 +344,15 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
       },
       child: child,
     );
+    // The error is read before the loading flag throughout: while Riverpod
+    // retries a failed read the state is loading AND errored, and the
+    // retry's backoff must not read as a load still on its way.
     if ((!healthAsync.hasValue && !healthAsync.hasError) ||
         (!identityAsync.hasValue && !identityAsync.hasError)) {
       return popSafe(
-        Scaffold(
-          appBar: AppBar(leading: backToList, title: const Text('')),
-          body: const Center(child: CircularProgressIndicator()),
+        GoalPageState(
+          kind: GoalPageStateKind.loading,
+          onBack: () => beamToNamed(goalsRootPath),
         ),
       );
     }
@@ -350,31 +361,27 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     // goal were healthy. A background reload error with a retained
     // identity keeps the established page (the no-flash rule).
     final identity = identityAsync.value;
-    if ((identityAsync.hasError && !identityAsync.hasValue) ||
-        (identityAsync.hasValue &&
-            (identity is! AgentIdentityEntity ||
-                identity.kind != AgentKinds.goalAgent))) {
+    if (identityAsync.hasError && !identityAsync.hasValue) {
       return popSafe(
-        Scaffold(
-          appBar: AppBar(leading: backToList, title: const Text('')),
-          body: Center(
-            child: Padding(
-              padding: EdgeInsets.all(tokens.spacing.step5),
-              child: Text(
-                identityAsync.hasError && !identityAsync.hasValue
-                    ? context.messages.goalDetailHealthUnavailable
-                    : context.messages.goalDetailNotFound,
-                textAlign: TextAlign.center,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-              ),
-            ),
-          ),
+        GoalPageState(
+          kind: GoalPageStateKind.failed,
+          onBack: () => beamToNamed(goalsRootPath),
+          onRetry: () => ref
+            ..invalidate(agentIdentityProvider(agentId))
+            ..invalidate(goalAgentHealthProvider(agentId)),
         ),
       );
     }
-    final goalIdentity = identity! as AgentIdentityEntity;
+    if (identity is! AgentIdentityEntity ||
+        identity.kind != AgentKinds.goalAgent) {
+      return popSafe(
+        GoalPageState(
+          kind: GoalPageStateKind.notFound,
+          onBack: () => beamToNamed(goalsRootPath),
+        ),
+      );
+    }
+    final goalIdentity = identity;
     final isActive = goalIdentity.lifecycle == AgentLifecycle.active;
     final health = healthAsync.value;
     final spec = health?.spec;
@@ -673,13 +680,13 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             // check-ins card can be below the fold, so "say what is going on"
             // must not depend on scrolling to it.
             if (isActive)
-              IconButton(
+              DesignSystemIconAction(
                 key: const ValueKey('goal-detail-checkin-action'),
                 // The LIVE mic glyph, not `micIdle`: that token resolves to
                 // Lucide's slashed mic-off, which on an enabled action reads
                 // as "recording unavailable". This button starts a check-in
                 // recording; nothing about it is muted.
-                icon: const Icon(LottiIcons.mic),
+                icon: LottiIcons.mic,
                 tooltip: context.messages.goalCheckInRecordCta,
                 onPressed: openComposer,
               ),
