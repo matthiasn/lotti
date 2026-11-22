@@ -124,8 +124,8 @@ class _InlineRecorderState extends ConsumerState<InlineRecorder> {
     _controller = ref.read(audioRecorderControllerProvider.notifier);
     // After the first frame, not in initState: the recorder is a provider,
     // and a provider may not change while the tree is building.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(_start());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (mounted) await _start();
     });
   }
 
@@ -199,13 +199,10 @@ class _InlineRecorderState extends ConsumerState<InlineRecorder> {
     }
   }
 
-  void _togglePause(AudioRecorderStatus status) {
-    if (status == AudioRecorderStatus.paused) {
-      unawaited(_controller.resume());
-    } else {
-      unawaited(_controller.pause());
-    }
-  }
+  Future<void> _togglePause(AudioRecorderStatus status) =>
+      status == AudioRecorderStatus.paused
+      ? _controller.resume()
+      : _controller.pause();
 
   @override
   Widget build(BuildContext context) {

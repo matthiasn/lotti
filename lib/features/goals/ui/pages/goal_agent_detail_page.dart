@@ -614,13 +614,11 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             addLabel: context.messages.goalAddAction,
             addSemanticLabel: context.messages.goalAddMenuTitle,
             onSpeak: () => openComposer(GoalCheckInStart.speaking),
-            onAdd: () => unawaited(
-              _addToGoal(
-                spec: spec,
-                progress: progress,
-                assessments: assessments,
-                writeCheckIn: () => openComposer(GoalCheckInStart.writing),
-              ),
+            onAdd: () => _addToGoal(
+              spec: spec,
+              progress: progress,
+              assessments: assessments,
+              writeCheckIn: () => openComposer(GoalCheckInStart.writing),
             ),
           );
     // The dashboard column with the bar docked under it: its own Scaffold,

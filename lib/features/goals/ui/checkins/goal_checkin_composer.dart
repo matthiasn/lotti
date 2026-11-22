@@ -135,7 +135,7 @@ class GoalCheckInComposer extends ConsumerStatefulWidget {
       // The recorder hides the floating indicator while it is up; a sheet
       // gone mid-take must hand it back, for the take to be stopped there.
       // Only where a recorder exists: a written check-in never made one.
-      if (container.exists(audioRecorderControllerProvider)) {
+      if (container.read(audioRecorderControllerProvider.exists)) {
         container
             .read(audioRecorderControllerProvider.notifier)
             .setModalVisible(modalVisible: false);
