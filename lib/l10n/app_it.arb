@@ -7483,7 +7483,9 @@
   "taskCategoryAllLabel": "tutte",
   "taskCategoryLabel": "Categoria:",
   "taskCategoryUnassignedLabel": "non assegnata",
+  "taskDetailLoadFailed": "Impossibile caricare questa attività",
   "taskDetailNotFound": "Questa attività non esiste più",
+  "taskDetailRetry": "Riprova",
   "taskDueDateLabel": "Data di scadenza",
   "taskDueDateWithDate": "Scadenza: {date}",
   "@taskDueDateWithDate": {
@@ -7644,7 +7646,7 @@
   "tasksEmptyClearFilters": "Rimuovi i filtri",
   "tasksEmptyClearSearch": "Cancella la ricerca",
   "tasksEmptyFilterMiss": "Nessuna attività corrisponde a questi filtri",
-  "tasksEmptyNoTasks": "Ancora nessuna attività",
+  "tasksEmptyNoOpenTasks": "Nessuna attività aperta",
   "tasksEmptySearchMiss": "Nessun risultato per «{query}»",
   "@tasksEmptySearchMiss": {
     "placeholders": {

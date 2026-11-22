@@ -6833,7 +6833,9 @@
   "taskCategoryAllLabel": "tout",
   "taskCategoryLabel": "Catégorie :",
   "taskCategoryUnassignedLabel": "non attribué",
+  "taskDetailLoadFailed": "Impossible de charger cette tâche",
   "taskDetailNotFound": "Cette tâche n'existe plus",
+  "taskDetailRetry": "Réessayer",
   "taskDueDateLabel": "Date d'échéance",
   "taskDueDateWithDate": "Échéance : {date}",
   "@taskDueDateWithDate": {
@@ -6994,7 +6996,7 @@
   "tasksEmptyClearFilters": "Effacer les filtres",
   "tasksEmptyClearSearch": "Effacer la recherche",
   "tasksEmptyFilterMiss": "Aucune tâche ne correspond à ces filtres",
-  "tasksEmptyNoTasks": "Pas encore de tâches",
+  "tasksEmptyNoOpenTasks": "Aucune tâche ouverte",
   "tasksEmptySearchMiss": "Rien ne correspond à « {query} »",
   "@tasksEmptySearchMiss": {
     "placeholders": {

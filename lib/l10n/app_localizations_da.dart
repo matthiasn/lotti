@@ -17950,7 +17950,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'Ikke tildelt';
 
   @override
+  String get taskDetailLoadFailed => 'Opgaven kunne ikke indlæses';
+
+  @override
   String get taskDetailNotFound => 'Denne opgave findes ikke længere';
+
+  @override
+  String get taskDetailRetry => 'Prøv igen';
 
   @override
   String get taskDueDateLabel => 'Forfaldsdato';
@@ -18308,7 +18314,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get tasksEmptyFilterMiss => 'Ingen opgaver matcher disse filtre';
 
   @override
-  String get tasksEmptyNoTasks => 'Ingen opgaver endnu';
+  String get tasksEmptyNoOpenTasks => 'Ingen åbne opgaver';
 
   @override
   String tasksEmptySearchMiss(String query) {

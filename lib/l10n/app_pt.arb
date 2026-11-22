@@ -7482,7 +7482,9 @@
   "taskCategoryAllLabel": "tudo",
   "taskCategoryLabel": "Categoria:",
   "taskCategoryUnassignedLabel": "não atribuído",
+  "taskDetailLoadFailed": "Não foi possível carregar esta tarefa",
   "taskDetailNotFound": "Esta tarefa já não existe",
+  "taskDetailRetry": "Tentar novamente",
   "taskDueDateLabel": "Data de vencimento",
   "taskDueDateWithDate": "Vencimento: {date}",
   "@taskDueDateWithDate": {
@@ -7643,7 +7645,7 @@
   "tasksEmptyClearFilters": "Limpar filtros",
   "tasksEmptyClearSearch": "Limpar pesquisa",
   "tasksEmptyFilterMiss": "Nenhuma tarefa corresponde a estes filtros",
-  "tasksEmptyNoTasks": "Ainda não há tarefas",
+  "tasksEmptyNoOpenTasks": "Não há tarefas abertas",
   "tasksEmptySearchMiss": "Nada corresponde a «{query}»",
   "@tasksEmptySearchMiss": {
     "placeholders": {

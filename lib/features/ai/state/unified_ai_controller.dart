@@ -313,6 +313,12 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
             config.aiResponseType,
             linkedEntityId: linkedEntityId,
           );
+          // A failed run is over, as a finished one is: drop its active entry
+          // so the running band's tap cannot open a dead run's progress.
+          _clearActiveInference(
+            config.aiResponseType,
+            linkedEntityId: linkedEntityId,
+          );
         }
       } catch (_) {
         // Ignore errors when setting status

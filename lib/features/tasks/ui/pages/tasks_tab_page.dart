@@ -442,6 +442,13 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
     final liveFilter = liveTasksFilterFor(state);
     final activeFilterCount = taskFilterNarrowingClauseCount(liveFilter);
     final filtersActive = activeFilterCount > 0;
+    // With no categories at all the controller selects the Unassigned
+    // sentinel by itself; that is not a filter the user set, so an empty
+    // list there is an empty journal, not a filter miss.
+    final onlyAutoCategory =
+        activeFilterCount == 1 &&
+        setEquals(liveFilter.selectedCategoryIds, const {''}) &&
+        getIt<EntitiesCacheService>().sortedCategories.isEmpty;
     // Watched here (not only in the toggle widget) so flipping density
     // rebuilds every visible row.
     final compactList = ref.watch(taskListDensityControllerProvider);
@@ -664,7 +671,9 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                           ),
                                           child: TaskListEmptyState(
                                             query: state.match,
-                                            filtersActive: filtersActive,
+                                            filtersActive:
+                                                filtersActive &&
+                                                !onlyAutoCategory,
                                             pullRequestSearch:
                                                 pullRequestSearchRef(
                                                   state.match,

@@ -18301,7 +18301,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'neatribuit';
 
   @override
+  String get taskDetailLoadFailed => 'Această sarcină nu a putut fi încărcată';
+
+  @override
   String get taskDetailNotFound => 'Această sarcină nu mai există';
+
+  @override
+  String get taskDetailRetry => 'Încercați din nou';
 
   @override
   String get taskDueDateLabel => 'Data scadenței';
@@ -18661,7 +18667,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nicio sarcină nu corespunde acestor filtre';
 
   @override
-  String get tasksEmptyNoTasks => 'Nicio sarcină încă';
+  String get tasksEmptyNoOpenTasks => 'Nicio sarcină deschisă';
 
   @override
   String tasksEmptySearchMiss(String query) {

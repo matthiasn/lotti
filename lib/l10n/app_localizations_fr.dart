@@ -18250,7 +18250,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'non attribué';
 
   @override
+  String get taskDetailLoadFailed => 'Impossible de charger cette tâche';
+
+  @override
   String get taskDetailNotFound => 'Cette tâche n\'existe plus';
+
+  @override
+  String get taskDetailRetry => 'Réessayer';
 
   @override
   String get taskDueDateLabel => 'Date d\'échéance';
@@ -18609,7 +18615,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksEmptyFilterMiss => 'Aucune tâche ne correspond à ces filtres';
 
   @override
-  String get tasksEmptyNoTasks => 'Pas encore de tâches';
+  String get tasksEmptyNoOpenTasks => 'Aucune tâche ouverte';
 
   @override
   String tasksEmptySearchMiss(String query) {

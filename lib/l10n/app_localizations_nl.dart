@@ -18010,7 +18010,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'niet toegewezen';
 
   @override
+  String get taskDetailLoadFailed => 'Deze taak kon niet worden geladen';
+
+  @override
   String get taskDetailNotFound => 'Deze taak bestaat niet meer';
+
+  @override
+  String get taskDetailRetry => 'Opnieuw proberen';
 
   @override
   String get taskDueDateLabel => 'Vervaldatum';
@@ -18368,7 +18374,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksEmptyFilterMiss => 'Geen taken passen bij deze filters';
 
   @override
-  String get tasksEmptyNoTasks => 'Nog geen taken';
+  String get tasksEmptyNoOpenTasks => 'Geen open taken';
 
   @override
   String tasksEmptySearchMiss(String query) {

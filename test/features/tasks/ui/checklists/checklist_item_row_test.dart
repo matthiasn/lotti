@@ -115,6 +115,11 @@ class ChecklistControllerCallTracker {
   String? deletionKey = 'deletion-key';
   String? deletionBegunForItemId;
   Duration? deletionUndoWindow;
+
+  /// How many deletions were begun, and an optional gate that holds the
+  /// write open, so a test can swipe again while one is pending.
+  int deletionBegins = 0;
+  Completer<void>? deletionGate;
   ({String key, String itemId})? undoneDeletion;
   Object? droppedLocalData;
   int? droppedTargetIndex;
@@ -137,7 +142,9 @@ class FakeChecklistController extends ChecklistController {
   }) async {
     _tracker
       ?..deletionBegunForItemId = checklistItemId
-      ..deletionUndoWindow = undoWindow;
+      ..deletionUndoWindow = undoWindow
+      ..deletionBegins += 1;
+    await _tracker?.deletionGate?.future;
     return _tracker?.deletionKey;
   }
 
@@ -1025,6 +1032,35 @@ void main() {
         // window, and the deletion is never undone.
         await tester.pump(kChecklistDeleteDuration * 2);
         expect(tracker.undoneDeletion, isNull);
+      },
+    );
+
+    testWidgets(
+      'a second swipe while the first deletion is pending starts nothing',
+      (tester) async {
+        final ctrls = await _pumpWithControllers(tester);
+        final gate = Completer<void>();
+        final tracker = ctrls.checklistTracker..deletionGate = gate;
+        await tester.pump();
+
+        await swipeToDelete(tester);
+        // The delete band is gone while the first deletion is pending.
+        expect(
+          tester
+              .widget<DesignSystemSwipeActions>(
+                find.byType(DesignSystemSwipeActions),
+              )
+              .endToStart,
+          isNull,
+        );
+        await swipeToDelete(tester);
+        expect(tracker.deletionBegins, 1);
+
+        gate.complete();
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 200));
+        }
+        expect(find.text('Item deleted'), findsOneWidget);
       },
     );
 

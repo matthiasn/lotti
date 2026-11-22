@@ -11,9 +11,10 @@ import 'package:material_ui/material_ui.dart';
 /// What the task list says when it shows no task, and the way out of it.
 ///
 /// A search that found nothing names the search and offers to clear it; a
-/// filter that matched nothing offers to reset the filters; a list with
-/// nothing to narrow is genuinely empty and keeps the demo offer, which
-/// gates itself to a truly empty journal.
+/// filter that matched nothing offers to reset the filters; with nothing
+/// narrowing, the default open-work view is empty — "No open tasks", since
+/// closed tasks may still exist — and keeps the demo offer, which gates
+/// itself to a truly empty journal.
 class TaskListEmptyState extends StatelessWidget {
   const TaskListEmptyState({
     required this.query,
@@ -57,7 +58,7 @@ class TaskListEmptyState extends StatelessWidget {
               onPressed: onClearFilters,
             ),
           )
-        : (messages.tasksEmptyNoTasks, const DemoTryButton());
+        : (messages.tasksEmptyNoOpenTasks, const DemoTryButton());
 
     return DesignSystemEmptyState(
       icon: LottiIcons.list,

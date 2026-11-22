@@ -616,6 +616,37 @@ void main() {
       );
     });
 
+    testWidgets(
+      'a failed load says it failed — never that the task is gone — and '
+      'tries again',
+      (tester) async {
+        var reads = 0;
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async {
+          reads++;
+          throw StateError('database unavailable');
+        });
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: hTaskDetailsPageOverrides(),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text("Couldn't load this task"), findsOneWidget);
+        expect(find.text('This task no longer exists'), findsNothing);
+
+        await tester.tap(find.text('Try again'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(reads, 2);
+      },
+    );
+
     testWidgets('while the task loads, the page keeps its quiet shell', (
       tester,
     ) async {

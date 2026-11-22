@@ -18177,7 +18177,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'non assegnata';
 
   @override
+  String get taskDetailLoadFailed => 'Impossibile caricare questa attività';
+
+  @override
   String get taskDetailNotFound => 'Questa attività non esiste più';
+
+  @override
+  String get taskDetailRetry => 'Riprova';
 
   @override
   String get taskDueDateLabel => 'Data di scadenza';
@@ -18536,7 +18542,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessuna attività corrisponde a questi filtri';
 
   @override
-  String get tasksEmptyNoTasks => 'Ancora nessuna attività';
+  String get tasksEmptyNoOpenTasks => 'Nessuna attività aperta';
 
   @override
   String tasksEmptySearchMiss(String query) {

@@ -18086,7 +18086,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'Nicht zugewiesen';
 
   @override
+  String get taskDetailLoadFailed =>
+      'Diese Aufgabe konnte nicht geladen werden';
+
+  @override
   String get taskDetailNotFound => 'Diese Aufgabe gibt es nicht mehr';
+
+  @override
+  String get taskDetailRetry => 'Erneut versuchen';
 
   @override
   String get taskDueDateLabel => 'Fälligkeitsdatum';
@@ -18444,7 +18451,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksEmptyFilterMiss => 'Keine Aufgaben passen zu diesen Filtern';
 
   @override
-  String get tasksEmptyNoTasks => 'Noch keine Aufgaben';
+  String get tasksEmptyNoOpenTasks => 'Keine offenen Aufgaben';
 
   @override
   String tasksEmptySearchMiss(String query) {

@@ -2041,7 +2041,7 @@ void main() {
       },
     );
 
-    testWidgets('a list nothing narrows says there are no tasks yet', (
+    testWidgets('a list nothing narrows says there are no open tasks', (
       tester,
     ) async {
       await pumpEmpty(
@@ -2056,11 +2056,36 @@ void main() {
         tester
             .widget<DesignSystemEmptyState>(find.byType(DesignSystemEmptyState))
             .title,
-        'No tasks yet',
+        'No open tasks',
       );
       expect(find.text('Clear filters'), findsNothing);
       expect(find.text('Clear search'), findsNothing);
     });
+
+    testWidgets(
+      'with no categories at all, the self-selected Unassigned category is '
+      'not a filter: a fresh install sees no open tasks, not a filter miss',
+      (tester) async {
+        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+        await pumpEmpty(
+          tester,
+          pageState: state(
+            selectedCategoryIds: const {''},
+            selectedTaskStatuses: defaultSelectedTaskStatuses,
+          ),
+        );
+
+        expect(
+          tester
+              .widget<DesignSystemEmptyState>(
+                find.byType(DesignSystemEmptyState),
+              )
+              .title,
+          'No open tasks',
+        );
+        expect(find.text('Clear filters'), findsNothing);
+      },
+    );
 
     testWidgets('a filter miss offers to reset the filters, search untouched', (
       tester,

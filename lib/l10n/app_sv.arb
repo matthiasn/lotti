@@ -7483,7 +7483,9 @@
   "taskCategoryAllLabel": "alla",
   "taskCategoryLabel": "Kategori:",
   "taskCategoryUnassignedLabel": "ej tilldelad",
+  "taskDetailLoadFailed": "Uppgiften kunde inte läsas in",
   "taskDetailNotFound": "Den här uppgiften finns inte längre",
+  "taskDetailRetry": "Försök igen",
   "taskDueDateLabel": "Förfallodatum",
   "taskDueDateWithDate": "Förfaller: {date}",
   "@taskDueDateWithDate": {
@@ -7644,7 +7646,7 @@
   "tasksEmptyClearFilters": "Rensa filter",
   "tasksEmptyClearSearch": "Rensa sökning",
   "tasksEmptyFilterMiss": "Inga uppgifter matchar de här filtren",
-  "tasksEmptyNoTasks": "Inga uppgifter än",
+  "tasksEmptyNoOpenTasks": "Inga öppna uppgifter",
   "tasksEmptySearchMiss": "Inget matchar ”{query}”",
   "@tasksEmptySearchMiss": {
     "placeholders": {

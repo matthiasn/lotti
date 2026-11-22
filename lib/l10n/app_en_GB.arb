@@ -5,6 +5,8 @@
   "agentsPageEmpty": "No goal agents yet. Create one and it will quietly watch your progress.",
   "agentsPageTitle": "Goal Agents",
   "agentSummaryBackfillAudioSummary": "Summarise the recording from {date} in task context",
+  "aiRunningAnalyzingImage": "Analysing image",
+  "aiRunningSummarizingRecording": "Summarising recording",
   "aiSetupWizardCreatesOptimized": "Creates optimised models, prompts, and a test category",
   "categoryAutomaticInferenceDescription": "Transcribe new audio, analyse new images and summarise pull requests in this category automatically",
   "categoryCreationError": "Failed to create category. Please try again.",

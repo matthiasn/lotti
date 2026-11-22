@@ -191,8 +191,11 @@ stateDiagram-v2
 **An empty list says why, and how to get out.** `TaskListEmptyState`
 (`widgets/task_list_states.dart`) picks by cause: a search that found nothing
 names the search and offers *Clear search*; a filter miss offers *Clear
-filters* (the same reset as the chip row's *Clear all*, search untouched); a
-list nothing narrows is genuinely empty and keeps the demo offer. Loading is the
+filters* (the same reset as the chip row's *Clear all*, search untouched); with
+nothing narrowing it says *No open tasks* — the default view hides closed
+tasks, so not "no tasks" — and keeps the demo offer. The Unassigned category the
+controller selects by itself when no categories exist does not count as a
+filter here, so a fresh install gets the demo offer. Loading is the
 design-system spinner (`TaskListSpinner`), and a page that failed to load shows
 `TaskListErrorState` with *Try again* instead of the pagination package's
 default.

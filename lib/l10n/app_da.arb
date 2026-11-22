@@ -7483,7 +7483,9 @@
   "taskCategoryAllLabel": "Alle",
   "taskCategoryLabel": "Kategori:",
   "taskCategoryUnassignedLabel": "Ikke tildelt",
+  "taskDetailLoadFailed": "Opgaven kunne ikke indlæses",
   "taskDetailNotFound": "Denne opgave findes ikke længere",
+  "taskDetailRetry": "Prøv igen",
   "taskDueDateLabel": "Forfaldsdato",
   "taskDueDateWithDate": "To: {date}",
   "@taskDueDateWithDate": {
@@ -7644,7 +7646,7 @@
   "tasksEmptyClearFilters": "Ryd filtre",
   "tasksEmptyClearSearch": "Ryd søgning",
   "tasksEmptyFilterMiss": "Ingen opgaver matcher disse filtre",
-  "tasksEmptyNoTasks": "Ingen opgaver endnu",
+  "tasksEmptyNoOpenTasks": "Ingen åbne opgaver",
   "tasksEmptySearchMiss": "Intet matcher »{query}«",
   "@tasksEmptySearchMiss": {
     "placeholders": {

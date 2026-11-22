@@ -6833,7 +6833,9 @@
   "taskCategoryAllLabel": "toate",
   "taskCategoryLabel": "Categorie:",
   "taskCategoryUnassignedLabel": "neatribuit",
+  "taskDetailLoadFailed": "Această sarcină nu a putut fi încărcată",
   "taskDetailNotFound": "Această sarcină nu mai există",
+  "taskDetailRetry": "Încercați din nou",
   "taskDueDateLabel": "Data scadenței",
   "taskDueDateWithDate": "Scadent: {date}",
   "@taskDueDateWithDate": {
@@ -6994,7 +6996,7 @@
   "tasksEmptyClearFilters": "Ștergeți filtrele",
   "tasksEmptyClearSearch": "Ștergeți căutarea",
   "tasksEmptyFilterMiss": "Nicio sarcină nu corespunde acestor filtre",
-  "tasksEmptyNoTasks": "Nicio sarcină încă",
+  "tasksEmptyNoOpenTasks": "Nicio sarcină deschisă",
   "tasksEmptySearchMiss": "Nimic nu corespunde cu „{query}”",
   "@tasksEmptySearchMiss": {
     "placeholders": {

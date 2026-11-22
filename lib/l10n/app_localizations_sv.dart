@@ -17976,7 +17976,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'ej tilldelad';
 
   @override
+  String get taskDetailLoadFailed => 'Uppgiften kunde inte läsas in';
+
+  @override
   String get taskDetailNotFound => 'Den här uppgiften finns inte längre';
+
+  @override
+  String get taskDetailRetry => 'Försök igen';
 
   @override
   String get taskDueDateLabel => 'Förfallodatum';
@@ -18334,7 +18340,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksEmptyFilterMiss => 'Inga uppgifter matchar de här filtren';
 
   @override
-  String get tasksEmptyNoTasks => 'Inga uppgifter än';
+  String get tasksEmptyNoOpenTasks => 'Inga öppna uppgifter';
 
   @override
   String tasksEmptySearchMiss(String query) {

@@ -72,12 +72,12 @@ void main() {
       expect(cleared, isEmpty);
     });
 
-    testWidgets('nothing narrowing: no tasks yet, no clear action', (
+    testWidgets('nothing narrowing: no open tasks, no clear action', (
       tester,
     ) async {
       await pump(tester);
 
-      expect(title(tester), 'No tasks yet');
+      expect(title(tester), 'No open tasks');
       expect(find.text('Clear filters'), findsNothing);
       expect(find.text('Clear search'), findsNothing);
     });

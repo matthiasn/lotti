@@ -8,6 +8,7 @@ import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
+import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
@@ -505,6 +506,19 @@ void main() {
           fireImmediately: true,
         );
 
+        // Watched through the run: set while it runs, gone once it failed —
+        // or the running band's tap could open a dead run's progress.
+        final activeStates = <bool>[];
+        final activeSubscription = testContainer.listen(
+          activeInferenceControllerProvider((
+            entityId: 'test-entity',
+            // ignore: deprecated_member_use_from_same_package
+            aiResponseType: AiResponseType.taskSummary,
+          )),
+          (previous, next) => activeStates.add(next != null),
+          fireImmediately: true,
+        );
+
         // Trigger inference explicitly since it no longer runs automatically
         testContainer.read(
           triggerNewInferenceProvider((
@@ -516,6 +530,10 @@ void main() {
 
         // Drive async execution
         async.flushMicrotasks();
+
+        expect(activeStates, contains(true));
+        expect(activeStates.last, isFalse);
+        activeSubscription.close();
 
         // Verify error handling
         verify(

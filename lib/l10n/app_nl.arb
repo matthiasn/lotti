@@ -7482,7 +7482,9 @@
   "taskCategoryAllLabel": "alle",
   "taskCategoryLabel": "Categorie:",
   "taskCategoryUnassignedLabel": "niet toegewezen",
+  "taskDetailLoadFailed": "Deze taak kon niet worden geladen",
   "taskDetailNotFound": "Deze taak bestaat niet meer",
+  "taskDetailRetry": "Opnieuw proberen",
   "taskDueDateLabel": "Vervaldatum",
   "taskDueDateWithDate": "Verloopdatum: {date}",
   "@taskDueDateWithDate": {
@@ -7643,7 +7645,7 @@
   "tasksEmptyClearFilters": "Filters wissen",
   "tasksEmptyClearSearch": "Zoekopdracht wissen",
   "tasksEmptyFilterMiss": "Geen taken passen bij deze filters",
-  "tasksEmptyNoTasks": "Nog geen taken",
+  "tasksEmptyNoOpenTasks": "Geen open taken",
   "tasksEmptySearchMiss": "Niets komt overeen met ‘{query}’",
   "@tasksEmptySearchMiss": {
     "placeholders": {

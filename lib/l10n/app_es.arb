@@ -6833,7 +6833,9 @@
   "taskCategoryAllLabel": "todos",
   "taskCategoryLabel": "Categoría:",
   "taskCategoryUnassignedLabel": "sin asignar",
+  "taskDetailLoadFailed": "No se pudo cargar esta tarea",
   "taskDetailNotFound": "Esta tarea ya no existe",
+  "taskDetailRetry": "Reintentar",
   "taskDueDateLabel": "Fecha de vencimiento",
   "taskDueDateWithDate": "Vence: {date}",
   "@taskDueDateWithDate": {
@@ -6994,7 +6996,7 @@
   "tasksEmptyClearFilters": "Quitar filtros",
   "tasksEmptyClearSearch": "Borrar búsqueda",
   "tasksEmptyFilterMiss": "Ninguna tarea coincide con estos filtros",
-  "tasksEmptyNoTasks": "Aún no hay tareas",
+  "tasksEmptyNoOpenTasks": "No hay tareas abiertas",
   "tasksEmptySearchMiss": "Nada coincide con «{query}»",
   "@tasksEmptySearchMiss": {
     "placeholders": {

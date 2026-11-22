@@ -17849,7 +17849,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'Unassigned';
 
   @override
+  String get taskDetailLoadFailed => 'Couldn\'t load this task';
+
+  @override
   String get taskDetailNotFound => 'This task no longer exists';
+
+  @override
+  String get taskDetailRetry => 'Try again';
 
   @override
   String get taskDueDateLabel => 'Due date';
@@ -18206,7 +18212,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksEmptyFilterMiss => 'No tasks match these filters';
 
   @override
-  String get tasksEmptyNoTasks => 'No tasks yet';
+  String get tasksEmptyNoOpenTasks => 'No open tasks';
 
   @override
   String tasksEmptySearchMiss(String query) {
@@ -18783,6 +18789,12 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String agentSummaryBackfillAudioSummary(Object date) {
     return 'Summarise the recording from $date in task context';
   }
+
+  @override
+  String get aiRunningAnalyzingImage => 'Analysing image';
+
+  @override
+  String get aiRunningSummarizingRecording => 'Summarising recording';
 
   @override
   String get aiSetupWizardCreatesOptimized =>

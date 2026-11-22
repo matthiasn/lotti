@@ -40,6 +40,11 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     with TickerProviderStateMixin {
   bool _isEditing = false;
+
+  /// A delete swipe has started and its deletion is not recorded yet. The
+  /// row snaps back while the write runs, so without this a second swipe
+  /// would start a second deletion whose timer outlives the first Undo.
+  bool _deletionPending = false;
   bool _showRow = true;
   Timer? _holdTimer;
 
@@ -653,6 +658,8 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
       }
 
       Future<void> deleteWithUndo() async {
+        if (_deletionPending) return;
+        setState(() => _deletionPending = true);
         // Capture the message strings from `context` BEFORE the await:
         // `beginItemDeletion` removes this row from the checklist's items,
         // which unmounts the row and invalidates `context`. The
@@ -667,7 +674,10 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
           widget.itemId,
           undoWindow: kChecklistDeleteDuration,
         );
-        if (key == null) return;
+        if (key == null) {
+          if (mounted) setState(() => _deletionPending = false);
+          return;
+        }
 
         messenger.showDesignSystemToast(
           tone: DesignSystemToastTone.warning,
@@ -705,13 +715,15 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
               : context.messages.checklistItemSwipeArchive,
           onTrigger: toggleArchive,
         ),
-        endToStart: DesignSystemSwipeAction(
-          color: colors.alert.error.defaultColor,
-          foregroundColor: colors.text.onInteractiveAlert,
-          icon: LottiIcons.delete,
-          label: context.messages.checklistItemSwipeDelete,
-          onTrigger: () async => deleteWithUndo(),
-        ),
+        endToStart: _deletionPending
+            ? null
+            : DesignSystemSwipeAction(
+                color: colors.alert.error.defaultColor,
+                foregroundColor: colors.text.onInteractiveAlert,
+                icon: LottiIcons.delete,
+                label: context.messages.checklistItemSwipeDelete,
+                onTrigger: () async => deleteWithUndo(),
+              ),
         child: rowContent,
       );
 

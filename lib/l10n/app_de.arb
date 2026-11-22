@@ -6833,7 +6833,9 @@
   "taskCategoryAllLabel": "Alle",
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "Nicht zugewiesen",
+  "taskDetailLoadFailed": "Diese Aufgabe konnte nicht geladen werden",
   "taskDetailNotFound": "Diese Aufgabe gibt es nicht mehr",
+  "taskDetailRetry": "Erneut versuchen",
   "taskDueDateLabel": "Fälligkeitsdatum",
   "taskDueDateWithDate": "Fällig: {date}",
   "@taskDueDateWithDate": {
@@ -6994,7 +6996,7 @@
   "tasksEmptyClearFilters": "Filter zurücksetzen",
   "tasksEmptyClearSearch": "Suche löschen",
   "tasksEmptyFilterMiss": "Keine Aufgaben passen zu diesen Filtern",
-  "tasksEmptyNoTasks": "Noch keine Aufgaben",
+  "tasksEmptyNoOpenTasks": "Keine offenen Aufgaben",
   "tasksEmptySearchMiss": "Nichts passt zu „{query}“",
   "@tasksEmptySearchMiss": {
     "placeholders": {

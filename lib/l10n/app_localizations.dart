@@ -29753,11 +29753,23 @@ abstract class AppLocalizations {
   /// **'Unassigned'**
   String get taskCategoryUnassignedLabel;
 
+  /// Task page state when loading the task failed (not when it was deleted).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this task'**
+  String get taskDetailLoadFailed;
+
   /// Task page title when the task it was opened for no longer exists.
   ///
   /// In en, this message translates to:
   /// **'This task no longer exists'**
   String get taskDetailNotFound;
+
+  /// Action on the task page's load-failed state.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get taskDetailRetry;
 
   /// No description provided for @taskDueDateLabel.
   ///
@@ -30371,11 +30383,11 @@ abstract class AppLocalizations {
   /// **'No tasks match these filters'**
   String get tasksEmptyFilterMiss;
 
-  /// Task list empty state when there are no tasks at all.
+  /// Task list empty state when nothing narrows the default open-work view and it is empty.
   ///
   /// In en, this message translates to:
-  /// **'No tasks yet'**
-  String get tasksEmptyNoTasks;
+  /// **'No open tasks'**
+  String get tasksEmptyNoOpenTasks;
 
   /// Task list empty state when a search matches no task; {query} is the typed search.
   ///

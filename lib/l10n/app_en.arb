@@ -11473,9 +11473,17 @@
   "taskCategoryAllLabel": "all",
   "taskCategoryLabel": "Category:",
   "taskCategoryUnassignedLabel": "Unassigned",
+  "taskDetailLoadFailed": "Couldn't load this task",
+  "@taskDetailLoadFailed": {
+    "description": "Task page state when loading the task failed (not when it was deleted)."
+  },
   "taskDetailNotFound": "This task no longer exists",
   "@taskDetailNotFound": {
     "description": "Task page title when the task it was opened for no longer exists."
+  },
+  "taskDetailRetry": "Try again",
+  "@taskDetailRetry": {
+    "description": "Action on the task page's load-failed state."
   },
   "taskDueDateLabel": "Due date",
   "taskDueDateWithDate": "Due: {date}",
@@ -11698,9 +11706,9 @@
   "@tasksEmptyFilterMiss": {
     "description": "Task list empty state when the active filters match no task."
   },
-  "tasksEmptyNoTasks": "No tasks yet",
-  "@tasksEmptyNoTasks": {
-    "description": "Task list empty state when there are no tasks at all."
+  "tasksEmptyNoOpenTasks": "No open tasks",
+  "@tasksEmptyNoOpenTasks": {
+    "description": "Task list empty state when nothing narrows the default open-work view and it is empty."
   },
   "tasksEmptySearchMiss": "Nothing matches “{query}”",
   "@tasksEmptySearchMiss": {

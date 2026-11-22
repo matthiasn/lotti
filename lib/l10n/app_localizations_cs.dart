@@ -18180,7 +18180,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskCategoryUnassignedLabel => 'nepřiřazeno';
 
   @override
+  String get taskDetailLoadFailed => 'Tento úkol se nepodařilo načíst';
+
+  @override
   String get taskDetailNotFound => 'Tento úkol už neexistuje';
+
+  @override
+  String get taskDetailRetry => 'Zkusit znovu';
 
   @override
   String get taskDueDateLabel => 'Datum splnění';
@@ -18540,7 +18546,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksEmptyFilterMiss => 'Těmto filtrům neodpovídá žádný úkol';
 
   @override
-  String get tasksEmptyNoTasks => 'Zatím žádné úkoly';
+  String get tasksEmptyNoOpenTasks => 'Žádné otevřené úkoly';
 
   @override
   String tasksEmptySearchMiss(String query) {
