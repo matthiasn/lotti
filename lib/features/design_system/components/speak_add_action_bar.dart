@@ -9,7 +9,9 @@ import 'package:material_ui/material_ui.dart';
 /// everything else.
 ///
 /// * **Speak** — the filled pill, and the app's mic: one tap and the page's
-///   recorder is listening.
+///   recorder is listening. While a take for this page's subject is running
+///   ([recordingLabel]) the pill wears the recording red and says so, and
+///   the same tap goes back to that take.
 /// * **+ Add** — the create menu, labelled and under its own glyph, never a
 ///   second `⋯`: the page's `⋯` already means "manage this".
 ///
@@ -24,12 +26,19 @@ class DesignSystemSpeakAddBar extends StatelessWidget {
     required this.addSemanticLabel,
     required this.onSpeak,
     required this.onAdd,
+    this.recordingLabel,
     this.speakKey,
     this.addKey,
     super.key,
   });
 
   final String speakLabel;
+
+  /// Non-null while a take for this page's subject is recording or paused:
+  /// what the Speak pill reads then, on the recording red. The page may be
+  /// the only place that shows it — a sheet dismissed mid-take leaves the
+  /// take running, and on a phone nothing else on this screen says so.
+  final String? recordingLabel;
   final String addLabel;
 
   /// The + control's accessible name: what it adds to, in words.
@@ -72,9 +81,13 @@ class DesignSystemSpeakAddBar extends StatelessWidget {
               children: [
                 DsGlassPill(
                   key: speakKey,
-                  label: speakLabel,
+                  label: recordingLabel ?? speakLabel,
                   icon: LottiIcons.mic,
-                  fillColor: tokens.colors.interactive.enabled,
+                  // The recorder's own red while a take is live, as a
+                  // task's mic wears it.
+                  fillColor: recordingLabel == null
+                      ? tokens.colors.interactive.enabled
+                      : tokens.colors.alert.error.defaultColor,
                   foregroundColor: tokens.colors.text.onInteractiveAlert,
                   onTap: onSpeak,
                 ),

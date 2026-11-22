@@ -1,8 +1,9 @@
 /// Deterministic design-review captures of the goal agent's page, framed on
 /// its hero "Agent's read" card: a goal at risk with a stale report, at phone
-/// and desktop widths, dark and light, with the companion on and off — and a
-/// journaling goal whose structured report answers what the user said, and
-/// that goal's full check-in history.
+/// and desktop widths, dark and light, with the companion on and off — a
+/// journaling goal whose structured report answers what the user said, that
+/// goal's full check-in history, and the page while a check-in take is still
+/// running behind it.
 ///
 /// PNGs are written to `LOTTI_SCREENSHOT_DIR`, or
 /// `screenshots/goal_agent_detail` when only `LOTTI_CAPTURE_SCREENSHOTS=true`
@@ -16,6 +17,7 @@
 library;
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -43,6 +45,7 @@ import 'package:lotti/features/goals/ui/pages/goal_timeline_page.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -57,6 +60,7 @@ import '../../../agents/test_data/entity_factories.dart';
 import '../../../companion/companion_overrides.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
 import '../../../habits/test_utils.dart';
+import '../../../relationships/helpers/check_in_speech_fakes.dart';
 import '../../../tts/test_utils.dart';
 
 const _subdir = 'goal_agent_detail';
@@ -202,6 +206,7 @@ Future<void> _capture(
   bool menuOpen = false,
   bool loadFailed = false,
   bool history = false,
+  bool takeRunning = false,
 }) async {
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pump();
@@ -331,12 +336,26 @@ Future<void> _capture(
             goalCheckInsLoadProvider(
               _agentId,
             ).overrideWithValue(GoalCheckInsLoad.settled),
+            // A check-in sheet dismissed mid-take: the take runs on.
+            if (takeRunning) ...[
+              goalEntryIdProvider(_agentId).overrideWithValue('goal-row-1'),
+              audioRecorderControllerProvider.overrideWith(
+                () => FakeAudioRecorderController(runningFor: 'goal-row-1'),
+              ),
+            ],
           ],
         ),
       ),
     );
     // She never settles: pump frames by hand.
     await settleFrames(tester, 20);
+    if (takeRunning) {
+      // The recorder exists once something has opened it, as the sheet did.
+      ProviderScope.containerOf(
+        tester.element(find.byType(GoalAgentDetailPage)),
+      ).read(audioRecorderControllerProvider);
+      await settleFrames(tester, 20);
+    }
   });
   if (menuOpen) {
     // The overflow menu every agent surface shares with the person page.
@@ -351,6 +370,8 @@ Future<void> _capture(
         ? 'load_failed_${device.name}_$theme'
         : history
         ? 'check_in_history_${device.name}_$theme'
+        : takeRunning
+        ? 'take_running_${device.name}_$theme'
         : journal
         ? 'journal_report_${device.name}_$theme'
         : menuOpen
@@ -415,6 +436,15 @@ void main() {
           companion: false,
           journal: true,
           history: true,
+        );
+      });
+      testWidgets('${device.name} take running $theme', (tester) async {
+        await _capture(
+          tester,
+          device: device,
+          brightness: brightness,
+          companion: false,
+          takeRunning: true,
         );
       });
       testWidgets('${device.name} journal report $theme', (tester) async {

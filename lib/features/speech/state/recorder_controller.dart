@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/audio_player_state.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
@@ -35,6 +36,27 @@ final audioRecorderControllerProvider =
     NotifierProvider<AudioRecorderController, AudioRecorderState>(
       AudioRecorderController.new,
       name: 'audioRecorderControllerProvider',
+    );
+
+/// Whether a take linked to the subject with this id is recording or
+/// paused.
+///
+/// For a page that shows it — a goal's or a person's *Speak* pill turning to
+/// the recording red — without standing the recorder up just to ask: a
+/// recorder nobody has built is not recording. On a phone those pages slide
+/// the navigation bar and its recording indicator away, so the pill is the
+/// only sign on the screen that a take is still running.
+final ProviderFamily<bool, String> subjectTakeLiveProvider = Provider
+    .autoDispose
+    .family<bool, String>(
+      (ref, subjectId) =>
+          ref.watch(audioRecorderControllerProvider.exists) &&
+          ref.watch(
+            audioRecorderControllerProvider.select(
+              (state) => state.isActiveSessionFor(subjectId),
+            ),
+          ),
+      name: 'subjectTakeLiveProvider',
     );
 
 class AudioRecorderController extends Notifier<AudioRecorderState> {

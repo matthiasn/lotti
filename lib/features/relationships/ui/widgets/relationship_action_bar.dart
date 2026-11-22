@@ -25,8 +25,13 @@ class RelationshipActionBar extends StatelessWidget {
     required this.onSpeak,
     required this.onAdd,
     required this.personName,
+    this.recording = false,
     super.key,
   });
+
+  /// Whether a take about this person is recording or paused: the Speak
+  /// pill then says so, in the recording red.
+  final bool recording;
 
   final VoidCallback onSpeak;
   final VoidCallback onAdd;
@@ -43,6 +48,7 @@ class RelationshipActionBar extends StatelessWidget {
       speakLabel: messages.relationshipSpeak,
       addLabel: messages.relationshipAddAction,
       addSemanticLabel: messages.relationshipAddToTimeline(personName),
+      recordingLabel: recording ? messages.checkInStatusRecording : null,
       onSpeak: onSpeak,
       onAdd: onAdd,
     );

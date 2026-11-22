@@ -11,6 +11,7 @@ void main() {
     WidgetTester tester, {
     VoidCallback? onSpeak,
     VoidCallback? onAdd,
+    String? recordingLabel,
   }) => tester.pumpWidget(
     makeTestableWidgetNoScroll(
       Scaffold(
@@ -21,6 +22,7 @@ void main() {
           speakLabel: 'Speak',
           addLabel: 'Add',
           addSemanticLabel: 'Add to this goal',
+          recordingLabel: recordingLabel,
           onSpeak: onSpeak ?? () {},
           onAdd: onAdd ?? () {},
         ),
@@ -51,6 +53,26 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('speak')));
     await tester.tap(find.byKey(const ValueKey('add')));
     expect((speaks, adds), (1, 1));
+  });
+
+  testWidgets("while this subject's take is running the pill says so in "
+      'the recording red, and the same tap goes back to it', (tester) async {
+    var speaks = 0;
+    await pump(tester, onSpeak: () => speaks++, recordingLabel: 'Recording');
+    final tokens = tester
+        .element(find.byKey(const ValueKey('speak')))
+        .designTokens;
+
+    final speak = tester.widget<DsGlassPill>(
+      find.byKey(const ValueKey('speak')),
+    );
+    expect(speak.label, 'Recording');
+    expect(speak.icon, LottiIcons.mic);
+    expect(speak.fillColor, tokens.colors.alert.error.defaultColor);
+    expect(find.text('Speak'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('speak')));
+    expect(speaks, 1);
   });
 
   testWidgets('the + control says what it adds to, and that name reaches '
