@@ -291,3 +291,14 @@ PeopleSummary peopleSummaryOf(
     mostOverdue: mostOverdue,
   );
 }
+
+/// Whether [person] answers a search for [query]: by name or by the nickname
+/// the user calls them, ignoring case. A blank query matches everyone. The
+/// People list's search and the person picker share it, so a name found in
+/// one is found in the other.
+bool personMatchesQuery(RelationshipEntry person, String query) {
+  final q = query.trim().toLowerCase();
+  return q.isEmpty ||
+      person.data.title.toLowerCase().contains(q) ||
+      (person.data.nickname?.toLowerCase().contains(q) ?? false);
+}

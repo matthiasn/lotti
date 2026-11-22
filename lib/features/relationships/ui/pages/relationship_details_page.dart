@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -36,6 +39,7 @@ import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.
 import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_sheet.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -201,21 +205,55 @@ class _RelationshipDetailsPageState
     final detail = detailAsync.value;
 
     if (detail == null) {
-      // Resolved-null means the person is gone (deleted here or on another
-      // device) — that is not an error, so say so instead of alarming.
-      final body = detailAsync.isLoading
-          ? const DesignSystemSpinner()
-          : Text(
-              detailAsync.hasError
-                  ? context.messages.commonError
-                  : context.messages.relationshipNotFound,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            );
+      // The error is checked first: while Riverpod retries a failed read the
+      // state is loading *and* errored, and the retry's backoff must not
+      // read as a load still on its way (the editor's rule). Resolved-null
+      // means the person is gone — deleted here or on another device — which
+      // is not an error, so it says so instead of alarming.
+      final messages = context.messages;
+      final Widget body;
+      if (detailAsync.hasError) {
+        body = DesignSystemEmptyState(
+          key: const ValueKey('person-page-load-failed'),
+          icon: LottiIcons.warning,
+          title: messages.relationshipPageLoadFailed,
+          action: DesignSystemButton(
+            key: const ValueKey('person-page-retry'),
+            label: messages.relationshipTryAgain,
+            variant: DesignSystemButtonVariant.secondary,
+            onPressed: () => ref.invalidate(
+              relationshipDetailControllerProvider(relationshipId),
+            ),
+          ),
+        );
+      } else if (detailAsync.isLoading) {
+        body = DesignSystemSpinner(semanticsLabel: messages.commonLoading);
+      } else {
+        body = DesignSystemEmptyState(
+          key: const ValueKey('person-page-not-found'),
+          icon: LottiIcons.people,
+          title: messages.relationshipNotFound,
+        );
+      }
       return Scaffold(
-        appBar: AppBar(),
-        body: Center(child: body),
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(tokens.spacing.step3),
+                // The chevron the person hero and a check-in lead back with.
+                child: DesignSystemIconAction(
+                  key: const ValueKey('person-page-state-back'),
+                  icon: LottiIcons.chevronLeft,
+                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  onPressed: () => _back(context),
+                ),
+              ),
+              Expanded(child: Center(child: body)),
+            ],
+          ),
+        ),
       );
     }
 
@@ -250,6 +288,9 @@ class _RelationshipDetailsPageState
         ? isEnrolled(relationship)
         : usableRelationshipAgent(identity) != null;
     final personName = relationship.shortName;
+    // The timeline's Upcoming / Today / This week, the cadence pill and the
+    // Today / Yesterday dates turn over at midnight with no write to say so.
+    ref.watch(taskDueDayProvider);
     final now = clock.now();
     final upcoming = buildPersonTimeline(
       now: now,

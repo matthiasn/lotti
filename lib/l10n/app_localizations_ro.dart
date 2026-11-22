@@ -14933,6 +14933,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipNotFound => 'Această persoană nu mai este urmărită.';
 
   @override
+  String get relationshipPageLoadFailed =>
+      'Pagina acestei persoane nu s-a încărcat.';
+
+  @override
   String get relationshipPayAttentionTo => 'Fiți atent la';
 
   @override
@@ -15081,6 +15085,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipsGroupDue => 'Scadente';
 
   @override
+  String get relationshipsLoadFailed =>
+      'Persoanele dumneavoastră nu s-au încărcat.';
+
+  @override
   String get relationshipSortThis => 'Sortați';
 
   @override
@@ -15088,6 +15096,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipSpeak => 'Vorbiți';
+
+  @override
+  String relationshipsSearchNoMatch(String query) {
+    return 'Nicio persoană nu se potrivește cu „$query”';
+  }
 
   @override
   String get relationshipsSelectPersonHint =>
@@ -15172,6 +15185,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipTimelineFilterAll => 'Toate';
 
   @override
+  String get relationshipTimelineFilterEmpty =>
+      'Încă nu există nimic pentru acest filtru.';
+
+  @override
   String get relationshipTimelineFilterMeetings => 'Întâlniri';
 
   @override
@@ -15193,6 +15210,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String relationshipTimelineRowLabel(String kind, String time, String text) {
     return '$kind, $time. $text';
   }
+
+  @override
+  String get relationshipTimelineShowAll => 'Afișați tot';
 
   @override
   String get relationshipTimelineTask => 'Sarcină';
@@ -15227,6 +15247,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipTimestampYesterday => 'Ieri';
+
+  @override
+  String get relationshipTryAgain => 'Încercați din nou';
 
   @override
   String get relationshipTurnOnReminders => 'Activați mementourile';

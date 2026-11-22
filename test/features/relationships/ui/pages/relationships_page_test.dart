@@ -32,6 +32,7 @@ import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart
 import 'package:lotti/features/relationships/ui/widgets/person_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -184,7 +185,8 @@ void main() {
     expect(find.byIcon(LottiIcons.add), findsNothing);
   });
 
-  testWidgets('shows the error text when the first load fails', (tester) async {
+  testWidgets('a failed first load says the list did not load and offers '
+      'Try again — never the empty tab', (tester) async {
     when(
       () => mockRepository.getRelationshipsByRecency(),
     ).thenThrow(Exception('db gone'));
@@ -192,28 +194,112 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
-    expect(find.text('Error'), findsOneWidget);
+    expect(find.byKey(const ValueKey('people-load-failed')), findsOneWidget);
+    expect(find.text("Your people didn't load."), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
     expect(
       find.text('Add the people you want to stay close to.'),
       findsNothing,
     );
+    // No search over a list that is not there.
+    expect(find.byKey(const ValueKey('people-search')), findsNothing);
   });
 
-  testWidgets('shows the error text when the first load fails', (
-    tester,
-  ) async {
-    when(
-      () => mockRepository.getRelationshipsByRecency(),
-    ).thenThrow(Exception('db gone'));
+  testWidgets('Try again reads the list again, and the rows replace the '
+      'failure', (tester) async {
+    // Every read fails — Riverpod's own retries included — until the
+    // database is back; only then does Try again have something to find.
+    var databaseBack = false;
+    when(() => mockRepository.getRelationshipsByRecency()).thenAnswer((
+      _,
+    ) async {
+      if (!databaseBack) throw Exception('db gone');
+      return [item('rel-1', title: 'Anna')];
+    });
 
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('people-load-failed')), findsOneWidget);
 
-    expect(find.text('Error'), findsOneWidget);
-    expect(
-      find.text('Add the people you want to stay close to.'),
-      findsNothing,
+    databaseBack = true;
+    await tester.tap(find.byKey(const ValueKey('people-load-retry')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('people-load-failed')), findsNothing);
+    expect(_rowNamed('Anna'), findsOneWidget);
+  });
+
+  testWidgets('the list turns over at midnight: due today becomes a day '
+      'overdue with no write announcing it', (tester) async {
+    // Weekly, last spoken a week ago this morning: due today.
+    final morning = DateTime(2026, 8, 13, 10);
+    var today = morning;
+    when(() => mockRepository.getRelationshipsByRecency()).thenAnswer(
+      (_) async => [
+        item(
+          'rel-1',
+          title: 'Anna',
+          important: true,
+          cadenceDays: 7,
+          lastCheckInAt: DateTime(2026, 8, 6, 9),
+        ),
+      ],
     );
+
+    await withClock(Clock(() => today), () async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+      expect(find.text('Due today'), findsOneWidget);
+
+      // Midnight passes: only the day provider re-emits.
+      today = morning.add(const Duration(days: 1));
+      ProviderScope.containerOf(
+        tester.element(find.byType(RelationshipsPage)),
+      ).invalidate(taskDueDayProvider);
+      await tester.pump();
+    });
+
+    expect(find.text('Due today'), findsNothing);
+    expect(find.text('1 day overdue'), findsOneWidget);
+  });
+
+  testWidgets('searching keeps the matching people, a miss offers Clear '
+      'search, and either clear brings everyone back', (tester) async {
+    when(() => mockRepository.getRelationshipsByRecency()).thenAnswer(
+      (_) async => [
+        item('rel-1', title: 'Anna'),
+        item('rel-2', title: 'Ben'),
+      ],
+    );
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    final field = find.descendant(
+      of: find.byKey(const ValueKey('people-search')),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(field, 'ann');
+    await tester.pumpAndSettle();
+    expect(_rowNamed('Anna'), findsOneWidget);
+    expect(_rowNamed('Ben'), findsNothing);
+
+    await tester.enterText(field, 'walrus');
+    await tester.pumpAndSettle();
+    expect(find.text('Nobody matches “walrus”'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('people-search-clear')));
+    await tester.pumpAndSettle();
+    expect(_rowNamed('Anna'), findsOneWidget);
+    expect(_rowNamed('Ben'), findsOneWidget);
+    expect(tester.widget<TextField>(field).controller!.text, isEmpty);
+
+    // The field's own clear button does the same.
+    await tester.enterText(field, 'ben');
+    await tester.pumpAndSettle();
+    expect(_rowNamed('Anna'), findsNothing);
+    await tester.tap(find.byIcon(LottiIcons.closeCircled));
+    await tester.pumpAndSettle();
+    expect(_rowNamed('Anna'), findsOneWidget);
   });
 
   testWidgets(
@@ -660,6 +746,12 @@ void main() {
       reason: 'the heading reads `Not enrolled · 2`; no row repeats it',
     );
 
+    // Every row on screen at once, so their order can be read off: the
+    // list is lazy and builds only what is visible.
+    tester.view.physicalSize = const Size(800, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpAndSettle();
     double y(String name) => tester.getCenter(_rowNamed(name)).dy;
     expect(y('Anna'), lessThan(y('Ben')));
     expect(y('Ben'), lessThan(y('Cara')));
@@ -737,7 +829,7 @@ void main() {
     // The band heading carries the state; the row does not repeat it.
     expect(find.text('No reminders · 1'), findsOneWidget);
     expect(find.text('No reminders'), findsNothing);
-    expect(find.byType(PeopleCadencePillWidget), findsNothing);
+    expect(find.byKey(const ValueKey('people-row-state')), findsNothing);
     expect(find.text('On track'), findsNothing);
     expect(find.byType(PeopleSummaryCard), findsOneWidget);
   });
@@ -994,12 +1086,14 @@ void main() {
         ),
         findsWidgets,
       );
-      final selectedRow = tester.widget<PeopleListRow>(
-        find.byKey(const ValueKey('people-row-rel-anna')),
+      PeopleListRow rowIn(String key) => tester.widget<PeopleListRow>(
+        find.descendant(
+          of: find.byKey(ValueKey(key)),
+          matching: find.byType(PeopleListRow),
+        ),
       );
-      final otherRow = tester.widget<PeopleListRow>(
-        find.byKey(const ValueKey('people-row-rel-ben')),
-      );
+      final selectedRow = rowIn('people-row-rel-anna');
+      final otherRow = rowIn('people-row-rel-ben');
       expect(selectedRow.selected, isTrue);
       expect(otherRow.selected, isFalse);
     });

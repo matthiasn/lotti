@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
@@ -10,19 +8,16 @@ import 'package:lotti/features/design_system/components/spinners/design_system_s
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
-import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
-import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/pages/contact_import_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
-import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
-import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/people_list_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_sheet.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -179,16 +174,41 @@ class _PersonDetailPaneState extends State<_PersonDetailPane> {
   }
 }
 
-/// The list itself: header, summary card, then the rows in their bands.
-class _PeopleListScaffold extends ConsumerWidget {
+/// The list itself: the header with its search, then the summary card and
+/// the rows in their bands ([PeopleListSliver]).
+class _PeopleListScaffold extends ConsumerStatefulWidget {
   const _PeopleListScaffold({required this.selectedRelationshipId});
 
   /// The person whose page fills the desktop detail pane; null on phones.
   final String? selectedRelationshipId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PeopleListScaffold> createState() =>
+      _PeopleListScaffoldState();
+}
+
+class _PeopleListScaffoldState extends ConsumerState<_PeopleListScaffold> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() => _query = '');
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // Bands, the due states and Today/Yesterday depend on the date as well
+    // as the data: at midnight someone due today becomes overdue without a
+    // write announcing it, so the list rebuilds when the day turns.
+    ref.watch(taskDueDayProvider);
     final itemsAsync = ref.watch(relationshipsListControllerProvider);
     // Never flash the established list during a background reload — keep the
     // previous value while the refetch runs.
@@ -216,7 +236,16 @@ class _PeopleListScaffold extends ConsumerWidget {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: _PeopleHeader(itemCount: items?.length)),
+            SliverToBoxAdapter(
+              child: PeopleListHeader(
+                itemCount: items?.length,
+                searchController: _searchController,
+                onQueryChanged: (query) => setState(() => _query = query),
+                onImport: ref.read(contactsServiceProvider).isSupported
+                    ? () => _openContactImport(context)
+                    : null,
+              ),
+            ),
             SliverPadding(
               // The last row must clear the overlaid bottom navigation and,
               // where one floats, the add button's own footprint (step12).
@@ -229,15 +258,20 @@ class _PeopleListScaffold extends ConsumerWidget {
                     (launcherOwnsCreateAction ? 0 : tokens.spacing.step12),
               ),
               sliver: switch (items) {
-                null when failedFirstLoad => SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
-                    child: Text(
-                      context.messages.commonError,
-                      textAlign: TextAlign.center,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
+                // A first load that failed says so and offers the read
+                // again; a failed background reload keeps the rows instead.
+                null when failedFirstLoad => SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: DesignSystemEmptyState(
+                    key: const ValueKey('people-load-failed'),
+                    icon: LottiIcons.warning,
+                    title: context.messages.relationshipsLoadFailed,
+                    action: DesignSystemButton(
+                      key: const ValueKey('people-load-retry'),
+                      label: context.messages.relationshipTryAgain,
+                      variant: DesignSystemButtonVariant.secondary,
+                      onPressed: () =>
+                          ref.invalidate(relationshipsListControllerProvider),
                     ),
                   ),
                 ),
@@ -255,151 +289,21 @@ class _PeopleListScaffold extends ConsumerWidget {
                   hasScrollBody: false,
                   child: _EmptyState(),
                 ),
-                final list => _PeopleList(
+                final list => PeopleListSliver(
                   items: list,
-                  selectedRelationshipId: selectedRelationshipId,
+                  query: _query,
+                  selectedRelationshipId: widget.selectedRelationshipId,
+                  onOpen: (id) => beamToNamed('/people/$id'),
+                  onSpeak: (item) => showPersonCaptureSheet(
+                    context: context,
+                    person: item.relationship,
+                  ),
+                  onClearSearch: _clearSearch,
                 ),
               },
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// The summary card and the banded rows, as one sliver list.
-class _PeopleList extends ConsumerWidget {
-  const _PeopleList({
-    required this.items,
-    required this.selectedRelationshipId,
-  });
-
-  final List<RelationshipListItem> items;
-  final String? selectedRelationshipId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
-    final sections = peopleListSections(items);
-    final children = <Widget>[
-      PeopleSummaryCard(
-        summary: peopleSummaryOf(items),
-        onOpenNextDue: (id) => beamToNamed('/people/$id'),
-      ),
-      for (final section in sections) ...[
-        Padding(
-          // No horizontal inset of its own: the band heading hangs on the
-          // page's content rail with the title above it, and the row's
-          // internal step4 is the row card's inset, not a second gutter.
-          // The break *above* a band has to beat the gaps inside it, or
-          // three bands read as one list with captions in it.
-          padding: EdgeInsets.fromLTRB(
-            0,
-            tokens.spacing.sectionGap,
-            0,
-            tokens.spacing.step2,
-          ),
-          child: _GroupHeading(
-            group: section.group,
-            count: section.items.length,
-          ),
-        ),
-        for (final item in section.items)
-          PeopleListRow(
-            key: ValueKey('people-row-${item.relationship.id}'),
-            item: item,
-            selected: item.relationship.id == selectedRelationshipId,
-            onTap: () => beamToNamed('/people/${item.relationship.id}'),
-            // Straight to speaking about them, without opening the page.
-            onLongPress: () => showPersonCaptureSheet(
-              context: context,
-              person: item.relationship,
-            ),
-          ),
-      ],
-    ];
-    return SliverList(delegate: SliverChildListDelegate(children));
-  }
-}
-
-/// A band's caption: `Due · 1`, `On track · 3`, `Not enrolled · 1`.
-class _GroupHeading extends StatelessWidget {
-  const _GroupHeading({required this.group, required this.count});
-
-  final PeopleListGroup group;
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final label = switch (group) {
-      PeopleListGroup.due => messages.relationshipsGroupDue,
-      PeopleListGroup.onTrack => messages.relationshipCadenceOnTrack,
-      PeopleListGroup.notEnrolled => messages.relationshipNotEnrolled,
-    };
-    return Text(
-      '$label · $count',
-      key: ValueKey('people-group-${group.name}'),
-      // The organising label of the list must not share a tier with the
-      // row metadata it organises: `calmEyebrowStyle` is the design
-      // system's structural voice for exactly this.
-      style: calmEyebrowStyle(tokens),
-    );
-  }
-}
-
-/// The left-aligned `People` title with a count caption and the
-/// import-from-contacts door, which exists only where there is an address
-/// book (ADR 0041 §2).
-///
-/// Adding a person is not up here: like adding a task, it is the page's
-/// bottom action — the floating button on desktop, the launcher's docked
-/// chip on phones.
-class _PeopleHeader extends ConsumerWidget {
-  const _PeopleHeader({required this.itemCount});
-
-  final int? itemCount;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        tokens.spacing.step5,
-        tokens.spacing.step5,
-        tokens.spacing.step5,
-        tokens.spacing.step3,
-      ),
-      child: Row(
-        children: [
-          Text(
-            messages.relationshipsPageTitle,
-            style: calmPageTitleStyle(tokens),
-          ),
-          if (itemCount != null) ...[
-            SizedBox(width: tokens.spacing.step2),
-            Text(
-              '· $itemCount',
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            ),
-          ],
-          const Spacer(),
-          if (ref.read(contactsServiceProvider).isSupported)
-            // The design system's icon action: a full-size touch target
-            // and a spoken label around the glyph, which a bare padded
-            // InkWell gave neither of.
-            DesignSystemIconAction(
-              icon: LottiIcons.contactImport,
-              tooltip: messages.relationshipImportAction,
-              onPressed: () => _openContactImport(context),
-            ),
-        ],
       ),
     );
   }

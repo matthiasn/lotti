@@ -91,7 +91,7 @@ sources:
   - id: list-model
     resource: ../../lib/features/relationships/ui/model/people_list_model.dart
     title: The People list's bands, pills and summary — pure logic
-    last_modified: 2026-09-06
+    last_modified: 2026-11-22
   - id: capture-sheet
     resource: ../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart
     title: The check-in composer, its form handle and pinned actions
@@ -248,8 +248,9 @@ types, and the full-text index carries a check-in's note, its topics and its
 device for its own user, so hiding them protected nothing; the `private`
 flag a check-in inherits from its person hides it in search as in the feed.
 Check-ins are not embedded — vector search resolves its hits to tasks only.
-A person is still not a Logbook type, so a name alone is not a search term.
-The People list itself is short by design and needs no local search.
+A person is still not a Logbook type, so a name alone is not a search term:
+the People list has its own search for that (see *The People list and the
+desktop split*).
 
 # Bound twice, on purpose
 
@@ -618,20 +619,63 @@ order-invariance, band⇔pill agreement, summary⇔bands agreement). The widgets
 row's status line composes the interaction label, the timestamp and the
 cadence label, and never "Tracking since …".
 
-**The row draws a pill only when it says something the band heading has
-not.** `peopleCadencePillRestatesBand` suppresses the `onTrack` and
+**The row has the task row's two tiers** (DESIGN.md *People Row*): the
+name in Subtitle 1 on a line of its own, wrapping to two lines rather than
+truncating — the one string on the row a reader cannot reconstruct from
+anything else on it — and one caption line under it. That line opens with
+the person's state **only when it says something the band heading has
+not**: `peopleCadencePillRestatesBand` suppresses the `onTrack` and
 `notEnrolled` faces, because each occurs in exactly one band and repeats its
-heading word for word; `overdue`, `dueSoon`, `dormant` and `archived` carry a
-time or a status no heading does, so they stay. The reclaimed width goes to
-the name, which wraps to two lines rather than truncating — the one string on
-the row a reader cannot reconstruct from anything else on it. No marker
-sits beside the name: the band the row is in already says whether reminders
-are on. A long press on a row opens *Speak about Pip* already recording
-(`showPersonCaptureSheet`, see *Speak your mind*). The overdue pill carries
-a leading `LottiIcons.warning` in `alert.warning.ink`: on the dark ground its
-tint alone read as an inert brown beside the neutral chip, and the glyph is
-the same one the briefing card's out-of-date line uses, so "needs attention"
-is drawn one way across the feature.
+heading word for word, while `overdue`, `dueSoon`, `dormant` and `archived`
+carry a time or a status no heading does. The status line follows. The state
+used to be a tag on the name's line, where it took the name's width — on a
+phone *Commander Pip Frostbeak* wrapped beside *5 days overdue* — so it is
+now a glyph and a word, the way a task row carries its status and due date
+(People V2, 2026-11-22). Overdue keeps `LottiIcons.warning`, now with its
+word, in `alert.warning.ink`: the same ink the timeline's overdue task line
+uses, so "needs attention" is drawn one way across the feature. The state
+and the status line sit in a `Wrap`: when they do not share a line the
+status line takes the next one whole, and at `TextScales.large` it may take
+two. No marker sits beside the name: the band the row is in already says
+whether reminders are on. A long press on a row opens *Speak about Pip*
+already recording (`showPersonCaptureSheet`, see *Speak your mind*).
+
+**The row is a `GroupedCardRowSurface`, and each band is one rows card.**
+The surface gives the shared hover and focus fill, `selected` on the row
+whose page fills the desktop detail pane, and one button node, whose label
+is the name, the state and the status line in one sentence
+(`MergeSemantics` over the surface, the long press and that label). In the
+split the row also takes the `AppCommandScope` expand handler task and
+project rows have: it opens the person and moves focus into the page. The
+card is `DsRowsCard`'s surface — `background.level02`, `radii.l`, a
+`DesignSystemDivider` between rows, no border — drawn one row at a time by
+`PeopleRowsCardSegment`
+([`people_list_view.dart`](../../lib/features/relationships/ui/widgets/people_list_view.dart)):
+the first row takes the top corners, the last the bottom ones. That keeps
+the list lazy. `PeopleListSliver` builds the summary card, the band headings
+and the rows as keyed slots of one `SliverList.builder` with a
+`findChildIndexCallback`, so an imported address book of hundreds builds only
+the rows on screen, and a person who changes band keeps their row's element.
+
+**Search keeps its full width.** `PeopleListHeader` is the title row (title,
+count, contact-import door) over a `DesignSystemSearch` that spans the pane,
+shown once there is at least one person. It is not `TabSectionHeader`, which
+sets a filter button beside its field: nothing narrows a search field, and
+People has no filters. A query matches the name or the nickname, ignoring
+case (`personMatchesQuery`, which the person picker shares). While it holds
+one, each band keeps only its matches and the summary card steps aside,
+since its counts describe everyone; a query that matches nobody shows
+*Nobody matches “walrus”* with *Clear search*.
+
+**The list turns over at midnight.** Bands, the due state and
+Today/Yesterday are functions of the date as well as the data, and nothing
+writes at midnight to say someone due today is now overdue. The list (and
+the person page) watch `taskDueDayProvider`, the timer to the next local
+midnight the task list uses, and rebuild when the day turns.
+
+**A first load that failed says so.** With no list yet and an error, the
+page shows *Your people didn't load.* and *Try again*, which invalidates the
+list provider; a failed background reload keeps the rows it has.
 
 **Each band orders by what that band is about** (`_orderWithin`): *Due* by
 the longest lapse, *On track* by the nearest deadline, *Not enrolled* by
@@ -703,8 +747,8 @@ included: the empty state adds no second one. It does say what the tab is
 for in one sentence, and where an address book exists it offers contact import
 in words — the header's door is a glyph (`DesignSystemIconAction`, so it has a
 full touch target and a spoken label) whose only name is a tooltip a phone
-never shows. Both doors go through `_openContactImport`. The header keeps only
-the title, the count and that door.
+never shows. Both doors go through `_openContactImport`. The header keeps the
+title, the count, that door and the search field under them.
 
 Both doors beam to `/people/new`, the person editor page. A save there beams
 to `/people/<id>` of the person it created, the way the task list opens the
@@ -829,7 +873,7 @@ sequenceDiagram
 | Header block | `PersonHeaderBlock` (same file) | Category · name · one-liner — the category a selector ([`CategoryCrumb`](../../lib/features/categories/ui/widgets/category_crumb.dart), the one the goal page carries too: its icon, name and a down chevron on a touch-height target, *Set category* when there is none) that opens the shared `showCategoryPicker`, moves the person through `EntryCategoryMove` as the editor does, and confirms *Moved to …* with an Undo — then one row of actions: [`PersonContactRow`](../../lib/features/relationships/ui/widgets/person_contact_row.dart) — Call, Message, Email as dense labelled buttons, a call always confirming first — with `personHeaderPills` flowing after them: the cadence fact, [`PersonRemindersPill`](../../lib/features/relationships/ui/widgets/person_reminders_pill.dart) and the next due day. A lapsed cadence shows its overdue pill whether or not a meeting is booked — the list says it either way, and one rule serves both; here the pill is also the way out, a trailing chevron saying so: a tap opens the meeting sheet (`onPlanMeeting`). A person without reminders shows none, the offer card says it once. |
 | Callouts | `PostInteractionPrompt`, the paused-reminder callout | Where the user lands coming back from a call. |
 | Before you talk | [`PersonBriefCard`](../../lib/features/relationships/ui/widgets/person_brief_card.dart), `RelationshipBriefingCard`, [`PersonAboutSection`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | One card with one thing that leads: the note to bring up, from the newest check-in that has notes (`PersonBriefCard.sourceOf`), set as a `heading3` headline; what to avoid under it in the quiet ink, marked by its glyph rather than a second label; a link into that check-in; and on a phone the next meeting as a row that opens it. With a meeting booked the label over the headline names its day — *Bring up before Sun 18 Oct* — on every width, rail included. Then the agent's briefing, then what the user pinned *About* the person. On a phone, when the user's notes lead, the briefing's calm faces (current, writing) fold to their header row (`RelationshipBriefingCard.folded`) and *About* to its heading — each opening in place — so the timeline starts on the first screen; a face that asks something is never folded. A wide pane shows the first three *About* notes, the rest behind `personDisclosure`. |
-| Timeline | [`PersonTimelineSliver`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | The heading, the filter pills once there is enough to filter, then each section's rows on [`DesignSystemTimelineRow`](../../lib/features/design_system/components/timeline/design_system_timeline_row.dart): a tile on a continuous rail, the meta line (when · what · how long) shedding segments from the end on a narrow width, the words capped at the prose measure, and for a check-in a caption line of how it felt and its topics. A task row unlinks on a long press. Lazily built: the history grows without bound. |
+| Timeline | [`PersonTimelineSliver`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | The heading, the filter pills once there is enough to filter (a filter that matches nothing says *Nothing under this filter yet.* with *Show all*, never a blank space), then each section's rows on [`DesignSystemTimelineRow`](../../lib/features/design_system/components/timeline/design_system_timeline_row.dart): a tile on a continuous rail, the meta line (when · what · how long) shedding segments from the end on a narrow width, the words capped at the prose measure, and for a check-in a caption line of how it felt and its topics. A task row unlinks on a long press. Lazily built: the history grows without bound. |
 | Bar | [`RelationshipActionBar`](../../lib/features/relationships/ui/widgets/relationship_action_bar.dart) | *Speak* (filled: opens *Speak about Pip* recording, see *Speak your mind*) and *+ Add*, whose [menu](../../lib/features/relationships/ui/widgets/person_create_menu.dart) offers a check-in, a meeting, a note, a task and photos, each naming the person. A meeting is planned in [its own sheet](../../lib/features/relationships/ui/widgets/person_meeting_sheet.dart): a title prefilled *Meet {name}*, then when and how long as the composer's own fact tags (`FactTag`) — tomorrow at the next full hour for an hour until changed — each opening its picker (`pickMeetingStart`, which looks ahead from today and moves a time already past to the next full hour, and the check-in duration picker). While the meeting is being written the sheet holds — Cancel off, and a `PopScope` the modal's close respects — so it never closes on a write that then lands anyway. |
 
 On a pane at least `kDesktopBreakpoint` wide the page splits: the hero, header
@@ -842,6 +886,16 @@ Every section and the bar sit on `detailContentInsets`, measured with a
 `LayoutBuilder` because on the split the detail pane is narrower than the
 window. The timeline sliver is outdented by its rows' own inset, so a row's
 tile sits on the page's text edge and its hover fill reaches into the gutter.
+
+With no detail to show, the page says which state it is in, under its own
+back control: *This person's page didn't load.* with *Try again* when the
+read failed, *This person is no longer tracked.* when it resolved to no one,
+and a spinner only while a first read is on its way. The error is checked
+before loading, as the editor does: while Riverpod retries a failed read the
+state is loading *and* errored, and the retry's backoff must not read as a
+load still coming. The page also watches `taskDueDayProvider`, so the
+timeline's sections, the cadence pill and Today/Yesterday turn over at
+midnight.
 
 The page reloads on every write that touches the person — a check-in alone
 writes the check-in, moves each recording into it, lands the transcript and

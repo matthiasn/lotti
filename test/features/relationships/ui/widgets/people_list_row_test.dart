@@ -3,8 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
@@ -12,7 +16,9 @@ import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.d
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/themes/theme_text_styles.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/test_app.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -208,21 +214,44 @@ void main() {
     expect(taps, 1);
   });
 
-  group('the pill tells the truth about the cadence', () {
-    testWidgets('lapsed: days overdue, warning-tinted — never "Due Sun"', (
-      tester,
-    ) async {
+  group('the state tells the truth about the cadence', () {
+    testWidgets('lapsed: days overdue behind the warning glyph, in the '
+        'warning ink, on the caption line — never "Due Sun"', (tester) async {
       // Weekly, last contact 3 Aug 09:00 → due 10 Aug → 3 days overdue on the 13th.
       await pump(tester, item(lastCheckInAt: DateTime(2026, 8, 3, 9)));
 
       expect(find.text('3 days overdue'), findsOneWidget);
       expect(find.textContaining('Due '), findsNothing);
-      final pill = tester.widget<DsPill>(
-        find.byKey(const ValueKey('people-row-pill-overdue')),
-      );
+      final state = find.byKey(const ValueKey('people-row-overdue'));
       final tokens = tester.element(find.byType(PeopleListRow)).designTokens;
-      expect(pill.variant, DsPillVariant.tinted);
-      expect(pill.color, tokens.colors.alert.warning.defaultColor);
+      final ink = tokens.colors.alert.warning.ink;
+      expect(
+        tester
+            .widget<Icon>(
+              find.descendant(of: state, matching: find.byType(Icon)),
+            )
+            .color,
+        ink,
+      );
+      expect(
+        tester
+            .widget<Text>(
+              find.descendant(of: state, matching: find.byType(Text)),
+            )
+            .style
+            ?.color,
+        ink,
+      );
+      // Off the name's line: the state sits below the name, not beside it,
+      // so the name keeps the row's full width.
+      expect(
+        tester.getTopLeft(state).dy,
+        greaterThan(
+          tester
+              .getBottomLeft(find.byKey(const ValueKey('people-row-name')))
+              .dy,
+        ),
+      );
     });
 
     testWidgets('due within the week: the weekday', (tester) async {
@@ -241,15 +270,15 @@ void main() {
       // The row sits under an `On track` heading; a pill repeating the word
       // spends the width the name needs to say nothing new.
       expect(find.text('On track'), findsNothing);
-      expect(find.byType(PeopleCadencePillWidget), findsNothing);
+      expect(find.byKey(const ValueKey('people-row-state')), findsNothing);
     });
 
-    testWidgets('due today says so, in the warning tint', (tester) async {
+    testWidgets('due today says so, in the warning ink', (tester) async {
       // Weekly, last contact a week ago this morning → due today.
       await pump(tester, item(lastCheckInAt: DateTime(2026, 8, 6, 9)));
       expect(find.text('Due today'), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('people-row-pill-overdue')),
+        find.byKey(const ValueKey('people-row-overdue')),
         findsOneWidget,
       );
     });
@@ -267,7 +296,7 @@ void main() {
           find.text('Call · Mon 3 Aug 09:00 · Monthly', findRichText: true),
           findsOneWidget,
         );
-        expect(find.byType(PeopleCadencePillWidget), findsNothing);
+        expect(find.byKey(const ValueKey('people-row-state')), findsNothing);
       },
     );
 
@@ -281,7 +310,7 @@ void main() {
       // Under the `Not enrolled` heading the pill would be the same two
       // words again, so the row drops it.
       expect(find.text('No reminders'), findsNothing);
-      expect(find.byType(PeopleCadencePillWidget), findsNothing);
+      expect(find.byKey(const ValueKey('people-row-state')), findsNothing);
       expect(find.textContaining('days overdue'), findsNothing);
       // The stored setting is still what the line names.
       expect(
@@ -325,19 +354,164 @@ void main() {
   });
 
   testWidgets('the selected row wears the selected wash; an unselected one '
-      'sits on the page surface', (tester) async {
+      'paints nothing of its own over the card', (tester) async {
     await pump(tester, item(), selected: true);
     final tokens = tester.element(find.byType(PeopleListRow)).designTokens;
-    Material material() => tester.widget<Material>(
-      find.descendant(
-        of: find.byType(PeopleListRow),
-        matching: find.byType(Material),
+    Finder wash(Color color) => find.descendant(
+      of: find.byType(GroupedCardRowSurface),
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is DecoratedBox &&
+            (widget.decoration as BoxDecoration).color == color,
       ),
     );
-    expect(material().color, tokens.colors.surface.selected);
+    expect(wash(tokens.colors.surface.selected), findsOneWidget);
 
     await pump(tester, item());
-    expect(material().color, tokens.colors.background.level01);
+    expect(wash(tokens.colors.surface.selected), findsNothing);
+  });
+
+  testWidgets('the name leads in the row-title tier, Subtitle 1', (
+    tester,
+  ) async {
+    await pump(tester, item());
+    final tokens = tester.element(find.byType(PeopleListRow)).designTokens;
+    final style = tester
+        .widget<Text>(find.byKey(const ValueKey('people-row-name')))
+        .style!;
+    expect(
+      style.fontSize,
+      tokens.typography.styles.subtitle.subtitle1.fontSize,
+    );
+    expect(
+      style.fontWeight,
+      tokens.typography.styles.subtitle.subtitle1.fontWeight,
+    );
+  });
+
+  testWidgets('assistive tech meets the row as one button: the name, the '
+      'state and the status line in one sentence, selected, tap and hold', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await pump(
+      tester,
+      item(lastCheckInAt: DateTime(2026, 8, 3, 9)),
+      selected: true,
+      onLongPress: () {},
+    );
+
+    expect(
+      tester.getSemantics(find.byType(GroupedCardRowSurface)),
+      matchesSemantics(
+        label: 'Anna, 3 days overdue, Call · Mon 3 Aug 09:00 · Weekly',
+        isButton: true,
+        isSelected: true,
+        hasSelectedState: true,
+        hasTapAction: true,
+        hasLongPressAction: true,
+        isFocusable: true,
+        hasFocusAction: true,
+      ),
+    );
+    handle.dispose();
+  });
+
+  testWidgets('at large text the status line takes a second line instead '
+      'of ending in an ellipsis', (tester) async {
+    int statusMaxLines() => tester
+        .widget<RelationshipLineWithDate>(
+          find.byKey(const ValueKey('people-row-status')),
+        )
+        .maxLines!;
+    await pump(tester, item(lastCheckInAt: DateTime(2026, 8, 3, 9)));
+    expect(statusMaxLines(), 1);
+
+    tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await pump(tester, item(lastCheckInAt: DateTime(2026, 8, 3, 9)));
+    expect(statusMaxLines(), 2);
+  });
+
+  testWidgets('in the desktop split the expand command opens the person and '
+      'moves focus into their page, as on a task or project row', (
+    tester,
+  ) async {
+    var taps = 0;
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          ListDetailFocusTraversal(
+            debugLabel: 'people-test-split',
+            listPane: SizedBox(
+              width: 320,
+              child: PeopleListRow(item: item(), onTap: () => taps++),
+            ),
+            divider: const SizedBox(width: 3),
+            detailPane: TextButton(
+              onPressed: () {},
+              child: const Text('Detail action'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    final scope = tester.widget<AppCommandScope>(find.byType(AppCommandScope));
+    await scope.handlers[AppCommandId.expand]!.invoke(
+      AppCommandInvocation(
+        context: tester.element(find.text('Anna')),
+        snapshot: _Snapshot(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(taps, 1);
+    // Focus left the list for the detail pane's first control.
+    final focused = FocusManager.instance.primaryFocus?.context;
+    expect(focused, isNotNull);
+    expect(
+      focused!.findAncestorWidgetOfExactType<TextButton>(),
+      isNotNull,
+      reason: 'focus moved into the detail pane',
+    );
+  });
+
+  testWidgets('outside a split the row carries no expand command', (
+    tester,
+  ) async {
+    await pump(tester, item());
+    expect(find.byType(AppCommandScope), findsNothing);
+  });
+
+  testWidgets('a long state at large text in a narrow pane wraps beside its '
+      'glyph instead of running past the row', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SizedBox(
+            width: 150,
+            child: PeopleListRow(
+              item: item(lastCheckInAt: DateTime(2026, 8, 3, 9)),
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    expect(tester.takeException(), isNull);
+    final state = tester.getRect(
+      find.byKey(const ValueKey('people-row-overdue')),
+    );
+    expect(
+      state.right,
+      lessThanOrEqualTo(tester.getRect(find.byType(PeopleListRow)).right),
+    );
   });
 
   testWidgets('tapping anywhere on the row fires onTap', (tester) async {
@@ -396,3 +570,5 @@ Map<String, TextStyle?> _spanStyles(WidgetTester tester) {
       });
   return fonts;
 }
+
+class _Snapshot extends Mock implements AppCommandContextSnapshot {}

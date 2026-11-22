@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
+import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -54,13 +55,10 @@ class PersonPickerSheet extends ConsumerWidget {
         item.relationship,
     ]..sort((a, b) => _name(a).toLowerCase().compareTo(_name(b).toLowerCase()));
 
-    List<PickerItem> entries(String query) {
-      final q = query.trim().toLowerCase();
-      return [
-        for (final person in people)
-          if (q.isEmpty || _matches(person, q)) _item(person),
-      ];
-    }
+    List<PickerItem> entries(String query) => [
+      for (final person in people)
+        if (personMatchesQuery(person, query)) _item(person),
+    ];
 
     return EntityPickerSheet(
       mode: PickerMode.multi,
@@ -72,11 +70,6 @@ class PersonPickerSheet extends ConsumerWidget {
   }
 
   static String _name(RelationshipEntry person) => person.data.title;
-
-  /// A person matches by name or by the nickname the user calls them.
-  static bool _matches(RelationshipEntry person, String query) =>
-      person.data.title.toLowerCase().contains(query) ||
-      (person.data.nickname?.toLowerCase().contains(query) ?? false);
 
   static PickerItem _item(RelationshipEntry person) {
     final data = person.data;

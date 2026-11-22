@@ -14837,6 +14837,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipNotFound => 'Esta persona ya no está en tu lista.';
 
   @override
+  String get relationshipPageLoadFailed =>
+      'La página de esta persona no se cargó.';
+
+  @override
   String get relationshipPayAttentionTo => 'Prestar atención a';
 
   @override
@@ -14984,6 +14988,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipsGroupDue => 'Pendientes';
 
   @override
+  String get relationshipsLoadFailed => 'Tus personas no se cargaron.';
+
+  @override
   String get relationshipSortThis => 'Ordenar';
 
   @override
@@ -14991,6 +14998,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get relationshipSpeak => 'Hablar';
+
+  @override
+  String relationshipsSearchNoMatch(String query) {
+    return 'Nadie coincide con «$query»';
+  }
 
   @override
   String get relationshipsSelectPersonHint =>
@@ -15074,6 +15086,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipTimelineFilterAll => 'Todo';
 
   @override
+  String get relationshipTimelineFilterEmpty =>
+      'Todavía no hay nada con este filtro.';
+
+  @override
   String get relationshipTimelineFilterMeetings => 'Reuniones';
 
   @override
@@ -15095,6 +15111,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String relationshipTimelineRowLabel(String kind, String time, String text) {
     return '$kind, $time. $text';
   }
+
+  @override
+  String get relationshipTimelineShowAll => 'Mostrar todo';
 
   @override
   String get relationshipTimelineTask => 'Tarea';
@@ -15129,6 +15148,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get relationshipTimestampYesterday => 'Ayer';
+
+  @override
+  String get relationshipTryAgain => 'Inténtalo de nuevo';
 
   @override
   String get relationshipTurnOnReminders => 'Activar recordatorios';

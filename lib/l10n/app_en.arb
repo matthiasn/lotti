@@ -9640,6 +9640,10 @@
     }
   },
   "relationshipNotFound": "This person is no longer tracked.",
+  "relationshipPageLoadFailed": "This person's page didn't load.",
+  "@relationshipPageLoadFailed": {
+    "description": "Person page: reading the person failed."
+  },
   "relationshipPayAttentionTo": "Pay attention to",
   "relationshipPhotoAddBanner": "Add banner",
   "relationshipPhotoAdjustCrop": "Adjust crop",
@@ -9779,6 +9783,10 @@
   },
   "relationshipsEmptyState": "Add the people you want to stay close to.",
   "relationshipsGroupDue": "Due",
+  "relationshipsLoadFailed": "Your people didn't load.",
+  "@relationshipsLoadFailed": {
+    "description": "People list: the first load failed."
+  },
   "relationshipSortThis": "Sort this",
   "@relationshipSortThis": {
     "description": "Action on a voice-note row of a person's timeline: sort its words into check-ins, notes, meetings or tasks."
@@ -9787,6 +9795,15 @@
   "relationshipSpeak": "Speak",
   "@relationshipSpeak": {
     "description": "Primary action on a person's page: record your thoughts about them by voice."
+  },
+  "relationshipsSearchNoMatch": "Nobody matches “{query}”",
+  "@relationshipsSearchNoMatch": {
+    "description": "People list: the search found nobody. {query} is what the user typed.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
   },
   "relationshipsSelectPersonHint": "Select a person to see their page.",
   "relationshipsSummaryDueNow": "Due now",
@@ -9881,6 +9898,10 @@
     }
   },
   "relationshipTimelineFilterAll": "All",
+  "relationshipTimelineFilterEmpty": "Nothing under this filter yet.",
+  "@relationshipTimelineFilterEmpty": {
+    "description": "Person timeline: the selected filter matches no rows."
+  },
   "relationshipTimelineFilterMeetings": "Meetings",
   "relationshipTimelineFilterNotes": "Notes",
   "relationshipTimelineFilterPhotos": "Photos",
@@ -9907,6 +9928,10 @@
         "type": "String"
       }
     }
+  },
+  "relationshipTimelineShowAll": "Show all",
+  "@relationshipTimelineShowAll": {
+    "description": "Person timeline: resets the filter to All."
   },
   "relationshipTimelineTask": "Task",
   "relationshipTimelineTaskDoneAt": "Done {time}",
@@ -9950,6 +9975,10 @@
   "relationshipTimestampYesterday": "Yesterday",
   "@relationshipTimestampYesterday": {
     "description": "The relative day word in a relationship timestamp, e.g. \"Yesterday 19:05\"."
+  },
+  "relationshipTryAgain": "Try again",
+  "@relationshipTryAgain": {
+    "description": "Button that repeats a failed read on the People surfaces."
   },
   "relationshipTurnOnReminders": "Turn on reminders",
   "@relationshipTurnOnReminders": {

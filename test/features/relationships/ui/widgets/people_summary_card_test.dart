@@ -1,3 +1,4 @@
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -131,6 +132,70 @@ void main() {
           reason: 'a fixed step drifted into the scaled caption',
         );
       }
+    });
+
+    testWidgets('at large text the halves stack — the right one is never '
+        'squeezed to a column a letter wide — and sit side by side at 1x', (
+      tester,
+    ) async {
+      Future<void> pumpAt(double scale) async {
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            PeopleSummaryCard(
+              summary: summary(
+                dueNow: 1,
+                nextDue: person('Tilly'),
+                nextDueAt: DateTime(2026, 8, 19),
+                mostOverdue: person('Pip'),
+              ),
+              onOpenNextDue: (_) {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await pumpAt(1.6);
+      final due = tester.getRect(find.text('Due now'));
+      final next = tester.getRect(find.text('Next due'));
+      expect(next.top, greaterThan(due.bottom));
+      expect(next.left, closeTo(due.left, 0.5));
+
+      await pumpAt(1);
+      expect(
+        tester.getRect(find.text('Next due')).left,
+        greaterThan(tester.getRect(find.text('Due now')).right),
+      );
+    });
+
+    testWidgets('each live half is announced as a button', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          PeopleSummaryCard(
+            summary: summary(
+              dueNow: 1,
+              nextDue: person('Tilly'),
+              nextDueAt: DateTime(2026, 8, 19),
+              mostOverdue: person('Pip'),
+            ),
+            onOpenNextDue: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (final key in [
+        'people-summary-due-open',
+        'people-summary-next-due-open',
+      ]) {
+        final node = tester.getSemantics(find.byKey(ValueKey(key)));
+        expect(node.flagsCollection.isButton, isTrue, reason: key);
+        expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      }
+      handle.dispose();
     });
 
     testWidgets('a half with nobody behind it is inert and shows no handle', (
