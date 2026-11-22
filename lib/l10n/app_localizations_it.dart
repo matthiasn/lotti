@@ -4840,7 +4840,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get createButton => 'Crea';
 
   @override
-  String get createCategoryTitle => 'Creare una categoria';
+  String get createCategoryTitle => 'Crea categoria';
 
   @override
   String get createEntryLabel => 'Creare una nuova voce';
