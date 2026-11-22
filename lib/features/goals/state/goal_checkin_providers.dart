@@ -140,11 +140,14 @@ final ProviderFamily<GoalCheckInsLoad, String> goalCheckInsLoadProvider =
       if ((links != null && !links.hasValue) || !assessments.hasValue) {
         return GoalCheckInsLoad.loading;
       }
-      // Only an entry still on its way holds the rail; one that resolved to
-      // nothing (deleted, private) must not keep it spinning forever.
+      // An entry still on its way holds the rail and one whose read failed
+      // fails it; one that resolved to nothing (deleted, private) must not
+      // keep it spinning forever.
       for (final link in links?.value ?? const <EntryLink>[]) {
         final entry = ref.watch(entryControllerProvider(link.toId));
         if (!entry.hasValue && !entry.hasError) return GoalCheckInsLoad.loading;
+        // A read that failed cannot say the history is empty either.
+        if (entry.hasError && !entry.hasValue) return GoalCheckInsLoad.failed;
       }
       return GoalCheckInsLoad.settled;
     }, name: 'goalCheckInsLoadProvider');

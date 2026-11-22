@@ -234,9 +234,7 @@ void main() {
       final sub = c.listen(goalCheckInsLoadProvider('agent-1'), (_, _) {});
       addTearDown(sub.close);
       // Let the futures behind it settle (or fail) first.
-      await Future<void>.value();
-      await Future<void>.value();
-      await Future<void>.value();
+      await pumpEventQueue();
       return c.read(goalCheckInsLoadProvider('agent-1'));
     }
 
@@ -285,6 +283,24 @@ void main() {
         GoalCheckInsLoad.loading,
       );
     });
+
+    test(
+      'failed when a linked entry could not be read, never settled',
+      () async {
+        expect(
+          await loadWith([
+            goalAssessmentHistoryProvider(
+              'agent-1',
+            ).overrideWith((ref) async => []),
+            linkedEntriesControllerProvider(
+              'goal-1',
+            ).overrideWith(() => FakeLinkedEntriesController(links: [link])),
+            entryControllerProvider('note-1').overrideWith(_FailingEntry.new),
+          ]),
+          GoalCheckInsLoad.failed,
+        );
+      },
+    );
 
     test(
       'failed when a read failed, so the rail never calls it empty',
@@ -437,4 +453,10 @@ void main() {
 class _PendingEntry extends EntryController {
   @override
   Future<EntryState?> build() => Completer<EntryState?>().future;
+}
+
+/// An entry whose read fails: the rail cannot call the history empty.
+class _FailingEntry extends EntryController {
+  @override
+  Future<EntryState?> build() async => throw StateError('entry unreadable');
 }

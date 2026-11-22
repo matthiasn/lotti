@@ -1,4 +1,3 @@
-import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -15,7 +14,6 @@ import 'package:lotti/features/goals/state/goal_dictation_provider.dart';
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:lotti/features/goals/ui/goal_record_offer_card.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
-import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -62,16 +60,16 @@ class GoalAgentChatPane extends ConsumerWidget {
         : null;
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
-    // The day words below are cut against today: rebuild when it turns.
-    ref.watch(taskDueDayProvider);
-    final now = clock.now();
     final shortDay = DateFormat.E(locale);
     final longDay = DateFormat.EEEE(locale);
-    final recentDayLabels = <DateTime, List<String>>{
+    // The day words a message names ("today", "Tuesday") are resolved
+    // against when that message was SENT, never the clock now: "I ran 5 km
+    // today" must not move to tomorrow when the pane rebuilds after midnight.
+    Map<DateTime, List<String>> recentDayLabels(DateTime sentAt) => {
       for (var offset = 0; offset < 7; offset++)
-        now.subtract(Duration(days: offset)): [
-          shortDay.format(now.subtract(Duration(days: offset))),
-          longDay.format(now.subtract(Duration(days: offset))),
+        sentAt.subtract(Duration(days: offset)): [
+          shortDay.format(sentAt.subtract(Duration(days: offset))),
+          longDay.format(sentAt.subtract(Duration(days: offset))),
           if (offset == 0) context.messages.calendarTodayLabel,
           if (offset == 1) context.messages.knowledgeGraphAgeYesterday,
         ],
@@ -101,8 +99,8 @@ class GoalAgentChatPane extends ConsumerWidget {
         message: message,
         criteria: spec.criteria,
         measurables: measurables,
-        reference: now,
-        recentDayLabels: recentDayLabels,
+        reference: message.createdAt,
+        recentDayLabels: recentDayLabels(message.createdAt),
       );
       if (offer == null) return null;
       final measurable = measurables
