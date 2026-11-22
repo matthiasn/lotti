@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
@@ -212,6 +214,59 @@ void main() {
     expect(recorder.stopCalls, 0);
     expect(recorder.modalVisibleLog, isEmpty);
     expect(recorded, isEmpty);
+  });
+
+  testWidgets('a host dismissed while the microphone is still starting '
+      'never gets a take started behind it', (tester) async {
+    recorder = FakeAudioRecorderController()..recordGate = Completer<void>();
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => Dialog(
+                child: InlineRecorder(
+                  linkedId: 'person-1',
+                  categoryId: 'category-7',
+                  onRecorded: (id, length) => recorded.add((id, length)),
+                  onDiscarded: () => discarded++,
+                  onFailed: failed.add,
+                ),
+              ),
+            ),
+            child: const Text('open'),
+          ),
+        ),
+        overrides: [
+          audioRecorderControllerProvider.overrideWith(() => recorder),
+          recordingStyleAppPrefsProvider.overrideWithValue(
+            _stylePrefs('modern'),
+          ),
+        ],
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(recorder.recordCalls, hasLength(1));
+
+    // Dismissed, and still mounted for its exit animation, when the
+    // microphone comes up.
+    Navigator.of(tester.element(find.byType(InlineRecorder))).pop();
+    await tester.pump();
+    expect(find.byType(InlineRecorder), findsOneWidget);
+    recorder.recordGate!.complete();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(
+      ProviderScope.containerOf(
+        tester.element(find.text('open')),
+      ).read(audioRecorderControllerProvider).status,
+      AudioRecorderStatus.stopped,
+    );
+    expect(failed, isEmpty);
   });
 
   testWidgets('a take already running for this subject is attached to, '

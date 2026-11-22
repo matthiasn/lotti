@@ -143,10 +143,15 @@ class _InlineRecorderState extends ConsumerState<InlineRecorder> {
     _controller.setModalVisible(modalVisible: true);
     if (widget.adoptRunning || taking) return;
     _controller.setCategoryId(widget.categoryId);
+    // A host dismissed while the microphone is still starting is on its way
+    // out but mounted until its exit animation ends: without the route check
+    // the take would start behind a sheet that is already gone, with nothing
+    // left to stop it. The recording sheet's own rule.
+    final route = ModalRoute.of(context);
     final failure = await _controller.record(
       linkedId: widget.linkedId,
       transcriptionHandledByCaller: widget.transcriptionHandledByCaller,
-      shouldCancel: () => !mounted,
+      shouldCancel: () => !mounted || (route != null && !route.isCurrent),
     );
     if (!mounted || failure == null) return;
     widget.onFailed(switch (failure) {

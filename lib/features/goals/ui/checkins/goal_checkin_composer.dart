@@ -289,8 +289,11 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
     // the check-in would be filed uncategorized.
     final category = ref.watch(goalCategoryIdProvider(widget.agentId));
     final categoryId = widget.categoryId ?? category.value;
-    final ready =
-        target.hasValue && (widget.categoryId != null || category.hasValue);
+    // Settled either way: a lookup that failed files the check-in
+    // uncategorized rather than holding the sheet for ever.
+    final categoryReady =
+        widget.categoryId != null || category.hasValue || category.hasError;
+    final ready = target.hasValue && categoryReady;
     final failure = _failure;
 
     return Column(
@@ -408,8 +411,10 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
                         isLoading: _saving,
                         // Never save without a capture target: with none
                         // resolved, popping discarded what the user had just
-                        // typed without a word.
-                        onPressed: goalEntryId == null
+                        // typed without a word. Nor before the category has
+                        // read: the note would be filed uncategorized for
+                        // good.
+                        onPressed: goalEntryId == null || !categoryReady
                             ? null
                             : () => _saveText(goalEntryId, categoryId),
                       )

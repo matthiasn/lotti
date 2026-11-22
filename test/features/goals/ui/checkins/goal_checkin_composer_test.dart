@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -50,6 +52,7 @@ void main() {
     String? goalRowCategory,
     GoalCheckInStart start = GoalCheckInStart.idle,
     Future<String?> Function()? captureTargetRead,
+    Future<String?> Function()? goalRowCategoryRead,
   }) => withClock(
     clockOverride ?? Clock.fixed(now),
     () => tester.pumpWidget(
@@ -89,7 +92,11 @@ void main() {
           ),
           goalCategoryIdProvider(
             'agent-1',
-          ).overrideWith((ref) async => goalRowCategory),
+          ).overrideWith(
+            (ref) => goalRowCategoryRead != null
+                ? goalRowCategoryRead()
+                : Future.value(goalRowCategory),
+          ),
           audioRecorderControllerProvider.overrideWith(() => recorder),
           appSettingsOpenerProvider.overrideWithValue(() async {
             settingsOpened++;
@@ -437,6 +444,49 @@ void main() {
     await tester.pump();
 
     expect(filedUnder, ['colony-fitness']);
+  });
+
+  testWidgets("a note cannot be saved before the goal's category has "
+      'read — it would be filed uncategorized for good', (tester) async {
+    final category = Completer<String?>();
+    await pump(
+      tester,
+      hostCategory: null,
+      goalRowCategoryRead: () => category.future,
+      start: GoalCheckInStart.writing,
+    );
+    await tester.pump();
+    await tester.enterText(find.byType(DesignSystemTextarea), 'Waddled.');
+    await tester.pump();
+
+    DesignSystemButton save() =>
+        tester.widget<DesignSystemButton>(key('goal-checkin-save'));
+    expect(save().onPressed, isNull);
+
+    category.complete('colony-fitness');
+    await tester.pump();
+    await tester.pump();
+    expect(save().onPressed, isNotNull);
+    await tester.tap(find.text('Save check-in'));
+    await tester.pump();
+    expect(filedUnder, ['colony-fitness']);
+  });
+
+  testWidgets('a category lookup that failed does not hold the sheet: the '
+      'note saves, uncategorized', (tester) async {
+    await pump(
+      tester,
+      hostCategory: null,
+      goalRowCategoryRead: () async => throw StateError('journal gone'),
+      start: GoalCheckInStart.writing,
+    );
+    await tester.pump();
+    await tester.pump();
+    await tester.enterText(find.byType(DesignSystemTextarea), 'Waddled.');
+    await tester.tap(find.text('Save check-in'));
+    await tester.pump();
+
+    expect(filedUnder, [null]);
   });
 
   testWidgets("the host's category, when it has one, is the one used", (
