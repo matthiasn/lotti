@@ -22,14 +22,19 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/pages/goal_timeline_page.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../../relationships/helpers/check_in_speech_fakes.dart';
 
 void main() {
+  late FakeAudioRecorderController recorder;
+  setUp(() => recorder = FakeAudioRecorderController());
+
   final now = DateTime(2026, 8, 18, 9);
 
   AgentIdentityEntity identity(AgentLifecycle lifecycle) =>
@@ -74,6 +79,8 @@ void main() {
             goalCheckInsLoadProvider(
               'agent-1',
             ).overrideWithValue(GoalCheckInsLoad.settled),
+            goalCategoryIdProvider('agent-1').overrideWith((ref) async => null),
+            audioRecorderControllerProvider.overrideWith(() => recorder),
             goalCaptureTargetProvider(
               'agent-1',
             ).overrideWith((ref) async => 'goal-1'),
@@ -150,16 +157,31 @@ void main() {
     expect(action.icon, LottiIcons.mic);
   });
 
-  testWidgets('an active goal can record without scrolling', (tester) async {
+  testWidgets('an active goal speaks without scrolling: one tap on the mic '
+      'and the check-in is already recording against the goal', (
+    tester,
+  ) async {
     await pump(tester);
     await tester.pumpAndSettle();
 
     // The history may be months long; creating must stay in the app bar.
-    await tester.tap(
-      find.byKey(const ValueKey('goal-timeline-checkin-action')),
+    final action = find.byKey(const ValueKey('goal-timeline-checkin-action'));
+    expect(tester.widget<DesignSystemIconAction>(action).tooltip, 'Speak');
+    await tester.tap(action);
+    // A live take never settles: the visualizer keeps moving.
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(
+      tester
+          .widget<GoalCheckInComposer>(find.byType(GoalCheckInComposer))
+          .start,
+      GoalCheckInStart.speaking,
     );
-    await tester.pumpAndSettle();
-    expect(find.byType(GoalCheckInComposer), findsOneWidget);
+    expect(recorder.recordCalls, [
+      (linkedId: 'goal-1', handledByCaller: false),
+    ]);
   });
 
   testWidgets('back returns to the goal, not to the goals list', (

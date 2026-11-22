@@ -34,6 +34,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_ic
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/components/speak_add_action_bar.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -51,11 +52,12 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/state/goal_timeline_rail_width_controller.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_card.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
-import 'package:lotti/features/goals/ui/checkins/goal_checkins_card.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_checkins_section.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_agent_lifetime_pills.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
+import 'package:lotti/features/goals/ui/goal_create_menu.dart';
 import 'package:lotti/features/goals/ui/goal_health_direction.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
@@ -258,13 +260,12 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     day: day,
   );
 
-  /// Opens the anytime check-in composer.
-  ///
-  /// The ever-present affordance: reachable from the app bar, the check-ins
-  /// header and any banner whose CTA asks for one, so "say what is going on"
-  /// is never more than one tap away.
+  /// Opens the anytime check-in sheet: already recording from the bar's
+  /// *Speak*, with the text field up from the create menu, and at rest from
+  /// a banner — which must not turn the mic on for the user.
   void _openCheckInComposer({
     required String goalTitle,
+    required GoalCheckInStart start,
     String? personaName,
     String? categoryId,
     String? preparedLine,
@@ -273,10 +274,41 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
       context,
       agentId: agentId,
       goalTitle: goalTitle,
+      start: start,
       personaName: personaName,
       categoryId: categoryId,
       preparedLine: preparedLine,
     );
+  }
+
+  /// The bar's **+**: everything that can be added to the goal besides
+  /// speaking. The chosen flow opens once the menu is gone, so no sheet
+  /// stacks on another.
+  Future<void> _addToGoal({
+    required GoalSpecVersionEntity? spec,
+    required GoalProgressView? progress,
+    required List<GoalAssessmentRecord> assessments,
+    required VoidCallback writeCheckIn,
+  }) async {
+    final choice = await showGoalCreateMenu(
+      context: context,
+      canReflect: spec != null && progress != null,
+      canLogToday: progress != null && progress.habits.isNotEmpty,
+    );
+    if (choice == null || !mounted) return;
+    switch (choice) {
+      case GoalCreateChoice.writeCheckIn:
+        writeCheckIn();
+      case GoalCreateChoice.logToday:
+        _logToday(progress!);
+      case GoalCreateChoice.reflectToday:
+        _openReflection(
+          spec: spec!,
+          progress: progress!,
+          assessments: assessments,
+          day: progress.today,
+        );
+    }
   }
 
   /// Opens the one-tap capture sheet for [progress]'s habits. The banner CTA
@@ -522,18 +554,19 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
 
     // Watched, not read at tap time: an unwatched lookup is still loading.
     final goalCategoryId = ref.watch(goalCategoryIdProvider(agentId)).value;
-    void openComposer() => _openCheckInComposer(
-      goalTitle: goalTitle,
-      personaName: goalIdentity.displayName,
-      // The goal row's category, so a check-in is filed with its goal.
-      categoryId: goalCategoryId,
-      preparedLine: latestReport?.tldr,
-    );
+    void openComposer([GoalCheckInStart start = GoalCheckInStart.idle]) =>
+        _openCheckInComposer(
+          goalTitle: goalTitle,
+          start: start,
+          personaName: goalIdentity.displayName,
+          // The goal row's category, so a check-in is filed with its goal.
+          categoryId: goalCategoryId,
+          preparedLine: latestReport?.tldr,
+        );
 
-    Widget checkInsCard({int? maxBeats}) => GoalCheckInsCard(
+    Widget checkInsCard({int? maxBeats}) => GoalCheckInsSection(
       agentId: agentId,
       maxBeats: maxBeats,
-      onCreate: isActive ? openComposer : null,
       onSeeAll: maxBeats == null
           ? null
           : () => beamToNamed(goalTimelinePath(agentId)),
@@ -569,6 +602,44 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     final desktop = isDesktopLayout(context);
     final chatAvailable = isActive;
 
+    // The page's one capture control, docked in thumb reach as the person
+    // page's is: Speak opens the check-in already listening, + holds the
+    // rest. A dormant goal takes nothing new, so it has no bar.
+    final bar = !isActive
+        ? null
+        : DesignSystemSpeakAddBar(
+            speakKey: const ValueKey('goal-action-speak'),
+            addKey: const ValueKey('goal-action-add'),
+            speakLabel: context.messages.goalSpeak,
+            addLabel: context.messages.goalAddAction,
+            addSemanticLabel: context.messages.goalAddMenuTitle,
+            onSpeak: () => openComposer(GoalCheckInStart.speaking),
+            onAdd: () => unawaited(
+              _addToGoal(
+                spec: spec,
+                progress: progress,
+                assessments: assessments,
+                writeCheckIn: () => openComposer(GoalCheckInStart.writing),
+              ),
+            ),
+          );
+    // The dashboard column with the bar docked under it: its own Scaffold,
+    // so beside a rail the bar sits on the column it adds to and never
+    // covers the rail. extendBody lets the glass blur the content beneath;
+    // the list reads the reserved height back as its bottom inset.
+    Widget docked({double? contentMaxWidth, bool showRail = false}) => Scaffold(
+      extendBody: true,
+      bottomNavigationBar: bar,
+      body: Builder(
+        builder: (context) => _detailList(
+          context,
+          inputs,
+          contentMaxWidth: contentMaxWidth,
+          showRail: showRail,
+        ),
+      ),
+    );
+
     final chatHeader = (
       identity: goalIdentity,
       status: unifiedStatus,
@@ -595,10 +666,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: _detailList(
-                    context,
-                    inputs,
-                    showChatAction: false,
+                  child: docked(
                     contentMaxWidth: kUnifiedGoalsContentMaxWidth,
                     showRail: true,
                   ),
@@ -635,10 +703,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                 ),
               ],
             )
-          : _detailList(
-              context,
-              inputs,
-              showChatAction: !desktop && chatAvailable,
+          : docked(
               contentMaxWidth: desktop ? kUnifiedGoalsContentMaxWidth : null,
             );
     }
@@ -673,23 +738,8 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             ),
           ),
           actions: [
-            // The conversation is the feature's second half — phones get a
-            // persistent doorway beside the overflow instead of a button
-            // buried below every card.
-            // The mic is the feature's ever-present doorway: on a phone the
-            // check-ins card can be below the fold, so "say what is going on"
-            // must not depend on scrolling to it.
-            if (isActive)
-              DesignSystemIconAction(
-                key: const ValueKey('goal-detail-checkin-action'),
-                // The LIVE mic glyph, not `micIdle`: that token resolves to
-                // Lucide's slashed mic-off, which on an enabled action reads
-                // as "recording unavailable". This button starts a check-in
-                // recording; nothing about it is muted.
-                icon: LottiIcons.mic,
-                tooltip: context.messages.goalCheckInRecordCta,
-                onPressed: openComposer,
-              ),
+            // The conversation is the feature's second half — its one
+            // doorway, here. Speaking is the bar's, at the bottom.
             // Phone: the same labelled doorway the person page's hero
             // carries, opening the conversation's own route.
             if (!desktop && chatAvailable)
@@ -747,6 +797,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
           ],
         ),
         body: SafeArea(
+          // The bar's glass runs into the home-indicator inset, so the
+          // bottom inset is the list's and the bar's to spend, not cut here.
+          bottom: false,
           // The desktop reading measure is a property of the pane, not of
           // chat: a dormant goal must not stretch its cards across the whole
           // window, and a narrow pane behind a wide sidebar must not get the

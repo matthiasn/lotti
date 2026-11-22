@@ -44,7 +44,6 @@ class GoalCheckInTimeline extends ConsumerStatefulWidget {
     required this.agentId,
     this.maxBeats,
     this.onOpenReflection,
-    this.emptyAction,
     super.key,
   });
 
@@ -56,9 +55,6 @@ class GoalCheckInTimeline extends ConsumerStatefulWidget {
 
   /// Reopens a day's reflection sheet. Null renders reflections as static.
   final ValueChanged<DateTime>? onOpenReflection;
-
-  /// Rendered under the empty-state invitation, normally the record CTA.
-  final Widget? emptyAction;
 
   @override
   ConsumerState<GoalCheckInTimeline> createState() =>
@@ -124,7 +120,7 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
             },
           ),
         ),
-        GoalCheckInsLoad.settled => _Empty(action: widget.emptyAction),
+        GoalCheckInsLoad.settled => const _Empty(),
       };
     }
     final cap = widget.maxBeats ?? _visibleCount;
@@ -400,21 +396,18 @@ class _VerdictPill extends StatelessWidget {
   }
 }
 
-/// An invitation, not an apology: the empty rail says what a check-in is for
-/// and offers the one action that fixes it — in the design system's empty
-/// state, as the person timeline's is.
+/// An invitation, not an apology: the empty rail says what a check-in is
+/// for — in the design system's empty state, as the person timeline's is.
+/// It carries no button: the page's *Speak* bar is the way to make one.
 class _Empty extends StatelessWidget {
-  const _Empty({this.action});
-
-  final Widget? action;
+  const _Empty();
 
   @override
   Widget build(BuildContext context) => DesignSystemEmptyState(
     key: const ValueKey('goal-checkin-empty'),
     // The person timeline's empty glyph, so the two histories look alike —
-    // and not `micIdle`, Lucide's slashed mic-off, beside a call to record.
+    // and not `micIdle`, Lucide's slashed mic-off, beside a call to speak.
     icon: LottiIcons.timeline,
     hint: context.messages.goalCheckInsEmptyInvitation,
-    action: action,
   );
 }

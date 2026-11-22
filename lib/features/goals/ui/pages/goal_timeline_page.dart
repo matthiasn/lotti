@@ -22,8 +22,8 @@ import 'package:material_ui/material_ui.dart';
 /// The phone's full check-in history — everything the inline card previews.
 ///
 /// A dedicated route rather than a tab: the detail page already carries a range
-/// picker, a chat action, a mic and an overflow menu, and a fifth navigation
-/// control on one screen is too many.
+/// picker, a chat action, a capture bar and an overflow menu, and a fifth
+/// navigation control on one screen is too many.
 class GoalTimelinePage extends ConsumerWidget {
   const GoalTimelinePage({required this.agentId, super.key});
 
@@ -72,6 +72,8 @@ class GoalTimelinePage extends ConsumerWidget {
       context,
       agentId: agentId,
       goalTitle: title,
+      // One tap and it is listening, as the goal page's Speak is.
+      start: GoalCheckInStart.speaking,
       personaName: goalIdentity.displayName,
       // The goal row's category, so a check-in is filed with its goal.
       categoryId: goalCategoryId,
@@ -98,7 +100,7 @@ class GoalTimelinePage extends ConsumerWidget {
             DesignSystemIconAction(
               key: const ValueKey('goal-timeline-checkin-action'),
               icon: LottiIcons.mic,
-              tooltip: context.messages.goalCheckInRecordCta,
+              tooltip: context.messages.goalSpeak,
               onPressed: openComposer,
             ),
         ],

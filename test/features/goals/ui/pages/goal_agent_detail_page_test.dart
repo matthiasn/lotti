@@ -44,6 +44,7 @@ import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/components/speak_add_action_bar.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -58,7 +59,7 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/state/goal_timeline_rail_width_controller.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_card.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
-import 'package:lotti/features/goals/ui/checkins/goal_checkins_card.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_checkins_section.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
@@ -75,6 +76,8 @@ import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/entry_category_move.dart';
@@ -96,9 +99,20 @@ import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../ai_consumption/test_utils.dart';
 import '../../../habits/test_utils.dart';
+import '../../../relationships/helpers/check_in_speech_fakes.dart';
 import '../../../tts/test_utils.dart';
 
 void main() {
+  late FakeAudioRecorderController recorder;
+  setUp(() => recorder = FakeAudioRecorderController());
+
+  /// For a sheet that is recording: the visualizer never settles.
+  Future<void> pumpFrames(WidgetTester tester) async {
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
+
   final goalIdentity =
       AgentDomainEntity.agent(
             id: 'goal-1',
@@ -293,6 +307,16 @@ void main() {
     scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
     await tester.pump();
     expect(find.text('Signals'), findsOneWidget);
+    // Scrolled to the end, the page's last card stands clear of the docked
+    // bar rather than under its glass.
+    expect(
+      tester.getRect(find.byType(GoalProgressCard)).bottom,
+      lessThanOrEqualTo(
+        tester.getRect(find.byType(DesignSystemSpeakAddBar)).top,
+      ),
+    );
+    // One doorway to the conversation — no second button at the page's foot.
+    expect(find.text('Talk to agent'), findsOneWidget);
     // The phone header's labelled doorway, as on the person page.
     expect(
       find.descendant(
@@ -2543,15 +2567,56 @@ void main() {
     );
     expect(appBarTitle().opacity, 0);
 
-    // The mic is the ever-present doorway: the check-ins card can sit below
-    // the fold, so capture must not depend on scrolling to it.
-    await tester.tap(
-      find.byKey(const ValueKey('goal-detail-checkin-action')),
+    // Capture is the docked bar's, never an app-bar mic: its + offers the
+    // written check-in, which opens the sheet with the text field up.
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.byIcon(LottiIcons.mic),
+      ),
+      findsNothing,
     );
+    await tester.tap(find.byKey(const ValueKey('goal-action-add')));
     await tester.pumpAndSettle();
-    expect(find.byType(GoalCheckInComposer), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('goal-create-writeCheckIn')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<GoalCheckInComposer>(find.byType(GoalCheckInComposer))
+          .start,
+      GoalCheckInStart.writing,
+    );
     Navigator.of(tester.element(find.byType(GoalCheckInComposer))).pop();
     await tester.pumpAndSettle();
+
+    // The same + logs today's habits, and reflects on today — each opening
+    // once the menu is gone, never stacked on it.
+    await tester.tap(find.byKey(const ValueKey('goal-action-add')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-create-logToday')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('goal-create-logToday')), findsNothing);
+    expect(find.byType(GoalLogTodaySheet), findsOneWidget);
+    Navigator.of(tester.element(find.byType(GoalLogTodaySheet))).pop();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('goal-action-add')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-create-reflectToday')));
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalDayAssessmentSheet), findsOneWidget);
+    Navigator.of(tester.element(find.byType(GoalDayAssessmentSheet))).pop();
+    await tester.pumpAndSettle();
+
+    // Dismissed without a choice, the menu opens nothing.
+    await tester.tap(find.byKey(const ValueKey('goal-action-add')));
+    await tester.pumpAndSettle();
+    Navigator.of(
+      tester.element(find.byKey(const ValueKey('goal-create-writeCheckIn'))),
+    ).pop();
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalCheckInComposer), findsNothing);
+    expect(find.byType(GoalLogTodaySheet), findsNothing);
 
     // The banner CTA performs the verb: it opens the one-tap logging
     // sheet instead of navigating to the route the page is already on.
@@ -2721,8 +2786,29 @@ void main() {
     expect(find.byType(GoalCheckInComposer), findsOneWidget);
     expect(navigated, isEmpty);
 
+    // A banner brought the user here, so the mic is not turned on for them.
+    expect(
+      tester
+          .widget<GoalCheckInComposer>(find.byType(GoalCheckInComposer))
+          .start,
+      GoalCheckInStart.idle,
+    );
+
     // Dismiss the composer before continuing.
     Navigator.of(tester.element(find.byType(GoalCheckInComposer))).pop();
+    await tester.pumpAndSettle();
+
+    // With no habit to tick off, the + does not offer to log one.
+    await tester.tap(find.byKey(const ValueKey('goal-action-add')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('goal-create-logToday')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('goal-create-reflectToday')),
+      findsOneWidget,
+    );
+    Navigator.of(
+      tester.element(find.byKey(const ValueKey('goal-create-writeCheckIn'))),
+    ).pop();
     await tester.pumpAndSettle();
 
     // The reflect row opens the day assessment sheet for today.
@@ -3142,7 +3228,7 @@ void main() {
         .getSize(
           find
               .ancestor(
-                of: find.byType(GoalCheckInsCard),
+                of: find.byType(GoalCheckInsSection),
                 matching: find.byType(SizedBox),
               )
               .first,
@@ -3359,9 +3445,19 @@ void main() {
     // expanded check-in's words set at least as wide as on a phone.
     expect(goalTimelineRailWidth(desktopSize.width), kGoalTimelineRailMaxWidth);
     expect(
-      tester.getSize(find.byType(GoalCheckInsCard)).width,
+      tester.getSize(find.byType(GoalCheckInsSection)).width,
       greaterThan(kGoalTimelineRailMinWidth),
     );
+    // The capture bar docks under the dashboard column it adds to: it ends
+    // where the rail begins, and its pills are centred on the cards.
+    final bar = tester.getRect(find.byType(DesignSystemSpeakAddBar));
+    expect(
+      bar.right,
+      lessThanOrEqualTo(
+        tester.getTopLeft(find.byType(GoalCheckInsSection)).dx,
+      ),
+    );
+    expect(bar.center.dx, moreOrLessEquals(closedCenter, epsilon: 1));
     final closedCardWidth = tester.getSize(find.byType(GoalProgressCard)).width;
 
     // The conversation opens from the named app-bar doorway in the shared
@@ -3541,6 +3637,8 @@ void main() {
     expect(find.text('Walk three times a week.'), findsOneWidget);
     expect(find.byType(GoalAgentChatPane), findsNothing);
     expect(find.text('Talk to agent'), findsNothing);
+    // A dormant goal takes nothing new: no capture bar.
+    expect(find.byType(DesignSystemSpeakAddBar), findsNothing);
     expect(find.text('Update now'), findsNothing);
     expect(find.byType(PopupMenuButton<HabitCompletionType>), findsNothing);
     expect(find.byType(ChangeSetSummaryCard), findsNothing);
@@ -4658,6 +4756,8 @@ void main() {
           goalCaptureTargetProvider(
             'goal-1',
           ).overrideWith((ref) async => 'goal-entry-1'),
+          goalCategoryIdProvider('goal-1').overrideWith((ref) async => null),
+          audioRecorderControllerProvider.overrideWith(() => recorder),
         ],
       ),
     );
@@ -4672,13 +4772,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(navigated, ['/goals/details/goal-1/timeline']);
 
-    // The mic opens the composer with whatever the agent last published as
-    // its prepared line, so opening it costs no inference.
-    await tester.tap(
-      find.byKey(const ValueKey('goal-detail-checkin-action')),
+    // Speak is one tap from a live mic: the check-in opens already
+    // recording against the goal's row. A live take never settles.
+    await tester.tap(find.byKey(const ValueKey('goal-action-speak')));
+    await pumpFrames(tester);
+    expect(
+      tester
+          .widget<GoalCheckInComposer>(find.byType(GoalCheckInComposer))
+          .start,
+      GoalCheckInStart.speaking,
     );
-    await tester.pumpAndSettle();
-    expect(find.byType(GoalCheckInComposer), findsOneWidget);
+    expect(recorder.recordCalls, [
+      (linkedId: 'goal-entry-1', handledByCaller: false),
+    ]);
   });
 
   testWidgets('desktop still offers the drawer while health is erroring — '
@@ -5071,14 +5177,21 @@ void main() {
             'goal-1',
           ).overrideWith((ref) async => {}),
           agentReportProvider('goal-1').overrideWith((ref) async => report),
+          goalCaptureTargetProvider(
+            'goal-1',
+          ).overrideWith((ref) async => 'goal-entry-1'),
+          goalCategoryIdProvider('goal-1').overrideWith((ref) async => null),
+          audioRecorderControllerProvider.overrideWith(() => recorder),
         ],
       ),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('goal-detail-checkin-action')));
-    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-action-speak')));
+    await pumpFrames(tester);
 
+    // The question stays in view while the answer is being recorded.
+    expect(find.byType(InlineRecorder), findsOneWidget);
     expect(
       tester
           .widget<GoalCheckInComposer>(

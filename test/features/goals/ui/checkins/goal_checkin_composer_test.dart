@@ -530,6 +530,74 @@ void main() {
     expect(find.textContaining('prepared for you'), findsNothing);
   });
 
+  group('opened as a sheet', () {
+    var recordersBuilt = 0;
+    setUp(() => recordersBuilt = 0);
+
+    Future<void> openSheet(WidgetTester tester, GoalCheckInStart start) async {
+      await withClock(
+        Clock.fixed(now),
+        () => tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Builder(
+              builder: (context) => TextButton(
+                onPressed: () => GoalCheckInComposer.show(
+                  context,
+                  agentId: 'agent-1',
+                  goalTitle: 'Fitness',
+                  start: start,
+                  categoryId: 'cat-1',
+                ),
+                child: const Text('open'),
+              ),
+            ),
+            overrides: [
+              goalCaptureTargetProvider(
+                'agent-1',
+              ).overrideWith((ref) async => 'goal-1'),
+              goalCategoryIdProvider(
+                'agent-1',
+              ).overrideWith((ref) async => null),
+              audioRecorderControllerProvider.overrideWith(() {
+                recordersBuilt++;
+                return recorder;
+              }),
+            ],
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await settle(tester);
+    }
+
+    testWidgets('dismissed mid-take, the take keeps running and goes back '
+        'to the floating indicator, where it can be stopped', (tester) async {
+      await openSheet(tester, GoalCheckInStart.speaking);
+      expect(find.text('Check in'), findsOneWidget);
+      expect(recorder.modalVisibleLog.last, isTrue);
+
+      Navigator.of(tester.element(find.byType(GoalCheckInComposer))).pop();
+      await settle(tester);
+
+      expect(find.byType(GoalCheckInComposer), findsNothing);
+      expect(recorder.stopCalls, 0);
+      expect(recorder.cancelCalls, 0);
+      expect(recorder.modalVisibleLog.last, isFalse);
+    });
+
+    testWidgets('a written check-in never stands the recorder up', (
+      tester,
+    ) async {
+      await openSheet(tester, GoalCheckInStart.writing);
+      expect(find.byType(DesignSystemTextarea), findsOneWidget);
+
+      Navigator.of(tester.element(find.byType(GoalCheckInComposer))).pop();
+      await settle(tester);
+
+      expect(recordersBuilt, 0);
+    });
+  });
+
   group('the writing session', () {
     // A clock the test moves by hand. The composer reads it on every tap and
     // on every tick, so each step below runs inside it.

@@ -117,10 +117,7 @@ class GoalCheckInComposer extends ConsumerStatefulWidget {
     String? personaName,
     String? categoryId,
   }) async {
-    final recorder = ProviderScope.containerOf(
-      context,
-      listen: false,
-    ).read(audioRecorderControllerProvider.notifier);
+    final container = ProviderScope.containerOf(context, listen: false);
     try {
       await DsActionModal.show<void>(
         context: context,
@@ -137,7 +134,12 @@ class GoalCheckInComposer extends ConsumerStatefulWidget {
     } finally {
       // The recorder hides the floating indicator while it is up; a sheet
       // gone mid-take must hand it back, for the take to be stopped there.
-      recorder.setModalVisible(modalVisible: false);
+      // Only where a recorder exists: a written check-in never made one.
+      if (container.exists(audioRecorderControllerProvider)) {
+        container
+            .read(audioRecorderControllerProvider.notifier)
+            .setModalVisible(modalVisible: false);
+      }
     }
   }
 
