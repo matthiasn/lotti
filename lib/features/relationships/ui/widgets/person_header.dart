@@ -426,7 +426,10 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
                 // holds nothing at all, so the name exists exactly once on
                 // the page at any time.
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 160),
+                  // With reduced motion the name simply appears.
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : MotionDurations.short3,
                   // An unkeyed fade, so the switcher numbers each entry: the
                   // default one is keyed by its child's key, and a name folded
                   // in and out faster than the fade left two outgoing titles

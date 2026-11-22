@@ -129,6 +129,7 @@ void main() {
     WidgetTester tester,
     PersonTimeline t, {
     ValueChanged<PersonTimelineFilter>? onFilter,
+    PersonTimelineFilter filter = PersonTimelineFilter.all,
     List<Override> overrides = const [],
     Map<String, String> summaries = const {},
   }) => tester.pumpWidget(
@@ -140,7 +141,7 @@ void main() {
             timeline: t,
             summaries: summaries,
             personName: 'Pip',
-            filter: PersonTimelineFilter.all,
+            filter: filter,
             onFilter: onFilter ?? (_) {},
             actions: actions(),
             now: now,
@@ -231,6 +232,43 @@ void main() {
     await tester.tap(find.text('Notes'));
 
     expect(chosen, PersonTimelineFilter.notes);
+  });
+
+  testWidgets('a filter that matches nothing says so under the pills and '
+      'offers Show all, never a blank space', (tester) async {
+    final many = [
+      for (var i = 0; i < personTimelineFiltersFrom; i++)
+        JournalEntity.journalEntry(
+          meta: meta('n$i', DateTime(2026, 6, 1, i)),
+          entryText: EntryText(plainText: 'note $i'),
+        ),
+    ];
+    PersonTimelineFilter? chosen;
+    await pump(
+      tester,
+      timeline(entries: many, filter: PersonTimelineFilter.photos),
+      filter: PersonTimelineFilter.photos,
+      onFilter: (f) => chosen = f,
+    );
+
+    expect(
+      find.byKey(const ValueKey('person-timeline-filter')),
+      findsOneWidget,
+    );
+    expect(find.text('Nothing under this filter yet.'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('person-timeline-show-all')));
+    expect(chosen, PersonTimelineFilter.all);
+
+    // A filter that does match shows its rows and no such message.
+    await pump(
+      tester,
+      timeline(entries: many, filter: PersonTimelineFilter.notes),
+      filter: PersonTimelineFilter.notes,
+    );
+    expect(
+      find.byKey(const ValueKey('person-timeline-filter-empty')),
+      findsNothing,
+    );
   });
 
   testWidgets('a month heading twice — a meeting called off later this month '

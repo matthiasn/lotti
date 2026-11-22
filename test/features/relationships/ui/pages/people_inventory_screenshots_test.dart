@@ -1364,6 +1364,91 @@ void main() {
   // -----------------------------------------------------------------
   // ADR 0063: after tapping the reminder, the page says it is paused and
   // until when.
+  // -------------------------------------------------------------------
+  // The list's search and failure states. Each captures before it asserts,
+  // so the same case also runs against a base commit for a "before".
+  // -------------------------------------------------------------------
+  for (final (device, viewport) in [
+    (proDevice, 'mobile'),
+    (desktopDevice, 'desktop'),
+  ]) {
+    for (final (query, name) in [
+      ('skua', 'search'),
+      ('walrus', 'search_miss'),
+    ]) {
+      testWidgets('$viewport people list, $name — dark', (tester) async {
+        await pumpSurface(
+          tester,
+          home: device.isPhone
+              ? const _PeopleUnderLauncher()
+              : const RelationshipsPage(),
+          device: device,
+          brightness: Brightness.dark,
+          overrides: withServiceOverrides(personOverrides()),
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.byKey(const ValueKey('people-search')),
+            matching: find.byType(TextField),
+          ),
+          query,
+        );
+        await tester.pumpAndSettle();
+        await captureScreenshot(
+          tester,
+          'people_list_${name}_${viewport}_dark',
+          subdir: _subdir,
+        );
+        expect(
+          find.byType(PeopleListRow),
+          query == 'skua' ? findsOneWidget : findsNothing,
+        );
+      });
+    }
+
+    testWidgets('$viewport people list, load failed — dark', (tester) async {
+      when(
+        () => repository.getRelationshipsByRecency(),
+      ).thenThrow(Exception('database unavailable'));
+
+      await pumpSurface(
+        tester,
+        home: device.isPhone
+            ? const _PeopleUnderLauncher()
+            : const RelationshipsPage(),
+        device: device,
+        brightness: Brightness.dark,
+        overrides: withServiceOverrides(personOverrides()),
+      );
+      await captureScreenshot(
+        tester,
+        'people_list_load_failed_${viewport}_dark',
+        subdir: _subdir,
+      );
+      expect(find.byKey(const ValueKey('people-load-retry')), findsOneWidget);
+    });
+  }
+
+  testWidgets('mobile person page, load failed — dark', (tester) async {
+    when(
+      () => repository.getRelationshipById(_pipId),
+    ).thenThrow(Exception('database unavailable'));
+
+    await pumpSurface(
+      tester,
+      home: const RelationshipDetailsPage(relationshipId: _pipId),
+      device: proDevice,
+      brightness: Brightness.dark,
+      overrides: withServiceOverrides(personOverrides()),
+    );
+    await captureScreenshot(
+      tester,
+      'person_page_load_failed_mobile_dark',
+      subdir: _subdir,
+    );
+    expect(find.byKey(const ValueKey('person-page-retry')), findsOneWidget);
+  });
+
   testWidgets('mobile person page, reminder paused — dark', (tester) async {
     await pumpSurface(
       tester,
@@ -1422,7 +1507,8 @@ void main() {
     );
 
     expect(
-      find.byKey(const ValueKey('relationship-brief-me')),
+      // The task card's own Update now asks for the first briefing (#5126).
+      find.byKey(const ValueKey('taskAgentWakeButton')),
       findsOneWidget,
       reason: 'an enrolled person without a report is offered the first one',
     );

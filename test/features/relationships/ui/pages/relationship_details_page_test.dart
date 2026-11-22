@@ -622,17 +622,54 @@ void main() {
     expect(find.text('Error'), findsNothing);
   });
 
-  testWidgets('shows the error text when loading actually fails', (
-    tester,
-  ) async {
-    when(
-      () => mockRepository.getRelationshipById('rel-1'),
-    ).thenThrow(Exception('db gone'));
+  testWidgets('a failed read says the page did not load and offers Try '
+      'again, which reads the person again', (tester) async {
+    // Every read fails — Riverpod's own retries included — until the
+    // database is back.
+    var databaseBack = false;
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer((
+      _,
+    ) async {
+      if (!databaseBack) throw Exception('db gone');
+      return null;
+    });
 
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
-    expect(find.text('Error'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('person-page-load-failed')),
+      findsOneWidget,
+    );
+    expect(find.text("This person's page didn't load."), findsOneWidget);
+    expect(find.byType(DesignSystemSpinner), findsNothing);
+
+    databaseBack = true;
+    await tester.tap(find.byKey(const ValueKey('person-page-retry')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('person-page-load-failed')),
+      findsNothing,
+    );
+    expect(find.text('This person is no longer tracked.'), findsOneWidget);
+  });
+
+  testWidgets('a page with no person still has its way back', (tester) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => null,
+    );
+    final beamedTo = <String>[];
+    beamToNamedOverride = beamedTo.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    await tester.pumpWidget(
+      buildPage(mediaQueryData: const MediaQueryData(size: Size(1400, 900))),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('person-page-state-back')));
+    expect(beamedTo, ['/people']);
   });
 
   testWidgets("the menu's edit beams to the person's editor page", (

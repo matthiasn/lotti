@@ -252,6 +252,27 @@ class PersonTimelineSliver extends ConsumerWidget {
             ),
           ),
       ],
+      // A filter that matches nothing — Photos for someone with none — says
+      // so under the pills and offers the way back, rather than leaving the
+      // pills over a blank space.
+      if (timeline.sections.isEmpty && filter != PersonTimelineFilter.all)
+        _TimelineSlot(
+          const ValueKey('person-timeline-filter-empty'),
+          (context, key) => Padding(
+            key: key,
+            padding: inset.copyWith(top: tokens.spacing.step6),
+            child: DesignSystemEmptyState(
+              icon: LottiIcons.timeline,
+              hint: messages.relationshipTimelineFilterEmpty,
+              action: DesignSystemButton(
+                key: const ValueKey('person-timeline-show-all'),
+                label: messages.relationshipTimelineShowAll,
+                variant: DesignSystemButtonVariant.secondary,
+                onPressed: () => onFilter(PersonTimelineFilter.all),
+              ),
+            ),
+          ),
+        ),
     ];
     final indexOfKey = {
       for (final (index, slot) in slots.indexed) slot.key: index,
