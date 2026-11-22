@@ -11,9 +11,9 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
+import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -190,7 +190,7 @@ void main() {
 
   for (final theme in [DesignSystemTheme.light(), DesignSystemTheme.dark()]) {
     testWidgets('draws no frame of its own in ${theme.brightness.name} mode '
-        '— the list\'s rows card is its surface', (tester) async {
+        "— the list's rows card is its surface", (tester) async {
       await pump(
         tester,
         agentHealth: health(
