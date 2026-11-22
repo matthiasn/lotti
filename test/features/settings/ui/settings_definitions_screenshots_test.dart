@@ -965,7 +965,7 @@ void main() {
       home: const CategoryDetailsPage(),
     );
     expect(
-      find.text(_messages(tester).settingsCategoriesCreateTitle),
+      find.text(_messages(tester).createCategoryTitle),
       findsOneWidget,
     );
     await captureScreenshot(
