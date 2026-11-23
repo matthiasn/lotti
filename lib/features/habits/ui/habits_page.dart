@@ -212,15 +212,6 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
     // on every (possibly framework-driven) rebuild.
     ref.listen(habitsControllerProvider, _scheduleLingerForNewlyDone);
 
-    // One content width for every block (header, summary, list, heatmap, chart):
-    // capped + centred on a wide window, full-bleed minus a gutter when narrow.
-    // The heatmap no longer breaks out wider than everything else (the "cross").
-    final width = MediaQuery.sizeOf(context).width;
-    // The gutter is the one Tasks, People and Goals sit on.
-    final pagePadding = width > _maxContentWidth + tokens.spacing.step5 * 2
-        ? (width - _maxContentWidth) / 2
-        : tokens.spacing.step5;
-
     final displayFilter = state.displayFilter;
     final showAll = displayFilter == HabitDisplayFilter.all;
 
@@ -320,75 +311,93 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
           // bottom inset. Leave that edge to the chart footer so the inset is
           // reserved exactly once.
           bottom: false,
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: <Widget>[
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  pagePadding,
-                  tokens.spacing.step5,
-                  pagePadding,
-                  0,
-                ),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    HabitsHeader(searchFocusNode: _searchFocusNode),
-                    SizedBox(height: tokens.spacing.sectionGap),
-                    const HabitsSummaryCard(),
-                    if (showOpenNow) ...[
-                      if (showAll)
-                        HabitsSectionHeader(
-                          label: messages.habitsOpenHeader,
-                          count: openNow.length,
-                        )
-                      else
-                        SizedBox(height: tokens.spacing.step5),
-                      ...openNow.map(buildOpenRow),
-                    ],
-                    if (showPendingLater) ...[
-                      if (showAll)
-                        HabitsSectionHeader(
-                          label: messages.habitsPendingLaterHeader,
-                          count: pendingLater.length,
-                        )
-                      else
-                        SizedBox(height: tokens.spacing.step5),
-                      ...pendingLater.map(buildRow),
-                    ],
-                    if (showCompleted) ...[
-                      if (showAll)
-                        HabitsSectionHeader(
-                          label: messages.habitsCompletedHeader,
-                          count: completed.length,
-                        )
-                      else
-                        SizedBox(height: tokens.spacing.step5),
-                      ...completed.map(buildRow),
-                    ],
-                  ]),
-                ),
-              ),
-              // The heatmap is the width-using centrepiece: a full-width band so a
-              // wide window shows more history, while the reading content stays a
-              // comfortable column.
-              SliverPadding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: pagePadding,
-                  vertical: tokens.spacing.sectionGap,
-                ),
-                sliver: const SliverToBoxAdapter(child: HabitHeatmapCard()),
-              ),
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  pagePadding,
-                  0,
-                  pagePadding,
-                  tokens.spacing.step6 +
-                      DesignSystemBottomNavigationBar.occupiedHeight(context),
-                ),
-                sliver: const SliverToBoxAdapter(child: HabitsChartCard()),
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (_, constraints) {
+              // One content width for every block (header, summary, list,
+              // heatmap, chart): capped + centred on a wide pane, full-bleed
+              // minus a gutter when narrow. Measured against the PANE, not
+              // the window: on desktop this page sits beside the navigation
+              // sidebar, and window-width arithmetic gave it a margin wider
+              // than the gutter while the cap was not even binding.
+              final width = constraints.maxWidth;
+              // The gutter is the one Tasks, People and Goals sit on.
+              final pagePadding =
+                  width > _maxContentWidth + tokens.spacing.step5 * 2
+                  ? (width - _maxContentWidth) / 2
+                  : tokens.spacing.step5;
+              return CustomScrollView(
+                controller: _scrollController,
+                slivers: <Widget>[
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      pagePadding,
+                      tokens.spacing.step5,
+                      pagePadding,
+                      0,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        HabitsHeader(searchFocusNode: _searchFocusNode),
+                        SizedBox(height: tokens.spacing.sectionGap),
+                        const HabitsSummaryCard(),
+                        if (showOpenNow) ...[
+                          if (showAll)
+                            HabitsSectionHeader(
+                              label: messages.habitsOpenHeader,
+                              count: openNow.length,
+                            )
+                          else
+                            SizedBox(height: tokens.spacing.step5),
+                          ...openNow.map(buildOpenRow),
+                        ],
+                        if (showPendingLater) ...[
+                          if (showAll)
+                            HabitsSectionHeader(
+                              label: messages.habitsPendingLaterHeader,
+                              count: pendingLater.length,
+                            )
+                          else
+                            SizedBox(height: tokens.spacing.step5),
+                          ...pendingLater.map(buildRow),
+                        ],
+                        if (showCompleted) ...[
+                          if (showAll)
+                            HabitsSectionHeader(
+                              label: messages.habitsCompletedHeader,
+                              count: completed.length,
+                            )
+                          else
+                            SizedBox(height: tokens.spacing.step5),
+                          ...completed.map(buildRow),
+                        ],
+                      ]),
+                    ),
+                  ),
+                  // The heatmap is the width-using centrepiece: a full-width band so a
+                  // wide window shows more history, while the reading content stays a
+                  // comfortable column.
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: pagePadding,
+                      vertical: tokens.spacing.sectionGap,
+                    ),
+                    sliver: const SliverToBoxAdapter(child: HabitHeatmapCard()),
+                  ),
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      pagePadding,
+                      0,
+                      pagePadding,
+                      tokens.spacing.step6 +
+                          DesignSystemBottomNavigationBar.occupiedHeight(
+                            context,
+                          ),
+                    ),
+                    sliver: const SliverToBoxAdapter(child: HabitsChartCard()),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

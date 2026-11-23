@@ -181,7 +181,9 @@ stateDiagram-v2
 ```
 
 The header leads with the current scope title and provides a dedicated Close
-control in companion mode. The chat picker always has a row of its own. On a
+control in companion mode. In the conversation view the chat picker always
+has a row of its own; while a reader has an evidence source open
+(`_sourceId`), the header shows neither the picker nor reach and filters. On a
 header narrower than `kPageHeaderFoldWidth` at the current text scale the
 agent attribution is dropped and search reach and filters open through a
 labelled disclosure; a wider header shows the attribution and the filters
