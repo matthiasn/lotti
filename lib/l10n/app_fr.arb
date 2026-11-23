@@ -3097,6 +3097,7 @@
   "eventsStatusCompleted": "Terminé",
   "eventsStatusMissed": "Manqué",
   "eventsStatusOngoing": "En cours",
+  "eventsStatusPickerTitle": "Statut",
   "eventsStatusPlanned": "Planifié",
   "eventsStatusPostponed": "Reporté",
   "eventsStatusRescheduled": "Reprogrammé",

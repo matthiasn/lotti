@@ -186,7 +186,9 @@ class _HeroContent extends StatelessWidget {
             _TappablePill(
               onTap: onTapStatus,
               child: EventOverlayPill(
-                dotColor: card.status.color,
+                // The pill is a translucent black chip over the cover
+                // photo in either theme, so it takes the dark-surface shade.
+                dotColor: card.status.colorForBrightness(Brightness.dark),
                 label: eventStatusLabel(context, card.status),
               ),
             ),

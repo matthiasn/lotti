@@ -24,25 +24,4 @@ extension EventStatusX on EventStatus {
     EventStatus.rescheduled => context.messages.eventsStatusRescheduled,
     EventStatus.missed => context.messages.eventsStatusMissed,
   };
-
-  Color get color {
-    switch (this) {
-      case EventStatus.tentative:
-        return Colors.grey;
-      case EventStatus.planned:
-        return Colors.blue;
-      case EventStatus.ongoing:
-        return Colors.orange;
-      case EventStatus.completed:
-        return Colors.green;
-      case EventStatus.cancelled:
-        return Colors.red;
-      case EventStatus.postponed:
-        return Colors.yellow;
-      case EventStatus.rescheduled:
-        return Colors.purple;
-      case EventStatus.missed:
-        return Colors.red;
-    }
-  }
 }

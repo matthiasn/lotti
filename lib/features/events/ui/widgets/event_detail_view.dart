@@ -14,6 +14,7 @@ import 'package:lotti/features/events/ui/widgets/event_star_rating.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/features/events/ui/widgets/event_timeline.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/event_status_colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
 

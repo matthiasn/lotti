@@ -21,6 +21,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/themes/event_status_colors.dart';
 import 'package:lotti/themes/task_colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
@@ -513,7 +514,7 @@ class _EntryCardContent extends StatelessWidget {
   Widget _eventStatusChip(BuildContext context, EventStatus status) {
     return ModernStatusChip(
       label: status.localizedLabel(context),
-      color: status.color,
+      color: status.colorForBrightness(Theme.of(context).brightness),
     );
   }
 

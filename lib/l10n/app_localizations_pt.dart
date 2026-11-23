@@ -7428,6 +7428,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventsStatusOngoing => 'Em andamento';
 
   @override
+  String get eventsStatusPickerTitle => 'Estado';
+
+  @override
   String get eventsStatusPlanned => 'Planejado';
 
   @override

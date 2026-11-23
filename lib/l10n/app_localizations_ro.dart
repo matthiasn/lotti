@@ -7464,6 +7464,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsStatusOngoing => 'În desfășurare';
 
   @override
+  String get eventsStatusPickerTitle => 'Stare';
+
+  @override
   String get eventsStatusPlanned => 'Planificat';
 
   @override

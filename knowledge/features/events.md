@@ -163,7 +163,14 @@ query, the flag gate and the status rule live with the lane, in
 
 # The hero is the interaction surface
 
-Title is tap-to-edit; category and status pills open shared pickers; the date
+Title is tap-to-edit; category and status pills open shared pickers (the
+status picker in `event_status_picker.dart` is the titled, icon-led
+`DesignSystemSelectionRow` list the task and project status pickers use, and
+re-picking the current status resolves to `null` so nothing is written). Every
+status surface takes its colour from `EventStatusColors.colorForBrightness` in
+`lib/themes/event_status_colors.dart` — the task icon palette, deeper on light
+surfaces; the hero pill always asks for the dark shade because it sits on a
+black chip over the cover photo. The date
 line opens the shared date-time modal and is **the single source of the event's
 when** — the body no longer repeats it.
 

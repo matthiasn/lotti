@@ -7356,6 +7356,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventsStatusOngoing => 'Lopende';
 
   @override
+  String get eventsStatusPickerTitle => 'Status';
+
+  @override
   String get eventsStatusPlanned => 'Gepland';
 
   @override

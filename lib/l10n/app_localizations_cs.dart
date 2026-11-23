@@ -7434,6 +7434,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsStatusOngoing => 'Probíhá';
 
   @override
+  String get eventsStatusPickerTitle => 'Stav';
+
+  @override
   String get eventsStatusPlanned => 'Naplánováno';
 
   @override

@@ -6,6 +6,7 @@ import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/themes/event_status_colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -234,7 +235,7 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final color = status.color;
+    final color = status.colorForBrightness(Theme.of(context).brightness);
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step2,

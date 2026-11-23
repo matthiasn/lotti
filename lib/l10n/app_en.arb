@@ -4647,6 +4647,7 @@
   "eventsStatusCompleted": "Completed",
   "eventsStatusMissed": "Missed",
   "eventsStatusOngoing": "Ongoing",
+  "eventsStatusPickerTitle": "Status",
   "eventsStatusPlanned": "Planned",
   "eventsStatusPostponed": "Postponed",
   "eventsStatusRescheduled": "Rescheduled",

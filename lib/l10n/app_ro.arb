@@ -3097,6 +3097,7 @@
   "eventsStatusCompleted": "Finalizat",
   "eventsStatusMissed": "Ratat",
   "eventsStatusOngoing": "În desfășurare",
+  "eventsStatusPickerTitle": "Stare",
   "eventsStatusPlanned": "Planificat",
   "eventsStatusPostponed": "Amânat",
   "eventsStatusRescheduled": "Reprogramat",

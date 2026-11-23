@@ -307,8 +307,8 @@ list does not take the default width, and the current choice as its one
 carries every item field across, groups and toggles included.
 
 **Pickable rows climb one primary ladder.** A context-menu row and a
-single-select `DesignSystemSelectionRow` — the task and project status pickers
-and every other single-select modal — hover in
+single-select `DesignSystemSelectionRow` — the task, project and event status
+pickers and every other single-select modal — hover in
 `DesignSystemListPalette.hoverFill` (`interactive.enabled` at
 `SurfaceAlphas.tint`, 8 %), wear `surface.selected` (about 16 %) when selected,
 and press in `DesignSystemListPalette.pressedFill` (`surface.active`, about

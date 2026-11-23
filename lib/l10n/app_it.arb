@@ -3422,6 +3422,7 @@
   "eventsStatusCompleted": "Completo",
   "eventsStatusMissed": "Mancato",
   "eventsStatusOngoing": "In corso",
+  "eventsStatusPickerTitle": "Stato",
   "eventsStatusPlanned": "Pianificato",
   "eventsStatusPostponed": "Postponi",
   "eventsStatusRescheduled": "Riprogrammazione",

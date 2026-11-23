@@ -7347,6 +7347,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get eventsStatusOngoing => 'Pågående';
 
   @override
+  String get eventsStatusPickerTitle => 'Status';
+
+  @override
   String get eventsStatusPlanned => 'Planerat';
 
   @override

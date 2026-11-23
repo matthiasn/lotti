@@ -688,6 +688,31 @@ void main() {
       expect(rec.statuses, [EventStatus.cancelled]);
     });
 
+    testWidgets('re-picking the current status writes nothing', (
+      tester,
+    ) async {
+      final rec = _RecordingEntryController(_event());
+      await pumpResolved(
+        tester,
+        linked: const [],
+        controllerBuilder: () => rec,
+      );
+
+      await tester.tap(find.text('Completed')); // status pill
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('event-status-completed')),
+      ); // the current row
+      await tester.pumpAndSettle();
+
+      expect(rec.statuses, isEmpty);
+      expect(
+        find.byKey(const ValueKey('event-status-completed')),
+        findsNothing,
+        reason: 'the picker closed',
+      );
+    });
+
     for (final deleted in [true, false]) {
       testWidgets(
         'the overflow menu deletes the event through the controller'

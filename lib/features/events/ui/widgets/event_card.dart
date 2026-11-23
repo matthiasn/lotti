@@ -7,6 +7,7 @@ import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_overlay_pill.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/themes/event_status_colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -209,7 +210,9 @@ class EventCardFooter extends StatelessWidget {
             Text(
               eventStatusLabel(context, data.status),
               style: tokens.typography.styles.others.caption.copyWith(
-                color: data.status.color,
+                color: data.status.colorForBrightness(
+                  Theme.of(context).brightness,
+                ),
                 fontWeight: FontWeight.w600,
               ),
             ),

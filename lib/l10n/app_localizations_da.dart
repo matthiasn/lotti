@@ -7332,6 +7332,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get eventsStatusOngoing => 'Løbende';
 
   @override
+  String get eventsStatusPickerTitle => 'Status';
+
+  @override
   String get eventsStatusPlanned => 'Planlagt';
 
   @override
