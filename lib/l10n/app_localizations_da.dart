@@ -7102,6 +7102,20 @@ class AppLocalizationsDa extends AppLocalizations {
   String get documentProposalRead => 'Læs udkast';
 
   @override
+  String get documentReviewAdded => 'Tilføjet i den foreslåede version';
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'Ikke i v$number';
+  }
+
+  @override
+  String get documentReviewRemoved => 'Fjernet i den foreslåede version';
+
+  @override
+  String get documentReviewRewritten => 'Omskrevet i den foreslåede version';
+
+  @override
   String get doneButton => 'Færdig';
 
   @override

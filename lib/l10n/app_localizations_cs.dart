@@ -7202,6 +7202,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get documentProposalRead => 'Přečíst návrh';
 
   @override
+  String get documentReviewAdded => 'Přidáno v navržené verzi';
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'Není ve v$number';
+  }
+
+  @override
+  String get documentReviewRemoved => 'Odebráno v navržené verzi';
+
+  @override
+  String get documentReviewRewritten => 'Přepsáno v navržené verzi';
+
+  @override
   String get doneButton => 'Hotovo';
 
   @override

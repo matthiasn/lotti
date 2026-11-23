@@ -514,7 +514,19 @@ stateDiagram-v2
   Closed --> [*]
 ```
 
-The rest of this section is the plan: the view is not built yet.
+Its rows are built too:
+[`ReviewBlockRow`](../../lib/features/documents/ui/widgets/review_block_row.dart)
+lays a pair out as two top-aligned cells of their own heights, current on
+the left, proposed on the right, with a gutter mark for a changed row (＋
+added, − removed, ~ rewritten, in the diff colour) and that change as the
+row's screen-reader label.
+[`ReviewBlockCell`](../../lib/features/documents/ui/widgets/review_block_cell.dart)
+renders a block with `AgentMarkdownView`: an unchanged one on no surface in
+medium ink, a changed one on its `colors.diff.*` surface, and a missing one
+as a dashed slot (`DsDashedBorder`, `decorative.level03`) saying "Not in
+v3", or "No text yet" when the document had none.
+
+The rest of this section is the plan: the view itself is not built yet.
 
 Reviewing a proposal is a mode of the document page. The current version is
 on the left and the proposed one on the right, aligned block by block

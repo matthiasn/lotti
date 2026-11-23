@@ -7126,6 +7126,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get documentProposalRead => 'Concept lezen';
 
   @override
+  String get documentReviewAdded => 'Toegevoegd in de voorgestelde versie';
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'Niet in v$number';
+  }
+
+  @override
+  String get documentReviewRemoved => 'Verwijderd in de voorgestelde versie';
+
+  @override
+  String get documentReviewRewritten => 'Herschreven in de voorgestelde versie';
+
+  @override
   String get doneButton => 'Klaar';
 
   @override

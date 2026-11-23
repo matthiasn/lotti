@@ -7223,6 +7223,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get documentProposalRead => 'Lire le brouillon';
 
   @override
+  String get documentReviewAdded => 'Ajouté dans la version proposée';
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'Absent de v$number';
+  }
+
+  @override
+  String get documentReviewRemoved => 'Supprimé dans la version proposée';
+
+  @override
+  String get documentReviewRewritten => 'Réécrit dans la version proposée';
+
+  @override
   String get doneButton => 'Terminé';
 
   @override

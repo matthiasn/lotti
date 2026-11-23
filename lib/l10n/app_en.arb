@@ -4543,6 +4543,28 @@
   "@documentProposalRead": {
     "description": "Button under an agent document proposal, in the AI summary card and in chat, that opens the proposed text before the user confirms it."
   },
+  "documentReviewAdded": "Added in the proposed version",
+  "@documentReviewAdded": {
+    "description": "Screen-reader label of a review row whose paragraph is new in the proposed version."
+  },
+  "documentReviewNotInVersion": "Not in v{number}",
+  "@documentReviewNotInVersion": {
+    "description": "Caption in the empty slot of a side-by-side document review, where a paragraph exists only on the other side: this version does not have it.",
+    "placeholders": {
+      "number": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "documentReviewRemoved": "Removed in the proposed version",
+  "@documentReviewRemoved": {
+    "description": "Screen-reader label of a review row whose paragraph the proposed version drops."
+  },
+  "documentReviewRewritten": "Rewritten in the proposed version",
+  "@documentReviewRewritten": {
+    "description": "Screen-reader label of a review row whose paragraph the proposed version rewrites."
+  },
   "doneButton": "Done",
   "downloadSizeMegabytes": "{megabytes} MB",
   "@downloadSizeMegabytes": {

@@ -7199,6 +7199,20 @@ class AppLocalizationsIt extends AppLocalizations {
   String get documentProposalRead => 'Leggi la bozza';
 
   @override
+  String get documentReviewAdded => 'Aggiunto nella versione proposta';
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'Non in v$number';
+  }
+
+  @override
+  String get documentReviewRemoved => 'Rimosso nella versione proposta';
+
+  @override
+  String get documentReviewRewritten => 'Riscritto nella versione proposta';
+
+  @override
   String get doneButton => 'Fatto';
 
   @override

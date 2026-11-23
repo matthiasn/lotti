@@ -7202,6 +7202,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get documentProposalRead => 'Leer borrador';
 
   @override
+  String get documentReviewAdded => 'Añadido en la versión propuesta';
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'No está en v$number';
+  }
+
+  @override
+  String get documentReviewRemoved => 'Eliminado en la versión propuesta';
+
+  @override
+  String get documentReviewRewritten => 'Reescrito en la versión propuesta';
+
+  @override
   String get doneButton => 'Listo';
 
   @override

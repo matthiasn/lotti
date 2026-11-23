@@ -7116,6 +7116,20 @@ class AppLocalizationsSv extends AppLocalizations {
   String get documentProposalRead => 'Läs utkast';
 
   @override
+  String get documentReviewAdded => 'Tillagt i den föreslagna versionen';
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'Inte i v$number';
+  }
+
+  @override
+  String get documentReviewRemoved => 'Borttaget i den föreslagna versionen';
+
+  @override
+  String get documentReviewRewritten => 'Omskrivet i den föreslagna versionen';
+
+  @override
   String get doneButton => 'Klart';
 
   @override

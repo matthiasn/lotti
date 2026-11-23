@@ -7073,6 +7073,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get documentProposalRead => 'Read draft';
 
   @override
+  String get documentReviewAdded => 'Added in the proposed version';
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'Not in v$number';
+  }
+
+  @override
+  String get documentReviewRemoved => 'Removed in the proposed version';
+
+  @override
+  String get documentReviewRewritten => 'Rewritten in the proposed version';
+
+  @override
   String get doneButton => 'Done';
 
   @override

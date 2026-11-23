@@ -7231,6 +7231,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get documentProposalRead => 'Citiți ciorna';
 
   @override
+  String get documentReviewAdded => 'Adăugat în versiunea propusă';
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'Nu este în v$number';
+  }
+
+  @override
+  String get documentReviewRemoved => 'Eliminat în versiunea propusă';
+
+  @override
+  String get documentReviewRewritten => 'Rescris în versiunea propusă';
+
+  @override
   String get doneButton => 'Gata';
 
   @override

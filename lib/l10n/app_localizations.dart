@@ -12023,6 +12023,30 @@ abstract class AppLocalizations {
   /// **'Read draft'**
   String get documentProposalRead;
 
+  /// Screen-reader label of a review row whose paragraph is new in the proposed version.
+  ///
+  /// In en, this message translates to:
+  /// **'Added in the proposed version'**
+  String get documentReviewAdded;
+
+  /// Caption in the empty slot of a side-by-side document review, where a paragraph exists only on the other side: this version does not have it.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in v{number}'**
+  String documentReviewNotInVersion(int number);
+
+  /// Screen-reader label of a review row whose paragraph the proposed version drops.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed in the proposed version'**
+  String get documentReviewRemoved;
+
+  /// Screen-reader label of a review row whose paragraph the proposed version rewrites.
+  ///
+  /// In en, this message translates to:
+  /// **'Rewritten in the proposed version'**
+  String get documentReviewRewritten;
+
   /// No description provided for @doneButton.
   ///
   /// In en, this message translates to:

@@ -7149,6 +7149,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get documentProposalRead => 'Entwurf lesen';
 
   @override
+  String get documentReviewAdded =>
+      'In der vorgeschlagenen Version hinzugefügt';
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'Nicht in v$number';
+  }
+
+  @override
+  String get documentReviewRemoved => 'In der vorgeschlagenen Version entfernt';
+
+  @override
+  String get documentReviewRewritten =>
+      'In der vorgeschlagenen Version umgeschrieben';
+
+  @override
   String get doneButton => 'Fertig';
 
   @override
