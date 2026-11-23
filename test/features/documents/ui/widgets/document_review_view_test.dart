@@ -9,7 +9,9 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/logic/markdown_block_diff.dart';
 import 'package:lotti/features/documents/state/document_review_providers.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/widgets/document_review_view.dart';
@@ -146,7 +148,9 @@ void main() {
       final rows = tester.widgetList<ReviewBlockRow>(
         find.byType(ReviewBlockRow),
       );
-      expect(rows, hasLength(4));
+      // The leading "# Brief" only repeats the title the header shows.
+      expect(rows, hasLength(3));
+      expect(rows.first.pair.kind, MarkdownBlockChange.rewritten);
       expect(rows.every((row) => !row.stacked), isTrue);
     });
 
@@ -178,9 +182,18 @@ void main() {
       'them', (tester) async {
     await pump(tester);
 
-    expect(find.text('+1'), findsOneWidget);
-    expect(find.text('~1'), findsOneWidget);
-    expect(find.text('−0'), findsNothing);
+    // Tags for the kinds there are, each with the gutter's own mark.
+    expect(
+      tester
+          .widgetList<DsPill>(
+            find.descendant(
+              of: find.byType(ExcludeSemantics),
+              matching: find.byType(DsPill),
+            ),
+          )
+          .map((pill) => ((pill.leading! as Icon).icon, pill.label)),
+      [(LottiIcons.add, '1'), (LottiIcons.compare, '1')],
+    );
     expect(
       find.bySemanticsLabel('1 added, 0 removed, 1 rewritten'),
       findsOneWidget,
@@ -233,7 +246,8 @@ void main() {
       );
     });
 
-    testWidgets('Discard draft rejects the item and closes', (tester) async {
+    testWidgets('Discard draft asks first; confirmed, it rejects the item '
+        'and closes', (tester) async {
       when(
         () => service.rejectItem(any(), any()),
       ).thenAnswer((_) async => true);
@@ -241,6 +255,13 @@ void main() {
 
       await tester.tap(find.byKey(DocumentReviewViewKeys.discard));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Discard this draft?'), findsOneWidget);
+      verifyNever(() => service.rejectItem(any(), any()));
+
+      await tester.tap(find.text('Discard draft').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       verify(() => service.rejectItem(any(), 0)).called(1);
       verifyNever(() => service.confirmItem(any(), any()));
@@ -272,7 +293,8 @@ void main() {
             ),
           )
           .data,
-      'Written against v1, current is v2',
+      'Written against v1, but the document is now v2: confirming would '
+      'overwrite the newer text.',
     );
     expect(find.byKey(DocumentReviewViewKeys.confirm), findsNothing);
     expect(find.byKey(DocumentReviewViewKeys.ask), findsNothing);
@@ -285,7 +307,13 @@ void main() {
           .toSet(),
       {null},
     );
-    expect(label(tester, DocumentReviewViewKeys.redo), 'Ask the agent to redo');
+    expect(
+      label(tester, DocumentReviewViewKeys.redo),
+      'Ask for a redo in chat',
+    );
+    // The left column is the draft's base, not the current text.
+    expect(find.text('Drafted over'), findsOneWidget);
+    expect(find.text('Current'), findsNothing);
 
     await tester.tap(find.byKey(DocumentReviewViewKeys.redo));
     await tester.pump();
@@ -339,5 +367,106 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump();
     expect(closed, 2);
+  });
+
+  testWidgets('a draft that rewrites the title keeps its title row', (
+    tester,
+  ) async {
+    open = [
+      documentDraft(
+        markdown:
+            '# Penguin brief\n\nFeed the penguins at noon.\n\nCount them at '
+            'dusk.',
+      ),
+    ];
+    await pump(tester);
+
+    expect(
+      tester
+          .widgetList<ReviewBlockRow>(find.byType(ReviewBlockRow))
+          .first
+          .pair
+          .kind,
+      MarkdownBlockChange.rewritten,
+    );
+    expect(find.textContaining('Penguin brief'), findsOneWidget);
+  });
+
+  testWidgets('on a narrow pane Discard draft is the icon — it asks first — '
+      'and Ask for changes keeps its words', (tester) async {
+    await pump(tester, width: 400);
+
+    expect(
+      find.descendant(
+        of: find.byKey(DocumentReviewViewKeys.discard),
+        matching: find.byTooltip('Discard draft'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.widgetWithText(DesignSystemButton, 'Ask for changes'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the column heads are pinned over the rows', (tester) async {
+    await pump(tester);
+
+    expect(
+      find.ancestor(
+        of: find.byKey(DocumentReviewViewKeys.columnHeads),
+        matching: find.byType(PinnedHeaderSliver),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('on a narrow pane Close review is an icon, its label the '
+      'tooltip', (tester) async {
+    await pump(tester, width: 400);
+
+    expect(
+      find.descendant(
+        of: find.byKey(DocumentReviewViewKeys.close),
+        matching: find.byTooltip('Close review'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(DocumentReviewViewKeys.close));
+    expect(closed, 1);
+  });
+
+  testWidgets('Discard draft cancelled discards nothing', (tester) async {
+    await pump(tester);
+
+    await tester.tap(find.byKey(DocumentReviewViewKeys.discard));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text('Cancel').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    verifyNever(() => service.rejectItem(any(), any()));
+    expect(closed, 0);
+  });
+
+  testWidgets('a stale draft with a newer one waiting offers the newer one '
+      'as its primary, not another redo', (tester) async {
+    document = documentShowing(v2);
+    await pump(tester);
+    final createdAt = open.single.changeSet.createdAt;
+    await reloadProposals(tester, [
+      documentDraft(),
+      documentDraft(
+        setId: 'cs-newer',
+        base: 'version-2',
+        createdAt: createdAt.add(const Duration(minutes: 5)),
+      ),
+    ]);
+
+    expect(find.byKey(DocumentReviewViewKeys.redo), findsNothing);
+    await tester.tap(find.byKey(DocumentReviewViewKeys.openNewer));
+
+    expect(opened.single.changeSetId, 'cs-newer');
   });
 }

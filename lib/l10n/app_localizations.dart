@@ -12035,6 +12035,12 @@ abstract class AppLocalizations {
   /// **'Ask for changes'**
   String get documentReviewAskForChanges;
 
+  /// Column head over the left side of a document review whose draft is stale: the column shows the version the draft was written over (named by the version tag beside it), not the document's current text.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafted over'**
+  String get documentReviewBase;
+
   /// Button in a document review's header that leaves the review and returns to the document.
   ///
   /// In en, this message translates to:
@@ -12058,6 +12064,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Current'**
   String get documentReviewCurrent;
+
+  /// Message of the confirmation asked before discarding the agent's draft in a document review: what discarding does, and how to get a new draft.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent\'s draft is thrown away. You can ask for a new one in the task\'s chat.'**
+  String get documentReviewDiscardMessage;
+
+  /// Title of the confirmation asked before discarding the agent's draft in a document review.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this draft?'**
+  String get documentReviewDiscardTitle;
 
   /// Link in a document review: the agent proposed a later draft of the same document while this one was open; opens that draft for review.
   ///
@@ -12089,10 +12107,10 @@ abstract class AppLocalizations {
   /// **'Proposed'**
   String get documentReviewProposed;
 
-  /// Primary button of a document review whose draft was written over an older version: opens the task's chat to ask the agent for a fresh draft against the current version.
+  /// Primary button of a document review whose draft was written over an older version: opens the task's chat, where the user asks the agent for a fresh draft against the current version.
   ///
   /// In en, this message translates to:
-  /// **'Ask the agent to redo'**
+  /// **'Ask for a redo in chat'**
   String get documentReviewRedo;
 
   /// Screen-reader label of a review row whose paragraph the proposed version drops.
@@ -12110,13 +12128,13 @@ abstract class AppLocalizations {
   /// Warning tag in a document review: the draft was written over version base, but the document has moved on to version current, so it cannot be confirmed.
   ///
   /// In en, this message translates to:
-  /// **'Written against v{base}, current is v{current}'**
+  /// **'Written against v{base}, but the document is now v{current}: confirming would overwrite the newer text.'**
   String documentReviewStale(int base, int current);
 
   /// Warning tag in a document review: the draft was written while the document had no text, but the document now shows version current, so it cannot be confirmed.
   ///
   /// In en, this message translates to:
-  /// **'Written before the document had text, current is v{current}'**
+  /// **'Written before the document had text; it is now v{current}, and confirming would overwrite it.'**
   String documentReviewStaleNoText(int current);
 
   /// Notice on a document page: the task agent has drafted a new version of this document that waits for review.
@@ -12124,6 +12142,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The agent drafted a new version'**
   String get documentReviewWaiting;
+
+  /// Notice on a document page: the task agent's waiting draft of a new version was written over an older version than the one the page shows, so it can no longer be confirmed as it is.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent drafted a new version, but over an older one'**
+  String get documentReviewWaitingStale;
 
   /// No description provided for @doneButton.
   ///

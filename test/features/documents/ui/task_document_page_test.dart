@@ -399,6 +399,64 @@ void main() {
       expect(find.byType(DocumentReviewView), findsNothing);
       expect(heard, 0);
     });
+
+    testWidgets('while reviewing, back closes the review onto the text '
+        'instead of leaving the page', (tester) async {
+      var left = 0;
+      await pump(
+        tester,
+        drafts: [draft],
+        initialReview: reviewOf(draft),
+        onClose: () => left++,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(DocumentReviewView), findsOneWidget);
+      expect(
+        tester.widget<PopScope<void>>(find.byType(PopScope<void>)).canPop,
+        isFalse,
+      );
+
+      await tester.tap(find.byType(BackWidget));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(DocumentReviewView), findsNothing);
+      expect(left, 0);
+      expect(
+        tester.widget<PopScope<void>>(find.byType(PopScope<void>)).canPop,
+        isTrue,
+      );
+    });
+
+    testWidgets('while a draft waits, Review changes is the filled button '
+        'and Edit steps down', (tester) async {
+      await pump(tester, drafts: [draft]);
+
+      expect(
+        tester
+            .widget<DesignSystemButton>(find.byKey(TaskDocumentPageKeys.review))
+            .variant,
+        DesignSystemButtonVariant.primary,
+      );
+      expect(
+        tester
+            .widget<DesignSystemButton>(find.byKey(TaskDocumentPageKeys.edit))
+            .variant,
+        DesignSystemButtonVariant.tertiary,
+      );
+    });
+
+    testWidgets('a draft written over an older version says so before it is '
+        'opened', (tester) async {
+      await pump(tester, drafts: [documentDraft()]);
+
+      expect(
+        find.text('The agent drafted a new version, but over an older one'),
+        findsOneWidget,
+      );
+      expect(find.text('The agent drafted a new version'), findsNothing);
+    });
   });
 }
 

@@ -7208,6 +7208,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get documentReviewAskForChanges => 'Požádat o změny';
 
   @override
+  String get documentReviewBase => 'Napsáno nad';
+
+  @override
   String get documentReviewClose => 'Zavřít kontrolu';
 
   @override
@@ -7222,6 +7225,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get documentReviewCurrent => 'Aktuální';
+
+  @override
+  String get documentReviewDiscardMessage =>
+      'Koncept agenta se zahodí. O nový můžeš požádat v chatu úkolu.';
+
+  @override
+  String get documentReviewDiscardTitle => 'Zahodit tento koncept?';
 
   @override
   String get documentReviewNewer => 'Otevřít novější koncept';
@@ -7241,7 +7251,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get documentReviewProposed => 'Navržená';
 
   @override
-  String get documentReviewRedo => 'Požádat agenta o přepracování';
+  String get documentReviewRedo => 'Požádat o přepracování v chatu';
 
   @override
   String get documentReviewRemoved => 'Odebráno v navržené verzi';
@@ -7251,16 +7261,20 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String documentReviewStale(int base, int current) {
-    return 'Napsáno nad v$base, aktuální je v$current';
+    return 'Napsáno nad v$base, ale dokument je teď v$current: potvrzením bys přepsal novější text.';
   }
 
   @override
   String documentReviewStaleNoText(int current) {
-    return 'Napsáno dřív, než dokument měl text, aktuální je v$current';
+    return 'Napsáno dřív, než dokument měl text; teď je v$current a potvrzením bys ho přepsal.';
   }
 
   @override
   String get documentReviewWaiting => 'Agent navrhl novou verzi';
+
+  @override
+  String get documentReviewWaitingStale =>
+      'Agent navrhl novou verzi, ale nad starší';
 
   @override
   String get doneButton => 'Hotovo';

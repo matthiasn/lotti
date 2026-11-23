@@ -12,11 +12,30 @@ void main() {
     WidgetTester tester, {
     required MarkdownBlockChange kind,
     String? block = 'Feed the penguins at noon.',
+    bool quiet = false,
   }) => tester.pumpWidget(
     makeTestableWidgetWithScaffold(
-      ReviewBlockCell(kind: kind, block: block, emptyLabel: 'Not in v3'),
+      ReviewBlockCell(
+        kind: kind,
+        block: block,
+        emptyLabel: 'Not in v3',
+        quiet: quiet,
+      ),
     ),
   );
+
+  Color? inkOf(WidgetTester tester, String text) => tester
+      .widget<RichText>(
+        find.descendant(
+          of: find.byType(ReviewBlockCell),
+          matching: find.byWidgetPredicate(
+            (w) => w is RichText && w.text.toPlainText().contains(text),
+          ),
+        ),
+      )
+      .text
+      .style
+      ?.color;
 
   DsTokens tokensOf(WidgetTester tester) =>
       tester.element(find.byType(ReviewBlockCell)).designTokens;
@@ -79,6 +98,50 @@ void main() {
     expect(
       tester.widget<DsDashedBorder>(find.byType(DsDashedBorder)).color,
       tokensOf(tester).colors.decorative.level03,
+    );
+  });
+
+  testWidgets('an unchanged heading keeps to the body size and the medium '
+      'ink, never outranking the review', (tester) async {
+    await pumpCell(
+      tester,
+      kind: MarkdownBlockChange.same,
+      block: '## Feeding rounds',
+    );
+
+    final tokens = tokensOf(tester);
+    TextStyle? headingStyle;
+    for (final text in tester.widgetList<RichText>(
+      find.descendant(
+        of: find.byType(ReviewBlockCell),
+        matching: find.byType(RichText),
+      ),
+    )) {
+      text.text.visitChildren((span) {
+        if (span is TextSpan && (span.text ?? '').contains('Feeding')) {
+          headingStyle = span.style;
+          return false;
+        }
+        return true;
+      });
+    }
+    // The heading's own span: at the body's size, in the cell's ink — not
+    // the renderer's full-brightness heading colour.
+    expect(headingStyle, isNotNull);
+    expect(
+      headingStyle!.fontSize,
+      tokens.typography.styles.body.bodyMedium.fontSize,
+    );
+    expect(headingStyle!.color, tokens.colors.text.mediumEmphasis);
+  });
+
+  testWidgets('a quiet changed block, the old half of a stacked rewrite, '
+      'is in medium ink', (tester) async {
+    await pumpCell(tester, kind: MarkdownBlockChange.rewritten, quiet: true);
+
+    expect(
+      inkOf(tester, 'Feed the penguins'),
+      tokensOf(tester).colors.text.mediumEmphasis,
     );
   });
 }

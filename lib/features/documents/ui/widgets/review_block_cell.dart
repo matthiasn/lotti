@@ -8,8 +8,11 @@ import 'package:material_ui/material_ui.dart';
 /// markdown on the surface its change calls for, or — where the other side
 /// has a block and this one has none — a dashed empty slot saying so.
 ///
-/// An unchanged block sits on no surface, in medium ink, so the changes are
-/// what the eye finds. A removed block's current side, an added block's
+/// An unchanged block sits on no surface, in medium ink, with no vertical
+/// padding — so plain text keeps its paragraph rhythm and the space gathers
+/// around the changes, which are what the eye finds. Headings stay at the
+/// body's size (`subordinateHeadings`), set apart by weight, so a document's
+/// own heading never outranks the review's title. A removed block's current side, an added block's
 /// proposed side and both sides of a rewritten one take the matching diff
 /// surface; the row's gutter mark says which, so colour is never the only
 /// signal.
@@ -18,8 +21,13 @@ class ReviewBlockCell extends StatelessWidget {
     required this.kind,
     required this.block,
     required this.emptyLabel,
+    this.quiet = false,
     super.key,
   });
+
+  /// Medium ink on a changed block: the old half of a rewrite stacked above
+  /// its new half, which reads first.
+  final bool quiet;
 
   final MarkdownBlockChange kind;
 
@@ -33,18 +41,23 @@ class ReviewBlockCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final radius = tokens.radii.m;
-    final padding = EdgeInsets.all(tokens.spacing.cardItemSpacing);
+    final inset = tokens.spacing.cardItemSpacing;
     final block = this.block;
     if (block == null) {
       return DsDashedBorder(
         color: tokens.colors.decorative.level03,
         radius: radius,
+        // A statement, not a field: centred in the slot, which stands as
+        // tall as the block beside it.
         child: Padding(
-          padding: padding,
-          child: Text(
-            emptyLabel,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+          padding: EdgeInsets.all(inset),
+          child: Center(
+            child: Text(
+              emptyLabel,
+              textAlign: TextAlign.center,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
             ),
           ),
         ),
@@ -59,17 +72,22 @@ class ReviewBlockCell extends StatelessWidget {
       MarkdownBlockChange.removed => diff.removed.surface,
       MarkdownBlockChange.added => diff.added.surface,
     };
+    final same = kind == MarkdownBlockChange.same;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(radius),
       ),
       child: Padding(
-        padding: padding,
+        // The text edge stays where a surfaced block's text starts.
+        padding: same
+            ? EdgeInsets.symmetric(horizontal: inset)
+            : EdgeInsets.all(inset),
         child: AgentMarkdownView(
           block,
+          subordinateHeadings: true,
           style: tokens.typography.styles.body.bodyMedium.copyWith(
-            color: kind == MarkdownBlockChange.same
+            color: same || quiet
                 ? tokens.colors.text.mediumEmphasis
                 : tokens.colors.text.highEmphasis,
           ),

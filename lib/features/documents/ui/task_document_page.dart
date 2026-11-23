@@ -167,88 +167,105 @@ class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
       if (context.mounted) close();
     }
 
-    return Scaffold(
-      // The task's chat docks beside the document, so a revision can be
-      // asked for while reading; it is the task's own discussion, the one
-      // its page opens, and its proposals carry a Read draft.
-      body: QueryCompanion(
-        scope: QueryScope(kind: QueryScopeKind.task, id: taskId),
-        entryViewBuilder: (entryId) =>
-            EntryDetailsPage(itemId: entryId, showBackButton: false),
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step2,
-                  vertical: tokens.spacing.step2,
+    final showingReview = reviewing != null && !over && document != null;
+
+    // While reviewing, back — the arrow, the system back, the iOS swipe —
+    // closes the review onto the text instead of leaving the document with
+    // the decision open.
+    return PopScope<void>(
+      canPop: !showingReview,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && showingReview) review.close();
+      },
+      child: Scaffold(
+        // The task's chat docks beside the document, so a revision can be
+        // asked for while reading; it is the task's own discussion, the one
+        // its page opens, and its proposals carry a Read draft.
+        body: QueryCompanion(
+          scope: QueryScope(kind: QueryScopeKind.task, id: taskId),
+          entryViewBuilder: (entryId) =>
+              EntryDetailsPage(itemId: entryId, showBackButton: false),
+          child: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.step2,
+                    vertical: tokens.spacing.step2,
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: BackWidget(
+                      onPressed: showingReview ? review.close : onClose,
+                    ),
+                  ),
                 ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: BackWidget(onPressed: onClose),
-                ),
-              ),
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: MediaQuery.disableAnimationsOf(context)
-                      ? Duration.zero
-                      : MotionDurations.short4,
-                  switchInCurve: MotionCurves.standard,
-                  switchOutCurve: MotionCurves.standard,
-                  child: reviewing != null && !over && document != null
-                      ? DocumentReviewView(
-                          key: ValueKey(reviewing),
-                          reviewKey: reviewing,
-                          title: document.data.title,
-                          onClose: review.close,
-                          onOpenDraft: review.open,
-                        )
-                      : document == null
-                      ? Center(
-                          child: Text(
-                            messages.taskDocumentsGone,
-                            style: tokens.typography.styles.body.bodyMedium
-                                .copyWith(
-                                  color: tokens.colors.text.mediumEmphasis,
-                                ),
-                          ),
-                        )
-                      : _DocumentBody(
-                          document: document,
-                          version: version,
-                          onEdit: () async => showTaskDocumentEditor(
-                            context,
-                            taskId: taskId,
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: MediaQuery.disableAnimationsOf(context)
+                        ? Duration.zero
+                        : MotionDurations.short4,
+                    switchInCurve: MotionCurves.standard,
+                    switchOutCurve: MotionCurves.standard,
+                    child: showingReview
+                        ? DocumentReviewView(
+                            key: ValueKey(reviewing),
+                            reviewKey: reviewing,
+                            title: document.data.title,
+                            onClose: review.close,
+                            onOpenDraft: review.open,
+                          )
+                        : document == null
+                        ? Center(
+                            child: Text(
+                              messages.taskDocumentsGone,
+                              style: tokens.typography.styles.body.bodyMedium
+                                  .copyWith(
+                                    color: tokens.colors.text.mediumEmphasis,
+                                  ),
+                            ),
+                          )
+                        : _DocumentBody(
                             document: document,
+                            version: version,
+                            onEdit: () async => showTaskDocumentEditor(
+                              context,
+                              taskId: taskId,
+                              document: document,
+                            ),
+                            onCopy: version == null
+                                ? null
+                                : () async => copyTaskDocumentMarkdown(
+                                    context,
+                                    version.data.markdown,
+                                  ),
+                            onHistory: version == null
+                                ? null
+                                : () async =>
+                                      showTaskDocumentHistory(context, key),
+                            onDelete: delete,
+                            chatScope: QueryScope(
+                              kind: QueryScopeKind.task,
+                              id: taskId,
+                            ),
+                            reviewOutOfDate:
+                                waiting != null &&
+                                waiting.item.args['baseVersionId'] !=
+                                    document.data.current?.id,
+                            onReview: waiting == null
+                                ? null
+                                : () => review.open((
+                                    taskId: taskId,
+                                    documentId: documentId,
+                                    changeSetId: waiting.changeSet.id,
+                                    itemIndex: waiting.itemIndex,
+                                  )),
                           ),
-                          onCopy: version == null
-                              ? null
-                              : () async => copyTaskDocumentMarkdown(
-                                  context,
-                                  version.data.markdown,
-                                ),
-                          onHistory: version == null
-                              ? null
-                              : () async =>
-                                    showTaskDocumentHistory(context, key),
-                          onDelete: delete,
-                          chatScope: QueryScope(
-                            kind: QueryScopeKind.task,
-                            id: taskId,
-                          ),
-                          onReview: waiting == null
-                              ? null
-                              : () => review.open((
-                                  taskId: taskId,
-                                  documentId: documentId,
-                                  changeSetId: waiting.changeSet.id,
-                                  itemIndex: waiting.itemIndex,
-                                )),
-                        ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -266,6 +283,7 @@ class _DocumentBody extends StatelessWidget {
     required this.onDelete,
     required this.chatScope,
     required this.onReview,
+    required this.reviewOutOfDate,
   });
 
   final TaskDocumentEntry document;
@@ -283,6 +301,10 @@ class _DocumentBody extends StatelessWidget {
   /// Opens the agent's waiting draft of this document for review; null when
   /// none waits.
   final VoidCallback? onReview;
+
+  /// The waiting draft was written over an older version than the one
+  /// shown.
+  final bool reviewOutOfDate;
 
   @override
   Widget build(BuildContext context) {
@@ -342,6 +364,19 @@ class _DocumentBody extends StatelessWidget {
                     ),
                   ),
                 ],
+                // A waiting draft comes before the actions: editing now
+                // would leave it stale, so reviewing it is the first thing
+                // to do, and the one filled button while it waits.
+                if (onReview != null) ...[
+                  SizedBox(height: tokens.spacing.step4),
+                  SizedBox(
+                    width: double.infinity,
+                    child: _DraftWaitingNotice(
+                      onReview: onReview!,
+                      outOfDate: reviewOutOfDate,
+                    ),
+                  ),
+                ],
                 SizedBox(height: tokens.spacing.step4),
                 Wrap(
                   spacing: tokens.spacing.step2,
@@ -352,6 +387,9 @@ class _DocumentBody extends StatelessWidget {
                       key: TaskDocumentPageKeys.edit,
                       label: messages.taskDocumentsEditAction,
                       leadingIcon: LottiIcons.edit,
+                      variant: onReview == null
+                          ? DesignSystemButtonVariant.primary
+                          : DesignSystemButtonVariant.tertiary,
                       onPressed: onEdit,
                     ),
                     DesignSystemButton(
@@ -377,10 +415,6 @@ class _DocumentBody extends StatelessWidget {
                   padding: EdgeInsets.only(top: tokens.spacing.step2),
                   child: QueryAskButton(scope: chatScope, inline: true),
                 ),
-                if (onReview != null) ...[
-                  SizedBox(height: tokens.spacing.step4),
-                  _DraftWaitingNotice(onReview: onReview!),
-                ],
                 SizedBox(height: tokens.spacing.step4),
                 const DesignSystemDivider(),
                 SizedBox(height: tokens.spacing.step5),
@@ -413,46 +447,68 @@ class _DocumentBody extends StatelessWidget {
   }
 }
 
-/// The agent's draft of a new version, waiting: said in the agent's violet,
-/// with the button that lays it beside the current text.
+/// The agent's draft of a new version, waiting: a status on the agent's own
+/// card surface — violet on its spark alone — with the button that lays the
+/// draft beside the current text.
 class _DraftWaitingNotice extends StatelessWidget {
-  const _DraftWaitingNotice({required this.onReview});
+  const _DraftWaitingNotice({required this.onReview, required this.outOfDate});
 
   final VoidCallback onReview;
+
+  /// The draft was written over a version the document no longer shows; it
+  /// says so before the review does.
+  final bool outOfDate;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final accent = tokens.colors.aiCard.accent;
-    return Wrap(
-      spacing: tokens.spacing.step3,
-      runSpacing: tokens.spacing.step2,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
+    final ai = tokens.colors.aiCard;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: ai.background,
+        border: Border.all(color: ai.border),
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.cardPadding),
+        child: Wrap(
+          spacing: tokens.spacing.step4,
+          runSpacing: tokens.spacing.step3,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          alignment: WrapAlignment.spaceBetween,
           children: [
-            Icon(LottiIcons.aiSpark, size: IconSizes.s, color: accent),
-            SizedBox(width: tokens.spacing.step2),
-            Flexible(
-              child: Text(
-                messages.documentReviewWaiting,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: accent,
-                  fontWeight: tokens.typography.weight.semiBold,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  outOfDate ? LottiIcons.warning : LottiIcons.aiSpark,
+                  size: IconSizes.m,
+                  color: outOfDate
+                      ? tokens.colors.alert.warning.defaultColor
+                      : ai.accent,
                 ),
-              ),
+                SizedBox(width: tokens.spacing.step2),
+                Flexible(
+                  child: Text(
+                    outOfDate
+                        ? messages.documentReviewWaitingStale
+                        : messages.documentReviewWaiting,
+                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            DesignSystemButton(
+              key: TaskDocumentPageKeys.review,
+              label: messages.documentReviewOpen,
+              onPressed: onReview,
             ),
           ],
         ),
-        DesignSystemButton(
-          key: TaskDocumentPageKeys.review,
-          label: messages.documentReviewOpen,
-          variant: DesignSystemButtonVariant.constructiveOutlined,
-          onPressed: onReview,
-        ),
-      ],
+      ),
     );
   }
 }

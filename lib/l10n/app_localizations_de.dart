@@ -7156,6 +7156,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get documentReviewAskForChanges => 'Änderungen erbitten';
 
   @override
+  String get documentReviewBase => 'Entworfen auf';
+
+  @override
   String get documentReviewClose => 'Prüfung schließen';
 
   @override
@@ -7170,6 +7173,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get documentReviewCurrent => 'Aktuell';
+
+  @override
+  String get documentReviewDiscardMessage =>
+      'Der Entwurf des Agenten wird verworfen. Im Chat der Aufgabe kannst du um einen neuen bitten.';
+
+  @override
+  String get documentReviewDiscardTitle => 'Diesen Entwurf verwerfen?';
 
   @override
   String get documentReviewNewer => 'Neueren Entwurf öffnen';
@@ -7189,7 +7199,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get documentReviewProposed => 'Vorgeschlagen';
 
   @override
-  String get documentReviewRedo => 'Agent um Neufassung bitten';
+  String get documentReviewRedo => 'Im Chat um Neufassung bitten';
 
   @override
   String get documentReviewRemoved => 'In der vorgeschlagenen Version entfernt';
@@ -7200,17 +7210,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String documentReviewStale(int base, int current) {
-    return 'Geschrieben für v$base, aktuell ist v$current';
+    return 'Geschrieben für v$base, aber das Dokument ist jetzt v$current: Übernehmen würde den neueren Text überschreiben.';
   }
 
   @override
   String documentReviewStaleNoText(int current) {
-    return 'Geschrieben, bevor das Dokument Text hatte, aktuell ist v$current';
+    return 'Geschrieben, bevor das Dokument Text hatte; es ist jetzt v$current, und Übernehmen würde es überschreiben.';
   }
 
   @override
   String get documentReviewWaiting =>
       'Der Agent hat eine neue Fassung entworfen';
+
+  @override
+  String get documentReviewWaitingStale =>
+      'Der Agent hat eine neue Fassung entworfen, aber auf einer älteren';
 
   @override
   String get doneButton => 'Fertig';

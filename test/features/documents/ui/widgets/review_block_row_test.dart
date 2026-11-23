@@ -14,6 +14,7 @@ void main() {
     int? baseVersion = 3,
     int? proposedVersion = 4,
     bool stacked = false,
+    bool stale = false,
   }) => tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       SizedBox(
@@ -24,6 +25,7 @@ void main() {
           proposedVersion: proposedVersion,
           noTextLabel: 'No text yet',
           stacked: stacked,
+          stale: stale,
         ),
       ),
     ),
@@ -69,7 +71,7 @@ void main() {
         base: feed,
         proposed: 'Feed the penguins at one.',
       ),
-      LottiIcons.edit,
+      LottiIcons.compare,
       'Rewritten in the proposed version',
       null,
     ),
@@ -123,9 +125,8 @@ void main() {
     expect(find.textContaining('Not in v'), findsNothing);
   });
 
-  testWidgets('cells stay top-aligned and keep their own heights', (
-    tester,
-  ) async {
+  testWidgets('a rewritten row is one band: a short side stands as tall as '
+      'a long one, side by side', (tester) async {
     await pumpRow(
       tester,
       MarkdownBlockPair(
@@ -139,8 +140,23 @@ void main() {
     final left = tester.getRect(cells.at(0));
     final right = tester.getRect(cells.at(1));
     expect(left.top, right.top);
-    expect(right.height, greaterThan(left.height * 2));
+    expect(left.bottom, right.bottom);
     expect(left.right, lessThan(right.left));
+  });
+
+  testWidgets('an unchanged row keeps each side its own height', (
+    tester,
+  ) async {
+    await pumpRow(
+      tester,
+      const MarkdownBlockPair(
+        kind: MarkdownBlockChange.same,
+        base: feed,
+        proposed: feed,
+      ),
+    );
+
+    expect(find.byType(IntrinsicHeight), findsNothing);
   });
 
   group('stacked, for a pane too narrow for two columns', () {
@@ -167,8 +183,9 @@ void main() {
       );
     });
 
-    testWidgets('a rewritten block shows its old text above its new one, '
-        'on the removed and added surfaces, under one mark', (tester) async {
+    testWidgets('a rewritten block shows its old text, quiet, under '
+        '"Current" above its new text under "Proposed" — both on the rewrite '
+        'surface, under one mark', (tester) async {
       const one = 'Feed the penguins at one.';
       await pumpRow(
         tester,
@@ -180,10 +197,22 @@ void main() {
         stacked: true,
       );
 
-      expect(cells(tester).map((cell) => (cell.kind, cell.block)), [
-        (MarkdownBlockChange.removed, feed),
-        (MarkdownBlockChange.added, one),
-      ]);
+      // Red and green keep meaning removed and added at every width.
+      expect(
+        cells(tester).map((cell) => (cell.kind, cell.block, cell.quiet)),
+        [
+          (MarkdownBlockChange.rewritten, feed, true),
+          (MarkdownBlockChange.rewritten, one, false),
+        ],
+      );
+      expect(
+        tester.getTopLeft(find.text('Current')).dy,
+        lessThan(tester.getTopLeft(find.byType(ReviewBlockCell).at(0)).dy),
+      );
+      expect(
+        tester.getTopLeft(find.text('Proposed')).dy,
+        lessThan(tester.getTopLeft(find.byType(ReviewBlockCell).at(1)).dy),
+      );
       final found = find.byType(ReviewBlockCell);
       expect(
         tester.getRect(found.at(0)).bottom,
@@ -208,5 +237,39 @@ void main() {
         expect(find.textContaining('Not in'), findsNothing);
       });
     }
+  });
+
+  testWidgets('an added or removed row stands as one band: its empty slot '
+      'is as tall as the block beside it', (tester) async {
+    await pumpRow(
+      tester,
+      MarkdownBlockPair(
+        kind: MarkdownBlockChange.removed,
+        base: List.filled(8, feed).join(' '),
+      ),
+    );
+
+    final cells = find.byType(ReviewBlockCell);
+    expect(
+      tester.getSize(cells.at(1)).height,
+      tester.getSize(cells.at(0)).height,
+    );
+  });
+
+  testWidgets("stacked, a stale draft's old half is headed by the version "
+      'it was drafted over, not "Current"', (tester) async {
+    await pumpRow(
+      tester,
+      const MarkdownBlockPair(
+        kind: MarkdownBlockChange.rewritten,
+        base: feed,
+        proposed: 'Feed the penguins at one.',
+      ),
+      stacked: true,
+      stale: true,
+    );
+
+    expect(find.text('Drafted over'), findsOneWidget);
+    expect(find.text('Current'), findsNothing);
   });
 }

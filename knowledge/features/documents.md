@@ -342,7 +342,7 @@ stateDiagram-v2
   good: the dispatch fails `nonRetryable`, and the confirmation service
   records that as a retraction, so it leaves the open list instead of
   failing again on every tap. The side-by-side review catches it before
-  that: it offers "Ask the agent to redo" instead of Confirm.
+  that: it offers "Ask for a redo in chat" instead of Confirm.
 - **A dismiss reason is feedback.** It reaches the next draft the way
   rejection reasons already reach the task agent.
 
@@ -399,7 +399,8 @@ A device on an older build skips both variants as undeserializable.
   [`TaskDocumentPage`](../../lib/features/documents/ui/task_document_page.dart):
   the title with Delete beside it (a neutral icon; its confirmation carries
   the warning), a provenance line ("v2 · Drafted by the
-  agent, confirmed by you · 2 h ago"), Edit (the one filled button), Copy,
+  agent, confirmed by you · 2 h ago"), Edit (the one filled button, unless a
+  draft waits), Copy,
   History and the chat disc, then the text rendered by `AgentMarkdownView`.
   Header and text share `kProseMeasureWidth`. A leading `# heading` that only
   repeats the title is not shown a second time (`withoutRepeatedTitle` in
@@ -409,9 +410,10 @@ A device on an older build skips both variants as undeserializable.
   `taskDocumentCurrentVersionProvider`, which re-reads only when the
   document moves to another version (a rename reads nothing) and keeps the
   version on show while the next loads, so the text is replaced in place.
-  While the task agent has a draft of this document waiting, a line in the
-  agent's violet says so ("The agent drafted a new version") with "Review
-  changes", which opens the newest one in the
+  While the task agent has a draft of this document waiting, a card on the
+  agent's surface above the actions says so ("The agent drafted a new
+  version") with "Review changes" — the page's one filled button then, Edit
+  stepping down to tertiary — which opens the newest one in the
   [side-by-side review](#side-by-side-review-desktop-partly-built).
   A document deleted while open says so. Delete asks first, then deletes
   the document with its versions and leaves the page.
@@ -553,36 +555,58 @@ The view is built:
 is a mode of the document page. Which draft is under review is
 `documentReviewOpenProvider` (per task, in memory): the page swaps its
 reading body for the review while it names one of its document's drafts
-(a 200 ms cross-fade, none under reduced motion) and back. The header holds
-the title, "Close review", count tags (+1 −1 ~1, read out as one sentence),
-the agent's change summary, and two live notices: a warning tag "Written
-against v1, current is v2" for a stale draft, and "Open the newer draft"
-when a later one waits, which reviews that one instead. Below are the rows,
-one `SliverList.builder` keyed by row index (the rows are pinned, so an
-index never moves), clear of the glass bar at the bottom.
+(a 200 ms cross-fade, none under reduced motion) and back.
 
+- **Header.** The title at `heading2` (the page's own), "Close review" (an
+  icon on a narrow pane), then lines whose icon sits in the rows' gutter
+  column and whose text starts on their text edge, held to
+  `kProseMeasureWidth`: for a stale draft the warning (glyph in the warning
+  hue, sentence in plain ink) saying confirming would overwrite the newer
+  text; the agent's change summary with its spark; tinted count tags with
+  the gutter's own marks (read out as one sentence); and, while a later draft
+  waits, "Open the newer draft".
+- **Rows.** A leading row that only repeats the title is dropped
+  (`withoutRepeatedTitle`), kept when the draft rewrites it. The column heads
+  ("Current v1", "Proposed v2" — violet on the proposed head only; "Drafted
+  over v1" in the warning hue for a stale draft) are pinned
+  (`PinnedHeaderSliver`). Cells render headings at the body's size
+  (`subordinateHeadings`), so a document's own heading never outranks the
+  review. An unchanged block has no surface and no vertical padding; a
+  changed row is one band (`IntrinsicHeight`), its two sides sharing top and
+  bottom edges, the empty slot a centred statement ("Not in v2"). The
+  rewritten mark is ⇄ (`LottiIcons.compare`), not the Edit pencil. One
+  `SliverList.builder` keyed by row index (the rows are pinned, so an index
+  never moves), clear of the bar.
 - **The gate is measured.** The content column, capped at
-  `kDetailContentMaxWidth`, shows the versions side by side under "Current
-  v1" and "Proposed v2" heads (violet on the proposed head only) when it
-  holds `documentReviewSideBySideMinWidth`: the gutter mark, two
+  `kDetailContentMaxWidth`, shows the versions side by side when it holds
+  `documentReviewSideBySideMinWidth`: the gutter mark, two
   `kReviewColumnMinWidth` (440) columns and a `step6` gap. Narrower, the same
-  rows stack into one column in reading order — a rewritten block's old text
-  on the removed surface above its new text on the added one, under one mark,
-  and no empty slots. A docked chat or a dragged divider switches it live.
-- **The bar** is the modal glass bar: "Discard draft", "Ask for changes" (opens
-  the task's chat) and "Confirm v2", the one primary. Confirm and Discard
-  call `ChangeSetConfirmationService.confirmItem` / `rejectItem`, as the card
+  rows stack in reading order with no empty slots; a rewrite keeps the
+  rewrite surface on both halves (red and green mean removed and added at
+  every width), its old half quiet under "Current" (or "Drafted over") above
+  its new half under "Proposed". A docked chat or a dragged divider switches
+  it live.
+- **The bar** is the modal glass bar spanning the pane, its buttons kept to
+  the column: "Discard draft", "Ask for changes" (opens the task's chat) and
+  "Confirm v2", the one primary. On a narrow pane Discard is the trash icon
+  and Ask keeps its words. Discard asks first (`showConfirmationModal`) —
+  there is no undo yet. Confirm and Discard call
+  `ChangeSetConfirmationService.confirmItem` / `rejectItem`, as the card
   does, then notify the agent's id; a verdict that lands closes the review,
   and one that fails says so in a toast and keeps it open.
-- **A stale draft** shows no Confirm. Its primary is "Ask the agent to
-  redo", which opens the task's chat (the request is not prefilled yet); the
-  proposed head drops its number and its empty slots say "Not in the draft",
-  since the next number already belongs to the version it is stale against.
-- **It closes** on "Close review", on Escape (the `cancel` app command), after
-  its own verdict, and when the draft stops waiting elsewhere. Leaving the
-  page mid-review keeps it open, so coming back returns to it — unless the
-  draft stopped waiting or the document was deleted meanwhile, which the
-  page finds and clears.
+- **A stale draft** shows no Confirm. Its primary is "Ask for a redo in
+  chat", which opens the task's chat (the request is not prefilled yet) —
+  or, when a newer draft waits, "Open the newer draft". The proposed head
+  drops its number and its empty slots say "Not in the draft", since the
+  next number already belongs to the version it is stale against. The
+  page's notice says so before the review opens ("…but over an older one",
+  with the warning glyph).
+- **It closes** on "Close review", on Escape (the `cancel` app command), on
+  back — the arrow, system back and the iOS swipe close the review onto the
+  text (`PopScope`) rather than leave the page — after its own verdict, and
+  when the draft stops waiting elsewhere. Leaving the page mid-review keeps
+  it open, so coming back returns to it — unless the draft stopped waiting
+  or the document was deleted meanwhile, which the page finds and clears.
 - **The panes step aside.** `documentReviewShowingProvider` is true while a
   review is open *and* the desktop pane shows its document
   (`NavService.desktopTaskDocument`), so a review left behind the task page
@@ -605,7 +629,7 @@ stateDiagram-v2
   [*] --> Reading
   Reading --> Reviewing: Review changes (newest waiting draft)
   Reviewing --> Reviewing: Open the newer draft
-  Reviewing --> Reading: Close review or Escape
+  Reviewing --> Reading: Close review, Escape or back
   Reviewing --> Reading: Confirm or Discard draft lands
   Reviewing --> Reading: the draft is decided or withdrawn elsewhere
   Reviewing --> Reading: Show list while the review holds the list's width
@@ -630,6 +654,3 @@ route.
 
 - Copy as plain markdown only, or also as rich text for email.
 - Whether a document follows the task's language or the request's.
-- `DESIGN.md` says agent chat is an overlay that never reflows the page,
-  while the code docks it. Review relies on docking, so `DESIGN.md` changes
-  before review ships.

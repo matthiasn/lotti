@@ -7132,6 +7132,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get documentReviewAskForChanges => 'Om wijzigingen vragen';
 
   @override
+  String get documentReviewBase => 'Opgesteld op';
+
+  @override
   String get documentReviewClose => 'Beoordeling sluiten';
 
   @override
@@ -7146,6 +7149,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get documentReviewCurrent => 'Huidig';
+
+  @override
+  String get documentReviewDiscardMessage =>
+      'Het concept van de agent wordt weggegooid. Je kunt in de chat van de taak om een nieuw vragen.';
+
+  @override
+  String get documentReviewDiscardTitle => 'Dit concept weggooien?';
 
   @override
   String get documentReviewNewer => 'Nieuwer concept openen';
@@ -7165,7 +7175,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get documentReviewProposed => 'Voorgesteld';
 
   @override
-  String get documentReviewRedo => 'Vraag de agent het opnieuw te doen';
+  String get documentReviewRedo => 'Vraag in de chat om een nieuwe versie';
 
   @override
   String get documentReviewRemoved => 'Verwijderd in de voorgestelde versie';
@@ -7175,17 +7185,21 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String documentReviewStale(int base, int current) {
-    return 'Geschreven op v$base, huidig is v$current';
+    return 'Geschreven op v$base, maar het document is nu v$current: bevestigen zou de nieuwere tekst overschrijven.';
   }
 
   @override
   String documentReviewStaleNoText(int current) {
-    return 'Geschreven voordat het document tekst had, huidig is v$current';
+    return 'Geschreven voordat het document tekst had; het is nu v$current, en bevestigen zou het overschrijven.';
   }
 
   @override
   String get documentReviewWaiting =>
       'De agent heeft een nieuwe versie opgesteld';
+
+  @override
+  String get documentReviewWaitingStale =>
+      'De agent heeft een nieuwe versie opgesteld, maar op een oudere';
 
   @override
   String get doneButton => 'Klaar';

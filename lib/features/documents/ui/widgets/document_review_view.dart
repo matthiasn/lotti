@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/logic/markdown_block_diff.dart';
 import 'package:lotti/features/documents/state/document_review_providers.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/widgets/review_block_row.dart';
@@ -22,7 +24,9 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_domains.dart';
+import 'package:lotti/widgets/markdown/markdown_title.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Keys the tests find the review's controls by.
@@ -34,6 +38,7 @@ abstract final class DocumentReviewViewKeys {
   static const redo = Key('document-review-redo');
   static const stale = Key('document-review-stale');
   static const newer = Key('document-review-newer');
+  static const openNewer = Key('document-review-open-newer');
   static const columnHeads = Key('document-review-column-heads');
 }
 
@@ -161,6 +166,19 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
     if (mounted) setState(() => _busy = false);
   }
 
+  /// Discard draft, once the user says so: there is no undo yet, and the
+  /// draft is the agent's work.
+  Future<void> _discard(DocumentReviewSnapshot snapshot) async {
+    final messages = context.messages;
+    final sure = await showConfirmationModal(
+      context: context,
+      title: messages.documentReviewDiscardTitle,
+      message: messages.documentReviewDiscardMessage,
+      confirmLabel: messages.documentProposalDiscard,
+    );
+    if (sure && mounted) await _decide(snapshot, confirm: false);
+  }
+
   /// The newest other draft of this document, if one arrived after this one.
   DocumentReviewKey? _newerDraft(DocumentReviewSnapshot snapshot) {
     final drafts = ref.watch(pendingDocumentProposalsProvider(_document));
@@ -199,6 +217,7 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
     final baseNumber = snapshot.baseVersion?.data.number;
     final proposedNumber = (baseNumber ?? 0) + 1;
     final newer = review.newerProposalAvailable ? _newerDraft(snapshot) : null;
+    final pairs = _withoutTitleRow(snapshot.pairs, widget.title);
     final horizontal = tokens.spacing.step5; // see documentReviewMinPaneWidth
 
     return AppCommandScope(
@@ -225,6 +244,7 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
                     SliverToBoxAdapter(
                       child: measure(
                         _Header(
+                          compact: !sideBySide,
                           title: widget.title,
                           review: review,
                           baseNumber: baseNumber,
@@ -236,14 +256,20 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
                         ),
                       ),
                     ),
+                    // Pinned: however far the rows scroll, it stays clear
+                    // which side is which.
                     if (sideBySide)
-                      SliverToBoxAdapter(
-                        child: measure(
-                          _ColumnHeads(
-                            baseNumber: baseNumber,
-                            proposedNumber: review.isStale
-                                ? null
-                                : proposedNumber,
+                      PinnedHeaderSliver(
+                        child: ColoredBox(
+                          color: tokens.colors.background.level01,
+                          child: measure(
+                            _ColumnHeads(
+                              stale: review.isStale,
+                              baseNumber: baseNumber,
+                              proposedNumber: review.isStale
+                                  ? null
+                                  : proposedNumber,
+                            ),
                           ),
                         ),
                       ),
@@ -254,7 +280,7 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
                             tokens.spacing.step5,
                       ),
                       sliver: SliverList.builder(
-                        itemCount: snapshot.pairs.length,
+                        itemCount: pairs.length,
                         // The rows are pinned, so a row's index is its
                         // identity for as long as the review is open.
                         findChildIndexCallback: (key) =>
@@ -266,13 +292,14 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
                               bottom: tokens.spacing.cardItemSpacing,
                             ),
                             child: ReviewBlockRow(
-                              pair: snapshot.pairs[index],
+                              pair: pairs[index],
                               baseVersion: baseNumber,
                               proposedVersion: review.isStale
                                   ? null
                                   : proposedNumber,
                               noTextLabel: context.messages.taskDocumentsNoText,
                               stacked: !sideBySide,
+                              stale: review.isStale,
                             ),
                           ),
                         ),
@@ -284,15 +311,25 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: measure(
-                    _Bar(
-                      stale: review.isStale,
-                      busy: _busy,
-                      proposedNumber: proposedNumber,
-                      onConfirm: () => _decide(snapshot, confirm: true),
-                      onDiscard: () => _decide(snapshot, confirm: false),
-                      onAsk: _askAgent,
+                  // The glass spans the pane; its buttons keep to the
+                  // column, Discard on the rows' text edge.
+                  child: _Bar(
+                    inset: EdgeInsets.only(
+                      left:
+                          (constraints.maxWidth - content) / 2 +
+                          (sideBySide ? IconSizes.m + tokens.spacing.step2 : 0),
+                      right: (constraints.maxWidth - content) / 2,
                     ),
+                    compact: !sideBySide,
+                    stale: review.isStale,
+                    onOpenNewer: newer == null
+                        ? null
+                        : () => widget.onOpenDraft(newer),
+                    busy: _busy,
+                    proposedNumber: proposedNumber,
+                    onConfirm: () => _decide(snapshot, confirm: true),
+                    onDiscard: () => _discard(snapshot),
+                    onAsk: _askAgent,
                   ),
                 ),
               ],
@@ -306,6 +343,7 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
 
 class _Header extends StatelessWidget {
   const _Header({
+    required this.compact,
     required this.title,
     required this.review,
     required this.baseNumber,
@@ -314,6 +352,8 @@ class _Header extends StatelessWidget {
     required this.onOpenNewer,
   });
 
+  /// A narrow pane: Close review is an icon, so the title keeps the line.
+  final bool compact;
   final String title;
   final DocumentReview review;
   final int? baseNumber;
@@ -330,13 +370,17 @@ class _Header extends StatelessWidget {
     final summary = snapshot.changeSummary;
     final currentNumber = this.currentNumber;
     final baseNumber = this.baseNumber;
-    final meta = tokens.typography.styles.body.bodySmall.copyWith(
-      color: tokens.colors.text.mediumEmphasis,
-    );
+    final accent = tokens.colors.aiCard.accent;
+    final warning = tokens.colors.alert.warning.defaultColor;
+    final diff = tokens.colors.diff;
+    final gap = SizedBox(height: tokens.spacing.step3);
+    // Title, then what would stop a confirm, then the agent's own line on
+    // the draft, then the counts the rows bear out.
     return Padding(
+      // The header stands apart from the table it introduces.
       padding: EdgeInsets.only(
         top: tokens.spacing.step2,
-        bottom: tokens.spacing.step5,
+        bottom: tokens.spacing.step6,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -346,79 +390,121 @@ class _Header extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: tokens.typography.styles.heading.heading3.copyWith(
+                  style: tokens.typography.styles.heading.heading2.copyWith(
                     color: tokens.colors.text.highEmphasis,
                   ),
                 ),
               ),
               SizedBox(width: tokens.spacing.step2),
-              DesignSystemButton(
-                key: DocumentReviewViewKeys.close,
-                label: messages.documentReviewClose,
-                variant: DesignSystemButtonVariant.secondary,
-                onPressed: onClose,
-              ),
+              if (compact)
+                DesignSystemIconAction(
+                  key: DocumentReviewViewKeys.close,
+                  icon: LottiIcons.close,
+                  tooltip: messages.documentReviewClose,
+                  onPressed: onClose,
+                )
+              else
+                DesignSystemButton(
+                  key: DocumentReviewViewKeys.close,
+                  label: messages.documentReviewClose,
+                  variant: DesignSystemButtonVariant.tertiary,
+                  onPressed: onClose,
+                ),
             ],
           ),
-          SizedBox(height: tokens.spacing.step3),
-          Semantics(
-            label: messages.documentReviewCounts(
-              stats.added,
-              stats.removed,
-              stats.rewritten,
+          if (review.isStale && currentNumber != null) ...[
+            gap,
+            // The one message that stops a confirm: a line that wraps, never
+            // a tag that clips.
+            _HeaderLine(
+              key: DocumentReviewViewKeys.stale,
+              icon: LottiIcons.warning,
+              iconColor: warning,
+              text: baseNumber == null
+                  ? messages.documentReviewStaleNoText(currentNumber)
+                  : messages.documentReviewStale(baseNumber, currentNumber),
+              // The warning hue on the glyph, the sentence in plain ink — the
+              // design system's alert grammar.
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
             ),
-            child: ExcludeSemantics(
-              child: Wrap(
-                spacing: tokens.spacing.step2,
-                runSpacing: tokens.spacing.step2,
-                children: [
-                  for (final (count, glyph, color) in [
-                    (stats.added, '+', tokens.colors.diff.added.color),
-                    (stats.removed, '−', tokens.colors.diff.removed.color),
-                    (stats.rewritten, '~', tokens.colors.diff.replaced.color),
-                  ])
-                    if (count > 0)
-                      DsPill(
-                        variant: DsPillVariant.outline,
-                        shape: DsPillShape.tag,
-                        color: color,
-                        label: '$glyph$count',
+          ],
+          if (summary != null) ...[
+            gap,
+            _HeaderLine(
+              icon: LottiIcons.aiSpark,
+              iconColor: accent,
+              text: summary,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
+            ),
+          ],
+          SizedBox(height: tokens.spacing.step2),
+          // On the text edge, under the lines above.
+          Padding(
+            padding: EdgeInsets.only(
+              left:
+                  IconSizes.m +
+                  tokens.spacing.step2 +
+                  tokens.spacing.cardItemSpacing,
+            ),
+            child: Semantics(
+              label: messages.documentReviewCounts(
+                stats.added,
+                stats.removed,
+                stats.rewritten,
+              ),
+              child: ExcludeSemantics(
+                child: Wrap(
+                  spacing: tokens.spacing.step2,
+                  runSpacing: tokens.spacing.step2,
+                  children: [
+                    // The gutter's own marks, so a count and its rows match.
+                    for (final (count, icon, color) in [
+                      (stats.added, LottiIcons.add, diff.added.color),
+                      (stats.removed, LottiIcons.remove, diff.removed.color),
+                      (
+                        stats.rewritten,
+                        LottiIcons.compare,
+                        diff.replaced.color,
                       ),
-                ],
+                    ])
+                      if (count > 0)
+                        DsPill(
+                          variant: DsPillVariant.tinted,
+                          shape: DsPillShape.tag,
+                          color: color,
+                          leading: Icon(icon, size: IconSizes.s, color: color),
+                          label: '$count',
+                          labelColor: tokens.colors.text.highEmphasis,
+                        ),
+                  ],
+                ),
               ),
             ),
           ),
-          if (summary != null) ...[
-            SizedBox(height: tokens.spacing.step2),
-            Text(summary, style: meta),
-          ],
-          if (review.isStale && currentNumber != null) ...[
-            SizedBox(height: tokens.spacing.step3),
-            DsPill(
-              key: DocumentReviewViewKeys.stale,
-              variant: DsPillVariant.tinted,
-              shape: DsPillShape.tag,
-              color: tokens.colors.alert.warning.defaultColor,
-              leading: Icon(
-                LottiIcons.warning,
-                size: IconSizes.s,
-                color: tokens.colors.alert.warning.defaultColor,
+          // A stale draft's bar already offers it as the primary.
+          if (onOpenNewer != null && !review.isStale) ...[
+            gap,
+            Padding(
+              padding: EdgeInsets.only(
+                left:
+                    IconSizes.m +
+                    tokens.spacing.step2 +
+                    tokens.spacing.cardItemSpacing,
               ),
-              label: baseNumber == null
-                  ? messages.documentReviewStaleNoText(currentNumber)
-                  : messages.documentReviewStale(baseNumber, currentNumber),
-            ),
-          ],
-          if (onOpenNewer != null) ...[
-            SizedBox(height: tokens.spacing.step2),
-            IntrinsicWidth(
-              child: DesignSystemInlineAction(
-                key: DocumentReviewViewKeys.newer,
-                label: messages.documentReviewNewer,
-                semanticsLabel: messages.documentReviewNewer,
-                leadingIcon: LottiIcons.aiSpark,
-                ink: tokens.colors.interactive.enabled,
-                onTap: onOpenNewer,
+              child: IntrinsicWidth(
+                child: DesignSystemInlineAction(
+                  key: DocumentReviewViewKeys.newer,
+                  label: messages.documentReviewNewer,
+                  semanticsLabel: messages.documentReviewNewer,
+                  leadingIcon: LottiIcons.aiSpark,
+                  // The agent's own action, in its voice.
+                  ink: accent,
+                  onTap: onOpenNewer,
+                ),
               ),
             ),
           ],
@@ -428,11 +514,19 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// "Current v3" over the left column and "Proposed v4" over the right, in
-/// the gutter's alignment; the proposed head alone takes the agent's violet.
+/// "Current v3" over the left column and "Proposed v4" over the right, on
+/// the rows' text edge; the proposed head alone takes the agent's violet.
+/// For a stale draft the left column is not the current text but the
+/// version the draft was written over, and its head says so in the
+/// warning's colour.
 class _ColumnHeads extends StatelessWidget {
-  const _ColumnHeads({required this.baseNumber, required this.proposedNumber});
+  const _ColumnHeads({
+    required this.stale,
+    required this.baseNumber,
+    required this.proposedNumber,
+  });
 
+  final bool stale;
   final int? baseNumber;
 
   /// Null for a stale draft, which would not become the next version.
@@ -442,58 +536,72 @@ class _ColumnHeads extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final head = tokens.typography.styles.others.caption.copyWith(
-      fontWeight: tokens.typography.weight.semiBold,
-    );
+    final head = tokens.typography.styles.subtitle.subtitle2;
     final neutral = tokens.colors.text.mediumEmphasis;
     final accent = tokens.colors.aiCard.accent;
+    final baseInk = stale ? tokens.colors.alert.warning.defaultColor : neutral;
+    final textEdge = EdgeInsets.only(left: tokens.spacing.cardItemSpacing);
     final baseNumber = this.baseNumber;
     final proposedNumber = this.proposedNumber;
     return Padding(
       key: DocumentReviewViewKeys.columnHeads,
-      padding: EdgeInsets.only(bottom: tokens.spacing.step3),
+      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
       child: Row(
         children: [
           SizedBox(width: IconSizes.m + tokens.spacing.step2),
           Expanded(
-            child: Row(
-              children: [
-                Text(
-                  messages.documentReviewCurrent,
-                  style: head.copyWith(color: neutral),
-                ),
-                if (baseNumber != null) ...[
-                  SizedBox(width: tokens.spacing.step2),
-                  DsPill(
-                    variant: DsPillVariant.outline,
-                    shape: DsPillShape.tag,
-                    color: neutral,
-                    label: messages.taskDocumentsVersion(baseNumber),
+            child: Padding(
+              padding: textEdge,
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      stale
+                          ? messages.documentReviewBase
+                          : messages.documentReviewCurrent,
+                      overflow: TextOverflow.ellipsis,
+                      style: head.copyWith(color: baseInk),
+                    ),
                   ),
+                  if (baseNumber != null) ...[
+                    SizedBox(width: tokens.spacing.step2),
+                    DsPill(
+                      variant: DsPillVariant.outline,
+                      shape: DsPillShape.tag,
+                      color: baseInk,
+                      label: messages.taskDocumentsVersion(baseNumber),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
           SizedBox(width: tokens.spacing.step6),
           Expanded(
-            child: Row(
-              children: [
-                Icon(LottiIcons.aiSpark, size: IconSizes.s, color: accent),
-                SizedBox(width: tokens.spacing.step1),
-                Text(
-                  messages.documentReviewProposed,
-                  style: head.copyWith(color: accent),
-                ),
-                if (proposedNumber != null) ...[
-                  SizedBox(width: tokens.spacing.step2),
-                  DsPill(
-                    variant: DsPillVariant.outline,
-                    shape: DsPillShape.tag,
-                    color: accent,
-                    label: messages.taskDocumentsVersion(proposedNumber),
+            child: Padding(
+              padding: textEdge,
+              child: Row(
+                children: [
+                  Icon(LottiIcons.aiSpark, size: IconSizes.s, color: accent),
+                  SizedBox(width: tokens.spacing.step1),
+                  Flexible(
+                    child: Text(
+                      messages.documentReviewProposed,
+                      overflow: TextOverflow.ellipsis,
+                      style: head.copyWith(color: accent),
+                    ),
                   ),
+                  if (proposedNumber != null) ...[
+                    SizedBox(width: tokens.spacing.step2),
+                    DsPill(
+                      variant: DsPillVariant.outline,
+                      shape: DsPillShape.tag,
+                      color: accent,
+                      label: messages.taskDocumentsVersion(proposedNumber),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ],
@@ -507,7 +615,10 @@ class _ColumnHeads extends StatelessWidget {
 /// asking the agent to redo it against the current version.
 class _Bar extends StatelessWidget {
   const _Bar({
+    required this.inset,
+    required this.compact,
     required this.stale,
+    required this.onOpenNewer,
     required this.busy,
     required this.proposedNumber,
     required this.onConfirm,
@@ -515,7 +626,17 @@ class _Bar extends StatelessWidget {
     required this.onAsk,
   });
 
+  /// Keeps the buttons to the review's column inside the full-width glass.
+  final EdgeInsets inset;
+
+  /// One column, on a narrow pane: medium buttons, and Ask for changes as an
+  /// icon, so the bar stays one row.
+  final bool compact;
   final bool stale;
+
+  /// Opens a newer draft of the document. For a stale draft with one
+  /// waiting, that is the next step, not asking for yet another.
+  final VoidCallback? onOpenNewer;
   final bool busy;
   final int proposedNumber;
   final VoidCallback onConfirm;
@@ -526,18 +647,35 @@ class _Bar extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final size = compact
+        ? DesignSystemButtonSize.medium
+        : DesignSystemButtonSize.large;
     return DesignSystemModalActionBar(
       glass: true,
       layout: DesignSystemModalActionBarLayout.compactPrimary,
-      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
-      secondary: [
-        DesignSystemButton(
-          key: DocumentReviewViewKeys.discard,
-          label: messages.documentProposalDiscard,
-          variant: DesignSystemButtonVariant.quiet,
-          size: DesignSystemButtonSize.large,
-          onPressed: busy ? null : onDiscard,
+      padding: inset.add(
+        EdgeInsets.symmetric(
+          vertical: compact ? tokens.spacing.step3 : tokens.spacing.step4,
         ),
+      ),
+      // On a narrow pane Discard — which asks first — is the icon, so the
+      // constructive alternative to Confirm keeps its words.
+      secondary: [
+        if (compact)
+          DesignSystemIconAction(
+            key: DocumentReviewViewKeys.discard,
+            icon: LottiIcons.delete,
+            tooltip: messages.documentProposalDiscard,
+            onPressed: busy ? null : onDiscard,
+          )
+        else
+          DesignSystemButton(
+            key: DocumentReviewViewKeys.discard,
+            label: messages.documentProposalDiscard,
+            variant: DesignSystemButtonVariant.quiet,
+            size: size,
+            onPressed: busy ? null : onDiscard,
+          ),
         // A stale draft's primary already asks the agent.
         if (!stale)
           DesignSystemButton(
@@ -545,24 +683,89 @@ class _Bar extends StatelessWidget {
             label: messages.documentReviewAskForChanges,
             leadingIcon: LottiIcons.chat,
             variant: DesignSystemButtonVariant.tertiary,
-            size: DesignSystemButtonSize.large,
+            size: size,
             onPressed: onAsk,
           ),
       ],
-      primary: stale
+      primary: stale && onOpenNewer != null
+          ? DesignSystemButton(
+              key: DocumentReviewViewKeys.openNewer,
+              label: messages.documentReviewNewer,
+              leadingIcon: LottiIcons.aiSpark,
+              size: size,
+              onPressed: onOpenNewer,
+            )
+          : stale
           ? DesignSystemButton(
               key: DocumentReviewViewKeys.redo,
               label: messages.documentReviewRedo,
               leadingIcon: LottiIcons.chat,
-              size: DesignSystemButtonSize.large,
+              size: size,
               onPressed: onAsk,
             )
           : DesignSystemButton(
               key: DocumentReviewViewKeys.confirm,
               label: messages.documentReviewConfirm(proposedNumber),
-              size: DesignSystemButtonSize.large,
+              size: size,
               onPressed: busy ? null : onConfirm,
             ),
+    );
+  }
+}
+
+/// The rows without a leading heading that only repeats the document's
+/// title, which the header already shows; kept when the draft rewrites it.
+List<MarkdownBlockPair> _withoutTitleRow(
+  List<MarkdownBlockPair> pairs,
+  String title,
+) {
+  final first = pairs.firstOrNull;
+  if (first == null || first.kind != MarkdownBlockChange.same) return pairs;
+  final repeatsTitle = withoutRepeatedTitle(
+    first.proposed ?? '',
+    title,
+  ).trim().isEmpty;
+  return repeatsTitle ? pairs.sublist(1) : pairs;
+}
+
+/// A line of the review's header — the stale warning, the agent's summary —
+/// its icon in the rows' gutter column and its text on their text edge.
+class _HeaderLine extends StatelessWidget {
+  const _HeaderLine({
+    required this.icon,
+    required this.iconColor,
+    required this.text,
+    required this.style,
+    super.key,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String text;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: IconSizes.m,
+          child: Icon(icon, size: IconSizes.m, color: iconColor),
+        ),
+        SizedBox(width: tokens.spacing.step2 + tokens.spacing.cardItemSpacing),
+        Expanded(
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            // A sentence, not a column: held to the reading measure.
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: kProseMeasureWidth),
+              child: Text(text, style: style),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

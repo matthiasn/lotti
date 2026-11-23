@@ -74,9 +74,10 @@ const kPageHeaderFoldWidth = 520.0;
 /// [kProseMeasureWidth] by design: a column is half a comparison, not a page.
 const kReviewColumnMinWidth = 440.0;
 
-/// The width of an agent conversation in the side sheet — a goal's or a
-/// person's (design handover §4b: "~400px right overlay"). It slides in over
-/// the page, never a column the page reflows around.
+/// The width of an agent conversation: a goal's or a person's side sheet
+/// (design handover §4b: "~400px right overlay"), which slides in over the
+/// page, and the narrowest a task, project or category chat docks at as a
+/// column beside its detail (`QueryCompanion.minimumChatWidth`).
 const kAgentChatSheetWidth = 400.0;
 
 /// The narrowest window that hosts the docked day-view column (and its

@@ -7208,6 +7208,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get documentReviewAskForChanges => 'Pedir cambios';
 
   @override
+  String get documentReviewBase => 'Redactado sobre';
+
+  @override
   String get documentReviewClose => 'Cerrar revisión';
 
   @override
@@ -7222,6 +7225,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get documentReviewCurrent => 'Actual';
+
+  @override
+  String get documentReviewDiscardMessage =>
+      'El borrador del agente se descarta. Puedes pedir uno nuevo en el chat de la tarea.';
+
+  @override
+  String get documentReviewDiscardTitle => '¿Descartar este borrador?';
 
   @override
   String get documentReviewNewer => 'Abrir el borrador más reciente';
@@ -7241,7 +7251,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get documentReviewProposed => 'Propuesta';
 
   @override
-  String get documentReviewRedo => 'Pedir al agente que lo rehaga';
+  String get documentReviewRedo => 'Pedir que lo rehaga en el chat';
 
   @override
   String get documentReviewRemoved => 'Eliminado en la versión propuesta';
@@ -7251,17 +7261,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String documentReviewStale(int base, int current) {
-    return 'Escrita sobre v$base, la actual es v$current';
+    return 'Escrita sobre v$base, pero el documento ya es v$current: confirmarla sobrescribiría el texto más reciente.';
   }
 
   @override
   String documentReviewStaleNoText(int current) {
-    return 'Escrita antes de que el documento tuviera texto, la actual es v$current';
+    return 'Escrita antes de que el documento tuviera texto; ya es v$current, y confirmarla lo sobrescribiría.';
   }
 
   @override
   String get documentReviewWaiting =>
       'El agente ha redactado una nueva versión';
+
+  @override
+  String get documentReviewWaitingStale =>
+      'El agente ha redactado una nueva versión, pero sobre una más antigua';
 
   @override
   String get doneButton => 'Listo';

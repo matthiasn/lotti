@@ -7237,6 +7237,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get documentReviewAskForChanges => 'Cereți modificări';
 
   @override
+  String get documentReviewBase => 'Redactat pe baza';
+
+  @override
   String get documentReviewClose => 'Închideți revizuirea';
 
   @override
@@ -7251,6 +7254,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get documentReviewCurrent => 'Actuală';
+
+  @override
+  String get documentReviewDiscardMessage =>
+      'Ciorna agentului este eliminată. Puteți cere una nouă în chatul sarcinii.';
+
+  @override
+  String get documentReviewDiscardTitle => 'Renunțați la această ciornă?';
 
   @override
   String get documentReviewNewer => 'Deschideți ciorna mai nouă';
@@ -7270,7 +7280,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get documentReviewProposed => 'Propusă';
 
   @override
-  String get documentReviewRedo => 'Cereți agentului să refacă';
+  String get documentReviewRedo => 'Cereți refacerea în chat';
 
   @override
   String get documentReviewRemoved => 'Eliminat în versiunea propusă';
@@ -7280,16 +7290,20 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String documentReviewStale(int base, int current) {
-    return 'Scrisă pe baza v$base, actuala este v$current';
+    return 'Scrisă pe baza v$base, dar documentul este acum v$current: confirmarea ar suprascrie textul mai nou.';
   }
 
   @override
   String documentReviewStaleNoText(int current) {
-    return 'Scrisă înainte ca documentul să aibă text, actuala este v$current';
+    return 'Scrisă înainte ca documentul să aibă text; acum este v$current, iar confirmarea l-ar suprascrie.';
   }
 
   @override
   String get documentReviewWaiting => 'Agentul a redactat o versiune nouă';
+
+  @override
+  String get documentReviewWaitingStale =>
+      'Agentul a redactat o versiune nouă, dar pe baza uneia mai vechi';
 
   @override
   String get doneButton => 'Gata';

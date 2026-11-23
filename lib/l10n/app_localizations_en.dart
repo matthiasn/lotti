@@ -7079,6 +7079,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get documentReviewAskForChanges => 'Ask for changes';
 
   @override
+  String get documentReviewBase => 'Drafted over';
+
+  @override
   String get documentReviewClose => 'Close review';
 
   @override
@@ -7093,6 +7096,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get documentReviewCurrent => 'Current';
+
+  @override
+  String get documentReviewDiscardMessage =>
+      'The agent\'s draft is thrown away. You can ask for a new one in the task\'s chat.';
+
+  @override
+  String get documentReviewDiscardTitle => 'Discard this draft?';
 
   @override
   String get documentReviewNewer => 'Open the newer draft';
@@ -7112,7 +7122,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get documentReviewProposed => 'Proposed';
 
   @override
-  String get documentReviewRedo => 'Ask the agent to redo';
+  String get documentReviewRedo => 'Ask for a redo in chat';
 
   @override
   String get documentReviewRemoved => 'Removed in the proposed version';
@@ -7122,16 +7132,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String documentReviewStale(int base, int current) {
-    return 'Written against v$base, current is v$current';
+    return 'Written against v$base, but the document is now v$current: confirming would overwrite the newer text.';
   }
 
   @override
   String documentReviewStaleNoText(int current) {
-    return 'Written before the document had text, current is v$current';
+    return 'Written before the document had text; it is now v$current, and confirming would overwrite it.';
   }
 
   @override
   String get documentReviewWaiting => 'The agent drafted a new version';
+
+  @override
+  String get documentReviewWaitingStale =>
+      'The agent drafted a new version, but over an older one';
 
   @override
   String get doneButton => 'Done';

@@ -7122,6 +7122,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get documentReviewAskForChanges => 'Be om ändringar';
 
   @override
+  String get documentReviewBase => 'Skrivet utifrån';
+
+  @override
   String get documentReviewClose => 'Stäng granskning';
 
   @override
@@ -7136,6 +7139,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get documentReviewCurrent => 'Nuvarande';
+
+  @override
+  String get documentReviewDiscardMessage =>
+      'Agentens utkast kastas. Du kan be om ett nytt i uppgiftens chatt.';
+
+  @override
+  String get documentReviewDiscardTitle => 'Kasta det här utkastet?';
 
   @override
   String get documentReviewNewer => 'Öppna det nyare utkastet';
@@ -7155,7 +7165,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get documentReviewProposed => 'Föreslagen';
 
   @override
-  String get documentReviewRedo => 'Be agenten göra om';
+  String get documentReviewRedo => 'Be om en ny version i chatten';
 
   @override
   String get documentReviewRemoved => 'Borttaget i den föreslagna versionen';
@@ -7165,17 +7175,21 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String documentReviewStale(int base, int current) {
-    return 'Skriven mot v$base, nuvarande är v$current';
+    return 'Skriven mot v$base, men dokumentet är nu v$current: att bekräfta skulle skriva över den nyare texten.';
   }
 
   @override
   String documentReviewStaleNoText(int current) {
-    return 'Skriven innan dokumentet hade text, nuvarande är v$current';
+    return 'Skriven innan dokumentet hade text; det är nu v$current, och att bekräfta skulle skriva över det.';
   }
 
   @override
   String get documentReviewWaiting =>
       'Agenten har skrivit ett utkast till en ny version';
+
+  @override
+  String get documentReviewWaitingStale =>
+      'Agenten har skrivit ett utkast till en ny version, men utifrån en äldre';
 
   @override
   String get doneButton => 'Klart';

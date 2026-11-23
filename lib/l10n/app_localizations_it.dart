@@ -7205,6 +7205,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get documentReviewAskForChanges => 'Chiedi modifiche';
 
   @override
+  String get documentReviewBase => 'Scritto su';
+
+  @override
   String get documentReviewClose => 'Chiudi revisione';
 
   @override
@@ -7219,6 +7222,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get documentReviewCurrent => 'Attuale';
+
+  @override
+  String get documentReviewDiscardMessage =>
+      'La bozza dell\'agente viene scartata. Puoi chiederne una nuova nella chat dell\'attività.';
+
+  @override
+  String get documentReviewDiscardTitle => 'Scartare questa bozza?';
 
   @override
   String get documentReviewNewer => 'Apri la bozza più recente';
@@ -7238,7 +7248,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get documentReviewProposed => 'Proposta';
 
   @override
-  String get documentReviewRedo => 'Chiedi all\'agente di rifarla';
+  String get documentReviewRedo => 'Chiedi di rifarla in chat';
 
   @override
   String get documentReviewRemoved => 'Rimosso nella versione proposta';
@@ -7248,16 +7258,20 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String documentReviewStale(int base, int current) {
-    return 'Scritta su v$base, quella attuale è v$current';
+    return 'Scritta su v$base, ma il documento ora è v$current: confermarla sovrascriverebbe il testo più recente.';
   }
 
   @override
   String documentReviewStaleNoText(int current) {
-    return 'Scritta prima che il documento avesse testo, quella attuale è v$current';
+    return 'Scritta prima che il documento avesse testo; ora è v$current, e confermarla lo sovrascriverebbe.';
   }
 
   @override
   String get documentReviewWaiting => 'L\'agente ha scritto una nuova versione';
+
+  @override
+  String get documentReviewWaitingStale =>
+      'L\'agente ha scritto una nuova versione, ma su una più vecchia';
 
   @override
   String get doneButton => 'Fatto';

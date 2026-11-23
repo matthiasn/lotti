@@ -24,4 +24,5 @@
   on a narrower window; on a desktop, "Read draft" in the AI summary opens
   it there too. Confirm it, discard it, or ask for changes in the
   task's chat. A draft written before you changed the document yourself
-  can't overwrite your edit: the review offers to ask the agent to redo it.
+  can't overwrite your edit: the review says so and offers to ask for a redo
+  in chat.

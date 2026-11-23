@@ -7229,6 +7229,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get documentReviewAskForChanges => 'Demander des modifications';
 
   @override
+  String get documentReviewBase => 'Rédigé sur';
+
+  @override
   String get documentReviewClose => 'Fermer la relecture';
 
   @override
@@ -7243,6 +7246,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get documentReviewCurrent => 'Actuelle';
+
+  @override
+  String get documentReviewDiscardMessage =>
+      'Le brouillon de l\'agent est abandonné. Tu peux en demander un nouveau dans le chat de la tâche.';
+
+  @override
+  String get documentReviewDiscardTitle => 'Abandonner ce brouillon ?';
 
   @override
   String get documentReviewNewer => 'Ouvrir le brouillon plus récent';
@@ -7262,7 +7272,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get documentReviewProposed => 'Proposée';
 
   @override
-  String get documentReviewRedo => 'Demander à l\'agent de refaire';
+  String get documentReviewRedo => 'Demander une nouvelle version dans le chat';
 
   @override
   String get documentReviewRemoved => 'Supprimé dans la version proposée';
@@ -7272,16 +7282,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String documentReviewStale(int base, int current) {
-    return 'Rédigée sur v$base, la version actuelle est v$current';
+    return 'Rédigée sur v$base, mais le document est maintenant en v$current : valider écraserait le texte plus récent.';
   }
 
   @override
   String documentReviewStaleNoText(int current) {
-    return 'Rédigée avant que le document ait du texte, la version actuelle est v$current';
+    return 'Rédigée avant que le document ait du texte ; il est maintenant en v$current, et valider l\'écraserait.';
   }
 
   @override
   String get documentReviewWaiting => 'L\'agent a rédigé une nouvelle version';
+
+  @override
+  String get documentReviewWaitingStale =>
+      'L\'agent a rédigé une nouvelle version, mais sur une plus ancienne';
 
   @override
   String get doneButton => 'Terminé';

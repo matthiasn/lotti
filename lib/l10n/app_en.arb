@@ -4551,6 +4551,10 @@
   "@documentReviewAskForChanges": {
     "description": "Button in a document review that opens the task's chat, to ask the agent to change its draft."
   },
+  "documentReviewBase": "Drafted over",
+  "@documentReviewBase": {
+    "description": "Column head over the left side of a document review whose draft is stale: the column shows the version the draft was written over (named by the version tag beside it), not the document's current text."
+  },
   "documentReviewClose": "Close review",
   "@documentReviewClose": {
     "description": "Button in a document review's header that leaves the review and returns to the document."
@@ -4587,6 +4591,14 @@
   "@documentReviewCurrent": {
     "description": "Column head over the left side of a side-by-side document review: the version the document shows now."
   },
+  "documentReviewDiscardMessage": "The agent's draft is thrown away. You can ask for a new one in the task's chat.",
+  "@documentReviewDiscardMessage": {
+    "description": "Message of the confirmation asked before discarding the agent's draft in a document review: what discarding does, and how to get a new draft."
+  },
+  "documentReviewDiscardTitle": "Discard this draft?",
+  "@documentReviewDiscardTitle": {
+    "description": "Title of the confirmation asked before discarding the agent's draft in a document review."
+  },
   "documentReviewNewer": "Open the newer draft",
   "@documentReviewNewer": {
     "description": "Link in a document review: the agent proposed a later draft of the same document while this one was open; opens that draft for review."
@@ -4613,9 +4625,9 @@
   "@documentReviewProposed": {
     "description": "Column head over the right side of a side-by-side document review: the version the agent proposes."
   },
-  "documentReviewRedo": "Ask the agent to redo",
+  "documentReviewRedo": "Ask for a redo in chat",
   "@documentReviewRedo": {
-    "description": "Primary button of a document review whose draft was written over an older version: opens the task's chat to ask the agent for a fresh draft against the current version."
+    "description": "Primary button of a document review whose draft was written over an older version: opens the task's chat, where the user asks the agent for a fresh draft against the current version."
   },
   "documentReviewRemoved": "Removed in the proposed version",
   "@documentReviewRemoved": {
@@ -4625,7 +4637,7 @@
   "@documentReviewRewritten": {
     "description": "Screen-reader label of a review row whose paragraph the proposed version rewrites."
   },
-  "documentReviewStale": "Written against v{base}, current is v{current}",
+  "documentReviewStale": "Written against v{base}, but the document is now v{current}: confirming would overwrite the newer text.",
   "@documentReviewStale": {
     "description": "Warning tag in a document review: the draft was written over version base, but the document has moved on to version current, so it cannot be confirmed.",
     "placeholders": {
@@ -4639,7 +4651,7 @@
       }
     }
   },
-  "documentReviewStaleNoText": "Written before the document had text, current is v{current}",
+  "documentReviewStaleNoText": "Written before the document had text; it is now v{current}, and confirming would overwrite it.",
   "@documentReviewStaleNoText": {
     "description": "Warning tag in a document review: the draft was written while the document had no text, but the document now shows version current, so it cannot be confirmed.",
     "placeholders": {
@@ -4652,6 +4664,10 @@
   "documentReviewWaiting": "The agent drafted a new version",
   "@documentReviewWaiting": {
     "description": "Notice on a document page: the task agent has drafted a new version of this document that waits for review."
+  },
+  "documentReviewWaitingStale": "The agent drafted a new version, but over an older one",
+  "@documentReviewWaitingStale": {
+    "description": "Notice on a document page: the task agent's waiting draft of a new version was written over an older version than the one the page shows, so it can no longer be confirmed as it is."
   },
   "doneButton": "Done",
   "downloadSizeMegabytes": "{megabytes} MB",

@@ -7108,6 +7108,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get documentReviewAskForChanges => 'Bed om ændringer';
 
   @override
+  String get documentReviewBase => 'Skrevet ud fra';
+
+  @override
   String get documentReviewClose => 'Luk gennemgang';
 
   @override
@@ -7122,6 +7125,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get documentReviewCurrent => 'Nuværende';
+
+  @override
+  String get documentReviewDiscardMessage =>
+      'Agentens udkast kasseres. Du kan bede om et nyt i opgavens chat.';
+
+  @override
+  String get documentReviewDiscardTitle => 'Kassér dette udkast?';
 
   @override
   String get documentReviewNewer => 'Åbn det nyere udkast';
@@ -7141,7 +7151,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get documentReviewProposed => 'Foreslået';
 
   @override
-  String get documentReviewRedo => 'Bed agenten om at lave det om';
+  String get documentReviewRedo => 'Bed om en ny version i chatten';
 
   @override
   String get documentReviewRemoved => 'Fjernet i den foreslåede version';
@@ -7151,17 +7161,21 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String documentReviewStale(int base, int current) {
-    return 'Skrevet ud fra v$base, nuværende er v$current';
+    return 'Skrevet ud fra v$base, men dokumentet er nu v$current: at bekræfte ville overskrive den nyere tekst.';
   }
 
   @override
   String documentReviewStaleNoText(int current) {
-    return 'Skrevet før dokumentet havde tekst, nuværende er v$current';
+    return 'Skrevet før dokumentet havde tekst; det er nu v$current, og at bekræfte ville overskrive det.';
   }
 
   @override
   String get documentReviewWaiting =>
       'Agenten har lavet et udkast til en ny version';
+
+  @override
+  String get documentReviewWaitingStale =>
+      'Agenten har lavet et udkast til en ny version, men ud fra en ældre';
 
   @override
   String get doneButton => 'Færdig';
