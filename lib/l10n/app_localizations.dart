@@ -5016,12 +5016,6 @@ abstract class AppLocalizations {
   /// **'Audio waveform'**
   String get audioPlayerWaveform;
 
-  /// No description provided for @audioRecordingCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get audioRecordingCancel;
-
   /// No description provided for @audioRecordingDiscardDialogBody.
   ///
   /// In en, this message translates to:
@@ -14273,12 +14267,6 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get goalCheckInClose;
 
-  /// No description provided for @goalCheckInComposerTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Check in'**
-  String get goalCheckInComposerTitle;
-
   /// No description provided for @goalCheckInDimensionsRated.
   ///
   /// In en, this message translates to:
@@ -14320,12 +14308,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Kept separate from your typed note'**
   String get goalCheckInNoteKeptSeparate;
-
-  /// No description provided for @goalCheckInPreparedBy.
-  ///
-  /// In en, this message translates to:
-  /// **'{name} · prepared for you'**
-  String goalCheckInPreparedBy(String name);
 
   /// Body of the goal check-in sheet's callout when another recording is already running elsewhere in the app. Sits under the title 'A recording is already running'.
   ///
@@ -20731,24 +20713,6 @@ abstract class AppLocalizations {
   /// **'yes'**
   String get onboardingMetricsYes;
 
-  /// No description provided for @onboardingRecordingStyleAnalogue.
-  ///
-  /// In en, this message translates to:
-  /// **'Analogue — VU meter'**
-  String get onboardingRecordingStyleAnalogue;
-
-  /// No description provided for @onboardingRecordingStyleModern.
-  ///
-  /// In en, this message translates to:
-  /// **'Modern — energy orb'**
-  String get onboardingRecordingStyleModern;
-
-  /// No description provided for @onboardingRecordingStyleTryVoice.
-  ///
-  /// In en, this message translates to:
-  /// **'Try with your voice'**
-  String get onboardingRecordingStyleTryVoice;
-
   /// No description provided for @onboardingStageProgress.
   ///
   /// In en, this message translates to:
@@ -23689,12 +23653,6 @@ abstract class AppLocalizations {
   /// **'Here\'s what I heard'**
   String get relationshipCaptureHeard;
 
-  /// Hint under the recorder: what a spoken capture can be.
-  ///
-  /// In en, this message translates to:
-  /// **'A conversation you had, something to remember, or a plan.'**
-  String get relationshipCaptureHint;
-
   /// Button closing the review without filing; the recording stays a voice note.
   ///
   /// In en, this message translates to:
@@ -23749,12 +23707,6 @@ abstract class AppLocalizations {
   /// **'No due date'**
   String get relationshipCaptureNoDue;
 
-  /// Caption when no model can sort a capture.
-  ///
-  /// In en, this message translates to:
-  /// **'No model to sort with — it stays a voice note.'**
-  String get relationshipCaptureNoSorter;
-
   /// Review card label: file this item as a note.
   ///
   /// In en, this message translates to:
@@ -23766,12 +23718,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The recording is saved in your journal, but it could not be put on {name}\'s timeline.'**
   String relationshipCaptureNotPlaced(String name);
-
-  /// Caption naming the model and provider that will sort the capture, e.g. 'Sorted by Gemini 2.5 Flash · via Google'.
-  ///
-  /// In en, this message translates to:
-  /// **'Sorted by {route}'**
-  String relationshipCaptureSortedBy(String route);
 
   /// Status while the capture is sorted by the model.
   ///
@@ -27140,7 +27086,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsPreferencesSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Theming, animations, notifications, recording style, speech, and shortcuts'**
+  /// **'Theming, animations, notifications, speech, and shortcuts'**
   String get settingsPreferencesSubtitle;
 
   /// No description provided for @settingsPreferencesTitle.
@@ -27148,24 +27094,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preferences'**
   String get settingsPreferencesTitle;
-
-  /// No description provided for @settingsRecordingStyleExplanation.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose how the mic looks while you\'re recording.'**
-  String get settingsRecordingStyleExplanation;
-
-  /// No description provided for @settingsRecordingStyleSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'VU meter or energy orb while recording'**
-  String get settingsRecordingStyleSubtitle;
-
-  /// No description provided for @settingsRecordingStyleTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recording Style'**
-  String get settingsRecordingStyleTitle;
 
   /// No description provided for @settingsResetGeminiConfirm.
   ///

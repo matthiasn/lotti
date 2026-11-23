@@ -16,9 +16,8 @@ mixin _$AudioRecorderState {
 
 /// Current status of the recorder.
  AudioRecorderStatus get status;/// Duration of the current recording.
- Duration get progress;/// Current audio level in decibels (0-160 range).
-/// Used for VU meter visualization.
- double get vu; double get dBFS;/// Whether to show the floating recording indicator.
+ Duration get progress;/// Current audio level in dBFS, as the level line draws it.
+ double get dBFS;/// Whether to show the floating recording indicator.
 /// Only relevant when recording and modal is not visible.
  bool get showIndicator;/// Whether the recording modal is currently visible.
 /// Used to coordinate with indicator display.
@@ -36,16 +35,16 @@ $AudioRecorderStateCopyWith<AudioRecorderState> get copyWith => _$AudioRecorderS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.vu, vu) || other.vu == vu)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.showIndicator, showIndicator) || other.showIndicator == showIndicator)&&(identical(other.modalVisible, modalVisible) || other.modalVisible == modalVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.showIndicator, showIndicator) || other.showIndicator == showIndicator)&&(identical(other.modalVisible, modalVisible) || other.modalVisible == modalVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,status,progress,vu,dBFS,showIndicator,modalVisible,linkedId,enableSpeechRecognition);
+int get hashCode => Object.hash(runtimeType,status,progress,dBFS,showIndicator,modalVisible,linkedId,enableSpeechRecognition);
 
 @override
 String toString() {
-  return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition)';
+  return 'AudioRecorderState(status: $status, progress: $progress, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition)';
 }
 
 
@@ -56,7 +55,7 @@ abstract mixin class $AudioRecorderStateCopyWith<$Res>  {
   factory $AudioRecorderStateCopyWith(AudioRecorderState value, $Res Function(AudioRecorderState) _then) = _$AudioRecorderStateCopyWithImpl;
 @useResult
 $Res call({
- AudioRecorderStatus status, Duration progress, double vu, double dBFS, bool showIndicator, bool modalVisible, String? linkedId, bool? enableSpeechRecognition
+ AudioRecorderStatus status, Duration progress, double dBFS, bool showIndicator, bool modalVisible, String? linkedId, bool? enableSpeechRecognition
 });
 
 
@@ -73,12 +72,11 @@ class _$AudioRecorderStateCopyWithImpl<$Res>
 
 /// Create a copy of AudioRecorderState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? progress = null,Object? vu = null,Object? dBFS = null,Object? showIndicator = null,Object? modalVisible = null,Object? linkedId = freezed,Object? enableSpeechRecognition = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? progress = null,Object? dBFS = null,Object? showIndicator = null,Object? modalVisible = null,Object? linkedId = freezed,Object? enableSpeechRecognition = freezed,}) {
   return _then(_self.copyWith(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as AudioRecorderStatus,progress: null == progress ? _self.progress : progress // ignore: cast_nullable_to_non_nullable
-as Duration,vu: null == vu ? _self.vu : vu // ignore: cast_nullable_to_non_nullable
-as double,dBFS: null == dBFS ? _self.dBFS : dBFS // ignore: cast_nullable_to_non_nullable
+as Duration,dBFS: null == dBFS ? _self.dBFS : dBFS // ignore: cast_nullable_to_non_nullable
 as double,showIndicator: null == showIndicator ? _self.showIndicator : showIndicator // ignore: cast_nullable_to_non_nullable
 as bool,modalVisible: null == modalVisible ? _self.modalVisible : modalVisible // ignore: cast_nullable_to_non_nullable
 as bool,linkedId: freezed == linkedId ? _self.linkedId : linkedId // ignore: cast_nullable_to_non_nullable
@@ -168,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double vu,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AudioRecorderState() when $default != null:
-return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition);case _:
+return $default(_that.status,_that.progress,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition);case _:
   return orElse();
 
 }
@@ -189,10 +187,10 @@ return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndica
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double vu,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition)  $default,) {final _that = this;
 switch (_that) {
 case _AudioRecorderState():
-return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition);case _:
+return $default(_that.status,_that.progress,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -209,10 +207,10 @@ return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndica
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AudioRecorderStatus status,  Duration progress,  double vu,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition)?  $default,) {final _that = this;
 switch (_that) {
 case _AudioRecorderState() when $default != null:
-return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition);case _:
+return $default(_that.status,_that.progress,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition);case _:
   return null;
 
 }
@@ -224,16 +222,14 @@ return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndica
 
 
 class _AudioRecorderState implements AudioRecorderState {
-   _AudioRecorderState({required this.status, required this.progress, required this.vu, required this.dBFS, required this.showIndicator, required this.modalVisible, this.linkedId, this.enableSpeechRecognition});
+   _AudioRecorderState({required this.status, required this.progress, required this.dBFS, required this.showIndicator, required this.modalVisible, this.linkedId, this.enableSpeechRecognition});
   
 
 /// Current status of the recorder.
 @override final  AudioRecorderStatus status;
 /// Duration of the current recording.
 @override final  Duration progress;
-/// Current audio level in decibels (0-160 range).
-/// Used for VU meter visualization.
-@override final  double vu;
+/// Current audio level in dBFS, as the level line draws it.
 @override final  double dBFS;
 /// Whether to show the floating recording indicator.
 /// Only relevant when recording and modal is not visible.
@@ -257,16 +253,16 @@ _$AudioRecorderStateCopyWith<_AudioRecorderState> get copyWith => __$AudioRecord
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.vu, vu) || other.vu == vu)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.showIndicator, showIndicator) || other.showIndicator == showIndicator)&&(identical(other.modalVisible, modalVisible) || other.modalVisible == modalVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.showIndicator, showIndicator) || other.showIndicator == showIndicator)&&(identical(other.modalVisible, modalVisible) || other.modalVisible == modalVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,status,progress,vu,dBFS,showIndicator,modalVisible,linkedId,enableSpeechRecognition);
+int get hashCode => Object.hash(runtimeType,status,progress,dBFS,showIndicator,modalVisible,linkedId,enableSpeechRecognition);
 
 @override
 String toString() {
-  return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition)';
+  return 'AudioRecorderState(status: $status, progress: $progress, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition)';
 }
 
 
@@ -277,7 +273,7 @@ abstract mixin class _$AudioRecorderStateCopyWith<$Res> implements $AudioRecorde
   factory _$AudioRecorderStateCopyWith(_AudioRecorderState value, $Res Function(_AudioRecorderState) _then) = __$AudioRecorderStateCopyWithImpl;
 @override @useResult
 $Res call({
- AudioRecorderStatus status, Duration progress, double vu, double dBFS, bool showIndicator, bool modalVisible, String? linkedId, bool? enableSpeechRecognition
+ AudioRecorderStatus status, Duration progress, double dBFS, bool showIndicator, bool modalVisible, String? linkedId, bool? enableSpeechRecognition
 });
 
 
@@ -294,12 +290,11 @@ class __$AudioRecorderStateCopyWithImpl<$Res>
 
 /// Create a copy of AudioRecorderState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? progress = null,Object? vu = null,Object? dBFS = null,Object? showIndicator = null,Object? modalVisible = null,Object? linkedId = freezed,Object? enableSpeechRecognition = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? progress = null,Object? dBFS = null,Object? showIndicator = null,Object? modalVisible = null,Object? linkedId = freezed,Object? enableSpeechRecognition = freezed,}) {
   return _then(_AudioRecorderState(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as AudioRecorderStatus,progress: null == progress ? _self.progress : progress // ignore: cast_nullable_to_non_nullable
-as Duration,vu: null == vu ? _self.vu : vu // ignore: cast_nullable_to_non_nullable
-as double,dBFS: null == dBFS ? _self.dBFS : dBFS // ignore: cast_nullable_to_non_nullable
+as Duration,dBFS: null == dBFS ? _self.dBFS : dBFS // ignore: cast_nullable_to_non_nullable
 as double,showIndicator: null == showIndicator ? _self.showIndicator : showIndicator // ignore: cast_nullable_to_non_nullable
 as bool,modalVisible: null == modalVisible ? _self.modalVisible : modalVisible // ignore: cast_nullable_to_non_nullable
 as bool,linkedId: freezed == linkedId ? _self.linkedId : linkedId // ignore: cast_nullable_to_non_nullable

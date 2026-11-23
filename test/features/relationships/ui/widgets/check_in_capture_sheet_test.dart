@@ -187,7 +187,7 @@ void main() {
   final save = find.byKey(const ValueKey('check-in-save'));
   final dictate = find.byKey(const ValueKey('check-in-dictate'));
   final inlineRecorder = find.byKey(const ValueKey('check-in-inline-recorder'));
-  final stop = find.byKey(const ValueKey('check-in-recorder-stop'));
+  final stop = find.byKey(const ValueKey('stop_recording'));
 
   String narrativeText(WidgetTester tester) =>
       tester.widget<TextField>(narrative).controller!.text;
@@ -1286,7 +1286,10 @@ void main() {
       await stopRecording(tester);
 
       expect(take('audio-1'), findsOneWidget);
-      expect(find.text('00:23 · Whisper large v3 · via Groq'), findsOneWidget);
+      // The length, and no model or provider beside it: where the words
+      // are made is an implementation detail.
+      expect(find.text('00:23'), findsOneWidget);
+      expect(find.textContaining('via'), findsNothing);
       expect(
         find.descendant(
           of: take('audio-1'),
@@ -1417,7 +1420,7 @@ void main() {
       await tester.pumpAndSettle();
       await type(tester, 'Typed only.');
       await startDictation(tester);
-      await tester.tap(find.byKey(const ValueKey('check-in-recorder-discard')));
+      await tester.tap(find.byKey(const ValueKey('cancel_recording')));
       await pumpRecording(tester);
       await tester.tap(find.text('Discard').last);
       await tester.pumpAndSettle();
@@ -1511,29 +1514,6 @@ void main() {
       expect(recorder.recordCalls, isEmpty);
       expect(recorder.stopCalls, 0);
       expect(recorder.modalVisibleLog, isEmpty);
-    });
-
-    testWidgets('a route lookup that throws never touches the wait', (
-      tester,
-    ) async {
-      final gate = Completer<String?>();
-      stubTranscription = StubCheckInTranscriptionService(
-        gate: gate,
-        routeThrows: true,
-      );
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-      await startDictation(tester);
-      recorder.tick(progress: const Duration(seconds: 5));
-      await tester.pump();
-      await stopRecording(tester);
-      expect(find.text('00:05'), findsOneWidget);
-      expect(find.text('Transcribing…'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-
-      gate.complete('Landed anyway.');
-      await tester.pumpAndSettle();
-      expect(find.text('Landed anyway.'), findsOneWidget);
     });
 
     // No profile, no model, or a run that never finished: the take says so
@@ -1746,25 +1726,6 @@ void main() {
 
       expect(stubTranscription.cancelCount, 1);
     });
-
-    testWidgets('the route is a courtesy: a transcription with no route '
-        'still shows the length and the wait', (tester) async {
-      final gate = Completer<String?>();
-      stubTranscription = StubCheckInTranscriptionService(
-        gate: gate,
-        routeResult: null,
-      );
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-      await startDictation(tester);
-      recorder.tick(progress: const Duration(seconds: 5));
-      await tester.pump();
-      await stopRecording(tester);
-      expect(find.text('00:05'), findsOneWidget);
-      expect(find.text('Transcribing…'), findsOneWidget);
-      gate.complete('x');
-      await tester.pumpAndSettle();
-    });
   });
 
   // Every other test in this file pumps `CheckInCaptureForm` bare, which is
@@ -1872,7 +1833,7 @@ void main() {
       await openSheet(tester);
       await startDictation(tester);
       expect(find.textContaining('Recording ·'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('check-in-recorder-pause')));
+      await tester.tap(find.byKey(const ValueKey('pause_resume_button')));
       // By hand: the shared visualizer keeps moving while paused, as the
       // recording sheet's does, so the tree never settles.
       for (var i = 0; i < 4; i++) {

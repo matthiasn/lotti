@@ -4,16 +4,14 @@ import 'package:lotti/features/relationships/service/check_in_transcription_serv
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 
-/// Stands in for the transcription service: answers the preflight probe,
-/// names a route, and hands back a wait the test drives directly.
+/// Stands in for the transcription service: answers the preflight probe
+/// and hands back a wait the test drives directly.
 class StubCheckInTranscriptionService implements CheckInTranscriptionService {
   StubCheckInTranscriptionService({
     this.canTranscribeResult = true,
     this.transcript,
     this.gate,
     this.preflightGate,
-    this.routeResult = (model: 'Whisper large v3', provider: 'Groq'),
-    this.routeThrows = false,
   });
 
   /// Mutable, so a test can take the route away between two takes.
@@ -32,10 +30,6 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
 
   /// When set, the preflight answers only when this completes.
   final Completer<void>? preflightGate;
-  final CheckInTranscriptionRoute? routeResult;
-
-  /// When set, `route()` throws — the profile read failing under the wait.
-  final bool routeThrows;
 
   int cancelCount = 0;
   final transcribeCalls = <String>[];
@@ -46,7 +40,7 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
   /// The person each transcript was asked for, in call order.
   final transcribePeople = <String>[];
 
-  /// The person each `canTranscribe` / `route` probe was for, in call order.
+  /// The person each `canTranscribe` probe was for, in call order.
   final probedPeople = <String>[];
 
   @override
@@ -54,15 +48,6 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
     probedPeople.add(relationshipId);
     await preflightGate?.future;
     return canTranscribeResult;
-  }
-
-  @override
-  Future<CheckInTranscriptionRoute?> route({
-    required String relationshipId,
-  }) async {
-    probedPeople.add(relationshipId);
-    if (routeThrows) throw StateError('profile store closed');
-    return routeResult;
   }
 
   @override
@@ -160,7 +145,6 @@ class FakeAudioRecorderController extends AudioRecorderController {
         ? AudioRecorderStatus.stopped
         : AudioRecorderStatus.recording,
     progress: Duration.zero,
-    vu: -20,
     dBFS: -160,
     showIndicator: false,
     modalVisible: false,

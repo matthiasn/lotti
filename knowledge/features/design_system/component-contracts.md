@@ -5,7 +5,7 @@ description: The repeating patterns that are contract rather than coincidence �
 resource: ../../../lib/features/design_system/components
 tags: [design-system, components, accessibility, layout]
 status: stable
-generated: { by: claude-code/fable-5.2, at: 2026-11-14T12:00:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-23T18:00:00Z }
 stale_after: 2027-05-14
 sources:
   - id: components
@@ -58,8 +58,8 @@ sources:
     last_modified: 2026-11-08
   - id: voice-waveform
     resource: ../../../lib/features/design_system/components/chat_input/design_system_voice_waveform.dart
-    title: DesignSystemVoiceWaveform — a take's voice across any width
-    last_modified: 2026-11-08
+    title: DesignSystemVoiceWaveform — the app's one voice waveform
+    last_modified: 2026-11-23
   - id: measurement-capture
     resource: ../../../lib/features/dashboards/ui/create_measurement/create_measurement_dialog.dart
     title: Measurement capture sheet — the hero value field and the box that focuses it
@@ -1170,13 +1170,20 @@ change:
   kept, Try again when `onRetry` is given). The host owns the recorder; the
   input owns none.
 
-`DesignSystemVoiceWaveform` shows the last `window` (4 s) of a take however
-wide it is: one bar and gap per `spacing.step1` pair, each bar its slice of
-the window read between the samples around it, nothing drawn for time before
-the take. So a wide row is full a few seconds in — the old waveform drew one
-bar per sample from a 200-sample history and padded the rest with dots, which
-left most of a wide Daily OS row empty. A recorder must keep at least one
-window of levels (the Daily OS capture keeps 200 at its 20 ms cadence).
+`DesignSystemVoiceWaveform` is the app's one voice waveform — this row's, the
+recorder's level line, Daily OS Capture's and Refine's — so a voice looks the
+same wherever it is recorded: `spacing.step1` accent bars on a
+`spacing.step1` + `spacing.step2` pitch, centred on a hairline in the
+decorative tone that is what silence looks like, newest at the right, fading
+out at the oldest end, `spacing.step6` tall. Each bar stands for
+`barDuration` (40 ms) of the take whatever the host's `sampleInterval`, so
+the bars travel at one pace everywhere and a wider row simply reaches further
+back: a slow recorder (the chat's 100 ms) is read between its samples, a fast
+one (the entry recorder's 20 ms) gives each bar the loudest of the samples it
+stands for. Nothing is drawn for time before the take — the hairline grows in
+from the right with it. Under reduced motion no bar is drawn and the hairline
+lies still across the whole width. Levels are `0..1` on the one loudness
+scale, `normaliseDbfs` (`lib/utils/recording_levels.dart`).
 `design_system_chat_input_test.dart` and
 `design_system_voice_waveform_test.dart` pin both; the widgetbook's *Chat
 input* overview shows every state.

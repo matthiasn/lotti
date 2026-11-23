@@ -28,9 +28,7 @@ abstract class AudioRecorderState with _$AudioRecorderState {
     /// Duration of the current recording.
     required Duration progress,
 
-    /// Current audio level in decibels (0-160 range).
-    /// Used for VU meter visualization.
-    required double vu,
+    /// Current audio level in dBFS, as the level line draws it.
     required double dBFS,
 
     /// Whether to show the floating recording indicator.

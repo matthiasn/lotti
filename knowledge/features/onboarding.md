@@ -5,7 +5,7 @@ description: The first-run path to the "speak a thought, watch it become a task"
 resource: ../../lib/features/onboarding
 tags: [onboarding, ftue, metrics, activation]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T03:45:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-23T18:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: src
@@ -209,9 +209,8 @@ her is that step's headline.
   the view stays free of providers and the step builds her for the frame. At
   the prompt the tray holds where the task will land, then the starter
   suggestions, and the main button opens the mic; back returns to the areas,
-  which reuse what they created. The recorder — the orb, or the VU meter
-  chosen under Settings › Recording Style — stands in the tray only once the
-  mic is open; "Done", with a check, then ends the recording, and the link
+  which reuse what they created. The recorder — the voice orb over its
+  level bars — stands in the tray only once the mic is open; "Done", with a check, then ends the recording, and the link
   is "Start over", which drops the take and opens the prompt again —
   "Rather type?" is not offered while the mic is open. The landed task is a
   preview on the shared surface, marked done with its check, its area under

@@ -8,7 +8,9 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/relationships/model/person_capture.dart';
 import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
@@ -18,6 +20,7 @@ import 'package:lotti/features/relationships/service/person_capture_sorter.dart'
 import 'package:lotti/features/relationships/state/person_capture_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_capture_sheet.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
@@ -221,7 +224,7 @@ void main() {
   Future<void> stop(WidgetTester tester) => withClock(
     Clock.fixed(now),
     () async {
-      await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+      await tester.tap(find.byKey(const ValueKey('stop_recording')));
       await settle(tester);
     },
   );
@@ -237,33 +240,27 @@ void main() {
   DesignSystemButton button(WidgetTester tester, String key) =>
       tester.widget(find.byKey(ValueKey(key)));
 
-  testWidgets('opens recording for the person, saying what a capture can be '
-      'and where it will be sorted before anything is sent', (tester) async {
+  testWidgets('opens recording for the person: the title, the recorder, and '
+      'not a word more — no hint, no model or provider name', (tester) async {
     await open(tester);
 
     expect(find.text('Speak about Pip'), findsOneWidget);
+    expect(find.byType(InlineRecorder), findsOneWidget);
+    // Everything else on the sheet is the recorder's own: its clock.
+    final sheet = find.byType(PersonCaptureFlowView);
     expect(
-      find.text('A conversation you had, something to remember, or a plan.'),
-      findsOneWidget,
+      tester
+          .widgetList<Text>(
+            find.descendant(of: sheet, matching: find.byType(Text)),
+          )
+          .map((text) => text.data),
+      ['00:00'],
     );
-    expect(
-      find.text('Sorted by Gemini 2.5 Flash · via Example Cloud'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Gemini'), findsNothing);
+    expect(find.textContaining('Example Cloud'), findsNothing);
     expect(recorder.recordCalls.single.linkedId, 'pip');
     expect(recorder.categoryIds, contains('cat-1'));
     expect(prompts, isEmpty);
-  });
-
-  testWidgets('with no model to sort with, the caption says it stays a '
-      'voice note', (tester) async {
-    sortModel = null;
-    await open(tester);
-
-    expect(
-      find.text('No model to sort with — it stays a voice note.'),
-      findsOneWidget,
-    );
   });
 
   testWidgets('stopping puts the recording on the timeline, then its words '
@@ -510,10 +507,21 @@ void main() {
     await stop(tester);
 
     expect(find.text('Listening back…'), findsOneWidget);
+    // The app's AI-running bars, running — not a spinner.
+    expect(
+      tester
+          .widget<AiThinkingShaderPresence>(
+            find.byType(AiThinkingShaderPresence),
+          )
+          .isRunning,
+      isTrue,
+    );
+    expect(find.byType(DesignSystemSpinner), findsNothing);
     words.complete('Called Pip.');
     await tester.pump();
     await tester.pump();
     expect(find.text('Sorting what you said…'), findsOneWidget);
+    expect(find.byType(AiThinkingShaderPresence), findsOneWidget);
     sorted.complete([call(twoItems)]);
     await settle(tester);
     expect(find.text("Here's what I heard"), findsOneWidget);
@@ -589,7 +597,7 @@ void main() {
   ) async {
     await open(tester);
 
-    await tester.tap(find.byKey(const ValueKey('check-in-recorder-discard')));
+    await tester.tap(find.byKey(const ValueKey('cancel_recording')));
     await settle(tester);
     await tester.tap(find.text('Discard'));
     await settle(tester);

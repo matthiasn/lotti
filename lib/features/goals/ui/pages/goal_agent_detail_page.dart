@@ -268,7 +268,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   void _openCheckInComposer({
     required String goalTitle,
     required GoalCheckInStart start,
-    String? personaName,
     String? categoryId,
     String? preparedLine,
   }) {
@@ -277,7 +276,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
       agentId: agentId,
       goalTitle: goalTitle,
       start: start,
-      personaName: personaName,
       categoryId: categoryId,
       preparedLine: preparedLine,
     );
@@ -563,7 +561,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
         _openCheckInComposer(
           goalTitle: goalTitle,
           start: start,
-          personaName: goalIdentity.displayName,
           // The goal row's category, so a check-in is filed with its goal.
           categoryId: goalCategoryId,
           preparedLine: latestReport?.tldr,

@@ -2984,9 +2984,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get audioPlayerWaveform => 'Audiogolfvorm';
 
   @override
-  String get audioRecordingCancel => 'Annuleren';
-
-  @override
   String get audioRecordingDiscardDialogBody =>
       'Deze opname wordt verwijderd. Er zal geen audio-invoer, transcript of taaksamenvatting worden aangemaakt.';
 
@@ -8461,9 +8458,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalCheckInClose => 'Sluiten';
 
   @override
-  String get goalCheckInComposerTitle => 'Check-in';
-
-  @override
   String goalCheckInDimensionsRated(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -8495,11 +8489,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get goalCheckInNoteKeptSeparate =>
       'Los van je getypte notitie bewaard';
-
-  @override
-  String goalCheckInPreparedBy(String name) {
-    return '$name · voor je voorbereid';
-  }
 
   @override
   String get goalCheckInRecorderBusyBody =>
@@ -12344,15 +12333,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingMetricsYes => 'ja';
 
   @override
-  String get onboardingRecordingStyleAnalogue => 'Absolute';
-
-  @override
-  String get onboardingRecordingStyleModern => 'Moderne energiebol';
-
-  @override
-  String get onboardingRecordingStyleTryVoice => 'Probeer het met je stem';
-
-  @override
   String onboardingStageProgress(int current, int total) {
     return 'Stap $current van $total';
   }
@@ -14289,10 +14269,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipCaptureHeard => 'Dit heb ik gehoord';
 
   @override
-  String get relationshipCaptureHint =>
-      'Een gesprek dat je had, iets om te onthouden of een plan.';
-
-  @override
   String get relationshipCaptureKeepVoiceNote => 'Bewaren als spraaknotitie';
 
   @override
@@ -14325,20 +14301,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipCaptureNoDue => 'Geen vervaldatum';
 
   @override
-  String get relationshipCaptureNoSorter =>
-      'Geen model om te sorteren – het blijft een spraaknotitie.';
-
-  @override
   String get relationshipCaptureNote => 'Bewaren als notitie';
 
   @override
   String relationshipCaptureNotPlaced(String name) {
     return 'De opname staat in je dagboek, maar kon niet op de tijdlijn van $name worden gezet.';
-  }
-
-  @override
-  String relationshipCaptureSortedBy(String route) {
-    return 'Gesorteerd door $route';
   }
 
   @override
@@ -16393,21 +16360,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Thema, animaties, meldingen, opnamestijl, spraak en sneltoetsen';
+      'Thema, animaties, meldingen, spraak en sneltoetsen';
 
   @override
   String get settingsPreferencesTitle => 'Voorkeuren';
-
-  @override
-  String get settingsRecordingStyleExplanation =>
-      'Kies hoe de microfoon eruit ziet terwijl je aan het opnemen bent.';
-
-  @override
-  String get settingsRecordingStyleSubtitle =>
-      'VU meter of energiebol tijdens het opnemen';
-
-  @override
-  String get settingsRecordingStyleTitle => 'Opnamestijl';
 
   @override
   String get settingsResetGeminiConfirm => 'Terugzetten';

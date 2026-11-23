@@ -2968,9 +2968,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get audioPlayerWaveform => 'Lydbølgeform';
 
   @override
-  String get audioRecordingCancel => 'Annuller';
-
-  @override
   String get audioRecordingDiscardDialogBody =>
       'Denne optagelse vil blive slettet. Der vil ikke blive oprettet lydindtastning, transskription eller opgaveoversigt.';
 
@@ -8431,9 +8428,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalCheckInClose => 'Luk';
 
   @override
-  String get goalCheckInComposerTitle => 'Check-in';
-
-  @override
   String goalCheckInDimensionsRated(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -8465,11 +8459,6 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get goalCheckInNoteKeptSeparate =>
       'Holdes adskilt fra din skrevne note';
-
-  @override
-  String goalCheckInPreparedBy(String name) {
-    return '$name · forberedt til dig';
-  }
 
   @override
   String get goalCheckInRecorderBusyBody =>
@@ -12313,15 +12302,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get onboardingMetricsYes => 'Ja';
 
   @override
-  String get onboardingRecordingStyleAnalogue => 'Analog — VU-måler';
-
-  @override
-  String get onboardingRecordingStyleModern => 'Moderne — energikugle';
-
-  @override
-  String get onboardingRecordingStyleTryVoice => 'Prøv med din stemme';
-
-  @override
   String onboardingStageProgress(int current, int total) {
     return 'Trin $current af $total';
   }
@@ -14252,10 +14232,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipCaptureHeard => 'Det her hørte jeg';
 
   @override
-  String get relationshipCaptureHint =>
-      'En samtale, du havde, noget at huske eller en plan.';
-
-  @override
   String get relationshipCaptureKeepVoiceNote => 'Behold som stemmenote';
 
   @override
@@ -14288,20 +14264,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipCaptureNoDue => 'Ingen forfaldsdato';
 
   @override
-  String get relationshipCaptureNoSorter =>
-      'Ingen model at sortere med – den forbliver en stemmenote.';
-
-  @override
   String get relationshipCaptureNote => 'Behold som note';
 
   @override
   String relationshipCaptureNotPlaced(String name) {
     return 'Optagelsen er gemt i din dagbog, men den kunne ikke lægges på tidslinjen for $name.';
-  }
-
-  @override
-  String relationshipCaptureSortedBy(String route) {
-    return 'Sorteret af $route';
   }
 
   @override
@@ -16351,21 +16318,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Tematisering, animationer, notifikationer, indspilningsstil, tale og genveje';
+      'Tematisering, animationer, notifikationer, tale og genveje';
 
   @override
   String get settingsPreferencesTitle => 'Præferencer';
-
-  @override
-  String get settingsRecordingStyleExplanation =>
-      'Vælg hvordan mikrofonen ser ud, mens du optager.';
-
-  @override
-  String get settingsRecordingStyleSubtitle =>
-      'VU-måler eller energikugle under optagelse';
-
-  @override
-  String get settingsRecordingStyleTitle => 'Indspilningsstil';
 
   @override
   String get settingsResetGeminiConfirm => 'Nulstil';

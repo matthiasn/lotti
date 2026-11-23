@@ -84,7 +84,6 @@ void main() {
       expect(resolve('definitions/measurables').title, 'Measurables');
       expect(resolve('preferences').title, 'Preferences');
       expect(resolve('preferences/notifications').title, 'Notifications');
-      expect(resolve('preferences/recording-style').title, 'Recording Style');
       expect(resolve('preferences/theming').title, 'Theming');
       expect(resolve('advanced/flags').title, 'Config Flags');
       expect(resolve('advanced').title, 'Advanced Settings');
@@ -133,8 +132,7 @@ void main() {
       expect(resolve('preferences').title, 'Preferences');
       expect(
         resolve('preferences').desc,
-        'Theming, animations, notifications, recording style, speech, and '
-        'shortcuts',
+        'Theming, animations, notifications, speech, and shortcuts',
       );
     });
 
@@ -149,7 +147,6 @@ void main() {
         resolve('preferences/keyboard-shortcuts').title,
         'Keyboard shortcuts',
       );
-      expect(resolve('preferences/recording-style').title, 'Recording Style');
       expect(resolve('preferences/speech').title, 'Speech');
       expect(resolve('preferences/companion').title, 'Companion');
       expect(

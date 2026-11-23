@@ -1,5 +1,5 @@
 /// Screenshot harness for settings that shape Lotti's appearance and
-/// interaction: theming, recording style, speech, keyboard shortcuts, and
+/// interaction: theming, speech, keyboard shortcuts, and
 /// completion celebrations.
 ///
 /// Desktop captures render the production desktop settings tree/detail shell.
@@ -23,7 +23,6 @@ import 'package:lotti/features/design_system/components/buttons/ds_segmented_tog
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/domain/palette_jump.dart';
@@ -32,11 +31,9 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/command_catalog_view.dart';
 import 'package:lotti/features/keyboard/ui/command_palette.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
-import 'package:lotti/features/onboarding/ui/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_playground_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_desktop_page.dart';
-import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/theming/ui/theming_page.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/features/tts/ui/speech_settings_page.dart';
@@ -58,7 +55,6 @@ import '../../../mocks/mocks.dart';
 import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
-import '../../speech/state/recording_style_test_utils.dart';
 
 const String _subdir = 'settings_preferences';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
@@ -68,7 +64,6 @@ AppLocalizations _messages(WidgetTester tester) =>
 
 enum _PreferenceSurface {
   theming('/settings/theming'),
-  recordingStyle('/settings/recording-style'),
   speech('/settings/speech'),
   keyboardShortcuts('/settings/keyboard-shortcuts'),
   celebrations('/settings/advanced/animations');
@@ -80,7 +75,6 @@ enum _PreferenceSurface {
 
 Widget _mobilePage(_PreferenceSurface surface) => switch (surface) {
   _PreferenceSurface.theming => const ThemingPage(),
-  _PreferenceSurface.recordingStyle => const RecordingStyleSettingsPage(),
   _PreferenceSurface.speech => const SpeechSettingsPage(),
   _PreferenceSurface.keyboardShortcuts => const KeyboardShortcutsPage(),
   _PreferenceSurface.celebrations => const CelebrationSettingsPage(),
@@ -258,15 +252,11 @@ void main() {
 
   late TestGetItMocks mocks;
   late FakeSettingsNavService navService;
-  late Map<String, String> recordingPrefs;
   late bool speechEnabled;
 
   setUp(() async {
     navService = FakeSettingsNavService();
     speechEnabled = false;
-    recordingPrefs = <String, String>{
-      recordingStylePrefsKey: RecordingStyle.modern.name,
-    };
     mocks = await setUpTestGetIt(
       additionalSetup: () {
         getIt
@@ -304,9 +294,6 @@ void main() {
   List<Override> overrides() => withServiceOverrides([
     journalDbProvider.overrideWithValue(mocks.journalDb),
     templatesPendingReviewProvider.overrideWith((ref) async => <String>{}),
-    recordingStyleAppPrefsProvider.overrideWithValue(
-      fakeRecordingStylePrefs(recordingPrefs),
-    ),
   ]);
 
   // The 402 dp phone matches the manual's canonical mobile viewport and gives
@@ -350,44 +337,6 @@ void main() {
           await captureScreenshot(
             tester,
             'theming_preferences_${viewport}_$theme',
-            subdir: _subdir,
-          );
-        }),
-      );
-
-      testWidgets(
-        '$viewport recording-style preview — $theme',
-        (tester) => _withDevicePlatform(device, () async {
-          await _pumpSurface(
-            tester,
-            surface: _PreferenceSurface.recordingStyle,
-            device: device,
-            brightness: brightness,
-            navService: navService,
-            overrides: withServiceOverrides(overrides()),
-          );
-          final messages = AppLocalizations.of(
-            tester.element(find.byType(Scaffold).first),
-          )!;
-          expect(
-            find.text(messages.settingsRecordingStyleTitle),
-            findsWidgets,
-          );
-          expect(
-            find.text(messages.onboardingRecordingStyleModern),
-            findsOneWidget,
-          );
-          expect(
-            find.text(messages.onboardingRecordingStyleAnalogue),
-            findsOneWidget,
-          );
-          expect(
-            find.byIcon(LottiIcons.radioSelected),
-            findsOneWidget,
-          );
-          await captureScreenshot(
-            tester,
-            'recording_style_preview_${viewport}_$theme',
             subdir: _subdir,
           );
         }),

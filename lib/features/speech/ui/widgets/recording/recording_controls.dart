@@ -1,19 +1,14 @@
-import 'dart:math' as math;
-
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
-import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_timer_pill.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/features/speech/state/recording_levels.dart';
-import 'package:lotti/features/speech/state/recording_style.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/entry_tools.dart';
+import 'package:lotti/utils/recording_levels.dart';
 import 'package:lotti/widgets/celebration/celebration_preferences_controller.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -22,29 +17,27 @@ import 'package:material_ui/material_ui.dart';
 /// page that record in place. A recorder that drew its own parts read as
 /// another app's recorder however carefully it was spaced.
 ///
-/// Composed as a studio recorder ([RecordingStage]) on one centred axis:
-/// the level display the user chose, the level line under it, the running
-/// time inside the red Stop between the two quiet controls — the app's one
-/// running-clock control, the pill a task's Track time wears — and a footer
-/// in the recorder's small voice.
+/// Composed ([RecordingStage]) on one centred axis: the level line, the
+/// running time inside the red Stop between the two quiet controls — the
+/// app's one running-clock control, the pill a task's Track time wears —
+/// and a footer in the recorder's small voice. Nothing else: the level line
+/// is the only picture of the voice, here and in every dictation field.
 
 /// The one small voice every line of words on the recorder speaks in — an
-/// option, a reassurance, a failure.
+/// option, a failure.
 TextStyle recordingCaptionStyle(DsTokens tokens) =>
     tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
 
-/// The whole recorder, top to bottom: the level display (left out when
-/// [compact]), the level line, the [controls] — whose Stop carries the
-/// running time — and an optional [footer], in one column no wider than
-/// the level line, every gap a design-system step, so each host reads the
-/// same.
+/// The whole recorder, top to bottom: the level line, the [controls] —
+/// whose Stop carries the running time — and an optional [footer], in one
+/// column as wide as the transport row, every gap a design-system step, so
+/// each host reads the same.
 class RecordingStage extends StatelessWidget {
   const RecordingStage({
     required this.state,
     required this.controls,
-    this.compact = false,
     this.levelSemanticsLabel,
     this.announceLevel = false,
     this.notice,
@@ -54,196 +47,72 @@ class RecordingStage extends StatelessWidget {
 
   final AudioRecorderState state;
 
-  /// The transport row while a take runs, or the host's record button
-  /// before one starts.
+  /// The transport row.
   final Widget controls;
 
-  /// Whether to leave the orb or meter out, for a host with no room for it:
-  /// the level line is then the recorder's only meter.
-  final bool compact;
-
-  /// What a screen reader hears for the level display and line, which are
-  /// pictures; nothing when null.
+  /// What a screen reader hears for the level line, which is a picture;
+  /// nothing when null.
   final String? levelSemanticsLabel;
 
   /// Whether that label is a live region — where nothing else on the
   /// surface announces the take starting.
   final bool announceLevel;
 
-  /// A line under the level line, such as a failure the host reports.
+  /// A line under the level line, such as the host's own status.
   final Widget? notice;
 
-  /// What sits under the controls: an option, or a reassurance.
+  /// What sits under the controls: an option.
   final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    // Between the pictures, the controls and the footer: a step tighter in
-    // a dock, so its inner gaps never outgrow its edges.
-    final groupGap = compact ? tokens.spacing.step4 : tokens.spacing.step6;
+    final gap = tokens.spacing.step5;
     return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: RecordingLevelLine.maxWidth,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (compact)
-              // The line stands in for the pictures it would sit under.
-              Semantics(
-                liveRegion: announceLevel,
-                label: levelSemanticsLabel,
-                child: ExcludeSemantics(
-                  child: RecordingLevelLine(state: state),
-                ),
-              )
-            else ...[
-              Semantics(
-                liveRegion: announceLevel,
-                label: levelSemanticsLabel,
-                child: ExcludeSemantics(
-                  child: RecordingLevelVisualizer(state: state),
-                ),
-              ),
-              // No step of its own: the orb's canvas already keeps a margin
-              // of glow below its ring, and that margin is the gap.
-              ExcludeSemantics(child: RecordingLevelLine(state: state)),
-            ],
-            if (notice case final notice?) ...[
-              SizedBox(height: tokens.spacing.step3),
-              notice,
-            ],
-            SizedBox(height: groupGap),
-            controls,
-            if (footer case final footer?) ...[
-              SizedBox(height: groupGap),
-              footer,
-            ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Semantics(
+            liveRegion: announceLevel,
+            label: levelSemanticsLabel,
+            child: ExcludeSemantics(child: RecordingLevelLine(state: state)),
+          ),
+          if (notice case final notice?) ...[
+            SizedBox(height: tokens.spacing.step3),
+            notice,
           ],
-        ),
+          SizedBox(height: gap),
+          controls,
+          if (footer case final footer?) ...[
+            SizedBox(height: gap),
+            footer,
+          ],
+        ],
       ),
     );
   }
 }
 
-/// The level display, per the persisted [RecordingStyle]: the voice orb for
-/// [RecordingStyle.modern], the analog VU meter otherwise — including while
-/// the preference is still loading, so the meter never flashes to the orb
-/// and back on the first frame. On a light surface the orb sits on a soft
-/// lit pool, so its glints have something to glow against.
-class RecordingLevelVisualizer extends ConsumerWidget {
-  const RecordingLevelVisualizer({
-    required this.state,
-    this.orbSize = defaultOrbSize,
-    this.meterWidth = defaultMeterWidth,
-    super.key,
-  });
-
-  /// The recording sheet's orb.
-  static const double defaultOrbSize = 220;
-
-  /// The recording sheet's meter, at its widest.
-  static const double defaultMeterWidth = 400;
-
-  final AudioRecorderState state;
-  final double orbSize;
-
-  /// The meter's width; it never grows past the space it is given.
-  final double meterWidth;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
-    final style = ref.watch(recordingStyleProvider).asData?.value;
-    if (style != RecordingStyle.modern) {
-      return LayoutBuilder(
-        builder: (context, constraints) => AnalogVuMeter(
-          key: const ValueKey('recording-visualizer-meter'),
-          vu: state.vu,
-          dBFS: state.dBFS,
-          // Clamping an unbounded width lands on the meter's own.
-          size: constraints.maxWidth.clamp(0, meterWidth).toDouble(),
-          colorScheme: Theme.of(context).colorScheme,
-        ),
-      );
-    }
-    final palette = AiVoiceOrbPalette.fromTokens(tokens);
-    final orb = AiVoiceInputShader(
-      key: const ValueKey('recording-visualizer-orb'),
-      dbfs: state.dBFS,
-      size: orbSize,
-      intensity: 1,
-      palette: palette,
-    );
-    if (!palette.onLightSurface) return orb;
-    // The lit pool: the brightest surface at the centre, the lit glint at
-    // the ring's radius, fading out before the orb's own crop — a lens for
-    // the glints, never a visible disc or a shadow.
-    return DecoratedBox(
-      key: const ValueKey('recording-visualizer-pool'),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            tokens.colors.background.level01.withValues(alpha: 0.6),
-            palette.glint.withValues(alpha: 0.16),
-            palette.glint.withValues(alpha: 0),
-          ],
-          stops: const [0, 0.7, 1],
-        ),
-      ),
-      child: orb,
-    );
-  }
-}
-
-/// The level over the last stretch of the take, as a thin line of bars
-/// across the column that fades out towards its oldest end: the accent under the orb,
-/// the neutral ink under the meter, as onboarding pairs them. It adds a
-/// sample per recorder tick while the take runs — a steady level too, so
-/// silence ages the loud bars out — holds still while paused, and starts
-/// empty for each new take.
-class RecordingLevelLine extends ConsumerStatefulWidget {
+/// The level over the last stretch of the take: the app's one voice
+/// waveform ([DesignSystemVoiceWaveform]) at the transport row's width, so
+/// the line and the controls under it share their edges in every host. It
+/// adds a level per recorder sample while the take runs — a steady level
+/// too, so silence ages the loud bars out — holds still while paused, and
+/// starts empty for each new take.
+class RecordingLevelLine extends StatefulWidget {
   const RecordingLevelLine({required this.state, super.key});
 
-  /// How many level samples the line keeps — two per bar, each bar the
-  /// louder of its pair, so it moves smoothly without each 20 ms sample
-  /// jolting it.
-  static const int levelWindow = 80;
-
-  /// Bars across the line.
-  static const int barCount = levelWindow ~/ 2;
-
-  /// The recorder's column at its widest.
-  static const double maxWidth = 400;
-
-  /// The mask the line is drawn through: it fades in at the oldest end
-  /// only, so the line reads as time passing towards *now*, the newest bars
-  /// at full strength.
-  static LinearGradient fadeOf(DsTokens tokens) => LinearGradient(
-    colors: [
-      tokens.colors.text.highEmphasis.withValues(alpha: 0),
-      tokens.colors.text.highEmphasis,
-    ],
-    stops: const [0, 0.18],
-  );
-
-  /// The window as bars: each bar the louder of its two samples, paired
-  /// from the newest back so the latest bar is always whole.
-  static List<double> barsOf(List<double> levels) => [
-    for (var end = levels.length; end > 0; end -= 2)
-      levels.sublist(end < 2 ? 0 : end - 2, end).reduce(math.max),
-  ].reversed.toList();
+  /// How many samples the line keeps: more than the transport row is ever
+  /// wide.
+  static const int levelWindow = 240;
 
   final AudioRecorderState state;
 
   @override
-  ConsumerState<RecordingLevelLine> createState() => _RecordingLevelLineState();
+  State<RecordingLevelLine> createState() => _RecordingLevelLineState();
 }
 
-class _RecordingLevelLineState extends ConsumerState<RecordingLevelLine> {
+class _RecordingLevelLineState extends State<RecordingLevelLine> {
   List<double> _levels = const [];
 
   @override
@@ -257,49 +126,25 @@ class _RecordingLevelLineState extends ConsumerState<RecordingLevelLine> {
     }
     // The recorder advances progress on every sample it takes, so a
     // repeated level is still a sample.
-    if (widget.state.status == AudioRecorderStatus.recording &&
-        widget.state.progress != oldWidget.state.progress) {
-      final next = [..._levels, normaliseDbfs(widget.state.dBFS)];
-      _levels = next.length > RecordingLevelLine.levelWindow
-          ? next.sublist(next.length - RecordingLevelLine.levelWindow)
-          : next;
+    if (widget.state.status != AudioRecorderStatus.recording ||
+        widget.state.progress == oldWidget.state.progress) {
+      return;
     }
+    final next = [..._levels, normaliseDbfs(widget.state.dBFS)];
+    _levels = next.length > RecordingLevelLine.levelWindow
+        ? next.sublist(next.length - RecordingLevelLine.levelWindow)
+        : next;
   }
 
   @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final modern =
-        ref.watch(recordingStyleProvider).asData?.value ==
-        RecordingStyle.modern;
-    final bars = RecordingLevelLine.barsOf(_levels);
-    return LayoutBuilder(
-      builder: (context, constraints) => ShaderMask(
-        // The line fades in at its oldest end only, so it reads as time
-        // passing towards *now* — the newest bars at full strength.
-        blendMode: BlendMode.dstIn,
-        shaderCallback: (bounds) =>
-            RecordingLevelLine.fadeOf(tokens).createShader(bounds),
-        child: LiveWaveform(
-          key: const ValueKey('recording-visualizer-bars'),
-          amplitudes: bars,
-          barCount: RecordingLevelLine.barCount,
-          // The transport row's width, so the line and the controls under
-          // it share their edges in every host — with the orb or without.
-          width: constraints.maxWidth
-              .clamp(0, RecordingTransportControls.rowWidth(context))
-              .toDouble(),
-          height: tokens.spacing.step6,
-          color: modern
-              ? tokens.colors.interactive.enabled
-              : tokens.colors.text.highEmphasis,
-          baselineColor: tokens.colors.decorative.level02,
-          // The rings' border weight: one hairline across the recorder.
-          baselineWidth: tokens.spacing.step1 / 2,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => SizedBox(
+    key: const ValueKey('recording-visualizer-bars'),
+    width: RecordingTransportControls.rowWidth(context),
+    child: DesignSystemVoiceWaveform(
+      levels: _levels,
+      sampleInterval: const Duration(milliseconds: intervalMs),
+    ),
+  );
 }
 
 /// An option under the recorder — its name in the recorder's caption
@@ -357,10 +202,6 @@ class RecordingTransportControls extends StatelessWidget {
     required this.onStop,
     this.progressSemanticsLabel,
     this.busy = false,
-    this.discardLabel,
-    this.discardKey = const ValueKey('cancel_recording'),
-    this.pauseKey = const ValueKey('pause_resume_button'),
-    this.stopKey = const ValueKey('stop_recording'),
     super.key,
   });
 
@@ -377,11 +218,9 @@ class RecordingTransportControls extends StatelessWidget {
   final VoidCallback onTogglePause;
   final VoidCallback onStop;
 
-  /// The discard control's name; the recording sheet's *Cancel* by default.
-  final String? discardLabel;
-  final Key discardKey;
-  final Key pauseKey;
-  final Key stopKey;
+  static const Key discardKey = ValueKey('cancel_recording');
+  static const Key pauseKey = ValueKey('pause_resume_button');
+  static const Key stopKey = ValueKey('stop_recording');
 
   /// The row's width on one line: two rings, the Stop pill at its held
   /// width, and the gaps between them — the recorder's one measure.
@@ -409,7 +248,7 @@ class RecordingTransportControls extends StatelessWidget {
       children: [
         _RoundControl(
           key: discardKey,
-          label: discardLabel ?? messages.audioRecordingCancel,
+          label: messages.checkInDiscardRecording,
           icon: LottiIcons.close,
           onTap: busy ? null : onDiscard,
         ),

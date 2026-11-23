@@ -536,9 +536,7 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
                           _onRecorded(checkIn, audioEntryId),
                       onDiscarded: () => setState(() => _recording = false),
                       onFailed: _onRecordingFailed,
-                      // No room for the orb over the check-in, and no header
-                      // to say the take is live.
-                      compact: true,
+                      // No header here to say the take is live.
                       showStatus: true,
                     )
                   : null,

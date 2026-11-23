@@ -8,7 +8,6 @@ import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
-import 'package:lotti/features/ai/ui/animation/ai_running_label.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -268,7 +267,7 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('an interactive band names the job that is running', (
+    testWidgets('an interactive band draws nothing over its bars', (
       tester,
     ) async {
       final container = makeContainer();
@@ -294,30 +293,23 @@ void main() {
       );
       await tester.pump(AiRunningDecoderBars.transitionDuration);
 
+      // The bars are the motion and nothing covers them: what is running
+      // is said by AiRunningLabel, under the host's controls.
+      expect(find.byKey(AiRunningDecoderBars.indicatorKey), findsOneWidget);
       expect(
-        tester.widget<AiRunningLabel>(find.byType(AiRunningLabel)).type,
-        AiResponseType.audioTranscription,
-      );
-      expect(find.text('Transcribing audio'), findsOneWidget);
-      container.dispose();
-    });
-
-    testWidgets('an idle interactive band shows no label', (tester) async {
-      final container = makeContainer();
-
-      await tester.pumpWidget(
-        buildSubject(
-          container,
-          const AiRunningDecoderBars(
-            entryId: testId,
-            responseTypes: testSet,
-            isInteractive: true,
-          ),
+        find.descendant(
+          of: find.byType(AiRunningDecoderBars),
+          matching: find.byType(Text),
         ),
+        findsNothing,
       );
-      await tester.pump(AiRunningDecoderBars.transitionDuration);
-
-      expect(find.byType(AiRunningLabel), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(AiRunningDecoderBars),
+          matching: find.byType(Stack),
+        ),
+        findsNothing,
+      );
       container.dispose();
     });
 

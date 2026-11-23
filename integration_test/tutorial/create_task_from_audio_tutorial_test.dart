@@ -220,8 +220,10 @@ void main() {
 
       await driver.step('record_dictation', () async {
         await driver.tapLikeUser(find.byKey(TaskActionBar.audioKey));
-        await driver.pumpUntilFound(find.byKey(const ValueKey('record')));
-        await driver.tapLikeUser(find.byKey(const ValueKey('record')));
+        // The sheet opens already recording: its Stop is the sign.
+        await driver.pumpUntilFound(
+          find.byKey(const ValueKey('stop_recording')),
+        );
         await tester.pump(const Duration(milliseconds: 500));
 
         // The narrator dictates in their own voice — wait for the step

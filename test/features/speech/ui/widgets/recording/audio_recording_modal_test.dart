@@ -1,2703 +1,399 @@
-// ignore_for_file: avoid_redundant_argument_values
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/audio_note.dart';
-import 'package:lotti/classes/category_icon/category_icon.dart';
-import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/event_data.dart';
-import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
-import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/model/entry_state.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
-import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/features/speech/state/app_settings_opener.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/features/speech/state/recording_style.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_failure_callout.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/providers/audio_player_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/app_prefs_service.dart';
-import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/services/time_service.dart';
-import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:record/record.dart';
-import 'package:uuid/uuid.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
-import '../../../../../helpers/service_overrides.dart';
 import '../../../../../mocks/mocks.dart';
+import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
+import '../../../../relationships/helpers/check_in_speech_fakes.dart';
 
-// Mock EntryController for testing
-class FakeEntryController extends EntryController {
-  FakeEntryController({
-    this.mockEntry,
-    this.shouldError = false,
-    this.isLoading = false,
-  });
-
-  final JournalEntity? mockEntry;
-  final bool shouldError;
-  final bool isLoading;
-
-  @override
-  Future<EntryState?> build() {
-    // Return synchronously using SynchronousFuture for immediate resolution in tests
-    if (shouldError) {
-      // Return a Future.error for error propagation
-      return Future<EntryState?>.error(Exception('Test error'));
-    }
-
-    // If simulating loading, return a future that never completes
-    if (isLoading) {
-      return Completer<EntryState?>().future;
-    }
-
-    if (mockEntry == null) {
-      return SynchronousFuture(null);
-    }
-
-    return SynchronousFuture(
-      EntryState.saved(
-        entryId: mockEntry!.meta.id,
-        entry: mockEntry,
-        showMap: false,
-        isFocused: false,
-        shouldShowEditorToolBar: false,
-      ),
-    );
-  }
-}
-
-class FakeCategoryDefinition extends Fake implements CategoryDefinition {
-  @override
-  String get id => 'test-category';
-
-  @override
-  String get name => 'Test Category';
-
-  @override
-  DateTime get createdAt => DateTime(2024);
-
-  @override
-  DateTime get updatedAt => DateTime(2024);
-
-  @override
-  bool get private => false;
-
-  @override
-  String? get color => '#000000';
-
-  @override
-  bool get active => true;
-
-  @override
-  bool get favorite => false;
-
-  @override
-  String? get defaultLanguageCode => null;
-
-  @override
-  List<String>? get speechDictionary => null;
-
-  @override
-  CategoryIcon? get icon => null;
-
-  @override
-  List<ChecklistCorrectionExample>? get correctionExamples => null;
-}
-
-// Test helper controller that returns a fixed state (from coverage tests)
-class TestAudioRecorderController extends AudioRecorderController {
-  TestAudioRecorderController(this.fixedState);
-
-  final AudioRecorderState fixedState;
-
-  @override
-  AudioRecorderState build() => fixedState;
-}
-
-/// Fake [AppPrefs] pre-seeded with a [RecordingStyle] preference, for
-/// asserting how [AudioRecordingModalContent] picks its visualizer.
-AppPrefs _fakeRecordingStylePrefs(String style) => AppPrefs(
-  getBool: (_) async => null,
-  setBool: ({required key, required value}) async => true,
-  getString: (key) async => key == recordingStylePrefsKey ? style : null,
-  setString: ({required key, required value}) async => true,
-);
-
-/// A [AppPrefs.getString] that never resolves, so the recording style stays
-/// in its loading state for the duration of a test.
-AppPrefs _neverResolvingRecordingStylePrefs() => AppPrefs(
-  getBool: (_) async => null,
-  setBool: ({required key, required value}) async => true,
-  getString: (_) => Completer<String?>().future,
-  setString: ({required key, required value}) async => true,
-);
-
-Finder _speechRecognitionCheckbox(WidgetTester tester) => find.widgetWithText(
-  RecordingOption,
-  AppLocalizations.of(
-    tester.element(find.byType(Scaffold).first),
-  )!.audioRecordingTranscribeOption,
-);
+const _taskId = 'task-1';
+const _categoryId = 'category-7';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  // Font downloads are centrally configured in test/flutter_test_config.dart
-
-  late MockAudioRecorderRepository mockAudioRecorderRepository;
-  late MockCategoryRepository mockCategoryRepository;
-  late MockEditorStateService mockEditorStateService;
-  late MockPersistenceLogic mockPersistenceLogic;
-  late MockTimeService mockTimeService;
-  late MockNavService mockNavService;
-  late MockPlayer mockPlayer;
-  late MockPlayerState mockPlayerState;
-  late MockPlayerStream mockPlayerStream;
-  late StreamController<Duration> positionController;
-  late StreamController<Duration> bufferController;
-  late StreamController<bool> completedController;
-
-  setUpAll(() {
-    registerFallbackValue(FakePlayable());
-    registerFallbackValue(Duration.zero);
-    // Exercise the inherited service state used by shared-isolate CI, too.
-    ensureThemingServicesRegistered();
-  });
+  late FakeAudioRecorderController recorder;
+  late MockJournalDb journalDb;
+  late MockNavService navService;
+  final results = <String?>[];
+  var settingsOpened = 0;
 
   setUp(() async {
-    await setUpTestGetIt();
-    mockAudioRecorderRepository = MockAudioRecorderRepository();
-    mockCategoryRepository = MockCategoryRepository();
-    mockEditorStateService = MockEditorStateService();
-    mockPersistenceLogic = MockPersistenceLogic();
-    mockTimeService = MockTimeService();
-    mockNavService = MockNavService();
-    mockPlayer = MockPlayer();
-    mockPlayerState = MockPlayerState();
-    mockPlayerStream = MockPlayerStream();
-    positionController = StreamController<Duration>.broadcast();
-    bufferController = StreamController<Duration>.broadcast();
-    completedController = StreamController<bool>.broadcast();
-
-    // Setup mock player
-    when(() => mockPlayer.state).thenReturn(mockPlayerState);
-    when(() => mockPlayerState.duration).thenReturn(const Duration(minutes: 5));
-    when(() => mockPlayer.stream).thenReturn(mockPlayerStream);
-    when(
-      () => mockPlayerStream.position,
-    ).thenAnswer((_) => positionController.stream);
-    when(
-      () => mockPlayerStream.buffer,
-    ).thenAnswer((_) => bufferController.stream);
-    when(
-      () => mockPlayerStream.completed,
-    ).thenAnswer((_) => completedController.stream);
-    when(() => mockPlayer.dispose()).thenAnswer((_) async {});
-    when(
-      () => mockPlayer.open(any(), play: any(named: 'play')),
-    ).thenAnswer((_) async {});
-    when(() => mockPlayer.play()).thenAnswer((_) async {});
-    when(() => mockPlayer.pause()).thenAnswer((_) async {});
-    when(() => mockPlayer.seek(any())).thenAnswer((_) async {});
-    when(() => mockPlayer.setRate(any())).thenAnswer((_) async {});
-
-    // Setup default mock behavior for AudioRecorderRepository
-    when(() => mockAudioRecorderRepository.amplitudeStream).thenAnswer(
-      (_) => const Stream<Amplitude>.empty(),
+    recorder = FakeAudioRecorderController();
+    journalDb = MockJournalDb();
+    navService = MockNavService();
+    results.clear();
+    settingsOpened = 0;
+    when(() => journalDb.journalEntityById(any())).thenAnswer(
+      (_) async => testTask,
     );
-    when(
-      () => mockAudioRecorderRepository.hasPermission(),
-    ).thenAnswer((_) async => true);
-    when(
-      () => mockAudioRecorderRepository.isPaused(),
-    ).thenAnswer((_) async => false);
-    when(
-      () => mockAudioRecorderRepository.isRecording(),
-    ).thenAnswer((_) async => false);
-    when(
-      () => mockAudioRecorderRepository.stopRecording(),
-    ).thenAnswer((_) async => 'test-audio-path.m4a');
-    when(
-      () => mockAudioRecorderRepository.startRecording(),
-    ).thenAnswer((_) async => null);
-    when(
-      () => mockAudioRecorderRepository.pauseRecording(),
-    ).thenAnswer((_) async {});
-    when(
-      () => mockAudioRecorderRepository.resumeRecording(),
-    ).thenAnswer((_) async {});
-
-    // Register mocks with GetIt
-    getIt
-      ..registerSingleton<EditorStateService>(mockEditorStateService)
-      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-      ..registerSingleton<TimeService>(mockTimeService)
-      ..registerSingleton<NavService>(mockNavService);
-  });
-
-  tearDown(() async {
-    await positionController.close();
-    await bufferController.close();
-    await completedController.close();
-    await tearDownTestGetIt();
-  });
-
-  Widget createTestWidget({
-    AudioRecorderState? state,
-    CategoryDefinition? category,
-    String? linkedTaskId,
-    bool provideCategory = true,
-    bool showSpeechCheckbox = false,
-  }) {
-    final categoryToUse = category ?? FakeCategoryDefinition();
-
-    // Set up category mock BEFORE creating widget (critical for synchronous resolution)
-    if (provideCategory) {
-      when(
-        () => mockCategoryRepository.watchCategory('test-category'),
-      ).thenAnswer((_) => Stream.value(categoryToUse));
-    }
-
-    // Create a mock Task entity when linkedTaskId is provided
-    final testDate = DateTime(2024, 3, 15, 10, 30);
-    final mockTask = linkedTaskId != null
-        ? Task(
-            meta: Metadata(
-              id: linkedTaskId,
-              createdAt: testDate,
-              updatedAt: testDate,
-              dateFrom: testDate,
-              dateTo: testDate,
-              categoryId: 'test-category',
-            ),
-            data: TaskData(
-              title: 'Test Task',
-              status: TaskStatus.open(
-                id: const Uuid().v1(),
-                createdAt: testDate,
-                utcOffset: 0,
-              ),
-              dateFrom: testDate,
-              dateTo: testDate,
-              statusHistory: [
-                TaskStatus.open(
-                  id: const Uuid().v1(),
-                  createdAt: testDate,
-                  utcOffset: 0,
-                ),
-              ],
-            ),
-          )
-        : null;
-
-    // Create a provider container with the mocked dependencies
-    final overrides = <Override>[
-      audioRecorderRepositoryProvider.overrideWithValue(
-        mockAudioRecorderRepository,
-      ),
-      categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-      playerFactoryProvider.overrideWithValue(() => mockPlayer),
-    ];
-
-    // Override the entryControllerProvider if linkedTaskId is provided
-    if (linkedTaskId != null && mockTask != null) {
-      overrides.add(
-        entryControllerProvider(linkedTaskId).overrideWith(
-          () => FakeEntryController(mockEntry: mockTask),
-        ),
-      );
-    }
-
-    // Override checkbox visibility when speech checkbox should be shown
-    if (showSpeechCheckbox) {
-      overrides.add(
-        checkboxVisibilityProvider((
-          categoryId: provideCategory ? 'test-category' : null,
-          linkedId: linkedTaskId,
-        )).overrideWithValue(
-          const AutomaticPromptVisibility(speech: true),
-        ),
-      );
-    }
-
-    return ProviderScope(
-      overrides: withServiceOverrides(overrides),
-      child: Builder(
-        builder: (context) {
-          // If we have a specific state to set, update the controller
-          if (state != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              ProviderScope.containerOf(context)
-                  .read(audioRecorderControllerProvider.notifier)
-                  .setEnableSpeechRecognition(
-                    enable: state.enableSpeechRecognition,
-                  );
-            });
-          }
-
-          return MaterialApp(
-            builder: LegacyMaterialBridge.builder,
-            theme: DesignSystemTheme.light(),
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              ...GlobalMaterialLocalizations.delegates,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: AudioRecordingModalContent(
-                categoryId: provideCategory ? 'test-category' : null,
-                linkedId: linkedTaskId,
-              ),
-            ),
-          );
-        },
-      ),
+    when(() => navService.beamToNamed(any())).thenReturn(null);
+    await setUpTestGetIt(
+      additionalSetup: () => getIt.registerSingleton<NavService>(navService),
     );
+  });
+  tearDown(tearDownTestGetIt);
+
+  /// A live take never settles: pump a bounded while instead.
+  Future<void> settle(WidgetTester tester) async {
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
   }
 
-  group('AudioRecordingModal - Speech Recognition Checkbox', () {
-    testWidgets('shows checkbox when profile transcription available', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          linkedTaskId: 'task-1',
-          showSpeechCheckbox: true,
-        ),
-      );
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      expect(
-        _speechRecognitionCheckbox(tester),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('hides checkbox when transcription prompts are absent', (
-      tester,
-    ) async {
-      final category = FakeCategoryDefinition();
-
-      await tester.pumpWidget(createTestWidget(category: category));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      expect(
-        _speechRecognitionCheckbox(tester),
-        findsNothing,
-      );
-    });
-  });
-
-  group('AudioRecordingModal - Visibility Integration', () {
-    testWidgets('hides entire section when no categoryId provided', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget(provideCategory: false));
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      expect(
-        find.byKey(const Key('speech_recognition_checkbox')),
-        findsNothing,
-      );
-      expect(find.byType(RecordingOption), findsNothing);
-    });
-
-    testWidgets('hides when category stream returns null', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          provideCategory: false,
-          linkedTaskId: 'task-1',
-        ),
-      );
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      expect(find.byType(RecordingOption), findsNothing);
-    });
-
-    testWidgets('shows speech recognition checkbox when configured', (
-      tester,
-    ) async {
-      final category = FakeCategoryDefinition();
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'task-1',
-        enableSpeechRecognition: true,
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          state: state,
-          category: category,
-          linkedTaskId: 'task-1',
-          showSpeechCheckbox: true,
-        ),
-      );
-      await tester.pump(); // Build initial frame
-      await tester.pump(); // Execute postFrameCallback
-      await tester.pump(); // Process state update from postFrameCallback
-      await tester.pump(); // Allow async providers to resolve
-      await tester.pump(); // Rebuild with resolved provider data
-
-      // Speech checkbox should be present
-      expect(
-        find.byKey(const Key('speech_recognition_checkbox')),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('hides section when no profile transcription', (tester) async {
-      final category = FakeCategoryDefinition();
-
-      await tester.pumpWidget(
-        createTestWidget(
-          category: category,
-          linkedTaskId: 'task-1',
-        ),
-      );
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      expect(find.byType(RecordingOption), findsNothing);
-    });
-  });
-
-  group('AudioRecordingModal - Coverage', () {
-    // ---------------------------------------------------------------------------
-    // Shared helpers (from coverage tests)
-    // ---------------------------------------------------------------------------
-
-    List<Override> baseOverrides() => withServiceOverrides([
-      audioRecorderRepositoryProvider.overrideWithValue(
-        mockAudioRecorderRepository,
-      ),
-      categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-      playerFactoryProvider.overrideWithValue(() => mockPlayer),
-    ]);
-
-    Future<void> pumpModalContent(
-      WidgetTester tester, {
-      String categoryId = 'test-category',
-      String? linkedId,
-      List<Override> extraOverrides = const [],
-      ThemeData? theme,
-      Locale? locale,
-    }) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: withServiceOverrides([
-            ...baseOverrides(),
-            ...extraOverrides,
-          ]),
-          child: MaterialApp(
-            builder: LegacyMaterialBridge.builder,
-            theme: theme ?? resolveTestTheme(),
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              ...GlobalMaterialLocalizations.delegates,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            locale: locale,
-            home: Scaffold(
-              body: AudioRecordingModalContent(
-                categoryId: categoryId,
-                linkedId: linkedId,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    /// Opens the sheet through the static entry point and records what it
-    /// resolved to, so the caller-visible contract can be asserted.
-    Future<List<String?>> pumpShowModalCapturingResult(
-      WidgetTester tester, {
-      String? linkedId,
-      bool transcriptionHandledByCaller = false,
-      List<Override> extraOverrides = const [],
-    }) async {
-      final results = <String?>[];
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: withServiceOverrides([
-            ...baseOverrides(),
-            ...extraOverrides,
-          ]),
-          child: MaterialApp(
-            builder: LegacyMaterialBridge.builder,
-            theme: resolveTestTheme(),
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              ...GlobalMaterialLocalizations.delegates,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: ElevatedButton(
-                  onPressed: () async {
-                    results.add(
-                      await AudioRecordingModal.show(
-                        context,
-                        linkedId: linkedId,
-                        transcriptionHandledByCaller:
-                            transcriptionHandledByCaller,
-                      ),
-                    );
-                  },
-                  child: const Text('Show Modal'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      return results;
-    }
-
-    Future<void> pumpShowModalTrigger(
-      WidgetTester tester, {
-      String? categoryId,
-      String? linkedId,
-      bool transcriptionHandledByCaller = false,
-      List<Override> extraOverrides = const [],
-    }) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: withServiceOverrides([
-            ...baseOverrides(),
-            ...extraOverrides,
-          ]),
-          child: MaterialApp(
-            builder: LegacyMaterialBridge.builder,
-            theme: resolveTestTheme(),
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              ...GlobalMaterialLocalizations.delegates,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Builder(
-              builder: (context) {
-                return Scaffold(
-                  body: ElevatedButton(
-                    onPressed: () {
-                      AudioRecordingModal.show(
-                        context,
-                        categoryId: categoryId,
-                        linkedId: linkedId,
-                        transcriptionHandledByCaller:
-                            transcriptionHandledByCaller,
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-    }
-
-    void stubCategory({
-      String categoryId = 'test-category',
-      FakeCategoryDefinition? category,
-    }) {
-      when(
-        () => mockCategoryRepository.watchCategory(categoryId),
-      ).thenAnswer(
-        (_) => Stream.value(category ?? FakeCategoryDefinition()),
-      );
-    }
-
-    // The check-in sheet needs the audio entry's id to wait for its
-    // transcript; before this the id was created and dropped on the floor.
-    group('AudioRecordingModal.show() returns the created entry id', () {
-      void sizeViewport(WidgetTester tester) {
-        tester.view
-          ..physicalSize = const Size(1000, 800)
-          ..devicePixelRatio = 1;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-      }
-
-      testWidgets('resolves to the id the recorder created', (tester) async {
-        sizeViewport(tester);
-        final results = await pumpShowModalCapturingResult(
-          tester,
-          linkedId: 'relationship-1',
-          extraOverrides: [
-            audioRecorderControllerProvider.overrideWith(
-              () => _CallbackTrackingController(
-                fixedState: AudioRecorderState(
-                  status: AudioRecorderStatus.recording,
-                  progress: const Duration(seconds: 3),
-                  vu: 1,
-                  dBFS: -24,
-                  showIndicator: false,
-                  modalVisible: true,
-                ),
-                createdId: 'audio-entry-42',
-              ),
-            ),
-          ],
-        );
-
-        await tester.tap(find.text('Show Modal'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(find.byKey(const ValueKey('stop_recording')));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(results, ['audio-entry-42']);
-      });
-
-      testWidgets('caller owns transcription from recording start', (
-        tester,
-      ) async {
-        sizeViewport(tester);
-        final ownership = <bool>[];
-        await pumpShowModalCapturingResult(
-          tester,
-          linkedId: 'relationship-1',
-          transcriptionHandledByCaller: true,
-          extraOverrides: [
-            audioRecorderControllerProvider.overrideWith(
-              () => _CallbackTrackingController(
-                fixedState: AudioRecorderState(
-                  status: AudioRecorderStatus.stopped,
-                  progress: Duration.zero,
-                  vu: 1,
-                  dBFS: -24,
-                  showIndicator: false,
-                  modalVisible: false,
-                  enableSpeechRecognition: true,
-                ),
-                onRecordingOwnership: ownership.add,
-              ),
-            ),
-          ],
-        );
-        await tester.tap(find.text('Show Modal'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.byKey(const ValueKey('record')));
-        await tester.pump();
-        expect(ownership, [true]);
-      });
-
-      for (final pendingStart in [false, true]) {
-        for (final duringExit in [false, true]) {
-          testWidgets(
-            'dismissal during ${pendingStart ? 'platform start' : 'permission'} aborts recording ${duringExit ? 'during exit' : 'after teardown'}',
-            (tester) async {
-              sizeViewport(tester);
-              final permission = Completer<bool>();
-              final start = Completer<AudioNote?>();
-              final note = AudioNote(
-                createdAt: DateTime(2024, 3, 15),
-                audioFile: 'aborted.m4a',
-                audioDirectory: '/audio/',
-                duration: Duration.zero,
-              );
-              when(
-                () => mockAudioRecorderRepository.hasPermission(),
-              ).thenAnswer(
-                (_) => pendingStart ? Future.value(true) : permission.future,
-              );
-              when(
-                () => mockAudioRecorderRepository.startRecording(),
-              ).thenAnswer((_) => start.future);
-              when(
-                () => mockAudioRecorderRepository.deleteRecording(note),
-              ).thenAnswer((_) async {});
-              final results = await pumpShowModalCapturingResult(
-                tester,
-                linkedId: 'person',
-              );
-              await tester.tap(find.text('Show Modal'));
-              await tester.pump();
-              await tester.pump(const Duration(milliseconds: 300));
-              final container = ProviderScope.containerOf(
-                tester.element(find.byType(AudioRecordingModalContent)),
-              );
-              await tester.tap(find.byKey(const ValueKey('record')));
-              await tester.pump();
-              // An outside tap dismisses the actual modal while startup is pending.
-              await tester.tapAt(const Offset(5, 5));
-              await tester.pump();
-              if (!duringExit) {
-                await tester.pump(const Duration(milliseconds: 300));
-              }
-              if (pendingStart) {
-                start.complete(note);
-              } else {
-                permission.complete(true);
-              }
-              await tester.pump();
-              await tester.pump(const Duration(milliseconds: 300));
-              expect(results, [null]);
-              expect(
-                container.read(audioRecorderControllerProvider).status,
-                AudioRecorderStatus.stopped,
-              );
-              if (pendingStart) {
-                verify(
-                  () => mockAudioRecorderRepository.stopRecording(),
-                ).called(1);
-                verify(
-                  () => mockAudioRecorderRepository.deleteRecording(note),
-                ).called(1);
-              } else {
-                verifyNever(() => mockAudioRecorderRepository.startRecording());
-              }
-              expect(tester.takeException(), isNull);
-            },
-          );
-        }
-      }
-
-      testWidgets('failed save keeps the recording sheet open with an error', (
-        tester,
-      ) async {
-        sizeViewport(tester);
-        final results = await pumpShowModalCapturingResult(
-          tester,
-          linkedId: 'relationship-1',
-          extraOverrides: [
-            audioRecorderControllerProvider.overrideWith(
-              () => _CallbackTrackingController(
-                fixedState: AudioRecorderState(
-                  status: AudioRecorderStatus.recording,
-                  progress: const Duration(seconds: 3),
-                  vu: 1,
-                  dBFS: -24,
-                  showIndicator: false,
-                  modalVisible: true,
-                ),
-              ),
-            ),
-          ],
-        );
-        await tester.tap(find.text('Show Modal'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.byKey(const ValueKey('stop_recording')));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        expect(results, isEmpty);
-        expect(find.text('Recording failed. Please try again.'), findsOne);
-        expect(find.byType(AudioRecordingModalContent), findsOne);
-      });
-
-      testWidgets('resolves to null when the sheet is dismissed', (
-        tester,
-      ) async {
-        sizeViewport(tester);
-        final results = await pumpShowModalCapturingResult(
-          tester,
-          linkedId: 'relationship-1',
-        );
-
-        await tester.tap(find.text('Show Modal'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        Navigator.of(
-          tester.element(find.byType(ElevatedButton)),
-          rootNavigator: true,
-        ).pop();
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(results, [null]);
-      });
-    });
-
-    group('AudioRecordingModal.show() - Static Method Coverage', () {
-      for (final openCreatedEntry in [true, false]) {
-        testWidgets(
-          'default root modal finishes cleanly above a nested task navigator '
-          '(openCreatedEntry: $openCreatedEntry)',
-          (tester) async {
-            String? shownId;
-            tester.view
-              ..physicalSize = const Size(1000, 800)
-              ..devicePixelRatio = 1;
-            addTearDown(tester.view.resetPhysicalSize);
-            addTearDown(tester.view.resetDevicePixelRatio);
-
-            final rootObserver = _TestNavigatorObserver();
-            final nestedObserver = _TestNavigatorObserver();
-            final navigatedPaths = <String>[];
-            var modalHadPoppedWhenNavigating = false;
-            beamToNamedOverride = (path) {
-              navigatedPaths.add(path);
-              modalHadPoppedWhenNavigating = rootObserver.poppedRoutes
-                  .whereType<WoltModalSheetRoute<String>>()
-                  .isNotEmpty;
-            };
-            addTearDown(() => beamToNamedOverride = null);
-            final recordingState = AudioRecorderState(
-              status: AudioRecorderStatus.recording,
-              progress: const Duration(seconds: 8),
-              vu: 1,
-              dBFS: -24,
-              showIndicator: false,
-              modalVisible: true,
-            );
-
-            await tester.pumpWidget(
-              ProviderScope(
-                overrides: withServiceOverrides([
-                  ...baseOverrides(),
-                  audioRecorderControllerProvider.overrideWith(
-                    () => _CallbackTrackingController(
-                      fixedState: recordingState,
-                      createdId: 'audio-entry-1',
-                    ),
-                  ),
-                ]),
-                child: MaterialApp(
-                  builder: LegacyMaterialBridge.builder,
-                  theme: resolveTestTheme(),
-                  localizationsDelegates: const [
-                    AppLocalizations.delegate,
-                    ...GlobalMaterialLocalizations.delegates,
-                  ],
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  navigatorObservers: [rootObserver],
-                  home: Navigator(
-                    observers: [nestedObserver],
-                    onGenerateRoute: (_) => MaterialPageRoute<void>(
-                      builder: (context) => Scaffold(
-                        body: ElevatedButton(
-                          onPressed: () async =>
-                              shownId = await AudioRecordingModal.show(
-                                context,
-                                openCreatedEntry: openCreatedEntry,
-                              ),
-                          child: const Text('Show Modal'),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-
-            await tester.tap(find.text('Show Modal'));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
-
-            expect(
-              rootObserver.pushedRoutes
-                  .whereType<WoltModalSheetRoute<String>>(),
-              hasLength(1),
-            );
-            expect(
-              nestedObserver.pushedRoutes
-                  .whereType<WoltModalSheetRoute<String>>(),
-              isEmpty,
-            );
-
-            await tester.tap(find.byKey(const ValueKey('stop_recording')));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
-
-            expect(find.byType(AudioRecordingModalContent), findsNothing);
-            // The recording is saved either way; only opening it is optional —
-            // a caller that links the recording itself stays where it is.
-            expect(shownId, 'audio-entry-1');
-            if (openCreatedEntry) {
-              expect(navigatedPaths, ['/journal/audio-entry-1']);
-              expect(modalHadPoppedWhenNavigating, isTrue);
-            } else {
-              expect(navigatedPaths, isEmpty);
-            }
-            expect(tester.takeException(), isNull);
-          },
-        );
-      }
-
-      testWidgets(
-        'should set modal visible and category when show() is called',
-        (tester) async {
-          stubCategory();
-
-          await pumpShowModalTrigger(
-            tester,
-            categoryId: 'test-category',
-            linkedId: 'test-linked-id',
-          );
-
-          // Initial state - modal not visible
-          final container = ProviderScope.containerOf(
-            tester.element(find.byType(ElevatedButton)),
-          );
-          var state = container.read(audioRecorderControllerProvider);
-          expect(state.modalVisible, isFalse);
-
-          // Tap button to show modal
-          await tester.tap(find.text('Show Modal'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-
-          // Verify modal is shown and state is updated
-          state = container.read(audioRecorderControllerProvider);
-          expect(state.modalVisible, isTrue);
-
-          // Find modal content
-          expect(find.byType(AudioRecordingModalContent), findsOneWidget);
-        },
-      );
-
-      for (final (handledByCaller, priorPreference) in [
-        (false, false),
-        (false, true),
-        (true, false),
-        (true, true),
-        (true, null),
-      ]) {
-        testWidgets(
-          'caller transcription=$handledByCaller scopes the '
-          '$priorPreference preference to the recording sheet',
-          (tester) async {
-            stubCategory();
-            await pumpShowModalTrigger(
-              tester,
-              categoryId: 'test-category',
-              linkedId: 'relationship-1',
-              transcriptionHandledByCaller: handledByCaller,
-              extraOverrides: [
-                checkboxVisibilityProvider((
-                  categoryId: 'test-category',
-                  linkedId: 'relationship-1',
-                )).overrideWithValue(
-                  const AutomaticPromptVisibility(speech: true),
-                ),
-              ],
-            );
-            final container = ProviderScope.containerOf(
-              tester.element(find.byType(ElevatedButton)),
-            );
-            container
-                .read(audioRecorderControllerProvider.notifier)
-                .setEnableSpeechRecognition(enable: priorPreference);
-
-            await tester.tap(find.text('Show Modal'));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
-            await tester.pump();
-
-            expect(
-              container
-                  .read(audioRecorderControllerProvider)
-                  .enableSpeechRecognition,
-              priorPreference,
-            );
-            expect(
-              find.byKey(const Key('speech_recognition_checkbox')),
-              handledByCaller ? findsNothing : findsOneWidget,
-            );
-
-            await tester.tapAt(const Offset(10, 10));
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 300));
-            expect(
-              container
-                  .read(audioRecorderControllerProvider)
-                  .enableSpeechRecognition,
-              priorPreference,
-              reason: 'A scoped check-in must not change ordinary recordings',
-            );
-          },
-        );
-      }
-
-      testWidgets('should set modal invisible when modal is dismissed', (
-        tester,
-      ) async {
-        stubCategory();
-
-        await pumpShowModalTrigger(
-          tester,
-          categoryId: 'test-category',
-        );
-
-        // Show modal
-        await tester.tap(find.text('Show Modal'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        final container = ProviderScope.containerOf(
-          tester.element(find.byType(ElevatedButton)),
-        );
-
-        // Modal should be visible
-        var state = container.read(audioRecorderControllerProvider);
-        expect(state.modalVisible, isTrue);
-
-        // Dismiss modal by tapping outside
-        await tester.tapAt(const Offset(10, 10));
-        await tester.pump();
-
-        // Modal should be invisible after dismissal
-        state = container.read(audioRecorderControllerProvider);
-        expect(state.modalVisible, isFalse);
-      });
-
-      testWidgets('should handle show() without categoryId', (tester) async {
-        await pumpShowModalTrigger(tester);
-
-        await tester.tap(find.text('Show Modal'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        final container = ProviderScope.containerOf(
-          tester.element(find.byType(ElevatedButton)),
-        );
-        final state = container.read(audioRecorderControllerProvider);
-
-        expect(state.modalVisible, isTrue);
-        expect(find.byType(AudioRecordingModalContent), findsOneWidget);
-      });
-    });
-
-    group('Stop Button Rendering and _isRecording Coverage', () {
-      testWidgets('announces when the microphone becomes live', (tester) async {
-        stubCategory();
-        final handle = tester.ensureSemantics();
-        try {
-          final recordingState = AudioRecorderState(
-            status: AudioRecorderStatus.recording,
-            progress: const Duration(seconds: 5),
-            vu: 80,
-            dBFS: -20,
-            showIndicator: false,
-            modalVisible: true,
-          );
-
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              audioRecorderControllerProvider.overrideWith(
-                () => TestAudioRecorderController(recordingState),
-              ),
-            ],
-          );
-          await tester.pump();
-
-          final semantics = tester.getSemantics(
-            find.bySemanticsLabel('Recording started'),
-          );
-          expect(semantics.flagsCollection.isLiveRegion, isTrue);
-        } finally {
-          handle.dispose();
-        }
-      });
-
-      testWidgets(
-        'should render stop button UI when _isRecording returns true '
-        '(recording state)',
-        (tester) async {
-          stubCategory();
-
-          final recordingState = AudioRecorderState(
-            status: AudioRecorderStatus.recording,
-            progress: const Duration(seconds: 5),
-            vu: 80,
-            dBFS: -20,
-            showIndicator: false,
-            modalVisible: true,
-          );
-
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              audioRecorderControllerProvider.overrideWith(
-                () => TestAudioRecorderController(recordingState),
-              ),
-            ],
-          );
-
-          await tester.pump();
-
-          await tester.pump(const Duration(milliseconds: 300));
-          await tester.pump(const Duration(milliseconds: 250));
-
-          final stopControlsFinder = find.byKey(
-            const ValueKey('stop_controls'),
-          );
-          expect(stopControlsFinder, findsOneWidget);
-          expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
-          expect(
-            find.descendant(
-              of: stopControlsFinder,
-              matching: find.byType(Container),
-            ),
-            findsWidgets,
-          );
-        },
-      );
-
-      testWidgets(
-        'should render stop button when _isRecording returns true '
-        '(paused state)',
-        (tester) async {
-          stubCategory();
-
-          final pausedState = AudioRecorderState(
-            status: AudioRecorderStatus.paused,
-            progress: const Duration(seconds: 10),
-            vu: 0,
-            dBFS: -60,
-            showIndicator: false,
-            modalVisible: true,
-          );
-
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              audioRecorderControllerProvider.overrideWith(
-                () => TestAudioRecorderController(pausedState),
-              ),
-            ],
-          );
-
-          await tester.pump();
-
-          await tester.pump(const Duration(milliseconds: 300));
-          await tester.pump(const Duration(milliseconds: 250));
-
-          final stopControlsFinder = find.byKey(
-            const ValueKey('stop_controls'),
-          );
-          expect(stopControlsFinder, findsOneWidget);
-          expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
-        },
-      );
-    });
-
-    group('Record Button Coverage', () {
-      testWidgets('a failed stop is shown and its cause logged', (
-        tester,
-      ) async {
-        stubCategory();
-        final logger = MockDomainLogger();
-        await pumpModalContent(
-          tester,
-          extraOverrides: [
-            domainLoggerProvider.overrideWithValue(logger),
-            audioRecorderControllerProvider.overrideWith(
-              () => _CallbackTrackingController(
-                fixedState: AudioRecorderState(
-                  status: AudioRecorderStatus.recording,
-                  progress: const Duration(seconds: 5),
-                  vu: 80,
-                  dBFS: -20,
-                  showIndicator: false,
-                  modalVisible: true,
-                ),
-                onStopCalled: () => throw StateError('recorder lost'),
-              ),
-            ),
-          ],
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump(const Duration(milliseconds: 250));
-
-        await tester.tap(find.byKey(const ValueKey('stop_recording')));
-        await tester.pump();
-
-        final messages = AppLocalizations.of(
-          tester.element(find.byType(AudioRecordingModalContent)),
-        )!;
-        expect(find.text(messages.chatInputRecordingFailed), findsOneWidget);
-        verify(
-          () => logger.error(
-            LogDomain.speech,
-            any<Object>(that: isA<StateError>()),
-            stackTrace: any(named: 'stackTrace'),
-            subDomain: 'AudioRecordingModal.stop',
-          ),
-        ).called(1);
-      });
-
-      testWidgets('should call record when record button is tapped', (
-        tester,
-      ) async {
-        stubCategory();
-
-        await pumpModalContent(
-          tester,
-          linkedId: 'test-linked-id',
-        );
-
-        await tester.pump();
-
-        await tester.pump(const Duration(milliseconds: 300));
-
-        final recordButton = find.byKey(const ValueKey('record'));
-        expect(recordButton, findsOneWidget);
-        // Sentence case: no label is ever upper-cased.
-        expect(find.text('Record'), findsOneWidget);
-        expect(find.text('RECORD'), findsNothing);
-
-        await tester.tap(recordButton);
-        await tester.pump();
-
-        verify(
-          () => mockAudioRecorderRepository.startRecording(),
-        ).called(1);
-      });
-
-      testWidgets('permission denial is visible and recording can be retried', (
-        tester,
-      ) async {
-        stubCategory();
-        when(
-          () => mockAudioRecorderRepository.hasPermission(),
-        ).thenAnswer((_) async => false);
-        await pumpModalContent(tester);
-        await tester.tap(find.byKey(const ValueKey('record')));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        expect(find.textContaining("Lotti can't use the microphone"), findsOne);
-        verifyNever(() => mockAudioRecorderRepository.startRecording());
-        when(
-          () => mockAudioRecorderRepository.hasPermission(),
-        ).thenAnswer((_) async => true);
-        await tester.tap(find.byKey(const ValueKey('record')));
-        await tester.pump();
-        verify(() => mockAudioRecorderRepository.startRecording()).called(1);
-      });
-
-      testWidgets(
-        'unexpected start errors leave the recording action retryable',
-        (
-          tester,
-        ) async {
-          var attempts = 0;
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              audioRecorderControllerProvider.overrideWith(
-                () => _CallbackTrackingController(
-                  fixedState: AudioRecorderState(
-                    status: AudioRecorderStatus.stopped,
-                    progress: Duration.zero,
-                    vu: -20,
-                    dBFS: -160,
-                    showIndicator: false,
-                    modalVisible: true,
-                  ),
-                  onRecord: () async {
-                    attempts++;
-                    if (attempts == 1) throw StateError('recorder unavailable');
-                    return null;
-                  },
-                ),
-              ),
-            ],
-          );
-          await tester.tap(find.byKey(const ValueKey('record')));
-          await tester.pump();
-          final messages = AppLocalizations.of(
-            tester.element(find.byType(AudioRecordingModalContent)),
-          )!;
-          expect(find.text(messages.chatInputRecordingFailed), findsOneWidget);
-          expect(attempts, 1);
-          await tester.tap(find.byKey(const ValueKey('record')));
-          await tester.pump();
-          expect(attempts, 2);
-          expect(find.text(messages.chatInputRecordingFailed), findsNothing);
-          expect(tester.takeException(), isNull);
-        },
-      );
-
-      testWidgets(
-        'a reported start failure is shown, blocks overlapping taps while '
-        'pending, and stays retryable',
-        (tester) async {
-          var attempts = 0;
-          final firstStart = Completer<AudioRecordingFailure?>();
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              audioRecorderControllerProvider.overrideWith(
-                () => _CallbackTrackingController(
-                  fixedState: AudioRecorderState(
-                    status: AudioRecorderStatus.stopped,
-                    progress: Duration.zero,
-                    vu: -20,
-                    dBFS: -160,
-                    showIndicator: false,
-                    modalVisible: true,
-                  ),
-                  onRecord: () {
-                    attempts++;
-                    return attempts == 1
-                        ? firstStart.future
-                        : Future<AudioRecordingFailure?>.value();
-                  },
-                ),
-              ),
-            ],
-          );
-          final messages = AppLocalizations.of(
-            tester.element(find.byType(AudioRecordingModalContent)),
-          )!;
-
-          await tester.tap(find.byKey(const ValueKey('record')));
-          await tester.pump();
-          // A second tap while the native start is pending launches nothing.
-          await tester.tap(
-            find.byKey(const ValueKey('record')),
-            warnIfMissed: false,
-          );
-          await tester.pump();
-          expect(attempts, 1);
-
-          firstStart.complete(AudioRecordingFailure.startFailed);
-          await tester.pump();
-          expect(find.text(messages.chatInputRecordingFailed), findsOneWidget);
-
-          await tester.tap(find.byKey(const ValueKey('record')));
-          await tester.pump();
-          expect(attempts, 2);
-          expect(find.text(messages.chatInputRecordingFailed), findsNothing);
-        },
-      );
-
-      testWidgets('localizes the record action', (tester) async {
-        stubCategory();
-
-        await pumpModalContent(tester, locale: const Locale('de'));
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.text('Aufnehmen'), findsOneWidget);
-      });
-    });
-
-    group('Checkbox onChange Callbacks Coverage', () {
-      testWidgets(
-        'should call setEnableSpeechRecognition when speech checkbox toggled',
-        (tester) async {
-          stubCategory();
-
-          await pumpModalContent(
-            tester,
-            linkedId: 'task-1',
-            extraOverrides: [
-              checkboxVisibilityProvider((
-                categoryId: 'test-category',
-                linkedId: 'task-1',
-              )).overrideWithValue(
-                const AutomaticPromptVisibility(speech: true),
-              ),
-            ],
-          );
-
-          await tester.pump();
-
-          await tester.pump(const Duration(milliseconds: 300));
-          await tester.pump();
-
-          final container = ProviderScope.containerOf(
-            tester.element(find.byType(Scaffold)),
-          );
-
-          final speechCheckbox = find.byKey(
-            const Key('speech_recognition_checkbox'),
-          );
-          expect(speechCheckbox, findsOneWidget);
-
-          var state = container.read(audioRecorderControllerProvider);
-          final initialValue = state.enableSpeechRecognition ?? true;
-
-          await tester.tap(speechCheckbox);
-          await tester.pump();
-
-          state = container.read(audioRecorderControllerProvider);
-          expect(state.enableSpeechRecognition, !initialValue);
-        },
-      );
-    });
-
-    group('Cancel (Discard) Controls', () {
-      testWidgets(
-        'should render cancel (X) button in standard recording mode',
-        (tester) async {
-          stubCategory();
-
-          final standardRecordingState = AudioRecorderState(
-            status: AudioRecorderStatus.recording,
-            progress: const Duration(seconds: 5),
-            vu: 80,
-            dBFS: -20,
-            showIndicator: false,
-            modalVisible: true,
-          );
-
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              audioRecorderControllerProvider.overrideWith(
-                () => TestAudioRecorderController(standardRecordingState),
-              ),
-            ],
-          );
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 250));
-
-          // The discard control is always available while recording.
-          expect(
-            find.byKey(const ValueKey('cancel_recording')),
-            findsOneWidget,
-          );
-          expect(find.byIcon(LottiIcons.close), findsOneWidget);
-          expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
-        },
-      );
-
-      testWidgets('tapping cancel in standard mode calls cancel', (
-        tester,
-      ) async {
-        stubCategory();
-
-        var cancelCalled = false;
-        var stopCalled = false;
-        final standardRecordingState = AudioRecorderState(
-          status: AudioRecorderStatus.recording,
-          progress: const Duration(seconds: 5),
-          vu: 80,
-          dBFS: -20,
-          showIndicator: false,
-          modalVisible: true,
-        );
-
-        await pumpModalContent(
-          tester,
-          extraOverrides: [
-            audioRecorderControllerProvider.overrideWith(
-              () => _CallbackTrackingController(
-                fixedState: standardRecordingState,
-                onCancelCalled: () => cancelCalled = true,
-                onStopCalled: () => stopCalled = true,
-              ),
-            ),
-          ],
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 250));
-
-        final cancelButton = find.byKey(const ValueKey('cancel_recording'));
-        expect(cancelButton, findsOneWidget);
-        // Tap inside the 48×48 ring but away from the centre icon to prove the
-        // whole control is tappable (HitTestBehavior.opaque), not just the
-        // ~22px icon.
-        await tester.tapAt(
-          tester.getTopLeft(cancelButton) + const Offset(6, 6),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.text('Discard recording?'), findsOneWidget);
-        expect(cancelCalled, isFalse);
-        expect(stopCalled, isFalse);
-
-        await tester.tap(
-          find.widgetWithText(DesignSystemButton, 'Discard'),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Cancel discards via cancel(); the standard stop()/transcription
-        // path must not run.
-        expect(cancelCalled, isTrue);
-        expect(stopCalled, isFalse);
-      });
-
-      testWidgets('declining cancel confirmation keeps recording active', (
-        tester,
-      ) async {
-        stubCategory();
-
-        var cancelCalled = false;
-        final standardRecordingState = AudioRecorderState(
-          status: AudioRecorderStatus.recording,
-          progress: const Duration(seconds: 5),
-          vu: 80,
-          dBFS: -20,
-          showIndicator: false,
-          modalVisible: true,
-        );
-
-        await pumpModalContent(
-          tester,
-          extraOverrides: [
-            audioRecorderControllerProvider.overrideWith(
-              () => _CallbackTrackingController(
-                fixedState: standardRecordingState,
-                onCancelCalled: () => cancelCalled = true,
-              ),
-            ),
-          ],
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 250));
-
-        await tester.tap(find.byKey(const ValueKey('cancel_recording')));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.text('Discard recording?'), findsOneWidget);
-
-        await tester.tap(
-          find.widgetWithText(DesignSystemButton, 'Keep recording'),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(cancelCalled, isFalse);
-        expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
-      });
-    });
-
-    group('Pause / Resume Controls', () {
-      AudioRecorderState standardRecording() => AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        progress: const Duration(seconds: 8),
-        vu: 40,
-        dBFS: -25,
-        showIndicator: false,
-        modalVisible: true,
-      );
-
-      testWidgets('shows pause button while recording in standard mode', (
-        tester,
-      ) async {
-        stubCategory();
-
-        await pumpModalContent(
-          tester,
-          extraOverrides: [
-            audioRecorderControllerProvider.overrideWith(
-              () => TestAudioRecorderController(standardRecording()),
-            ),
-          ],
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 250));
-
-        expect(
-          find.byKey(const ValueKey('pause_resume_button')),
-          findsOneWidget,
-        );
-        // Recording → shows the pause glyph.
-        expect(find.byIcon(LottiIconsFilled.pause), findsOneWidget);
-        // Cancel and stop stay alongside it.
-        expect(find.byKey(const ValueKey('cancel_recording')), findsOneWidget);
-        expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
-      });
-
-      testWidgets(
-        'tapping pause calls pause() and swaps to a resume (play) button',
-        (tester) async {
-          stubCategory();
-
-          var pauseCalled = false;
-
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              audioRecorderControllerProvider.overrideWith(
-                () => _CallbackTrackingController(
-                  fixedState: standardRecording(),
-                  onPauseCalled: () => pauseCalled = true,
-                ),
-              ),
-            ],
-          );
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 250));
-
-          await tester.tap(find.byKey(const ValueKey('pause_resume_button')));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 250));
-
-          expect(pauseCalled, isTrue);
-          // The single button persists (static key); its glyph swaps to play.
-          expect(
-            find.byKey(const ValueKey('pause_resume_button')),
-            findsOneWidget,
-          );
-          expect(find.byIcon(LottiIconsFilled.play), findsOneWidget);
-          expect(find.byIcon(LottiIconsFilled.pause), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'paused state shows a resume button; tapping it calls resume()',
-        (tester) async {
-          stubCategory();
-
-          var resumeCalled = false;
-          final paused = standardRecording().copyWith(
-            status: AudioRecorderStatus.paused,
-          );
-
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              audioRecorderControllerProvider.overrideWith(
-                () => _CallbackTrackingController(
-                  fixedState: paused,
-                  onResumeCalled: () => resumeCalled = true,
-                ),
-              ),
-            ],
-          );
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 250));
-
-          expect(
-            find.byKey(const ValueKey('pause_resume_button')),
-            findsOneWidget,
-          );
-          // Paused → shows the play (resume) glyph.
-          expect(find.byIcon(LottiIconsFilled.play), findsOneWidget);
-          // Stop controls remain visible while paused.
-          expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
-
-          await tester.tap(find.byKey(const ValueKey('pause_resume_button')));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 250));
-
-          expect(resumeCalled, isTrue);
-          // Same button; glyph swaps back to pause.
-          expect(find.byIcon(LottiIconsFilled.pause), findsOneWidget);
-          expect(find.byIcon(LottiIconsFilled.play), findsNothing);
-        },
-      );
-    });
-
-    group('AudioRecordingModal - Recording Style Visualizer', () {
-      final restingState = AudioRecorderState(
-        status: AudioRecorderStatus.stopped,
-        progress: Duration.zero,
-        vu: -20,
-        dBFS: -34,
-        showIndicator: false,
-        modalVisible: true,
-      );
-
-      testWidgets('renders the orb (not the VU meter) for modern style', (
-        tester,
-      ) async {
-        stubCategory();
-        await pumpModalContent(
-          tester,
-          extraOverrides: [
-            audioRecorderControllerProvider.overrideWith(
-              () => TestAudioRecorderController(restingState),
-            ),
-            recordingStyleAppPrefsProvider.overrideWithValue(
-              _fakeRecordingStylePrefs('modern'),
-            ),
-          ],
-        );
-        await tester.pump();
-        await tester.pump();
-
-        expect(find.byType(AiVoiceInputShader), findsOneWidget);
-        expect(find.byType(AnalogVuMeter), findsNothing);
-      });
-
-      testWidgets('renders the VU meter (not the orb) for analogue style', (
-        tester,
-      ) async {
-        stubCategory();
-        await pumpModalContent(
-          tester,
-          extraOverrides: [
-            audioRecorderControllerProvider.overrideWith(
-              () => TestAudioRecorderController(restingState),
-            ),
-            recordingStyleAppPrefsProvider.overrideWithValue(
-              _fakeRecordingStylePrefs('analogue'),
-            ),
-          ],
-        );
-        await tester.pump();
-        await tester.pump();
-
-        expect(find.byType(AnalogVuMeter), findsOneWidget);
-        expect(find.byType(AiVoiceInputShader), findsNothing);
-      });
-
-      testWidgets(
-        'falls back to the VU meter while the style preference is still '
-        'loading',
-        (tester) async {
-          stubCategory();
-          await pumpModalContent(
-            tester,
-            extraOverrides: [
-              audioRecorderControllerProvider.overrideWith(
-                () => TestAudioRecorderController(restingState),
-              ),
-              recordingStyleAppPrefsProvider.overrideWithValue(
-                _neverResolvingRecordingStylePrefs(),
-              ),
-            ],
-          );
-          await tester.pump();
-          await tester.pump();
-
-          expect(find.byType(AnalogVuMeter), findsOneWidget);
-          expect(find.byType(AiVoiceInputShader), findsNothing);
-          expect(tester.takeException(), isNull);
-        },
-      );
-
-      testWidgets('the recorder dBFS flows through to the orb shader', (
-        tester,
-      ) async {
-        stubCategory();
-        final loudState = AudioRecorderState(
-          status: AudioRecorderStatus.recording,
-          progress: const Duration(seconds: 2),
-          vu: 1,
-          dBFS: -7,
-          showIndicator: false,
-          modalVisible: true,
-        );
-
-        await pumpModalContent(
-          tester,
-          extraOverrides: [
-            audioRecorderControllerProvider.overrideWith(
-              () => TestAudioRecorderController(loudState),
-            ),
-            recordingStyleAppPrefsProvider.overrideWithValue(
-              _fakeRecordingStylePrefs('modern'),
-            ),
-          ],
-        );
-        await tester.pump();
-        await tester.pump();
-
-        final shader = tester.widget<AiVoiceInputShader>(
-          find.byType(AiVoiceInputShader),
-        );
-        final shaderContext = tester.element(find.byType(AiVoiceInputShader));
-        final theme = Theme.of(shaderContext);
-        final tokens =
-            theme.extension<DsTokens>() ??
-            (theme.brightness == Brightness.dark
-                ? dsTokensDark
-                : dsTokensLight);
-        expect(shader.dbfs, -7);
-        expect(shader.intensity, 1);
-        expect(shader.palette, AiVoiceOrbPalette.fromTokens(tokens));
-      });
-
-      testWidgets(
-        'light and dark design-system themes provide the orb colors',
-        (tester) async {
-          stubCategory();
-          for (final scenario in <(ThemeData, DsTokens)>[
-            (DesignSystemTheme.light(), dsTokensLight),
-            (DesignSystemTheme.dark(), dsTokensDark),
-          ]) {
-            await pumpModalContent(
-              tester,
-              theme: scenario.$1,
-              extraOverrides: [
-                audioRecorderControllerProvider.overrideWith(
-                  () => TestAudioRecorderController(restingState),
-                ),
-                recordingStyleAppPrefsProvider.overrideWithValue(
-                  _fakeRecordingStylePrefs('modern'),
-                ),
-              ],
-            );
-            await tester.pump();
-            await tester.pump();
-
-            final shader = tester.widget<AiVoiceInputShader>(
-              find.byType(AiVoiceInputShader),
-            );
-            // The theme's own palette: on light, a lit-mint glint rather
-            // than the near-black text ink.
-            expect(shader.palette, AiVoiceOrbPalette.fromTokens(scenario.$2));
-            expect(
-              shader.palette.glint,
-              isNot(scenario.$2.colors.text.highEmphasis),
-              reason: 'only the dark theme glints in the text ink',
-              skip: scenario.$2 == dsTokensDark,
-            );
-            await tester.pumpWidget(const SizedBox.shrink());
-            await tester.pump();
-          }
-        },
-      );
-    });
-  });
-
-  group('AudioRecordingModal - Task Type Detection', () {
-    Metadata createMockMetadata(String id) {
-      final testDate = DateTime(2024, 3, 15, 10, 30);
-      return Metadata(
-        id: id,
-        createdAt: testDate,
-        updatedAt: testDate,
-        dateFrom: testDate,
-        dateTo: testDate,
-        categoryId: 'test-category',
-      );
-    }
-
-    Widget createTestWidgetWithEntry({
-      required String linkedId,
-      JournalEntity? linkedEntry,
-      CategoryDefinition? category,
-      bool shouldError = false,
-      bool showSpeechCheckbox = false,
-    }) {
-      final categoryToUse = category ?? FakeCategoryDefinition();
-
-      when(
-        () => mockCategoryRepository.watchCategory('test-category'),
-      ).thenAnswer((_) => Stream.value(categoryToUse));
-
-      return ProviderScope(
-        overrides: withServiceOverrides([
-          audioRecorderRepositoryProvider.overrideWithValue(
-            mockAudioRecorderRepository,
-          ),
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-          playerFactoryProvider.overrideWithValue(() => mockPlayer),
-          entryControllerProvider(linkedId).overrideWith(
-            () => FakeEntryController(
-              mockEntry: linkedEntry,
-              shouldError: shouldError,
-            ),
-          ),
-          if (showSpeechCheckbox)
-            checkboxVisibilityProvider((
-              categoryId: 'test-category',
-              linkedId: linkedId,
-            )).overrideWithValue(
-              const AutomaticPromptVisibility(speech: true),
-            ),
-        ]),
-        child: Builder(
-          builder: (context) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              ProviderScope.containerOf(context)
-                  .read(audioRecorderControllerProvider.notifier)
-                  .setEnableSpeechRecognition(enable: true);
-            });
-
-            return MaterialApp(
-              builder: LegacyMaterialBridge.builder,
-              theme: DesignSystemTheme.light(),
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                ...GlobalMaterialLocalizations.delegates,
-              ],
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: AudioRecordingModalContent(
-                  categoryId: 'test-category',
-                  linkedId: linkedId,
-                ),
-              ),
-            );
-          },
-        ),
-      );
-    }
-
-    testWidgets('shows checkboxes when linked entry is a Task', (tester) async {
-      final testDate = DateTime(2024, 3, 15, 10, 30);
-      const uuid = Uuid();
-      final openStatus = TaskStatus.open(
-        id: uuid.v1(),
-        createdAt: testDate,
-        utcOffset: 0,
-      );
-      final mockTask = Task(
-        meta: createMockMetadata('task-123'),
-        data: TaskData(
-          title: 'Test Task',
-          status: openStatus,
-          dateFrom: testDate,
-          dateTo: testDate,
-          statusHistory: [openStatus],
-        ),
-      );
-
-      await tester.pumpWidget(
-        createTestWidgetWithEntry(
-          linkedId: 'task-123',
-          linkedEntry: mockTask,
-          showSpeechCheckbox: true,
-        ),
-      );
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Speech recognition checkbox should be visible for a Task
-      expect(
-        _speechRecognitionCheckbox(tester),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('hides task checkboxes when linked entry is an Event', (
-      tester,
-    ) async {
-      final mockEvent = JournalEvent(
-        meta: createMockMetadata('event-123'),
-        data: const EventData(
-          title: 'Test Event',
-          stars: 0,
-          status: EventStatus.completed,
-        ),
-      );
-
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'event-123',
-        enableSpeechRecognition: true,
-      );
-
-      // Set up category mock BEFORE creating widget
-      when(
-        () => mockCategoryRepository.watchCategory('test-category'),
-      ).thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: withServiceOverrides([
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider.overrideWithValue(
-              mockCategoryRepository,
-            ),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-            // Override entryControllerProvider to return an Event
-            entryControllerProvider('event-123').overrideWith(
-              () => FakeEntryController(mockEntry: mockEvent),
-            ),
-            checkboxVisibilityProvider((
-              categoryId: 'test-category',
-              linkedId: 'event-123',
-            )).overrideWithValue(
-              const AutomaticPromptVisibility(speech: true),
-            ),
-          ]),
-          child: Builder(
-            builder: (context) {
-              if (state.enableSpeechRecognition != null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ProviderScope.containerOf(context)
-                      .read(audioRecorderControllerProvider.notifier)
-                      .setEnableSpeechRecognition(
-                        enable: state.enableSpeechRecognition,
-                      );
-                });
-              }
-
-              return MaterialApp(
-                builder: LegacyMaterialBridge.builder,
-                theme: DesignSystemTheme.light(),
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  ...GlobalMaterialLocalizations.delegates,
-                ],
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: const Scaffold(
-                  body: AudioRecordingModalContent(
-                    categoryId: 'test-category',
-                    linkedId: 'event-123',
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      );
-
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Only speech recognition checkbox should be visible, not task-specific ones
-      expect(
-        _speechRecognitionCheckbox(tester),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('hides task checkboxes when linked entry is a JournalEntry', (
-      tester,
-    ) async {
-      final mockJournalEntry = JournalEntry(
-        meta: createMockMetadata('journal-123'),
-      );
-
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'journal-123',
-        enableSpeechRecognition: true,
-      );
-
-      // Set up category mock BEFORE creating widget
-      when(
-        () => mockCategoryRepository.watchCategory('test-category'),
-      ).thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: withServiceOverrides([
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider.overrideWithValue(
-              mockCategoryRepository,
-            ),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-            entryControllerProvider('journal-123').overrideWith(
-              () => FakeEntryController(mockEntry: mockJournalEntry),
-            ),
-            checkboxVisibilityProvider((
-              categoryId: 'test-category',
-              linkedId: 'journal-123',
-            )).overrideWithValue(
-              const AutomaticPromptVisibility(speech: true),
-            ),
-          ]),
-          child: Builder(
-            builder: (context) {
-              if (state.enableSpeechRecognition != null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ProviderScope.containerOf(context)
-                      .read(audioRecorderControllerProvider.notifier)
-                      .setEnableSpeechRecognition(
-                        enable: state.enableSpeechRecognition,
-                      );
-                });
-              }
-
-              return MaterialApp(
-                builder: LegacyMaterialBridge.builder,
-                theme: DesignSystemTheme.light(),
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  ...GlobalMaterialLocalizations.delegates,
-                ],
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: const Scaffold(
-                  body: AudioRecordingModalContent(
-                    categoryId: 'test-category',
-                    linkedId: 'journal-123',
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      );
-
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Only speech recognition should be visible
-      expect(
-        _speechRecognitionCheckbox(tester),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('hides task checkboxes when entry is null', (tester) async {
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'nonexistent-123',
-        enableSpeechRecognition: true,
-      );
-
-      // Set up category mock BEFORE creating widget
-      when(
-        () => mockCategoryRepository.watchCategory('test-category'),
-      ).thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: withServiceOverrides([
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider.overrideWithValue(
-              mockCategoryRepository,
-            ),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-            // Return null entry
-            entryControllerProvider('nonexistent-123').overrideWith(
-              () => FakeEntryController(mockEntry: null),
-            ),
-            checkboxVisibilityProvider((
-              categoryId: 'test-category',
-              linkedId: 'nonexistent-123',
-            )).overrideWithValue(
-              const AutomaticPromptVisibility(speech: true),
-            ),
-          ]),
-          child: Builder(
-            builder: (context) {
-              if (state.enableSpeechRecognition != null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ProviderScope.containerOf(context)
-                      .read(audioRecorderControllerProvider.notifier)
-                      .setEnableSpeechRecognition(
-                        enable: state.enableSpeechRecognition,
-                      );
-                });
-              }
-
-              return MaterialApp(
-                builder: LegacyMaterialBridge.builder,
-                theme: DesignSystemTheme.light(),
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  ...GlobalMaterialLocalizations.delegates,
-                ],
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: const Scaffold(
-                  body: AudioRecordingModalContent(
-                    categoryId: 'test-category',
-                    linkedId: 'nonexistent-123',
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      );
-
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // Only speech recognition visible, task checkboxes hidden
-      expect(
-        _speechRecognitionCheckbox(tester),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets(
-      'hides task checkboxes when entryController returns null value',
-      (tester) async {
-        final state = AudioRecorderState(
-          status: AudioRecorderStatus.recording,
-          vu: 0,
-          dBFS: -60,
-          progress: Duration.zero,
-          showIndicator: false,
-          modalVisible: true,
-          linkedId: 'null-value-123',
-          enableSpeechRecognition: true,
-        );
-
-        // Set up category mock BEFORE creating widget
-        when(
-          () => mockCategoryRepository.watchCategory('test-category'),
-        ).thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: withServiceOverrides([
-              audioRecorderRepositoryProvider.overrideWithValue(
-                mockAudioRecorderRepository,
-              ),
-              categoryRepositoryProvider.overrideWithValue(
-                mockCategoryRepository,
-              ),
-              playerFactoryProvider.overrideWithValue(() => mockPlayer),
-              // Return AsyncValue with null value
-              entryControllerProvider('null-value-123').overrideWith(
-                () => FakeEntryController(mockEntry: null),
-              ),
-              checkboxVisibilityProvider((
-                categoryId: 'test-category',
-                linkedId: 'null-value-123',
-              )).overrideWithValue(
-                const AutomaticPromptVisibility(speech: true),
-              ),
-            ]),
-            child: Builder(
-              builder: (context) {
-                if (state.enableSpeechRecognition != null) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    ProviderScope.containerOf(context)
-                        .read(audioRecorderControllerProvider.notifier)
-                        .setEnableSpeechRecognition(
-                          enable: state.enableSpeechRecognition,
-                        );
-                  });
-                }
-
-                return MaterialApp(
-                  builder: LegacyMaterialBridge.builder,
-                  theme: DesignSystemTheme.light(),
-                  localizationsDelegates: const [
-                    AppLocalizations.delegate,
-                    ...GlobalMaterialLocalizations.delegates,
-                  ],
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  home: const Scaffold(
-                    body: AudioRecordingModalContent(
-                      categoryId: 'test-category',
-                      linkedId: 'null-value-123',
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-
-        await tester.pump();
-        // Extra pump for Riverpod async provider resolution
-        await tester.pump();
-
-        // Only speech recognition visible
-        expect(
-          _speechRecognitionCheckbox(tester),
-          findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets('shows task checkboxes optimistically during loading state', (
-      tester,
-    ) async {
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'loading-123',
-        enableSpeechRecognition: true,
-      );
-
-      // Set up category mock BEFORE creating widget
-      when(
-        () => mockCategoryRepository.watchCategory('test-category'),
-      ).thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: withServiceOverrides([
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider.overrideWithValue(
-              mockCategoryRepository,
-            ),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-            // Return loading state
-            entryControllerProvider('loading-123').overrideWith(
-              () => FakeEntryController(isLoading: true),
-            ),
-            checkboxVisibilityProvider((
-              categoryId: 'test-category',
-              linkedId: 'loading-123',
-            )).overrideWithValue(
-              const AutomaticPromptVisibility(speech: true),
-            ),
-          ]),
-          child: Builder(
-            builder: (context) {
-              if (state.enableSpeechRecognition != null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ProviderScope.containerOf(context)
-                      .read(audioRecorderControllerProvider.notifier)
-                      .setEnableSpeechRecognition(
-                        enable: state.enableSpeechRecognition,
-                      );
-                });
-              }
-
-              return MaterialApp(
-                builder: LegacyMaterialBridge.builder,
-                theme: DesignSystemTheme.light(),
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  ...GlobalMaterialLocalizations.delegates,
-                ],
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: const Scaffold(
-                  body: AudioRecordingModalContent(
-                    categoryId: 'test-category',
-                    linkedId: 'loading-123',
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      );
-
-      await tester.pump();
-      // Extra pump for Riverpod async provider resolution
-      await tester.pump();
-
-      // All checkboxes visible optimistically during loading
-      expect(
-        _speechRecognitionCheckbox(tester),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('hides task checkboxes on error state', (tester) async {
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.recording,
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: true,
-        linkedId: 'error-123',
-        enableSpeechRecognition: true,
-      );
-
-      // Set up category mock BEFORE creating widget
-      when(
-        () => mockCategoryRepository.watchCategory('test-category'),
-      ).thenAnswer((_) => Stream.value(FakeCategoryDefinition()));
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: withServiceOverrides([
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider.overrideWithValue(
-              mockCategoryRepository,
-            ),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-            // Override checkboxVisibilityProvider to simulate error state behavior
-            // When entryController is in error state, isLinkedToTask should be false,
-            // so only speech checkbox is visible
-            checkboxVisibilityProvider((
-              categoryId: 'test-category',
-              linkedId: 'error-123',
-            )).overrideWithValue(
-              const AutomaticPromptVisibility(
-                speech: true,
-              ),
-            ),
-          ]),
-          child: Builder(
-            builder: (context) {
-              if (state.enableSpeechRecognition != null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ProviderScope.containerOf(context)
-                      .read(audioRecorderControllerProvider.notifier)
-                      .setEnableSpeechRecognition(
-                        enable: state.enableSpeechRecognition,
-                      );
-                });
-              }
-
-              return MaterialApp(
-                builder: LegacyMaterialBridge.builder,
-                theme: DesignSystemTheme.light(),
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  ...GlobalMaterialLocalizations.delegates,
-                ],
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: const Scaffold(
-                  body: AudioRecordingModalContent(
-                    categoryId: 'test-category',
-                    linkedId: 'error-123',
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      );
-
-      await tester.pump();
-      // Extra pumps for Riverpod async provider error state propagation
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-
-      // Only speech recognition visible on error
-      expect(
-        _speechRecognitionCheckbox(tester),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets(
-      'shows Task checkboxes even with Task + no category prompts still respects category config',
-      (tester) async {
-        final testDate = DateTime(2024, 3, 15, 10, 30);
-        const uuid = Uuid();
-        final openStatus = TaskStatus.open(
-          id: uuid.v1(),
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        final mockTask = Task(
-          meta: createMockMetadata('task-123'),
-          data: TaskData(
-            title: 'Test Task',
-            status: openStatus,
-            dateFrom: testDate,
-            dateTo: testDate,
-            statusHistory: [openStatus],
-          ),
-        );
-
-        final categoryWithoutPrompts = FakeCategoryDefinition();
-
-        // Set up category mock BEFORE creating widget
-        when(
-          () => mockCategoryRepository.watchCategory('test-category'),
-        ).thenAnswer((_) => Stream.value(categoryWithoutPrompts));
-
-        final state = AudioRecorderState(
-          status: AudioRecorderStatus.recording,
-          vu: 0,
-          dBFS: -60,
-          progress: Duration.zero,
-          showIndicator: false,
-          modalVisible: true,
-          linkedId: 'task-123',
-          enableSpeechRecognition: true,
-        );
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: withServiceOverrides([
-              audioRecorderRepositoryProvider.overrideWithValue(
-                mockAudioRecorderRepository,
-              ),
-              categoryRepositoryProvider.overrideWithValue(
-                mockCategoryRepository,
-              ),
-              playerFactoryProvider.overrideWithValue(() => mockPlayer),
-              entryControllerProvider('task-123').overrideWith(
-                () => FakeEntryController(mockEntry: mockTask),
-              ),
-              checkboxVisibilityProvider((
-                categoryId: 'test-category',
-                linkedId: 'task-123',
-              )).overrideWithValue(
-                const AutomaticPromptVisibility(speech: true),
-              ),
-            ]),
-            child: Builder(
-              builder: (context) {
-                if (state.enableSpeechRecognition != null) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    ProviderScope.containerOf(context)
-                        .read(audioRecorderControllerProvider.notifier)
-                        .setEnableSpeechRecognition(
-                          enable: state.enableSpeechRecognition,
-                        );
-                  });
-                }
-
-                return MaterialApp(
-                  builder: LegacyMaterialBridge.builder,
-                  theme: DesignSystemTheme.light(),
-                  localizationsDelegates: const [
-                    AppLocalizations.delegate,
-                    ...GlobalMaterialLocalizations.delegates,
-                  ],
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  home: const Scaffold(
-                    body: AudioRecordingModalContent(
-                      categoryId: 'test-category',
-                      linkedId: 'task-123',
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-
-        await tester.pump();
-        // Extra pump for Riverpod async provider resolution
-        await tester.pump();
-
-        // Speech checkbox visible via profile-driven transcription
-        expect(
-          _speechRecognitionCheckbox(tester),
-          findsOneWidget,
-        );
-      },
-    );
-  });
-}
-
-/// Controller that tracks method calls for interaction tests
-class _CallbackTrackingController extends AudioRecorderController {
-  _CallbackTrackingController({
-    required this.fixedState,
-    this.onStopCalled,
-    this.onCancelCalled,
-    this.createdId,
-    this.onPauseCalled,
-    this.onResumeCalled,
-    this.onRecord,
-    this.onRecordingOwnership,
-  });
-
-  final AudioRecorderState fixedState;
-  final VoidCallback? onStopCalled;
-  final VoidCallback? onCancelCalled;
-  final String? createdId;
-  final VoidCallback? onPauseCalled;
-  final VoidCallback? onResumeCalled;
-  final Future<AudioRecordingFailure?> Function()? onRecord;
-  // ignore: avoid_positional_boolean_parameters
-  final void Function(bool)? onRecordingOwnership;
-
-  @override
-  AudioRecorderState build() => fixedState;
-
-  @override
-  Future<void> pause() async {
-    onPauseCalled?.call();
-    state = state.copyWith(status: AudioRecorderStatus.paused);
-  }
-
-  @override
-  Future<void> resume() async {
-    onResumeCalled?.call();
-    state = state.copyWith(status: AudioRecorderStatus.recording);
-  }
-
-  @override
-  Future<AudioRecordingFailure?> record({
-    String? linkedId,
+  /// Opens the sheet the way the app does, from a button on a page.
+  Future<void> open(
+    WidgetTester tester, {
+    String? linkedId = _taskId,
+    String? categoryId = _categoryId,
     bool transcriptionHandledByCaller = false,
-    bool Function()? shouldCancel,
+    bool openCreatedEntry = true,
+    AutomaticPromptVisibility visibility = const AutomaticPromptVisibility(
+      speech: true,
+    ),
+    List<Override> overrides = const [],
   }) async {
-    onRecordingOwnership?.call(transcriptionHandledByCaller);
-    return onRecord?.call();
-  }
-
-  @override
-  Future<String?> stop() async {
-    onStopCalled?.call();
-    return createdId;
-  }
-
-  @override
-  Future<void> cancel() async {
-    onCancelCalled?.call();
-    state = fixedState.copyWith(
-      status: AudioRecorderStatus.stopped,
-      modalVisible: false,
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () async => results.add(
+              await AudioRecordingModal.show(
+                context,
+                linkedId: linkedId,
+                categoryId: categoryId,
+                transcriptionHandledByCaller: transcriptionHandledByCaller,
+                openCreatedEntry: openCreatedEntry,
+              ),
+            ),
+            child: const Text('open'),
+          ),
+        ),
+        overrides: [
+          audioRecorderControllerProvider.overrideWith(() => recorder),
+          journalDbProvider.overrideWithValue(journalDb),
+          checkboxVisibilityProvider((
+            categoryId: categoryId,
+            linkedId: linkedId,
+          )).overrideWithValue(visibility),
+          appSettingsOpenerProvider.overrideWithValue(() async {
+            settingsOpened++;
+            return true;
+          }),
+          ...overrides,
+        ],
+      ),
     );
-  }
-}
-
-class _TestNavigatorObserver extends NavigatorObserver {
-  final List<Route<dynamic>> pushedRoutes = <Route<dynamic>>[];
-  final List<Route<dynamic>> poppedRoutes = <Route<dynamic>>[];
-
-  @override
-  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    pushedRoutes.add(route);
-    super.didPush(route, previousRoute);
+    await tester.tap(find.text('open'));
+    await settle(tester);
   }
 
-  @override
-  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    poppedRoutes.add(route);
-    super.didPop(route, previousRoute);
+  Finder key(Key key) => find.byKey(key);
+  const recordKey = ValueKey('record');
+  const transcribeKey = Key('speech_recognition_checkbox');
+
+  group('recordingSubjectTitle', () {
+    final meta = testTextEntry.meta;
+    for (final (name, subject, expected) in <(String, JournalEntity?, String?)>[
+      ('a task is its title', testTask, testTask.data.title),
+      (
+        'an entry is its words, trimmed',
+        JournalEntity.journalEntry(
+          meta: meta,
+          entryText: const EntryText(plainText: '  Call the vet  '),
+        ),
+        'Call the vet',
+      ),
+      (
+        'an entry with no words is nothing',
+        JournalEntity.journalEntry(
+          meta: meta,
+          entryText: const EntryText(plainText: '   '),
+        ),
+        null,
+      ),
+      (
+        'an entry with no text at all is nothing',
+        JournalEntry(meta: meta),
+        null,
+      ),
+      ('no subject is nothing', null, null),
+    ]) {
+      test(name, () => expect(recordingSubjectTitle(subject), expected));
+    }
+  });
+
+  testWidgets('opens already recording — no second tap — for its subject and '
+      'category, titled with what the recording is about', (tester) async {
+    await open(tester);
+
+    expect(recorder.recordCalls, [(linkedId: _taskId, handledByCaller: false)]);
+    expect(recorder.categoryIds.toSet(), {_categoryId});
+    expect(find.text(testTask.data.title), findsOneWidget);
+    expect(find.byType(RecordingTransportControls), findsOneWidget);
+    expect(key(recordKey), findsNothing);
+    // The floating indicator is hidden while the sheet shows the take.
+    expect(recorder.modalVisibleLog, isNotEmpty);
+    expect(recorder.modalVisibleLog, everyElement(isTrue));
+  });
+
+  testWidgets('Stop saves the take, closes the sheet with its id, and hands '
+      'the floating indicator back', (tester) async {
+    recorder.stopResult = 'audio-42';
+    await open(tester);
+
+    await tester.tap(key(RecordingTransportControls.stopKey));
+    await settle(tester);
+
+    expect(results, ['audio-42']);
+    expect(find.byType(AudioRecordingModalContent), findsNothing);
+    expect(recorder.modalVisibleLog.last, isFalse);
+    // Linked to its subject: the user stays where they are.
+    verifyNever(() => navService.beamToNamed(any()));
+  });
+
+  for (final openCreatedEntry in [true, false]) {
+    testWidgets('a recording with no subject has the plain title and opens '
+        'as its own entry once saved — unless the caller links it itself: '
+        'openCreatedEntry $openCreatedEntry', (tester) async {
+      await open(
+        tester,
+        linkedId: null,
+        categoryId: null,
+        openCreatedEntry: openCreatedEntry,
+      );
+      expect(find.text('Record a voice note'), findsOneWidget);
+      expect(recorder.recordCalls, [(linkedId: null, handledByCaller: false)]);
+      verifyNever(() => journalDb.journalEntityById(any()));
+
+      await tester.tap(key(RecordingTransportControls.stopKey));
+      await settle(tester);
+
+      expect(results, ['audio-1']);
+      if (openCreatedEntry) {
+        verify(() => navService.beamToNamed('/journal/audio-1')).called(1);
+      } else {
+        verifyNever(() => navService.beamToNamed(any()));
+      }
+    });
   }
+
+  testWidgets('a subject that cannot be read costs only its name: the sheet '
+      'opens under the plain title and records all the same', (tester) async {
+    when(
+      () => journalDb.journalEntityById(any()),
+    ).thenThrow(StateError('database closed'));
+    await open(tester);
+
+    expect(find.text('Record a voice note'), findsOneWidget);
+    expect(recorder.recordCalls.single.linkedId, _taskId);
+  });
+
+  group('Transcribe', () {
+    testWidgets('where a transcription would run it is offered under the '
+        'controls, on unless switched off, and the switch reaches the '
+        'recorder', (tester) async {
+      await open(tester);
+
+      final option = tester.widget<RecordingOption>(key(transcribeKey));
+      expect(option.label, 'Transcribe');
+      expect(option.value, isTrue);
+      expect(
+        tester.getRect(key(transcribeKey)).top,
+        greaterThan(
+          tester.getRect(find.byType(RecordingTransportControls)).bottom,
+        ),
+      );
+
+      await tester.tap(key(transcribeKey));
+      await tester.pump();
+      expect(recorder.state.enableSpeechRecognition, isFalse);
+      expect(
+        tester.widget<RecordingOption>(key(transcribeKey)).value,
+        isFalse,
+      );
+    });
+
+    testWidgets('where nothing would transcribe it is not offered', (
+      tester,
+    ) async {
+      await open(
+        tester,
+        visibility: const AutomaticPromptVisibility(speech: false),
+      );
+      expect(key(transcribeKey), findsNothing);
+    });
+
+    testWidgets('a recording filed nowhere and linked to nothing has no '
+        'automation to offer', (tester) async {
+      await open(tester, linkedId: null, categoryId: null);
+      expect(key(transcribeKey), findsNothing);
+    });
+
+    testWidgets('a caller that transcribes the take itself gets no option, '
+        'and the recorder is told so from the start', (tester) async {
+      await open(tester, transcriptionHandledByCaller: true);
+
+      expect(key(transcribeKey), findsNothing);
+      expect(recorder.recordCalls, [
+        (linkedId: _taskId, handledByCaller: true),
+      ]);
+    });
+  });
+
+  testWidgets('a confirmed discard closes the sheet with nothing', (
+    tester,
+  ) async {
+    await open(tester);
+
+    await tester.tap(key(RecordingTransportControls.discardKey));
+    await settle(tester);
+    expect(
+      find.textContaining('This recording will be deleted.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Discard').last);
+    await settle(tester);
+
+    expect(recorder.cancelCalls, 1);
+    expect(recorder.stopCalls, 0);
+    expect(results, [null]);
+    expect(find.byType(AudioRecordingModalContent), findsNothing);
+  });
+
+  testWidgets('dismissed mid-take, the take keeps running and goes back to '
+      'the floating indicator, where it can be stopped', (tester) async {
+    await open(tester);
+
+    Navigator.of(
+      tester.element(find.byType(AudioRecordingModalContent)),
+    ).pop();
+    await settle(tester);
+
+    expect(results, [null]);
+    expect(recorder.stopCalls, 0);
+    expect(recorder.cancelCalls, 0);
+    expect(recorder.state.status, AudioRecorderStatus.recording);
+    expect(recorder.modalVisibleLog.last, isFalse);
+  });
+
+  testWidgets('reopened for the subject whose take is running — the '
+      "indicator's tap — it attaches: no second start, the running clock", (
+    tester,
+  ) async {
+    recorder = FakeAudioRecorderController(runningFor: _taskId);
+    await open(tester);
+    recorder.tick(progress: const Duration(seconds: 83));
+    await tester.pump();
+
+    expect(recorder.recordCalls, isEmpty);
+    expect(find.text('01:23'), findsOneWidget);
+    expect(find.text(testTask.data.title), findsOneWidget);
+  });
+
+  group('a recorder that could not record', () {
+    testWidgets('a refused microphone rests the sheet on its reason, with '
+        'the door to settings, and Record tries again', (tester) async {
+      recorder = FakeAudioRecorderController(
+        recordFailure: AudioRecordingFailure.permissionDenied,
+      );
+      await open(tester);
+
+      expect(find.byType(InlineRecorder), findsNothing);
+      expect(find.text('Allow microphone access'), findsOneWidget);
+      expect(
+        find.textContaining("Lotti can't use the microphone."),
+        findsOneWidget,
+      );
+      await tester.tap(key(RecordingFailureCallout.openSettingsKey));
+      expect(settingsOpened, 1);
+
+      // Allowed now: Record starts the take and the reason goes.
+      recorder.recordFailure = null;
+      await tester.tap(key(recordKey));
+      await settle(tester);
+      expect(find.text('Allow microphone access'), findsNothing);
+      expect(find.byType(RecordingTransportControls), findsOneWidget);
+      expect(recorder.recordCalls, hasLength(2));
+    });
+
+    testWidgets('a microphone that would not start says so, with no door '
+        'to settings', (tester) async {
+      recorder = FakeAudioRecorderController(
+        recordFailure: AudioRecordingFailure.startFailed,
+      );
+      await open(tester);
+
+      expect(find.text("Recording didn't start"), findsOneWidget);
+      expect(key(RecordingFailureCallout.openSettingsKey), findsNothing);
+      expect(key(RecordingFailureCallout.stopRunningKey), findsNothing);
+      expect(key(recordKey), findsOneWidget);
+    });
+
+    testWidgets("someone else's running take is never taken over: it can be "
+        'stopped from the sheet — saved where it was started — and then '
+        'Record records', (tester) async {
+      recorder = FakeAudioRecorderController(runningFor: 'another-task');
+      await open(tester);
+
+      expect(find.text('A recording is already running'), findsOneWidget);
+      expect(recorder.recordCalls, isEmpty);
+      expect(recorder.stopCalls, 0);
+
+      await tester.tap(key(RecordingFailureCallout.stopRunningKey));
+      await settle(tester);
+      expect(recorder.stopCalls, 1);
+      expect(find.text('A recording is already running'), findsNothing);
+      // The sheet stays: stopping the other take is not this take's Stop.
+      expect(results, isEmpty);
+
+      await tester.tap(key(recordKey));
+      await settle(tester);
+      expect(recorder.recordCalls, [
+        (linkedId: _taskId, handledByCaller: false),
+      ]);
+    });
+
+    testWidgets('a running take that will not stop is said to be unsaved', (
+      tester,
+    ) async {
+      recorder = FakeAudioRecorderController(
+        runningFor: 'another-task',
+        stopResult: null,
+      );
+      await open(tester);
+
+      await tester.tap(key(RecordingFailureCallout.stopRunningKey));
+      await settle(tester);
+
+      expect(find.text("Recording couldn't be saved"), findsOneWidget);
+    });
+
+    testWidgets('a take that could not be saved keeps the sheet open on its '
+        'reason rather than closing on nothing', (tester) async {
+      recorder = FakeAudioRecorderController(stopResult: null);
+      await open(tester);
+
+      await tester.tap(key(RecordingTransportControls.stopKey));
+      await settle(tester);
+
+      expect(results, isEmpty);
+      expect(find.text("Recording couldn't be saved"), findsOneWidget);
+      expect(key(recordKey), findsOneWidget);
+    });
+  });
 }

@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/fable-5.2, at: 2026-11-23T09:00:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-23T18:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -1747,12 +1747,11 @@ handler would retract it; that wiring is a follow-up.
   voice across the row while it records, a streaming partial transcript,
   and on Done the words in the field to be read before sending. The
   waveform (`DesignSystemVoiceWaveform`, which the charter sheet's Dictate
-  row uses too) shows the last four seconds of the take across all the
-  width it has: thin round-capped bars in quiet ink, newest on the right,
-  centred, nothing drawn before the take — quiet is a dot and speech stands
-  up. Bars and gaps are both `spacing.step1` wide, the waveform
-  `spacing.step7` tall. The dBFS range starts at −55 (`chatAmplitudeMinDbfs`), so
-  room noise reads as silence rather than half-height bars. The recorder watch lives inside `_ChatComposer`
+  row uses too) is the recorder's own: thin accent bars over a hairline,
+  newest on the right, nothing drawn before the take, on the one loudness
+  scale (`normaliseDbfs`) — see
+  [the chat input](design_system/component-contracts.md#one-chat-input-for-typing-and-talking).
+  The recorder watch lives inside `_ChatComposer`
   (a `ConsumerWidget`) so the 10 Hz amplitude stream rebuilds only the
   composer subtree, not the full message list.
 
@@ -2225,9 +2224,10 @@ route (`GoalTimelinePage`) keeps a single app-bar mic, which is the same
 
 **The sheet** ([`GoalCheckInComposer`](../../lib/features/goals/ui/checkins/goal_checkin_composer.dart),
 opened through `DsActionModal` — a sheet on a phone, a dialog on a wide
-window) names the goal under its *Check in* title and keeps the agent's
-question in view, in the agent's violet card (`aiCardDecoration`), while the
-user answers it. It records with the shared
+window) is titled with the goal's own name and keeps the agent's question in
+view — the question alone, in the agent's violet card (`aiCardDecoration`),
+with no line saying who prepared it — while the user answers it. The sheet
+carries nothing else over the recorder: no second title, no hint. It records with the shared
 [`InlineRecorder`](../../lib/features/speech/ui/widgets/recording/inline_recorder.dart)
 — the recorder a person's check-in uses — linked to the goal row from
 `goalCaptureTargetProvider` and filed in the goal's category; it waits for
@@ -2256,7 +2256,9 @@ stateDiagram-v2
 
 **A recorder that cannot record says why.** `InlineRecorder` reports one of
 four `InlineRecordingFailure`s and the sheet returns to rest under a
-`DesignSystemInlineCallout`: a refused microphone offers *Open settings*
+[`RecordingFailureCallout`](../../lib/features/speech/ui/widgets/recording/recording_failure_callout.dart)
+(the recording sheet's card, with this sheet's own words and *Write
+instead*): a refused microphone offers *Open settings*
 (`appSettingsOpenerProvider`); a take that did not start or was not saved
 names itself; and a recording already running elsewhere offers *Stop that
 recording*, which calls the recorder's `stop` — saving that take under the

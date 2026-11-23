@@ -31,7 +31,6 @@ import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/notifications/ui/notification_settings_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
-import 'package:lotti/features/onboarding/ui/recording_style_settings_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/settings/routing/settings_route.dart';
 import 'package:lotti/features/settings/ui/mobile/settings_mobile_branch_page.dart';
@@ -485,12 +484,6 @@ final SettingsRouteTable settingsRoutes = SettingsRouteTable(
       url: '/settings/notifications',
       page: (_, _) => const NotificationSettingsPage(),
       panel: (_, _) => const NotificationSettingsBody(),
-      scrollable: true,
-    ),
-    'preferences/recording-style': SettingsRoute(
-      url: '/settings/recording-style',
-      page: (_, _) => const RecordingStyleSettingsPage(),
-      panel: (_, _) => const RecordingStyleSettingsBody(),
       scrollable: true,
     ),
     'preferences/speech': SettingsRoute(

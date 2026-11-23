@@ -128,7 +128,6 @@ void main() {
       'preferences/theming',
       'preferences/animations',
       'preferences/notifications',
-      'preferences/recording-style',
       'preferences/keyboard-shortcuts',
     ]);
   });

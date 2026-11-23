@@ -2119,7 +2119,6 @@
   },
   "audioPlayerTimeline": "Audio timeline",
   "audioPlayerWaveform": "Audio waveform",
-  "audioRecordingCancel": "Cancel",
   "audioRecordingDiscardDialogBody": "This recording will be deleted. No audio entry, transcript, or task summary will be created.",
   "audioRecordingDiscardDialogCancel": "Keep recording",
   "audioRecordingDiscardDialogConfirm": "Discard",
@@ -5451,7 +5450,6 @@
   },
   "goalCheckInAddVoiceNote": "Add a voice note",
   "goalCheckInClose": "Close",
-  "goalCheckInComposerTitle": "Check in",
   "goalCheckInDimensionsRated": "{count, plural, =1{1 dimension rated} other{{count} dimensions rated}}",
   "@goalCheckInDimensionsRated": {
     "placeholders": {
@@ -5477,14 +5475,6 @@
     }
   },
   "goalCheckInNoteKeptSeparate": "Kept separate from your typed note",
-  "goalCheckInPreparedBy": "{name} · prepared for you",
-  "@goalCheckInPreparedBy": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "goalCheckInRecorderBusyBody": "Stop it here and it is saved where it was started. Then you can speak.",
   "@goalCheckInRecorderBusyBody": {
     "description": "Body of the goal check-in sheet's callout when another recording is already running elsewhere in the app. Sits under the title 'A recording is already running'."
@@ -8077,9 +8067,6 @@
   "@onboardingMetricsYes": {
     "description": "Positive boolean value in the onboarding metrics debug view."
   },
-  "onboardingRecordingStyleAnalogue": "Analogue — VU meter",
-  "onboardingRecordingStyleModern": "Modern — energy orb",
-  "onboardingRecordingStyleTryVoice": "Try with your voice",
   "onboardingStageProgress": "Step {current} of {total}",
   "@onboardingStageProgress": {
     "placeholders": {
@@ -9302,10 +9289,6 @@
   "@relationshipCaptureHeard": {
     "description": "Heading over the review of a sorted capture."
   },
-  "relationshipCaptureHint": "A conversation you had, something to remember, or a plan.",
-  "@relationshipCaptureHint": {
-    "description": "Hint under the recorder: what a spoken capture can be."
-  },
   "relationshipCaptureKeepVoiceNote": "Keep as a voice note",
   "@relationshipCaptureKeepVoiceNote": {
     "description": "Button closing the review without filing; the recording stays a voice note."
@@ -9342,10 +9325,6 @@
   "@relationshipCaptureNoDue": {
     "description": "A task without a due day, on its review card; tapping sets one."
   },
-  "relationshipCaptureNoSorter": "No model to sort with — it stays a voice note.",
-  "@relationshipCaptureNoSorter": {
-    "description": "Caption when no model can sort a capture."
-  },
   "relationshipCaptureNote": "Keep as a note",
   "@relationshipCaptureNote": {
     "description": "Review card label: file this item as a note."
@@ -9355,15 +9334,6 @@
     "description": "Said when a spoken capture's recording was saved but could not be put on the person's timeline; {name} is their nickname or name.",
     "placeholders": {
       "name": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipCaptureSortedBy": "Sorted by {route}",
-  "@relationshipCaptureSortedBy": {
-    "description": "Caption naming the model and provider that will sort the capture, e.g. 'Sorted by Gemini 2.5 Flash · via Google'.",
-    "placeholders": {
-      "route": {
         "type": "String"
       }
     }
@@ -10628,11 +10598,8 @@
   "settingsOnboardingTestResetTitle": "Reset onboarding test state",
   "settingsOnboardingTitle": "Onboarding",
   "settingsOptionsTitle": "Options",
-  "settingsPreferencesSubtitle": "Theming, animations, notifications, recording style, speech, and shortcuts",
+  "settingsPreferencesSubtitle": "Theming, animations, notifications, speech, and shortcuts",
   "settingsPreferencesTitle": "Preferences",
-  "settingsRecordingStyleExplanation": "Choose how the mic looks while you're recording.",
-  "settingsRecordingStyleSubtitle": "VU meter or energy orb while recording",
-  "settingsRecordingStyleTitle": "Recording Style",
   "settingsResetGeminiConfirm": "Reset",
   "settingsResetGeminiConfirmQuestion": "This will show the Gemini setup dialog again. Continue?",
   "settingsResetGeminiSubtitle": "Show the Gemini AI setup dialog again",

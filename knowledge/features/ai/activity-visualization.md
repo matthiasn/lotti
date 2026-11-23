@@ -5,7 +5,7 @@ description: The two runtime-effect shaders behind voice capture and thinking in
 resource: ../../../lib/features/ai/ui/animation/ai_state_shader_animation.dart
 tags: [ai, shaders, animation, ui]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-20T12:00:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-23T18:00:00Z }
 stale_after: 2026-12-26
 sources:
   - id: barrel
@@ -67,12 +67,11 @@ glint the high-emphasis text colour — so the pressure-lit ribbons bloom white 
 and the halo the body deepened to 72 %. On a light surface the glint is the
 accent's hue at 0.60 lightness, a lit teal rather than dark ink, the halo sits
 midway between body and glint, and the `onLightSurface` flag narrows and softens
-the shader's halos and glints. The shared recorder's `RecordingLevelVisualizer`
-shows the orb for the modern recording style (the analog VU meter otherwise),
-builds the palette from the ambient tokens, and on a light surface sets the orb
-in a soft radial lit pool. The Daily OS `VoiceButton` passes its own teal
-accent; the onboarding `RecordingStylePicker` passes the card's own surface
-tokens.
+the shader's halos and glints. The Daily OS `VoiceButton` — the orb that is
+itself the microphone button, on Capture, Refine and onboarding's first task
+— passes its own teal accent. The recorder no longer draws an orb: its level
+line is the one picture of a voice (see
+[Recording UI](../speech/recording-ui.md)).
 
 # Two adapters
 
@@ -91,13 +90,20 @@ flowchart LR
 `inferenceRunningControllerProvider` for one entity and a set of response types,
 listens to the matching `inferenceErrorControllerProvider` instances, and
 delegates its visual lifecycle to `AiThinkingShaderPresence`. Interactive hosts
-also use it as the labelled tap target that resolves the active prompt and opens
-`UnifiedAiProgressContent`. **An interactive band says which job is in flight**:
-while it runs, `AiRunningLabel` sits over the bars — the job's glyph in agent
-violet, its name (*Transcribing audio*, *Generating image*, …) and a chevron —
-read from the same per-type `inferenceStatusControllerProvider` that makes the
-band run, so the words and the bars cannot disagree. The bars alone said nothing
-a sighted reader could act on, and frozen in a screenshot they read as a glitch.
+also use it as the tap target that resolves the active prompt and opens
+`UnifiedAiProgressContent` (`openAiRunningProgress`). **What is in flight is
+said under the host's controls, never over the bars**: `AiRunningLabel` is one
+quiet line — the job's glyph in agent violet, its name (*Transcribing audio*,
+*Generating image*, …) and a chevron — that a task's and an entry's action bar
+place in their `bottomSlot`, beneath the action row, and that opens the same
+progress view. It reads the same per-type `inferenceStatusControllerProvider`
+that makes the band run, so the words and the bars cannot disagree, and takes
+no height while nothing runs. It was a capsule laid across the bars; that hid
+the animation it named.
+
+A surface that waits on a run of its own shows the same bars through
+`AiThinkingShaderPresence`: *Speak about …*, while a person's capture is
+listened back and sorted, shows them over the one line saying which.
 
 It appears in `TaskDetailsPage` (the interactive `topSlot` of `TaskActionBar`,
 for image analysis, audio transcription, audio summary, prompt generation and

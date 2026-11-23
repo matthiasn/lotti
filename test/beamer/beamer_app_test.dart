@@ -524,7 +524,6 @@ Future<void> _pumpAppScreen(
                 AudioRecorderState(
                   status: AudioRecorderStatus.stopped,
                   progress: Duration.zero,
-                  vu: -20,
                   dBFS: -160,
                   showIndicator: false,
                   modalVisible: false,
@@ -631,7 +630,6 @@ Future<void> _pumpAppScreenCustomProviders(
             AudioRecorderState(
               status: AudioRecorderStatus.stopped,
               progress: Duration.zero,
-              vu: -20,
               dBFS: -160,
               showIndicator: false,
               modalVisible: false,
@@ -757,7 +755,6 @@ Future<void> _pumpReadyMyBeamerApp(
             AudioRecorderState(
               status: AudioRecorderStatus.stopped,
               progress: Duration.zero,
-              vu: -20,
               dBFS: -160,
               showIndicator: false,
               modalVisible: false,
@@ -1831,7 +1828,6 @@ void main() {
         audioRecorderState: AudioRecorderState(
           status: AudioRecorderStatus.recording,
           progress: const Duration(seconds: 30),
-          vu: -8,
           dBFS: -18,
           showIndicator: true,
           modalVisible: false,
@@ -3603,7 +3599,6 @@ void main() {
             '/settings/flags',
             '/settings/theming',
             '/settings/notifications',
-            '/settings/recording-style',
             '/settings/daily-os',
             '/settings/speech',
             '/settings/onboarding',
@@ -5792,7 +5787,6 @@ void main() {
                   AudioRecorderState(
                     status: AudioRecorderStatus.stopped,
                     progress: Duration.zero,
-                    vu: -20,
                     dBFS: -160,
                     showIndicator: false,
                     modalVisible: false,
@@ -6468,7 +6462,6 @@ void main() {
           audioRecorderState: AudioRecorderState(
             status: AudioRecorderStatus.recording,
             progress: const Duration(seconds: 8),
-            vu: -20,
             dBFS: -40,
             showIndicator: true,
             modalVisible: false,

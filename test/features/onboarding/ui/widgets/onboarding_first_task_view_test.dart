@@ -1,5 +1,3 @@
-import 'dart:ui' show SemanticsAction;
-
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
@@ -9,8 +7,6 @@ import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_view.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_speech_bubble.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_stage.dart';
-import 'package:lotti/features/speech/state/recording_style.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -41,7 +37,6 @@ void main() {
   Future<void> pumpView(
     WidgetTester tester,
     OnboardingFirstTaskPhase phase, {
-    RecordingStyle style = RecordingStyle.modern,
     List<OnboardingCaptureCategory> categories = oneCategory,
     String selectedCategoryId = 'c1',
     bool reduceMotion = true,
@@ -61,9 +56,7 @@ void main() {
             width: 390,
             child: OnboardingFirstTaskView(
               phase: phase,
-              style: style,
               accent: accent,
-              colorScheme: const ColorScheme.dark(),
               title: 'Create your first task',
               guidance: 'Tap to talk and say what needs doing.',
               suggestionsLabel: 'Or start with one of these:',
@@ -147,7 +140,6 @@ void main() {
       await pumpView(tester, OnboardingFirstTaskPhase.prompt);
 
       expect(find.byType(VoiceOrbZone), findsNothing);
-      expect(find.byType(AnalogVuMeter), findsNothing);
       final stage = tester.widget<OnboardingStage>(
         find.byType(OnboardingStage),
       );
@@ -160,72 +152,17 @@ void main() {
     });
   });
 
-  group('recording style', () {
-    testWidgets('modern renders the tappable orb zone', (tester) async {
+  group('recorder', () {
+    testWidgets('listening, the tray holds the tappable orb zone', (
+      tester,
+    ) async {
       await pumpView(tester, OnboardingFirstTaskPhase.listening);
 
       expect(find.byType(VoiceOrbZone), findsOneWidget);
-      expect(find.byType(AnalogVuMeter), findsNothing);
 
       await tester.tap(find.byType(VoiceButton), warnIfMissed: false);
       expect(recordTaps, 1);
     });
-
-    testWidgets('analogue renders the tappable VU meter pair', (tester) async {
-      await pumpView(
-        tester,
-        OnboardingFirstTaskPhase.listening,
-        style: RecordingStyle.analogue,
-      );
-
-      expect(find.byType(AnalogVuMeter), findsOneWidget);
-      expect(find.byType(VoiceOrbZone), findsNothing);
-
-      await tester.tap(find.byType(AnalogVuMeter), warnIfMissed: false);
-      expect(recordTaps, 1);
-    });
-
-    testWidgets('analogue recorder activates via keyboard', (tester) async {
-      await pumpView(
-        tester,
-        OnboardingFirstTaskPhase.listening,
-        style: RecordingStyle.analogue,
-      );
-
-      final meter = find.byType(AnalogVuMeter);
-      final focus = Focus.of(tester.element(meter))..requestFocus();
-      await tester.pump();
-      expect(focus.hasPrimaryFocus, isTrue);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pump();
-
-      expect(recordTaps, 1);
-      expect(
-        tester
-            .getSemantics(meter)
-            .getSemanticsData()
-            .hasAction(SemanticsAction.tap),
-        isTrue,
-      );
-    });
-
-    testWidgets(
-      'the analogue meter also rides the live level while listening',
-      (
-        tester,
-      ) async {
-        await pumpView(
-          tester,
-          OnboardingFirstTaskPhase.listening,
-          style: RecordingStyle.analogue,
-        );
-
-        // The meter receives the injected live dBFS (VU = dBFS + 18, clamped).
-        final meter = tester.widget<AnalogVuMeter>(find.byType(AnalogVuMeter));
-        expect(meter.dBFS, -20);
-        expect(meter.vu, -2);
-      },
-    );
   });
 
   group('listening frame', () {
@@ -328,9 +265,8 @@ void main() {
       // frame is the created beat, not more input.
       expect(find.text('Rather type?'), findsNothing);
       expect(find.text('Or start with one of these:'), findsNothing);
-      // Neither recording visual renders while thinking.
+      // The recorder is gone while thinking.
       expect(find.byType(VoiceOrbZone), findsNothing);
-      expect(find.byType(AnalogVuMeter), findsNothing);
     });
 
     testWidgets('the pulse loops when motion is enabled', (tester) async {
@@ -384,7 +320,6 @@ void main() {
         // The composing/thinking furniture is gone — the card owns the tray.
         expect(find.text('Rather type?'), findsNothing);
         expect(find.byType(VoiceOrbZone), findsNothing);
-        expect(find.byType(AnalogVuMeter), findsNothing);
         // One way on: the card itself is not a second button.
         await tester.tap(find.text(title), warnIfMissed: false);
         expect(openTaskTaps, 0);

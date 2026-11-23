@@ -3009,9 +3009,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get audioPlayerWaveform => 'Forma d’onda audio';
 
   @override
-  String get audioRecordingCancel => 'Annulla';
-
-  @override
   String get audioRecordingDiscardDialogBody =>
       'Questa registrazione verrà cancellata. Non verrà creata alcuna voce audio, trascrizione o sommaria delle attività.';
 
@@ -8536,9 +8533,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalCheckInClose => 'Chiudi';
 
   @override
-  String get goalCheckInComposerTitle => 'Check-in';
-
-  @override
   String goalCheckInDimensionsRated(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -8570,11 +8564,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get goalCheckInNoteKeptSeparate =>
       'Tenuto separato dalla nota che hai scritto';
-
-  @override
-  String goalCheckInPreparedBy(String name) {
-    return '$name · preparato per te';
-  }
 
   @override
   String get goalCheckInRecorderBusyBody =>
@@ -12477,15 +12466,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get onboardingMetricsYes => 'sì';
 
   @override
-  String get onboardingRecordingStyleAnalogue => 'Analoga — Misuratore di VU';
-
-  @override
-  String get onboardingRecordingStyleModern => 'Moderno — energia orb';
-
-  @override
-  String get onboardingRecordingStyleTryVoice => 'Prova con la tua voce';
-
-  @override
   String onboardingStageProgress(int current, int total) {
     return 'Passaggio $current di $total';
   }
@@ -14432,10 +14412,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipCaptureHeard => 'Ecco cosa ho sentito';
 
   @override
-  String get relationshipCaptureHint =>
-      'Una conversazione che hai avuto, qualcosa da ricordare o un piano.';
-
-  @override
   String get relationshipCaptureKeepVoiceNote => 'Tieni come nota vocale';
 
   @override
@@ -14468,20 +14444,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipCaptureNoDue => 'Nessuna scadenza';
 
   @override
-  String get relationshipCaptureNoSorter =>
-      'Nessun modello per ordinarlo: resta una nota vocale.';
-
-  @override
   String get relationshipCaptureNote => 'Tieni come nota';
 
   @override
   String relationshipCaptureNotPlaced(String name) {
     return 'La registrazione è salvata nel tuo diario, ma non è stato possibile metterla nella cronologia di $name.';
-  }
-
-  @override
-  String relationshipCaptureSortedBy(String route) {
-    return 'Ordinato da $route';
   }
 
   @override
@@ -16557,21 +16524,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Tema, animazioni, notifiche, stile di registrazione, voce e scorciatoie';
+      'Tema, animazioni, notifiche, voce e scorciatoie';
 
   @override
   String get settingsPreferencesTitle => 'Preferenze';
-
-  @override
-  String get settingsRecordingStyleExplanation =>
-      'Scegli come appare il microfono mentre stai registrando.';
-
-  @override
-  String get settingsRecordingStyleSubtitle =>
-      'Misuratore VU o orb di energia durante la registrazione';
-
-  @override
-  String get settingsRecordingStyleTitle => 'Stile di registrazione';
 
   @override
   String get settingsResetGeminiConfirm => 'Ripristino';

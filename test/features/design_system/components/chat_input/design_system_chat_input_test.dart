@@ -280,7 +280,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('1:07'), findsOne);
+      expect(find.text('01:07'), findsOne);
       final cancel = tester.getRect(
         find.byKey(DesignSystemChatInputKeys.cancel),
       );

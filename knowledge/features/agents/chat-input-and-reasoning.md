@@ -5,7 +5,7 @@ description: Shared voice-recorder state, waveform feedback, and reasoning discl
 resource: ../../../lib/features/agents/ui/chat
 tags: [agents, chat, recording, reasoning]
 status: stable
-generated: { by: claude-code/fable-5.2, at: 2026-11-23T09:00:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-23T18:00:00Z }
 stale_after: 2027-01-31
 sources:
   - id: chat
@@ -134,8 +134,8 @@ driven here by `chatRecorderControllerProvider`: its phase from the
 recorder's status, its levels from `getNormalizedAmplitudeHistory`, Done to
 `stopAndTranscribe`, cancel to `cancel`. Recording changes only the input's
 bottom row, so nothing jumps as it starts, and the voice runs across all the
-width the row has (`DesignSystemVoiceWaveform`, the last four seconds of the
-take). The companion's stage carries the conversation's own composer, so it
+width the row has (`DesignSystemVoiceWaveform`, the recorder's own bars at
+the recorder's own pace). The companion's stage carries the conversation's own composer, so it
 records the same way. There is no per-host recording layout.
 
 Its composer and the agent improvement input widgets use
@@ -158,10 +158,10 @@ the same voice-input primitives under `agents/ui/chat/`:
   the controller *before* the keep step is awaited, so neither the cleanup
   that follows nor a teardown racing the await deletes it; and the temp
   directory is only ever removed when empty.
-- `chat_amplitude_history.dart` provides bounded history and normalization
-  functions; the design system's `DesignSystemVoiceWaveform` renders the
-  normalized samples (the evolution chat and the goal charter sheet use it
-  directly).
+- `chat_amplitude_history.dart` keeps the bounded dBFS history;
+  `getNormalizedAmplitudeHistory` puts it on the recorder's own loudness scale
+  (`normaliseDbfs`), and the design system's `DesignSystemVoiceWaveform`
+  draws it (the evolution chat and the goal charter sheet use it directly).
 - `chatRecorderErrorMessage` maps error kinds to localized messages.
 - `thinking_parser.dart` separates reasoning from visible assistant text;
   `ThinkingDisclosure` renders it collapsed by default in improvement replies.

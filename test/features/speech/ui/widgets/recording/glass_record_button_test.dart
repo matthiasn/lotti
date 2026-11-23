@@ -13,11 +13,9 @@ const _linkedId = 'entry-under-test';
 AudioRecorderState _state({
   required AudioRecorderStatus status,
   String? linkedId,
-  double vu = -20,
 }) => AudioRecorderState(
   status: status,
   progress: Duration.zero,
-  vu: vu,
   dBFS: -160,
   showIndicator: false,
   modalVisible: false,
@@ -198,7 +196,6 @@ void main() {
         _state(
           status: AudioRecorderStatus.recording,
           linkedId: _linkedId,
-          vu: -3,
         ),
       );
       expect(element.dirty, isFalse);

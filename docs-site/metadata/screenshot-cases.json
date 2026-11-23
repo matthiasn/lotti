@@ -610,17 +610,6 @@
       }
     },
     {
-      "id": "recording-style/preview",
-      "title": "Recording style preview",
-      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
-      "variants": {
-        "mobile-light": "recording_style_preview_mobile_light.png",
-        "mobile-dark": "recording_style_preview_mobile_dark.png",
-        "desktop-light": "recording_style_preview_desktop_light.png",
-        "desktop-dark": "recording_style_preview_desktop_dark.png"
-      }
-    },
-    {
       "id": "speech/settings",
       "title": "Speech voice, model, and reading speed",
       "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",

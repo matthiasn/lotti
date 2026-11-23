@@ -14,14 +14,16 @@ import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/app_prefs_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../../mocks/mocks.dart';
+import '../../../../../test_data/test_data.dart';
 import '../../../../daily_os_next/screenshot_harness.dart';
 
 const _linkedTaskId = 'payment-confirmation';
@@ -105,7 +107,6 @@ Future<void> _pumpActiveRecording(
     status: AudioRecorderStatus.recording,
     // The ticks below bring it to 0:00:42.
     progress: const Duration(milliseconds: 40400),
-    vu: 1.5,
     dBFS: -12,
     showIndicator: false,
     modalVisible: true,
@@ -121,9 +122,8 @@ Future<void> _pumpActiveRecording(
           audioRecorderControllerProvider.overrideWith(
             () => controller = _FixedAudioRecorderController(fixedState),
           ),
-          recordingStyleAppPrefsProvider.overrideWithValue(
-            _modernRecordingStylePreferences,
-          ),
+          // The sheet is titled with the task it records for.
+          journalDbProvider.overrideWithValue(_journalDbWithTask()),
           checkboxVisibilityProvider((
             categoryId: _categoryId,
             linkedId: _linkedTaskId,
@@ -187,24 +187,18 @@ Future<void> _pumpActiveRecording(
   }
 }
 
-const _modernRecordingStylePreferences = AppPrefs(
-  getBool: _getBoolPreference,
-  setBool: _setBoolPreference,
-  getString: _getStringPreference,
-  setString: _setStringPreference,
-);
-
-Future<bool?> _getBoolPreference(String key) async => null;
-
-Future<bool> _setBoolPreference({
-  required String key,
-  required bool value,
-}) async => true;
-
-Future<String?> _getStringPreference(String key) async =>
-    key == recordingStylePrefsKey ? 'modern' : null;
-
-Future<bool> _setStringPreference({
-  required String key,
-  required String value,
-}) async => true;
+/// A journal holding the one task the sheet records for.
+MockJournalDb _journalDbWithTask() {
+  final db = MockJournalDb();
+  when(() => db.journalEntityById(_linkedTaskId)).thenAnswer(
+    (_) async => testTask.copyWith(
+      data: testTask.data.copyWith(
+        title: _t(
+          'Inspect orbital penguin habitat',
+          'Pinguin-Habitat im Orbit inspizieren',
+        ),
+      ),
+    ),
+  );
+  return db;
+}

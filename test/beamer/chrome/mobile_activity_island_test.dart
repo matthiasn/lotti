@@ -168,7 +168,6 @@ void main() {
   }) => AudioRecorderState(
     status: status,
     progress: progress,
-    vu: -8,
     dBFS: -18,
     showIndicator: status == AudioRecorderStatus.recording,
     modalVisible: modalVisible,

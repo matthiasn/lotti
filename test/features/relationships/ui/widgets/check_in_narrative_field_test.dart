@@ -312,17 +312,17 @@ void main() {
       length: Duration(seconds: 23),
     );
 
-    testWidgets('a take still transcribing gives its length and route, then '
+    testWidgets('a take still transcribing gives its length, then '
         'the shared status, and says Save does not wait', (tester) async {
       await pump(
         tester,
         phase: const CheckInSpeechIdle(),
-        takes: [take.withRoute('whisper · via Melious')],
+        takes: const [take],
         width: 1200,
       );
 
-      expect(find.text('00:23 · whisper · via Melious'), findsOneWidget);
-      // A narrow row sheds the route first; the length is the fact.
+      expect(find.text('00:23'), findsOneWidget);
+      // The length is the fact; no model or provider is named beside it.
       expect(
         tester
             .widget<DsTieredText>(
@@ -332,7 +332,7 @@ void main() {
               ),
             )
             .tiers,
-        ['00:23 · whisper · via Melious', '00:23'],
+        ['00:23'],
       );
       // Where the words are is said once, by the component every check-in
       // surface shares, with the composer's reassurance as its detail.

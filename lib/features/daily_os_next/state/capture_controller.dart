@@ -20,7 +20,6 @@ import 'package:lotti/features/daily_os_next/state/capture_dbfs.dart';
 import 'package:lotti/features/daily_os_next/state/capture_state.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
-import 'package:lotti/features/speech/state/recording_levels.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
@@ -28,6 +27,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/recording_levels.dart';
 import 'package:record/record.dart' as record;
 import 'package:uuid/uuid.dart';
 

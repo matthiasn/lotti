@@ -2441,14 +2441,13 @@ void main() {
           );
           await tester.pump();
         }
-        expect(find.byKey(const ValueKey('person-capture-route')), findsOne);
         await captureScreenshot(
           tester,
           'person_capture_recording_${viewport}_dark',
           subdir: _subdir,
         );
 
-        await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+        await tester.tap(find.byKey(const ValueKey('stop_recording')));
         for (var i = 0; i < 6; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
@@ -2525,7 +2524,7 @@ void main() {
           subdir: _subdir,
         );
 
-        await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+        await tester.tap(find.byKey(const ValueKey('stop_recording')));
         for (var i = 0; i < 4; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
@@ -2617,7 +2616,7 @@ void main() {
         for (var i = 0; i < 4; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
-        await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+        await tester.tap(find.byKey(const ValueKey('stop_recording')));
         for (var i = 0; i < 4; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
@@ -2685,7 +2684,7 @@ void main() {
         }
         recorder.tick(progress: const Duration(seconds: 23));
         await tester.pump();
-        await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+        await tester.tap(find.byKey(const ValueKey('stop_recording')));
         await tester.pumpAndSettle();
         expect(find.text('Not transcribed'), findsOneWidget);
         expect(find.widgetWithText(DesignSystemButton, 'Retry'), findsOne);

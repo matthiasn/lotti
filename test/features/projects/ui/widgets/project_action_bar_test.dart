@@ -178,7 +178,6 @@ void main() {
       recorder: AudioRecorderState(
         status: AudioRecorderStatus.recording,
         progress: Duration.zero,
-        vu: -20,
         dBFS: -160,
         showIndicator: false,
         modalVisible: false,

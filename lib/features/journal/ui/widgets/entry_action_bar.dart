@@ -47,6 +47,7 @@ class EntryActionBar extends ConsumerWidget {
   const EntryActionBar({
     required this.entry,
     this.topSlot,
+    this.bottomSlot,
     super.key,
   });
 
@@ -57,6 +58,10 @@ class EntryActionBar extends ConsumerWidget {
   /// Optional activity area above the action row — the AI running strip. It
   /// collapses to nothing while idle.
   final Widget? topSlot;
+
+  /// Optional line under the action row — what the strip above stands for.
+  /// It collapses to nothing while idle.
+  final Widget? bottomSlot;
 
   /// Stable test key for the Add a task pill.
   @visibleForTesting
@@ -162,6 +167,7 @@ class EntryActionBar extends ConsumerWidget {
                 ),
               ],
             ),
+            ?bottomSlot,
           ],
         ),
       ),

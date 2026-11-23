@@ -862,65 +862,10 @@ void main() {
         logger,
       );
 
-      expect(
-        await service.route(relationshipId: personId),
-        (model: 'Voxtral Mini Transcribe', provider: 'Mistral'),
-      );
+      expect(await service.canTranscribe(relationshipId: personId), isTrue);
+      verify(() => profiles.resolveByProfileId('mistral-eu')).called(1);
       verifyNever(() => profiles.resolveByProfileId('melious'));
       verifyNever(profiles.resolveDefaultProfile);
-    });
-  });
-
-  group('route', () {
-    late CheckInTranscriptionService service;
-
-    setUp(() {
-      service = CheckInTranscriptionService(
-        journalDb,
-        MockUpdateNotifications(),
-        resolver,
-        runner,
-        relationships,
-        logger,
-      );
-    });
-
-    test(
-      'names the model and the provider the words would come from',
-      () async {
-        stubResolved(
-          ResolvedProfile(
-            thinkingModelId: 'thinking-model',
-            thinkingProvider: testInferenceProvider(),
-            transcriptionModelId: 'whisper',
-            transcriptionProvider: testInferenceProvider(),
-            transcriptionModel: testAiModel(),
-          ),
-        );
-        expect(await service.route(relationshipId: personId), (
-          model: 'Test Model',
-          provider: 'Gemini',
-        ));
-      },
-    );
-
-    for (final missing in ['profile', 'model', 'provider']) {
-      test('is nothing when the default $missing is missing', () async {
-        stubResolved(
-          missing == 'profile'
-              ? null
-              : profile(
-                  model: missing != 'model',
-                  provider: missing != 'provider',
-                ),
-        );
-        expect(await service.route(relationshipId: personId), isNull);
-      });
-    }
-
-    test('is nothing when the slot has an id but no resolved model', () async {
-      stubResolved(profile());
-      expect(await service.route(relationshipId: personId), isNull);
     });
   });
 

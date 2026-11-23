@@ -345,7 +345,6 @@ List<Override> _providerOverrides(_InMemoryFullAppHarness harness) {
         AudioRecorderState(
           status: AudioRecorderStatus.stopped,
           progress: Duration.zero,
-          vu: -20,
           dBFS: -160,
           showIndicator: false,
           modalVisible: false,

@@ -30,7 +30,6 @@ import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/notifications/ui/notification_settings_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
-import 'package:lotti/features/onboarding/ui/recording_style_settings_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/ui/mobile/settings_mobile_branch_page.dart';
@@ -209,7 +208,6 @@ void main() {
           '/settings/sections',
           '/settings/flags',
           '/settings/notifications',
-          '/settings/recording-style',
           '/settings/theming',
           '/settings/keyboard-shortcuts',
           '/settings/speech',
@@ -1660,13 +1658,6 @@ void main() {
       );
       expect(pages[2].child, pageMatcher, reason: url);
     }
-
-    test('buildPages builds RecordingStyleSettingsPage under the hub', () {
-      expectPreferenceLeafStack(
-        '/settings/recording-style',
-        isA<RecordingStyleSettingsPage>(),
-      );
-    });
 
     test('buildPages builds NotificationSettingsPage under the hub', () {
       expectPreferenceLeafStack(

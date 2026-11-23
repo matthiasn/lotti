@@ -50,7 +50,6 @@ void main() {
     return AudioRecorderState(
       status: AudioRecorderStatus.stopped,
       enableSpeechRecognition: enableSpeechRecognition,
-      vu: 0,
       dBFS: -60,
       progress: Duration.zero,
       showIndicator: false,

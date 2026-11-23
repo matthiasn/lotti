@@ -5,7 +5,7 @@ description: One flag-gated tree says what settings exist; one route registry sa
 resource: ../../lib/features/settings
 tags: [settings, navigation, tree, routing, forms]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-23T18:00:00Z }
 stale_after: 2027-04-03
 sources:
   - id: settings
@@ -228,7 +228,6 @@ flowchart LR
   Preferences --> Companion["Companion — if enableCompanion"]
   Preferences --> Animations["Animations — URL /settings/advanced/animations"]
   Preferences --> Notifications["Notifications"]
-  Preferences --> RecordingStyle["Recording style"]
   Preferences --> Speech["Speech — if enableSpeechTts"]
   Preferences --> Keyboard["Keyboard shortcuts"]
 
@@ -379,7 +378,7 @@ animations (completion celebrations), health import and the measurable editor.
 referenced from the registry: AI and agents, categories, labels, projects and
 sync; dashboard definitions in `dashboards/ui/settings/`; the habit list in
 `habits`; theming in `theming`; notification settings in `notifications`;
-recording style in `onboarding`; speech in `tts`; keyboard shortcuts in
+speech in `tts`; keyboard shortcuts in
 `keyboard`; system health in `system_health`; GitHub in `github`. Nothing
 imports the retired `features/settings_v2` directory, and the settings tree and
 its state import neither the routing layer nor the UI — both rules are in

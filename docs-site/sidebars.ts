@@ -78,7 +78,6 @@ const sidebars: SidebarsConfig = {
         'reference/settings',
         'reference/whats-new',
         'reference/appearance',
-        'reference/recording-style',
         'reference/speech',
         'reference/keyboard-shortcuts',
         'reference/completion-celebrations',

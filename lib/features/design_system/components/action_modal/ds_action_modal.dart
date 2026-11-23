@@ -32,9 +32,11 @@ abstract final class DsActionModal {
     required BuildContext context,
     required String title,
     required Widget Function(BuildContext) builder,
+    bool? useRootNavigator,
   }) {
     return ModalUtils.showSinglePageModal<T>(
       context: context,
+      useRootNavigator: useRootNavigator,
       hasTopBarLayer: false,
       showCloseButton: false,
       navBarHeight: headerHeight(context),

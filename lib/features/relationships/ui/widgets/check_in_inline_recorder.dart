@@ -1,5 +1,6 @@
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The recorder embedded in the check-in composer's narrative field, the
@@ -20,7 +21,6 @@ class CheckInInlineRecorder extends StatelessWidget {
     required this.onDiscarded,
     required this.onFailed,
     this.categoryId,
-    this.compact = false,
     this.showStatus = false,
     super.key,
   });
@@ -35,10 +35,6 @@ class CheckInInlineRecorder extends StatelessWidget {
   final VoidCallback onDiscarded;
   final void Function(CheckInSpeechFailureKind failure) onFailed;
 
-  /// Whether to leave the orb or meter out, as the check-in page's dock
-  /// does, so dictating never covers the check-in it adds to.
-  final bool compact;
-
   /// Whether the recorder says *Recording* / *Paused* itself — the page's
   /// dock, which has no header of its own; the composer's header says it
   /// there.
@@ -48,8 +44,9 @@ class CheckInInlineRecorder extends StatelessWidget {
   Widget build(BuildContext context) => InlineRecorder(
     linkedId: linkedId,
     categoryId: categoryId,
-    compact: compact,
     showStatus: showStatus,
+    // This surface's own words: the audio goes, the check-in stays.
+    discardMessage: context.messages.checkInDiscardRecordingBody,
     onRecorded: onRecorded,
     onDiscarded: onDiscarded,
     onFailed: (failure) => onFailed(switch (failure) {

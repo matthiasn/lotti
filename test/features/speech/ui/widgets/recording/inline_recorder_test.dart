@@ -2,29 +2,19 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/features/speech/state/recording_style.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/app_prefs_service.dart';
+import 'package:lotti/utils/recording_levels.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../../widget_test_utils.dart';
 import '../../../../relationships/helpers/check_in_speech_fakes.dart';
-
-/// The user's recording look, as the recording sheet's tests seed it.
-AppPrefs _stylePrefs(String style) => AppPrefs(
-  getBool: (_) async => null,
-  setBool: ({required key, required value}) async => true,
-  getString: (key) async => key == recordingStylePrefsKey ? style : null,
-  setString: ({required key, required value}) async => true,
-);
 
 void main() {
   late FakeAudioRecorderController recorder;
@@ -45,8 +35,9 @@ void main() {
     bool stopThrows = false,
     Completer<void>? stopGate,
     String? runningFor,
-    String style = 'modern',
     bool showStatus = false,
+    String? discardMessage,
+    Widget? footer,
   }) async {
     recorder = FakeAudioRecorderController(
       recordFailure: recordFailure,
@@ -60,13 +51,14 @@ void main() {
           linkedId: 'person-1',
           categoryId: 'category-7',
           showStatus: showStatus,
+          discardMessage: discardMessage,
+          footer: footer,
           onRecorded: (id, length) => recorded.add((id, length)),
           onDiscarded: () => discarded++,
           onFailed: failed.add,
         ),
         overrides: [
           audioRecorderControllerProvider.overrideWith(() => recorder),
-          recordingStyleAppPrefsProvider.overrideWithValue(_stylePrefs(style)),
         ],
       ),
     );
@@ -112,41 +104,59 @@ void main() {
   });
 
   group("the recording sheet's anatomy", () {
-    testWidgets('the shared visualizer, level line and transport row, in '
-        'that order, with the timed Stop between discard and pause', (
-      tester,
-    ) async {
+    testWidgets('the level line over the transport row, with the timed Stop '
+        'between discard and pause, and a footer under them when the host '
+        'has one', (tester) async {
       final semantics = tester.ensureSemantics();
-      await pump(tester);
+      await pump(tester, footer: const Text('an option'));
 
-      expect(find.byType(RecordingLevelVisualizer), findsOneWidget);
       expect(find.byType(RecordingTransportControls), findsOneWidget);
-      final visualizer = tester.getRect(find.byType(RecordingLevelVisualizer));
       final line = tester.getRect(find.byType(RecordingLevelLine));
       final controls = tester.getRect(find.byType(RecordingTransportControls));
-      expect(visualizer.bottom, lessThanOrEqualTo(line.top + 0.5));
       expect(line.bottom, lessThan(controls.top));
+      expect(
+        controls.bottom,
+        lessThan(tester.getRect(find.text('an option')).top),
+      );
       // Discard, Stop, Pause: the sheet's order, left to right.
-      final discard = tester.getRect(key('check-in-recorder-discard'));
-      final pause = tester.getRect(key('check-in-recorder-pause'));
-      final stop = tester.getRect(key('check-in-recorder-stop'));
+      final discard = tester.getRect(key('cancel_recording'));
+      final pause = tester.getRect(key('pause_resume_button'));
+      final stop = tester.getRect(key('stop_recording'));
       expect(discard.right, lessThan(stop.left));
       expect(stop.right, lessThan(pause.left));
-      // Stop is named for a reader; the discard is this surface's own.
-      expect(labelOf(tester, 'check-in-recorder-stop'), 'Stop');
-      expect(labelOf(tester, 'check-in-recorder-discard'), 'Discard');
+      // Each is named for a reader, the same on every surface.
+      expect(labelOf(tester, 'stop_recording'), 'Stop');
+      expect(labelOf(tester, 'cancel_recording'), 'Discard');
       semantics.dispose();
     });
 
-    for (final (style, type) in [
-      ('modern', AiVoiceInputShader),
-      ('analogue', AnalogVuMeter),
-    ]) {
-      testWidgets('draws the look the user chose — $style', (tester) async {
-        await pump(tester, style: style);
-        recorder.tick(progress: const Duration(seconds: 3), dBFS: -18);
+    testWidgets('the level line moves with the voice', (tester) async {
+      await pump(tester);
+      for (var i = 1; i <= 4; i++) {
+        recorder.tick(progress: Duration(milliseconds: 20 * i), dBFS: -18);
         await tester.pump();
-        expect(find.byType(type), findsOneWidget);
+      }
+      expect(
+        tester
+            .widget<DesignSystemVoiceWaveform>(
+              find.byType(DesignSystemVoiceWaveform),
+            )
+            .levels,
+        List.filled(4, normaliseDbfs(-18)),
+      );
+    });
+
+    for (final showStatus in [false, true]) {
+      testWidgets('the take starting is announced once: by the level line '
+          'where no status line says so — status line: $showStatus', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        await pump(tester, showStatus: showStatus);
+        final node = tester.getSemantics(find.byType(RecordingLevelLine));
+        expect(node.label, 'Recording started');
+        expect(node.flagsCollection.isLiveRegion, !showStatus);
+        semantics.dispose();
       });
     }
 
@@ -162,7 +172,7 @@ void main() {
       expect(controls.progress, const Duration(seconds: 83));
       expect(find.text('01:23'), findsOneWidget);
       expect(
-        tester.getSemantics(key('check-in-recorder-stop')).value,
+        tester.getSemantics(key('stop_recording')).value,
         '1 minute 23 seconds',
       );
       semantics.dispose();
@@ -175,8 +185,8 @@ void main() {
     await pump(tester, recordFailure: AudioRecordingFailure.permissionDenied);
     expect(failed, [InlineRecordingFailure.microphoneDenied]);
     expect(recorded, isEmpty);
-    expect(enabled(tester, 'check-in-recorder-stop'), isFalse);
-    expect(enabled(tester, 'check-in-recorder-pause'), isFalse);
+    expect(enabled(tester, 'stop_recording'), isFalse);
+    expect(enabled(tester, 'pause_resume_button'), isFalse);
     semantics.dispose();
   });
 
@@ -197,7 +207,7 @@ void main() {
     expect(recorder.categoryIds, isEmpty);
     expect(recorder.modalVisibleLog, [true]);
 
-    await tester.tap(key('check-in-recorder-stop'));
+    await tester.tap(key('stop_recording'));
     await tester.pump();
     expect(recorded, [('audio-1', Duration.zero)]);
   });
@@ -234,9 +244,6 @@ void main() {
         ),
         overrides: [
           audioRecorderControllerProvider.overrideWith(() => recorder),
-          recordingStyleAppPrefsProvider.overrideWithValue(
-            _stylePrefs('modern'),
-          ),
         ],
       ),
     );
@@ -298,9 +305,6 @@ void main() {
         ),
         overrides: [
           audioRecorderControllerProvider.overrideWith(() => recorder),
-          recordingStyleAppPrefsProvider.overrideWithValue(
-            _stylePrefs('modern'),
-          ),
         ],
       ),
     );
@@ -334,7 +338,7 @@ void main() {
     expect(failed, isEmpty);
     expect(recorder.recordCalls, isEmpty);
     expect(recorder.modalVisibleLog, [true]);
-    await tester.tap(key('check-in-recorder-stop'));
+    await tester.tap(key('stop_recording'));
     await tester.pump();
     expect(recorded, [('audio-1', Duration.zero)]);
   });
@@ -360,7 +364,7 @@ void main() {
     await tester.pump();
     expect(find.text('00:23'), findsOneWidget);
 
-    await tester.tap(key('check-in-recorder-stop'));
+    await tester.tap(key('stop_recording'));
     await tester.pump();
     await tester.pump();
 
@@ -375,7 +379,7 @@ void main() {
     testWidgets('a stop that $name is a recording not saved — never a start '
         'that failed', (tester) async {
       await pump(tester, stopResult: stopResult, stopThrows: stopThrows);
-      await tester.tap(key('check-in-recorder-stop'));
+      await tester.tap(key('stop_recording'));
       await tester.pump();
       await tester.pump();
 
@@ -391,18 +395,18 @@ void main() {
     final semantics = tester.ensureSemantics();
     final gate = Completer<void>();
     await pump(tester, stopGate: gate);
-    await tester.tap(key('check-in-recorder-stop'));
+    await tester.tap(key('stop_recording'));
     await tester.pump();
 
     for (final name in [
-      'check-in-recorder-pause',
-      'check-in-recorder-discard',
-      'check-in-recorder-stop',
+      'pause_resume_button',
+      'cancel_recording',
+      'stop_recording',
     ]) {
       expect(enabled(tester, name), isFalse, reason: name);
     }
     // A second press while the first is in flight stops nothing twice.
-    await tester.tap(key('check-in-recorder-stop'), warnIfMissed: false);
+    await tester.tap(key('stop_recording'), warnIfMissed: false);
     expect(recorder.stopCalls, 1);
     gate.complete();
     await tester.pump();
@@ -413,13 +417,12 @@ void main() {
   testWidgets('Discard asks first; confirming cancels and says so, backing '
       'out keeps recording', (tester) async {
     await pump(tester);
-    await tester.tap(key('check-in-recorder-discard'));
+    await tester.tap(key('cancel_recording'));
     await settleModal(tester);
     expect(find.text('Discard recording?'), findsOneWidget);
-    // This surface's own words, not the journal recorder's: the audio goes,
-    // the check-in stays.
+    // The recorder's own words, where the host has none.
     expect(
-      find.text('The audio is deleted. Your check-in stays open.'),
+      find.textContaining('This recording will be deleted.'),
       findsOneWidget,
     );
 
@@ -428,7 +431,7 @@ void main() {
     expect(recorder.cancelCalls, 0);
     expect(discarded, 0);
 
-    await tester.tap(key('check-in-recorder-discard'));
+    await tester.tap(key('cancel_recording'));
     await settleModal(tester);
     await tester.tap(find.text('Discard').last);
     await tester.pump();
@@ -437,22 +440,67 @@ void main() {
     expect(discarded, 1);
   });
 
+  testWidgets("a host's own words say what a discard loses", (tester) async {
+    await pump(tester, discardMessage: 'The audio goes; the note stays.');
+    await tester.tap(key('cancel_recording'));
+    await settleModal(tester);
+    expect(find.text('The audio goes; the note stays.'), findsOneWidget);
+    expect(
+      find.textContaining('This recording will be deleted.'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('with no subject it records a take that stands on its own, '
+      'and still never takes over a take running for a subject', (
+    tester,
+  ) async {
+    Future<void> pumpUnlinked(FakeAudioRecorderController controller) async {
+      recorder = controller;
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          InlineRecorder(
+            linkedId: null,
+            transcriptionHandledByCaller: false,
+            onRecorded: (id, length) => recorded.add((id, length)),
+            onDiscarded: () => discarded++,
+            onFailed: failed.add,
+          ),
+          overrides: [
+            audioRecorderControllerProvider.overrideWith(() => recorder),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+
+    await pumpUnlinked(FakeAudioRecorderController());
+    expect(recorder.recordCalls, [(linkedId: null, handledByCaller: false)]);
+    expect(failed, isEmpty);
+
+    await pumpUnlinked(FakeAudioRecorderController(runningFor: 'a-task'));
+    expect(failed, [InlineRecordingFailure.recorderBusy]);
+    expect(recorder.recordCalls, isEmpty);
+  });
+
   testWidgets('Pause and Resume toggle the recorder and the control', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
     await pump(tester);
-    expect(labelOf(tester, 'check-in-recorder-pause'), 'Pause');
-    await tester.tap(key('check-in-recorder-pause'));
+    expect(labelOf(tester, 'pause_resume_button'), 'Pause');
+    await tester.tap(key('pause_resume_button'));
     await tester.pump();
     expect(recorder.pauseCalls, 1);
-    expect(labelOf(tester, 'check-in-recorder-pause'), 'Resume');
+    expect(labelOf(tester, 'pause_resume_button'), 'Resume');
     // The live region says so too, as it says "recording" while live.
     expect(find.bySemanticsLabel('Paused'), findsOneWidget);
-    await tester.tap(key('check-in-recorder-pause'));
+    await tester.tap(key('pause_resume_button'));
     await tester.pump();
     expect(recorder.resumeCalls, 1);
-    expect(labelOf(tester, 'check-in-recorder-pause'), 'Pause');
+    expect(labelOf(tester, 'pause_resume_button'), 'Pause');
     semantics.dispose();
   });
 
@@ -499,8 +547,12 @@ void main() {
     recorder.tick(progress: const Duration(seconds: 9));
     await tester.pump();
     List<Rect> controls() => [
-      for (final name in ['discard', 'stop', 'pause'])
-        tester.getRect(key('check-in-recorder-$name')),
+      for (final name in [
+        'cancel_recording',
+        'stop_recording',
+        'pause_resume_button',
+      ])
+        tester.getRect(key(name)),
     ];
     final before = controls();
     final stopBefore = before[1];
@@ -517,7 +569,7 @@ void main() {
     await tester.pump();
     expect(find.text('01:00:00'), findsOneWidget);
     expect(
-      tester.getRect(key('check-in-recorder-stop')).center,
+      tester.getRect(key('stop_recording')).center,
       stopBefore.center,
     );
   });
