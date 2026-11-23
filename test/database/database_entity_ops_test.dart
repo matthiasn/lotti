@@ -1891,6 +1891,43 @@ void main() {
         );
 
         test(
+          'two copies of one version row, written by applying one confirmed '
+          'proposal on two devices, merge without a conflict in either '
+          'order, the live copy kept over one taken back',
+          () async {
+            final applied = taskDocumentVersionEntry(
+              number: 4,
+              clock: {'a': 1},
+              writtenSecond: 10,
+            );
+            final takenBack = taskDocumentVersionEntry(
+              number: 4,
+              clock: {'b': 1},
+              writtenSecond: 20,
+              deleted: true,
+            );
+
+            for (final (first, second) in [
+              (applied, takenBack),
+              (takenBack, applied),
+            ]) {
+              await clearAllTables(db!);
+              await db!.updateJournalEntity(first);
+              final result = await db!.updateJournalEntity(second);
+
+              expect(result.applied, isTrue);
+              expect(await db!.conflictsForEntry(applied.meta.id), isEmpty);
+              final stored = await db!.journalEntityById(applied.meta.id);
+              expect(stored?.meta.deletedAt, isNull);
+              expect(
+                stored?.meta.vectorClock,
+                const VectorClock({'a': 1, 'b': 1}),
+              );
+            }
+          },
+        );
+
+        test(
           'a live document and a purged deletion merge to the deletion in '
           'either order, without a conflict',
           () async {

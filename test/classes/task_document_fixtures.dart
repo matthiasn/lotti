@@ -42,21 +42,29 @@ TaskDocumentEntry taskDocumentEntry({
   );
 }
 
-/// Version [number] of document [documentId], holding [markdown].
+/// Version [number] of document [documentId], holding [markdown], under
+/// [clock], written [writtenSecond] seconds after [taskDocFixtureEpoch] and
+/// deleted then when [deleted].
 TaskDocumentVersionEntry taskDocumentVersionEntry({
   int number = 1,
   String markdown = '# Next steps\n\nShare the rollout plan.',
   String documentId = 'task-document',
   TaskDocumentAuthor author = TaskDocumentAuthor.user,
   String? id,
+  Map<String, int> clock = const {'a': 1},
+  int writtenSecond = 0,
+  bool deleted = false,
 }) => TaskDocumentVersionEntry(
   meta: Metadata(
     id: id ?? 'version-$number',
-    createdAt: taskDocFixtureEpoch,
-    updatedAt: taskDocFixtureEpoch,
+    createdAt: taskDocFixtureEpoch.add(Duration(seconds: writtenSecond)),
+    updatedAt: taskDocFixtureEpoch.add(Duration(seconds: writtenSecond)),
     dateFrom: taskDocFixtureEpoch,
     dateTo: taskDocFixtureEpoch,
-    vectorClock: const VectorClock({'a': 1}),
+    vectorClock: VectorClock(clock),
+    deletedAt: deleted
+        ? taskDocFixtureEpoch.add(Duration(seconds: writtenSecond))
+        : null,
   ),
   data: TaskDocumentVersionData(
     documentId: documentId,

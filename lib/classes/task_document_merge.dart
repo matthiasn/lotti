@@ -66,10 +66,38 @@ TaskDocumentEntry mergeConcurrentTaskDocumentVersions(
   );
 }
 
-TaskDocumentEntry _laterEdit(TaskDocumentEntry a, TaskDocumentEntry b) {
+/// The row every device writes for two concurrent copies of one task
+/// document version (ADR 0167): the same confirmed proposal applied on two
+/// devices before either synced, both deriving the version's id from it.
+///
+/// A version's text never changes, so the copies differ only in when each
+/// device wrote it, and in deletion: a device whose document moved on while
+/// it wrote deletes its copy again. The live copy wins over a deleted one,
+/// since the merged document may show that version — at worst a version the
+/// document never showed stays in its history. Otherwise the later write by
+/// `meta.updatedAt` wins, ties broken by the clock's canonical key. The clock
+/// is the join of both.
+///
+/// Both orders of the arguments give the same row. Two deletions are not
+/// handed here: the journal merges those for every entry type.
+TaskDocumentVersionEntry mergeConcurrentTaskDocumentVersionRows(
+  TaskDocumentVersionEntry a,
+  TaskDocumentVersionEntry b,
+) {
+  final kept = a.isDeleted == b.isDeleted
+      ? _laterEdit(a, b)
+      : (a.isDeleted ? b : a);
+  return kept.copyWith(
+    meta: kept.meta.copyWith(
+      vectorClock: VectorClock.merge(a.meta.vectorClock, b.meta.vectorClock),
+    ),
+  );
+}
+
+T _laterEdit<T extends JournalEntity>(T a, T b) {
   final byTime = a.meta.updatedAt.compareTo(b.meta.updatedAt);
   if (byTime != 0) return byTime > 0 ? a : b;
   return _clockKey(a).compareTo(_clockKey(b)) >= 0 ? a : b;
 }
 
-String _clockKey(TaskDocumentEntry e) => e.meta.vectorClock?.canonicalKey ?? '';
+String _clockKey(JournalEntity e) => e.meta.vectorClock?.canonicalKey ?? '';

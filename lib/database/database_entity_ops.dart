@@ -57,7 +57,9 @@ mixin _JournalDbEntityOps
   /// snapshots are fetched, not written by anyone, and [updateJournalEntity]
   /// keeps the newer observation. Nor are two versions of a task document:
   /// its text lives in immutable version rows, so [updateJournalEntity] only
-  /// has to pick which version the document shows.
+  /// has to pick which version the document shows. Nor are two copies of one
+  /// such version row, written by applying one confirmed proposal on two
+  /// devices: their text is the same by construction.
   Future<VclockStatus> detectConflict(
     JournalEntity existing,
     JournalEntity updated,
@@ -96,10 +98,12 @@ mixin _JournalDbEntityOps
   static bool _pullRequestPair(JournalEntity a, JournalEntity b) =>
       _pairOf<PullRequestEntry>(a, b);
 
-  /// Two concurrent versions of one task document (ADR 0167), with the same
-  /// allowance for a purge's tombstone on one side.
+  /// Two concurrent versions of one task document, or two concurrent copies
+  /// of one of its version rows (ADR 0167), with the same allowance for a
+  /// purge's tombstone on one side.
   static bool _taskDocumentPair(JournalEntity a, JournalEntity b) =>
-      _pairOf<TaskDocumentEntry>(a, b);
+      _pairOf<TaskDocumentEntry>(a, b) ||
+      _pairOf<TaskDocumentVersionEntry>(a, b);
 
   static bool _pairOf<T extends JournalEntity>(
     JournalEntity a,
@@ -113,7 +117,8 @@ mixin _JournalDbEntityOps
   ///
   /// A pull request pair is decided by observation, deleted or not, so two
   /// unlinks keep the newer snapshot too. A task document pair shows the
-  /// newer current version and keeps a deletion from either side. Against a
+  /// newer current version and keeps a deletion from either side; a version
+  /// row pair keeps a live copy over a deleted one. Against a
   /// purge's tombstone the deletion wins under the join of both clocks;
   /// [_overStored] then compacts it as it does for every entry type.
   static JournalEntity _mergeConcurrent(
@@ -125,6 +130,10 @@ mixin _JournalDbEntityOps
     }
     if (stored is TaskDocumentEntry && incoming is TaskDocumentEntry) {
       return mergeConcurrentTaskDocumentVersions(stored, incoming);
+    }
+    if (stored is TaskDocumentVersionEntry &&
+        incoming is TaskDocumentVersionEntry) {
+      return mergeConcurrentTaskDocumentVersionRows(stored, incoming);
     }
     if (!_pullRequestPair(stored, incoming) &&
         !_taskDocumentPair(stored, incoming)) {

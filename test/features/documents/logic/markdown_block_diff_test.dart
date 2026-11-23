@@ -107,6 +107,34 @@ void main() {
   });
 
   group('alignMarkdownBlocks', () {
+    test('past the cell cap, the changed middle is rows removed then added, '
+        'and the unchanged start and end still match', () {
+      const n = 600;
+      final base = [
+        'Intro.',
+        for (var k = 0; k < n; k++) 'old $k',
+        'Outro.',
+      ];
+      final proposed = [
+        'Intro.',
+        for (var k = 0; k < n; k++) 'new $k',
+        'Outro.',
+      ];
+      expect((n + 1) * (n + 1), greaterThan(markdownBlockAlignMaxCells));
+
+      final kinds = alignMarkdownBlocks(
+        base,
+        proposed,
+      ).map((pair) => pair.kind).toList();
+
+      expect(kinds, [
+        MarkdownBlockChange.same,
+        ...List.filled(n, MarkdownBlockChange.removed),
+        ...List.filled(n, MarkdownBlockChange.added),
+        MarkdownBlockChange.same,
+      ]);
+    });
+
     const intro = 'All 37 penguins were counted at roll call.';
     const feeder = 'The north feeder jams twice a week.';
     const steps = '## Next steps';

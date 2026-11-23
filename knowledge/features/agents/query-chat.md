@@ -491,7 +491,10 @@ version, with its text while the texts fit what the input budget leaves
 (oldest first, keeping 1 KiB for a repair attempt). A text that does not fit
 is marked `textOmitted`, and a revision of that document is dropped as an
 unavailable target: without the text the model could only have rewritten it
-from nothing. A recorded proposal carries the document's `title` and
+from nothing. Listing stops at the first document whose entry does not fit
+even without its text, and `documentsOmitted` counts the rest, so many
+documents or one long title never push the request over the budget and
+fail every action in the task's chat. A recorded proposal carries the document's `title` and
 `baseVersionId` from the context, never from the model, which is the same
 shape a task wake records, so one dispatcher handler applies both. Confirmation
 re-validates it on fresh context with those two keys set aside. The chat

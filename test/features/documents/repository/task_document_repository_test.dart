@@ -285,6 +285,31 @@ void main() {
     );
 
     test(
+      'a derived version an earlier attempt took back, the document having '
+      'moved on, is stale when applied again, not written',
+      () async {
+        final document = await created();
+        final v1 = await written(document, 'one');
+        persistence.afterVersionCreated = () async {
+          await written(document, 'theirs', base: v1.id);
+        };
+        Future<TaskDocumentWriteResult> write() => repository.writeVersion(
+          documentId: document.id,
+          markdown: 'mine',
+          author: TaskDocumentAuthor.agent,
+          baseVersionId: v1.id,
+          uuidV5Input: 'change-effect:set:0:task-document-version',
+        );
+
+        expect((await write()).status, TaskDocumentWriteStatus.stale);
+        final again = await write();
+
+        expect(again.status, TaskDocumentWriteStatus.stale);
+        expect(again.version, isNull);
+      },
+    );
+
+    test(
       'when the document moves on while the version is being stored, the '
       'write comes back stale and its row is deleted, so history holds only '
       'versions the document showed',

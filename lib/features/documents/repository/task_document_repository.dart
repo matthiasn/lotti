@@ -156,7 +156,9 @@ class TaskDocumentRepository {
   /// twice — on two devices, or again after a crash — writes one version
   /// (ADR 0075). When the version that id names is there already, the
   /// effect happened, and it comes back [TaskDocumentWriteStatus.written]
-  /// with nothing written.
+  /// with nothing written. When it is there deleted, an earlier attempt
+  /// found the document moved on and took its version back: it comes back
+  /// [TaskDocumentWriteStatus.stale], as that attempt did.
   Future<TaskDocumentWriteResult> writeVersion({
     required String documentId,
     required String markdown,
@@ -170,7 +172,9 @@ class TaskDocumentRepository {
     if (uuidV5Input != null) {
       final existing = await _byDerivedId(uuidV5Input);
       if (existing is TaskDocumentVersionEntry) {
-        return (status: TaskDocumentWriteStatus.written, version: existing);
+        return existing.isDeleted
+            ? _result(TaskDocumentWriteStatus.stale)
+            : (status: TaskDocumentWriteStatus.written, version: existing);
       }
     }
     final stored = await document(documentId);

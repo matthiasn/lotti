@@ -192,21 +192,74 @@ List<String> splitMarkdownBlocks(String markdown) {
 /// one block rewritten: the Dice coefficient of their word sets.
 const rewrittenBlockSimilarity = 0.5;
 
+/// The most pairs of blocks the alignment weighs between the unchanged
+/// start and end of a document — about 500 changed blocks a side. Past it
+/// the changed middle is listed removed then added, without rewrites: the
+/// review stays open, at the cost of finer rows, rather than spend a
+/// quadratic table on the UI isolate.
+const markdownBlockAlignMaxCells = 250000;
+
 /// Aligns the blocks of the current version ([base]) with those of the
 /// proposed one into the rows of the review.
 ///
-/// Unchanged blocks are matched by a longest common subsequence on their
-/// text with whitespace collapsed. Between two matches, a removed block and
-/// an added one whose words overlap by at least [rewrittenBlockSimilarity]
-/// become one [MarkdownBlockChange.rewritten] row. Every block of each side
-/// appears in exactly one row, and in its own order; a moved block reads as
-/// removed in one place and added in another.
+/// The blocks both versions start and end with are matched first. Between
+/// them, unchanged blocks are matched by a longest common subsequence on
+/// their text with whitespace collapsed, and between two matches a removed
+/// block and an added one whose words overlap by at least
+/// [rewrittenBlockSimilarity] become one [MarkdownBlockChange.rewritten]
+/// row — while the changed middle stays within [markdownBlockAlignMaxCells];
+/// past it, its blocks are rows removed and then added. Every block of each
+/// side appears in exactly one row, and in its own order; a moved block
+/// reads as removed in one place and added in another.
 List<MarkdownBlockPair> alignMarkdownBlocks(
   List<String> base,
   List<String> proposed,
 ) {
   final a = [for (final block in base) _normalise(block)];
   final b = [for (final block in proposed) _normalise(block)];
+  var start = 0;
+  while (start < a.length && start < b.length && a[start] == b[start]) {
+    start++;
+  }
+  var endA = a.length;
+  var endB = b.length;
+  while (endA > start && endB > start && a[endA - 1] == b[endB - 1]) {
+    endA--;
+    endB--;
+  }
+  MarkdownBlockPair same(int i, int j) => MarkdownBlockPair(
+    kind: MarkdownBlockChange.same,
+    base: base[i],
+    proposed: proposed[j],
+  );
+  final middleA = endA - start;
+  final middleB = endB - start;
+  return [
+    for (var k = 0; k < start; k++) same(k, k),
+    if ((middleA + 1) * (middleB + 1) > markdownBlockAlignMaxCells) ...[
+      for (final block in base.sublist(start, endA))
+        MarkdownBlockPair(kind: MarkdownBlockChange.removed, base: block),
+      for (final block in proposed.sublist(start, endB))
+        MarkdownBlockPair(kind: MarkdownBlockChange.added, proposed: block),
+    ] else
+      ..._alignMiddle(
+        base.sublist(start, endA),
+        proposed.sublist(start, endB),
+        a.sublist(start, endA),
+        b.sublist(start, endB),
+      ),
+    for (var k = 0; k < a.length - endA; k++) same(endA + k, endB + k),
+  ];
+}
+
+/// The rows for the changed middle of two versions: [base] and [proposed]
+/// as written, [a] and [b] the same blocks normalised.
+List<MarkdownBlockPair> _alignMiddle(
+  List<String> base,
+  List<String> proposed,
+  List<String> a,
+  List<String> b,
+) {
   // lcs[i][j]: the longest common subsequence of a[i..] and b[j..].
   final lcs = List.generate(
     a.length + 1,

@@ -1599,6 +1599,47 @@ void main() {
       });
 
       test(
+        'closing a document a link opened on desktop takes the route back to '
+        'its task, so neither a rebuild nor the next launch reopens it',
+        () async {
+          final bench = _NavFlagBench()..emitAll(enabled: true);
+          final navService = bench.navService
+            ..beamToNamed('/tasks/task-7/documents/doc-1/review/set-1/0');
+          await pumpEventQueue();
+          navService.desktopTaskDocument.value = (
+            taskId: 'task-7',
+            documentId: 'doc-1',
+          );
+
+          navService.closeDesktopTaskDocument('task-7');
+          await pumpEventQueue();
+
+          expect(navService.desktopTaskDocument.value, isNull);
+          expect(navService.routeForTab('/tasks'), '/tasks/task-7');
+        },
+      );
+
+      test(
+        'closing a document opened in place leaves the route where it is',
+        () async {
+          final bench = _NavFlagBench()..emitAll(enabled: true);
+          final navService = bench.navService..beamToNamed('/tasks/task-7');
+          await pumpEventQueue();
+          navService.desktopTaskDocument.value = (
+            taskId: 'task-7',
+            documentId: 'doc-1',
+          );
+
+          navService.closeDesktopTaskDocument('task-7');
+          await pumpEventQueue();
+
+          expect(navService.desktopTaskDocument.value, isNull);
+          expect(navService.routeForTab('/tasks'), '/tasks/task-7');
+          expect(navService.tasksDelegate.canBeamBack, isTrue);
+        },
+      );
+
+      test(
         'a restored detail route can be backed out of',
         () async {
           final settingsDb = SettingsDb(inMemoryDatabase: true);

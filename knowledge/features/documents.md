@@ -307,7 +307,9 @@ On confirmation, `ChangeSetConfirmationService` dispatches the item with its
   given a `uuidV5Input` first look for the entity that id names: a version
   already there is the effect having happened — on this device, or synced
   from one that confirmed too — and comes back `written` with nothing
-  written. A new document deleted since is not brought back.
+  written. A version there deleted is an earlier attempt that found the
+  document moved on and took its row back, and comes back `stale`, as that
+  attempt did. A new document deleted since is not brought back.
 - **Over its base.** The version is written with the repository's
   compare-and-set, as the agent's (`author: agent`), with the proposal's
   `changeSummary` and the effect key as `changeEffectKey`. A new document
@@ -365,6 +367,15 @@ without a user-facing conflict, like the pull request pair already is, by
   deletion wins under the joined clock, as for pull requests.
 - **The clock** is the join of both. Either argument order gives the same
   row, which a property test checks.
+
+One confirmed proposal applied on two devices before either synced writes
+the same version row twice: both derive its id from the effect. Those two
+copies merge without a conflict too, by
+[`mergeConcurrentTaskDocumentVersionRows`](../../lib/classes/task_document_merge.dart):
+their text is the same by construction, so the later write is kept, under
+the joined clock — except that a live copy wins over one its device took
+back (the document had moved on as it wrote), since the merged document may
+show that version.
 
 A device on an older build skips both variants as undeserializable.
 
@@ -480,7 +491,11 @@ follows the rule `openLinkedTaskDetail` follows for a linked task:
   ([`tasks_location.dart`](../../lib/beamer/locations/tasks_location.dart)):
   on a phone the document page is stacked over the task page; on desktop the
   pane opens it over the task, and a URL naming only the task returns the
-  pane to the task. History records it as a visit to the task.
+  pane to the task. History records it as a visit to the task. Closing or
+  deleting the document goes through `NavService.closeDesktopTaskDocument`,
+  which also takes a route still naming the document back to the task,
+  replacing it: the location reopens whatever document its route names on
+  every rebuild, and the route is what the next launch restores.
 - **Review link**
   `/tasks/:taskId/documents/:documentId/review/:changeSetId/:itemIndex`
   opens the document with that draft under review. On a phone the pushed
@@ -509,7 +524,11 @@ The rows come from
 a cell) and fenced code. `alignMarkdownBlocks` matches unchanged blocks by a
 longest common subsequence on whitespace-collapsed text; between two
 matches, a removed and an added block whose word sets overlap by at least
-half (Dice) become one rewritten row. Every block of each side lands in
+half (Dice) become one rewritten row. The blocks both versions start and
+end with are matched first, so the table covers only the changed middle,
+and past `markdownBlockAlignMaxCells` (about 500 changed blocks a side) that
+middle is listed removed then added, without rewrites, rather than spend a
+quadratic table on the UI isolate. Every block of each side lands in
 exactly one row, in its order, which a property test holds; a moved block
 reads as removed in one place and added in another.
 

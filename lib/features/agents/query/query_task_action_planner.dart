@@ -261,10 +261,16 @@ class QueryTaskActionPlanner {
   /// adds, so a budget the documents filled cannot fail that attempt.
   static const _repairReserveBytes = 1024;
 
+  /// What the input keeps free to say how many documents went unlisted.
+  static const _omittedNoteBytes = 32;
+
   /// Lists the task's [documents] in [input] by id, title and version, each
   /// with its text while the texts fit in what [maxInputBytes] leaves —
-  /// oldest first, a text that does not fit marked as omitted. Returns the
-  /// ids whose text the model is given: only those may be revised.
+  /// oldest first, a text that does not fit marked as omitted. Listing stops
+  /// at the first document whose entry does not fit even without its text —
+  /// a title can be any length — and `documentsOmitted` counts the rest, so
+  /// many documents or one long title never fail the task's chat. Returns
+  /// the ids whose text the model is given: only those may be revised.
   static Set<String> _addDocuments(
     Map<String, Object?> input,
     Map<String, TaskDocumentText>? documents, {
@@ -276,6 +282,7 @@ class QueryTaskActionPlanner {
     var remaining =
         maxInputBytes -
         _repairReserveBytes -
+        _omittedNoteBytes -
         QueryTextInference.requestBytes(system, input);
     final supplied = <String>{};
     for (final document in documents.values) {
@@ -285,7 +292,14 @@ class QueryTaskActionPlanner {
         'title': summary.title,
         'version': summary.versionNumber,
       };
-      remaining -= utf8.encode(jsonEncode(entry)).length;
+      // Charged as listed without its text, separator included.
+      final entryBytes =
+          utf8.encode(jsonEncode({...entry, 'textOmitted': true})).length + 1;
+      if (entryBytes > remaining) {
+        input['documentsOmitted'] = documents.length - listed.length;
+        break;
+      }
+      remaining -= entryBytes;
       final textBytes = utf8.encode(jsonEncode(document.markdown)).length + 16;
       if (textBytes <= remaining) {
         entry['text'] = document.markdown;

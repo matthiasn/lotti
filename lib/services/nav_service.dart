@@ -952,6 +952,20 @@ class NavService {
     return snapshot?.activeRoute;
   }
 
+  /// Closes the document the desktop detail pane shows over task [taskId].
+  ///
+  /// The pane goes back to the task. When the tasks tab stands on a route
+  /// that names a document of that task — a link opened it, the review route
+  /// included — the route goes back to the task too, replacing it: the
+  /// location reopens whatever document its route names on every rebuild,
+  /// and the route is what the next launch restores.
+  void closeDesktopTaskDocument(String taskId) {
+    desktopTaskDocument.value = null;
+    if (routeForTab('/tasks').startsWith('/tasks/$taskId/documents/')) {
+      tasksDelegate.beamToReplacementNamed('/tasks/$taskId');
+    }
+  }
+
   /// Pops the active tab one step back, guaranteeing an escape.
   ///
   /// When the tab has no beaming history to pop (a cold start restored

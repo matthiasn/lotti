@@ -69,6 +69,9 @@ void main() {
         when(
           () => mockNavService.taskDocumentReviewRequest,
         ).thenReturn(reviewRequest);
+        when(() => mockNavService.closeDesktopTaskDocument(any())).thenAnswer(
+          (_) => desktopDocument.value = null,
+        );
         getIt
           ..registerSingleton<NavService>(mockNavService)
           ..registerSingleton<EntitiesCacheService>(
@@ -253,6 +256,11 @@ void main() {
       tester.widget<TaskDocumentPage>(find.byType(TaskDocumentPage)).onClose!();
       await tester.pump();
 
+      // Closed through the service, which also takes a route that named the
+      // document back to its task.
+      verify(
+        () => getIt<NavService>().closeDesktopTaskDocument(key.taskId),
+      ).called(1);
       expect(desktopDocument.value, isNull);
       expect(find.byType(TaskDocumentPage), findsNothing);
       expect(find.byType(TaskDetailsPage), findsOneWidget);

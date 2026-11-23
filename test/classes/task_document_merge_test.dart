@@ -196,4 +196,61 @@ void main() {
       tags: 'glados',
     );
   });
+
+  group('mergeConcurrentTaskDocumentVersionRows -', () {
+    // One confirmed proposal applied on two devices before either synced:
+    // the same derived id and text, written at different times.
+    final early = taskDocumentVersionEntry(
+      number: 4,
+      clock: {'a': 1},
+      writtenSecond: 10,
+    );
+    final late = taskDocumentVersionEntry(
+      number: 4,
+      clock: {'b': 1},
+      writtenSecond: 20,
+    );
+    const joined = VectorClock({'a': 1, 'b': 1});
+
+    test('keeps the later write, under the join of both clocks, in either '
+        'order', () {
+      final merged = mergeConcurrentTaskDocumentVersionRows(early, late);
+
+      expect(mergeConcurrentTaskDocumentVersionRows(late, early), merged);
+      expect(merged.meta.updatedAt, late.meta.updatedAt);
+      expect(merged.data, late.data);
+      expect(merged.meta.vectorClock, joined);
+    });
+
+    test('keeps a live copy over one its device took back, even when the '
+        'deletion is the later write, in either order', () {
+      final takenBack = taskDocumentVersionEntry(
+        number: 4,
+        clock: {'b': 1},
+        writtenSecond: 30,
+        deleted: true,
+      );
+
+      final merged = mergeConcurrentTaskDocumentVersionRows(early, takenBack);
+
+      expect(mergeConcurrentTaskDocumentVersionRows(takenBack, early), merged);
+      expect(merged.meta.deletedAt, isNull);
+      expect(merged.meta.updatedAt, early.meta.updatedAt);
+      expect(merged.meta.vectorClock, joined);
+    });
+
+    test('of two writes at the same instant, picks one by clock in either '
+        'order', () {
+      final twin = taskDocumentVersionEntry(
+        number: 4,
+        clock: {'b': 1},
+        writtenSecond: 10,
+      );
+
+      expect(
+        mergeConcurrentTaskDocumentVersionRows(early, twin),
+        mergeConcurrentTaskDocumentVersionRows(twin, early),
+      );
+    });
+  });
 }

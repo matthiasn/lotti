@@ -1162,6 +1162,57 @@ void main() {
       ]);
     });
 
+    test('stops listing at a document whose entry does not fit, counts the '
+        'rest, and still plans the task action asked for', () async {
+      Map<String, dynamic>? sent;
+      final result =
+          await QueryTaskActionPlanner(
+            inference: QueryTextInference(
+              generate: (_, prompt) {
+                sent ??= jsonDecode(prompt) as Map<String, dynamic>;
+                return Stream.value(
+                  jsonEncode({
+                    'answer': 'Rename it.',
+                    'actions': [
+                      {
+                        'name': 'set_task_title',
+                        'arguments': {'title': 'Inspect the habitat'},
+                        'summary': 'Rename the task',
+                      },
+                    ],
+                  }),
+                );
+              },
+            ),
+          ).plan(
+            context: QueryTaskActionContext(
+              taskId: 'habitat',
+              input: const {'title': 'Inspect orbital penguin habitat'},
+              dependencies: const [],
+              documents: {
+                'brief': doc('brief', 'Habitat brief', 2, '# Brief'),
+                // A title longer than the whole input budget.
+                'huge': doc('huge', 'y' * 40000, 1, 'Short.'),
+                'log': doc('log', 'Dive log', 1, 'Logged.'),
+              },
+            ),
+            question: 'Rename this task to "Inspect the habitat".',
+            conversation: [],
+            cancellation: QueryCancellation(),
+          );
+
+      expect(result.items.single.toolName, 'set_task_title');
+      expect(sent!['documents'], [
+        {
+          'id': 'brief',
+          'title': 'Habitat brief',
+          'version': 2,
+          'text': '# Brief',
+        },
+      ]);
+      expect(sent!['documentsOmitted'], 2);
+    });
+
     test('records a revision with the title and base version from the '
         'context, never the model', () async {
       final result = await planWith([

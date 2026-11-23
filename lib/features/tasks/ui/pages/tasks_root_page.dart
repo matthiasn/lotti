@@ -402,7 +402,7 @@ class _TaskWithDocument extends ConsumerWidget {
                 key: ValueKey(document.documentId),
                 taskId: taskId,
                 documentId: document.documentId,
-                onClose: () => navService.desktopTaskDocument.value = null,
+                onClose: () => navService.closeDesktopTaskDocument(taskId),
                 initialReview: reviewRequest.value,
                 onInitialReviewOpened: () => reviewRequest.value = null,
               ),
