@@ -487,8 +487,34 @@ longest common subsequence on whitespace-collapsed text; between two
 matches, a removed and an added block whose word sets overlap by at least
 half (Dice) become one rewritten row. Every block of each side lands in
 exactly one row, in its order, which a property test holds; a moved block
-reads as removed in one place and added in another. The rest of this
-section is the plan.
+reads as removed in one place and added in another.
+
+The review's state is built too, in
+[`document_review_providers.dart`](../../lib/features/documents/state/document_review_providers.dart).
+`pendingDocumentProposalsProvider` lists the task agent's drafts of one
+document still waiting (drafts proposed in task chat stay the chat's). A
+review is keyed by the draft's change set and item index.
+`documentReviewSnapshotProvider` reads the version the draft names as its
+base once (`TaskDocumentRepository.version`) and aligns the blocks once; it
+watches only whether that draft is still waiting, by its fingerprint, so a
+reload of the proposals, a sync, a landed version or a newer draft never
+rebuilds the rows. `documentReviewProvider` adds what can move around them,
+live: `isStale` when the document no longer shows that base version, and
+`newerProposalAvailable` when a later draft of the same document waits. It
+is null once the draft stops waiting — decided here or on another device, or
+withdrawn — and the review closes onto the document.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Loading
+  Loading --> Open: the draft waits, its base read and its blocks aligned
+  Loading --> Closed: the draft no longer waits
+  Open --> Open: a version lands (stale) or a newer draft waits, rows kept
+  Open --> Closed: the draft is confirmed, dismissed or withdrawn
+  Closed --> [*]
+```
+
+The rest of this section is the plan: the view is not built yet.
 
 Reviewing a proposal is a mode of the document page. The current version is
 on the left and the proposed one on the right, aligned block by block
@@ -510,9 +536,6 @@ Ask for changes, Dismiss and Confirm.
 - **Chat takes the width back.** [`QueryCompanion`](../../lib/features/agents/ui/query/query_companion.dart)
   docks chat as a column, so opening chat from review usually drops it to
   one column.
-- **The rows stay put.** Review pins the pair it opened with. A sync, a
-  wake or a newer proposal never swaps rows under the reader. A newer
-  proposal shows a quiet "Newer proposal available" link instead.
 
 ## Invariants
 

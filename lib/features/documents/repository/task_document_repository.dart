@@ -83,8 +83,14 @@ class TaskDocumentRepository {
     TaskDocumentEntry document,
   ) async {
     final currentId = document.data.current?.id;
-    if (currentId == null) return null;
-    final entry = await _db.journalEntityById(currentId);
+    return currentId == null ? null : version(currentId);
+  }
+
+  /// Version [versionId], or null when there is no such version — the
+  /// version a proposal was drafted against, which need not be the one the
+  /// document shows now.
+  Future<TaskDocumentVersionEntry?> version(String versionId) async {
+    final entry = await _db.journalEntityById(versionId);
     return entry is TaskDocumentVersionEntry ? entry : null;
   }
 

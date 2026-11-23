@@ -187,6 +187,26 @@ void main() {
     );
   });
 
+  group('version', () {
+    test('reads any version by id, not only the one on show', () async {
+      final document = await created();
+      final first = await written(document, 'The first draft.');
+      await written(document, 'The second draft.', base: first.id);
+
+      expect(
+        (await repository.version(first.id))?.data.markdown,
+        'The first draft.',
+      );
+    });
+
+    test('is null for an id that names no version', () async {
+      final document = await created();
+      expect(await repository.version('no-such-version'), isNull);
+      // A document is not a version.
+      expect(await repository.version(document.id), isNull);
+    });
+  });
+
   group('writeVersion', () {
     test(
       'writes a first version and points the document at it, with its '
