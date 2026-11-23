@@ -353,7 +353,7 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
       widget.suggestion?.item.toolName ?? widget.entry!.toolName;
 
   /// A document draft is confirmed only from the sheet that shows its text
-  /// (ADR 0166): no check on the row, and no swipe to confirm. Dismissing
+  /// (ADR 0167): no check on the row, and no swipe to confirm. Dismissing
   /// stays one gesture away.
   bool get _readFirst => _toolName == TaskAgentToolNames.proposeDocumentVersion;
   Map<String, dynamic> get _args =>

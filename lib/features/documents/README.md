@@ -6,7 +6,7 @@ what the task already holds, only when asked, and every agent version is a
 proposal the user confirms or dismisses. The user can also edit by hand,
 restore an older version, and copy the markdown out.
 
-The feature is being built in steps (ADR 0166). Today a user can write a
+The feature is being built in steps (ADR 0167). Today a user can write a
 document by hand, read it, edit it, look back through its versions, restore
 one, delete it and copy it out, and the task's agent drafts and revises
 documents when a voice note, a note or the task's chat asks it to. A

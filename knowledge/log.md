@@ -5,7 +5,7 @@
   feature not built yet: journal-stored documents with append-only versions,
   agent versions only through proposals, the side-by-side review and how it
   borrows width
-  ([ADR 0166](../docs/adr/0166-task-documents-are-journal-entries-revised-by-proposal.md)).
+  ([ADR 0167](../docs/adr/0167-task-documents-are-journal-entries-revised-by-proposal.md)).
   The two journal variants and their merge have landed;
   [Journal entity](domain/journal-entity.md) and
   [Vector clocks and conflicts](features/sync/vector-clocks-and-conflicts.md)

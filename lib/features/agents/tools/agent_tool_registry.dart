@@ -144,7 +144,7 @@ abstract final class TaskAgentToolNames {
   static const linkPullRequest = 'link_pull_request';
   static const refreshPullRequests = 'refresh_pull_requests';
 
-  // Document tools (ADR 0166).
+  // Document tools (ADR 0167).
   static const readDocument = 'read_document';
   static const proposeDocumentVersion = 'propose_document_version';
 

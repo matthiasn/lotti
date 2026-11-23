@@ -1,6 +1,6 @@
 part of 'database.dart';
 
-/// Task document query surface for [JournalDb] (ADR 0166): a document's
+/// Task document query surface for [JournalDb] (ADR 0167): a document's
 /// versions, resolved through the denormalized `subtype` column, which
 /// carries the owning document id for `TaskDocumentVersion` rows — the goal
 /// snapshot precedent, served by `idx_journal_type_subtype`.

@@ -1,4 +1,4 @@
-# ADR 0166: Task Documents Are Journal Entries, Revised by Proposal
+# ADR 0167: Task Documents Are Journal Entries, Revised by Proposal
 
 - Status: Proposed
 - Date: 2026-11-22

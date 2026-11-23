@@ -12,7 +12,7 @@ import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 /// No report, transcript, neighbour body or historical instruction is
 /// included. The task's own documents are, text and all: revising one is a
 /// change the user can ask for, and the planner decides how much of their
-/// text fits (ADR 0166).
+/// text fits (ADR 0167).
 class QueryTaskActionContextLoader {
   const QueryTaskActionContextLoader({required this.access, this.documents});
 

@@ -20,9 +20,9 @@
 - **See what a new version changes before confirming it.** When the agent
   drafts a new version of a document, its page says so; "Review changes"
   lays the current text and the draft side by side, paragraph by paragraph,
-  with what was added, removed and rewritten marked — or one under the other
-  on a narrower window; on a desktop, "Read draft" in the AI summary opens
-  it there too. Confirm it, discard it, or ask for changes in the
-  task's chat. A draft written before you changed the document yourself
-  can't overwrite your edit: the review says so and offers to ask for a redo
-  in chat.
+  with what was added, removed and rewritten marked, down to the words a
+  rewritten paragraph changed — or one under the other on a narrower
+  window; on a desktop, "Read draft" in the AI summary opens it there too.
+  Confirm it, discard it, or ask for changes in the task's chat. A draft
+  written before you changed the document yourself can't overwrite your
+  edit: the review says so and offers to ask for a redo in chat.

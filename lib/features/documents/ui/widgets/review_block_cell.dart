@@ -1,10 +1,12 @@
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/documents/logic/markdown_block_diff.dart';
+import 'package:lotti/features/documents/logic/rewrite_word_marks.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// One side of one review row (ADR 0166, direction B): a block rendered as
+/// One side of one review row (ADR 0167, direction B): a block rendered as
 /// markdown on the surface its change calls for, or — where the other side
 /// has a block and this one has none — a dashed empty slot saying so.
 ///
@@ -16,18 +18,27 @@ import 'package:material_ui/material_ui.dart';
 /// proposed side and both sides of a rewritten one take the matching diff
 /// surface; the row's gutter mark says which, so colour is never the only
 /// signal.
+///
+/// Inside a rewritten block, the words [markRewrittenWords] marked sit on
+/// [wordMark] — the removed surface on the current side, the added one on
+/// the proposed side — so the eye finds the words that changed without
+/// reading the paragraph twice.
 class ReviewBlockCell extends StatelessWidget {
   const ReviewBlockCell({
     required this.kind,
     required this.block,
     required this.emptyLabel,
     this.quiet = false,
+    this.wordMark,
     super.key,
   });
 
   /// Medium ink on a changed block: the old half of a rewrite stacked above
   /// its new half, which reads first.
   final bool quiet;
+
+  /// The surface a marked word sits on; null leaves marked words plain.
+  final Color? wordMark;
 
   final MarkdownBlockChange kind;
 
@@ -86,6 +97,16 @@ class ReviewBlockCell extends StatelessWidget {
         child: AgentMarkdownView(
           block,
           subordinateHeadings: true,
+          inlineDirectives: [
+            InlineDirective(
+              open: rewriteWordMarkOpen,
+              close: rewriteWordMarkClose,
+              builder: (context, words, style) => TextSpan(
+                text: words,
+                style: style.copyWith(backgroundColor: wordMark),
+              ),
+            ),
+          ],
           style: tokens.typography.styles.body.bodyMedium.copyWith(
             color: same || quiet
                 ? tokens.colors.text.mediumEmphasis

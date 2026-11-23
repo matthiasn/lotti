@@ -62,7 +62,7 @@ class QueryTaskActionContext {
   final Map<String, Map<String, Object?>> timeEntryFields;
 
   /// The task's documents by id, with their current text, as
-  /// `propose_document_version` may target them (ADR 0166). Null when no
+  /// `propose_document_version` may target them (ADR 0167). Null when no
   /// document source is wired: the tool is then not offered at all.
   final Map<String, TaskDocumentText>? documents;
 }

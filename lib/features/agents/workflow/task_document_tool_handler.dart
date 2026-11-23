@@ -10,7 +10,7 @@ const taskDocumentEffectRole = 'task-document';
 const taskDocumentVersionEffectRole = 'task-document-version';
 
 /// Applies a confirmed `propose_document_version` to task [taskId] through
-/// [source] (ADR 0166): the proposed markdown becomes the document's next
+/// [source] (ADR 0167): the proposed markdown becomes the document's next
 /// version, the agent's, over the version the proposal was drafted against.
 ///
 /// [effect] names the confirmation; the document and version it writes take

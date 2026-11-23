@@ -4,7 +4,7 @@ import 'package:lotti/features/agents/model/task_document_source.dart';
 
 /// The body of a wake's `## Documents` section: the task's documents by id,
 /// title and version — never their text, which the agent reads on request
-/// with `read_document` (ADR 0166 decision 7). Empty for a task with none.
+/// with `read_document` (ADR 0167 decision 7). Empty for a task with none.
 ///
 /// Titles are the user's words, so they are JSON-quoted: data, never a line
 /// of instructions.

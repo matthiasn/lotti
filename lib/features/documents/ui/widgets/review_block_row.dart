@@ -1,5 +1,6 @@
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/documents/logic/markdown_block_diff.dart';
+import 'package:lotti/features/documents/logic/rewrite_word_marks.dart';
 import 'package:lotti/features/documents/ui/widgets/review_block_cell.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -9,14 +10,16 @@ abstract final class ReviewBlockRowKeys {
   static const gutter = Key('review-block-row-gutter');
 }
 
-/// One row of the side-by-side review (ADR 0166, direction B): the current
+/// One row of the side-by-side review (ADR 0167, direction B): the current
 /// version's block on the left, the proposed one's on the right, each in
 /// its own cell, with a mark in the leading gutter for a changed row — ＋
 /// added, − removed, ⇄ rewritten — in the diff colour, and a
 /// label a screen reader says. A changed row is one band: its two cells — or
 /// a block and the empty slot beside it — share a top and a bottom edge, the
 /// shorter standing as tall as the other. An unchanged row is plain text and
-/// keeps each side's own height.
+/// keeps each side's own height. A rewritten row also marks the words it
+/// changed ([markRewrittenWords]): the dropped ones on the removed surface,
+/// the new ones on the added surface.
 ///
 /// [baseVersion] and [proposedVersion] name the empty slots ("Not in v3");
 /// a null [baseVersion] means the document had no text, and its slot says
@@ -76,6 +79,7 @@ class ReviewBlockRow extends StatelessWidget {
     final baseVersion = this.baseVersion;
     final proposedVersion = this.proposedVersion;
     final band = !stacked && pair.kind != MarkdownBlockChange.same;
+    final blocks = _blocks();
     // Stacked, a rewrite opens with its "Current" caption: the mark sits
     // level with the first line of text below it.
     final caption = tokens.typography.styles.others.caption;
@@ -109,12 +113,13 @@ class ReviewBlockRow extends StatelessWidget {
         ),
         SizedBox(width: tokens.spacing.step2),
         if (stacked)
-          Expanded(child: _stackedCells(context, tokens))
+          Expanded(child: _stackedCells(context, tokens, blocks))
         else ...[
           Expanded(
             child: ReviewBlockCell(
               kind: pair.kind,
-              block: pair.base,
+              block: blocks.base,
+              wordMark: diff.removed.surface,
               emptyLabel: baseVersion == null
                   ? noTextLabel
                   : messages.documentReviewNotInVersion(baseVersion),
@@ -124,7 +129,8 @@ class ReviewBlockRow extends StatelessWidget {
           Expanded(
             child: ReviewBlockCell(
               kind: pair.kind,
-              block: pair.proposed,
+              block: blocks.proposed,
+              wordMark: diff.added.surface,
               emptyLabel: proposedVersion == null
                   ? messages.documentReviewNotInDraft
                   : messages.documentReviewNotInVersion(proposedVersion),
@@ -138,7 +144,23 @@ class ReviewBlockRow extends StatelessWidget {
     return Semantics(container: true, label: mark.$3, child: sized);
   }
 
-  Widget _stackedCells(BuildContext context, DsTokens tokens) {
+  /// The row's two blocks, a rewrite's with its changed words marked.
+  ({String? base, String? proposed}) _blocks() {
+    final base = pair.base;
+    final proposed = pair.proposed;
+    if (pair.kind == MarkdownBlockChange.rewritten &&
+        base != null &&
+        proposed != null) {
+      return markRewrittenWords(base, proposed);
+    }
+    return (base: base, proposed: proposed);
+  }
+
+  Widget _stackedCells(
+    BuildContext context,
+    DsTokens tokens,
+    ({String? base, String? proposed}) blocks,
+  ) {
     final messages = context.messages;
     final kind = pair.kind;
     if (kind != MarkdownBlockChange.rewritten) {
@@ -175,9 +197,10 @@ class ReviewBlockRow extends StatelessWidget {
         SizedBox(height: tokens.spacing.step1),
         ReviewBlockCell(
           kind: kind,
-          block: pair.base,
+          block: blocks.base,
           emptyLabel: noTextLabel,
           quiet: true,
+          wordMark: tokens.colors.diff.removed.surface,
         ),
         // More air above "Proposed" than below it: the caption belongs to
         // the block it heads.
@@ -198,8 +221,9 @@ class ReviewBlockRow extends StatelessWidget {
         SizedBox(height: tokens.spacing.step1),
         ReviewBlockCell(
           kind: kind,
-          block: pair.proposed,
+          block: blocks.proposed,
           emptyLabel: noTextLabel,
+          wordMark: tokens.colors.diff.added.surface,
         ),
       ],
     );

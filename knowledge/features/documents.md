@@ -88,9 +88,9 @@ sources:
     resource: ../../lib/database/conversions.dart
     title: Journal row type and subtype for both variants
     last_modified: 2026-11-22
-  - id: adr-0166
-    resource: ../../docs/adr/0166-task-documents-are-journal-entries-revised-by-proposal.md
-    title: "ADR 0166: Task Documents Are Journal Entries, Revised by Proposal"
+  - id: adr-0167
+    resource: ../../docs/adr/0167-task-documents-are-journal-entries-revised-by-proposal.md
+    title: "ADR 0167: Task Documents Are Journal Entries, Revised by Proposal"
     last_modified: 2026-11-22
   - id: agent-entities
     resource: ../../lib/classes/agents/agent_domain_entity.dart
@@ -137,7 +137,7 @@ sources:
 # Task documents
 
 > **Partly built.** This concept describes the design agreed in
-> [ADR 0166](../../docs/adr/0166-task-documents-are-journal-entries-revised-by-proposal.md).
+> [ADR 0167](../../docs/adr/0167-task-documents-are-journal-entries-revised-by-proposal.md).
 > What runs today: the two journal variants, their merge, the repository,
 > the user's side of the UI — the Documents section, the Add sheet row, the
 > editor, and the document page with history, restore and delete — and the
@@ -148,8 +148,8 @@ sources:
 > chat proposes versions too, a proposal's text can be read before it is
 > confirmed, and the document page hosts the task's chat
 > ([Reading a proposal](#reading-a-proposal)). The side-by-side review
-> runs inside the document page, the task list and day column step aside
-> for it, and a route opens it directly. Each implementation
+> runs inside the document page and marks the words a rewrite changed,
+> the task list and day column step aside for it, and a route opens it directly. Each implementation
 > step rewrites the part it lands, and the page moves to `stable` when the
 > last part does.
 
@@ -500,9 +500,9 @@ stateDiagram-v2
   OtherTask --> Task: the task selected again
 ```
 
-### Side-by-side review (desktop, partly built)
+### Side-by-side review
 
-Built so far: the alignment the rows come from,
+The rows come from
 [`markdown_block_diff.dart`](../../lib/features/documents/logic/markdown_block_diff.dart).
 `splitMarkdownBlocks` cuts a version into headings, paragraphs, whole lists
 (a loose list stays one block, so an ordered list never restarts at "1." in
@@ -538,17 +538,37 @@ stateDiagram-v2
   Closed --> [*]
 ```
 
-Its rows are built too:
 [`ReviewBlockRow`](../../lib/features/documents/ui/widgets/review_block_row.dart)
-lays a pair out as two top-aligned cells of their own heights, current on
-the left, proposed on the right, with a gutter mark for a changed row (＋
-added, − removed, ~ rewritten, in the diff colour) and that change as the
-row's screen-reader label.
+lays a pair out current on the left, proposed on the right, with a gutter
+mark for a changed row (＋ added, − removed, ⇄ rewritten, in the diff
+colour) and that change as the row's screen-reader label. A changed row is
+one band — its two cells, or a block and the empty slot beside it, share a
+top and a bottom edge — while an unchanged row keeps each side's own
+height. Stacked, for a pane too narrow for two columns, a rewrite shows its
+old half quiet under "Current" ("Drafted over" for a stale draft) above its
+new half under "Proposed".
 [`ReviewBlockCell`](../../lib/features/documents/ui/widgets/review_block_cell.dart)
 renders a block with `AgentMarkdownView`: an unchanged one on no surface in
 medium ink, a changed one on its `colors.diff.*` surface, and a missing one
 as a dashed slot (`DsDashedBorder`, `decorative.level03`) saying "Not in
 v3", or "No text yet" when the document had none.
+
+Inside a rewritten row the words that changed are marked as well:
+[`markRewrittenWords`](../../lib/features/documents/logic/rewrite_word_marks.dart)
+runs the word diff sync's title diff also uses
+([`diffTokens`](../../lib/utils/text_diff.dart)) over the two blocks and
+wraps each run of dropped words on the current side, and of new words on
+the proposed side, in Private Use Area delimiters. `AgentMarkdownView`
+passes them to `gpt_markdown` as an `InlineDirective`, lifted out before
+the Markdown is parsed, and the cell draws the run on `diff.removed.surface`
+or `diff.added.surface` — so a heading, a list or the bold around a word
+renders as before. The marking works on source offsets: line breaks, list
+and heading markers and the emphasis around a word stay outside a mark, and
+inline code, links, fenced code and words holding Markdown syntax stay
+unmarked (a delimiter would show there as written). A block over about 500
+words a side keeps its rewrite surface without word marks. The marks are a
+visual aid on top of the row's own label, so colour is still not the only
+signal.
 
 The view is built:
 [`DocumentReviewView`](../../lib/features/documents/ui/widgets/document_review_view.dart)

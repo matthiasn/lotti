@@ -34,7 +34,7 @@ int compareTaskDocumentVersionRefs(
 }
 
 /// The row every device writes for two concurrent versions of one task
-/// document, whichever it held first (ADR 0166).
+/// document, whichever it held first (ADR 0167).
 ///
 /// - The document shows the newer of the two current versions
 ///   ([compareTaskDocumentVersionRefs]). The other version keeps its own

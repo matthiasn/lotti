@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/documents/logic/markdown_block_diff.dart';
+import 'package:lotti/features/documents/logic/rewrite_word_marks.dart';
 import 'package:lotti/features/documents/ui/widgets/review_block_cell.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -13,6 +14,7 @@ void main() {
     required MarkdownBlockChange kind,
     String? block = 'Feed the penguins at noon.',
     bool quiet = false,
+    Color? wordMark,
   }) => tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       ReviewBlockCell(
@@ -20,6 +22,7 @@ void main() {
         block: block,
         emptyLabel: 'Not in v3',
         quiet: quiet,
+        wordMark: wordMark,
       ),
     ),
   );
@@ -144,4 +147,34 @@ void main() {
       tokensOf(tester).colors.text.mediumEmphasis,
     );
   });
+
+  testWidgets(
+    "a rewrite's marked words sit on the word-mark surface, the delimiters "
+    'unseen',
+    (tester) async {
+      await pumpCell(
+        tester,
+        kind: MarkdownBlockChange.rewritten,
+        // Emphasis stays outside a mark, as markRewrittenWords leaves it.
+        block:
+            'Feed the **${rewriteWordMarkOpen}young$rewriteWordMarkClose** '
+            'penguins.',
+        wordMark: Colors.pink,
+      );
+
+      TextSpan? marked;
+      final text = tester.widget<RichText>(
+        find.descendant(
+          of: find.byType(ReviewBlockCell),
+          matching: find.byType(RichText),
+        ),
+      );
+      text.text.visitChildren((span) {
+        if (span is TextSpan && span.text == 'young') marked = span;
+        return marked == null;
+      });
+      expect(marked?.style?.backgroundColor, Colors.pink);
+      expect(text.text.toPlainText(), 'Feed the young penguins.');
+    },
+  );
 }

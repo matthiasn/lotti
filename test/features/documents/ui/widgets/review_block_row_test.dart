@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/documents/logic/markdown_block_diff.dart';
+import 'package:lotti/features/documents/logic/rewrite_word_marks.dart';
 import 'package:lotti/features/documents/ui/widgets/review_block_cell.dart';
 import 'package:lotti/features/documents/ui/widgets/review_block_row.dart';
 
@@ -198,11 +199,12 @@ void main() {
       );
 
       // Red and green keep meaning removed and added at every width.
+      final marked = markRewrittenWords(feed, one);
       expect(
         cells(tester).map((cell) => (cell.kind, cell.block, cell.quiet)),
         [
-          (MarkdownBlockChange.rewritten, feed, true),
-          (MarkdownBlockChange.rewritten, one, false),
+          (MarkdownBlockChange.rewritten, marked.base, true),
+          (MarkdownBlockChange.rewritten, marked.proposed, false),
         ],
       );
       expect(
@@ -272,4 +274,48 @@ void main() {
     expect(find.text('Drafted over'), findsOneWidget);
     expect(find.text('Current'), findsNothing);
   });
+
+  for (final stacked in [false, true]) {
+    testWidgets(
+      'a rewrite marks the words it dropped on the removed surface and the '
+      'ones it brought on the added surface${stacked ? ', stacked' : ''}',
+      (tester) async {
+        await pumpRow(
+          tester,
+          const MarkdownBlockPair(
+            kind: MarkdownBlockChange.rewritten,
+            base: 'The colony of 37 penguins.',
+            proposed: 'The colony of 38 penguins.',
+          ),
+          stacked: stacked,
+        );
+
+        Color? markOf(String word) {
+          Color? found;
+          for (final text in tester.widgetList<RichText>(
+            find.descendant(
+              of: find.byType(ReviewBlockCell),
+              matching: find.byType(RichText),
+            ),
+          )) {
+            text.text.visitChildren((span) {
+              if (span is TextSpan && span.text == word) {
+                found = span.style?.backgroundColor;
+              }
+              return found == null;
+            });
+          }
+          return found;
+        }
+
+        final diff = tester
+            .element(find.byType(ReviewBlockRow))
+            .designTokens
+            .colors
+            .diff;
+        expect(markOf('37'), diff.removed.surface);
+        expect(markOf('38'), diff.added.surface);
+      },
+    );
+  }
 }

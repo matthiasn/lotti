@@ -483,7 +483,7 @@ task's documents. It is not given `set_task_project`, `create_task_project` or
 `link_pull_request`: the chat's context carries no project directory and no
 pull request listing, so an id there could only be invented.
 
-**Documents** ([Task documents](../documents.md), ADR 0166). With the
+**Documents** ([Task documents](../documents.md), ADR 0167). With the
 documents feature wired (`taskDocumentSourceProvider`), the loader reads the
 task's documents through that port, text included, and the planner offers
 `propose_document_version`. The planner lists each document by id, title and

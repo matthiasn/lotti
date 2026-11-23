@@ -1,6 +1,6 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
-/// Tools for the markdown documents a task holds (ADR 0166).
+/// Tools for the markdown documents a task holds (ADR 0167).
 ///
 /// The wake lists the task's documents by id and title only. The agent reads
 /// one in full on request, and proposes a new version — or a first document —

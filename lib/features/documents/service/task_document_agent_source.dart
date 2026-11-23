@@ -5,7 +5,7 @@ import 'package:lotti/features/documents/repository/task_document_repository.dar
 
 /// The documents feature's side of [TaskDocumentSource]: what the task agent
 /// reads of a task's documents, and the write of a document proposal the
-/// user confirmed (ADR 0166), through [TaskDocumentRepository] — so an agent
+/// user confirmed (ADR 0167), through [TaskDocumentRepository] — so an agent
 /// version is the same compare-and-set as a hand edit, recorded as the
 /// agent's.
 class TaskDocumentAgentSource implements TaskDocumentSource {

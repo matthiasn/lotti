@@ -5,7 +5,7 @@ import 'package:lotti/utils/relative_age_label.dart';
 
 /// Who wrote [version], in words: the user by hand, the user restoring an
 /// older version, or the agent with the user's confirmation — an agent
-/// version only ever lands confirmed (ADR 0166), so the line says both.
+/// version only ever lands confirmed (ADR 0167), so the line says both.
 String taskDocumentAuthorship(
   AppLocalizations messages,
   TaskDocumentVersionEntry version,

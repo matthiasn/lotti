@@ -35,7 +35,7 @@ abstract final class TaskDocumentPageKeys {
   static const review = Key('task-document-page-review');
 }
 
-/// One document of a task, for reading (ADR 0166): its title, where the
+/// One document of a task, for reading (ADR 0167): its title, where the
 /// version on show came from, and its text rendered at the prose measure —
 /// with Edit, Copy, History and Delete, and Ask, which opens the task's chat
 /// beside the document to ask for a revision there.

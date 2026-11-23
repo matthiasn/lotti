@@ -42,7 +42,7 @@ typedef TaskDocumentWriteResult = ({
   TaskDocumentVersionEntry? version,
 });
 
-/// The documents of tasks (ADR 0166): creating them, writing their
+/// The documents of tasks (ADR 0167): creating them, writing their
 /// versions, restoring, renaming and deleting.
 ///
 /// A document is a [TaskDocumentEntry] linked from its task; its text lives
@@ -142,7 +142,7 @@ class TaskDocumentRepository {
   /// [baseVersionId], the version the text was written over (null for a
   /// first version).
   ///
-  /// This is the compare-and-set ADR 0166 relies on: a hand edit opened on
+  /// This is the compare-and-set ADR 0167 relies on: a hand edit opened on
   /// v3, or an agent proposal drafted against v3, never replaces a v4 that
   /// landed meanwhile. A base that no longer matches comes back
   /// [TaskDocumentWriteStatus.stale], with nothing changed. When the

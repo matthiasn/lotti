@@ -4,7 +4,7 @@ part 'task_document_data.freezed.dart';
 part 'task_document_data.g.dart';
 
 /// Payload of a `JournalEntity.taskDocument`: a markdown document a task
-/// holds, linked to that task by an `EntryLink` (ADR 0166).
+/// holds, linked to that task by an `EntryLink` (ADR 0167).
 ///
 /// The text is not stored here. It lives in append-only
 /// [TaskDocumentVersionData] rows, and this row only names the [title] and
@@ -58,7 +58,7 @@ enum TaskDocumentAuthor {
 }
 
 /// Payload of a `JournalEntity.taskDocumentVersion`: the full text of one
-/// version of a document. Written once and never changed (ADR 0166), so two
+/// version of a document. Written once and never changed (ADR 0167), so two
 /// devices can never conflict over it.
 @freezed
 abstract class TaskDocumentVersionData with _$TaskDocumentVersionData {

@@ -57,7 +57,7 @@ double documentReviewSideBySideMinWidth(DsTokens tokens) =>
 double documentReviewMinPaneWidth(DsTokens tokens) =>
     documentReviewSideBySideMinWidth(tokens) + 2 * tokens.spacing.step5;
 
-/// A draft of a document under review (ADR 0166, direction B): the version
+/// A draft of a document under review (ADR 0167, direction B): the version
 /// it was written over beside the text it proposes, row by row, with
 /// Confirm, Discard draft and Ask for changes on a glass bar.
 ///

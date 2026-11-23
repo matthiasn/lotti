@@ -23,7 +23,7 @@ abstract final class TaskDocumentsSectionKeys {
 }
 
 /// The task's documents, in their own card below its linked tasks and pull
-/// requests (ADR 0166).
+/// requests (ADR 0167).
 ///
 /// `TaskForm` shows it only while the task holds a document: the "Add" sheet
 /// is the way to the first one, so the section never stands empty. Each

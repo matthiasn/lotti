@@ -337,7 +337,7 @@ class ProposalHistorySection extends StatelessWidget {
   }
 }
 
-/// Whether [s] proposes a task document's text (ADR 0166).
+/// Whether [s] proposes a task document's text (ADR 0167).
 bool _isDocument(PendingSuggestion s) =>
     s.item.toolName == TaskAgentToolNames.proposeDocumentVersion;
 

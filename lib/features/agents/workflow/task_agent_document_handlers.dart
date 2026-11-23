@@ -1,6 +1,6 @@
 part of 'task_agent_strategy.dart';
 
-/// The document tools of [TaskAgentStrategy] (ADR 0166): reading a
+/// The document tools of [TaskAgentStrategy] (ADR 0167): reading a
 /// document's text, and validating and queueing a proposed version.
 extension TaskAgentDocumentHandlers on TaskAgentStrategy {
   /// Answers `read_document` with the text of the version the document

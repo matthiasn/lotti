@@ -693,7 +693,7 @@ class TaskAgentContextBuilder {
         ..writeln();
     }
 
-    // The task's documents by id and title, never their text (ADR 0166):
+    // The task's documents by id and title, never their text (ADR 0167):
     // a rename or a new version rewrites it, so it sits in the tail too.
     if (documentsContext != null && documentsContext.isNotEmpty) {
       buffer

@@ -348,7 +348,7 @@ sealed class JournalEntity with _$JournalEntity {
   }) = PullRequestEntry;
 
   /// A markdown document a task holds: its title and which version it
-  /// shows — see [TaskDocumentData] and ADR 0166.
+  /// shows — see [TaskDocumentData] and ADR 0167.
   const factory JournalEntity.taskDocument({
     required Metadata meta,
     required TaskDocumentData data,

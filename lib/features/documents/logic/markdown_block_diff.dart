@@ -1,6 +1,6 @@
 import 'package:meta/meta.dart';
 
-/// How a row of the side-by-side review changes its block (ADR 0166,
+/// How a row of the side-by-side review changes its block (ADR 0167,
 /// direction B).
 enum MarkdownBlockChange {
   /// The same block on both sides.

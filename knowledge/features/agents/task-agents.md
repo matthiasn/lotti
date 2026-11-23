@@ -1359,7 +1359,7 @@ A task's markdown documents are owned by the documents feature, which ranks
 above agents; the agent reaches them through the `TaskDocumentSource` port
 (`lib/features/agents/model/task_document_source.dart`), wired in
 `app_bootstrap.dart`. See [Task documents](../documents.md) for the documents
-themselves (ADR 0166).
+themselves (ADR 0167).
 
 - **Context.** The wake reads the task's documents once
   (`_taskDocumentDirectory`, empty when unwired or the read fails) and lists

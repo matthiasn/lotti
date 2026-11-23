@@ -29,7 +29,7 @@ String? documentProposalTitle(Map<String, dynamic> args) {
   return null;
 }
 
-/// "Read draft" under a document proposal (ADR 0166): the row says only
+/// "Read draft" under a document proposal (ADR 0167): the row says only
 /// which document it writes, and a draft is confirmed only after reading
 /// it, in the sheet this opens — the row itself offers no confirm. Renders nothing for any other change, or for a proposal
 /// without text.

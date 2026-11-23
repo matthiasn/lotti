@@ -1,6 +1,6 @@
 /// One document of a task as the task agent sees it: which one, what it is
 /// called, and which version it shows — not its text, which is read on
-/// request ([TaskDocumentSource.read], ADR 0166 decision 7).
+/// request ([TaskDocumentSource.read], ADR 0167 decision 7).
 class TaskDocumentSummary {
   const TaskDocumentSummary({
     required this.id,

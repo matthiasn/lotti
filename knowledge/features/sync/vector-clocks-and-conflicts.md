@@ -408,7 +408,8 @@ changes — is left out of the comparison, for tasks only
 
 Two details make it trustworthy:
 
-- **Text fields carry a word-level LCS diff** (`computeTitleDiff`).
+- **Text fields carry a word-level LCS diff** (`computeTitleDiff`, over the
+  shared `diffTokens` in [`text_diff.dart`](../../../lib/utils/text_diff.dart)).
 - **A JSON completeness guard** emits a single `EntryField.other` entry whenever
   the two versions differ in a field the registry does not model. A change can
   therefore never be silently hidden across any of the 16 entity types — which

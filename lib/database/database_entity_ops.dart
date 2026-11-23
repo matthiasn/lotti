@@ -96,7 +96,7 @@ mixin _JournalDbEntityOps
   static bool _pullRequestPair(JournalEntity a, JournalEntity b) =>
       _pairOf<PullRequestEntry>(a, b);
 
-  /// Two concurrent versions of one task document (ADR 0166), with the same
+  /// Two concurrent versions of one task document (ADR 0167), with the same
   /// allowance for a purge's tombstone on one side.
   static bool _taskDocumentPair(JournalEntity a, JournalEntity b) =>
       _pairOf<TaskDocumentEntry>(a, b);
@@ -336,7 +336,7 @@ mixin _JournalDbEntityOps
   /// deletions are merged ([_mergeDeletions]), and so are two concurrent
   /// versions of a pull request entry ([mergeConcurrentPullRequestVersions],
   /// `specs/tla/PullRequestSnapshot.tla`) or of a task document
-  /// ([mergeConcurrentTaskDocumentVersions], ADR 0166). An applied write marks the
+  /// ([mergeConcurrentTaskDocumentVersions], ADR 0167). An applied write marks the
   /// entry's conflict resolved only when it includes the conflict's version
   /// (ADR 0083).
   ///

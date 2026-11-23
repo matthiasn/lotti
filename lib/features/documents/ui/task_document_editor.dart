@@ -37,7 +37,7 @@ Future<void> showTaskDocumentEditor(
 );
 
 /// A document's title and its markdown text, saved as the user's own
-/// version (ADR 0166).
+/// version (ADR 0167).
 ///
 /// The text opens on the document's current version, and saving writes a
 /// new version over exactly that one: when the document moved on meanwhile

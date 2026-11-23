@@ -123,7 +123,7 @@ class _DraftGone extends _DraftState {
   int get hashCode => 0;
 }
 
-/// The rows a review shows, pinned (ADR 0166, direction B).
+/// The rows a review shows, pinned (ADR 0167, direction B).
 ///
 /// Built once for the draft the key names — the version it was drafted
 /// against read once, the blocks aligned once — and built again only when
@@ -170,7 +170,7 @@ class DocumentReview {
 
   /// The document no longer shows the version the draft was written over —
   /// an edit, a restore or another draft landed since. Confirming would be
-  /// refused (ADR 0166), so the review offers a fresh draft instead.
+  /// refused (ADR 0167), so the review offers a fresh draft instead.
   final bool isStale;
 
   /// The agent proposed a later draft of the same document while this one
