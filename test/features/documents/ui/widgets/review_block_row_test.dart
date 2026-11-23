@@ -12,6 +12,8 @@ void main() {
     WidgetTester tester,
     MarkdownBlockPair pair, {
     int? baseVersion = 3,
+    int? proposedVersion = 4,
+    bool stacked = false,
   }) => tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       SizedBox(
@@ -19,8 +21,9 @@ void main() {
         child: ReviewBlockRow(
           pair: pair,
           baseVersion: baseVersion,
-          proposedVersion: 4,
+          proposedVersion: proposedVersion,
           noTextLabel: 'No text yet',
+          stacked: stacked,
         ),
       ),
     ),
@@ -108,6 +111,18 @@ void main() {
     expect(find.text('No text yet'), findsOneWidget);
   });
 
+  testWidgets('a draft that would not become the next version says its '
+      'slot is not in the draft', (tester) async {
+    await pumpRow(
+      tester,
+      const MarkdownBlockPair(kind: MarkdownBlockChange.removed, base: feed),
+      proposedVersion: null,
+    );
+
+    expect(find.text('Not in the draft'), findsOneWidget);
+    expect(find.textContaining('Not in v'), findsNothing);
+  });
+
   testWidgets('cells stay top-aligned and keep their own heights', (
     tester,
   ) async {
@@ -126,5 +141,72 @@ void main() {
     expect(left.top, right.top);
     expect(right.height, greaterThan(left.height * 2));
     expect(left.right, lessThan(right.left));
+  });
+
+  group('stacked, for a pane too narrow for two columns', () {
+    List<ReviewBlockCell> cells(WidgetTester tester) => tester
+        .widgetList<ReviewBlockCell>(find.byType(ReviewBlockCell))
+        .toList();
+
+    testWidgets('an unchanged block shows once, on no surface', (
+      tester,
+    ) async {
+      await pumpRow(
+        tester,
+        const MarkdownBlockPair(
+          kind: MarkdownBlockChange.same,
+          base: feed,
+          proposed: feed,
+        ),
+        stacked: true,
+      );
+
+      expect(
+        cells(tester).map((cell) => (cell.kind, cell.block)),
+        [(MarkdownBlockChange.same, feed)],
+      );
+    });
+
+    testWidgets('a rewritten block shows its old text above its new one, '
+        'on the removed and added surfaces, under one mark', (tester) async {
+      const one = 'Feed the penguins at one.';
+      await pumpRow(
+        tester,
+        const MarkdownBlockPair(
+          kind: MarkdownBlockChange.rewritten,
+          base: feed,
+          proposed: one,
+        ),
+        stacked: true,
+      );
+
+      expect(cells(tester).map((cell) => (cell.kind, cell.block)), [
+        (MarkdownBlockChange.removed, feed),
+        (MarkdownBlockChange.added, one),
+      ]);
+      final found = find.byType(ReviewBlockCell);
+      expect(
+        tester.getRect(found.at(0)).bottom,
+        lessThanOrEqualTo(tester.getRect(found.at(1)).top),
+      );
+      expect(find.byKey(ReviewBlockRowKeys.gutter), findsOneWidget);
+    });
+
+    for (final pair in const [
+      MarkdownBlockPair(kind: MarkdownBlockChange.added, proposed: feed),
+      MarkdownBlockPair(kind: MarkdownBlockChange.removed, base: feed),
+    ]) {
+      testWidgets('${pair.kind.name}: its one block, and no empty slot', (
+        tester,
+      ) async {
+        await pumpRow(tester, pair, stacked: true);
+
+        expect(
+          cells(tester).map((cell) => (cell.kind, cell.block)),
+          [(pair.kind, feed)],
+        );
+        expect(find.textContaining('Not in'), findsNothing);
+      });
+    }
   });
 }

@@ -7076,15 +7076,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get documentReviewAdded => 'Added in the proposed version';
 
   @override
+  String get documentReviewAskForChanges => 'Ask for changes';
+
+  @override
+  String get documentReviewClose => 'Close review';
+
+  @override
+  String documentReviewConfirm(int number) {
+    return 'Confirm v$number';
+  }
+
+  @override
+  String documentReviewCounts(int added, int removed, int rewritten) {
+    return '$added added, $removed removed, $rewritten rewritten';
+  }
+
+  @override
+  String get documentReviewCurrent => 'Current';
+
+  @override
+  String get documentReviewNewer => 'Open the newer draft';
+
+  @override
+  String get documentReviewNotInDraft => 'Not in the draft';
+
+  @override
   String documentReviewNotInVersion(int number) {
     return 'Not in v$number';
   }
+
+  @override
+  String get documentReviewOpen => 'Review changes';
+
+  @override
+  String get documentReviewProposed => 'Proposed';
+
+  @override
+  String get documentReviewRedo => 'Ask the agent to redo';
 
   @override
   String get documentReviewRemoved => 'Removed in the proposed version';
 
   @override
   String get documentReviewRewritten => 'Rewritten in the proposed version';
+
+  @override
+  String documentReviewStale(int base, int current) {
+    return 'Written against v$base, current is v$current';
+  }
+
+  @override
+  String documentReviewStaleNoText(int current) {
+    return 'Written before the document had text, current is v$current';
+  }
+
+  @override
+  String get documentReviewWaiting => 'The agent drafted a new version';
 
   @override
   String get doneButton => 'Done';

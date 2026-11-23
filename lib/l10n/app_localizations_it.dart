@@ -7202,15 +7202,62 @@ class AppLocalizationsIt extends AppLocalizations {
   String get documentReviewAdded => 'Aggiunto nella versione proposta';
 
   @override
+  String get documentReviewAskForChanges => 'Chiedi modifiche';
+
+  @override
+  String get documentReviewClose => 'Chiudi revisione';
+
+  @override
+  String documentReviewConfirm(int number) {
+    return 'Conferma v$number';
+  }
+
+  @override
+  String documentReviewCounts(int added, int removed, int rewritten) {
+    return '$added aggiunti, $removed rimossi, $rewritten riscritti';
+  }
+
+  @override
+  String get documentReviewCurrent => 'Attuale';
+
+  @override
+  String get documentReviewNewer => 'Apri la bozza più recente';
+
+  @override
+  String get documentReviewNotInDraft => 'Non nella bozza';
+
+  @override
   String documentReviewNotInVersion(int number) {
     return 'Non in v$number';
   }
+
+  @override
+  String get documentReviewOpen => 'Rivedi le modifiche';
+
+  @override
+  String get documentReviewProposed => 'Proposta';
+
+  @override
+  String get documentReviewRedo => 'Chiedi all\'agente di rifarla';
 
   @override
   String get documentReviewRemoved => 'Rimosso nella versione proposta';
 
   @override
   String get documentReviewRewritten => 'Riscritto nella versione proposta';
+
+  @override
+  String documentReviewStale(int base, int current) {
+    return 'Scritta su v$base, quella attuale è v$current';
+  }
+
+  @override
+  String documentReviewStaleNoText(int current) {
+    return 'Scritta prima che il documento avesse testo, quella attuale è v$current';
+  }
+
+  @override
+  String get documentReviewWaiting => 'L\'agente ha scritto una nuova versione';
 
   @override
   String get doneButton => 'Fatto';

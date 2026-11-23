@@ -66,6 +66,14 @@ const kUnifiedGoalsContentMaxWidth = 760.0;
 /// habits-header breakpoint, shared by the unified Goals header.
 const kPageHeaderFoldWidth = 520.0;
 
+/// The narrowest each column of a side-by-side document review may be (ADR
+/// 0166, direction B). Two of them with their gap fit inside
+/// [kDetailContentMaxWidth], so a review shows the current and the proposed
+/// version side by side wherever the detail pane is at its full measure, and
+/// one column — the changes in reading order — wherever it is not. Below
+/// [kProseMeasureWidth] by design: a column is half a comparison, not a page.
+const kReviewColumnMinWidth = 440.0;
+
 /// The width of an agent conversation in the side sheet — a goal's or a
 /// person's (design handover §4b: "~400px right overlay"). It slides in over
 /// the page, never a column the page reflows around.

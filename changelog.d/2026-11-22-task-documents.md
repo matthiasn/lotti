@@ -17,3 +17,10 @@
   confirmed only after reading it: "Read draft", in the chat or the AI
   summary, opens the full text, with "Create document" or "Use this
   version" at its foot. A document's page opens the task's chat beside it.
+- **See what a new version changes before confirming it.** When the agent
+  drafts a new version of a document, its page says so; "Review changes"
+  lays the current text and the draft side by side, paragraph by paragraph,
+  with what was added, removed and rewritten marked — or one under the other
+  on a narrower window. Confirm it, discard it, or ask for changes in the
+  task's chat. A draft written before you changed the document yourself
+  can't overwrite your edit: the review offers to ask the agent to redo it.

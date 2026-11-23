@@ -7205,15 +7205,62 @@ class AppLocalizationsCs extends AppLocalizations {
   String get documentReviewAdded => 'Přidáno v navržené verzi';
 
   @override
+  String get documentReviewAskForChanges => 'Požádat o změny';
+
+  @override
+  String get documentReviewClose => 'Zavřít kontrolu';
+
+  @override
+  String documentReviewConfirm(int number) {
+    return 'Potvrdit v$number';
+  }
+
+  @override
+  String documentReviewCounts(int added, int removed, int rewritten) {
+    return 'Přidáno: $added, odebráno: $removed, přepsáno: $rewritten';
+  }
+
+  @override
+  String get documentReviewCurrent => 'Aktuální';
+
+  @override
+  String get documentReviewNewer => 'Otevřít novější koncept';
+
+  @override
+  String get documentReviewNotInDraft => 'Není v konceptu';
+
+  @override
   String documentReviewNotInVersion(int number) {
     return 'Není ve v$number';
   }
+
+  @override
+  String get documentReviewOpen => 'Zkontrolovat změny';
+
+  @override
+  String get documentReviewProposed => 'Navržená';
+
+  @override
+  String get documentReviewRedo => 'Požádat agenta o přepracování';
 
   @override
   String get documentReviewRemoved => 'Odebráno v navržené verzi';
 
   @override
   String get documentReviewRewritten => 'Přepsáno v navržené verzi';
+
+  @override
+  String documentReviewStale(int base, int current) {
+    return 'Napsáno nad v$base, aktuální je v$current';
+  }
+
+  @override
+  String documentReviewStaleNoText(int current) {
+    return 'Napsáno dřív, než dokument měl text, aktuální je v$current';
+  }
+
+  @override
+  String get documentReviewWaiting => 'Agent navrhl novou verzi';
 
   @override
   String get doneButton => 'Hotovo';

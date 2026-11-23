@@ -8,12 +8,14 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task_document_data.dart';
 import 'package:lotti/classes/task_document_merge.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
+import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/task_document_editor.dart';
 import 'package:lotti/features/documents/ui/task_document_history.dart';
 import 'package:lotti/features/documents/ui/task_document_page.dart';
+import 'package:lotti/features/documents/ui/widgets/document_review_view.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart' show BackWidget;
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:mocktail/mocktail.dart';
@@ -22,6 +24,7 @@ import '../../../classes/task_document_fixtures.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../document_draft_fixtures.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -55,6 +58,9 @@ void main() {
     when(
       () => repository.currentVersion(document),
     ).thenAnswer((_) async => version);
+    when(
+      () => repository.version('version-2'),
+    ).thenAnswer((_) async => version);
   });
 
   Future<void> pump(
@@ -63,6 +69,7 @@ void main() {
     bool gone = false,
     VoidCallback? onClose,
     bool chat = false,
+    List<PendingSuggestion> drafts = const [],
   }) async {
     final doc = gone ? null : (shown ?? document);
     await withClock(
@@ -85,6 +92,10 @@ void main() {
                 (ref) async => [version],
               ),
               queryChatEnabledProvider.overrideWithValue(chat),
+              unifiedSuggestionListProvider(key.taskId).overrideWith(
+                (ref) async =>
+                    UnifiedSuggestionList(open: drafts, activity: const []),
+              ),
             ],
           ),
         );
@@ -257,5 +268,74 @@ void main() {
       tester.widget<QueryCompanion>(find.byType(QueryCompanion)).scope,
       scope,
     );
+  });
+
+  group('a draft waiting for review', () {
+    final draft = documentDraft(
+      base: 'version-2',
+      markdown: '# Launch brief\n\nAll 38 penguins present.',
+    );
+
+    testWidgets('no notice while no draft waits', (tester) async {
+      await pump(tester);
+
+      expect(find.byKey(TaskDocumentPageKeys.review), findsNothing);
+    });
+
+    testWidgets('the notice opens the draft beside the current text, and '
+        'closing the review returns to reading', (tester) async {
+      await pump(tester, drafts: [draft]);
+
+      expect(find.text('The agent drafted a new version'), findsOneWidget);
+      await tester.tap(find.byKey(TaskDocumentPageKeys.review));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final review = tester.widget<DocumentReviewView>(
+        find.byType(DocumentReviewView),
+      );
+      expect(review.reviewKey, (
+        taskId: 'task-1',
+        documentId: 'doc-brief',
+        changeSetId: 'cs-draft',
+        itemIndex: 0,
+      ));
+      expect(review.title, 'Launch brief for Mission Control');
+      expect(find.byKey(TaskDocumentPageKeys.edit), findsNothing);
+
+      await tester.tap(find.byKey(DocumentReviewViewKeys.close));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(DocumentReviewView), findsNothing);
+      expect(find.byKey(TaskDocumentPageKeys.edit), findsOneWidget);
+    });
+
+    testWidgets('of several drafts, the notice opens the newest', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        drafts: [
+          draft,
+          documentDraft(
+            setId: 'cs-newest',
+            base: 'version-2',
+            createdAt: draft.changeSet.createdAt.add(const Duration(hours: 1)),
+          ),
+        ],
+      );
+
+      await tester.tap(find.byKey(TaskDocumentPageKeys.review));
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<DocumentReviewView>(find.byType(DocumentReviewView))
+            .reviewKey
+            .changeSetId,
+        'cs-newest',
+      );
+    });
   });
 }

@@ -7234,15 +7234,62 @@ class AppLocalizationsRo extends AppLocalizations {
   String get documentReviewAdded => 'Adăugat în versiunea propusă';
 
   @override
+  String get documentReviewAskForChanges => 'Cereți modificări';
+
+  @override
+  String get documentReviewClose => 'Închideți revizuirea';
+
+  @override
+  String documentReviewConfirm(int number) {
+    return 'Confirmați v$number';
+  }
+
+  @override
+  String documentReviewCounts(int added, int removed, int rewritten) {
+    return '$added adăugate, $removed eliminate, $rewritten rescrise';
+  }
+
+  @override
+  String get documentReviewCurrent => 'Actuală';
+
+  @override
+  String get documentReviewNewer => 'Deschideți ciorna mai nouă';
+
+  @override
+  String get documentReviewNotInDraft => 'Nu este în ciornă';
+
+  @override
   String documentReviewNotInVersion(int number) {
     return 'Nu este în v$number';
   }
+
+  @override
+  String get documentReviewOpen => 'Revizuiți modificările';
+
+  @override
+  String get documentReviewProposed => 'Propusă';
+
+  @override
+  String get documentReviewRedo => 'Cereți agentului să refacă';
 
   @override
   String get documentReviewRemoved => 'Eliminat în versiunea propusă';
 
   @override
   String get documentReviewRewritten => 'Rescris în versiunea propusă';
+
+  @override
+  String documentReviewStale(int base, int current) {
+    return 'Scrisă pe baza v$base, actuala este v$current';
+  }
+
+  @override
+  String documentReviewStaleNoText(int current) {
+    return 'Scrisă înainte ca documentul să aibă text, actuala este v$current';
+  }
+
+  @override
+  String get documentReviewWaiting => 'Agentul a redactat o versiune nouă';
 
   @override
   String get doneButton => 'Gata';

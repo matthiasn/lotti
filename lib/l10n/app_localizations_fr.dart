@@ -7226,15 +7226,62 @@ class AppLocalizationsFr extends AppLocalizations {
   String get documentReviewAdded => 'Ajouté dans la version proposée';
 
   @override
+  String get documentReviewAskForChanges => 'Demander des modifications';
+
+  @override
+  String get documentReviewClose => 'Fermer la relecture';
+
+  @override
+  String documentReviewConfirm(int number) {
+    return 'Valider v$number';
+  }
+
+  @override
+  String documentReviewCounts(int added, int removed, int rewritten) {
+    return '$added ajoutés, $removed supprimés, $rewritten réécrits';
+  }
+
+  @override
+  String get documentReviewCurrent => 'Actuelle';
+
+  @override
+  String get documentReviewNewer => 'Ouvrir le brouillon plus récent';
+
+  @override
+  String get documentReviewNotInDraft => 'Absent du brouillon';
+
+  @override
   String documentReviewNotInVersion(int number) {
     return 'Absent de v$number';
   }
+
+  @override
+  String get documentReviewOpen => 'Relire les changements';
+
+  @override
+  String get documentReviewProposed => 'Proposée';
+
+  @override
+  String get documentReviewRedo => 'Demander à l\'agent de refaire';
 
   @override
   String get documentReviewRemoved => 'Supprimé dans la version proposée';
 
   @override
   String get documentReviewRewritten => 'Réécrit dans la version proposée';
+
+  @override
+  String documentReviewStale(int base, int current) {
+    return 'Rédigée sur v$base, la version actuelle est v$current';
+  }
+
+  @override
+  String documentReviewStaleNoText(int current) {
+    return 'Rédigée avant que le document ait du texte, la version actuelle est v$current';
+  }
+
+  @override
+  String get documentReviewWaiting => 'L\'agent a rédigé une nouvelle version';
 
   @override
   String get doneButton => 'Terminé';

@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -9,11 +10,13 @@ import 'package:lotti/features/design_system/components/buttons/design_system_ic
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/state/document_review_providers.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/task_document_copy.dart';
 import 'package:lotti/features/documents/ui/task_document_editor.dart';
 import 'package:lotti/features/documents/ui/task_document_history.dart';
 import 'package:lotti/features/documents/ui/task_document_labels.dart';
+import 'package:lotti/features/documents/ui/widgets/document_review_view.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart' show BackWidget;
@@ -29,6 +32,7 @@ abstract final class TaskDocumentPageKeys {
   static const history = Key('task-document-page-history');
   static const delete = Key('task-document-page-delete');
   static const provenance = Key('task-document-page-provenance');
+  static const review = Key('task-document-page-review');
 }
 
 /// One document of a task, for reading (ADR 0166): its title, where the
@@ -44,7 +48,7 @@ abstract final class TaskDocumentPageKeys {
 /// [onClose] leaves the page: the desktop detail pane passes the action that
 /// returns it to the task. Without it, the back arrow pops the page or beams
 /// back, as for any page.
-class TaskDocumentPage extends ConsumerWidget {
+class TaskDocumentPage extends ConsumerStatefulWidget {
   const TaskDocumentPage({
     required this.taskId,
     required this.documentId,
@@ -57,16 +61,43 @@ class TaskDocumentPage extends ConsumerWidget {
   final VoidCallback? onClose;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TaskDocumentPage> createState() => _TaskDocumentPageState();
+}
+
+class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
+  /// The draft under review, while one is; the page reads otherwise.
+  DocumentReviewKey? _reviewing;
+
+  void _review(DocumentReviewKey? draft) => setState(() => _reviewing = draft);
+
+  @override
+  Widget build(BuildContext context) {
+    final taskId = widget.taskId;
+    final documentId = widget.documentId;
+    final onClose = widget.onClose;
     final tokens = context.designTokens;
     final messages = context.messages;
     final key = (taskId: taskId, documentId: documentId);
     final document = ref.watch(taskDocumentProvider(key));
     final version = ref.watch(taskDocumentCurrentVersionProvider(key)).value;
+    // The newest draft waiting for this document, which the notice opens.
+    final waiting = ref
+        .watch(pendingDocumentProposalsProvider(key))
+        ?.fold<PendingSuggestion?>(
+          null,
+          (newest, draft) =>
+              newest == null ||
+                  draft.changeSet.createdAt.isAfter(
+                    newest.changeSet.createdAt,
+                  )
+              ? draft
+              : newest,
+        );
+    final reviewing = _reviewing;
 
     void close() {
       if (onClose != null) {
-        onClose!();
+        onClose();
       } else {
         Navigator.of(context).maybePop();
       }
@@ -107,39 +138,63 @@ class TaskDocumentPage extends ConsumerWidget {
                 ),
               ),
               Expanded(
-                child: document == null
-                    ? Center(
-                        child: Text(
-                          messages.taskDocumentsGone,
-                          style: tokens.typography.styles.body.bodyMedium
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                        ),
-                      )
-                    : _DocumentBody(
-                        document: document,
-                        version: version,
-                        onEdit: () async => showTaskDocumentEditor(
-                          context,
-                          taskId: taskId,
+                child: AnimatedSwitcher(
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : MotionDurations.short4,
+                  switchInCurve: MotionCurves.standard,
+                  switchOutCurve: MotionCurves.standard,
+                  child: reviewing != null && document != null
+                      ? DocumentReviewView(
+                          key: ValueKey(reviewing),
+                          reviewKey: reviewing,
+                          title: document.data.title,
+                          onClose: () => _review(null),
+                          onOpenDraft: _review,
+                        )
+                      : document == null
+                      ? Center(
+                          child: Text(
+                            messages.taskDocumentsGone,
+                            style: tokens.typography.styles.body.bodyMedium
+                                .copyWith(
+                                  color: tokens.colors.text.mediumEmphasis,
+                                ),
+                          ),
+                        )
+                      : _DocumentBody(
                           document: document,
+                          version: version,
+                          onEdit: () async => showTaskDocumentEditor(
+                            context,
+                            taskId: taskId,
+                            document: document,
+                          ),
+                          onCopy: version == null
+                              ? null
+                              : () async => copyTaskDocumentMarkdown(
+                                  context,
+                                  version.data.markdown,
+                                ),
+                          onHistory: version == null
+                              ? null
+                              : () async =>
+                                    showTaskDocumentHistory(context, key),
+                          onDelete: delete,
+                          chatScope: QueryScope(
+                            kind: QueryScopeKind.task,
+                            id: taskId,
+                          ),
+                          onReview: waiting == null
+                              ? null
+                              : () => _review((
+                                  taskId: taskId,
+                                  documentId: documentId,
+                                  changeSetId: waiting.changeSet.id,
+                                  itemIndex: waiting.itemIndex,
+                                )),
                         ),
-                        onCopy: version == null
-                            ? null
-                            : () async => copyTaskDocumentMarkdown(
-                                context,
-                                version.data.markdown,
-                              ),
-                        onHistory: version == null
-                            ? null
-                            : () async => showTaskDocumentHistory(context, key),
-                        onDelete: delete,
-                        chatScope: QueryScope(
-                          kind: QueryScopeKind.task,
-                          id: taskId,
-                        ),
-                      ),
+                ),
               ),
             ],
           ),
@@ -158,6 +213,7 @@ class _DocumentBody extends StatelessWidget {
     required this.onHistory,
     required this.onDelete,
     required this.chatScope,
+    required this.onReview,
   });
 
   final TaskDocumentEntry document;
@@ -171,6 +227,10 @@ class _DocumentBody extends StatelessWidget {
 
   /// The task's discussion, which the Ask button opens beside the page.
   final QueryScope chatScope;
+
+  /// Opens the agent's waiting draft of this document for review; null when
+  /// none waits.
+  final VoidCallback? onReview;
 
   @override
   Widget build(BuildContext context) {
@@ -265,6 +325,10 @@ class _DocumentBody extends StatelessWidget {
                   padding: EdgeInsets.only(top: tokens.spacing.step2),
                   child: QueryAskButton(scope: chatScope, inline: true),
                 ),
+                if (onReview != null) ...[
+                  SizedBox(height: tokens.spacing.step4),
+                  _DraftWaitingNotice(onReview: onReview!),
+                ],
                 SizedBox(height: tokens.spacing.step4),
                 const DesignSystemDivider(),
                 SizedBox(height: tokens.spacing.step5),
@@ -291,6 +355,50 @@ class _DocumentBody extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The agent's draft of a new version, waiting: said in the agent's violet,
+/// with the button that lays it beside the current text.
+class _DraftWaitingNotice extends StatelessWidget {
+  const _DraftWaitingNotice({required this.onReview});
+
+  final VoidCallback onReview;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final accent = tokens.colors.aiCard.accent;
+    return Wrap(
+      spacing: tokens.spacing.step3,
+      runSpacing: tokens.spacing.step2,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LottiIcons.aiSpark, size: IconSizes.s, color: accent),
+            SizedBox(width: tokens.spacing.step2),
+            Flexible(
+              child: Text(
+                messages.documentReviewWaiting,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: accent,
+                  fontWeight: tokens.typography.weight.semiBold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        DesignSystemButton(
+          key: TaskDocumentPageKeys.review,
+          label: messages.documentReviewOpen,
+          variant: DesignSystemButtonVariant.constructiveOutlined,
+          onPressed: onReview,
         ),
       ],
     );

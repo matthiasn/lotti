@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task_document_merge.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
@@ -12,7 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../classes/task_document_fixtures.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import '../../agents/test_data/change_set_factories.dart';
+import '../document_draft_fixtures.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -42,42 +41,6 @@ void main() {
   TaskDocumentEntry documentShowing(TaskDocumentVersionEntry version) =>
       taskDocumentEntry(clock: {'a': 1}, id: documentId, current: version.ref);
 
-  PendingSuggestion draft({
-    String setId = 'cs-draft',
-    String document = documentId,
-    String tool = 'propose_document_version',
-    String? base = 'version-1',
-    String markdown =
-        '# Brief\n\nFeed the penguins at one.\n\nCount them at '
-        'dusk.\n\nReport to the council.',
-    DateTime? createdAt,
-  }) {
-    final set = makeTestChangeSet(
-      id: setId,
-      taskId: taskId,
-      createdAt: createdAt,
-      items: [
-        ChangeItem(
-          toolName: tool,
-          args: {
-            'documentId': document,
-            'title': 'Brief',
-            'baseVersionId': ?base,
-            'markdown': markdown,
-            'changeSummary': ' Feeds later, reports to the council. ',
-          },
-          humanSummary: 'New version of "Brief"',
-        ),
-      ],
-    );
-    return PendingSuggestion(
-      changeSet: set,
-      itemIndex: 0,
-      item: set.items.single,
-      fingerprint: 'fp-$setId',
-    );
-  }
-
   late MockTaskDocumentRepository repository;
   late List<PendingSuggestion> open;
   late TaskDocumentEntry? document;
@@ -86,7 +49,7 @@ void main() {
   setUp(() {
     repository = MockTaskDocumentRepository();
     when(() => repository.version('version-1')).thenAnswer((_) async => v1);
-    open = [draft()];
+    open = [documentDraft()];
     document = documentShowing(v1);
     container = ProviderContainer(
       overrides: [
@@ -131,9 +94,9 @@ void main() {
     test('is null until the proposals load, then lists only this '
         "document's drafts", () async {
       open = [
-        draft(),
-        draft(setId: 'cs-other-doc', document: 'doc-other'),
-        draft(setId: 'cs-title', tool: 'set_task_title'),
+        documentDraft(),
+        documentDraft(setId: 'cs-other-doc', document: 'doc-other'),
+        documentDraft(setId: 'cs-title', tool: 'set_task_title'),
       ];
       container.listen(pendingDocumentProposalsProvider(docKey), (_, _) {});
       expect(container.read(pendingDocumentProposalsProvider(docKey)), isNull);
@@ -171,7 +134,7 @@ void main() {
     });
 
     test('a draft over a document with no text is all additions', () async {
-      open = [draft(base: null, markdown: 'One.\n\nTwo.')];
+      open = [documentDraft(base: null, markdown: 'One.\n\nTwo.')];
       document = taskDocumentEntry(clock: {'a': 1}, id: documentId);
 
       final review = await openReview();
@@ -187,8 +150,8 @@ void main() {
       final before = (await openReview()).snapshot;
 
       await reloadProposals([
-        draft(),
-        draft(setId: 'cs-title', tool: 'set_task_title'),
+        documentDraft(),
+        documentDraft(setId: 'cs-title', tool: 'set_task_title'),
       ]);
 
       expect(
@@ -219,8 +182,8 @@ void main() {
       final before = (await openReview()).snapshot;
 
       await reloadProposals([
-        draft(),
-        draft(
+        documentDraft(),
+        documentDraft(
           setId: 'cs-newer',
           markdown: 'Something else entirely.',
           createdAt: before.proposal.changeSet.createdAt.add(

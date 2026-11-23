@@ -7129,15 +7129,63 @@ class AppLocalizationsNl extends AppLocalizations {
   String get documentReviewAdded => 'Toegevoegd in de voorgestelde versie';
 
   @override
+  String get documentReviewAskForChanges => 'Om wijzigingen vragen';
+
+  @override
+  String get documentReviewClose => 'Beoordeling sluiten';
+
+  @override
+  String documentReviewConfirm(int number) {
+    return 'v$number bevestigen';
+  }
+
+  @override
+  String documentReviewCounts(int added, int removed, int rewritten) {
+    return '$added toegevoegd, $removed verwijderd, $rewritten herschreven';
+  }
+
+  @override
+  String get documentReviewCurrent => 'Huidig';
+
+  @override
+  String get documentReviewNewer => 'Nieuwer concept openen';
+
+  @override
+  String get documentReviewNotInDraft => 'Niet in het concept';
+
+  @override
   String documentReviewNotInVersion(int number) {
     return 'Niet in v$number';
   }
+
+  @override
+  String get documentReviewOpen => 'Wijzigingen bekijken';
+
+  @override
+  String get documentReviewProposed => 'Voorgesteld';
+
+  @override
+  String get documentReviewRedo => 'Vraag de agent het opnieuw te doen';
 
   @override
   String get documentReviewRemoved => 'Verwijderd in de voorgestelde versie';
 
   @override
   String get documentReviewRewritten => 'Herschreven in de voorgestelde versie';
+
+  @override
+  String documentReviewStale(int base, int current) {
+    return 'Geschreven op v$base, huidig is v$current';
+  }
+
+  @override
+  String documentReviewStaleNoText(int current) {
+    return 'Geschreven voordat het document tekst had, huidig is v$current';
+  }
+
+  @override
+  String get documentReviewWaiting =>
+      'De agent heeft een nieuwe versie opgesteld';
 
   @override
   String get doneButton => 'Klaar';

@@ -7119,15 +7119,63 @@ class AppLocalizationsSv extends AppLocalizations {
   String get documentReviewAdded => 'Tillagt i den föreslagna versionen';
 
   @override
+  String get documentReviewAskForChanges => 'Be om ändringar';
+
+  @override
+  String get documentReviewClose => 'Stäng granskning';
+
+  @override
+  String documentReviewConfirm(int number) {
+    return 'Bekräfta v$number';
+  }
+
+  @override
+  String documentReviewCounts(int added, int removed, int rewritten) {
+    return '$added tillagda, $removed borttagna, $rewritten omskrivna';
+  }
+
+  @override
+  String get documentReviewCurrent => 'Nuvarande';
+
+  @override
+  String get documentReviewNewer => 'Öppna det nyare utkastet';
+
+  @override
+  String get documentReviewNotInDraft => 'Inte i utkastet';
+
+  @override
   String documentReviewNotInVersion(int number) {
     return 'Inte i v$number';
   }
+
+  @override
+  String get documentReviewOpen => 'Granska ändringar';
+
+  @override
+  String get documentReviewProposed => 'Föreslagen';
+
+  @override
+  String get documentReviewRedo => 'Be agenten göra om';
 
   @override
   String get documentReviewRemoved => 'Borttaget i den föreslagna versionen';
 
   @override
   String get documentReviewRewritten => 'Omskrivet i den föreslagna versionen';
+
+  @override
+  String documentReviewStale(int base, int current) {
+    return 'Skriven mot v$base, nuvarande är v$current';
+  }
+
+  @override
+  String documentReviewStaleNoText(int current) {
+    return 'Skriven innan dokumentet hade text, nuvarande är v$current';
+  }
+
+  @override
+  String get documentReviewWaiting =>
+      'Agenten har skrivit ett utkast till en ny version';
 
   @override
   String get doneButton => 'Klart';

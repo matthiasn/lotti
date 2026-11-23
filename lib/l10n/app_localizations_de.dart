@@ -7153,9 +7153,43 @@ class AppLocalizationsDe extends AppLocalizations {
       'In der vorgeschlagenen Version hinzugefügt';
 
   @override
+  String get documentReviewAskForChanges => 'Änderungen erbitten';
+
+  @override
+  String get documentReviewClose => 'Prüfung schließen';
+
+  @override
+  String documentReviewConfirm(int number) {
+    return 'v$number übernehmen';
+  }
+
+  @override
+  String documentReviewCounts(int added, int removed, int rewritten) {
+    return '$added hinzugefügt, $removed entfernt, $rewritten umgeschrieben';
+  }
+
+  @override
+  String get documentReviewCurrent => 'Aktuell';
+
+  @override
+  String get documentReviewNewer => 'Neueren Entwurf öffnen';
+
+  @override
+  String get documentReviewNotInDraft => 'Nicht im Entwurf';
+
+  @override
   String documentReviewNotInVersion(int number) {
     return 'Nicht in v$number';
   }
+
+  @override
+  String get documentReviewOpen => 'Änderungen prüfen';
+
+  @override
+  String get documentReviewProposed => 'Vorgeschlagen';
+
+  @override
+  String get documentReviewRedo => 'Agent um Neufassung bitten';
 
   @override
   String get documentReviewRemoved => 'In der vorgeschlagenen Version entfernt';
@@ -7163,6 +7197,20 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get documentReviewRewritten =>
       'In der vorgeschlagenen Version umgeschrieben';
+
+  @override
+  String documentReviewStale(int base, int current) {
+    return 'Geschrieben für v$base, aktuell ist v$current';
+  }
+
+  @override
+  String documentReviewStaleNoText(int current) {
+    return 'Geschrieben, bevor das Dokument Text hatte, aktuell ist v$current';
+  }
+
+  @override
+  String get documentReviewWaiting =>
+      'Der Agent hat eine neue Fassung entworfen';
 
   @override
   String get doneButton => 'Fertig';

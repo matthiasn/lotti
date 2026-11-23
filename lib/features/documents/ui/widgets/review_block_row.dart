@@ -18,20 +18,29 @@ abstract final class ReviewBlockRowKeys {
 ///
 /// [baseVersion] and [proposedVersion] name the empty slots ("Not in v3");
 /// a null [baseVersion] means the document had no text, and its slot says
-/// [noTextLabel] instead.
+/// [noTextLabel] instead. A null [proposedVersion] is a draft that would not
+/// become the next version — written over an older one — and its slot says
+/// "Not in the draft".
+///
+/// [stacked] is the one-column form, for a pane too narrow for two: the
+/// row's blocks one above the other in reading order, with no empty slots —
+/// a rewritten block's old text on the removed surface above its new text on
+/// the added one, so before and after stay apart without a column each.
 class ReviewBlockRow extends StatelessWidget {
   const ReviewBlockRow({
     required this.pair,
     required this.baseVersion,
     required this.proposedVersion,
     required this.noTextLabel,
+    this.stacked = false,
     super.key,
   });
 
   final MarkdownBlockPair pair;
   final int? baseVersion;
-  final int proposedVersion;
+  final int? proposedVersion;
   final String noTextLabel;
+  final bool stacked;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +66,7 @@ class ReviewBlockRow extends StatelessWidget {
       ),
     };
     final baseVersion = this.baseVersion;
+    final proposedVersion = this.proposedVersion;
     final row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -77,26 +87,58 @@ class ReviewBlockRow extends StatelessWidget {
                 ),
         ),
         SizedBox(width: tokens.spacing.step2),
-        Expanded(
-          child: ReviewBlockCell(
-            kind: pair.kind,
-            block: pair.base,
-            emptyLabel: baseVersion == null
-                ? noTextLabel
-                : messages.documentReviewNotInVersion(baseVersion),
+        if (stacked)
+          Expanded(child: _stackedCells(tokens))
+        else ...[
+          Expanded(
+            child: ReviewBlockCell(
+              kind: pair.kind,
+              block: pair.base,
+              emptyLabel: baseVersion == null
+                  ? noTextLabel
+                  : messages.documentReviewNotInVersion(baseVersion),
+            ),
           ),
-        ),
-        SizedBox(width: tokens.spacing.step6),
-        Expanded(
-          child: ReviewBlockCell(
-            kind: pair.kind,
-            block: pair.proposed,
-            emptyLabel: messages.documentReviewNotInVersion(proposedVersion),
+          SizedBox(width: tokens.spacing.step6),
+          Expanded(
+            child: ReviewBlockCell(
+              kind: pair.kind,
+              block: pair.proposed,
+              emptyLabel: proposedVersion == null
+                  ? messages.documentReviewNotInDraft
+                  : messages.documentReviewNotInVersion(proposedVersion),
+            ),
           ),
-        ),
+        ],
       ],
     );
     if (mark == null) return row;
     return Semantics(container: true, label: mark.$3, child: row);
+  }
+
+  Widget _stackedCells(DsTokens tokens) {
+    // A rewritten row's halves take the removed and added surfaces, so the
+    // old text and the new one read apart; an unchanged row shows its text
+    // once.
+    final kind = pair.kind;
+    final rewritten = kind == MarkdownBlockChange.rewritten;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (kind == MarkdownBlockChange.removed || rewritten)
+          ReviewBlockCell(
+            kind: MarkdownBlockChange.removed,
+            block: pair.base,
+            emptyLabel: noTextLabel,
+          ),
+        if (rewritten) SizedBox(height: tokens.spacing.step1),
+        if (kind != MarkdownBlockChange.removed)
+          ReviewBlockCell(
+            kind: rewritten ? MarkdownBlockChange.added : kind,
+            block: pair.proposed,
+            emptyLabel: noTextLabel,
+          ),
+      ],
+    );
   }
 }

@@ -4547,6 +4547,54 @@
   "@documentReviewAdded": {
     "description": "Screen-reader label of a review row whose paragraph is new in the proposed version."
   },
+  "documentReviewAskForChanges": "Ask for changes",
+  "@documentReviewAskForChanges": {
+    "description": "Button in a document review that opens the task's chat, to ask the agent to change its draft."
+  },
+  "documentReviewClose": "Close review",
+  "@documentReviewClose": {
+    "description": "Button in a document review's header that leaves the review and returns to the document."
+  },
+  "documentReviewConfirm": "Confirm v{number}",
+  "@documentReviewConfirm": {
+    "description": "Primary button of a document review: makes the agent's draft the document's new version, numbered as shown.",
+    "placeholders": {
+      "number": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "documentReviewCounts": "{added} added, {removed} removed, {rewritten} rewritten",
+  "@documentReviewCounts": {
+    "description": "Screen-reader label for the count tags in a document review's header: how many paragraphs the draft adds, removes and rewrites.",
+    "placeholders": {
+      "added": {
+        "type": "int",
+        "example": "3"
+      },
+      "removed": {
+        "type": "int",
+        "example": "3"
+      },
+      "rewritten": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "documentReviewCurrent": "Current",
+  "@documentReviewCurrent": {
+    "description": "Column head over the left side of a side-by-side document review: the version the document shows now."
+  },
+  "documentReviewNewer": "Open the newer draft",
+  "@documentReviewNewer": {
+    "description": "Link in a document review: the agent proposed a later draft of the same document while this one was open; opens that draft for review."
+  },
+  "documentReviewNotInDraft": "Not in the draft",
+  "@documentReviewNotInDraft": {
+    "description": "Caption in the empty slot on the proposed side of a document review whose draft was written over an older version: the draft does not have this paragraph. Used instead of a version number, since the draft would not become the next version."
+  },
   "documentReviewNotInVersion": "Not in v{number}",
   "@documentReviewNotInVersion": {
     "description": "Caption in the empty slot of a side-by-side document review, where a paragraph exists only on the other side: this version does not have it.",
@@ -4557,6 +4605,18 @@
       }
     }
   },
+  "documentReviewOpen": "Review changes",
+  "@documentReviewOpen": {
+    "description": "Button beside the notice on a document page that opens the agent's draft side by side with the current version."
+  },
+  "documentReviewProposed": "Proposed",
+  "@documentReviewProposed": {
+    "description": "Column head over the right side of a side-by-side document review: the version the agent proposes."
+  },
+  "documentReviewRedo": "Ask the agent to redo",
+  "@documentReviewRedo": {
+    "description": "Primary button of a document review whose draft was written over an older version: opens the task's chat to ask the agent for a fresh draft against the current version."
+  },
   "documentReviewRemoved": "Removed in the proposed version",
   "@documentReviewRemoved": {
     "description": "Screen-reader label of a review row whose paragraph the proposed version drops."
@@ -4564,6 +4624,34 @@
   "documentReviewRewritten": "Rewritten in the proposed version",
   "@documentReviewRewritten": {
     "description": "Screen-reader label of a review row whose paragraph the proposed version rewrites."
+  },
+  "documentReviewStale": "Written against v{base}, current is v{current}",
+  "@documentReviewStale": {
+    "description": "Warning tag in a document review: the draft was written over version base, but the document has moved on to version current, so it cannot be confirmed.",
+    "placeholders": {
+      "base": {
+        "type": "int",
+        "example": "3"
+      },
+      "current": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "documentReviewStaleNoText": "Written before the document had text, current is v{current}",
+  "@documentReviewStaleNoText": {
+    "description": "Warning tag in a document review: the draft was written while the document had no text, but the document now shows version current, so it cannot be confirmed.",
+    "placeholders": {
+      "current": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "documentReviewWaiting": "The agent drafted a new version",
+  "@documentReviewWaiting": {
+    "description": "Notice on a document page: the task agent has drafted a new version of this document that waits for review."
   },
   "doneButton": "Done",
   "downloadSizeMegabytes": "{megabytes} MB",

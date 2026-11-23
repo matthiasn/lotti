@@ -36,6 +36,10 @@ sources:
     resource: ../../lib/features/documents/ui/task_document_page.dart
     title: TaskDocumentPage
     last_modified: 2026-11-23
+  - id: review-view
+    resource: ../../lib/features/documents/ui/widgets/document_review_view.dart
+    title: DocumentReviewView — the side-by-side review and its gate
+    last_modified: 2026-11-23
   - id: history
     resource: ../../lib/features/documents/ui/task_document_history.dart
     title: TaskDocumentHistory and TaskDocumentVersionView
@@ -143,8 +147,9 @@ sources:
 > [Applying a confirmed proposal](#applying-a-confirmed-proposal)). Task
 > chat proposes versions too, a proposal's text can be read before it is
 > confirmed, and the document page hosts the task's chat
-> ([Reading a proposal](#reading-a-proposal)). The side-by-side review is
-> not built yet. Each implementation
+> ([Reading a proposal](#reading-a-proposal)). The side-by-side review
+> runs inside the document page; the task list and day column do not yet
+> step aside for it, and no route opens it directly. Each implementation
 > step rewrites the part it lands, and the page moves to `stable` when the
 > last part does.
 
@@ -336,8 +341,8 @@ stateDiagram-v2
 - **A stale proposal cannot be confirmed.** Today the apply refuses it for
   good: the dispatch fails `nonRetryable`, and the confirmation service
   records that as a retraction, so it leaves the open list instead of
-  failing again on every tap. The side-by-side review (not built yet) is to
-  catch it before that, offering "Ask the agent to redo" instead of Confirm.
+  failing again on every tap. The side-by-side review catches it before
+  that: it offers "Ask the agent to redo" instead of Confirm.
 - **A dismiss reason is feedback.** It reaches the next draft the way
   rejection reasons already reach the task agent.
 
@@ -404,6 +409,10 @@ A device on an older build skips both variants as undeserializable.
   `taskDocumentCurrentVersionProvider`, which re-reads only when the
   document moves to another version (a rename reads nothing) and keeps the
   version on show while the next loads, so the text is replaced in place.
+  While the task agent has a draft of this document waiting, a line in the
+  agent's violet says so ("The agent drafted a new version") with "Review
+  changes", which opens the newest one in the
+  [side-by-side review](#side-by-side-review-desktop-partly-built).
   A document deleted while open says so. Delete asks first, then deletes
   the document with its versions and leaves the page.
 - **History.**
@@ -526,25 +535,60 @@ medium ink, a changed one on its `colors.diff.*` surface, and a missing one
 as a dashed slot (`DsDashedBorder`, `decorative.level03`) saying "Not in
 v3", or "No text yet" when the document had none.
 
-The rest of this section is the plan: the view itself is not built yet.
+The view is built:
+[`DocumentReviewView`](../../lib/features/documents/ui/widgets/document_review_view.dart)
+is a mode of the document page, which swaps its reading body for the review
+(a 200 ms cross-fade, none under reduced motion) and back. The header holds
+the title, "Close review", count tags (+1 −1 ~1, read out as one sentence),
+the agent's change summary, and two live notices: a warning tag "Written
+against v1, current is v2" for a stale draft, and "Open the newer draft"
+when a later one waits, which reviews that one instead. Below are the rows,
+one `SliverList.builder` keyed by row index (the rows are pinned, so an
+index never moves), clear of the glass bar at the bottom.
 
-Reviewing a proposal is a mode of the document page. The current version is
-on the left and the proposed one on the right, aligned block by block
-(headings, paragraphs, whole lists, code). Unchanged blocks are muted.
-Added, removed and rewritten blocks use the diff colour tokens and carry a
-＋ / − / ~ mark, so colour is not the only signal. A bar at the bottom holds
-Ask for changes, Dismiss and Confirm.
+- **The gate is measured.** The content column, capped at
+  `kDetailContentMaxWidth`, shows the versions side by side under "Current
+  v1" and "Proposed v2" heads (violet on the proposed head only) when it
+  holds `documentReviewSideBySideMinWidth`: the gutter mark, two
+  `kReviewColumnMinWidth` (440) columns and a `step6` gap. Narrower, the same
+  rows stack into one column in reading order — a rewritten block's old text
+  on the removed surface above its new text on the added one, under one mark,
+  and no empty slots. A docked chat or a dragged divider switches it live.
+- **The bar** is the modal glass bar: "Discard draft", "Ask for changes" (opens
+  the task's chat) and "Confirm v2", the one primary. Confirm and Discard
+  call `ChangeSetConfirmationService.confirmItem` / `rejectItem`, as the card
+  does, then notify the agent's id; a verdict that lands closes the review,
+  and one that fails says so in a toast and keeps it open.
+- **A stale draft** shows no Confirm. Its primary is "Ask the agent to
+  redo", which opens the task's chat (the request is not prefilled yet); the
+  proposed head drops its number and its empty slots say "Not in the draft",
+  since the next number already belongs to the version it is stale against.
+- **It closes** on "Close review", on Escape (the `cancel` app command), after
+  its own verdict, and when the draft stops waiting elsewhere.
 
-- **The gate is measured.** Two columns need `2 × kReviewColumnMinWidth +
-  step6` of document width. Below that the page shows the single-column
-  view, so a docked chat or a dragged divider switches it live.
+```mermaid
+stateDiagram-v2
+  [*] --> Reading
+  Reading --> Reviewing: Review changes (newest waiting draft)
+  Reviewing --> Reviewing: Open the newer draft
+  Reviewing --> Reading: Close review or Escape
+  Reviewing --> Reading: Confirm or Discard draft lands
+  Reviewing --> Reading: the draft is decided or withdrawn elsewhere
+```
+
+Still to build:
+
 - **The width comes from the panes stepping aside.** While review is open,
-  the task list and day column are hidden the way they already are for task
-  chat: [`tasks_root_page.dart`](../../lib/features/tasks/ui/pages/tasks_root_page.dart)
+  the task list and day column are to be hidden the way they already are for
+  task chat: [`tasks_root_page.dart`](../../lib/features/tasks/ui/pages/tasks_root_page.dart)
   folds a temporary term into the list's visibility, and
   [`beamer_app_layout_part.dart`](../../lib/beamer/beamer_app_layout_part.dart)
   puts the day column offstage. Both are derived. The stored pane settings
   are never written, so closing review restores the user's layout exactly.
+  Until then the review is side by side only where the detail pane alone is
+  that wide.
+- **A route into review**, so the card's Read draft and a notification can
+  land in it directly.
 - **Chat takes the width back.** [`QueryCompanion`](../../lib/features/agents/ui/query/query_companion.dart)
   docks chat as a column, so opening chat from review usually drops it to
   one column.

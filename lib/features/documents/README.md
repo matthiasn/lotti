@@ -21,7 +21,10 @@ opens the task's chat beside the document.
   row and the section's + open an editor for a new one; tapping a document
   opens its page.
 - **Shows a document on its own page**: its text, where the version came
-  from, Edit, Copy, its history of versions with Restore, and Delete. On
+  from, Edit, Copy, its history of versions with Restore, and Delete.
+- **Lays the agent's draft beside the current text**, block by block, so a
+  new version is confirmed after seeing what it changes; a draft written
+  over an older version cannot be confirmed and is sent back to the agent. On
   desktop the page opens over its task in the detail pane, which comes back
   as it was on close; on a phone it is pushed.
 - **Keeps each document on its task.** A document is a `TaskDocumentEntry`
@@ -62,10 +65,14 @@ It implements the task agent's `TaskDocumentSource` port
 and reads a task's documents and a version the user confirmed is written;
 the agent's tools and their rules live in the agents feature.
 
-Still to come: the side-by-side review of a proposed version. Its block
-alignment is in `logic/markdown_block_diff.dart`, its state in
-`state/document_review_providers.dart`, and its rows in `ui/widgets/`; the
-review view is not built yet.
+It owns the side-by-side review of the agent's draft of a new version
+(`ui/widgets/document_review_view.dart`): the document page opens it from
+its "Review changes" notice, with the versions side by side where the pane
+is wide enough and stacked where it is not, and Confirm or Discard decided
+through the agents feature's confirmation service. Its block alignment is
+in `logic/markdown_block_diff.dart` and its state in
+`state/document_review_providers.dart`. Still to come: the task list and
+day column stepping aside while it is open, and a route into it.
 
 ## Where it sits
 

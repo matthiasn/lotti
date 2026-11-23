@@ -12029,11 +12029,71 @@ abstract class AppLocalizations {
   /// **'Added in the proposed version'**
   String get documentReviewAdded;
 
+  /// Button in a document review that opens the task's chat, to ask the agent to change its draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for changes'**
+  String get documentReviewAskForChanges;
+
+  /// Button in a document review's header that leaves the review and returns to the document.
+  ///
+  /// In en, this message translates to:
+  /// **'Close review'**
+  String get documentReviewClose;
+
+  /// Primary button of a document review: makes the agent's draft the document's new version, numbered as shown.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm v{number}'**
+  String documentReviewConfirm(int number);
+
+  /// Screen-reader label for the count tags in a document review's header: how many paragraphs the draft adds, removes and rewrites.
+  ///
+  /// In en, this message translates to:
+  /// **'{added} added, {removed} removed, {rewritten} rewritten'**
+  String documentReviewCounts(int added, int removed, int rewritten);
+
+  /// Column head over the left side of a side-by-side document review: the version the document shows now.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get documentReviewCurrent;
+
+  /// Link in a document review: the agent proposed a later draft of the same document while this one was open; opens that draft for review.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the newer draft'**
+  String get documentReviewNewer;
+
+  /// Caption in the empty slot on the proposed side of a document review whose draft was written over an older version: the draft does not have this paragraph. Used instead of a version number, since the draft would not become the next version.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in the draft'**
+  String get documentReviewNotInDraft;
+
   /// Caption in the empty slot of a side-by-side document review, where a paragraph exists only on the other side: this version does not have it.
   ///
   /// In en, this message translates to:
   /// **'Not in v{number}'**
   String documentReviewNotInVersion(int number);
+
+  /// Button beside the notice on a document page that opens the agent's draft side by side with the current version.
+  ///
+  /// In en, this message translates to:
+  /// **'Review changes'**
+  String get documentReviewOpen;
+
+  /// Column head over the right side of a side-by-side document review: the version the agent proposes.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed'**
+  String get documentReviewProposed;
+
+  /// Primary button of a document review whose draft was written over an older version: opens the task's chat to ask the agent for a fresh draft against the current version.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the agent to redo'**
+  String get documentReviewRedo;
 
   /// Screen-reader label of a review row whose paragraph the proposed version drops.
   ///
@@ -12046,6 +12106,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rewritten in the proposed version'**
   String get documentReviewRewritten;
+
+  /// Warning tag in a document review: the draft was written over version base, but the document has moved on to version current, so it cannot be confirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Written against v{base}, current is v{current}'**
+  String documentReviewStale(int base, int current);
+
+  /// Warning tag in a document review: the draft was written while the document had no text, but the document now shows version current, so it cannot be confirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Written before the document had text, current is v{current}'**
+  String documentReviewStaleNoText(int current);
+
+  /// Notice on a document page: the task agent has drafted a new version of this document that waits for review.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent drafted a new version'**
+  String get documentReviewWaiting;
 
   /// No description provided for @doneButton.
   ///
