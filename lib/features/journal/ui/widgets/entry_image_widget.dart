@@ -29,6 +29,9 @@ class EntryImageWidget extends ConsumerWidget {
 
   final JournalImage journalImage;
 
+  /// Tallest an inline photo is drawn; the full picture is one tap away.
+  static const double _maxHeight = 400;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = entryControllerProvider(journalImage.meta.id);
@@ -37,7 +40,6 @@ class EntryImageWidget extends ConsumerWidget {
     final focusNode = notifier.focusNode;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
-    final maxHeight = isMobile ? 400.0 : screenWidth;
     // Hold a single ResizeImage instance so the cache eviction below targets
     // the exact key Flutter used to store the decoded bitmap. Evicting a bare
     // FileImage would miss because ResizeImageKey also includes dimensions +
@@ -45,7 +47,7 @@ class EntryImageWidget extends ConsumerWidget {
     final imageProvider = ResizeImage(
       FileImage(file),
       width: (screenWidth * devicePixelRatio).round().clamp(1, 10000),
-      height: (maxHeight * devicePixelRatio).round().clamp(1, 10000),
+      height: (_maxHeight * devicePixelRatio).round().clamp(1, 10000),
       policy: ResizeImagePolicy.fit,
     );
 
@@ -58,15 +60,16 @@ class EntryImageWidget extends ConsumerWidget {
           date: journalImage.data.capturedAt,
         );
       },
-      child: ColoredBox(
-        color: Colors.black,
-        child: Hero(
-          tag: 'entry_img',
+      // The picture at its own shape, corners rounded like the card it sits
+      // in: no letterbox bars, so nothing but the photo is painted.
+      child: Hero(
+        tag: 'entry_img',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(context.designTokens.radii.s),
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxHeight),
+            constraints: const BoxConstraints(maxHeight: _maxHeight),
             child: Image(
               image: imageProvider,
-              width: screenWidth,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
                 imageCache.evict(imageProvider);

@@ -4620,14 +4620,7 @@
   "navTabTitleProjects": "Projekty",
   "navTabTitleSettings": "Nastavení",
   "navTabTitleTasks": "Úkoly",
-  "nestedAiResponsesTitle": "{count, plural, =1{1 AI odpověď} other{{count} AI odpovědí}}",
-  "@nestedAiResponsesTitle": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "nestedAiResponsesLoadFailed": "Výsledky AI k tomuto záznamu se nenačetly.",
   "noDefaultLanguage": "Žádný výchozí jazyk",
   "noTasksFound": "Nebyly nalezeny žádné úkoly",
   "noTasksToLink": "Žádné dostupné úkoly k propojení",

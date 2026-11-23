@@ -3,9 +3,12 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
@@ -13,6 +16,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_activity_filter_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -20,6 +24,7 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -603,5 +608,204 @@ void main() {
       expect(entryDetails(flaggedEntry.meta.id), findsOneWidget);
       expect(entryDetails(testTextEntry.meta.id), findsOneWidget);
     });
+
+    testWidgets('filters that hide every entry say so and offer the way back', (
+      tester,
+    ) async {
+      mockLinkedEntries([testLink]);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(LinkedEntriesWidget(testTask)),
+      );
+      await tester.pumpAndSettle();
+
+      final messages = tester
+          .element(find.byType(LinkedEntriesWidget))
+          .messages;
+      Finder entryDetails() => find.byWidgetPredicate(
+        (widget) =>
+            widget is EntryDetailsWidget &&
+            widget.itemId == testTextEntry.meta.id,
+      );
+
+      // Nothing is narrowed: the entry shows and there is no empty line.
+      expect(entryDetails(), findsOneWidget);
+      expect(find.text(messages.logbookNoMatchesTitle), findsNothing);
+
+      // The only entry is not flagged, so flagged-only empties the list.
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(LinkedEntriesWidget)),
+      );
+      container
+          .read(showFlaggedOnlyControllerProvider(testTask.meta.id).notifier)
+          .setShowFlaggedOnly(value: true);
+      container
+          .read(
+            linkedEntriesActivityFilterControllerProvider(
+              testTask.meta.id,
+            ).notifier,
+          )
+          .toggle(LinkedEntryActivityFilter.audio);
+      await tester.pumpAndSettle();
+
+      expect(entryDetails(), findsNothing);
+      expect(find.text(messages.logbookNoMatchesTitle), findsOneWidget);
+      // The filter bar stays, so the filters can also be undone one by one.
+      expect(find.byType(LinkedEntriesActivityFilterBar), findsOneWidget);
+
+      await tester.tap(find.text(messages.projectsClearFilters));
+      await tester.pumpAndSettle();
+
+      // Both the flagged-only toggle and the kind set are back to default.
+      expect(entryDetails(), findsOneWidget);
+      expect(find.text(messages.logbookNoMatchesTitle), findsNothing);
+      expect(
+        container.read(showFlaggedOnlyControllerProvider(testTask.meta.id)),
+        isFalse,
+      );
+      expect(
+        container.read(
+          linkedEntriesActivityFilterControllerProvider(testTask.meta.id),
+        ),
+        LinkedEntryActivityFilter.values.toSet(),
+      );
+    });
+
+    testWidgets('entries the list never draws do not count as filtered out', (
+      tester,
+    ) async {
+      EntryLink linkTo(String id) => EntryLink.basic(
+        id: 'link-$id',
+        fromId: testTask.meta.id,
+        toId: id,
+        createdAt: DateTime(2024, 1, 2),
+        updatedAt: DateTime(2024, 1, 2),
+        vectorClock: null,
+      );
+      AiResponseEntry response(String id, AiResponseType type) =>
+          AiResponseEntry(
+            meta: testTextEntry.meta.copyWith(id: id),
+            data: AiResponseData(
+              model: 'test-model',
+              systemMessage: '',
+              prompt: '',
+              thoughts: '',
+              response: '## Summary\nCount the sardines\n\n## Prompt\nDo it',
+              type: type,
+            ),
+          );
+      final deleted = testTextEntry.copyWith(
+        meta: testTextEntry.meta.copyWith(
+          id: 'deleted-entry',
+          deletedAt: DateTime(2024, 1, 3),
+        ),
+      );
+      final analysis = response('analysis', AiResponseType.imageAnalysis);
+      final prompt = response('prompt', AiResponseType.promptGeneration);
+
+      Future<void> pumpWith(List<JournalEntity> entries) async {
+        mockLinkedEntries([for (final e in entries) linkTo(e.meta.id)]);
+        for (final e in entries) {
+          when(
+            () => mockJournalDb.journalEntityById(e.meta.id),
+          ).thenAnswer((_) async => e);
+        }
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            LinkedEntriesWidget(testTask, hideTaskEntries: true),
+          ),
+        );
+        await tester.pumpAndSettle();
+        ProviderScope.containerOf(
+              tester.element(find.byType(LinkedEntriesWidget)),
+            )
+            .read(
+              linkedEntriesActivityFilterControllerProvider(
+                testTask.meta.id,
+              ).notifier,
+            )
+            .toggle(LinkedEntryActivityFilter.code);
+        await tester.pumpAndSettle();
+      }
+
+      // A deleted entry and a transcript-style response are never drawn, so
+      // with Code off there is nothing the filter took away.
+      await pumpWith([deleted, analysis]);
+      final messages = tester
+          .element(find.byType(LinkedEntriesWidget))
+          .messages;
+      expect(find.text(messages.logbookNoMatchesTitle), findsNothing);
+
+      // A coding prompt is drawn, so switching Code off does empty the list.
+      // The linked task beside it has its own section and is not drawn here,
+      // so it does not count as an entry that still matches.
+      final linkedTask = testTask.copyWith(
+        meta: testTask.meta.copyWith(id: 'linked-task'),
+      );
+      await pumpWith([deleted, analysis, prompt, linkedTask]);
+      expect(find.text(messages.logbookNoMatchesTitle), findsOneWidget);
+    });
+
+    for (final eventsEnabled in [false, true]) {
+      testWidgets('a linked event counts as a match only while Events is '
+          '${eventsEnabled ? 'on' : 'off'}, as only then is it drawn', (
+        tester,
+      ) async {
+        EntryLink linkTo(String id) => EntryLink.basic(
+          id: 'link-$id',
+          fromId: testTask.meta.id,
+          toId: id,
+          createdAt: DateTime(2024, 1, 2),
+          updatedAt: DateTime(2024, 1, 2),
+          vectorClock: null,
+        );
+        mockLinkedEntries([
+          linkTo(testTextEntry.meta.id),
+          linkTo(testRehearsalEvent.meta.id),
+        ]);
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testRehearsalEvent.meta.id),
+        ).thenAnswer((_) async => testRehearsalEvent);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            LinkedEntriesWidget(testTask),
+            overrides: [
+              configFlagProvider(
+                enableEventsFlag,
+              ).overrideWith((ref) => Stream.value(eventsEnabled)),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Timer off hides the text entry; the event has no kind of its own.
+        ProviderScope.containerOf(
+              tester.element(find.byType(LinkedEntriesWidget)),
+            )
+            .read(
+              linkedEntriesActivityFilterControllerProvider(
+                testTask.meta.id,
+              ).notifier,
+            )
+            .toggle(LinkedEntryActivityFilter.timer);
+        await tester.pumpAndSettle();
+
+        final messages = tester
+            .element(find.byType(LinkedEntriesWidget))
+            .messages;
+        expect(
+          find.text(messages.logbookNoMatchesTitle),
+          eventsEnabled ? findsNothing : findsOneWidget,
+        );
+      });
+    }
   });
 }

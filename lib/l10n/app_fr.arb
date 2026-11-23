@@ -4613,14 +4613,7 @@
   "navTabTitleProjects": "Projets",
   "navTabTitleSettings": "Paramètres",
   "navTabTitleTasks": "Tâches",
-  "nestedAiResponsesTitle": "{count} réponse{count, plural, =1{} other{s}} d'IA",
-  "@nestedAiResponsesTitle": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "nestedAiResponsesLoadFailed": "Les résultats IA de cette entrée n’ont pas pu être chargés.",
   "noDefaultLanguage": "Aucune langue par défaut",
   "noTasksFound": "Aucune tâche trouvée",
   "noTasksToLink": "Aucune tâche disponible à lier",

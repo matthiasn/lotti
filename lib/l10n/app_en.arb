@@ -7881,14 +7881,7 @@
   "navTabTitleProjects": "Projects",
   "navTabTitleSettings": "Settings",
   "navTabTitleTasks": "Tasks",
-  "nestedAiResponsesTitle": "{count} AI response{count, plural, =1{} other{s}}",
-  "@nestedAiResponsesTitle": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "nestedAiResponsesLoadFailed": "The AI results for this entry didn't load.",
   "noDefaultLanguage": "No default language",
   "noTasksFound": "No tasks found",
   "noTasksToLink": "No tasks available to link",

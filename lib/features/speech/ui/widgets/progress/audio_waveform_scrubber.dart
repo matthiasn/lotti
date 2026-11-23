@@ -26,7 +26,6 @@ class AudioWaveformScrubber extends StatefulWidget {
     required this.total,
     required this.onSeek,
     required this.enabled,
-    required this.compact,
     super.key,
   });
 
@@ -47,9 +46,6 @@ class AudioWaveformScrubber extends StatefulWidget {
 
   /// Whether tap/drag scrubbing is enabled (typically only the active clip).
   final bool enabled;
-
-  /// Compact layout flag for tighter bar spacing and height.
-  final bool compact;
 
   @override
   State<AudioWaveformScrubber> createState() => _AudioWaveformScrubberState();
@@ -75,7 +71,7 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
     final theme = Theme.of(context);
     final tokens = theme.extension<DsTokens>();
     final colors = resolveAudioProgressColors(theme, tokens: tokens);
-    final height = (widget.compact ? 40 : 48).toDouble();
+    const height = 40.0;
 
     final progressRatio = _hasTotal
         ? (widget.progress.inMilliseconds / widget.total.inMilliseconds).clamp(
@@ -105,7 +101,6 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
             glowColor: colors.glow,
             targetBarWidth: kAudioWaveformTargetBarWidth,
             targetSpacing: kAudioWaveformTargetBarSpacing,
-            compact: widget.compact,
           ),
         ),
       ),
@@ -236,7 +231,6 @@ class _WaveformPainter extends CustomPainter {
     required this.glowColor,
     required this.targetBarWidth,
     required this.targetSpacing,
-    required this.compact,
   });
 
   final List<double> amplitudes;
@@ -248,7 +242,6 @@ class _WaveformPainter extends CustomPainter {
   final Color glowColor;
   final double targetBarWidth;
   final double targetSpacing;
-  final bool compact;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -259,7 +252,7 @@ class _WaveformPainter extends CustomPainter {
     final barCount = amplitudes.length;
     final barFullWidth = size.width / barCount;
     final desiredWidth = targetBarWidth;
-    final spacingTarget = compact ? targetSpacing * 0.9 : targetSpacing;
+    final spacingTarget = targetSpacing * 0.9;
 
     double barWidth = math.min(desiredWidth, barFullWidth);
     double spacing = math.max(0, barFullWidth - barWidth);
@@ -285,7 +278,7 @@ class _WaveformPainter extends CustomPainter {
     final bufferedPaint = Paint()..color = bufferedColor;
     final trackPaint = Paint()..color = trackColor;
 
-    final barRadius = Radius.circular(compact ? 1.0 : 1.5);
+    const barRadius = Radius.circular(1);
 
     var x = 0.0;
     for (var index = 0; index < barCount; index++) {
@@ -330,7 +323,6 @@ class _WaveformPainter extends CustomPainter {
         oldDelegate.trackColor != trackColor ||
         oldDelegate.glowColor != glowColor ||
         oldDelegate.targetBarWidth != targetBarWidth ||
-        oldDelegate.targetSpacing != targetSpacing ||
-        oldDelegate.compact != compact;
+        oldDelegate.targetSpacing != targetSpacing;
   }
 }

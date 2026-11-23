@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/entry_summary_providers.dart';
@@ -523,16 +524,6 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
             stabilizeGeneratedText:
                 item is JournalImage || item is JournalAudio,
           ),
-        if (item is JournalImage)
-          AiAttributionSummary(
-            artifact: AiArtifactReference(
-              type: AiArtifactType.journalImage,
-              id: item.id,
-            ),
-            attribution: item.data.aiAttribution,
-            asCaption: true,
-            includeTopSpacing: false,
-          ),
       ];
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,6 +540,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
           if (!_bodyOpensWithPromptTitleRow(item, hasLabels: hasLabels))
             SizedBox(height: context.designTokens.spacing.step3),
           ..._withRhythm(context, body),
+          if (item is JournalImage) _imageAttribution(item),
           if (item is JournalAudio || item is JournalImage)
             NestedAiResponsesWidget(
               parentEntryId: itemId,
@@ -573,22 +565,13 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
           itemId,
           stabilizeGeneratedText: item is JournalImage || item is JournalAudio,
         ),
-      if (item is JournalImage)
-        AiAttributionSummary(
-          artifact: AiArtifactReference(
-            type: AiArtifactType.journalImage,
-            id: item.id,
-          ),
-          attribution: item.data.aiAttribution,
-          asCaption: true,
-          includeTopSpacing: false,
-        ),
     ];
     final expandedContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         ..._withRhythm(context, collapsibleBody),
+        if (item is JournalImage) _imageAttribution(item),
         if (item is JournalAudio || item is JournalImage)
           NestedAiResponsesWidget(
             parentEntryId: itemId,
@@ -632,6 +615,19 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
     );
   }
 
+  /// Who made a generated or analysed image, as a caption under it. It
+  /// renders nothing for a photo with no AI work behind it, so it brings its
+  /// own leading gap instead of taking a rhythm step that would stay behind
+  /// as a hole when it is empty.
+  Widget _imageAttribution(JournalImage image) => AiAttributionSummary(
+    artifact: AiArtifactReference(
+      type: AiArtifactType.journalImage,
+      id: image.id,
+    ),
+    attribution: image.data.aiAttribution,
+    asCaption: true,
+  );
+
   /// The entry's body/note editor, nudged left so its text hangs from the same
   /// content gutter as the timestamp and value lines. flutter_quill insets a
   /// read-only line's text ~3px from the editor's own left edge; without this
@@ -646,7 +642,11 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
     String itemId, {
     required bool stabilizeGeneratedText,
   }) {
-    final editor = EditorWidget(entryId: itemId, margin: EdgeInsets.zero);
+    // Running text keeps the reading measure however wide the card is.
+    final editor = ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: kProseMeasureWidth),
+      child: EditorWidget(entryId: itemId, margin: EdgeInsets.zero),
+    );
     if (!stabilizeGeneratedText) return editor;
 
     // Transcription and image analysis update the source entry's `entryText`
@@ -729,22 +729,49 @@ class _CollapsedAudioOneLiner extends ConsumerWidget {
     final oneLiner = summary ?? audioEntryOneLiner(audio);
     if (oneLiner == null) return const SizedBox.shrink();
     final tokens = context.designTokens;
+    // Two voices: a summary is the agent's words, so it reads in the agent's
+    // violet behind its sparkle. The transcript's opening line is what the
+    // user said, and stays in neutral ink.
+    final isSummary = summary != null;
+    final line = Text(
+      oneLiner,
+      // A summary clamped to one line is not a summary — at phone width the
+      // first clause plus an ellipsis was all that survived, which is the
+      // one thing summarizing an hour of meeting notes was meant to avoid.
+      // Several lines still collapse the entry to a fraction of the full
+      // transcript, so the collapsed card can afford them.
+      maxLines: isSummary
+          ? _collapsedAudioSummaryMaxLines
+          : _collapsedAudioTranscriptMaxLines,
+      overflow: TextOverflow.ellipsis,
+      style: tokens.typography.styles.body.bodySmall.copyWith(
+        color: isSummary
+            ? tokens.colors.aiCard.accent
+            : tokens.colors.text.mediumEmphasis,
+      ),
+    );
     final text = Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step2),
-      child: Text(
-        oneLiner,
-        // A summary clamped to one line is not a summary — at phone width the
-        // first clause plus an ellipsis was all that survived, which is the
-        // one thing summarizing an hour of meeting notes was meant to avoid.
-        // Several lines still collapse the entry to a fraction of the full
-        // transcript, so the collapsed card can afford them.
-        maxLines: summary != null
-            ? _collapsedAudioSummaryMaxLines
-            : _collapsedAudioTranscriptMaxLines,
-        overflow: TextOverflow.ellipsis,
-        style: tokens.typography.styles.body.bodySmall.copyWith(
-          color: tokens.colors.text.mediumEmphasis,
-        ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: kProseMeasureWidth),
+        child: !isSummary
+            ? line
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Centred on the first text line (20 line height).
+                  Padding(
+                    padding: EdgeInsets.only(top: tokens.spacing.step1),
+                    child: Icon(
+                      LottiIcons.magic,
+                      size: IconSizes.s,
+                      color: tokens.colors.aiCard.accent,
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  Expanded(child: line),
+                ],
+              ),
       ),
     );
     final onTap = this.onTap;

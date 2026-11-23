@@ -28,6 +28,7 @@ class AiResponseCard extends StatelessWidget {
   const AiResponseCard({
     required this.aiResponse,
     this.header,
+    this.headerActions,
     this.body,
     this.collapsed,
     this.onToggleCollapsed,
@@ -44,8 +45,26 @@ class AiResponseCard extends StatelessWidget {
   /// The response whose attribution the caption names.
   final AiResponseEntry aiResponse;
 
-  /// Row above the body, e.g. a title with copy and expand actions.
+  /// Row above the body: the title naming what the response is.
   final Widget? header;
+
+  /// Controls belonging to [header], e.g. copy and expand. On the framed
+  /// card they sit in its top trailing corner, over the inset rather than
+  /// inside the title row, so a card with controls and one without start
+  /// their titles at the same height. The header leaves [actionsReserve]
+  /// clear for them. Unframed there is no inset to sit over, and the caller
+  /// places its controls in the header itself.
+  final Widget? headerActions;
+
+  /// The side of one corner control: its glyph inside one card inset on
+  /// every side.
+  static double actionExtent(DsTokens tokens) =>
+      IconSizes.s + 2 * tokens.spacing.step4;
+
+  /// Width a framed [header] keeps clear at its trailing end for [count]
+  /// corner controls: their width, less the card inset they overhang.
+  static double actionsReserve(DsTokens tokens, {required int count}) =>
+      count * actionExtent(tokens) - tokens.spacing.step4;
 
   /// The response content. Null renders a card that is only the toggle and
   /// the caption — a collapsed response with no short version to show.
@@ -103,6 +122,9 @@ class AiResponseCard extends StatelessWidget {
     if (!framed) return content;
 
     return Container(
+      // Full width, so sibling responses share both edges whatever the
+      // length of their text.
+      width: double.infinity,
       decoration: BoxDecoration(
         // Half-strength tint: keeps the AI color identity while letting the
         // entry card's surface blend through, so the nested card stays
@@ -111,8 +133,22 @@ class AiResponseCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(tokens.radii.l),
         border: Border.all(color: ai.borderSoft),
       ),
-      padding: EdgeInsets.all(tokens.spacing.step4),
-      child: content,
+      child: Stack(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(tokens.spacing.step4),
+            child: content,
+          ),
+          // Centred on the title's first line: the inset plus half a
+          // subtitle line, less half a control, is one `step1` from the top.
+          if (headerActions case final actions?)
+            PositionedDirectional(
+              top: tokens.spacing.step1,
+              end: 0,
+              child: actions,
+            ),
+        ],
+      ),
     );
   }
 }

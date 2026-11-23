@@ -11986,15 +11986,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get navTabTitleTasks => 'Taken';
 
   @override
-  String nestedAiResponsesTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 's',
-      one: '',
-    );
-    return '$count AI-respons$_temp0';
-  }
+  String get nestedAiResponsesLoadFailed =>
+      'De AI-resultaten bij dit item zijn niet geladen.';
 
   @override
   String get noDefaultLanguage => 'Geen standaardtaal';

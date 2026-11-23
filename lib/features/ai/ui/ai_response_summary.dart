@@ -3,6 +3,9 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_card.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
@@ -133,6 +136,48 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
     );
   }
 
+  /// Caps running text at the reading measure; the card itself stays as wide
+  /// as its siblings.
+  static Widget _proseMeasure(Widget child) => ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: kProseMeasureWidth),
+    child: child,
+  );
+
+  /// The row naming what the agent made — "Summary", "Image analysis" — in
+  /// the agent's violet, so a response nested under a recording or a photo
+  /// says what it is the way a generated prompt's title does. Null for a
+  /// type with no name of its own.
+  Widget? _jobHeader(BuildContext context) {
+    final messages = context.messages;
+    final name = switch (widget.aiResponse.data.type) {
+      AiResponseType.audioSummary => messages.aiConsumptionTypeAudioSummary,
+      AiResponseType.imageAnalysis => messages.aiConsumptionTypeImageAnalysis,
+      AiResponseType.audioTranscription =>
+        messages.aiConsumptionTypeAudioTranscription,
+      _ => null,
+    };
+    if (name == null) return null;
+    final tokens = context.designTokens;
+    final accent = tokens.colors.aiCard.accent;
+    return Padding(
+      padding: EdgeInsets.only(bottom: tokens.spacing.step2),
+      child: Row(
+        children: [
+          Icon(LottiIcons.magic, color: accent, size: IconSizes.s),
+          SizedBox(width: tokens.spacing.step2),
+          Expanded(
+            child: Text(
+              name,
+              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                color: accent,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final aiResponse = widget.aiResponse;
@@ -149,7 +194,9 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
     final bodyStyle = AiResponseCard.bodyStyle(context);
 
     final content = SelectionArea(
-      child: AgentMarkdownView(aiResponse.data.response, style: bodyStyle),
+      child: _proseMeasure(
+        AgentMarkdownView(aiResponse.data.response, style: bodyStyle),
+      ),
     );
 
     final responseContent = GestureDetector(
@@ -180,10 +227,12 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
       // report card renders its TLDR the same way. Headings stay at body size:
       // a stray `#` in two sentences must not outrank the card it sits in.
       body = SelectionArea(
-        child: AgentMarkdownView(
-          tldr,
-          style: bodyStyle,
-          subordinateHeadings: true,
+        child: _proseMeasure(
+          AgentMarkdownView(
+            tldr,
+            style: bodyStyle,
+            subordinateHeadings: true,
+          ),
         ),
       );
     } else {
@@ -195,6 +244,7 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
       // The faded preview is the response shown as its own entry: the entry
       // card already frames it, so only the AI text treatment remains.
       framed: !widget.fadeOut,
+      header: widget.fadeOut ? null : _jobHeader(context),
       body: body,
       collapsed: _canCollapse ? _collapsed : null,
       onToggleCollapsed: _canCollapse

@@ -12118,15 +12118,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get navTabTitleTasks => 'Úkoly';
 
   @override
-  String nestedAiResponsesTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count AI odpovědí',
-      one: '1 AI odpověď',
-    );
-    return '$_temp0';
-  }
+  String get nestedAiResponsesLoadFailed =>
+      'Výsledky AI k tomuto záznamu se nenačetly.';
 
   @override
   String get noDefaultLanguage => 'Žádný výchozí jazyk';

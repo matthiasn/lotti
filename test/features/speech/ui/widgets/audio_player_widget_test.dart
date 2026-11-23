@@ -1,9 +1,14 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_player_state.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
+import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
@@ -184,7 +189,7 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('renders compact audio card with minimal controls', (
+  testWidgets('renders the audio card with minimal controls', (
     WidgetTester tester,
   ) async {
     final journalAudio = buildJournalAudio();
@@ -304,6 +309,166 @@ void main() {
 
     expect(find.byType(AudioWaveformScrubber), findsOneWidget);
     expect(find.byType(AudioProgressBar), findsNothing);
+  });
+
+  testWidgets('keeps the waveform on screen while it reloads', (
+    WidgetTester tester,
+  ) async {
+    final journalAudio = buildJournalAudio();
+    await pumpPlayer(
+      tester,
+      journalAudio: journalAudio,
+      state: buildState(
+        status: AudioPlayerStatus.stopped,
+        totalDuration: journalAudio.data.duration,
+        progress: Duration.zero,
+        pausedAt: Duration.zero,
+        speed: 1,
+      ),
+      waveformData: AudioWaveformData(
+        amplitudes: const <double>[0.3, 0.6, 0.9],
+      ),
+    );
+    expect(find.byType(AudioWaveformScrubber), findsOneWidget);
+
+    // A reload that has not answered yet: the drawn waveform stays, rather
+    // than dropping back to the plain bar until the answer lands.
+    final pending = Completer<AudioWaveformData?>();
+    when(
+      () => waveformService.loadWaveform(
+        journalAudio,
+        targetBuckets: any(named: 'targetBuckets'),
+      ),
+    ).thenAnswer((_) => pending.future);
+    ProviderScope.containerOf(
+      tester.element(find.byType(AudioPlayerWidget)),
+    ).invalidate(audioWaveformProvider);
+    await tester.pump();
+
+    expect(find.byType(AudioWaveformScrubber), findsOneWidget);
+    expect(find.byType(AudioProgressBar), findsNothing);
+    pending.complete(null);
+  });
+
+  testWidgets('keeps the waveform when a width change asks for a different '
+      'bar count that has not loaded yet', (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    AudioPlayerState stopped() => buildState(
+      status: AudioPlayerStatus.stopped,
+      totalDuration: journalAudio.data.duration,
+      progress: Duration.zero,
+      pausedAt: Duration.zero,
+      speed: 1,
+    );
+    final amplitudes = List<double>.filled(40, 0.5);
+    await pumpPlayer(
+      tester,
+      journalAudio: journalAudio,
+      state: stopped(),
+      waveformData: AudioWaveformData(amplitudes: amplitudes),
+    );
+    final before = tester.widget<AudioWaveformScrubber>(
+      find.byType(AudioWaveformScrubber),
+    );
+    expect(before.amplitudes, amplitudes);
+
+    // Narrower: fewer bars, so a provider instance that has no answer yet.
+    final pending = Completer<AudioWaveformData?>();
+    when(
+      () => waveformService.loadWaveform(
+        journalAudio,
+        targetBuckets: any(named: 'targetBuckets'),
+      ),
+    ).thenAnswer((_) => pending.future);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 320,
+              child: AudioPlayerWidget(journalAudio),
+            ),
+          ),
+        ),
+        overrides: [
+          audioPlayerControllerProvider.overrideWith(() => controller),
+        ],
+        theme: ThemeData(useMaterial3: true),
+      ),
+    );
+    await tester.pump();
+
+    final verification = verify(
+      () => waveformService.loadWaveform(
+        journalAudio,
+        targetBuckets: captureAny(named: 'targetBuckets'),
+      ),
+    );
+    expect(verification.captured.toSet().length, greaterThan(1));
+    expect(
+      tester
+          .widget<AudioWaveformScrubber>(find.byType(AudioWaveformScrubber))
+          .amplitudes,
+      amplitudes,
+    );
+    expect(find.byType(AudioProgressBar), findsNothing);
+
+    // The answer for the new width replaces what was drawn.
+    final narrower = List<double>.filled(20, 0.8);
+    pending.complete(AudioWaveformData(amplitudes: narrower));
+    await tester.pump();
+    await tester.pump();
+    expect(
+      tester
+          .widget<AudioWaveformScrubber>(find.byType(AudioWaveformScrubber))
+          .amplitudes,
+      narrower,
+    );
+  });
+
+  testWidgets('the waveform keeps its width when the time label gains or '
+      'loses its hours field', (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    const total = Duration(hours: 1, minutes: 5);
+    double waveformWidth() =>
+        tester.getSize(find.byType(AudioProgressBar)).width;
+
+    // At rest the label is the length, "01:05:00".
+    await pumpPlayer(
+      tester,
+      journalAudio: journalAudio,
+      state: buildState(
+        status: AudioPlayerStatus.stopped,
+        totalDuration: total,
+        progress: Duration.zero,
+        pausedAt: Duration.zero,
+        speed: 1,
+      ),
+    );
+    expect(find.text('01:05:00'), findsOneWidget);
+    final atRest = waveformWidth();
+
+    // Loaded, the label is the position: "00:30", then "01:00:30".
+    for (final position in const [
+      Duration(seconds: 30),
+      Duration(hours: 1, seconds: 30),
+    ]) {
+      await tester.pumpWidget(Container());
+      await pumpPlayer(
+        tester,
+        journalAudio: journalAudio,
+        state: buildState(
+          status: AudioPlayerStatus.playing,
+          totalDuration: total,
+          progress: position,
+          pausedAt: Duration.zero,
+          speed: 1,
+          audioNote: journalAudio,
+        ),
+      );
+      expect(find.text(formatElapsed(position)), findsOneWidget);
+      expect(waveformWidth(), atRest);
+    }
   });
 
   testWidgets('scrubbing progress calls seek with target duration', (
@@ -455,20 +620,16 @@ void main() {
 
     await pumpPlayer(tester, journalAudio: journalAudio, state: state);
 
-    final speedButton = find.text('1.5x');
-    expect(speedButton, findsOneWidget);
+    // Speed belongs to the loaded recording: any other player's control is
+    // a disabled button, not a live-looking one that does nothing.
+    final speedButton = tester.widget<DesignSystemButton>(
+      find.widgetWithText(DesignSystemButton, '1.5x'),
+    );
+    expect(speedButton.onPressed, isNull);
 
-    // Kept at full contrast (no dimming wrapper) so it stays a clearly legible
-    // control in the resting card, but not interactive until playback is active
-    // (no InkWell wrapping it).
-    expect(
-      find.ancestor(of: speedButton, matching: find.byType(Opacity)),
-      findsNothing,
-    );
-    expect(
-      find.ancestor(of: speedButton, matching: find.byType(InkWell)),
-      findsNothing,
-    );
+    await tester.tap(find.text('1.5x'), warnIfMissed: false);
+    await tester.pump();
+    expect(controller.lastSpeedSet, isNull);
   });
 
   // Every transition in the speed sequence is exercised here, including the
@@ -568,9 +729,14 @@ void main() {
 
     await pumpPlayer(tester, journalAudio: journalAudio, state: state);
 
-    // Should display state totalDuration (03:00), not journalAudio duration
-    // (05:00) — rendered as the "elapsed / total" value line.
-    expect(find.textContaining('03:00'), findsOneWidget);
+    // The loaded recording's label is its position, and the scrubber runs
+    // against the state's length (03:00), not the entry's stored 05:00.
+    expect(find.text('00:30'), findsOneWidget);
+    expect(find.text('05:00'), findsNothing);
+    expect(
+      tester.widget<AudioProgressBar>(find.byType(AudioProgressBar)).total,
+      const Duration(minutes: 3),
+    );
   });
 
   testWidgets('progress ratio is clamped between 0 and 1', (
@@ -593,39 +759,60 @@ void main() {
     expect(find.byType(AudioProgressBar), findsOneWidget);
   });
 
-  testWidgets('speed label uses error color for non-1x speeds only', (
+  testWidgets('a non-default speed is never painted as an error', (
     WidgetTester tester,
   ) async {
     final journalAudio = buildJournalAudio();
-
-    AudioPlayerState stateForSpeed(double speed) => buildState(
-      status: AudioPlayerStatus.playing,
-      totalDuration: journalAudio.data.duration,
-      progress: const Duration(seconds: 5),
-      pausedAt: Duration.zero,
-      speed: speed,
-      audioNote: journalAudio,
-    );
-
-    // Non-1x speed: label text is painted with the theme error color.
     await pumpPlayer(
       tester,
       journalAudio: journalAudio,
-      state: stateForSpeed(1.5),
+      state: buildState(
+        status: AudioPlayerStatus.playing,
+        totalDuration: journalAudio.data.duration,
+        progress: const Duration(seconds: 5),
+        pausedAt: Duration.zero,
+        speed: 1.5,
+        audioNote: journalAudio,
+      ),
     );
-    final fastFinder = find.text('1.5x');
-    final errorColor = Theme.of(tester.element(fastFinder)).colorScheme.error;
-    expect(tester.widget<Text>(fastFinder).style?.color, errorColor);
 
-    // 1x speed: label text is NOT painted with the error color.
-    await tester.pumpWidget(Container());
-    await pumpPlayer(
-      tester,
-      journalAudio: journalAudio,
-      state: stateForSpeed(1),
+    final label = find.text('1.5x');
+    final theme = Theme.of(tester.element(label));
+    final color = DefaultTextStyle.of(tester.element(label)).style.color;
+    expect(color, isNot(theme.colorScheme.error));
+    expect(
+      color,
+      isNot(theme.extension<DsTokens>()!.colors.alert.error.defaultColor),
     );
-    final normalFinder = find.text('1x');
-    expect(tester.widget<Text>(normalFinder).style?.color, isNot(errorColor));
+  });
+
+  testWidgets('is one 40 px row at phone and desktop widths', (
+    WidgetTester tester,
+  ) async {
+    final journalAudio = buildJournalAudio();
+    for (final width in <double>[300, 720]) {
+      await tester.pumpWidget(Container());
+      await pumpPlayer(
+        tester,
+        journalAudio: journalAudio,
+        state: buildState(
+          status: AudioPlayerStatus.playing,
+          totalDuration: journalAudio.data.duration,
+          progress: const Duration(seconds: 5),
+          pausedAt: Duration.zero,
+          speed: 1.75,
+          audioNote: journalAudio,
+        ),
+        width: width,
+      );
+      expect(tester.getSize(find.byType(AudioPlayerWidget)).height, 40);
+      // Time and speed share the play control's row.
+      final playCenter = tester.getCenter(
+        find.byKey(const Key('audio_player_play_button_surface')),
+      );
+      expect(tester.getCenter(find.text('00:05')).dy, playCenter.dy);
+      expect(tester.getCenter(find.text('1.75x')).dy, playCenter.dy);
+    }
   });
 
   testWidgets('shows correct buffered progress', (WidgetTester tester) async {
@@ -746,15 +933,18 @@ void main() {
         expect(progressBar.progress, c.expectedProgress);
         expect(progressBar.enabled, c.active);
 
-        // Elapsed and total render together as one "elapsed / total" line.
+        // One label: the position while loaded, the length at rest.
         expect(
-          find.textContaining(formatElapsed(totalDuration)),
+          find.text(
+            formatElapsed(c.active ? activeProgress : totalDuration),
+          ),
           findsOneWidget,
         );
-        // The leading position is shown in that same combined line.
         expect(
-          find.textContaining(formatElapsed(c.expectedProgress)),
-          findsWidgets,
+          find.text(
+            formatElapsed(c.active ? totalDuration : activeProgress),
+          ),
+          findsNothing,
         );
       });
     }

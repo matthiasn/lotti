@@ -181,6 +181,28 @@ void main() {
     );
   }
 
+  testWidgets('fills its width however short its text, so sibling cards '
+      'share both edges', (tester) async {
+    await tester.pumpWidget(
+      WidgetTestBench(
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 500,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AiResponseCard(aiResponse: response, body: const Text('Hi')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.getSize(find.byType(AiResponseCard)).width, 500);
+  });
+
   testWidgets('without a collapse state there is no toggle', (tester) async {
     await pumpCard(tester, body: const Text('Body'));
 

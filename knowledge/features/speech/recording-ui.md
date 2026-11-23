@@ -227,8 +227,9 @@ records why the People patterns became the standard.
   ([`recording_playback.dart`](../../../lib/features/speech/ui/widgets/recording_playback.dart)):
   closed, one small tertiary *Play audio* action (its length in the
   semantics label — the row's meta already shows it); tapped, it plays and
-  the row eases open (`AnimatedSize`, motion tokens) to the waveform
-  `AudioPlayerWidget` while that recording is the one the app's single
+  the row eases open (`AnimatedSize`, motion tokens) to the one-row
+  `AudioPlayerWidget` (play, waveform, one time label, speed; 40 px tall on
+  every width) while that recording is the one the app's single
   player holds and has not finished, folding back when it stops or another
   starts. The design panel chose this over a player card under every
   recording, unanimously: a history is for reading. The person timeline

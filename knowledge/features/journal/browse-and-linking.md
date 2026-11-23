@@ -232,8 +232,15 @@ Runtime details that matter:
 - The Filter & Sort modal can narrow the outgoing list to **flagged entries only**
   (`meta.flag == EntryFlag.import`). The check runs **per row** against the
   watched entry, so flagging or unflagging updates the filtered list reactively.
-- Linked AI responses stay collapsed under their source entry; the generic
-  outgoing list does not expose a second, unused visibility toggle for them.
+- Linked AI responses are drawn under their source entry by
+  `NestedAiResponsesWidget`, on the entry's own gutter at full width. Each one
+  names its job (*Summary*, *Image analysis*, a prompt's title) and collapses
+  by itself; the stack has no header, count or toggle of its own, and says so
+  when the responses could not be loaded. The generic outgoing list does not
+  expose a second visibility toggle for them.
+- **A collapsed recording's line says who wrote it.** An AI summary's one-liner
+  reads in the agent's violet behind its sparkle; the transcript's opening
+  line, which is what the user said, stays in neutral ink.
 - **Outgoing links are ordered by the linked entity's editable `dateFrom`, not by
   link creation time**, with a user-selectable direction via
   `LinkedEntriesSortController`. Links whose target has not resolved yet fall back
@@ -263,13 +270,20 @@ observe disposed state.
 The sort trigger includes a visible count when Hidden or Flagged-only is active,
 while its semantics name enumerates the active filters.
 
-## Pill treatment
+## Chip treatment
 
-The activity and sort controls reuse the same 28 px bordered `DsPill` shell as the
-task header, including its bounded hover treatment. Active activity pills apply
-their Timer, Audio, Images or Code accent to **both** icon and outline; inactive
-pills return to the quiet `decorative.level02` outline, while the sort trigger
-always keeps that neutral border. Labels stay at medium text emphasis.
+The activity kinds and the sort trigger are one row of the design system's own
+filter chip (`DesignSystemChip`, `compactPill`, outlined), so they share a
+height and a shape. **A kind carries no hue of its own**: it is neither a state
+nor the agent's voice, so an active kind is the chip's neutral selected fill
+(`quietSelection`) and a switched-off kind is the bare outline. Every kind is on
+by default, which is why "on" is the quiet look. The sort trigger opens a sheet
+and is never itself selected.
 
-**The Code pill only exists when at least one linked entry contains a coding
-prompt.** Pills wrap as compact units rather than expanding into full-width rows.
+**Filters that hide every entry never leave a blank list.** While a kind is off
+or flagged-only is on, `LinkedEntriesWidget` checks the resolved entries against
+the same rule its rows apply; when none passes it shows *No entries match* with
+*Clear filters*, which resets both the kind set and the flagged-only toggle.
+
+**The Code chip only exists when at least one linked entry contains a coding
+prompt.** Chips wrap as compact units rather than expanding into full-width rows.

@@ -4613,14 +4613,7 @@
   "navTabTitleProjects": "Proiecte",
   "navTabTitleSettings": "Setări",
   "navTabTitleTasks": "Sarcini",
-  "nestedAiResponsesTitle": "{count, plural, =1{1 răspuns AI} other{{count} răspunsuri AI}}",
-  "@nestedAiResponsesTitle": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "nestedAiResponsesLoadFailed": "Rezultatele IA pentru această intrare nu s-au încărcat.",
   "noDefaultLanguage": "Fără limbă implicită",
   "noTasksFound": "Nu s-au găsit sarcini",
   "noTasksToLink": "Nu sunt sarcini disponibile pentru a fi legate",

@@ -630,9 +630,18 @@ above `ai` (see [which voice speaks](../tts.md#which-voice-speaks)); the card ow
 attribution caption. A response shown as its own entry — the faded
 `fadeOut` preview, e.g. a coding prompt linked to a task — renders with
 `framed: false`: the same accent and body colours, no tint, border or inset,
-because the entry card already frames it. In the nested tree the cards collapse binarily, so long analyses (full
+because the entry card already frames it. Nested under a recording or a photo, a
+summary, analysis or transcription opens with a row naming its job in the
+accent (*Summary*, *Image analysis*), the way a generated prompt opens with its
+title, and every card fills the entry's width so siblings share both edges.
+A prompt's copy and expand controls sit in the framed card's top trailing
+corner (`AiResponseCard.headerActions`), over the inset rather than in the
+title row, so its title starts level with a summary's above or below it;
+unframed, where there is no inset, they ride in the row.
+There the cards collapse binarily, so long analyses (full
 OCR) start fully collapsed to a Show more/Show less toggle plus the attribution
-caption, while short summaries stay visible.
+caption, while short summaries stay visible. Running text is capped at the
+reading measure (`kProseMeasureWidth`) inside the full-width card.
 
 The body goes through `AgentMarkdownView`, so an analysis nested in an image or
 audio entry card sits at the editor's own `body.bodySmall` measure with the

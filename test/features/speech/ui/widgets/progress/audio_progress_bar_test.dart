@@ -96,7 +96,6 @@ void main() {
               total: const Duration(minutes: 1),
               onSeek: (_) {},
               enabled: true,
-              compact: false,
             ),
           ),
         ),

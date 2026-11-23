@@ -12090,15 +12090,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get navTabTitleTasks => 'Tarefas';
 
   @override
-  String nestedAiResponsesTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 's',
-      one: '',
-    );
-    return '$count Respostas de IA$_temp0';
-  }
+  String get nestedAiResponsesLoadFailed =>
+      'Os resultados de IA desta entrada não foram carregados.';
 
   @override
   String get noDefaultLanguage => 'Nenhum idioma padrão';

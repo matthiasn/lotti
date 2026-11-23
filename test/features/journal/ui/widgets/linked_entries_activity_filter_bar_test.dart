@@ -1,4 +1,4 @@
-import 'dart:ui' show PointerDeviceKind, SemanticsAction, Tristate;
+import 'dart:ui' show SemanticsAction;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -81,89 +81,58 @@ void main() {
       const Locale('en'),
     );
 
-    // The code icon lives in the same pill as the Code label.
-    final codePill = find.ancestor(
-      of: find.text(messages.journalLinkedEntriesActivityFilterCode),
-      matching: find.byType(Row),
-    );
-    expect(
-      find.descendant(
-        of: codePill.first,
-        matching: find.byIcon(LottiIcons.code),
+    final codeChip = tester.widget<DesignSystemChip>(
+      find.widgetWithText(
+        DesignSystemChip,
+        messages.journalLinkedEntriesActivityFilterCode,
       ),
-      findsOneWidget,
     );
-    final codeVisual = find.byKey(
-      const ValueKey('linked-entries-activity-code-visual'),
-    );
-    final codeBorder = const Color(0xFF34C759).withValues(alpha: 0.7);
-    expect(tester.widget<DsPill>(codeVisual).borderColor, codeBorder);
-    expect(
-      (_pillDecoration(tester, codeVisual).border! as Border).top.color,
-      codeBorder,
-    );
+    expect(codeChip.leadingIcon, LottiIcons.code);
+    expect(codeChip.selected, isTrue);
   });
 
-  testWidgets('filter-modal trigger matches activity and task-header height', (
+  Finder kindChip(String label) => find.widgetWithText(DesignSystemChip, label);
+  final sortChip = find.byKey(const ValueKey('linked-entries-sort-trigger'));
+
+  testWidgets('the sort trigger is the same chip as the kinds beside it', (
     tester,
   ) async {
     await pumpBar(tester);
-
-    final messages = await AppLocalizations.delegate.load(
-      const Locale('en'),
-    );
+    final messages = await AppLocalizations.delegate.load(const Locale('en'));
 
     expect(
-      find.text(messages.journalLinkedEntriesSortNewestFirst),
+      find.descendant(
+        of: sortChip,
+        matching: find.text(messages.journalLinkedEntriesSortNewestFirst),
+      ),
       findsOneWidget,
     );
-
-    final timerChip = find.byKey(
-      const ValueKey('linked-entries-activity-timer-visual'),
+    final timer = kindChip(messages.journalLinkedEntriesActivityFilterTimer);
+    expect(tester.getSize(sortChip).height, tester.getSize(timer).height);
+    expect(tester.getTopLeft(sortChip).dy, tester.getTopLeft(timer).dy);
+    expect(
+      tester.widget<DesignSystemChip>(sortChip).size,
+      tester.widget<DesignSystemChip>(timer).size,
     );
-    final sortChip = find.byKey(
-      const ValueKey('linked-entries-sort-trigger-visual'),
-    );
-    expect(tester.getSize(sortChip).height, tester.getSize(timerChip).height);
-    expect(tester.getTopLeft(sortChip).dy, tester.getTopLeft(timerChip).dy);
-
-    final timerTarget = find.byKey(
-      const ValueKey('linked-entries-activity-timer'),
-    );
-    final sortTarget = find.byKey(
-      const ValueKey('linked-entries-sort-trigger'),
-    );
-    expect(tester.getSize(timerTarget).height, DsPill.height);
-    expect(tester.getSize(sortTarget).height, DsPill.height);
-    expect(tester.getSize(timerChip).height, DsPill.height);
-    expect(tester.getSize(sortChip).height, DsPill.height);
   });
 
-  testWidgets('activity pills stay compact and share the first row on phone', (
+  testWidgets('kind chips and the sort trigger share the first row on phone', (
     tester,
   ) async {
     await pumpBar(
       tester,
       mediaQueryData: const MediaQueryData(size: Size(402, 800)),
     );
+    final messages = await AppLocalizations.delegate.load(const Locale('en'));
 
-    final timer = find.byKey(
-      const ValueKey('linked-entries-activity-timer-visual'),
-    );
-    final audio = find.byKey(
-      const ValueKey('linked-entries-activity-audio-visual'),
-    );
-    final images = find.byKey(
-      const ValueKey('linked-entries-activity-images-visual'),
-    );
-    final sort = find.byKey(
-      const ValueKey('linked-entries-sort-trigger-visual'),
-    );
+    final timer = kindChip(messages.journalLinkedEntriesActivityFilterTimer);
+    final audio = kindChip(messages.journalLinkedEntriesActivityFilterAudio);
+    final images = kindChip(messages.journalLinkedEntriesActivityFilterImages);
 
     final timerTop = tester.getTopLeft(timer).dy;
     expect(tester.getTopLeft(audio).dy, timerTop);
     expect(tester.getTopLeft(images).dy, timerTop);
-    expect(tester.getTopLeft(sort).dy, timerTop);
+    expect(tester.getTopLeft(sortChip).dy, timerTop);
     expect(
       tester.getTopRight(timer).dx,
       lessThan(tester.getTopLeft(audio).dx),
@@ -172,69 +141,50 @@ void main() {
       tester.getTopRight(audio).dx,
       lessThan(tester.getTopLeft(images).dx),
     );
-    expect(tester.getSize(timer).width, lessThan(120));
+    expect(
+      tester.getTopRight(images).dx,
+      lessThan(tester.getTopLeft(sortChip).dx),
+    );
   });
 
-  testWidgets('active pills use the task-header shell with accent outlines', (
-    tester,
-  ) async {
-    await pumpBar(tester);
+  testWidgets('a kind carries no hue of its own: every chip is the neutral '
+      'filter chip, on by default', (tester) async {
+    await pumpBar(
+      tester,
+      overrides: [
+        resolvedOutgoingLinkedEntriesProvider(entryId).overrideWith(
+          (_) => [_codingPrompt()],
+        ),
+      ],
+    );
+    final messages = await AppLocalizations.delegate.load(const Locale('en'));
 
-    final expectedBorders = <String, Color>{
-      'timer': dsTokensLight.colors.alert.warning.defaultColor,
-      'audio': const Color(0xFF9966E5).withValues(alpha: 0.7),
-      'images': const Color(0xFF619EFF).withValues(alpha: 0.7),
+    final icons = <String, IconData>{
+      messages.journalLinkedEntriesActivityFilterTimer: LottiIcons.timer,
+      messages.journalLinkedEntriesActivityFilterAudio: LottiIcons.mic,
+      messages.journalLinkedEntriesActivityFilterImages: LottiIcons.image,
+      messages.journalLinkedEntriesActivityFilterCode: LottiIcons.code,
     };
-    for (final entry in expectedBorders.entries) {
-      final visual = find.byKey(
-        ValueKey('linked-entries-activity-${entry.key}-visual'),
-      );
-      expect(tester.widget<DsPill>(visual).borderColor, entry.value);
-      expect(
-        (_pillDecoration(tester, visual).border! as Border).top.color,
-        entry.value,
+    final glyphColors = <Color?>{};
+    for (final entry in icons.entries) {
+      final chip = tester.widget<DesignSystemChip>(kindChip(entry.key));
+      expect(chip.leadingIcon, entry.value);
+      expect(chip.selected, isTrue);
+      // Neutral selection, never the accent or a per-kind colour.
+      expect(chip.quietSelection, isTrue);
+      expect(chip.outlined, isTrue);
+      glyphColors.add(
+        tester
+            .widget<Icon>(
+              find.descendant(
+                of: kindChip(entry.key),
+                matching: find.byIcon(entry.value),
+              ),
+            )
+            .color,
       );
     }
-
-    final visualFinder = find.byKey(
-      const ValueKey('linked-entries-activity-timer-visual'),
-    );
-    final pill = tester.widget<DsPill>(visualFinder);
-    final decoration = _pillDecoration(tester, visualFinder);
-
-    expect(pill.variant, DsPillVariant.filled);
-    expect(pill.bordered, isTrue);
-    expect(pill.labelColor, dsTokensLight.colors.text.mediumEmphasis);
-    expect(decoration.color, dsTokensLight.colors.surface.enabled);
-    expect(
-      tester.widget<Icon>(find.byIcon(LottiIcons.timer)).color,
-      dsTokensLight.colors.alert.warning.defaultColor,
-    );
-  });
-
-  testWidgets('hover stays confined to the compact shared pill', (
-    tester,
-  ) async {
-    await pumpBar(tester);
-
-    final visual = find.byKey(
-      const ValueKey('linked-entries-activity-images-visual'),
-    );
-    final inkWell = find.descendant(
-      of: visual,
-      matching: find.byType(InkWell),
-    );
-    expect(inkWell, findsOneWidget);
-    expect(tester.getSize(inkWell).height, DsPill.height);
-    expect(tester.widget<InkWell>(inkWell).hoverColor, isNull);
-
-    final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
-    await pointer.addPointer();
-    await pointer.moveTo(tester.getCenter(visual));
-    await tester.pump();
-
-    expect(tester.getSize(inkWell).height, DsPill.height);
-    await pointer.removePointer();
+    expect(glyphColors, hasLength(1));
   });
 
   testWidgets('sort trigger exposes active filters and a visible count', (
@@ -261,37 +211,27 @@ void main() {
       findsOneWidget,
     );
 
-    final semantics = tester.getSemantics(
-      find.byKey(const ValueKey('linked-entries-sort-trigger')),
-    );
-    expect(semantics.label, contains(messages.journalLinkedEntriesShowHidden));
+    final semanticsLabel = tester
+        .widget<DesignSystemChip>(sortChip)
+        .semanticsLabel;
+    expect(semanticsLabel, contains(messages.journalLinkedEntriesShowHidden));
     expect(
-      semantics.label,
+      semanticsLabel,
       contains(messages.journalLinkedEntriesShowFlaggedOnly),
     );
+    expect(find.bySemanticsLabel(semanticsLabel!), findsOneWidget);
 
-    final visualFinder = find.byKey(
-      const ValueKey('linked-entries-sort-trigger-visual'),
-    );
-    final pill = tester.widget<DsPill>(visualFinder);
-    final decoration = _pillDecoration(tester, visualFinder);
-    expect(pill.variant, DsPillVariant.filled);
-    expect(pill.bordered, isTrue);
-    expect(decoration.color, dsTokensLight.colors.surface.enabled);
-    expect(
-      (decoration.border! as Border).top.color,
-      dsTokensLight.colors.decorative.level02,
-    );
+    // It opens a sheet and is never itself "on".
+    final chip = tester.widget<DesignSystemChip>(sortChip);
+    expect(chip.outlined, isTrue);
+    expect(chip.selected, isFalse);
   });
 
   testWidgets('sort trigger names the current sort order', (tester) async {
     await pumpBar(tester);
     final messages = await AppLocalizations.delegate.load(const Locale('en'));
-    final visualFinder = find.byKey(
-      const ValueKey('linked-entries-sort-trigger-visual'),
-    );
     expect(
-      tester.widget<DsPill>(visualFinder).label,
+      tester.widget<DesignSystemChip>(sortChip).label,
       messages.journalLinkedEntriesSortNewestFirst,
     );
 
@@ -301,16 +241,10 @@ void main() {
         LinkedEntriesSortOrder.oldestFirst;
     await tester.pump();
 
+    final chip = tester.widget<DesignSystemChip>(sortChip);
+    expect(chip.label, messages.journalLinkedEntriesSortOldestFirst);
     expect(
-      tester.widget<DsPill>(visualFinder).label,
-      messages.journalLinkedEntriesSortOldestFirst,
-    );
-    expect(
-      tester
-          .getSemantics(
-            find.byKey(const ValueKey('linked-entries-sort-trigger')),
-          )
-          .label,
+      chip.semanticsLabel,
       contains(messages.journalLinkedEntriesSortOldestFirst),
     );
   });
@@ -329,55 +263,29 @@ void main() {
     final container = ProviderScope.containerOf(element);
 
     final audioLabel = messages.journalLinkedEntriesActivityFilterAudio;
-    final audioPill = find.bySemanticsLabel(audioLabel);
-    bool audioPillSelected() =>
-        tester.getSemantics(audioPill).flagsCollection.isToggled ==
-        Tristate.isTrue;
+    bool audioSelected() =>
+        tester.widget<DesignSystemChip>(kindChip(audioLabel)).selected;
 
-    // Audio starts active, both in the controller and in the rendered pill.
+    // Audio starts active, both in the controller and in the rendered chip.
     expect(
       container.read(
         linkedEntriesActivityFilterControllerProvider(entryId),
       ),
       contains(LinkedEntryActivityFilter.audio),
     );
-    expect(audioPillSelected(), isTrue);
-    expect(
-      tester
-          .getSemantics(audioPill)
-          .getSemanticsData()
-          .hasAction(SemanticsAction.tap),
-      isTrue,
-    );
-    expect(
-      tester.widget<Text>(find.text(audioLabel)).style!.color,
-      dsTokensLight.colors.text.mediumEmphasis,
-    );
+    expect(audioSelected(), isTrue);
 
-    await tester.tap(
-      find.text(messages.journalLinkedEntriesActivityFilterAudio),
-    );
+    await tester.tap(find.text(audioLabel));
     await tester.pumpAndSettle();
 
-    // After the tap the controller drops audio and the pill re-renders as off.
+    // After the tap the controller drops audio and the chip re-renders off.
     expect(
       container.read(
         linkedEntriesActivityFilterControllerProvider(entryId),
       ),
       isNot(contains(LinkedEntryActivityFilter.audio)),
     );
-    expect(audioPillSelected(), isFalse);
-    final audioVisual = find.byKey(
-      const ValueKey('linked-entries-activity-audio-visual'),
-    );
-    expect(
-      (_pillDecoration(tester, audioVisual).border! as Border).top.color,
-      dsTokensLight.colors.decorative.level02,
-    );
-    expect(
-      tester.widget<Icon>(find.byIcon(LottiIcons.micIdle)).color,
-      dsTokensLight.colors.text.lowEmphasis,
-    );
+    expect(audioSelected(), isFalse);
   });
 
   testWidgets('tapping the sort trigger opens the filter modal', (
@@ -407,7 +315,9 @@ void main() {
     await pumpBar(tester);
     final messages = await AppLocalizations.delegate.load(const Locale('en'));
     final node = tester.getSemantics(
-      find.byKey(const ValueKey('linked-entries-sort-trigger')),
+      find.bySemanticsLabel(
+        tester.widget<DesignSystemChip>(sortChip).semanticsLabel!,
+      ),
     );
 
     // ignore: deprecated_member_use
@@ -424,15 +334,6 @@ void main() {
     handle.dispose();
   });
 }
-
-BoxDecoration _pillDecoration(WidgetTester tester, Finder pill) =>
-    tester
-            .widgetList<DecoratedBox>(
-              find.descendant(of: pill, matching: find.byType(DecoratedBox)),
-            )
-            .first
-            .decoration
-        as BoxDecoration;
 
 AiResponseEntry _codingPrompt() {
   final date = DateTime(2024, 3, 15);

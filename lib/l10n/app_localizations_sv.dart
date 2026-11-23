@@ -11976,15 +11976,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get navTabTitleTasks => 'Uppgifter';
 
   @override
-  String nestedAiResponsesTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 's',
-      one: '',
-    );
-    return '$count AI-respons$_temp0';
-  }
+  String get nestedAiResponsesLoadFailed =>
+      'AI-resultaten för den här posten kunde inte laddas.';
 
   @override
   String get noDefaultLanguage => 'Inget standardspråk';

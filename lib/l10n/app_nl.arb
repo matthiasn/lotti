@@ -5098,14 +5098,7 @@
   "navTabTitleProjects": "Projecten",
   "navTabTitleSettings": "Instellingen",
   "navTabTitleTasks": "Taken",
-  "nestedAiResponsesTitle": "{count} AI-respons{count, plural, =1{} other{s}}",
-  "@nestedAiResponsesTitle": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "nestedAiResponsesLoadFailed": "De AI-resultaten bij dit item zijn niet geladen.",
   "noDefaultLanguage": "Geen standaardtaal",
   "noTasksFound": "Geen taken gevonden",
   "noTasksToLink": "Geen taken beschikbaar om te koppelen",

@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -9,17 +9,12 @@ import 'package:material_ui/material_ui.dart';
 
 /// Activity-filter pill row above the linked entries list.
 ///
-/// Implements the Figma "Activity Filter" treatment as a single
-/// horizontally-centered pill row that's always visible on every
-/// breakpoint.
+/// One row, always visible: a toggle chip per activity kind, then the sort
+/// and filter trigger.
 ///
-/// Every control uses the same compact [DsPill] shell as the task header.
-/// Active activity kinds keep their own accent on the leading icon while the
-/// shared filled surface and accent-matched border provide one consistent pill
-/// shape. Inactive kinds fall back to the task header's quiet neutral border.
-/// Timer's accent comes from `alert.warning`; Audio, Images, and Code retain
-/// the colors from the Figma activity-filter spec because the token set does
-/// not expose semantic equivalents yet.
+/// The kind chips are the design system's own filter chip, neutral with the
+/// shared selected state: a kind is not a state and not the agent's voice, so
+/// it carries no hue of its own.
 class LinkedEntriesActivityFilterBar extends ConsumerWidget {
   const LinkedEntriesActivityFilterBar({required this.entryId, super.key});
 
@@ -129,30 +124,20 @@ class _FilterTrigger extends StatelessWidget {
       ...activeLabels,
     ].join(', ');
 
-    final radius = BorderRadius.circular(tokens.radii.badgesPills);
-    return Semantics(
+    // The same chip as the kinds beside it, so the row is one height and
+    // one shape; it stays an outline because it opens a sheet and is never
+    // itself "on".
+    return DesignSystemChip(
       key: const ValueKey('linked-entries-sort-trigger'),
-      button: true,
-      label: semanticsLabel,
-      onTap: () => showLinkedEntriesFilterModal(
-        context: context,
-        entryId: entryId,
-      ),
-      excludeSemantics: true,
-      child: DsPill(
-        key: const ValueKey('linked-entries-sort-trigger-visual'),
-        variant: DsPillVariant.filled,
-        bordered: true,
-        label: label,
-        labelColor: tokens.colors.text.mediumEmphasis,
-        leading: Icon(
-          LottiIcons.filter,
-          size: tokens.spacing.step4,
-          color: tokens.colors.interactive.enabled,
-        ),
-        trailing: activeLabels.isEmpty
-            ? null
-            : Container(
+      label: label,
+      semanticsLabel: semanticsLabel,
+      leadingIcon: LottiIcons.filter,
+      outlined: true,
+      size: DesignSystemChipSize.compactPill,
+      trailing: activeLabels.isEmpty
+          ? null
+          : ExcludeSemantics(
+              child: Container(
                 key: const ValueKey(
                   'linked-entries-sort-trigger-active-count',
                 ),
@@ -162,7 +147,9 @@ class _FilterTrigger extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: tokens.colors.surface.active,
-                  borderRadius: radius,
+                  borderRadius: BorderRadius.circular(
+                    tokens.radii.badgesPills,
+                  ),
                 ),
                 child: Text(
                   '${activeLabels.length}',
@@ -174,10 +161,10 @@ class _FilterTrigger extends StatelessWidget {
                   ),
                 ),
               ),
-        onTap: () => showLinkedEntriesFilterModal(
-          context: context,
-          entryId: entryId,
-        ),
+            ),
+      onPressed: () => showLinkedEntriesFilterModal(
+        context: context,
+        entryId: entryId,
       ),
     );
   }
@@ -197,80 +184,35 @@ class _ActivityPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final spec = _ActivityPillSpec.of(context, kind);
-    final iconColor = active ? spec.accent : tokens.colors.text.lowEmphasis;
-
-    return Semantics(
-      button: true,
-      toggled: active,
-      label: spec.label,
-      onTap: onTap,
-      excludeSemantics: true,
-      child: DsPill(
-        key: ValueKey('linked-entries-activity-${kind.name}-visual'),
-        variant: DsPillVariant.filled,
-        bordered: true,
-        borderColor: active
-            ? spec.accent.withValues(alpha: spec.borderAlpha)
-            : null,
-        label: spec.label,
-        labelColor: tokens.colors.text.mediumEmphasis,
-        leading: Icon(
-          spec.icon,
-          size: tokens.spacing.step4,
-          color: iconColor,
-        ),
-        onTap: onTap,
-      ),
-    );
-  }
-}
-
-class _ActivityPillSpec {
-  const _ActivityPillSpec({
-    required this.label,
-    required this.icon,
-    required this.accent,
-    required this.borderAlpha,
-  });
-
-  factory _ActivityPillSpec.of(
-    BuildContext context,
-    LinkedEntryActivityFilter kind,
-  ) {
-    final tokens = context.designTokens;
     final messages = context.messages;
-    return switch (kind) {
-      LinkedEntryActivityFilter.timer => _ActivityPillSpec(
-        label: messages.journalLinkedEntriesActivityFilterTimer,
-        icon: LottiIcons.timer,
-        accent: tokens.colors.alert.warning.defaultColor,
-        borderAlpha: 1,
+    final (label, icon) = switch (kind) {
+      LinkedEntryActivityFilter.timer => (
+        messages.journalLinkedEntriesActivityFilterTimer,
+        LottiIcons.timer,
       ),
-      LinkedEntryActivityFilter.audio => _ActivityPillSpec(
-        label: messages.journalLinkedEntriesActivityFilterAudio,
-        icon: LottiIcons.micIdle,
-        accent: const Color(0xFF9966E5),
-        borderAlpha: 0.7,
+      LinkedEntryActivityFilter.audio => (
+        messages.journalLinkedEntriesActivityFilterAudio,
+        LottiIcons.mic,
       ),
-      LinkedEntryActivityFilter.images => _ActivityPillSpec(
-        label: messages.journalLinkedEntriesActivityFilterImages,
-        icon: LottiIcons.image,
-        accent: const Color(0xFF619EFF),
-        borderAlpha: 0.7,
+      LinkedEntryActivityFilter.images => (
+        messages.journalLinkedEntriesActivityFilterImages,
+        LottiIcons.image,
       ),
-      LinkedEntryActivityFilter.code => _ActivityPillSpec(
-        label: messages.journalLinkedEntriesActivityFilterCode,
-        icon: LottiIcons.code,
-        accent: const Color(0xFF34C759),
-        borderAlpha: 0.7,
+      LinkedEntryActivityFilter.code => (
+        messages.journalLinkedEntriesActivityFilterCode,
+        LottiIcons.code,
       ),
     };
+    return DesignSystemChip(
+      label: label,
+      leadingIcon: icon,
+      selected: active,
+      // Every kind is on by default, so "on" is the quiet neutral fill and
+      // the outline is what is left when a kind is switched off.
+      outlined: true,
+      quietSelection: true,
+      size: DesignSystemChipSize.compactPill,
+      onPressed: onTap,
+    );
   }
-
-  final String label;
-  final IconData icon;
-  final Color accent;
-  final double borderAlpha;
 }

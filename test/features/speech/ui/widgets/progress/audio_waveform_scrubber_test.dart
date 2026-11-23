@@ -12,7 +12,6 @@ Widget _buildHarness({
   Duration buffered = Duration.zero,
   Duration total = const Duration(seconds: 120),
   bool enabled = true,
-  bool compact = false,
   double width = 240,
   ValueChanged<Duration>? onSeek,
   bool constrained = true,
@@ -24,7 +23,6 @@ Widget _buildHarness({
     total: total,
     onSeek: onSeek ?? (_) {},
     enabled: enabled,
-    compact: compact,
   );
 
   if (constrained) {
@@ -87,7 +85,6 @@ Future<void> _pumpScrubber(
   Duration buffered = Duration.zero,
   Duration total = const Duration(seconds: 120),
   bool enabled = true,
-  bool compact = false,
   double width = 240,
   ValueChanged<Duration>? onSeek,
   bool constrained = true,
@@ -99,7 +96,6 @@ Future<void> _pumpScrubber(
       buffered: buffered,
       total: total,
       enabled: enabled,
-      compact: compact,
       width: width,
       onSeek: onSeek,
       constrained: constrained,
@@ -117,7 +113,6 @@ Future<CustomPainter> _pumpAndGetPainter(
   Duration progress = Duration.zero,
   Duration buffered = Duration.zero,
   Duration total = const Duration(seconds: 120),
-  bool compact = false,
   double width = 240,
 }) async {
   await _pumpScrubber(
@@ -126,7 +121,6 @@ Future<CustomPainter> _pumpAndGetPainter(
     progress: progress,
     buffered: buffered,
     total: total,
-    compact: compact,
     width: width,
   );
 

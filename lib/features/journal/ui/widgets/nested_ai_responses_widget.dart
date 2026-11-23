@@ -10,22 +10,17 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/layout/viewport_stable_animated_size.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Displays AI responses linked to an entry (e.g., audio) in a collapsible
-/// nested tree view.
+/// The AI responses linked to an entry (a recording's summary and coding
+/// prompts, a photo's analysis), stacked under it on the entry's own gutter.
 ///
-/// This widget creates a visual hierarchy showing that AI responses belong
-/// to the parent entry, similar to comment threads or nested replies.
-///
-/// Features:
-/// - Only renders if AI responses exist (completely hidden otherwise)
-/// - Collapsible section with smooth animation
-/// - Indented visual style to indicate nesting
-/// - Shows count of AI responses in the header
+/// Each response is an [AiResponseSummary] that names its own job and
+/// collapses by itself, so the stack has no header and no toggle of its own.
+/// Renders nothing while the entry has no responses, and says so when they
+/// could not be loaded. A response arriving later is animated in.
 class NestedAiResponsesWidget extends ConsumerStatefulWidget {
   const NestedAiResponsesWidget({
     required this.parentEntryId,
@@ -33,9 +28,6 @@ class NestedAiResponsesWidget extends ConsumerStatefulWidget {
     this.contextTaskId,
     super.key,
   });
-
-  /// Key for the header widget - used for testing
-  static const headerKey = Key('nested_ai_responses_header');
 
   /// The ID of the parent entry (e.g., audio entry) to fetch linked AI responses for.
   final String parentEntryId;
@@ -66,11 +58,7 @@ class NestedAiResponsesWidget extends ConsumerStatefulWidget {
 }
 
 class _NestedAiResponsesWidgetState
-    extends ConsumerState<NestedAiResponsesWidget>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _expandAnimation;
-  late Animation<double> _rotationAnimation;
+    extends ConsumerState<NestedAiResponsesWidget> {
   ProviderSubscription<AsyncValue<List<AiResponseEntry>>>?
   _responsesSubscription;
   final Set<String> _seenResponseIds = {};
@@ -78,37 +66,9 @@ class _NestedAiResponsesWidgetState
   bool _receivedInitialResponses = false;
   bool _animateSection = false;
 
-  /// Whether the section is expanded - derived from animation controller.
-  bool get _isExpanded =>
-      _animationController.status == AnimationStatus.completed ||
-      _animationController.status == AnimationStatus.forward;
-
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 250),
-      vsync: this,
-    );
-    _expandAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    );
-    // Standard expand/collapse caret: collapsed → right (-0.25 turns
-    // from the natural downward `LottiIcons.expand`), expanded → down.
-    _rotationAnimation =
-        Tween<double>(
-          begin: -0.25,
-          end: 0,
-        ).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeInOut,
-          ),
-        );
-
-    // Start expanded
-    _animationController.value = 1.0;
     _listenToResponses();
   }
 
@@ -131,7 +91,6 @@ class _NestedAiResponsesWidgetState
   @override
   void dispose() {
     _responsesSubscription?.close();
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -160,180 +119,57 @@ class _NestedAiResponsesWidgetState
       ..addAll(currentIds);
   }
 
-  void _toggleExpanded() {
-    if (_isExpanded) {
-      _animationController.reverse();
-    } else {
-      _animationController.forward();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final asyncAiResponses = ref.watch(
-      widget._responses,
-    );
+    final asyncAiResponses = ref.watch(widget._responses);
+    final tokens = context.designTokens;
 
     final aiResponses = asyncAiResponses.value;
-    if (aiResponses == null) return const SizedBox.shrink();
+    if (aiResponses == null) {
+      // Still loading renders nothing; a failed first load says so rather
+      // than leaving the entry looking as if the agent made nothing of it.
+      if (!asyncAiResponses.hasError) return const SizedBox.shrink();
+      return Padding(
+        padding: EdgeInsets.only(top: tokens.spacing.cardItemSpacing),
+        child: Text(
+          context.messages.nestedAiResponsesLoadFailed,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+      );
+    }
 
     if (aiResponses.isEmpty) return const SizedBox.shrink();
 
-    final section = _buildNestedSection(
-      context,
-      aiResponses,
-      newlyArrived: _newlyArrivedResponseIds,
-    );
-    if (!_animateSection) return section;
+    final newlyArrived = _newlyArrivedResponseIds;
+    // The entrance wrappers are always mounted, keyed, and only told whether
+    // to animate: [SizeFadeEntrance] plays once, when it mounts. Adding the
+    // wrapper for an arrival and dropping it on the next build would change
+    // the widget type at that slot, remount the card under it and throw away
+    // its expanded state.
     return SizeFadeEntrance(
       key: ValueKey('nested-ai-section-${widget.parentEntryId}'),
-      child: section,
-    );
-  }
-
-  Widget _buildNestedSection(
-    BuildContext context,
-    List<AiResponseEntry> aiResponses, {
-    required Set<String> newlyArrived,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(
-        left: AppTheme.spacingSmall,
-        top: AppTheme.spacingSmall,
-      ),
+      animate: _animateSection,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Nested connector line and content
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Vertical connector line
-              _buildConnectorLine(context),
-              const SizedBox(width: AppTheme.spacingSmall),
-              // Content area
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Collapsible header
-                    _buildHeader(context, aiResponses.length),
-                    // Animated content
-                    SizeTransition(
-                      sizeFactor: _expandAnimation,
-                      alignment: AlignmentGeometry.topStart,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: AppTheme.spacingXSmall),
-                          ...aiResponses.map((response) {
-                            final card = Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: AppTheme.spacingSmall,
-                              ),
-                              child: _buildAiResponseCard(context, response),
-                            );
-                            if (!newlyArrived.contains(response.meta.id)) {
-                              return card;
-                            }
-                            return SizeFadeEntrance(
-                              key: ValueKey(
-                                'nested-ai-response-${response.meta.id}',
-                              ),
-                              child: card,
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+          for (final response in aiResponses)
+            SizeFadeEntrance(
+              key: ValueKey('nested-ai-response-${response.meta.id}'),
+              animate: newlyArrived.contains(response.meta.id),
+              child: Padding(
+                padding: EdgeInsets.only(top: tokens.spacing.cardItemSpacing),
+                child: _buildAiResponseCard(context, response),
               ),
-            ],
-          ),
+            ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildConnectorLine(BuildContext context) {
-    final colorScheme = context.colorScheme;
-
-    return SizedBox(
-      width: 16,
-      child: Column(
-        children: [
-          // Horizontal line connecting to parent
-          Container(
-            width: 16,
-            height: 12,
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: colorScheme.outlineVariant,
-                  width: 2,
-                ),
-                bottom: BorderSide(
-                  color: colorScheme.outlineVariant,
-                  width: 2,
-                ),
-              ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(8),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, int count) {
-    final colorScheme = context.colorScheme;
-    final textTheme = context.textTheme;
-
-    return InkWell(
-      key: NestedAiResponsesWidget.headerKey,
-      onTap: _toggleExpanded,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppTheme.spacingXSmall,
-          horizontal: AppTheme.spacingXSmall,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              LottiIcons.magic,
-              size: 16,
-              color: colorScheme.primary,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              context.messages.nestedAiResponsesTitle(count),
-              style: textTheme.labelMedium?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(width: 4),
-            RotationTransition(
-              turns: _rotationAnimation,
-              child: Icon(
-                LottiIcons.expand,
-                size: 18,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
 
   Widget _buildAiResponseCard(BuildContext context, AiResponseEntry response) {
-    final colorScheme = context.colorScheme;
+    final tokens = context.designTokens;
 
     return Dismissible(
       key: Key(response.meta.id),
@@ -341,19 +177,16 @@ class _NestedAiResponsesWidgetState
       direction: DismissDirection.endToStart,
       confirmDismiss: (_) => _confirmAndDelete(context, response.meta.id),
       background: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: ColoredBox(
-            color: colorScheme.error,
-            child: const Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: EdgeInsets.all(10),
-                child: Icon(
-                  LottiIcons.delete,
-                  color: Colors.white,
-                ),
+        borderRadius: BorderRadius.circular(tokens.radii.l),
+        child: ColoredBox(
+          color: tokens.colors.alert.error.defaultColor,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: EdgeInsets.all(tokens.spacing.step4),
+              child: Icon(
+                LottiIcons.delete,
+                color: tokens.colors.text.onInteractiveAlert,
               ),
             ),
           ),

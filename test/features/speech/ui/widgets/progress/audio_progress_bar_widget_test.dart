@@ -6,8 +6,8 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../../widget_test_utils.dart';
 
 RRect _track(double width) => RRect.fromRectAndRadius(
-  Rect.fromLTWH(0, 15.5, width, 5),
-  const Radius.circular(2.5),
+  Rect.fromLTWH(0, 14, width, 4),
+  const Radius.circular(2),
 );
 
 void Function(Canvas) _paintBar(WidgetTester tester) {
@@ -34,7 +34,6 @@ void main() {
       Duration buffered = Duration.zero,
       Duration total = const Duration(minutes: 5),
       bool enabled = true,
-      bool compact = false,
       String? semanticLabel,
     }) async {
       await tester.pumpWidget(
@@ -49,7 +48,6 @@ void main() {
                   total: total,
                   onSeek: seekCalls.add,
                   enabled: enabled,
-                  compact: compact,
                   semanticLabel: semanticLabel,
                 ),
               ),
@@ -66,25 +64,13 @@ void main() {
         _paintBar(tester),
         paints
           ..circle()
-          ..circle(x: 9, y: 18, radius: 9),
+          ..circle(x: 7.5, y: 16, radius: 7.5),
       );
     });
 
-    testWidgets('renders compact variant', (WidgetTester tester) async {
-      await pumpProgressBar(tester, compact: true);
-
-      final sizedBox = tester.widget<SizedBox>(
-        find
-            .descendant(
-              of: find.byType(AudioProgressBar),
-              matching: find.byType(SizedBox),
-            )
-            .first,
-      );
-      expect(sizedBox.height, 32);
-    });
-
-    testWidgets('renders standard variant', (WidgetTester tester) async {
+    testWidgets('is 32 tall, inside the player row', (
+      WidgetTester tester,
+    ) async {
       await pumpProgressBar(tester);
 
       final sizedBox = tester.widget<SizedBox>(
@@ -95,7 +81,7 @@ void main() {
             )
             .first,
       );
-      expect(sizedBox.height, 36);
+      expect(sizedBox.height, 32);
     });
 
     testWidgets('displays correct progress and buffered values', (
@@ -431,7 +417,6 @@ void main() {
                 total: const Duration(minutes: 5),
                 onSeek: seekCalls.add,
                 enabled: true,
-                compact: false,
               ),
             ),
           ),
@@ -576,7 +561,6 @@ void main() {
                     total: const Duration(seconds: 100),
                     onSeek: seekCalls.add,
                     enabled: true,
-                    compact: false,
                   ),
                 ),
               ),

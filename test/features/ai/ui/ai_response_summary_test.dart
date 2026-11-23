@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
@@ -39,6 +40,78 @@ void main() {
         type: AiResponseType.imageAnalysis,
       ),
     );
+    for (final (type, name) in [
+      (AiResponseType.audioSummary, 'Summary'),
+      (AiResponseType.imageAnalysis, 'Image analysis'),
+      (AiResponseType.audioTranscription, 'Transcription'),
+    ]) {
+      testWidgets('a nested $type names its job in the agent accent', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: AiResponseSummary(
+              testAiResponseEntry.copyWith(
+                data: testAiResponseEntry.data.copyWith(type: type),
+              ),
+              fadeOut: false,
+            ),
+          ),
+        );
+
+        final title = find.text(name);
+        expect(title, findsOneWidget);
+        final accent = tester.element(title).designTokens.colors.aiCard.accent;
+        expect(tester.widget<Text>(title).style?.color, accent);
+        final sparkle = find.byIcon(LottiIcons.magic);
+        expect(tester.widget<Icon>(sparkle).color, accent);
+        // The name leads the card, above the response it names.
+        expect(
+          tester.getTopLeft(title).dy,
+          lessThan(tester.getTopLeft(find.text('AI response')).dy),
+        );
+      });
+    }
+
+    testWidgets('shown as its own entry it carries no job row: the entry '
+        'card already says what it is', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: AiResponseSummary(testAiResponseEntry, fadeOut: true),
+        ),
+      );
+
+      expect(find.text('Image analysis'), findsNothing);
+      expect(find.byIcon(LottiIcons.magic), findsNothing);
+      expect(find.text('AI response'), findsOneWidget);
+    });
+
+    testWidgets('running text keeps the reading measure in a wide card', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1400, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: AiResponseSummary(
+            testAiResponseEntry.copyWith(
+              data: testAiResponseEntry.data.copyWith(
+                response: List.filled(60, 'sardine count').join(' '),
+              ),
+            ),
+            fadeOut: false,
+          ),
+        ),
+      );
+
+      final card = tester.getSize(find.byType(AiResponseCard));
+      final prose = tester.getSize(find.byType(AgentMarkdownView));
+      expect(prose.width, kProseMeasureWidth);
+      expect(card.width, greaterThan(kProseMeasureWidth));
+    });
+
     testWidgets('renders GptMarkdown for standard responses', (
       tester,
     ) async {
@@ -141,12 +214,16 @@ The image shows a beautiful landscape with mountains.''';
 
         // Check for ShaderMask when fadeOut is true
         expect(find.byType(ShaderMask), findsOneWidget);
-        // ConstrainedBox with maxHeight should be inside ShaderMask
-        final constrainedBox = find.descendant(
-          of: find.byType(ShaderMask),
-          matching: find.byType(ConstrainedBox),
-        );
-        expect(constrainedBox, findsOneWidget);
+        // The preview is clipped to its 200 px height inside the mask.
+        final previewHeights = tester
+            .widgetList<ConstrainedBox>(
+              find.descendant(
+                of: find.byType(ShaderMask),
+                matching: find.byType(ConstrainedBox),
+              ),
+            )
+            .map((box) => box.constraints.maxHeight);
+        expect(previewHeights, contains(200));
       },
     );
 
@@ -559,18 +636,6 @@ Style: isometric digital art. --ar 16:9
         return container.decoration! as BoxDecoration;
       }
 
-      Container card(WidgetTester tester) => tester.widget<Container>(
-        find.byWidgetPredicate(
-          (w) =>
-              w is Container &&
-              w.decoration is BoxDecoration &&
-              (w.decoration! as BoxDecoration).color ==
-                  dsTokensLight.colors.aiCard.background.withValues(
-                    alpha: 0.5,
-                  ),
-        ),
-      );
-
       testWidgets(
         'the body sits at the editor measure, never louder than the entry '
         'text it belongs to',
@@ -617,9 +682,24 @@ Style: isometric digital art. --ar 16:9
           'card', (tester) async {
         await pumpSummary(tester, text: shortSummaryText);
 
+        // Measured, not read off a widget: where the content starts inside
+        // the card's edge.
+        final cardRect = tester.getRect(find.byType(AiResponseCard));
+        final content = tester.getRect(
+          find
+              .descendant(
+                of: find.byType(AiResponseCard),
+                matching: find.byType(Column),
+              )
+              .first,
+        );
         expect(
-          card(tester).padding,
-          EdgeInsets.all(dsTokensLight.spacing.step4),
+          content.topLeft - cardRect.topLeft,
+          // One hairline of border, then the inset.
+          Offset(
+            dsTokensLight.spacing.step4 + 1,
+            dsTokensLight.spacing.step4 + 1,
+          ),
           reason:
               'A surface nested inside an entry card should not spend a full '
               'card inset of its own.',

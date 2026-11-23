@@ -20131,11 +20131,11 @@ abstract class AppLocalizations {
   /// **'Tasks'**
   String get navTabTitleTasks;
 
-  /// No description provided for @nestedAiResponsesTitle.
+  /// No description provided for @nestedAiResponsesLoadFailed.
   ///
   /// In en, this message translates to:
-  /// **'{count} AI response{count, plural, =1{} other{s}}'**
-  String nestedAiResponsesTitle(int count);
+  /// **'The AI results for this entry didn\'t load.'**
+  String get nestedAiResponsesLoadFailed;
 
   /// No description provided for @noDefaultLanguage.
   ///
