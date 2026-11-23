@@ -50,7 +50,7 @@ sources:
     last_modified: 2026-11-23
   - id: tasks-location
     resource: ../../lib/beamer/locations/tasks_location.dart
-    title: The /tasks/:taskId/documents/:documentId route
+    title: The document route and the review route
     last_modified: 2026-11-23
   - id: section
     resource: ../../lib/features/documents/ui/task_documents_section.dart
@@ -148,8 +148,8 @@ sources:
 > chat proposes versions too, a proposal's text can be read before it is
 > confirmed, and the document page hosts the task's chat
 > ([Reading a proposal](#reading-a-proposal)). The side-by-side review
-> runs inside the document page, and the task list and day column step
-> aside for it; no route opens it directly yet. Each implementation
+> runs inside the document page, the task list and day column step aside
+> for it, and a route opens it directly. Each implementation
 > step rewrites the part it lands, and the page moves to `stable` when the
 > last part does.
 
@@ -450,7 +450,12 @@ it, only Read draft and then "Discard draft", with the draft's change
 summary under its description. Read draft opens a
 sheet with whether the proposal
 starts a document or replaces one's text, in the agent's violet, the change
-summary, and, after a gap rather than a rule, the markdown as it would read. While the row can still be
+summary, and, after a gap rather than a rule, the markdown as it would read.
+On desktop the card's Read draft on a *revision* goes to the
+[side-by-side review](#side-by-side-review-desktop-partly-built) instead,
+through the review route (the card's `onRead`); a new document, any draft on
+a phone, and every chat draft (the chat's own, which the review cannot load)
+open the sheet. While the row can still be
 decided there, the sheet's glass footer carries "Discard draft" (closing
 the sheet keeps the draft) and the one confirm, which names the outcome — "Create document" or "Use this version" — on both hosts,
 deciding the item alone, or the whole answer when it is the only change. A
@@ -474,6 +479,14 @@ follows the rule `openLinkedTaskDetail` follows for a linked task:
   on a phone the document page is stacked over the task page; on desktop the
   pane opens it over the task, and a URL naming only the task returns the
   pane to the task. History records it as a visit to the task.
+- **Review link**
+  `/tasks/:taskId/documents/:documentId/review/:changeSetId/:itemIndex`
+  opens the document with that draft under review. On a phone the pushed
+  page gets it as `initialReview`; on desktop the location sets
+  `NavService.taskDocumentReviewRequest` before `desktopTaskDocument`, the
+  pane hands it to the page, and the page clears it once the review is open
+  — one-shot, so opening the document later reads it. A malformed index
+  reviews nothing.
 
 ```mermaid
 stateDiagram-v2
@@ -598,10 +611,8 @@ stateDiagram-v2
   Reviewing --> Reading: Show list while the review holds the list's width
 ```
 
-Still to build:
-
-- **A route into review**, so the card's Read draft and a notification can
-  land in it directly.
+Still to build: a notification that lands in review through the same
+route.
 
 ## Invariants
 

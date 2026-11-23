@@ -43,12 +43,17 @@ class DocumentProposalReadButton extends StatelessWidget {
     required this.args,
     this.onConfirm,
     this.onReject,
+    this.onRead,
     this.inRow = false,
     super.key,
   });
 
   /// Set inside a row of buttons: no gap above, and it hugs its label.
   final bool inRow;
+
+  /// Opens the draft somewhere other than the reading sheet — the
+  /// side-by-side review, where the host can reach it. Null opens the sheet.
+  final VoidCallback? onRead;
 
   final String toolName;
   final Map<String, dynamic> args;
@@ -64,12 +69,20 @@ class DocumentProposalReadButton extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final label = context.messages.documentProposalRead;
-    void open() => showDocumentProposalPreview(
-      context,
-      args: args,
-      onConfirm: onConfirm,
-      onReject: onReject,
-    );
+    final onRead = this.onRead;
+    void open() {
+      if (onRead != null) {
+        onRead();
+        return;
+      }
+      showDocumentProposalPreview(
+        context,
+        args: args,
+        onConfirm: onConfirm,
+        onReject: onReject,
+      );
+    }
+
     final tokens = context.designTokens;
     // While the draft can be decided, reading it is the way to confirm it,
     // so it is the row's button. Once decided, it is only a way to look.
@@ -254,10 +267,15 @@ class DocumentDraftRowActions extends StatelessWidget {
     required this.resolving,
     required this.onConfirm,
     required this.onReject,
+    this.onRead,
     super.key,
   });
 
   final Map<String, dynamic> args;
+
+  /// Where Read draft goes instead of the sheet; see
+  /// [DocumentProposalReadButton.onRead].
+  final VoidCallback? onRead;
 
   /// A verdict is being written: the rail shows its spinner.
   final bool busy;
@@ -299,6 +317,7 @@ class DocumentDraftRowActions extends StatelessWidget {
                   inRow: true,
                   onConfirm: onConfirm,
                   onReject: onReject,
+                  onRead: onRead,
                 ),
               ),
             ),

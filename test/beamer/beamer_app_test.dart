@@ -393,6 +393,15 @@ Future<void> _stubNavService(
   final taskStack = ValueNotifier<List<String>>([]);
   when(() => navService.desktopTaskDetailStack).thenReturn(taskStack);
   addTearDown(taskStack.dispose);
+  final document = ValueNotifier<({String taskId, String documentId})?>(null);
+  final reviewRequest =
+      ValueNotifier<
+        ({String taskId, String documentId, String changeSetId, int itemIndex})?
+      >(null);
+  when(() => navService.desktopTaskDocument).thenReturn(document);
+  when(() => navService.taskDocumentReviewRequest).thenReturn(reviewRequest);
+  addTearDown(document.dispose);
+  addTearDown(reviewRequest.dispose);
 
   final tasksDelegate = await _createEmptyDelegate('/tasks');
   projectsDelegate ??= await _createEmptyDelegate('/projects');

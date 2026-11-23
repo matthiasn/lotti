@@ -361,6 +361,10 @@ class _TaskPaneBody extends StatelessWidget {
 /// `NavService.desktopTaskDocument` opened over it, if it belongs to this
 /// task.
 ///
+/// A draft the review route asks for (`NavService.taskDocumentReviewRequest`)
+/// is handed to that document's page, which opens it for review and clears
+/// the request.
+///
 /// The task page stays mounted beneath an open document — offstage, its
 /// tickers paused and out of focus — so closing the document returns to the
 /// task as it was, scroll position and all.
@@ -372,9 +376,16 @@ class _TaskWithDocument extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final navService = ref.read(navServiceProvider);
-    return ValueListenableBuilder<({String taskId, String documentId})?>(
-      valueListenable: navService.desktopTaskDocument,
-      builder: (context, open, task) {
+    final reviewRequest = navService.taskDocumentReviewRequest;
+    return ListenableBuilder(
+      // The review route asks for a draft beside the document it opens, or
+      // for one of the document already open.
+      listenable: Listenable.merge([
+        navService.desktopTaskDocument,
+        reviewRequest,
+      ]),
+      builder: (context, task) {
+        final open = navService.desktopTaskDocument.value;
         final document = open?.taskId == taskId ? open : null;
         return Stack(
           fit: StackFit.expand,
@@ -392,6 +403,8 @@ class _TaskWithDocument extends ConsumerWidget {
                 taskId: taskId,
                 documentId: document.documentId,
                 onClose: () => navService.desktopTaskDocument.value = null,
+                initialReview: reviewRequest.value,
+                onInitialReviewOpened: () => reviewRequest.value = null,
               ),
           ],
         );

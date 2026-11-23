@@ -17,6 +17,9 @@ class TasksLocation extends BeamLocation<BeamState> {
     '/tasks',
     '/tasks/:taskId',
     '/tasks/:taskId/documents/:documentId',
+    // A draft of the document, opened for side-by-side review: the change
+    // set it travels in and its place there.
+    '/tasks/:taskId/documents/:documentId/review/:changeSetId/:itemIndex',
   ];
 
   @override
@@ -25,13 +28,17 @@ class TasksLocation extends BeamLocation<BeamState> {
     final documentId = state.pathParameters['documentId'];
     final navService = getIt<NavService>();
     final isDesktop = navService.isDesktopMode;
+    final review = _review(state, taskId: taskId, documentId: documentId);
 
     if (isDesktop) {
       final desktopTaskId = isUuid(taskId) ? taskId : null;
       scheduleMicrotask(() {
         if (getIt.isRegistered<NavService>() &&
             identical(getIt<NavService>(), navService)) {
-          navService.resetDesktopTaskDetail(desktopTaskId);
+          navService
+            ..resetDesktopTaskDetail(desktopTaskId)
+            // Before the document, so the pane opening it sees the draft.
+            ..taskDocumentReviewRequest.value = review;
           // The document the URL names opens over its task in the detail
           // pane; a URL that names none returns the pane to the task.
           navService.desktopTaskDocument.value =
@@ -56,8 +63,39 @@ class TasksLocation extends BeamLocation<BeamState> {
       if (!isDesktop && isUuid(taskId) && isUuid(documentId))
         BeamPage(
           key: ValueKey('task-document-$documentId'),
-          child: TaskDocumentPage(taskId: taskId!, documentId: documentId!),
+          child: TaskDocumentPage(
+            taskId: taskId!,
+            documentId: documentId!,
+            initialReview: review,
+          ),
         ),
     ];
+  }
+
+  /// The draft the URL opens for review; null when it names none, or names
+  /// one malformed.
+  static ({
+    String taskId,
+    String documentId,
+    String changeSetId,
+    int itemIndex,
+  })?
+  _review(BeamState state, {String? taskId, String? documentId}) {
+    final changeSetId = state.pathParameters['changeSetId'];
+    final itemIndex = int.tryParse(state.pathParameters['itemIndex'] ?? '');
+    if (!isUuid(taskId) ||
+        !isUuid(documentId) ||
+        changeSetId == null ||
+        changeSetId.isEmpty ||
+        itemIndex == null ||
+        itemIndex < 0) {
+      return null;
+    }
+    return (
+      taskId: taskId!,
+      documentId: documentId!,
+      changeSetId: changeSetId,
+      itemIndex: itemIndex,
+    );
   }
 }

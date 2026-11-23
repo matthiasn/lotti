@@ -19,6 +19,7 @@ import 'package:lotti/features/agents/ui/document_proposal_preview.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -539,6 +540,26 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     return completer.future;
   }
 
+  /// On desktop, a revision of a document opens side by side with the
+  /// version it rewrites, through the review route; a new document, and any
+  /// draft on a phone, is read in the sheet. Null where the sheet applies.
+  VoidCallback? _reviewRoute(BuildContext context) {
+    final suggestion = widget.suggestion;
+    final documentId = _args['documentId'];
+    if (suggestion == null ||
+        documentId is! String ||
+        !isDesktopLayout(context)) {
+      return null;
+    }
+    final set = suggestion.changeSet;
+    return () => ref
+        .read(navServiceProvider)
+        .beamToNamed(
+          '/tasks/${set.taskId}/documents/$documentId/review/'
+          '${set.id}/${suggestion.itemIndex}',
+        );
+  }
+
   Future<void> _confirm() async {
     final suggestion = widget.suggestion;
     if (suggestion == null || _busy || _exiting || widget.settling) return;
@@ -874,6 +895,7 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
                                   resolving: resolveKindLocal != null,
                                   onConfirm: _confirm,
                                   onReject: _reject,
+                                  onRead: _reviewRoute(context),
                                 )
                               : DocumentProposalReadButton(
                                   toolName: _toolName,

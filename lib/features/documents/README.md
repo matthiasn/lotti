@@ -73,7 +73,9 @@ through the agents feature's confirmation service. Its block alignment is
 in `logic/markdown_block_diff.dart` and its state in
 `state/document_review_providers.dart`, which also tells the task split
 and the app shell when a review is on screen, so the task list and the day
-column step aside for it. Still to come: a route into it.
+column step aside for it. The app shell routes
+`/tasks/:taskId/documents/:documentId/review/:changeSetId/:itemIndex` to
+it, which the AI summary card's Read draft follows on desktop.
 
 ## Where it sits
 

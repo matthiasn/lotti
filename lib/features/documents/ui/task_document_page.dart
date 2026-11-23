@@ -48,11 +48,13 @@ abstract final class TaskDocumentPageKeys {
 /// [onClose] leaves the page: the desktop detail pane passes the action that
 /// returns it to the task. Without it, the back arrow pops the page or beams
 /// back, as for any page.
-class TaskDocumentPage extends ConsumerWidget {
+class TaskDocumentPage extends ConsumerStatefulWidget {
   const TaskDocumentPage({
     required this.taskId,
     required this.documentId,
     this.onClose,
+    this.initialReview,
+    this.onInitialReviewOpened,
     super.key,
   });
 
@@ -60,8 +62,51 @@ class TaskDocumentPage extends ConsumerWidget {
   final String documentId;
   final VoidCallback? onClose;
 
+  /// A draft of this document to open for review as the page appears, or
+  /// when a later link asks for it — the review route's. Ignored when it
+  /// names another document.
+  final DocumentReviewKey? initialReview;
+
+  /// Called once [initialReview] is open, so whoever asked can forget it.
+  final VoidCallback? onInitialReviewOpened;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TaskDocumentPage> createState() => _TaskDocumentPageState();
+}
+
+class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
+  @override
+  void initState() {
+    super.initState();
+    _openInitialReview();
+  }
+
+  @override
+  void didUpdateWidget(TaskDocumentPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialReview != oldWidget.initialReview) _openInitialReview();
+  }
+
+  void _openInitialReview() {
+    final draft = widget.initialReview;
+    if (draft == null ||
+        draft.taskId != widget.taskId ||
+        draft.documentId != widget.documentId) {
+      return;
+    }
+    // After the frame: opening it rebuilds this page.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(documentReviewOpenProvider(widget.taskId).notifier).open(draft);
+      widget.onInitialReviewOpened?.call();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final taskId = widget.taskId;
+    final documentId = widget.documentId;
+    final onClose = widget.onClose;
     final tokens = context.designTokens;
     final messages = context.messages;
     final key = (taskId: taskId, documentId: documentId);
@@ -104,7 +149,7 @@ class TaskDocumentPage extends ConsumerWidget {
 
     void close() {
       if (onClose != null) {
-        onClose!();
+        onClose();
       } else {
         Navigator.of(context).maybePop();
       }

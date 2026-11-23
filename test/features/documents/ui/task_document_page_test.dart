@@ -70,6 +70,8 @@ void main() {
     bool gone = false,
     VoidCallback? onClose,
     bool chat = false,
+    DocumentReviewKey? initialReview,
+    VoidCallback? onInitialReviewOpened,
     List<PendingSuggestion> drafts = const [],
   }) async {
     final doc = gone ? null : (shown ?? document);
@@ -82,6 +84,8 @@ void main() {
               taskId: key.taskId,
               documentId: key.documentId,
               onClose: onClose,
+              initialReview: initialReview,
+              onInitialReviewOpened: onInitialReviewOpened,
             ),
             overrides: [
               taskDocumentRepositoryProvider.overrideWithValue(repository),
@@ -358,5 +362,49 @@ void main() {
       expect(find.byKey(TaskDocumentPageKeys.edit), findsOneWidget);
       expect(container.read(documentReviewOpenProvider('task-1')), isNull);
     });
+
+    testWidgets('a draft handed in by the review route opens as the page '
+        'appears, and the route hears so', (tester) async {
+      var heard = 0;
+      await pump(
+        tester,
+        drafts: [draft],
+        initialReview: reviewOf(draft),
+        onInitialReviewOpened: () => heard++,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(DocumentReviewView), findsOneWidget);
+      expect(heard, 1);
+    });
+
+    testWidgets("a draft of another document is not this page's to open", (
+      tester,
+    ) async {
+      var heard = 0;
+      await pump(
+        tester,
+        drafts: [draft],
+        initialReview: (
+          taskId: 'task-1',
+          documentId: 'doc-other',
+          changeSetId: 'cs-draft',
+          itemIndex: 0,
+        ),
+        onInitialReviewOpened: () => heard++,
+      );
+      await tester.pump();
+
+      expect(find.byType(DocumentReviewView), findsNothing);
+      expect(heard, 0);
+    });
   });
 }
+
+DocumentReviewKey reviewOf(PendingSuggestion draft) => (
+  taskId: draft.changeSet.taskId,
+  documentId: draft.item.args['documentId'] as String,
+  changeSetId: draft.changeSet.id,
+  itemIndex: draft.itemIndex,
+);

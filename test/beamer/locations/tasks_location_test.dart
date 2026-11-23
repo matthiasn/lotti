@@ -19,13 +19,22 @@ void main() {
 
     late MockNavService mockNavService;
     late ValueNotifier<({String taskId, String documentId})?> desktopDocument;
+    late ValueNotifier<
+      ({String taskId, String documentId, String changeSetId, int itemIndex})?
+    >
+    reviewRequest;
 
     setUp(() {
       mockBuildContext = MockBuildContext();
       mockNavService = MockNavService();
       desktopDocument = ValueNotifier(null);
       addTearDown(desktopDocument.dispose);
+      reviewRequest = ValueNotifier(null);
+      addTearDown(reviewRequest.dispose);
       when(() => mockNavService.isDesktopMode).thenReturn(false);
+      when(
+        () => mockNavService.taskDocumentReviewRequest,
+      ).thenReturn(reviewRequest);
       when(
         () => mockNavService.desktopTaskDocument,
       ).thenReturn(desktopDocument);
@@ -49,6 +58,7 @@ void main() {
         '/tasks',
         '/tasks/:taskId',
         '/tasks/:taskId/documents/:documentId',
+        '/tasks/:taskId/documents/:documentId/review/:changeSetId/:itemIndex',
       ]);
     });
 
@@ -120,6 +130,76 @@ void main() {
         final page = pages[2].child as TaskDocumentPage;
         expect(page.taskId, taskId);
         expect(page.documentId, documentId);
+      });
+
+      final reviewPath = '/tasks/$taskId/documents/$documentId/review/cs-1/2';
+      final reviewParameters = {
+        'taskId': taskId,
+        'documentId': documentId,
+        'changeSetId': 'cs-1',
+        'itemIndex': '2',
+      };
+      final review = (
+        taskId: taskId,
+        documentId: documentId,
+        changeSetId: 'cs-1',
+        itemIndex: 2,
+      );
+
+      test('on mobile, the review route stacks the document page and hands '
+          'it the draft to review', () {
+        final pages =
+            TasksLocation(
+              RouteInformation(uri: Uri.parse(reviewPath)),
+            ).buildPages(
+              mockBuildContext,
+              stateFor(reviewPath, reviewParameters),
+            );
+
+        expect(pages, hasLength(3));
+        expect((pages[2].child as TaskDocumentPage).initialReview, review);
+      });
+
+      test('a review route with no usable item index reviews nothing', () {
+        final pages =
+            TasksLocation(
+              RouteInformation(uri: Uri.parse(reviewPath)),
+            ).buildPages(
+              mockBuildContext,
+              stateFor(reviewPath, {...reviewParameters, 'itemIndex': 'x'}),
+            );
+
+        expect((pages[2].child as TaskDocumentPage).initialReview, isNull);
+      });
+
+      testWidgets('on desktop, the review route asks the pane for the draft '
+          'alongside the document; a plain document URL asks for none', (
+        tester,
+      ) async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.resetDesktopTaskDetail(any()),
+        ).thenAnswer((_) {});
+
+        TasksLocation(
+          RouteInformation(uri: Uri.parse(reviewPath)),
+        ).buildPages(mockBuildContext, stateFor(reviewPath, reviewParameters));
+        await tester.pump();
+
+        expect(reviewRequest.value, review);
+        expect(desktopDocument.value, (
+          taskId: taskId,
+          documentId: documentId,
+        ));
+
+        final path = '/tasks/$taskId/documents/$documentId';
+        TasksLocation(RouteInformation(uri: Uri.parse(path))).buildPages(
+          mockBuildContext,
+          stateFor(path, {'taskId': taskId, 'documentId': documentId}),
+        );
+        await tester.pump();
+        expect(reviewRequest.value, isNull);
       });
 
       testWidgets(

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/document_proposal_preview.dart';
 
@@ -23,6 +24,7 @@ void main() {
     Map<String, dynamic> args = revision,
     Future<void> Function()? onConfirm,
     Future<void> Function()? onReject,
+    VoidCallback? onRead,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -31,6 +33,7 @@ void main() {
           args: args,
           onConfirm: onConfirm,
           onReject: onReject,
+          onRead: onRead,
         ),
       ),
     );
@@ -142,6 +145,17 @@ void main() {
       );
     });
   }
+
+  testWidgets('a host that reads the draft elsewhere gets the tap, and no '
+      'sheet opens', (tester) async {
+    var read = 0;
+    await pumpButton(tester, onConfirm: () async {}, onRead: () => read++);
+
+    await openPreview(tester);
+
+    expect(read, 1);
+    expect(find.textContaining('Feed the penguins at noon.'), findsNothing);
+  });
 
   testWidgets('a heading that repeats the title is not shown twice', (
     tester,

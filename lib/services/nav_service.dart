@@ -164,6 +164,15 @@ class NavService {
   final ValueNotifier<({String taskId, String documentId})?>
   desktopTaskDocument = ValueNotifier(null);
 
+  /// A draft the `/tasks/:taskId/documents/:documentId/review/…` route asks
+  /// the desktop detail pane to open for review, alongside
+  /// [desktopTaskDocument]: one-shot, cleared by the document page once the
+  /// review is open, so reopening the document later reads it instead.
+  final ValueNotifier<
+    ({String taskId, String documentId, String changeSetId, int itemIndex})?
+  >
+  taskDocumentReviewRequest = ValueNotifier(null);
+
   /// Desktop split-pane People selection — the person whose page fills the
   /// right pane, or `null` for the empty state. Written exclusively by
   /// `RelationshipsLocation` from the URL, like the projects slot.
@@ -974,6 +983,7 @@ class NavService {
     desktopTaskDetailStack.dispose();
     desktopSelectedTaskId.dispose();
     desktopTaskDocument.dispose();
+    taskDocumentReviewRequest.dispose();
     desktopSelectedProjectId.dispose();
     desktopSelectedRelationshipId.dispose();
     desktopRelationshipChatOpen.dispose();

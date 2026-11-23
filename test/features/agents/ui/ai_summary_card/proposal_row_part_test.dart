@@ -1178,6 +1178,68 @@ void main() {
 
       verify(() => service.confirmItem(any(), 0)).called(1);
     });
+
+    for (final (layout, size, reviews) in [
+      ('on desktop', const Size(1280, 800), true),
+      ('on a phone', const Size(390, 800), false),
+    ]) {
+      testWidgets(
+        '$layout, Read draft on a revision '
+        '${reviews ? 'opens it side by side through the review route' : 'reads it in the sheet'}',
+        (
+          tester,
+        ) async {
+          final nav = MockNavService();
+          when(() => nav.beamToNamed(any())).thenReturn(null);
+          final bench = AgentTestBench(
+            mediaQueryData: MediaQueryData(size: size, disableAnimations: true),
+            confirmationService: MockChangeSetConfirmationService(),
+            updateNotifications: MockUpdateNotifications(),
+            extraOverrides: [navServiceProvider.overrideWithValue(nav)],
+            suggestions: UnifiedSuggestionList(
+              open: [
+                makePending(
+                  id: 'p1',
+                  toolName: 'propose_document_version',
+                  args: const {
+                    'documentId': 'brief',
+                    'title': 'Habitat brief',
+                    'baseVersionId': 'brief-v2',
+                    'markdown': 'Feed the penguins at one.',
+                  },
+                  humanSummary: 'New version of "Habitat brief"',
+                ),
+              ],
+              activity: const [],
+            ),
+          );
+          await tester.pumpWidget(bench.build());
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          await tester.tap(find.text('Read draft'));
+          await tester.pumpAndSettle();
+
+          if (reviews) {
+            verify(
+              () => nav.beamToNamed(
+                '/tasks/task-001/documents/brief/review/p1/0',
+              ),
+            ).called(1);
+            expect(
+              find.textContaining('Feed the penguins at one.'),
+              findsNothing,
+            );
+          } else {
+            verifyNever(() => nav.beamToNamed(any()));
+            expect(
+              find.textContaining('Feed the penguins at one.'),
+              findsOneWidget,
+            );
+          }
+        },
+      );
+    }
   });
 }
 

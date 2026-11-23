@@ -40,10 +40,16 @@ void main() {
 
   late FakeJournalPageController fakeController;
   late ValueNotifier<({String taskId, String documentId})?> desktopDocument;
+  late ValueNotifier<
+    ({String taskId, String documentId, String changeSetId, int itemIndex})?
+  >
+  reviewRequest;
 
   setUp(() async {
     desktopDocument = ValueNotifier(null);
+    reviewRequest = ValueNotifier(null);
     addTearDown(desktopDocument.dispose);
+    addTearDown(reviewRequest.dispose);
     await setUpTestGetIt(
       additionalSetup: () {
         final mockUserActivityService = MockUserActivityService();
@@ -60,6 +66,9 @@ void main() {
         when(
           () => mockNavService.desktopTaskDocument,
         ).thenReturn(desktopDocument);
+        when(
+          () => mockNavService.taskDocumentReviewRequest,
+        ).thenReturn(reviewRequest);
         getIt
           ..registerSingleton<NavService>(mockNavService)
           ..registerSingleton<EntitiesCacheService>(
@@ -543,6 +552,27 @@ void main() {
 
       expect(tester.element(find.byType(TasksTabPage)), same(list));
       expect(container.read(paneWidthControllerProvider), widths);
+      await tearDownTree(tester);
+    });
+
+    testWidgets('the review route opens the draft it names, once: the '
+        'request is cleared when the review is open', (tester) async {
+      reviewRequest.value = draft;
+      final container = await pumpSplit(tester, width: 1100);
+      await tester.pump();
+
+      expect(container.read(documentReviewOpenProvider('task-42')), draft);
+      expect(reviewRequest.value, isNull);
+      expect(find.byType(TasksTabPage), findsNothing);
+
+      // A later link to a draft of the document already open opens it too.
+      container.read(documentReviewOpenProvider('task-42').notifier).close();
+      await tester.pump();
+      reviewRequest.value = draft;
+      await tester.pump();
+      await tester.pump();
+
+      expect(container.read(documentReviewOpenProvider('task-42')), draft);
       await tearDownTree(tester);
     });
 
