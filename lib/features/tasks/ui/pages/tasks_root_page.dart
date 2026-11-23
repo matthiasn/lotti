@@ -8,7 +8,9 @@ import 'package:lotti/features/design_system/components/navigation/resizable_div
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/state/document_review_providers.dart';
 import 'package:lotti/features/documents/ui/task_document_page.dart';
+import 'package:lotti/features/documents/ui/widgets/document_review_view.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
@@ -107,6 +109,12 @@ class _TasksRootPageState extends ConsumerState<TasksRootPage> {
               final queryOpen =
                   queryScope != null &&
                   ref.watch(queryPaneOpenProvider(queryScope));
+              // A document's side-by-side review on screen: it needs the
+              // width of two columns, so the list and the day column step
+              // aside for it as they do for chat.
+              final reviewShowing =
+                  selectedTaskId != null &&
+                  ref.watch(documentReviewShowingProvider(selectedTaskId));
               // Temporary fit-driven suppression preserves the user's
               // stored list preference and the mounted browse state.
               final queryNeedsListSpace =
@@ -114,12 +122,18 @@ class _TasksRootPageState extends ConsumerState<TasksRootPage> {
                   constraints.maxWidth <
                       listPaneWidth +
                           QueryCompanion.minimumDockedWidth(context);
+              final reviewNeedsListSpace =
+                  reviewShowing &&
+                  constraints.maxWidth <
+                      listPaneWidth +
+                          documentReviewMinPaneWidth(context.designTokens);
               final canHideListPane = selectedTaskId != null;
               final listPaneVisible =
                   !canHideListPane ||
                   (!paneWidths.listPaneCollapsed &&
-                      !(splitStarved && !queryOpen) &&
-                      !queryNeedsListSpace);
+                      !(splitStarved && !queryOpen && !reviewShowing) &&
+                      !queryNeedsListSpace &&
+                      !reviewNeedsListSpace);
               final detailChild = selectedTaskId != null
                   ? _TaskWithDocument(
                       key: ValueKey(selectedTaskId),
@@ -141,6 +155,15 @@ class _TasksRootPageState extends ConsumerState<TasksRootPage> {
                             )
                             .open =
                         false;
+                  }
+                  // Likewise a review holding the list's width closes back
+                  // to the document's text.
+                  if (reviewNeedsListSpace) {
+                    ref
+                        .read(
+                          documentReviewOpenProvider(selectedTaskId).notifier,
+                        )
+                        .close();
                   }
                   // Asking for the list while the day-view column is what
                   // starved the split yields the column: the list is the
@@ -191,7 +214,8 @@ class _TasksRootPageState extends ConsumerState<TasksRootPage> {
                     // reader has hidden the list to focus one task, the pane is
                     // wide enough to carry the task's metadata beside it instead
                     // of over it. Null keeps the fly-out as the only host.
-                    metaColumnTaskId: listPaneVisible || queryOpen
+                    metaColumnTaskId:
+                        listPaneVisible || queryOpen || reviewShowing
                         ? null
                         : selectedTaskId,
                     detail: AnimatedSwitcher(

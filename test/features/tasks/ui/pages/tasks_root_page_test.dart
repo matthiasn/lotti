@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/components/navigation/desktop_detai
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/state/document_review_providers.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/task_document_page.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
@@ -32,6 +33,7 @@ import '../../../../classes/task_document_fixtures.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../documents/document_draft_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -456,6 +458,148 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+
+  group('a document review on screen', () {
+    const document = (taskId: 'task-42', documentId: 'doc-1');
+    const draft = (
+      taskId: 'task-42',
+      documentId: 'doc-1',
+      changeSetId: 'cs-draft',
+      itemIndex: 0,
+    );
+
+    /// The task split at [width], with document-1 open over task-42 and a
+    /// draft of it waiting; returns the container.
+    Future<ProviderContainer> pumpSplit(
+      WidgetTester tester, {
+      required double width,
+    }) async {
+      fakeController = FakeJournalPageController(state());
+      final stack = ValueNotifier<List<String>>(['task-42']);
+      addTearDown(stack.dispose);
+      when(
+        () => (getIt<NavService>() as MockNavService).desktopTaskDetailStack,
+      ).thenReturn(stack);
+      desktopDocument.value = document;
+      await tester.binding.setSurfaceSize(Size(width, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const TasksRootPage(),
+          mediaQueryData: MediaQueryData(size: Size(width, 900)),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => fakeController),
+            taskDocumentProvider(document).overrideWith(
+              (ref) => taskDocumentEntry(clock: {'a': 1}, id: 'doc-1'),
+            ),
+            taskDocumentCurrentVersionProvider(
+              document,
+            ).overrideWith((ref) async => null),
+            pendingDocumentProposalsProvider(
+              document,
+            ).overrideWith((ref) => [documentDraft(taskId: 'task-42')]),
+            // The rows themselves are the view's business, not the split's.
+            documentReviewProvider(draft).overrideWith((ref) => null),
+          ],
+        ),
+      );
+      await tester.pump();
+      return ProviderScope.containerOf(
+        tester.element(find.byType(TasksRootPage)),
+      );
+    }
+
+    Future<void> tearDownTree(WidgetTester tester) async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('hides the list where two columns would not fit beside it, '
+        'and closing the review brings the same list back, settings '
+        'untouched', (tester) async {
+      final container = await pumpSplit(tester, width: 1100);
+      final list = tester.element(find.byType(TasksTabPage));
+      final widths = container.read(paneWidthControllerProvider);
+
+      container
+          .read(documentReviewOpenProvider('task-42').notifier)
+          .open(
+            draft,
+          );
+      await tester.pump();
+
+      expect(find.byType(TasksTabPage), findsNothing);
+      expect(
+        tester.element(find.byType(TasksTabPage, skipOffstage: false)),
+        same(list),
+      );
+      expect(container.read(paneWidthControllerProvider), widths);
+
+      container.read(documentReviewOpenProvider('task-42').notifier).close();
+      await tester.pump();
+
+      expect(tester.element(find.byType(TasksTabPage)), same(list));
+      expect(container.read(paneWidthControllerProvider), widths);
+      await tearDownTree(tester);
+    });
+
+    testWidgets('keeps the list where there is room for both', (tester) async {
+      final container = await pumpSplit(tester, width: 2400);
+
+      container
+          .read(documentReviewOpenProvider('task-42').notifier)
+          .open(
+            draft,
+          );
+      await tester.pump();
+
+      expect(find.byType(TasksTabPage), findsOneWidget);
+      await tearDownTree(tester);
+    });
+
+    testWidgets('asking for the list while the review holds its width '
+        'closes the review', (tester) async {
+      final container = await pumpSplit(tester, width: 1100);
+      container
+          .read(documentReviewOpenProvider('task-42').notifier)
+          .open(
+            draft,
+          );
+      await tester.pump();
+
+      ListDetailFocusTraversal.maybeOf(
+        tester.element(find.byType(TaskDocumentPage)),
+      )!.showListPane();
+      await tester.pump();
+
+      expect(container.read(documentReviewOpenProvider('task-42')), isNull);
+      expect(find.byType(TasksTabPage), findsOneWidget);
+      await tearDownTree(tester);
+    });
+
+    testWidgets('a list the user had collapsed stays collapsed after the '
+        'review closes', (tester) async {
+      final container = await pumpSplit(tester, width: 1100);
+      container.read(paneWidthControllerProvider.notifier).collapseListPane();
+      await tester.pump();
+      final review = container.read(
+        documentReviewOpenProvider('task-42').notifier,
+      )..open(draft);
+      await tester.pump();
+      review.close();
+      await tester.pump();
+
+      expect(find.byType(TasksTabPage), findsNothing);
+      expect(
+        container.read(paneWidthControllerProvider).listPaneCollapsed,
+        isTrue,
+      );
+      await tearDownTree(tester);
+    });
+  });
 
   group('day-view column starving the split', () {
     /// Pumps the split with a task open in a content region [regionWidth]

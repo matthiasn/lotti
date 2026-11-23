@@ -210,20 +210,27 @@ extension _AppScreenLayout on _AppScreenState {
               valueListenable: navService.desktopTaskDetailStack,
               builder: (context, stack, child) => Consumer(
                 builder: (context, ref, _) {
-                  final queryOpen =
+                  // Chat, or a document's side-by-side review, temporarily
+                  // owns the companion space. Keep the day view mounted and
+                  // its persisted visibility untouched.
+                  final stepAside =
                       stack.isNotEmpty &&
-                      ref.watch(
-                        queryPaneOpenProvider(
-                          QueryScope(kind: QueryScopeKind.task, id: stack.last),
-                        ),
-                      );
-                  // Chat temporarily owns the companion space. Keep the day
-                  // view mounted and its persisted visibility untouched.
+                      (ref.watch(
+                            queryPaneOpenProvider(
+                              QueryScope(
+                                kind: QueryScopeKind.task,
+                                id: stack.last,
+                              ),
+                            ),
+                          ) ||
+                          ref.watch(
+                            documentReviewShowingProvider(stack.last),
+                          ));
                   return Offstage(
-                    offstage: queryOpen,
+                    offstage: stepAside,
                     child: TickerMode(
-                      enabled: !queryOpen,
-                      child: ExcludeFocus(excluding: queryOpen, child: child!),
+                      enabled: !stepAside,
+                      child: ExcludeFocus(excluding: stepAside, child: child!),
                     ),
                   );
                 },

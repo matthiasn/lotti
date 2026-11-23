@@ -48,7 +48,7 @@ abstract final class TaskDocumentPageKeys {
 /// [onClose] leaves the page: the desktop detail pane passes the action that
 /// returns it to the task. Without it, the back arrow pops the page or beams
 /// back, as for any page.
-class TaskDocumentPage extends ConsumerStatefulWidget {
+class TaskDocumentPage extends ConsumerWidget {
   const TaskDocumentPage({
     required this.taskId,
     required this.documentId,
@@ -61,43 +61,50 @@ class TaskDocumentPage extends ConsumerStatefulWidget {
   final VoidCallback? onClose;
 
   @override
-  ConsumerState<TaskDocumentPage> createState() => _TaskDocumentPageState();
-}
-
-class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
-  /// The draft under review, while one is; the page reads otherwise.
-  DocumentReviewKey? _reviewing;
-
-  void _review(DocumentReviewKey? draft) => setState(() => _reviewing = draft);
-
-  @override
-  Widget build(BuildContext context) {
-    final taskId = widget.taskId;
-    final documentId = widget.documentId;
-    final onClose = widget.onClose;
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final key = (taskId: taskId, documentId: documentId);
     final document = ref.watch(taskDocumentProvider(key));
     final version = ref.watch(taskDocumentCurrentVersionProvider(key)).value;
+    final drafts = ref.watch(pendingDocumentProposalsProvider(key));
     // The newest draft waiting for this document, which the notice opens.
-    final waiting = ref
-        .watch(pendingDocumentProposalsProvider(key))
-        ?.fold<PendingSuggestion?>(
-          null,
-          (newest, draft) =>
-              newest == null ||
-                  draft.changeSet.createdAt.isAfter(
-                    newest.changeSet.createdAt,
-                  )
-              ? draft
-              : newest,
-        );
-    final reviewing = _reviewing;
+    final waiting = drafts?.fold<PendingSuggestion?>(
+      null,
+      (newest, draft) =>
+          newest == null ||
+              draft.changeSet.createdAt.isAfter(
+                newest.changeSet.createdAt,
+              )
+          ? draft
+          : newest,
+    );
+    final review = ref.read(documentReviewOpenProvider(taskId).notifier);
+    final open = ref.watch(documentReviewOpenProvider(taskId));
+    final reviewing = open?.documentId == documentId ? open : null;
+    // A review whose draft stopped waiting while the page was away, or whose
+    // document is gone, is over: the page reads, and the panes that stepped
+    // aside for it come back.
+    final over =
+        reviewing != null &&
+        (document == null ||
+            (drafts != null &&
+                !drafts.any(
+                  (draft) =>
+                      draft.changeSet.id == reviewing.changeSetId &&
+                      draft.itemIndex == reviewing.itemIndex,
+                )));
+    if (over) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (ref.read(documentReviewOpenProvider(taskId)) == reviewing) {
+          review.close();
+        }
+      });
+    }
 
     void close() {
       if (onClose != null) {
-        onClose();
+        onClose!();
       } else {
         Navigator.of(context).maybePop();
       }
@@ -144,13 +151,13 @@ class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
                       : MotionDurations.short4,
                   switchInCurve: MotionCurves.standard,
                   switchOutCurve: MotionCurves.standard,
-                  child: reviewing != null && document != null
+                  child: reviewing != null && !over && document != null
                       ? DocumentReviewView(
                           key: ValueKey(reviewing),
                           reviewKey: reviewing,
                           title: document.data.title,
-                          onClose: () => _review(null),
-                          onOpenDraft: _review,
+                          onClose: review.close,
+                          onOpenDraft: review.open,
                         )
                       : document == null
                       ? Center(
@@ -187,7 +194,7 @@ class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
                           ),
                           onReview: waiting == null
                               ? null
-                              : () => _review((
+                              : () => review.open((
                                   taskId: taskId,
                                   documentId: documentId,
                                   changeSetId: waiting.changeSet.id,

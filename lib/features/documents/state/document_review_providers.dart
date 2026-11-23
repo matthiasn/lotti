@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/documents/logic/markdown_block_diff.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:meta/meta.dart';
 
 /// The task agent's drafts of the document the key names still
@@ -206,3 +207,60 @@ documentReviewProvider = Provider.autoDispose
         ),
       );
     }, name: 'documentReviewProvider');
+
+/// The draft of one of task `taskId`'s documents under review, or null while
+/// none is: the document page reads it to show the review instead of the
+/// text, and closes it by clearing it. In memory only, like the chat's open
+/// toggle — a review is never restored on the next launch.
+///
+/// Leaving the page while reviewing leaves it set, so coming back to the
+/// document returns to the review; the panes that step aside for it read
+/// [documentReviewShowingProvider], which is true only while it is on
+/// screen.
+final NotifierProviderFamily<DocumentReviewOpen, DocumentReviewKey?, String>
+documentReviewOpenProvider =
+    NotifierProvider.family<DocumentReviewOpen, DocumentReviewKey?, String>(
+      DocumentReviewOpen.new,
+      name: 'documentReviewOpenProvider',
+    );
+
+class DocumentReviewOpen extends Notifier<DocumentReviewKey?> {
+  DocumentReviewOpen(this.taskId);
+
+  final String taskId;
+
+  @override
+  DocumentReviewKey? build() => null;
+
+  /// Reviews [draft], in place of any review open on this task.
+  void open(DocumentReviewKey draft) {
+    assert(draft.taskId == taskId, 'a review belongs to its own task');
+    state = draft;
+  }
+
+  void close() => state = null;
+}
+
+/// Whether a review of one of task `taskId`'s documents is on screen in the
+/// desktop detail pane: one is open ([documentReviewOpenProvider]) and the
+/// pane shows that document over the task (`NavService.desktopTaskDocument`).
+///
+/// The task list and the day column step aside while it is true, so the two
+/// columns get the width they need. Derived only — the stored pane settings
+/// are never written, so the layout comes back as it was the moment the
+/// review closes or the pane returns to the task.
+final ProviderFamily<bool, String> documentReviewShowingProvider = Provider
+    .autoDispose
+    .family<bool, String>((ref, taskId) {
+      // No review, nothing to follow: the pane is listened to only while
+      // one is open.
+      final review = ref.watch(documentReviewOpenProvider(taskId));
+      if (review == null) return false;
+      final shown = ref.watch(navServiceProvider).desktopTaskDocument;
+      void changed() => ref.invalidateSelf();
+      shown.addListener(changed);
+      ref.onDispose(() => shown.removeListener(changed));
+      final document = shown.value;
+      return document?.taskId == taskId &&
+          document?.documentId == review.documentId;
+    }, name: 'documentReviewShowingProvider');

@@ -126,12 +126,12 @@ sources:
     last_modified: 2026-10-14
   - id: tasks-root
     resource: ../../lib/features/tasks/ui/pages/tasks_root_page.dart
-    title: Derived task-list suppression while chat is open
-    last_modified: 2026-11-22
+    title: Derived task-list suppression while chat or a review is open
+    last_modified: 2026-11-23
   - id: shell-layout
     resource: ../../lib/beamer/beamer_app_layout_part.dart
-    title: Day column offstage while chat is open
-    last_modified: 2026-11-01
+    title: Day column offstage while chat or a review is open
+    last_modified: 2026-11-23
 ---
 
 # Task documents
@@ -148,8 +148,8 @@ sources:
 > chat proposes versions too, a proposal's text can be read before it is
 > confirmed, and the document page hosts the task's chat
 > ([Reading a proposal](#reading-a-proposal)). The side-by-side review
-> runs inside the document page; the task list and day column do not yet
-> step aside for it, and no route opens it directly. Each implementation
+> runs inside the document page, and the task list and day column step
+> aside for it; no route opens it directly yet. Each implementation
 > step rewrites the part it lands, and the page moves to `stable` when the
 > last part does.
 
@@ -537,7 +537,9 @@ v3", or "No text yet" when the document had none.
 
 The view is built:
 [`DocumentReviewView`](../../lib/features/documents/ui/widgets/document_review_view.dart)
-is a mode of the document page, which swaps its reading body for the review
+is a mode of the document page. Which draft is under review is
+`documentReviewOpenProvider` (per task, in memory): the page swaps its
+reading body for the review while it names one of its document's drafts
 (a 200 ms cross-fade, none under reduced motion) and back. The header holds
 the title, "Close review", count tags (+1 −1 ~1, read out as one sentence),
 the agent's change summary, and two live notices: a warning tag "Written
@@ -564,7 +566,26 @@ index never moves), clear of the glass bar at the bottom.
   proposed head drops its number and its empty slots say "Not in the draft",
   since the next number already belongs to the version it is stale against.
 - **It closes** on "Close review", on Escape (the `cancel` app command), after
-  its own verdict, and when the draft stops waiting elsewhere.
+  its own verdict, and when the draft stops waiting elsewhere. Leaving the
+  page mid-review keeps it open, so coming back returns to it — unless the
+  draft stopped waiting or the document was deleted meanwhile, which the
+  page finds and clears.
+- **The panes step aside.** `documentReviewShowingProvider` is true while a
+  review is open *and* the desktop pane shows its document
+  (`NavService.desktopTaskDocument`), so a review left behind the task page
+  hides nothing. While it is true,
+  [`tasks_root_page.dart`](../../lib/features/tasks/ui/pages/tasks_root_page.dart)
+  hides the list where it and `documentReviewMinPaneWidth` would not both
+  fit, drops the metadata column, and
+  [`beamer_app_layout_part.dart`](../../lib/beamer/beamer_app_layout_part.dart)
+  puts the day column offstage — the same derived terms task chat uses. No
+  stored pane setting is written, so a list the user had collapsed stays
+  collapsed and the layout returns exactly on close. Asking for the list
+  while the review holds its width (Show list, the search shortcut) closes
+  the review, as it closes chat.
+- **Chat takes the width back.** [`QueryCompanion`](../../lib/features/agents/ui/query/query_companion.dart)
+  docks chat as a column, so opening chat from review usually drops it to
+  one column.
 
 ```mermaid
 stateDiagram-v2
@@ -574,24 +595,13 @@ stateDiagram-v2
   Reviewing --> Reading: Close review or Escape
   Reviewing --> Reading: Confirm or Discard draft lands
   Reviewing --> Reading: the draft is decided or withdrawn elsewhere
+  Reviewing --> Reading: Show list while the review holds the list's width
 ```
 
 Still to build:
 
-- **The width comes from the panes stepping aside.** While review is open,
-  the task list and day column are to be hidden the way they already are for
-  task chat: [`tasks_root_page.dart`](../../lib/features/tasks/ui/pages/tasks_root_page.dart)
-  folds a temporary term into the list's visibility, and
-  [`beamer_app_layout_part.dart`](../../lib/beamer/beamer_app_layout_part.dart)
-  puts the day column offstage. Both are derived. The stored pane settings
-  are never written, so closing review restores the user's layout exactly.
-  Until then the review is side by side only where the detail pane alone is
-  that wide.
 - **A route into review**, so the card's Read draft and a notification can
   land in it directly.
-- **Chat takes the width back.** [`QueryCompanion`](../../lib/features/agents/ui/query/query_companion.dart)
-  docks chat as a column, so opening chat from review usually drops it to
-  one column.
 
 ## Invariants
 

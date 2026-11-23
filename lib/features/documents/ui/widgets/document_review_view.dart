@@ -46,6 +46,12 @@ double documentReviewSideBySideMinWidth(DsTokens tokens) =>
     2 * kReviewColumnMinWidth +
     tokens.spacing.step6;
 
+/// The narrowest pane that shows a review side by side: the two columns
+/// with their gutter, and the review's own margins either side. The task
+/// split hides its list while a review needs that much more than it leaves.
+double documentReviewMinPaneWidth(DsTokens tokens) =>
+    documentReviewSideBySideMinWidth(tokens) + 2 * tokens.spacing.step5;
+
 /// A draft of a document under review (ADR 0166, direction B): the version
 /// it was written over beside the text it proposes, row by row, with
 /// Confirm, Discard draft and Ask for changes on a glass bar.
@@ -193,7 +199,7 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
     final baseNumber = snapshot.baseVersion?.data.number;
     final proposedNumber = (baseNumber ?? 0) + 1;
     final newer = review.newerProposalAvailable ? _newerDraft(snapshot) : null;
-    final horizontal = tokens.spacing.step5;
+    final horizontal = tokens.spacing.step5; // see documentReviewMinPaneWidth
 
     return AppCommandScope(
       handlers: {

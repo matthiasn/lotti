@@ -71,8 +71,9 @@ its "Review changes" notice, with the versions side by side where the pane
 is wide enough and stacked where it is not, and Confirm or Discard decided
 through the agents feature's confirmation service. Its block alignment is
 in `logic/markdown_block_diff.dart` and its state in
-`state/document_review_providers.dart`. Still to come: the task list and
-day column stepping aside while it is open, and a route into it.
+`state/document_review_providers.dart`, which also tells the task split
+and the app shell when a review is on screen, so the task list and the day
+column step aside for it. Still to come: a route into it.
 
 ## Where it sits
 

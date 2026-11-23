@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -6,6 +7,7 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/documents/logic/markdown_block_diff.dart';
 import 'package:lotti/features/documents/state/document_review_providers.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../classes/task_document_fixtures.dart';
@@ -204,6 +206,60 @@ void main() {
       await reloadProposals(const []);
 
       expect(container.read(documentReviewProvider(reviewKey)), isNull);
+    });
+  });
+
+  group('documentReviewShowingProvider', () {
+    late ValueNotifier<({String taskId, String documentId})?> shown;
+    late MockNavService nav;
+
+    setUp(() {
+      shown = ValueNotifier(null);
+      addTearDown(shown.dispose);
+      nav = MockNavService();
+      when(() => nav.desktopTaskDocument).thenReturn(shown);
+      container = ProviderContainer(
+        overrides: [navServiceProvider.overrideWithValue(nav)],
+      );
+      addTearDown(container.dispose);
+      container.listen(documentReviewShowingProvider(taskId), (_, _) {});
+    });
+
+    bool showing() => container.read(documentReviewShowingProvider(taskId));
+
+    test('is true only while a review is open and its document is the one '
+        'the pane shows', () async {
+      final review = container.read(
+        documentReviewOpenProvider(taskId).notifier,
+      );
+      expect(showing(), isFalse);
+      // Nothing open: the pane is not even looked at.
+      verifyNever(() => nav.desktopTaskDocument);
+
+      review.open(reviewKey);
+      expect(showing(), isFalse);
+
+      shown.value = docKey;
+      expect(showing(), isTrue);
+
+      shown.value = (taskId: taskId, documentId: 'doc-other');
+      expect(showing(), isFalse);
+
+      shown.value = docKey;
+      review.close();
+      expect(showing(), isFalse);
+    });
+
+    test("another task's review does not count", () {
+      container.read(documentReviewOpenProvider('task-other').notifier).open((
+        taskId: 'task-other',
+        documentId: documentId,
+        changeSetId: 'cs-draft',
+        itemIndex: 0,
+      ));
+      shown.value = docKey;
+
+      expect(showing(), isFalse);
     });
   });
 }

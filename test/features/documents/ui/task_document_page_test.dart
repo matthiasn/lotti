@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/documents/state/document_review_providers.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/task_document_editor.dart';
 import 'package:lotti/features/documents/ui/task_document_history.dart';
@@ -336,6 +337,26 @@ void main() {
             .changeSetId,
         'cs-newest',
       );
+    });
+
+    testWidgets('a review left open while its draft was decided elsewhere '
+        'is over: the page reads, and the review is cleared', (tester) async {
+      await pump(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(TaskDocumentPage)),
+      );
+      container.read(documentReviewOpenProvider('task-1').notifier).open((
+        taskId: 'task-1',
+        documentId: 'doc-brief',
+        changeSetId: 'cs-gone',
+        itemIndex: 0,
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(DocumentReviewView), findsNothing);
+      expect(find.byKey(TaskDocumentPageKeys.edit), findsOneWidget);
+      expect(container.read(documentReviewOpenProvider('task-1')), isNull);
     });
   });
 }
