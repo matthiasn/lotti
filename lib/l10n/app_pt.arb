@@ -3421,6 +3421,7 @@
   "eventsStatusCompleted": "Concluído",
   "eventsStatusMissed": "Perdido",
   "eventsStatusOngoing": "Em andamento",
+  "eventsStatusPickerTitle": "Estado",
   "eventsStatusPlanned": "Planejado",
   "eventsStatusPostponed": "Adiado",
   "eventsStatusRescheduled": "Reprogramado",

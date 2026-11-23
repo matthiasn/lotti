@@ -3421,6 +3421,7 @@
   "eventsStatusCompleted": "Voltooid",
   "eventsStatusMissed": "Gemiste",
   "eventsStatusOngoing": "Lopende",
+  "eventsStatusPickerTitle": "Status",
   "eventsStatusPlanned": "Gepland",
   "eventsStatusPostponed": "Uitgesteld",
   "eventsStatusRescheduled": "Herschikt",

@@ -7380,6 +7380,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsStatusOngoing => 'Läuft';
 
   @override
+  String get eventsStatusPickerTitle => 'Status';
+
+  @override
   String get eventsStatusPlanned => 'Geplant';
 
   @override

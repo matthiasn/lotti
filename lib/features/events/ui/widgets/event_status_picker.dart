@@ -1,6 +1,8 @@
 import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/event_status_colors.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -8,92 +10,73 @@ import 'package:material_ui/material_ui.dart';
 String eventStatusLabel(BuildContext context, EventStatus status) =>
     status.localizedLabel(context);
 
-/// Opens a modal listing every [EventStatus] and resolves to the chosen one, or
-/// `null` when dismissed. Reuses the app's single-page modal chrome.
+/// The icon that stands for an [EventStatus] in the status picker, drawn in
+/// the status's [EventStatusColors.colorForBrightness] the way the task and
+/// project pickers draw theirs.
+IconData eventStatusIcon(EventStatus status) => switch (status) {
+  EventStatus.tentative => LottiIcons.help,
+  EventStatus.planned => LottiIcons.calendar,
+  EventStatus.ongoing => LottiIcons.playCircled,
+  EventStatus.completed => LottiIcons.confirmCircled,
+  EventStatus.cancelled => LottiIcons.closeCircled,
+  EventStatus.postponed => LottiIcons.pauseCircled,
+  EventStatus.rescheduled => LottiIcons.replay,
+  EventStatus.missed => LottiIcons.warning,
+};
+
+/// Opens the adaptive event-status picker and resolves to the chosen status,
+/// or `null` when it is dismissed or the already-current status is tapped —
+/// so re-picking the current status writes nothing.
+///
+/// It shares the task and project status pickers' chrome — a titled
+/// single-page modal (bottom sheet on compact widths, dialog on wider ones)
+/// with full-width [DesignSystemSelectionRow]s — so every status picker in the
+/// app looks and behaves alike.
 Future<EventStatus?> showEventStatusPicker({
   required BuildContext context,
   required EventStatus current,
 }) {
   return ModalUtils.showSinglePageModal<EventStatus>(
     context: context,
-    builder: (modalContext) => _EventStatusList(current: current),
+    title: context.messages.eventsStatusPickerTitle,
+    padding: EdgeInsets.zero,
+    builder: (modalContext) => EventStatusModalContent(current: current),
   );
 }
 
-class _EventStatusList extends StatelessWidget {
-  const _EventStatusList({required this.current});
+/// Modal body listing every [EventStatus] as an icon-led selection row, with a
+/// trailing check on [current]. Tapping a row pops the route with that status,
+/// or with `null` when it is [current], which leaves nothing to change.
+class EventStatusModalContent extends StatelessWidget {
+  const EventStatusModalContent({required this.current, super.key});
 
   final EventStatus current;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final status in EventStatus.values)
-          _EventStatusRow(
-            status: status,
-            selected: status == current,
-            onTap: () => Navigator.of(context).pop(status),
-          ),
-      ],
-    );
-  }
-}
-
-class _EventStatusRow extends StatelessWidget {
-  const _EventStatusRow({
-    required this.status,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final EventStatus status;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final cs = context.colorScheme;
+    final brightness = Theme.of(context).brightness;
 
-    return Material(
-      color: selected ? cs.primary.withValues(alpha: 0.12) : Colors.transparent,
-      borderRadius: BorderRadius.circular(tokens.radii.m),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step3,
-            vertical: tokens.spacing.step3,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: status.color,
-                  shape: BoxShape.circle,
-                ),
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final status in EventStatus.values)
+            DesignSystemSelectionRow(
+              key: ValueKey('event-status-${status.name}'),
+              title: eventStatusLabel(context, status),
+              type: DesignSystemSelectionRowType.singleSelect,
+              selected: status == current,
+              leading: Icon(
+                eventStatusIcon(status),
+                color: status.colorForBrightness(brightness),
+                size: tokens.spacing.step6,
               ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Text(
-                  eventStatusLabel(context, status),
-                  style: tokens.typography.styles.body.bodyLarge.copyWith(
-                    color: cs.onSurface,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                ),
-              ),
-              if (selected)
-                Icon(LottiIcons.confirm, size: 18, color: cs.primary),
-            ],
-          ),
-        ),
+              onTap: () => Navigator.of(
+                context,
+              ).pop(status == current ? null : status),
+            ),
+        ],
       ),
     );
   }

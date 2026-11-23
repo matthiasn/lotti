@@ -12431,6 +12431,12 @@ abstract class AppLocalizations {
   /// **'Ongoing'**
   String get eventsStatusOngoing;
 
+  /// No description provided for @eventsStatusPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get eventsStatusPickerTitle;
+
   /// No description provided for @eventsStatusPlanned.
   ///
   /// In en, this message translates to:

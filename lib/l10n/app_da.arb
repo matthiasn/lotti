@@ -3422,6 +3422,7 @@
   "eventsStatusCompleted": "Færdiggjort",
   "eventsStatusMissed": "Missede",
   "eventsStatusOngoing": "Løbende",
+  "eventsStatusPickerTitle": "Status",
   "eventsStatusPlanned": "Planlagt",
   "eventsStatusPostponed": "Udsat",
   "eventsStatusRescheduled": "Omlagt",

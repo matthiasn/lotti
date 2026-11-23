@@ -7454,6 +7454,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventsStatusOngoing => 'En cours';
 
   @override
+  String get eventsStatusPickerTitle => 'Statut';
+
+  @override
   String get eventsStatusPlanned => 'Planifié';
 
   @override

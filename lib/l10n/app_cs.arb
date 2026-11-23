@@ -3104,6 +3104,7 @@
   "eventsStatusCompleted": "Dokončeno",
   "eventsStatusMissed": "Zmeškáno",
   "eventsStatusOngoing": "Probíhá",
+  "eventsStatusPickerTitle": "Stav",
   "eventsStatusPlanned": "Naplánováno",
   "eventsStatusPostponed": "Odloženo",
   "eventsStatusRescheduled": "Přeplánováno",
