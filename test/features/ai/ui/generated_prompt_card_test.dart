@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_card.dart';
+import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -51,31 +52,99 @@ Please provide step-by-step guidance.
       ),
     );
 
-    testWidgets('the title row is no taller than its 48 by 32 buttons and the '
-        'summary follows it directly', (tester) async {
+    testWidgets("its title starts where a sibling summary's does: the "
+        'controls sit in the card corner, not in the title row', (
+      tester,
+    ) async {
+      final summary = testAiResponseEntry.copyWith(
+        meta: testAiResponseEntry.meta.copyWith(id: 'summary-id'),
+        data: testAiResponseEntry.data.copyWith(
+          response: 'North side held.',
+          type: AiResponseType.audioSummary,
+        ),
+      );
       await tester.pumpWidget(
         WidgetTestBench(
-          child: GeneratedPromptCard(testAiResponseEntry),
+          child: Column(
+            children: [
+              AiResponseSummary(summary, fadeOut: false),
+              GeneratedPromptCard(testAiResponseEntry),
+            ],
+          ),
         ),
       );
 
-      // Wide rather than tall: the row stays 32 high, the targets are 48
-      // across and sit side by side without overlapping.
+      Offset titleOffset(String title, Type cardOwner) {
+        final card = find.descendant(
+          of: find.byType(cardOwner),
+          matching: find.byType(AiResponseCard),
+        );
+        return tester.getTopLeft(find.text(title)) - tester.getTopLeft(card);
+      }
+
+      // Same distance from the card's top and leading edge for both titles.
+      expect(
+        titleOffset('AI Coding Prompt', GeneratedPromptCard),
+        titleOffset('Summary', AiResponseSummary),
+      );
+
+      // And the same gap from the title down to the text under it.
+      double gapBelow(String title, String body) =>
+          tester.getTopLeft(find.textContaining(body)).dy -
+          tester.getBottomLeft(find.text(title)).dy;
+      expect(
+        gapBelow('AI Coding Prompt', 'This prompt helps implement'),
+        gapBelow('Summary', 'North side held.'),
+      );
+
+      // The controls are 40 px targets inside the card, centred on the
+      // title's line, with the trailing glyph on the card's content edge.
+      final promptCard = tester.getRect(
+        find.descendant(
+          of: find.byType(GeneratedPromptCard),
+          matching: find.byType(AiResponseCard),
+        ),
+      );
       final copy = find.widgetWithIcon(IconButton, LottiIcons.copy);
       final expand = find.widgetWithIcon(IconButton, LottiIcons.expand);
-      expect(tester.getSize(copy), const Size(48, 32));
-      expect(tester.getSize(expand), const Size(48, 32));
+      for (final button in [copy, expand]) {
+        final rect = tester.getRect(button);
+        expect(rect.size, const Size(40, 40));
+        expect(promptCard.contains(rect.topLeft), isTrue);
+        expect(
+          promptCard.contains(rect.bottomRight - const Offset(1, 1)),
+          isTrue,
+        );
+        expect(
+          rect.center.dy,
+          tester.getCenter(find.text('AI Coding Prompt')).dy,
+        );
+      }
+      // Flush with the inside of the card's hairline border.
+      expect(tester.getRect(expand).right, promptCard.right - 1);
+      expect(tester.getRect(copy).right, tester.getRect(expand).left);
+      // The title never runs under them.
       expect(
-        tester.getTopRight(copy).dx,
-        lessThanOrEqualTo(tester.getTopLeft(expand).dx),
+        tester.getRect(find.text('AI Coding Prompt')).right,
+        lessThanOrEqualTo(tester.getRect(copy).left),
       );
-      final title = find.text('AI Coding Prompt');
-      final summary = find.textContaining('This prompt helps implement');
-      // The title is centred in that row, so the summary starts within a
-      // few pixels of it rather than a button's overhang away.
-      final gap =
-          tester.getTopLeft(summary).dy - tester.getBottomLeft(title).dy;
-      expect(gap, inInclusiveRange(0, 8));
+    });
+
+    testWidgets('as its own entry the controls ride in the title row, since '
+        'there is no card inset to sit over', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: GeneratedPromptCard(testAiResponseEntry, framed: false),
+        ),
+      );
+
+      final title = tester.getRect(find.text('AI Coding Prompt'));
+      final copy = tester.getRect(
+        find.widgetWithIcon(IconButton, LottiIcons.copy),
+      );
+      expect(copy.size, const Size(40, 40));
+      expect(copy.center.dy, title.center.dy);
+      expect(copy.left, greaterThanOrEqualTo(title.right));
     });
 
     testWidgets('expanded, a hairline with one step either side separates '

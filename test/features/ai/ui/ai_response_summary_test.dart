@@ -636,18 +636,6 @@ Style: isometric digital art. --ar 16:9
         return container.decoration! as BoxDecoration;
       }
 
-      Container card(WidgetTester tester) => tester.widget<Container>(
-        find.byWidgetPredicate(
-          (w) =>
-              w is Container &&
-              w.decoration is BoxDecoration &&
-              (w.decoration! as BoxDecoration).color ==
-                  dsTokensLight.colors.aiCard.background.withValues(
-                    alpha: 0.5,
-                  ),
-        ),
-      );
-
       testWidgets(
         'the body sits at the editor measure, never louder than the entry '
         'text it belongs to',
@@ -694,9 +682,24 @@ Style: isometric digital art. --ar 16:9
           'card', (tester) async {
         await pumpSummary(tester, text: shortSummaryText);
 
+        // Measured, not read off a widget: where the content starts inside
+        // the card's edge.
+        final cardRect = tester.getRect(find.byType(AiResponseCard));
+        final content = tester.getRect(
+          find
+              .descendant(
+                of: find.byType(AiResponseCard),
+                matching: find.byType(Column),
+              )
+              .first,
+        );
         expect(
-          card(tester).padding,
-          EdgeInsets.all(dsTokensLight.spacing.step4),
+          content.topLeft - cardRect.topLeft,
+          // One hairline of border, then the inset.
+          Offset(
+            dsTokensLight.spacing.step4 + 1,
+            dsTokensLight.spacing.step4 + 1,
+          ),
           reason:
               'A surface nested inside an entry card should not spend a full '
               'card inset of its own.',

@@ -173,16 +173,11 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
     }
   }
 
-  /// The title row's icon buttons: 48 wide and 32 tall. The stock compact
-  /// button is 40 tall, which left the title floating in a row twice its own
-  /// height, so the height is what gives; the width, which costs the row
-  /// nothing, makes up the touch target.
+  /// The header's icon buttons: the glyph inside one card inset on every
+  /// side ([AiResponseCard.actionExtent] square), with no minimum beyond it.
   static ButtonStyle _headerButtonStyle(DsTokens tokens) =>
       IconButton.styleFrom(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step5,
-          vertical: tokens.spacing.step3,
-        ),
+        padding: EdgeInsets.all(tokens.spacing.step4),
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       );
@@ -192,60 +187,73 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final bodyStyle = AiResponseCard.bodyStyle(context);
-    return AiResponseCard(
-      aiResponse: widget.aiResponse,
-      framed: widget.framed,
-      // Header row with title and action buttons
-      header: Row(
-        children: [
-          Icon(
-            _isImagePrompt
-                ? AiResponseType.imagePromptGeneration.icon
-                : AiResponseType.promptGeneration.icon,
-            color: ai.accent,
-            size: IconSizes.s,
-          ),
-          SizedBox(width: tokens.spacing.step2),
-          Expanded(
-            child: Text(
-              _cardTitle(context),
-              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                color: ai.accent,
-                fontWeight: tokens.typography.weight.semiBold,
-              ),
-            ),
-          ),
-          // Copy button (prominent)
-          IconButton(
+    final actions = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Copy button (prominent)
+        IconButton(
+          icon: Icon(LottiIcons.copy, color: ai.accent, size: IconSizes.s),
+          style: _headerButtonStyle(tokens),
+          tooltip: _isImagePrompt
+              ? context.messages.imagePromptGenerationCopyTooltip
+              : context.messages.promptGenerationCopyTooltip,
+          onPressed: _copyToClipboard,
+        ),
+        // Expand/collapse button
+        RotationTransition(
+          turns: _rotationAnimation,
+          child: IconButton(
             icon: Icon(
-              LottiIcons.copy,
-              color: ai.accent,
+              LottiIcons.expand,
+              color: ai.metaText,
               size: IconSizes.s,
             ),
             style: _headerButtonStyle(tokens),
             tooltip: _isImagePrompt
-                ? context.messages.imagePromptGenerationCopyTooltip
-                : context.messages.promptGenerationCopyTooltip,
-            onPressed: _copyToClipboard,
+                ? context.messages.imagePromptGenerationExpandTooltip
+                : context.messages.promptGenerationExpandTooltip,
+            onPressed: _toggleExpanded,
           ),
-          // Expand/collapse button
-          RotationTransition(
-            turns: _rotationAnimation,
-            child: IconButton(
-              icon: Icon(
-                LottiIcons.expand,
-                color: ai.metaText,
-                size: IconSizes.s,
-              ),
-              style: _headerButtonStyle(tokens),
-              tooltip: _isImagePrompt
-                  ? context.messages.imagePromptGenerationExpandTooltip
-                  : context.messages.promptGenerationExpandTooltip,
-              onPressed: _toggleExpanded,
+        ),
+      ],
+    );
+    return AiResponseCard(
+      aiResponse: widget.aiResponse,
+      framed: widget.framed,
+      // Framed, the controls sit in the card's corner and the title row is
+      // only as tall as its text, level with a sibling summary's title.
+      // Unframed, the entry card is the frame and they ride in the row.
+      header: Padding(
+        padding: widget.framed
+            ? EdgeInsetsDirectional.only(
+                end: AiResponseCard.actionsReserve(tokens, count: 2),
+                bottom: tokens.spacing.step2,
+              )
+            : EdgeInsets.zero,
+        child: Row(
+          children: [
+            Icon(
+              _isImagePrompt
+                  ? AiResponseType.imagePromptGeneration.icon
+                  : AiResponseType.promptGeneration.icon,
+              color: ai.accent,
+              size: IconSizes.s,
             ),
-          ),
-        ],
+            SizedBox(width: tokens.spacing.step2),
+            Expanded(
+              child: Text(
+                _cardTitle(context),
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: ai.accent,
+                  fontWeight: tokens.typography.weight.semiBold,
+                ),
+              ),
+            ),
+            if (!widget.framed) actions,
+          ],
+        ),
       ),
+      headerActions: widget.framed ? actions : null,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
