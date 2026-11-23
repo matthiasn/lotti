@@ -554,16 +554,16 @@ const DsTokens dsTokensDark = DsTokens(
     ),
     diff: DsColorsDiff(
       added: DsColorsDiffAdded(
-        color: Color(0xFF9CE7CE),
-        surface: Color(0x385ED4B7),
+        color: Color(0xFFA5D6A7),
+        surface: Color(0x4266BB6A),
       ),
       removed: DsColorsDiffRemoved(
         color: Color(0xFFF2B0B0),
-        surface: Color(0x2EE57373),
+        surface: Color(0x3DE57373),
       ),
       replaced: DsColorsDiffReplaced(
         color: Color(0xFFA8D2F8),
-        surface: Color(0x3864B5F6),
+        surface: Color(0x4264B5F6),
       ),
     ),
     aiProvider: DsColorsAiProvider(
