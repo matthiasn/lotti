@@ -173,12 +173,16 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
     }
   }
 
-  /// The title row's icon buttons: the glyph inside one `step3` of padding
-  /// on each side, with no minimum beyond that. The stock compact button is
-  /// 40 tall, which left the title floating in a row twice its own height.
+  /// The title row's icon buttons: 48 wide and 32 tall. The stock compact
+  /// button is 40 tall, which left the title floating in a row twice its own
+  /// height, so the height is what gives; the width, which costs the row
+  /// nothing, makes up the touch target.
   static ButtonStyle _headerButtonStyle(DsTokens tokens) =>
       IconButton.styleFrom(
-        padding: EdgeInsets.all(tokens.spacing.step3),
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step5,
+          vertical: tokens.spacing.step3,
+        ),
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       );

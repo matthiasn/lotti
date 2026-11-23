@@ -51,7 +51,7 @@ Please provide step-by-step guidance.
       ),
     );
 
-    testWidgets('the title row is no taller than its 32 px buttons and the '
+    testWidgets('the title row is no taller than its 48 by 32 buttons and the '
         'summary follows it directly', (tester) async {
       await tester.pumpWidget(
         WidgetTestBench(
@@ -59,8 +59,16 @@ Please provide step-by-step guidance.
         ),
       );
 
+      // Wide rather than tall: the row stays 32 high, the targets are 48
+      // across and sit side by side without overlapping.
       final copy = find.widgetWithIcon(IconButton, LottiIcons.copy);
-      expect(tester.getSize(copy), const Size(32, 32));
+      final expand = find.widgetWithIcon(IconButton, LottiIcons.expand);
+      expect(tester.getSize(copy), const Size(48, 32));
+      expect(tester.getSize(expand), const Size(48, 32));
+      expect(
+        tester.getTopRight(copy).dx,
+        lessThanOrEqualTo(tester.getTopLeft(expand).dx),
+      );
       final title = find.text('AI Coding Prompt');
       final summary = find.textContaining('This prompt helps implement');
       // The title is centred in that row, so the summary starts within a
