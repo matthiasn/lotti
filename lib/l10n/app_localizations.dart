@@ -2922,6 +2922,12 @@ abstract class AppLocalizations {
   /// **'Companion, full screen'**
   String get aiCardCompanionStageTitle;
 
+  /// Caption under the Documents heading of the AI summary card's proposals, where each document draft is confirmed on its own.
+  ///
+  /// In en, this message translates to:
+  /// **'Read each draft, then confirm it on its own.'**
+  String get aiCardDocumentProposalsHint;
+
   /// No description provided for @aiCardHistoryToggle.
   ///
   /// In en, this message translates to:
@@ -11980,6 +11986,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove {deviceName} from your sync account? It will be signed out and will need to be paired again before it can sync.'**
   String deviceDeleteQuestion(String deviceName);
+
+  /// Primary button in the proposal preview sheet when the agent proposes a new document: confirming creates it.
+  ///
+  /// In en, this message translates to:
+  /// **'Create document'**
+  String get documentProposalConfirmNew;
+
+  /// Primary button in the proposal preview sheet when the agent proposes a new version of a document: confirming makes it the version the document shows.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this version'**
+  String get documentProposalConfirmVersion;
+
+  /// Dismisses an agent's document draft without writing it: the draft sheet's secondary button, and the button beside Read draft in chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard draft'**
+  String get documentProposalDiscard;
 
   /// Line at the top of the proposal preview sheet when the agent proposes a new document.
   ///

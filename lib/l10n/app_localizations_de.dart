@@ -1717,6 +1717,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Begleitung im Vollbild';
 
   @override
+  String get aiCardDocumentProposalsHint =>
+      'Lies jeden Entwurf und bestätige ihn dann einzeln.';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Verlauf · $count';
   }
@@ -7125,6 +7129,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String deviceDeleteQuestion(String deviceName) {
     return '$deviceName aus deinem Sync-Konto entfernen? Das Gerät wird abgemeldet und muss neu gekoppelt werden, bevor es wieder synchronisieren kann.';
   }
+
+  @override
+  String get documentProposalConfirmNew => 'Dokument erstellen';
+
+  @override
+  String get documentProposalConfirmVersion => 'Diese Version verwenden';
+
+  @override
+  String get documentProposalDiscard => 'Entwurf verwerfen';
 
   @override
   String get documentProposalKindNew => 'Vorgeschlagenes neues Dokument';

@@ -686,6 +686,7 @@
   "aiCardCompanionOpenFullScreen": "Ver tu acompañante en pantalla completa",
   "aiCardCompanionStageNextOutfit": "Cambiar de ropa",
   "aiCardCompanionStageTitle": "Acompañante en pantalla completa",
+  "aiCardDocumentProposalsHint": "Lee cada borrador y luego confírmalo por separado.",
   "aiCardHistoryToggle": "Historial · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3022,6 +3023,9 @@
       }
     }
   },
+  "documentProposalConfirmNew": "Crear documento",
+  "documentProposalConfirmVersion": "Usar esta versión",
+  "documentProposalDiscard": "Descartar borrador",
   "documentProposalKindNew": "Nuevo documento propuesto",
   "documentProposalKindVersion": "Nueva versión propuesta",
   "documentProposalRead": "Leer borrador",

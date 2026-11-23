@@ -804,6 +804,7 @@
   "aiCardCompanionOpenFullScreen": "Visa följeslagaren i helskärm",
   "aiCardCompanionStageNextOutfit": "Byt kläder",
   "aiCardCompanionStageTitle": "Följeslagaren i helskärm",
+  "aiCardDocumentProposalsHint": "Läs varje utkast och bekräfta det sedan för sig.",
   "aiCardHistoryToggle": "Historik · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3333,6 +3334,9 @@
       }
     }
   },
+  "documentProposalConfirmNew": "Skapa dokument",
+  "documentProposalConfirmVersion": "Använd den här versionen",
+  "documentProposalDiscard": "Släng utkastet",
   "documentProposalKindNew": "Föreslaget nytt dokument",
   "documentProposalKindVersion": "Föreslagen ny version",
   "documentProposalRead": "Läs utkast",

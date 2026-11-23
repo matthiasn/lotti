@@ -17,6 +17,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../test_data/change_set_factories.dart';
 import 'test_bench.dart';
 
@@ -1129,10 +1130,48 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byKey(DocumentProposalPreviewKeys.read));
+      // Its own neutral band — never the status-change warning.
+      // (The empty status band stays mounted, collapsed, for its exit.)
+      expect(
+        find.text('Read each draft, then confirm it on its own.'),
+        findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(find.text('Read draft')).dy,
+        greaterThan(tester.getTopLeft(find.text('Documents')).dy),
+      );
+      expect(
+        tester
+            .getSize(find.byKey(const ValueKey('proposalStatusChanges')))
+            .height,
+        0,
+      );
+
+      // Read first: the row offers no confirm, and a draft takes no swipe
+      // either way — not to confirm, not to discard.
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
+      for (final dx in [400.0, -400.0]) {
+        await tester.drag(find.byType(ProposalRow), Offset(dx, 0));
+        await tester.pumpAndSettle();
+      }
+      verifyNever(() => service.confirmItem(any(), any()));
+      verifyNever(() => service.rejectItem(any(), any()));
+      // The agent's line on the draft, and the title over the full width:
+      // its ✕ sits on the line with Read draft, not beside the title.
+      expect(find.text('A brief for the habitat.'), findsOneWidget);
+      // Its ✕ names what it does to a draft.
+      expect(findMaterialTooltip('Discard draft'), findsOneWidget);
+      expect(
+        tester.getCenter(find.byIcon(LottiIcons.close)).dy,
+        moreOrLessEquals(
+          tester.getCenter(find.text('Read draft')).dy,
+          epsilon: 2,
+        ),
+      );
+
+      await tester.tap(find.text('Read draft'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Feed the penguins at noon.'), findsOneWidget);
-      verifyNever(() => service.confirmItem(any(), any()));
 
       await tester.tap(find.byKey(DocumentProposalPreviewKeys.confirm));
       await tester.pumpAndSettle();

@@ -686,6 +686,7 @@
   "aiCardCompanionOpenFullScreen": "Vizualizați însoțitorul pe tot ecranul",
   "aiCardCompanionStageNextOutfit": "Schimbați ținuta",
   "aiCardCompanionStageTitle": "Însoțitor pe tot ecranul",
+  "aiCardDocumentProposalsHint": "Citiți fiecare ciornă, apoi confirmați-o separat.",
   "aiCardHistoryToggle": "Istoric · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3022,6 +3023,9 @@
       }
     }
   },
+  "documentProposalConfirmNew": "Creați documentul",
+  "documentProposalConfirmVersion": "Folosiți această versiune",
+  "documentProposalDiscard": "Renunțați la ciornă",
   "documentProposalKindNew": "Document nou propus",
   "documentProposalKindVersion": "Versiune nouă propusă",
   "documentProposalRead": "Citiți ciorna",

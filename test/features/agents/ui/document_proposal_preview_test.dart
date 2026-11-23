@@ -38,7 +38,7 @@ void main() {
   }
 
   Future<void> openPreview(WidgetTester tester) async {
-    await tester.tap(find.byKey(DocumentProposalPreviewKeys.read));
+    await tester.tap(find.text('Read draft'));
     await tester.pumpAndSettle();
   }
 
@@ -122,4 +122,54 @@ void main() {
       },
     );
   }
+
+  for (final (kind, args, label) in [
+    ('a new document', newDocument, 'Create document'),
+    ('a new version', revision, 'Use this version'),
+  ]) {
+    testWidgets('confirming $kind says what it does: "$label"', (
+      tester,
+    ) async {
+      await pumpButton(tester, args: args, onConfirm: () async {});
+      await openPreview(tester);
+
+      expect(
+        find.descendant(
+          of: find.byKey(DocumentProposalPreviewKeys.confirm),
+          matching: find.text(label),
+        ),
+        findsOneWidget,
+      );
+    });
+  }
+
+  testWidgets('a heading that repeats the title is not shown twice', (
+    tester,
+  ) async {
+    await pumpButton(
+      tester,
+      args: const {
+        'newTitle': 'Habitat brief',
+        'markdown': '# Habitat brief\n\nFeed the penguins at noon.',
+        'changeSummary': '',
+      },
+    );
+    await openPreview(tester);
+
+    expect(find.textContaining('Habitat brief'), findsOneWidget);
+    expect(find.textContaining('Feed the penguins at noon.'), findsOneWidget);
+  });
+
+  testWidgets('a draft sheet discards rather than dismisses', (tester) async {
+    await pumpButton(tester, onConfirm: () async {}, onReject: () async {});
+    await openPreview(tester);
+
+    expect(
+      find.descendant(
+        of: find.byKey(DocumentProposalPreviewKeys.reject),
+        matching: find.text('Discard draft'),
+      ),
+      findsOneWidget,
+    );
+  });
 }

@@ -350,6 +350,11 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
 
   String get _toolName =>
       widget.suggestion?.item.toolName ?? widget.entry!.toolName;
+
+  /// A document draft is confirmed only from the sheet that shows its text
+  /// (ADR 0166): no check on the row, and no swipe to confirm. Dismissing
+  /// stays one gesture away.
+  bool get _readFirst => _toolName == TaskAgentToolNames.proposeDocumentVersion;
   Map<String, dynamic> get _args =>
       widget.suggestion?.item.args ?? widget.entry!.args;
 
@@ -443,8 +448,9 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     // row would just disappear without communicating anything new.
     setState(
       () => _dx = (_dx + details.delta.dx).clamp(
-        -_swipeTrigger * 2,
-        _swipeTrigger * 2,
+        // A draft has no swipe: its verdicts are taps, after reading.
+        _readFirst ? 0.0 : -_swipeTrigger * 2,
+        _readFirst ? 0.0 : _swipeTrigger * 2,
       ),
     );
   }
@@ -857,15 +863,22 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
                         resolving: resolveKindLocal != null,
                         closesTask: isDoneProposal(_toolName, _args),
                         onReject: _reject,
-                        onConfirm: _confirm,
+                        onConfirm: _readFirst ? null : _confirm,
+                        showActions: !_readFirst,
                       ),
                       widget.details ??
-                          DocumentProposalReadButton(
-                            toolName: _toolName,
-                            args: _args,
-                            onConfirm: widget.isResolved ? null : _confirm,
-                            onReject: widget.isResolved ? null : _reject,
-                          ),
+                          (_readFirst && !widget.isResolved
+                              ? DocumentDraftRowActions(
+                                  args: _args,
+                                  busy: _busy,
+                                  resolving: resolveKindLocal != null,
+                                  onConfirm: _confirm,
+                                  onReject: _reject,
+                                )
+                              : DocumentProposalReadButton(
+                                  toolName: _toolName,
+                                  args: _args,
+                                )),
                     ],
                   ),
                 ),

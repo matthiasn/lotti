@@ -498,8 +498,10 @@ re-validates it on fresh context with those two keys set aside. The chat
 history shows earlier document proposals without their text. Transcripts are
 still not loaded: a revision works from the document's text, the conversation
 and the user's message. In both the chat review and the AI card, a document
-proposal carries **Read draft**, a sheet with the proposed text and that
-host's own Accept/Dismiss (Confirm/Reject on the card)
+proposal carries **Read draft**, a sheet with the proposed text and Dismiss
+beside a primary naming the outcome ("Create document" or "Use this
+version"). A draft is accepted only there: its row has no confirm, and a
+lone draft has no Accept beside it, only "Discard draft"
 ([`document_proposal_preview.dart`](../../../lib/features/agents/ui/document_proposal_preview.dart)).
 Checklist targets use the journal metadata ID; nullable or stale legacy IDs
 inside checklist data cannot overwrite it. Chat-specific guidance allows

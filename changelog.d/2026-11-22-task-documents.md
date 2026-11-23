@@ -13,6 +13,7 @@
   text from what the task holds. You read each version and confirm it
   before it becomes the document; it never rewrites a document on its own.
 - **Ask for a document in the task's chat.** Ask the chat for a document,
-  or for changes to one, and it proposes the new text there. "Read draft"
-  under a proposal, in the chat or the AI summary, shows the full text
-  before you accept it. A document's page opens the task's chat beside it.
+  or for changes to one, and it proposes the new text there. A draft is
+  confirmed only after reading it: "Read draft", in the chat or the AI
+  summary, opens the full text, with "Create document" or "Use this
+  version" at its foot. A document's page opens the task's chat beside it.

@@ -89,10 +89,17 @@ void main() {
     (tester) async {
       await openHistory(tester);
 
-      final current = tester.getTopLeft(find.text('v2 · Current')).dy;
-      final older = tester.getTopLeft(find.text('v1')).dy;
+      // Which and when lead each row; who wrote it is under them.
+      final current = tester.getTopLeft(find.text('v2 · 2 h ago')).dy;
+      final older = tester.getTopLeft(find.text('v1 · 2 h ago')).dy;
       expect(current, lessThan(older));
-      expect(find.text('Written by you · 2 h ago'), findsNWidgets(2));
+      // The current one is marked by its own pill, on its own row.
+      expect(
+        tester.getTopLeft(find.byKey(TaskDocumentHistoryKeys.current)).dy,
+        lessThan(older),
+      );
+      expect(find.text('Current'), findsOneWidget);
+      expect(find.text('Written by you'), findsNWidgets(2));
     },
   );
 
@@ -105,7 +112,8 @@ void main() {
   });
 
   testWidgets(
-    'an older version restores over the version on show, says so and closes',
+    'an older version restores over the version on show, says so and '
+    'closes back to the page',
     (tester) async {
       await openHistory(tester);
       await openVersion(tester, 'version-1');
@@ -123,8 +131,10 @@ void main() {
       ).called(1);
       expect(find.text('Version restored'), findsWidgets);
       expect(find.byType(TaskDocumentVersionView), findsNothing);
-      // The history stays open, for the new version to join it.
-      expect(find.byType(TaskDocumentHistory), findsOneWidget);
+      // Past the History sheet too, onto what opened it — the page, which
+      // shows the restored text.
+      expect(find.byType(TaskDocumentHistory), findsNothing);
+      expect(find.text('open'), findsOneWidget);
       await tester.pump(const Duration(seconds: 4));
     },
   );

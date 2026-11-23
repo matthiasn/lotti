@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/documents/ui/task_document_labels.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/relative_age_label.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
+import 'package:lotti/widgets/markdown/markdown_title.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -19,6 +21,7 @@ import 'package:material_ui/material_ui.dart';
 abstract final class TaskDocumentHistoryKeys {
   static Key row(String versionId) => Key('task-document-version-$versionId');
   static const restore = Key('task-document-version-restore');
+  static const current = Key('task-document-version-current');
 }
 
 /// Lists every version of the document [key] names, newest first, the
@@ -68,15 +71,31 @@ class TaskDocumentHistory extends ConsumerWidget {
               isCurrent: version.id == currentId,
             ),
             borderRadius: BorderRadius.circular(tokens.radii.m),
-            title: version.id == currentId
-                ? '${messages.taskDocumentsVersion(version.data.number)} · '
-                      '${messages.taskDocumentsCurrent}'
-                : messages.taskDocumentsVersion(version.data.number),
-            subtitle:
-                '${taskDocumentAuthorship(messages, version)} · '
+            // Which and when lead; who wrote it is the line under them.
+            title:
+                '${messages.taskDocumentsVersion(version.data.number)} · '
                 '${relativeAgeOrDateLabel(messages, at: version.meta.createdAt, now: now)}',
-            subtitleEmphasis: tokens.colors.text.lowEmphasis,
+            subtitle: taskDocumentAuthorship(messages, version),
+            subtitleEmphasis: tokens.colors.text.mediumEmphasis,
+            // Who and when wrap rather than lose the date beside a pill.
+            subtitleMaxLines: 2,
             size: DesignSystemListItemSize.small,
+            // The version on show is marked, not just named in the title.
+            trailing: version.id == currentId
+                ? DsPill(
+                    key: TaskDocumentHistoryKeys.current,
+                    variant: DsPillVariant.outline,
+                    shape: DsPillShape.tag,
+                    color: tokens.colors.text.mediumEmphasis,
+                    label: messages.taskDocumentsCurrent,
+                  )
+                : null,
+            // Last on every row, so the chevrons line up.
+            trailingExtra: Icon(
+              LottiIcons.chevronRight,
+              size: IconSizes.m,
+              color: tokens.colors.text.mediumEmphasis,
+            ),
           ),
       ],
     );
@@ -92,7 +111,15 @@ Future<void> showTaskDocumentVersion(
   required bool isCurrent,
 }) => ModalUtils.showSinglePageModal<void>(
   context: context,
-  title: context.messages.taskDocumentsVersion(version.data.number),
+  // Which document, then which version: a bare "v1" says neither alone.
+  title: switch (ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(taskDocumentProvider(key))?.data.title) {
+    final String title =>
+      '$title · ${context.messages.taskDocumentsVersion(version.data.number)}',
+    null => context.messages.taskDocumentsVersion(version.data.number),
+  },
   padding: EdgeInsets.all(context.designTokens.spacing.step5),
   builder: (_) => TaskDocumentVersionView(
     documentKey: key,
@@ -144,21 +171,32 @@ class TaskDocumentVersionView extends ConsumerWidget {
         },
         duration: const Duration(seconds: 3),
       );
-      if (written) Navigator.of(context).pop();
+      // Back past the version view and the History sheet under it, onto the
+      // page, which now shows the restored text and its provenance.
+      if (written) {
+        Navigator.of(context)
+          ..pop()
+          ..pop();
+      }
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          taskDocumentVersionLine(messages, version, now: clock.now()),
+          // The sheet's title already names the version.
+          '${taskDocumentAuthorship(messages, version)} · '
+          '${relativeAgeOrDateLabel(messages, at: version.meta.createdAt, now: clock.now())}',
           style: tokens.typography.styles.body.bodySmall.copyWith(
             color: tokens.colors.text.mediumEmphasis,
           ),
         ),
         SizedBox(height: tokens.spacing.step4),
         AgentMarkdownView(
-          version.data.markdown,
+          withoutRepeatedTitle(
+            version.data.markdown,
+            ref.watch(taskDocumentProvider(documentKey))?.data.title,
+          ),
           style: tokens.typography.styles.body.bodyMedium.copyWith(
             color: tokens.colors.text.highEmphasis,
           ),

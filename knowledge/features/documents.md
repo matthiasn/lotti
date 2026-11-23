@@ -374,7 +374,8 @@ A device on an older build skips both variants as undeserializable.
   first), so it never stands empty and needs no opt-in flag. Each row shows
   the title, then `v3 · 2 h ago` or "No text yet"; Copy puts the current
   version's markdown on the clipboard and is offered only once there is
-  one; tapping the row opens the document page. The header's + opens the
+  one, as a quiet icon beside the row; a trailing chevron, last on every row,
+  says tapping the row opens the document page. The header's + opens the
   editor for a new document.
 - **Add sheet.** `NewDocumentItem`, wired into
   `JournalDetailSlots.taskCreateActions` ahead of pull request tracking, is
@@ -391,24 +392,34 @@ A device on an older build skips both variants as undeserializable.
   band, and a retry after a failed text write never creates it twice.
 - **Document page.**
   [`TaskDocumentPage`](../../lib/features/documents/ui/task_document_page.dart):
-  the title, a provenance line ("v2 · Drafted by the agent, confirmed by you
-  · 2 h ago"), Edit, Copy, History and Delete, then the text rendered by
-  `AgentMarkdownView` at `kProseMeasureWidth`. It reads
+  the title with Delete beside it (a neutral icon; its confirmation carries
+  the warning), a provenance line ("v2 · Drafted by the
+  agent, confirmed by you · 2 h ago"), Edit (the one filled button), Copy,
+  History and the chat disc, then the text rendered by `AgentMarkdownView`.
+  Header and text share `kProseMeasureWidth`. A leading `# heading` that only
+  repeats the title is not shown a second time (`withoutRepeatedTitle` in
+  [`markdown_title.dart`](../../lib/widgets/markdown/markdown_title.dart));
+  the page, the version view and the proposal preview all do this, and Copy
+  still copies the markdown whole. It reads
   `taskDocumentCurrentVersionProvider`, which re-reads only when the
   document moves to another version (a rename reads nothing) and keeps the
   version on show while the next loads, so the text is replaced in place.
   A document deleted while open says so. Delete asks first, then deletes
-  the document with its versions and leaves the page. The delete button is
-  neutral ink, not teal.
+  the document with its versions and leaves the page.
 - **History.**
   [`TaskDocumentHistory`](../../lib/features/documents/ui/task_document_history.dart)
-  lists the versions newest first, the current one marked. Opening one shows
-  its text; an older one offers Restore, which writes its text as the next
+  lists the versions newest first, each row titled with its number and age
+  ("v2 · 2 h ago") over who wrote it, the current one marked by a "Current"
+  pill, a chevron last on every row. Opening one shows its text under the title
+  "<document> · v<n>"; an older one offers Restore, which writes its text as the next
   version over the one on show (`restore` with that `baseVersionId`). A
   refused restore says a newer version arrived; a written one closes the
-  version view and the new version joins the list.
+  version view and the History sheet under it, back onto the page, which
+  shows the restored text.
 - **Ask.** The page sits inside the task's own `QueryCompanion`, and its
-  action row carries `QueryAskButton`, which opens the task's chat beside
+  actions are followed, on a line of their own, by `QueryAskButton` as a
+  labelled inline action in the agent's violet ("Ask about this task"),
+  which opens the task's chat beside
   the document (a docked column on desktop, a sheet on a phone) to ask for
   a revision while reading. It is the same discussion the task page opens.
 
@@ -417,13 +428,25 @@ A device on an older build skips both variants as undeserializable.
 A proposal row names only the document it writes, so the text is one tap
 away: [`DocumentProposalReadButton`](../../lib/features/agents/ui/document_proposal_preview.dart)
 ("Read draft") sits under a document proposal in the AI summary card's
-`ProposalRow` and in chat's `QueryActionReview`. It opens a sheet with
-whether the proposal starts a document or replaces one's text, the change
-summary, and the markdown as it would read. While the row can still be
-decided there, the sheet carries that host's own verdicts: Confirm/Reject
-on the card, Accept/Dismiss in chat, for the item alone, or for the whole
-answer when it is the only change. A verdict closes the sheet first, so the
-row shows the outcome. A decided proposal is read-only.
+`ProposalRow` and in chat's `QueryActionReview`. On the card, document
+proposals sit under their own plain **Documents** heading ("Read each draft,
+then confirm it on its own"), apart from the warning band for status
+changes; both are confirmed one by one (`individualConfirmTools`) and stay
+out of Confirm all. **A draft is confirmed only after reading it**: a
+document row offers no confirm and takes no swipe either way. Its title
+takes the row's full width; under it, the agent's change summary, then
+Read draft with the ✕ across from it, in the reject column the other rows
+use (`DocumentDraftRowActions`). In chat a lone draft has no Accept beside
+it, only Read draft and then "Discard draft", with the draft's change
+summary under its description. Read draft opens a
+sheet with whether the proposal
+starts a document or replaces one's text, in the agent's violet, the change
+summary, and, after a gap rather than a rule, the markdown as it would read. While the row can still be
+decided there, the sheet's glass footer carries "Discard draft" (closing
+the sheet keeps the draft) and the one confirm, which names the outcome — "Create document" or "Use this version" — on both hosts,
+deciding the item alone, or the whole answer when it is the only change. A
+verdict closes the sheet first, so the row shows the outcome. A decided
+proposal is read-only.
 
 ### How the page opens
 

@@ -1711,6 +1711,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Följeslagaren i helskärm';
 
   @override
+  String get aiCardDocumentProposalsHint =>
+      'Läs varje utkast och bekräfta det sedan för sig.';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Historik · $count';
   }
@@ -7092,6 +7096,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String deviceDeleteQuestion(String deviceName) {
     return 'Ta bort $deviceName från ditt synkroniseringskonto? Enheten loggas ut och måste paras ihop igen innan den kan synkronisera.';
   }
+
+  @override
+  String get documentProposalConfirmNew => 'Skapa dokument';
+
+  @override
+  String get documentProposalConfirmVersion => 'Använd den här versionen';
+
+  @override
+  String get documentProposalDiscard => 'Släng utkastet';
 
   @override
   String get documentProposalKindNew => 'Föreslaget nytt dokument';

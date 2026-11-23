@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_pa
 import 'package:lotti/features/agents/ui/document_proposal_preview.dart';
 import 'package:lotti/features/agents/ui/query/query_action_review.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -709,7 +710,7 @@ void main() {
     );
 
     Future<void> openDraft(WidgetTester tester) async {
-      await tester.tap(find.byKey(DocumentProposalPreviewKeys.read));
+      await tester.tap(find.text('Read draft'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Feed the penguins at noon.'), findsOneWidget);
     }
@@ -718,6 +719,15 @@ void main() {
         'whole answer', (tester) async {
       stub((approved) async => const []);
       await pump(tester, response: answerWith(const [draft]));
+      // Read first: no Accept beside a lone draft — Read draft, then
+      // Discard draft, on one line, with the agent's line on the draft.
+      expect(find.text('Accept'), findsNothing);
+      expect(find.textContaining('Moves feeding to noon.'), findsOneWidget);
+      // A draft's dismissal says what it does: it throws the draft away.
+      final dismiss = tester.getRect(find.text('Discard draft'));
+      final read = tester.getRect(find.text('Read draft'));
+      expect(read.left, lessThan(dismiss.left));
+      expect(dismiss.center.dy, moreOrLessEquals(read.center.dy, epsilon: 2));
       await openDraft(tester);
 
       await tester.tap(find.byKey(DocumentProposalPreviewKeys.confirm));
@@ -751,6 +761,9 @@ void main() {
         tester,
         response: answerWith([draft, answer.proposedActions.first]),
       );
+      // The draft's row offers reject only; the checklist row both.
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsNWidgets(2));
       await openDraft(tester);
 
       await tester.tap(find.byKey(DocumentProposalPreviewKeys.reject));
@@ -776,5 +789,73 @@ void main() {
       expect(find.byKey(DocumentProposalPreviewKeys.confirm), findsNothing);
       expect(find.byKey(DocumentProposalPreviewKeys.reject), findsNothing);
     });
+
+    testWidgets('after Accept all, a draft it skipped can still be '
+        'confirmed from its sheet', (tester) async {
+      // Accept all confirms the checklist item and leaves the draft pending,
+      // as the confirmation service does for a change confirmed on its own.
+      stub((approved) async {
+        saved =
+            AgentDomainEntity.changeSet(
+                  id: 'query-chat:question:actions',
+                  agentId: 'agent',
+                  taskId: 'task',
+                  threadId: 'chat',
+                  runKey: 'query-chat:question',
+                  status: ChangeSetStatus.partiallyResolved,
+                  items: [
+                    draft,
+                    answer.proposedActions.first.copyWith(
+                      status: ChangeItemStatus.confirmed,
+                    ),
+                  ],
+                  createdAt: DateTime(2026, 9, 13),
+                  vectorClock: null,
+                )
+                as ChangeSetEntity;
+        return const [];
+      });
+      when(
+        () => service.resolveItem(
+          agentId: 'agent',
+          chatId: 'chat',
+          questionId: 'question',
+          itemIndex: any(named: 'itemIndex'),
+          approved: any(named: 'approved'),
+        ),
+      ).thenAnswer((_) async => null);
+      await pump(
+        tester,
+        response: answerWith([draft, answer.proposedActions.first]),
+      );
+      await tester.tap(find.text('Accept all'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      await openDraft(tester);
+      await tester.tap(find.byKey(DocumentProposalPreviewKeys.confirm));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      verify(
+        () => service.resolveItem(
+          agentId: 'agent',
+          chatId: 'chat',
+          questionId: 'question',
+          itemIndex: 0,
+          approved: true,
+        ),
+      ).called(1);
+    });
+  });
+
+  testWidgets('Dismiss comes before Accept, as on the card and the sheet', (
+    tester,
+  ) async {
+    await pump(tester);
+    expect(
+      tester.getTopLeft(find.text('Dismiss all')).dx,
+      lessThan(tester.getTopLeft(find.text('Accept all')).dx),
+    );
   });
 }

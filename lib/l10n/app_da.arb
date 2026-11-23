@@ -804,6 +804,7 @@
   "aiCardCompanionOpenFullScreen": "Vis følgesvend i fuld skærm",
   "aiCardCompanionStageNextOutfit": "Skift tøj",
   "aiCardCompanionStageTitle": "Følgesvend i fuld skærm",
+  "aiCardDocumentProposalsHint": "Læs hvert udkast, og bekræft det så for sig.",
   "aiCardHistoryToggle": "Historie · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3333,6 +3334,9 @@
       }
     }
   },
+  "documentProposalConfirmNew": "Opret dokument",
+  "documentProposalConfirmVersion": "Brug denne version",
+  "documentProposalDiscard": "Kassér udkast",
   "documentProposalKindNew": "Foreslået nyt dokument",
   "documentProposalKindVersion": "Foreslået ny version",
   "documentProposalRead": "Læs udkast",

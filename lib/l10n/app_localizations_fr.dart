@@ -1726,6 +1726,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Compagnon en plein écran';
 
   @override
+  String get aiCardDocumentProposalsHint =>
+      'Lis chaque brouillon, puis confirme-le séparément.';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Historique · $count';
   }
@@ -7199,6 +7203,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String deviceDeleteQuestion(String deviceName) {
     return 'Supprimer $deviceName de ton compte de synchronisation ? L\'appareil sera déconnecté et devra être appairé à nouveau avant de pouvoir synchroniser.';
   }
+
+  @override
+  String get documentProposalConfirmNew => 'Créer le document';
+
+  @override
+  String get documentProposalConfirmVersion => 'Utiliser cette version';
+
+  @override
+  String get documentProposalDiscard => 'Jeter le brouillon';
 
   @override
   String get documentProposalKindNew => 'Nouveau document proposé';

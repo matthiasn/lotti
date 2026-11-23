@@ -9,14 +9,23 @@ class RowActions extends StatelessWidget {
   const RowActions({
     required this.busy,
     required this.onReject,
-    required this.onConfirm,
+    this.onConfirm,
+    this.rejectLabel,
     this.enabled = true,
     super.key,
   });
 
   final bool busy;
   final Future<void> Function() onReject;
-  final Future<void> Function() onConfirm;
+
+  /// Null for a proposal confirmed elsewhere — a document draft, confirmed
+  /// in the sheet that shows its text. Only reject shows then, in its own
+  /// column, and the rail keeps its width so rows stay aligned.
+  final Future<void> Function()? onConfirm;
+
+  /// What the ✕ says it does, when "Reject" is not the word — a document
+  /// draft's is "Discard draft".
+  final String? rejectLabel;
 
   /// `false` renders both discs inert and dimmed, with disabled semantics.
   /// A host that cannot take a decision right now (a page mutation in
@@ -57,15 +66,25 @@ class RowActions extends StatelessWidget {
     // separates the two hit zones — the asymmetric chrome keeps the
     // opposite-meaning targets visually distinct, and swipe remains the
     // primary gesture.
+    final reject = _SquareIconButton(
+      icon: LottiIcons.close,
+      tooltip: rejectLabel ?? context.messages.changeSetSwipeReject,
+      onPressed: enabled ? onReject : null,
+      variant: _SquareIconVariant.outline,
+    );
+    final onConfirm = this.onConfirm;
+    if (onConfirm == null) {
+      return SizedBox(
+        width: footprintWidth(context),
+        // In the reject column every other row has: the rightmost disc on
+        // the card always means confirm.
+        child: Align(alignment: Alignment.centerLeft, child: reject),
+      );
+    }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _SquareIconButton(
-          icon: LottiIcons.close,
-          tooltip: context.messages.changeSetSwipeReject,
-          onPressed: enabled ? onReject : null,
-          variant: _SquareIconVariant.outline,
-        ),
+        reject,
         SizedBox(width: context.designTokens.spacing.step2),
         _SquareIconButton(
           icon: LottiIcons.confirm,

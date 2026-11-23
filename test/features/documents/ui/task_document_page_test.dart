@@ -183,7 +183,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byType(TaskDocumentHistory), findsOneWidget);
-    expect(find.text('v2 · Current'), findsOneWidget);
+    expect(find.byKey(TaskDocumentHistoryKeys.current), findsOneWidget);
   });
 
   testWidgets(

@@ -804,6 +804,7 @@
   "aiCardCompanionOpenFullScreen": "Mostra il compagno a schermo intero",
   "aiCardCompanionStageNextOutfit": "Cambia vestito",
   "aiCardCompanionStageTitle": "Compagno a schermo intero",
+  "aiCardDocumentProposalsHint": "Leggi ogni bozza, poi confermala singolarmente.",
   "aiCardHistoryToggle": "Cronologia · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3333,6 +3334,9 @@
       }
     }
   },
+  "documentProposalConfirmNew": "Crea documento",
+  "documentProposalConfirmVersion": "Usa questa versione",
+  "documentProposalDiscard": "Scarta la bozza",
   "documentProposalKindNew": "Nuovo documento proposto",
   "documentProposalKindVersion": "Nuova versione proposta",
   "documentProposalRead": "Leggi la bozza",

@@ -1711,6 +1711,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Metgezel op volledig scherm';
 
   @override
+  String get aiCardDocumentProposalsHint =>
+      'Lees elk concept en bevestig het daarna apart.';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Geschiedenis · $count';
   }
@@ -7102,6 +7106,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String deviceDeleteQuestion(String deviceName) {
     return '$deviceName uit je synchronisatieaccount verwijderen? Het apparaat wordt afgemeld en moet opnieuw worden gekoppeld voordat het kan synchroniseren.';
   }
+
+  @override
+  String get documentProposalConfirmNew => 'Document maken';
+
+  @override
+  String get documentProposalConfirmVersion => 'Deze versie gebruiken';
+
+  @override
+  String get documentProposalDiscard => 'Concept weggooien';
 
   @override
   String get documentProposalKindNew => 'Voorgesteld nieuw document';

@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart' show BackWidget;
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
+import 'package:lotti/widgets/markdown/markdown_title.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -187,15 +189,32 @@ class _DocumentBody extends StatelessWidget {
       children: [
         Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: kDetailContentMaxWidth),
+            // One measure for header and text, so the title, the rule and
+            // the prose share both edges.
+            constraints: const BoxConstraints(maxWidth: kProseMeasureWidth),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  document.data.title,
-                  style: tokens.typography.styles.heading.heading2.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        document.data.title,
+                        style: tokens.typography.styles.heading.heading2
+                            .copyWith(color: tokens.colors.text.highEmphasis),
+                      ),
+                    ),
+                    SizedBox(width: tokens.spacing.step2),
+                    // Apart from the actions that work on the text, so it
+                    // never wraps into their row; neutral at rest — the
+                    // confirmation it opens carries the warning.
+                    DesignSystemIconAction(
+                      key: TaskDocumentPageKeys.delete,
+                      icon: LottiIcons.delete,
+                      tooltip: messages.deleteButton,
+                      onPressed: onDelete,
+                    ),
+                  ],
                 ),
                 if (version != null) ...[
                   SizedBox(height: tokens.spacing.step2),
@@ -221,7 +240,6 @@ class _DocumentBody extends StatelessWidget {
                       key: TaskDocumentPageKeys.edit,
                       label: messages.taskDocumentsEditAction,
                       leadingIcon: LottiIcons.edit,
-                      variant: DesignSystemButtonVariant.secondary,
                       onPressed: onEdit,
                     ),
                     DesignSystemButton(
@@ -238,18 +256,14 @@ class _DocumentBody extends StatelessWidget {
                       variant: DesignSystemButtonVariant.tertiary,
                       onPressed: onHistory,
                     ),
-                    QueryAskButton(scope: chatScope, fullLabel: true),
-                    DesignSystemButton(
-                      key: TaskDocumentPageKeys.delete,
-                      label: '',
-                      semanticsLabel: messages.deleteButton,
-                      leadingIcon: LottiIcons.delete,
-                      // Neutral ink: teal says "act here", which a
-                      // destructive action must not invite.
-                      variant: DesignSystemButtonVariant.quiet,
-                      onPressed: onDelete,
-                    ),
                   ],
+                ),
+                // The agent's own control, labelled and in its violet, on a
+                // line of its own at every width rather than wherever the
+                // actions above happen to wrap.
+                Padding(
+                  padding: EdgeInsets.only(top: tokens.spacing.step2),
+                  child: QueryAskButton(scope: chatScope, inline: true),
                 ),
                 SizedBox(height: tokens.spacing.step4),
                 const DesignSystemDivider(),
@@ -262,12 +276,13 @@ class _DocumentBody extends StatelessWidget {
                     ),
                   )
                 else if (version != null)
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: kProseMeasureWidth,
-                    ),
+                  SizedBox(
+                    width: double.infinity,
                     child: AgentMarkdownView(
-                      version.data.markdown,
+                      withoutRepeatedTitle(
+                        version.data.markdown,
+                        document.data.title,
+                      ),
                       style: tokens.typography.styles.body.bodyMedium.copyWith(
                         color: tokens.colors.text.highEmphasis,
                       ),

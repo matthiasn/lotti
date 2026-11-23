@@ -1,7 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -72,12 +72,11 @@ class TaskDocumentsSection extends ConsumerWidget {
                           .copyWith(color: tokens.colors.text.highEmphasis),
                     ),
                   ),
-                  DesignSystemButton(
+                  DesignSystemIconAction(
                     key: TaskDocumentsSectionKeys.add,
-                    label: '',
-                    semanticsLabel: messages.taskDocumentsNew,
-                    variant: DesignSystemButtonVariant.tertiary,
-                    leadingIcon: LottiIcons.add,
+                    icon: LottiIcons.add,
+                    tooltip: messages.taskDocumentsNew,
+                    tone: tokens.colors.interactive.enabled,
                     onPressed: () async =>
                         showTaskDocumentEditor(context, taskId: taskId),
                   ),
@@ -162,23 +161,28 @@ class TaskDocumentRow extends ConsumerWidget {
           ? messages.taskDocumentsNoText
           : '${messages.taskDocumentsVersion(current.number)} · '
                 '${relativeAgeOrDateLabel(messages, at: current.createdAt, now: clock.now())}',
-      subtitleEmphasis: tokens.colors.text.lowEmphasis,
+      subtitleEmphasis: tokens.colors.text.mediumEmphasis,
       size: DesignSystemListItemSize.small,
       leading: Icon(
         LottiIcons.description,
         size: IconSizes.m,
         color: tokens.colors.text.mediumEmphasis,
       ),
-      trailingExtra: current == null
+      // Copy is a quiet shortcut beside the row; the chevron, last on every
+      // row so they line up, says the row itself opens the document.
+      trailing: current == null
           ? null
-          : DesignSystemButton(
+          : DesignSystemIconAction(
               key: TaskDocumentsSectionKeys.copy(document.id),
-              label: '',
-              semanticsLabel: messages.taskDocumentsCopy,
-              variant: DesignSystemButtonVariant.tertiary,
-              leadingIcon: LottiIcons.copy,
+              icon: LottiIcons.copy,
+              tooltip: messages.taskDocumentsCopy,
               onPressed: copy,
             ),
+      trailingExtra: Icon(
+        LottiIcons.chevronRight,
+        size: IconSizes.m,
+        color: tokens.colors.text.mediumEmphasis,
+      ),
     );
   }
 }

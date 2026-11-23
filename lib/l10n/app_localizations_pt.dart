@@ -1722,6 +1722,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Acompanhante em ecrã inteiro';
 
   @override
+  String get aiCardDocumentProposalsHint =>
+      'Lê cada rascunho e depois confirma-o separadamente.';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Histórico · $count';
   }
@@ -7172,6 +7176,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String deviceDeleteQuestion(String deviceName) {
     return 'Remover $deviceName da sua conta de sincronização? O dispositivo será desconectado e precisará ser pareado novamente antes de poder sincronizar.';
   }
+
+  @override
+  String get documentProposalConfirmNew => 'Criar documento';
+
+  @override
+  String get documentProposalConfirmVersion => 'Usar esta versão';
+
+  @override
+  String get documentProposalDiscard => 'Descartar rascunho';
 
   @override
   String get documentProposalKindNew => 'Novo documento proposto';

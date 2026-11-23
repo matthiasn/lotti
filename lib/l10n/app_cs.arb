@@ -693,6 +693,7 @@
   "aiCardCompanionOpenFullScreen": "Zobrazit společníka na celé obrazovce",
   "aiCardCompanionStageNextOutfit": "Změnit oblečení",
   "aiCardCompanionStageTitle": "Společník na celé obrazovce",
+  "aiCardDocumentProposalsHint": "Přečti si každý návrh a pak ho potvrď samostatně.",
   "aiCardHistoryToggle": "Historie · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3029,6 +3030,9 @@
       }
     }
   },
+  "documentProposalConfirmNew": "Vytvořit dokument",
+  "documentProposalConfirmVersion": "Použít tuto verzi",
+  "documentProposalDiscard": "Zahodit návrh",
   "documentProposalKindNew": "Navržený nový dokument",
   "documentProposalKindVersion": "Navržená nová verze",
   "documentProposalRead": "Přečíst návrh",

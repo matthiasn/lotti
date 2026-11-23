@@ -1715,6 +1715,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Společník na celé obrazovce';
 
   @override
+  String get aiCardDocumentProposalsHint =>
+      'Přečti si každý návrh a pak ho potvrď samostatně.';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Historie · $count';
   }
@@ -7178,6 +7182,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String deviceDeleteQuestion(String deviceName) {
     return 'Odebrat $deviceName z tvého synchronizačního účtu? Zařízení bude odhlášeno a před další synchronizací ho bude nutné znovu spárovat.';
   }
+
+  @override
+  String get documentProposalConfirmNew => 'Vytvořit dokument';
+
+  @override
+  String get documentProposalConfirmVersion => 'Použít tuto verzi';
+
+  @override
+  String get documentProposalDiscard => 'Zahodit návrh';
 
   @override
   String get documentProposalKindNew => 'Navržený nový dokument';

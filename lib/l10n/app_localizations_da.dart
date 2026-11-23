@@ -1703,6 +1703,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Følgesvend i fuld skærm';
 
   @override
+  String get aiCardDocumentProposalsHint =>
+      'Læs hvert udkast, og bekræft det så for sig.';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Historie · $count';
   }
@@ -7078,6 +7082,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String deviceDeleteQuestion(String deviceName) {
     return 'Vil du fjerne $deviceName fra din synkroniseringskonto? Enheden logges ud og skal parres igen, før den kan synkronisere.';
   }
+
+  @override
+  String get documentProposalConfirmNew => 'Opret dokument';
+
+  @override
+  String get documentProposalConfirmVersion => 'Brug denne version';
+
+  @override
+  String get documentProposalDiscard => 'Kassér udkast';
 
   @override
   String get documentProposalKindNew => 'Foreslået nyt dokument';

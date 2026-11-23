@@ -1725,6 +1725,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Însoțitor pe tot ecranul';
 
   @override
+  String get aiCardDocumentProposalsHint =>
+      'Citiți fiecare ciornă, apoi confirmați-o separat.';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Istoric · $count';
   }
@@ -7207,6 +7211,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String deviceDeleteQuestion(String deviceName) {
     return 'Eliminați $deviceName din contul dvs. de sincronizare? Dispozitivul va fi deconectat și va trebui asociat din nou înainte de a putea sincroniza.';
   }
+
+  @override
+  String get documentProposalConfirmNew => 'Creați documentul';
+
+  @override
+  String get documentProposalConfirmVersion => 'Folosiți această versiune';
+
+  @override
+  String get documentProposalDiscard => 'Renunțați la ciornă';
 
   @override
   String get documentProposalKindNew => 'Document nou propus';

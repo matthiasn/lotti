@@ -686,6 +686,7 @@
   "aiCardCompanionOpenFullScreen": "Afficher le compagnon en plein écran",
   "aiCardCompanionStageNextOutfit": "Changer de tenue",
   "aiCardCompanionStageTitle": "Compagnon en plein écran",
+  "aiCardDocumentProposalsHint": "Lis chaque brouillon, puis confirme-le séparément.",
   "aiCardHistoryToggle": "Historique · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3022,6 +3023,9 @@
       }
     }
   },
+  "documentProposalConfirmNew": "Créer le document",
+  "documentProposalConfirmVersion": "Utiliser cette version",
+  "documentProposalDiscard": "Jeter le brouillon",
   "documentProposalKindNew": "Nouveau document proposé",
   "documentProposalKindVersion": "Nouvelle version proposée",
   "documentProposalRead": "Lire le brouillon",

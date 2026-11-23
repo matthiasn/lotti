@@ -1695,6 +1695,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Companion, full screen';
 
   @override
+  String get aiCardDocumentProposalsHint =>
+      'Read each draft, then confirm it on its own.';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'History · $count';
   }
@@ -7049,6 +7053,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String deviceDeleteQuestion(String deviceName) {
     return 'Remove $deviceName from your sync account? It will be signed out and will need to be paired again before it can sync.';
   }
+
+  @override
+  String get documentProposalConfirmNew => 'Create document';
+
+  @override
+  String get documentProposalConfirmVersion => 'Use this version';
+
+  @override
+  String get documentProposalDiscard => 'Discard draft';
 
   @override
   String get documentProposalKindNew => 'Proposed new document';

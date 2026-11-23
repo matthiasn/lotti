@@ -803,6 +803,7 @@
   "aiCardCompanionOpenFullScreen": "Ver o teu acompanhante em ecrã inteiro",
   "aiCardCompanionStageNextOutfit": "Trocar de roupa",
   "aiCardCompanionStageTitle": "Acompanhante em ecrã inteiro",
+  "aiCardDocumentProposalsHint": "Lê cada rascunho e depois confirma-o separadamente.",
   "aiCardHistoryToggle": "Histórico · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3332,6 +3333,9 @@
       }
     }
   },
+  "documentProposalConfirmNew": "Criar documento",
+  "documentProposalConfirmVersion": "Usar esta versão",
+  "documentProposalDiscard": "Descartar rascunho",
   "documentProposalKindNew": "Novo documento proposto",
   "documentProposalKindVersion": "Nova versão proposta",
   "documentProposalRead": "Ler rascunho",

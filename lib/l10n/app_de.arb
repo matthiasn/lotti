@@ -686,6 +686,7 @@
   "aiCardCompanionOpenFullScreen": "Begleitung im Vollbild ansehen",
   "aiCardCompanionStageNextOutfit": "Outfit wechseln",
   "aiCardCompanionStageTitle": "Begleitung im Vollbild",
+  "aiCardDocumentProposalsHint": "Lies jeden Entwurf und bestätige ihn dann einzeln.",
   "aiCardHistoryToggle": "Verlauf · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3022,6 +3023,9 @@
       }
     }
   },
+  "documentProposalConfirmNew": "Dokument erstellen",
+  "documentProposalConfirmVersion": "Diese Version verwenden",
+  "documentProposalDiscard": "Entwurf verwerfen",
   "documentProposalKindNew": "Vorgeschlagenes neues Dokument",
   "documentProposalKindVersion": "Vorgeschlagene neue Version",
   "documentProposalRead": "Entwurf lesen",

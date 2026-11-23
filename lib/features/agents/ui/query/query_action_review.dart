@@ -135,6 +135,11 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
     final lines = <String>[
       localizedChangeSummary(messages, item.toolName, display) ??
           item.humanSummary,
+      // A draft carries the agent's line on what it changes, as on the card.
+      if (_isDocument(item))
+        if (args['changeSummary'] case final String summary
+            when summary.trim().isNotEmpty)
+          summary.trim(),
     ];
     if (item.toolName == TaskAgentToolNames.updateChecklistItem) {
       final title = display['title'];
@@ -203,14 +208,51 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
     return lines;
   }
 
+  /// Read draft for [item], deciding in its sheet what this row's own
+  /// buttons — or a lone change's set buttons — would decide.
+  Widget _readButton(
+    ChangeItem item,
+    int index,
+    int count,
+    bool perItem, {
+    bool inRow = false,
+  }) {
+    final decidable = _canDecide(item, perItem);
+    return DocumentProposalReadButton(
+      toolName: item.toolName,
+      args: item.args,
+      inRow: inRow,
+      onConfirm: decidable
+          ? () => count == 1
+                ? _resolve(true)
+                : _resolveItem(index, approved: true)
+          : null,
+      onReject: decidable
+          ? () => count == 1
+                ? _resolve(false)
+                : _resolveItem(index, approved: false)
+          : null,
+    );
+  }
+
+  static bool _isDocument(ChangeItem item) =>
+      item.toolName == TaskAgentToolNames.proposeDocumentVersion;
+
   /// Whether [item] can still be decided here: pending, applicable, with no
   /// verdict on the set, and either alone or decided row by row.
-  bool _canDecide(ChangeItem item, bool perItem) =>
-      !_busy &&
-      widget.canApply &&
-      (widget.approved ?? _decision) == null &&
-      item.status == ChangeItemStatus.pending &&
-      (perItem || widget.answer.proposedActions.length == 1);
+  ///
+  /// A row decided one by one stays decidable after Accept all: that
+  /// skips the changes confirmed on their own, a document draft among them,
+  /// which must still reach its sheet's confirm.
+  bool _canDecide(ChangeItem item, bool perItem) {
+    final decision = widget.approved ?? _decision;
+    return !_busy &&
+        widget.canApply &&
+        decision != false &&
+        item.status == ChangeItemStatus.pending &&
+        (perItem ||
+            (widget.answer.proposedActions.length == 1 && decision == null));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -241,6 +283,7 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
                 item.toolName,
               ),
         );
+    final loneDocument = items.length == 1 && _isDocument(items.single);
     return Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step3),
       child: Column(
@@ -259,24 +302,10 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
                           _descriptions(context, item).join('\n'),
                           style: tokens.typography.styles.body.bodySmall,
                         ),
-                        DocumentProposalReadButton(
-                          toolName: item.toolName,
-                          args: item.args,
-                          confirmLabel: messages.queryActionsAccept,
-                          rejectLabel: messages.queryActionsDismiss,
-                          // The sheet decides only what this row's own
-                          // buttons, or a lone change's set buttons, decide.
-                          onConfirm: _canDecide(item, perItem)
-                              ? () => items.length == 1
-                                    ? _resolve(true)
-                                    : _resolveItem(index, approved: true)
-                              : null,
-                          onReject: _canDecide(item, perItem)
-                              ? () => items.length == 1
-                                    ? _resolve(false)
-                                    : _resolveItem(index, approved: false)
-                              : null,
-                        ),
+                        // A lone draft's Read draft sits beside its Dismiss,
+                        // below; any other stays under its description.
+                        if (!(loneDocument && decision == null))
+                          _readButton(item, index, items.length, perItem),
                         if (!_busy && item.status != ChangeItemStatus.pending)
                           Text(
                             item.status == ChangeItemStatus.confirmed
@@ -292,7 +321,11 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
                       busy: false,
                       enabled: !_busy,
                       onReject: () => _resolveItem(index, approved: false),
-                      onConfirm: () => _resolveItem(index, approved: true),
+                      // A document draft is confirmed in the sheet that
+                      // shows its text, never from the row.
+                      onConfirm: _isDocument(item)
+                          ? null
+                          : () => _resolveItem(index, approved: true),
                     ),
                 ],
               ),
@@ -318,25 +351,44 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
               Wrap(
                 spacing: tokens.spacing.step2,
                 runSpacing: tokens.spacing.step2,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  DesignSystemButton(
-                    label: decision == true
-                        ? messages.projectNextStepRetry
-                        : items.length > 1
-                        ? messages.queryActionsAcceptAll
-                        : messages.queryActionsAccept,
-                    isLoading: _busy || loading,
-                    onPressed: widget.canApply ? () => _resolve(true) : null,
-                  ),
+                  // A lone draft leads with reading it — its way forward —
+                  // then Discard draft, as its row on the card reads.
+                  if (loneDocument && decision == null)
+                    _readButton(
+                      items.single,
+                      0,
+                      1,
+                      perItem,
+                      inRow: true,
+                    ),
+                  // Quiet Dismiss first, the way forward last: the order of
+                  // the card's ✕/✓ and of the draft sheet's footer.
                   if (decision == null)
                     DesignSystemButton(
                       label: items.length > 1
                           ? messages.queryActionsDismissAll
+                          : loneDocument
+                          ? messages.documentProposalDiscard
                           : messages.queryActionsDismiss,
-                      variant: DesignSystemButtonVariant.tertiary,
+                      // Neutral: teal marks only the way forward.
+                      variant: DesignSystemButtonVariant.quiet,
                       onPressed: _busy || !widget.canApply
                           ? null
                           : () => _resolve(false),
+                    ),
+                  // A lone document draft is accepted from its sheet; a
+                  // retry after a failed accept stays here.
+                  if (decision == true || !loneDocument)
+                    DesignSystemButton(
+                      label: decision == true
+                          ? messages.projectNextStepRetry
+                          : items.length > 1
+                          ? messages.queryActionsAcceptAll
+                          : messages.queryActionsAccept,
+                      isLoading: _busy || loading,
+                      onPressed: widget.canApply ? () => _resolve(true) : null,
                     ),
                 ],
               ),
