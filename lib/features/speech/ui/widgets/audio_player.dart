@@ -121,7 +121,7 @@ class AudioPlayerWidget extends ConsumerWidget {
   }
 }
 
-class _WaveformArea extends ConsumerWidget {
+class _WaveformArea extends ConsumerStatefulWidget {
   const _WaveformArea({
     required this.journalAudio,
     required this.progress,
@@ -138,11 +138,36 @@ class _WaveformArea extends ConsumerWidget {
   final bool isActive;
   final ValueChanged<Duration> onSeek;
 
+  @override
+  ConsumerState<_WaveformArea> createState() => _WaveformAreaState();
+}
+
+class _WaveformAreaState extends ConsumerState<_WaveformArea> {
   static const int _minBars = 24;
   static const int _maxBars = 320;
 
+  /// The amplitudes last drawn for this recording. The bar count follows the
+  /// width, and each count is its own provider instance, so a width change —
+  /// a longer speed label, a resized window — would otherwise drop back to
+  /// the plain bar until the new instance has loaded.
+  List<double>? _drawn;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void didUpdateWidget(_WaveformArea oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.journalAudio.meta.id != widget.journalAudio.meta.id) {
+      _drawn = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final journalAudio = widget.journalAudio;
+    final progress = widget.progress;
+    final buffered = widget.buffered;
+    final totalDuration = widget.totalDuration;
+    final isActive = widget.isActive;
+    final onSeek = widget.onSeek;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final width = constraints.maxWidth;
@@ -175,9 +200,14 @@ class _WaveformArea extends ConsumerWidget {
         );
 
         // `.value`, not `.when`: a reload keeps the drawn waveform instead of
-        // dropping back to the bar.
-        final amplitudes = asyncWaveform.value?.amplitudes;
-        if (amplitudes == null || amplitudes.isEmpty) return progressBar;
+        // dropping back to the bar. An answer replaces what is drawn (an
+        // empty one clears it); no answer yet leaves it as it is.
+        if (asyncWaveform.hasValue) {
+          final loaded = asyncWaveform.value?.amplitudes;
+          _drawn = loaded == null || loaded.isEmpty ? null : loaded;
+        }
+        final amplitudes = _drawn;
+        if (amplitudes == null) return progressBar;
         return AudioWaveformScrubber(
           amplitudes: amplitudes,
           progress: progress,

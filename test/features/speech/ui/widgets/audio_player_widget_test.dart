@@ -350,6 +350,82 @@ void main() {
     pending.complete(null);
   });
 
+  testWidgets('keeps the waveform when a width change asks for a different '
+      'bar count that has not loaded yet', (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    AudioPlayerState stopped() => buildState(
+      status: AudioPlayerStatus.stopped,
+      totalDuration: journalAudio.data.duration,
+      progress: Duration.zero,
+      pausedAt: Duration.zero,
+      speed: 1,
+    );
+    final amplitudes = List<double>.filled(40, 0.5);
+    await pumpPlayer(
+      tester,
+      journalAudio: journalAudio,
+      state: stopped(),
+      waveformData: AudioWaveformData(amplitudes: amplitudes),
+    );
+    final before = tester.widget<AudioWaveformScrubber>(
+      find.byType(AudioWaveformScrubber),
+    );
+    expect(before.amplitudes, amplitudes);
+
+    // Narrower: fewer bars, so a provider instance that has no answer yet.
+    final pending = Completer<AudioWaveformData?>();
+    when(
+      () => waveformService.loadWaveform(
+        journalAudio,
+        targetBuckets: any(named: 'targetBuckets'),
+      ),
+    ).thenAnswer((_) => pending.future);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 320,
+              child: AudioPlayerWidget(journalAudio),
+            ),
+          ),
+        ),
+        overrides: [
+          audioPlayerControllerProvider.overrideWith(() => controller),
+        ],
+        theme: ThemeData(useMaterial3: true),
+      ),
+    );
+    await tester.pump();
+
+    final verification = verify(
+      () => waveformService.loadWaveform(
+        journalAudio,
+        targetBuckets: captureAny(named: 'targetBuckets'),
+      ),
+    );
+    expect(verification.captured.toSet().length, greaterThan(1));
+    expect(
+      tester
+          .widget<AudioWaveformScrubber>(find.byType(AudioWaveformScrubber))
+          .amplitudes,
+      amplitudes,
+    );
+    expect(find.byType(AudioProgressBar), findsNothing);
+
+    // The answer for the new width replaces what was drawn.
+    final narrower = List<double>.filled(20, 0.8);
+    pending.complete(AudioWaveformData(amplitudes: narrower));
+    await tester.pump();
+    await tester.pump();
+    expect(
+      tester
+          .widget<AudioWaveformScrubber>(find.byType(AudioWaveformScrubber))
+          .amplitudes,
+      narrower,
+    );
+  });
+
   testWidgets('scrubbing progress calls seek with target duration', (
     WidgetTester tester,
   ) async {
