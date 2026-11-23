@@ -39,6 +39,7 @@ import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.
 import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_sheet.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/image_import.dart';
@@ -478,6 +479,7 @@ class _RelationshipDetailsPageState
 
     final bar = RelationshipActionBar(
       personName: personName,
+      recording: ref.watch(subjectTakeLiveProvider(relationship.id)),
       // Speak your mind: a capture the page sorts for review, rather than
       // a check-in the user has to file by hand.
       onSpeak: () => unawaited(

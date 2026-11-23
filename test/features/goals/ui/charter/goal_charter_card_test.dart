@@ -377,7 +377,7 @@ void main() {
             find.byKey(const ValueKey('goal-charter-record')),
           )
           .tooltip,
-      'Record about this goal',
+      'Speak about this goal',
     );
   });
 
@@ -390,7 +390,7 @@ void main() {
       find.byKey(const ValueKey('goal-charter-empty-record')),
       findsOneWidget,
     );
-    expect(find.text('Record about this goal'), findsOneWidget);
+    expect(find.text('Speak about this goal'), findsOneWidget);
     expect(find.byKey(const ValueKey('goal-charter-empty-cta')), findsOne);
   });
 

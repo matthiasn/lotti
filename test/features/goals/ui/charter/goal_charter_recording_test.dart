@@ -148,7 +148,13 @@ void main() {
 
     await record(tester);
 
-    expect(find.text("That didn't save. Try again."), findsOneWidget);
+    expect(
+      find.text(
+        "That couldn't be added to this goal. Your recording is saved in "
+        'the logbook.',
+      ),
+      findsOneWidget,
+    );
     expect(transcribed, isEmpty);
   });
 
@@ -162,7 +168,13 @@ void main() {
 
     await record(tester);
 
-    expect(find.text("That didn't save. Try again."), findsOneWidget);
+    expect(
+      find.text(
+        "That couldn't be added to this goal. Your recording is saved in "
+        'the logbook.',
+      ),
+      findsOneWidget,
+    );
     expect(transcribed, isEmpty);
     verify(
       () => logger.error(
@@ -188,7 +200,7 @@ void main() {
     await record(tester);
 
     expect(transcribed.single.entityId, 'audio-1');
-    expect(find.text("That didn't save. Try again."), findsNothing);
+    expect(find.textContaining('saved in the logbook'), findsNothing);
     verify(
       () => logger.error(
         LogDomain.general,

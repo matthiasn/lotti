@@ -14,7 +14,11 @@ void main() {
     adds = 0;
   });
 
-  Future<void> pump(WidgetTester tester, {Size? size}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    Size? size,
+    bool recording = false,
+  }) async {
     if (size != null) {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
@@ -24,6 +28,7 @@ void main() {
       makeTestableWidgetWithScaffold(
         RelationshipActionBar(
           personName: 'Pip',
+          recording: recording,
           onSpeak: () => speaks++,
           onAdd: () => adds++,
         ),
@@ -42,6 +47,16 @@ void main() {
     expect(pills.last.fillColor, isNull, reason: 'Add is glass');
     // No unlabelled discs: every control says what it does.
     expect(find.byType(DsGlassRoundButton), findsNothing);
+  });
+
+  testWidgets('while a take about the person is running, Speak reads '
+      'Recording', (tester) async {
+    await pump(tester, recording: true);
+
+    final pills = tester.widgetList<DsGlassPill>(find.byType(DsGlassPill));
+    expect(pills.map((p) => p.label), ['Recording', 'Add']);
+    await tester.tap(find.byKey(const ValueKey('person-action-speak')));
+    expect(speaks, 1);
   });
 
   testWidgets('each control does its own thing', (tester) async {

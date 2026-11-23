@@ -3492,6 +3492,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'No transcription model is set up yet. Add an audio-capable model in AI settings.';
 
   @override
+  String get chatInputRecordingNoAudioModelKept =>
+      'No transcription model is set up yet. Your recording is saved in the logbook. Add an audio-capable model in AI settings.';
+
+  @override
   String get chatInputRecordingNoMicPermission =>
       'Lotti can\'t use the microphone. Enable microphone access for Lotti in your system settings.';
 
@@ -3509,7 +3513,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatInputTranscriptionFailed =>
-      'The recording was captured, but transcribing it failed. Please try again.';
+      'Transcribing the recording failed. Please try again.';
+
+  @override
+  String get chatInputTranscriptionFailedKept =>
+      'Transcribing failed. Your recording is saved in the logbook, so nothing is lost.';
 
   @override
   String get checkInAddNoteHint => 'Add a note…';
@@ -8308,7 +8316,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your agent can only read the first part of this. Shorten or combine entries so it reads all of it.';
 
   @override
-  String get goalCharterRecord => 'Record about this goal';
+  String get goalCharterRecord => 'Speak about this goal';
+
+  @override
+  String get goalCharterRecordingKept =>
+      'That couldn\'t be added to this goal. Your recording is saved in the logbook.';
 
   @override
   String get goalCharterSaveFailed => 'That didn\'t save. Try again.';

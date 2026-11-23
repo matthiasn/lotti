@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -26,6 +28,7 @@ import 'package:record/record.dart' as record;
 
 import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_data/ai_config_factories.dart';
 
@@ -3042,6 +3045,347 @@ void main() {
       final withError = base.copyWith(error: 'something failed');
       expect(withError.error, 'something failed');
       expect(withError.transcript, isNull);
+    });
+  });
+
+  group('a take whose transcription failed is never thrown away', () {
+    late Directory baseTemp;
+    late MockAudioRecorder mockRecorder;
+    late MockAudioTranscriptionService transcription;
+
+    setUp(() {
+      baseTemp = Directory.systemTemp.createTempSync('chat_recorder_keep');
+      addTearDown(() => baseTemp.deleteSync(recursive: true));
+      mockRecorder = MockAudioRecorder();
+      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+      // A real recorder leaves a real file: the take this group is about.
+      when(
+        () => mockRecorder.start(
+          any<record.RecordConfig>(),
+          path: any(named: 'path'),
+        ),
+      ).thenAnswer((invocation) async {
+        File(
+          invocation.namedArguments[#path] as String,
+        ).writeAsStringSync('the take');
+      });
+      when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+      when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
+        (_) => const Stream<record.Amplitude>.empty(),
+      );
+      transcription = MockAudioTranscriptionService();
+    });
+
+    Future<ChatRecorderState> dictate({
+      required ChatFailedTakeKeeper keep,
+    }) async {
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => baseTemp,
+              transcriptionService: transcription,
+              keepFailedTake: keep,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
+      await controller.stopAndTranscribe();
+      return container.read(chatRecorderControllerProvider);
+    }
+
+    List<String> filesUnder(Directory directory) => [
+      for (final entity in directory.listSync(recursive: true))
+        if (entity is File) entity.uri.pathSegments.last,
+    ];
+
+    for (final (name, error, kind) in [
+      (
+        'a failed request',
+        Exception('network down'),
+        ChatRecorderErrorKind.transcriptionFailed,
+      ),
+      (
+        'a missing audio model',
+        Exception('No audio-capable models configured'),
+        ChatRecorderErrorKind.noAudioModel,
+      ),
+    ]) {
+      test('$name: the take is handed to the journal while its file still '
+          'exists, and the state says it was kept', () async {
+        when(
+          () => transcription.transcribeStream(any()),
+        ).thenAnswer((_) => Stream.error(error));
+        final keptWith = <String>[];
+
+        final state = await dictate(
+          keep: (path) async {
+            // Still on disk when the keeper is asked: nothing deleted it
+            // first.
+            keptWith.add(File(path).readAsStringSync());
+            return true;
+          },
+        );
+
+        expect(keptWith, ['the take']);
+        expect(state.errorKind, kind);
+        expect(state.keptInJournal, isTrue);
+        // Safely in the journal, so the temp copy is cleaned up as before.
+        expect(filesUnder(baseTemp), isEmpty);
+      });
+    }
+
+    for (final (name, keep) in <(String, ChatFailedTakeKeeper)>[
+      ('answers that it could not', (_) async => false),
+      ('throws', (_) async => throw StateError('journal unavailable')),
+    ]) {
+      test('when the journal $name take it, the audio is moved out of the '
+          "cleanup's reach and left on disk — and nothing claims it was "
+          'kept', () async {
+        when(
+          () => transcription.transcribeStream(any()),
+        ).thenAnswer((_) => Stream.error(Exception('network down')));
+
+        final state = await dictate(keep: keep);
+
+        expect(state.errorKind, ChatRecorderErrorKind.transcriptionFailed);
+        expect(state.keptInJournal, isFalse);
+        final left = filesUnder(baseTemp);
+        expect(left, hasLength(1));
+        expect(left.single, startsWith('lotti_unsaved_chat_'));
+        expect(
+          File('${baseTemp.path}/${left.single}').readAsStringSync(),
+          'the take',
+        );
+      });
+    }
+
+    test('a teardown racing the keep step cannot delete the take out from '
+        'under it', () async {
+      when(
+        () => transcription.transcribeStream(any()),
+      ).thenAnswer((_) => Stream.error(Exception('network down')));
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      String? readByKeeper;
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => baseTemp,
+              transcriptionService: transcription,
+              keepFailedTake: (path) async {
+                entered.complete();
+                await release.future;
+                final file = File(path);
+                readByKeeper = file.existsSync()
+                    ? file.readAsStringSync()
+                    : null;
+                return readByKeeper != null;
+              },
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
+      final stopping = controller.stopAndTranscribe();
+      await entered.future;
+
+      // The chat closes while the journal is still taking the recording.
+      await controller.dispose();
+      release.complete();
+      await stopping;
+
+      expect(readByKeeper, 'the take');
+    });
+
+    test('when the journal refuses the take and it cannot be moved aside '
+        'either, it is left where it is — no cleanup deletes it', () async {
+      when(
+        () => transcription.transcribeStream(any()),
+      ).thenAnswer((_) => Stream.error(Exception('network down')));
+      // Something already sits where the take would be moved to.
+      Directory(
+        '${baseTemp.path}/lotti_unsaved_chat_42.m4a',
+      ).createSync();
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              nowMillisProvider: () => 42,
+              tempDirectoryProvider: () async => baseTemp,
+              transcriptionService: transcription,
+              keepFailedTake: (_) async => false,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
+      await controller.stopAndTranscribe();
+
+      final state = container.read(chatRecorderControllerProvider);
+      expect(state.errorKind, ChatRecorderErrorKind.transcriptionFailed);
+      expect(state.keptInJournal, isFalse);
+      final take = File('${baseTemp.path}/lotti_chat_rec/chat_42.m4a');
+      expect(take.existsSync(), isTrue);
+      expect(take.readAsStringSync(), 'the take');
+
+      // Nor does tearing the recorder down afterwards.
+      await controller.dispose();
+      expect(take.readAsStringSync(), 'the take');
+    });
+
+    test('words that arrive need no keeping: the take is deleted, as '
+        'dictation always was', () async {
+      when(
+        () => transcription.transcribeStream(any()),
+      ).thenAnswer((_) => Stream.value('hello'));
+      var asked = 0;
+
+      final state = await dictate(
+        keep: (_) async {
+          asked++;
+          return true;
+        },
+      );
+
+      expect(state.transcript, 'hello');
+      expect(state.keptInJournal, isFalse);
+      expect(asked, 0);
+      expect(filesUnder(baseTemp), isEmpty);
+    });
+
+    test('unless overridden, the take goes into the journal: its audio '
+        "copied into the app's own audio store and filed as an unlinked "
+        'recording', () async {
+      when(
+        () => transcription.transcribeStream(any()),
+      ).thenAnswer((_) => Stream.error(Exception('network down')));
+      final documents = Directory.systemTemp.createTempSync('chat_keep_docs');
+      addTearDown(() => documents.deleteSync(recursive: true));
+      if (getIt.isRegistered<Directory>()) getIt.unregister<Directory>();
+      getIt.registerSingleton<Directory>(documents);
+      addTearDown(() => getIt.unregister<Directory>());
+      final speech = MockSpeechRepository();
+      registerFallbackValue(
+        AudioNote(
+          createdAt: DateTime(2026, 8, 18),
+          audioFile: 'fallback.m4a',
+          audioDirectory: '/audio/',
+          duration: Duration.zero,
+        ),
+      );
+      when(
+        () => speech.createAudioEntry(
+          any(),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => testAudioEntry);
+
+      final container = ProviderContainer(
+        overrides: [
+          speechRepositoryProvider.overrideWithValue(speech),
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => baseTemp,
+              transcriptionService: transcription,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
+      await controller.stopAndTranscribe();
+
+      expect(
+        container.read(chatRecorderControllerProvider).keptInJournal,
+        isTrue,
+      );
+      // Words for a text field, not a check-in on anything: no link.
+      final note =
+          verify(
+                () => speech.createAudioEntry(
+                  captureAny(),
+                  // Stated, not defaulted: that there is no link is the claim.
+                  // ignore: avoid_redundant_argument_values
+                  linkedId: null,
+                  // ignore: avoid_redundant_argument_values
+                  categoryId: null,
+                ),
+              ).captured.single
+              as AudioNote;
+      final stored = File(
+        '${documents.path}${note.audioDirectory}${note.audioFile}',
+      );
+      expect(stored.readAsStringSync(), 'the take');
+      // The temp copy is gone; the journal's is the one that remains.
+      expect(filesUnder(baseTemp), isEmpty);
+    });
+
+    test('clearing a consumed failure clears the kept flag with it', () async {
+      when(
+        () => transcription.transcribeStream(any()),
+      ).thenAnswer((_) => Stream.error(Exception('network down')));
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => baseTemp,
+              transcriptionService: transcription,
+              keepFailedTake: (_) async => true,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
+      await controller.stopAndTranscribe();
+      expect(
+        container.read(chatRecorderControllerProvider).keptInJournal,
+        isTrue,
+      );
+
+      controller.clearResult();
+
+      final cleared = container.read(chatRecorderControllerProvider);
+      expect(cleared.error, isNull);
+      expect(cleared.keptInJournal, isFalse);
     });
   });
 }

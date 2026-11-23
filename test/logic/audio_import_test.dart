@@ -92,7 +92,7 @@ void main() {
   });
 
   /// Imports [files] through the mocks, reading durations with [reader].
-  Future<void> importAudio(
+  Future<int> importAudio(
     List<XFile> files, {
     String? linkedId,
     String? categoryId,
@@ -145,7 +145,9 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importAudio(dropDetails);
+      // It answers how many recordings it filed, for a caller holding the
+      // only copy to know it may let go of it.
+      expect(await importAudio(dropDetails), 1);
 
       verify(
         () => mockPersistenceLogic.createDbEntity(
@@ -162,7 +164,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importAudio(dropDetails);
+      expect(await importAudio(dropDetails), 0);
 
       verifyNever(
         () => mockPersistenceLogic.createDbEntity(
@@ -245,7 +247,8 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importAudio(dropDetails);
+      // Nothing was filed, and it says so.
+      expect(await importAudio(dropDetails), 0);
 
       // Entry creation was attempted (and failed)
       verify(

@@ -3560,6 +3560,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun modèle de transcription n\'est configuré. Ajoute un modèle compatible audio dans les paramètres IA.';
 
   @override
+  String get chatInputRecordingNoAudioModelKept =>
+      'Aucun modèle de transcription n\'est configuré. Ton enregistrement est sauvegardé dans le journal. Ajoute un modèle compatible audio dans les paramètres IA.';
+
+  @override
   String get chatInputRecordingNoMicPermission =>
       'Lotti ne peut pas utiliser le microphone. Autorise l\'accès au microphone pour Lotti dans les réglages système.';
 
@@ -3577,7 +3581,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get chatInputTranscriptionFailed =>
-      'L\'enregistrement a bien été capté, mais la transcription a échoué. Réessaie.';
+      'La transcription de l\'enregistrement a échoué. Réessaie.';
+
+  @override
+  String get chatInputTranscriptionFailedKept =>
+      'La transcription a échoué. Ton enregistrement est sauvegardé dans le journal, rien n\'est perdu.';
 
   @override
   String get checkInAddNoteHint => 'Ajoute une note…';
@@ -8476,7 +8484,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ton agent ne peut lire que la première partie. Raccourcis ou regroupe des entrées pour qu\'il lise tout.';
 
   @override
-  String get goalCharterRecord => 'Enregistrer sur cet objectif';
+  String get goalCharterRecord => 'Parler de cet objectif';
+
+  @override
+  String get goalCharterRecordingKept =>
+      'Impossible de l\'ajouter à cet objectif. Ton enregistrement est sauvegardé dans le journal.';
 
   @override
   String get goalCharterSaveFailed => 'L\'enregistrement a échoué. Réessaie.';

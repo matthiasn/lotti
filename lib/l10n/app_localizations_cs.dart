@@ -3552,6 +3552,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zatím není nastavený žádný přepisovací model. Přidej v nastavení AI model podporující zvuk.';
 
   @override
+  String get chatInputRecordingNoAudioModelKept =>
+      'Zatím není nastavený žádný přepisovací model. Nahrávka je uložená v zápisníku. Přidej v nastavení AI model podporující zvuk.';
+
+  @override
   String get chatInputRecordingNoMicPermission =>
       'Lotti nemůže použít mikrofon. Povol Lotti přístup k mikrofonu v nastavení systému.';
 
@@ -3569,7 +3573,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get chatInputTranscriptionFailed =>
-      'Nahrávka se pořídila, ale přepis se nezdařil. Zkus to prosím znovu.';
+      'Přepis nahrávky se nezdařil. Zkus to prosím znovu.';
+
+  @override
+  String get chatInputTranscriptionFailedKept =>
+      'Přepis se nezdařil. Nahrávka je uložená v zápisníku, takže se nic neztratilo.';
 
   @override
   String get checkInAddNoteHint => 'Přidej poznámku…';
@@ -8452,7 +8460,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tvůj agent dokáže přečíst jen první část. Zkrať záznamy nebo je spoj, aby přečetl všechno.';
 
   @override
-  String get goalCharterRecord => 'Nahrát o tomto cíli';
+  String get goalCharterRecord => 'Mluvit o tomto cíli';
+
+  @override
+  String get goalCharterRecordingKept =>
+      'K tomuto cíli se to nepodařilo přidat. Nahrávka je uložená v zápisníku.';
 
   @override
   String get goalCharterSaveFailed => 'Neuložilo se to. Zkus to znovu.';

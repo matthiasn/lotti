@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/fable-5.2, at: 2026-11-22T20:00:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-23T09:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -2204,7 +2204,11 @@ Invariants worth not breaking:
 desktop rail the bar sits under the cards it adds to and never covers the
 rail; the list reads the bar's reserved height back as its bottom inset
 (`MediaQuery.paddingOf`), which is what lets the last card scroll clear of
-the glass. A dormant goal takes nothing new and has no bar. There is no mic
+the glass. A dormant goal takes nothing new and has no bar. While a take
+linked to the goal row is recording or paused the *Speak* pill reads
+*Recording* in the recorder's red (`subjectTakeLiveProvider`): a sheet
+dismissed mid-take leaves the take running, a phone's goal page has no
+recording indicator, and the same tap goes back to that take. There is no mic
 in the app bar, no plus in the check-ins heading and no button in the empty
 rail: three doors to one sheet were one too many twice over. The timeline
 route (`GoalTimelinePage`) keeps a single app-bar mic, which is the same
@@ -2552,7 +2556,15 @@ flowchart LR
   recording made from the card (`recordGoalCharterEntry`) is saved by the
   shared recording sheet with **no parent** and `openCreatedEntry: false`,
   linked by `GoalRepository.attachCharterRecording`, then transcribed by
-  the caller, since the recorder's own automation keys on a parent. Its
+  the caller, since the recorder's own automation keys on a parent. A
+  recording whose link is refused or throws **stays in the journal**,
+  unlinked, and the toast says so: a written note that fails to link is
+  deleted again because its words are still in the sheet, but a recording
+  exists nowhere else. Dictation into the sheet saves a take whose
+  transcription failed to the journal too; should the journal refuse it,
+  the audio file is left on disk rather than deleted and the message claims
+  nothing about the recording
+  ([chat input](agents/chat-input-and-reasoning.md)). Its
   transcript is what the agent reads, so `charter()` leaves a recording out
   until it has words; the card plays it and shows the transcript state with
   the check-in rail's rule (`transcriptStatusOf`) and Retry, drawn by the

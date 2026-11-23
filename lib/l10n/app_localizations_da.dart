@@ -3508,6 +3508,10 @@ class AppLocalizationsDa extends AppLocalizations {
       'Der er endnu ikke opsat en transskriptionsmodel. Tilføj en model med lydunderstøttelse i AI-indstillingerne.';
 
   @override
+  String get chatInputRecordingNoAudioModelKept =>
+      'Der er endnu ikke opsat en transskriptionsmodel. Din optagelse er gemt i logbogen. Tilføj en model med lydunderstøttelse i AI-indstillingerne.';
+
+  @override
   String get chatInputRecordingNoMicPermission =>
       'Lotti kan ikke bruge mikrofonen. Giv Lotti adgang til mikrofonen i dine systemindstillinger.';
 
@@ -3525,7 +3529,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get chatInputTranscriptionFailed =>
-      'Optagelsen blev gemt, men transskriptionen mislykkedes. Prøv igen.';
+      'Transskriptionen af optagelsen mislykkedes. Prøv igen.';
+
+  @override
+  String get chatInputTranscriptionFailedKept =>
+      'Transskriptionen mislykkedes. Din optagelse er gemt i logbogen, så intet er gået tabt.';
 
   @override
   String get checkInAddNoteHint => 'Tilføj en note…';
@@ -8344,7 +8352,11 @@ class AppLocalizationsDa extends AppLocalizations {
       'Din agent kan kun læse den første del. Forkort eller saml indlæg, så den læser det hele.';
 
   @override
-  String get goalCharterRecord => 'Indtal om dette mål';
+  String get goalCharterRecord => 'Tal om dette mål';
+
+  @override
+  String get goalCharterRecordingKept =>
+      'Det kunne ikke føjes til dette mål. Din optagelse er gemt i logbogen.';
 
   @override
   String get goalCharterSaveFailed => 'Det blev ikke gemt. Prøv igen.';

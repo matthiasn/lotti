@@ -5898,6 +5898,12 @@ abstract class AppLocalizations {
   /// **'No transcription model is set up yet. Add an audio-capable model in AI settings.'**
   String get chatInputRecordingNoAudioModel;
 
+  /// Toast when dictation could not be transcribed because no audio-capable model is set up, and the recording was saved to the journal.
+  ///
+  /// In en, this message translates to:
+  /// **'No transcription model is set up yet. Your recording is saved in the logbook. Add an audio-capable model in AI settings.'**
+  String get chatInputRecordingNoAudioModelKept;
+
   /// No description provided for @chatInputRecordingNoMicPermission.
   ///
   /// In en, this message translates to:
@@ -5931,8 +5937,14 @@ abstract class AppLocalizations {
   /// No description provided for @chatInputTranscriptionFailed.
   ///
   /// In en, this message translates to:
-  /// **'The recording was captured, but transcribing it failed. Please try again.'**
+  /// **'Transcribing the recording failed. Please try again.'**
   String get chatInputTranscriptionFailed;
+
+  /// Toast when dictation into a text field could not be transcribed and the recording was saved to the journal instead of being discarded.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing failed. Your recording is saved in the logbook, so nothing is lost.'**
+  String get chatInputTranscriptionFailedKept;
 
   /// The empty note's placeholder beside a recording in the check-in composer
   ///
@@ -14132,8 +14144,14 @@ abstract class AppLocalizations {
   /// No description provided for @goalCharterRecord.
   ///
   /// In en, this message translates to:
-  /// **'Record about this goal'**
+  /// **'Speak about this goal'**
   String get goalCharterRecord;
+
+  /// Toast when a recording made for a goal's 'About this goal' could not be linked to the goal; the recording stays in the journal.
+  ///
+  /// In en, this message translates to:
+  /// **'That couldn\'t be added to this goal. Your recording is saved in the logbook.'**
+  String get goalCharterRecordingKept;
 
   /// No description provided for @goalCharterSaveFailed.
   ///

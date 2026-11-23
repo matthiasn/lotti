@@ -3554,6 +3554,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non è ancora configurato nessun modello di trascrizione. Aggiungi un modello compatibile con l\'audio nelle impostazioni IA.';
 
   @override
+  String get chatInputRecordingNoAudioModelKept =>
+      'Non è ancora configurato nessun modello di trascrizione. La tua registrazione è salvata nel diario. Aggiungi un modello compatibile con l\'audio nelle impostazioni IA.';
+
+  @override
   String get chatInputRecordingNoMicPermission =>
       'Lotti non può usare il microfono. Attiva l\'accesso al microfono per Lotti nelle impostazioni di sistema.';
 
@@ -3571,7 +3575,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get chatInputTranscriptionFailed =>
-      'La registrazione è stata acquisita, ma la trascrizione non è riuscita. Riprova.';
+      'La trascrizione della registrazione non è riuscita. Riprova.';
+
+  @override
+  String get chatInputTranscriptionFailedKept =>
+      'La trascrizione non è riuscita. La tua registrazione è salvata nel diario, quindi non è andato perso nulla.';
 
   @override
   String get checkInAddNoteHint => 'Aggiungi una nota…';
@@ -8448,7 +8456,11 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il tuo agente può leggere solo la prima parte. Accorcia o unisci le voci perché le legga tutte.';
 
   @override
-  String get goalCharterRecord => 'Registra su questo obiettivo';
+  String get goalCharterRecord => 'Parla di questo obiettivo';
+
+  @override
+  String get goalCharterRecordingKept =>
+      'Non è stato possibile aggiungerla a questo obiettivo. La tua registrazione è salvata nel diario.';
 
   @override
   String get goalCharterSaveFailed => 'Non è stato salvato. Riprova.';

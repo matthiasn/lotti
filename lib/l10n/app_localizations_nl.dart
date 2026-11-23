@@ -3526,6 +3526,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Er is nog geen transcriptiemodel ingesteld. Voeg een model met audio-ondersteuning toe in de AI-instellingen.';
 
   @override
+  String get chatInputRecordingNoAudioModelKept =>
+      'Er is nog geen transcriptiemodel ingesteld. Je opname is opgeslagen in het logboek. Voeg een model met audio-ondersteuning toe in de AI-instellingen.';
+
+  @override
   String get chatInputRecordingNoMicPermission =>
       'Lotti kan de microfoon niet gebruiken. Geef Lotti toegang tot de microfoon in je systeeminstellingen.';
 
@@ -3543,7 +3547,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get chatInputTranscriptionFailed =>
-      'De opname is gelukt, maar het transcriberen is mislukt. Probeer het opnieuw.';
+      'Het transcriberen van de opname is mislukt. Probeer het opnieuw.';
+
+  @override
+  String get chatInputTranscriptionFailedKept =>
+      'Het transcriberen is mislukt. Je opname is opgeslagen in het logboek, dus er is niets verloren.';
 
   @override
   String get checkInAddNoteHint => 'Voeg een notitie toe…';
@@ -8374,6 +8382,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalCharterRecord => 'Inspreken over dit doel';
+
+  @override
+  String get goalCharterRecordingKept =>
+      'Dat kon niet aan dit doel worden toegevoegd. Je opname is opgeslagen in het logboek.';
 
   @override
   String get goalCharterSaveFailed =>

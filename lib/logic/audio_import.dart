@@ -29,7 +29,10 @@ abstract final class AudioImportConstants {
 ///
 /// Entries are written through [speechRepository]; [metadataReader] replaces
 /// the platform duration reader (see [AudioMetadataExtractor.selectReader]).
-Future<void> importAudioXFiles(
+///
+/// Returns how many journal entries were created, so a caller holding the
+/// only copy of a recording knows whether it is safe to let go of it.
+Future<int> importAudioXFiles(
   List<XFile> files, {
   required SpeechRepository speechRepository,
   required DomainLogger domainLogger,
@@ -37,6 +40,7 @@ Future<void> importAudioXFiles(
   String? categoryId,
   AudioMetadataReader? metadataReader,
 }) async {
+  var created = 0;
   for (final file in files) {
     String? copiedFilePath;
 
@@ -132,6 +136,8 @@ Future<void> importAudioXFiles(
         categoryId: categoryId,
       );
 
+      if (result != null) created++;
+
       // If entry creation failed, clean up the copied file
       if (result == null) {
         try {
@@ -170,4 +176,5 @@ Future<void> importAudioXFiles(
       // Continue processing other files even if one fails
     }
   }
+  return created;
 }

@@ -43,6 +43,7 @@ import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/components/speak_add_action_bar.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
@@ -4801,6 +4802,7 @@ void main() {
             'goal-1',
           ).overrideWith((ref) async => 'goal-entry-1'),
           goalCategoryIdProvider('goal-1').overrideWith((ref) async => null),
+          goalEntryIdProvider('goal-1').overrideWithValue('goal-entry-1'),
           audioRecorderControllerProvider.overrideWith(() => recorder),
         ],
       ),
@@ -4816,6 +4818,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(navigated, ['/goals/details/goal-1/timeline']);
 
+    // Nothing is recording yet.
+    DsGlassPill speakPill() => tester.widget<DsGlassPill>(
+      find.byKey(const ValueKey('goal-action-speak')),
+    );
+    expect(speakPill().label, 'Speak');
+
     // Speak is one tap from a live mic: the check-in opens already
     // recording against the goal's row. A live take never settles.
     await tester.tap(find.byKey(const ValueKey('goal-action-speak')));
@@ -4829,6 +4837,23 @@ void main() {
     expect(recorder.recordCalls, [
       (linkedId: 'goal-entry-1', handledByCaller: false),
     ]);
+
+    // Dismissed mid-take, the take runs on — and on a phone this page has
+    // no recording indicator, so the pill is what says so, in the red.
+    Navigator.of(tester.element(find.byType(GoalCheckInComposer))).pop();
+    await pumpFrames(tester);
+    expect(find.byType(GoalCheckInComposer), findsNothing);
+    final tokens = tester
+        .element(find.byKey(const ValueKey('goal-action-speak')))
+        .designTokens;
+    expect(speakPill().label, 'Recording');
+    expect(speakPill().fillColor, tokens.colors.alert.error.defaultColor);
+
+    // Stopped from anywhere, the pill is Speak again.
+    await recorder.stop();
+    await pumpFrames(tester);
+    expect(speakPill().label, 'Speak');
+    expect(speakPill().fillColor, tokens.colors.interactive.enabled);
   });
 
   testWidgets('desktop still offers the drawer while health is erroring — '
