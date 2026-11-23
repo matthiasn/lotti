@@ -17,7 +17,10 @@ void main() {
       final fixture = QueryActionEvalFixture(database);
       final hash = fixture.hash;
       await fixture.seed();
-      final loader = QueryTaskActionContextLoader(access: database.access);
+      final loader = QueryTaskActionContextLoader(
+        access: database.access,
+        documents: const ActionEvalDocuments(),
+      );
       final context = await loader.load(
         corpus.task.meta.id,
         runningTimerId: ActionEvalIds.timer,
@@ -33,6 +36,9 @@ void main() {
       // The running timer is editable too, through update_time_entry.
       expect(context.timeEntryIds, contains(ActionEvalIds.timer));
       expect(context.runningTimerId, ActionEvalIds.timer);
+      // A task chat with a document source, holding no documents yet: the
+      // planner offers a new document, and nothing to revise.
+      expect(context.documents, isEmpty);
       expect(
         context.input.toString(),
         isNot(contains('Private medical appointment')),

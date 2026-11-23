@@ -139,7 +139,10 @@ void main() {
           events: [asked],
           unread: false,
         );
-        final loader = QueryTaskActionContextLoader(access: database.access);
+        final loader = QueryTaskActionContextLoader(
+          access: database.access,
+          documents: const ActionEvalDocuments(),
+        );
         final clock = Stopwatch()..start();
         final row = <String, Object?>{
           'case': scenario.id,
