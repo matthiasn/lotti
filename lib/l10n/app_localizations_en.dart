@@ -7051,6 +7051,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get documentProposalKindNew => 'Proposed new document';
+
+  @override
+  String get documentProposalKindVersion => 'Proposed new version';
+
+  @override
+  String get documentProposalRead => 'Read draft';
+
+  @override
   String get doneButton => 'Done';
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_task_action_context.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
@@ -9,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../test_data/test_data.dart';
+import '../fake_task_document_source.dart';
 import 'query_test_utils.dart';
 
 void main() {
@@ -223,5 +225,32 @@ void main() {
     ).load('task', runningTimerId: 'foreign-timer');
     expect(context.runningTimerId, isNull);
     expect(context.timeEntryIds, isEmpty);
+  });
+
+  test('lists no documents without a document source', () async {
+    final context = await QueryTaskActionContextLoader(
+      access: bench.crawler.access,
+    ).load('task');
+    expect(context.documents, isNull);
+  });
+
+  test("reads the task's documents with their text through the source, "
+      'skipping one gone between listing and reading', () async {
+    const brief = TaskDocumentSummary(
+      id: 'brief',
+      title: 'Habitat brief',
+      versionId: 'brief-v1',
+      versionNumber: 1,
+    );
+    const gone = TaskDocumentSummary(id: 'gone', title: 'Gone');
+    const briefText = TaskDocumentText(summary: brief, markdown: '# Brief');
+    final source = FakeTaskDocumentSource()
+      ..documents = const [brief, gone]
+      ..texts = const {'brief': briefText};
+    final context = await QueryTaskActionContextLoader(
+      access: bench.crawler.access,
+      documents: source,
+    ).load('task');
+    expect(context.documents, {'brief': briefText});
   });
 }

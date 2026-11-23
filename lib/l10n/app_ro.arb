@@ -3022,6 +3022,9 @@
       }
     }
   },
+  "documentProposalKindNew": "Document nou propus",
+  "documentProposalKindVersion": "Versiune nouă propusă",
+  "documentProposalRead": "Citiți ciorna",
   "doneButton": "Gata",
   "downloadSizeMegabytes": "{megabytes} MB",
   "editLinkTypeCounterpartLabel": "Sarcină asociată",

@@ -7080,6 +7080,15 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get documentProposalKindNew => 'Foreslået nyt dokument';
+
+  @override
+  String get documentProposalKindVersion => 'Foreslået ny version';
+
+  @override
+  String get documentProposalRead => 'Læs udkast';
+
+  @override
   String get doneButton => 'Færdig';
 
   @override

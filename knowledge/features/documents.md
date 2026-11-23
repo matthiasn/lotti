@@ -5,7 +5,7 @@ description: Markdown documents a task holds, drafted and revised by its agent t
 resource: ../../lib/features/documents
 tags: [documents, tasks, agents, proposals, markdown, versions, review]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-23T09:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-23T15:00:00Z }
 stale_after: 2027-04-03
 sources:
   - id: tool-definitions
@@ -140,8 +140,11 @@ sources:
 > task agent's side: it lists the task's documents, reads one on request,
 > proposes versions when asked, and a confirmed proposal is written
 > ([How a version is made](#how-a-version-is-made),
-> [Applying a confirmed proposal](#applying-a-confirmed-proposal)). The chat
-> path and the side-by-side review are not built yet. Each implementation
+> [Applying a confirmed proposal](#applying-a-confirmed-proposal)). Task
+> chat proposes versions too, a proposal's text can be read before it is
+> confirmed, and the document page hosts the task's chat
+> ([Reading a proposal](#reading-a-proposal)). The side-by-side review is
+> not built yet. Each implementation
 > step rewrites the part it lands, and the page moves to `stable` when the
 > last part does.
 
@@ -252,7 +255,10 @@ flowchart TD
 ```
 
 - **The agent proposes only when asked.** A voice note, text entry or chat
-  message has to ask for a document or name one. New material on the task
+  message has to ask for a document or name one. In chat, the router's
+  `actionRequest` counts writing or revising a task document as a change
+  request, and the planner works from the documents' text, not the task's
+  transcripts ([Scoped query conversations](agents/query-chat.md#task-actions-and-inline-approval)). New material on the task
   does not revise documents by itself. The system prompt's `## Documents`
   rules and the tool description carry this; nothing in code can tell a
   request from other text, so the proposal step is the backstop: nothing
@@ -401,8 +407,23 @@ A device on an older build skips both variants as undeserializable.
   version over the one on show (`restore` with that `baseVersionId`). A
   refused restore says a newer version arrived; a written one closes the
   version view and the new version joins the list.
-- **Chat card** (not built yet). In task chat, a proposed version is a short card (title,
-  change summary, Open, dismiss, confirm). Chat never shows the full text.
+- **Ask.** The page sits inside the task's own `QueryCompanion`, and its
+  action row carries `QueryAskButton`, which opens the task's chat beside
+  the document (a docked column on desktop, a sheet on a phone) to ask for
+  a revision while reading. It is the same discussion the task page opens.
+
+### Reading a proposal
+
+A proposal row names only the document it writes, so the text is one tap
+away: [`DocumentProposalReadButton`](../../lib/features/agents/ui/document_proposal_preview.dart)
+("Read draft") sits under a document proposal in the AI summary card's
+`ProposalRow` and in chat's `QueryActionReview`. It opens a sheet with
+whether the proposal starts a document or replaces one's text, the change
+summary, and the markdown as it would read. While the row can still be
+decided there, the sheet carries that host's own verdicts: Confirm/Reject
+on the card, Accept/Dismiss in chat, for the item alone, or for the whole
+answer when it is the only change. A verdict closes the sheet first, so the
+row shows the outcome. A decided proposal is read-only.
 
 ### How the page opens
 

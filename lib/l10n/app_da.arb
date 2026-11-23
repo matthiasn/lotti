@@ -3333,6 +3333,9 @@
       }
     }
   },
+  "documentProposalKindNew": "Foreslået nyt dokument",
+  "documentProposalKindVersion": "Foreslået ny version",
+  "documentProposalRead": "Læs udkast",
   "doneButton": "Færdig",
   "downloadSizeMegabytes": "{megabytes} MB",
   "editLinkTypeCounterpartLabel": "Sammenkædet opgave",

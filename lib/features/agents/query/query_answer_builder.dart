@@ -153,7 +153,7 @@ class QueryAnswerBuilder {
                         .map(
                           (item) => {
                             'toolName': item.toolName,
-                            'args': item.args,
+                            'args': QueryTaskActionPlanner.historyArgs(item),
                           },
                         )
                         .toList(),

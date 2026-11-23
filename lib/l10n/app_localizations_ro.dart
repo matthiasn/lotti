@@ -7209,6 +7209,15 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get documentProposalKindNew => 'Document nou propus';
+
+  @override
+  String get documentProposalKindVersion => 'Versiune nouă propusă';
+
+  @override
+  String get documentProposalRead => 'Citiți ciorna';
+
+  @override
   String get doneButton => 'Gata';
 
   @override

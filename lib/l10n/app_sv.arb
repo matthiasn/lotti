@@ -3333,6 +3333,9 @@
       }
     }
   },
+  "documentProposalKindNew": "Föreslaget nytt dokument",
+  "documentProposalKindVersion": "Föreslagen ny version",
+  "documentProposalRead": "Läs utkast",
   "doneButton": "Klart",
   "downloadSizeMegabytes": "{megabytes} MB",
   "editLinkTypeCounterpartLabel": "Länkad uppgift",

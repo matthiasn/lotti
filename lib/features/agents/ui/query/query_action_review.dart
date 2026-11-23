@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
+import 'package:lotti/features/agents/ui/document_proposal_preview.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -202,6 +203,15 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
     return lines;
   }
 
+  /// Whether [item] can still be decided here: pending, applicable, with no
+  /// verdict on the set, and either alone or decided row by row.
+  bool _canDecide(ChangeItem item, bool perItem) =>
+      !_busy &&
+      widget.canApply &&
+      (widget.approved ?? _decision) == null &&
+      item.status == ChangeItemStatus.pending &&
+      (perItem || widget.answer.proposedActions.length == 1);
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -248,6 +258,24 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
                         SelectableText(
                           _descriptions(context, item).join('\n'),
                           style: tokens.typography.styles.body.bodySmall,
+                        ),
+                        DocumentProposalReadButton(
+                          toolName: item.toolName,
+                          args: item.args,
+                          confirmLabel: messages.queryActionsAccept,
+                          rejectLabel: messages.queryActionsDismiss,
+                          // The sheet decides only what this row's own
+                          // buttons, or a lone change's set buttons, decide.
+                          onConfirm: _canDecide(item, perItem)
+                              ? () => items.length == 1
+                                    ? _resolve(true)
+                                    : _resolveItem(index, approved: true)
+                              : null,
+                          onReject: _canDecide(item, perItem)
+                              ? () => items.length == 1
+                                    ? _resolve(false)
+                                    : _resolveItem(index, approved: false)
+                              : null,
                         ),
                         if (!_busy && item.status != ChangeItemStatus.pending)
                           Text(

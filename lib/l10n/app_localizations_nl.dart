@@ -7104,6 +7104,15 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get documentProposalKindNew => 'Voorgesteld nieuw document';
+
+  @override
+  String get documentProposalKindVersion => 'Voorgestelde nieuwe versie';
+
+  @override
+  String get documentProposalRead => 'Concept lezen';
+
+  @override
   String get doneButton => 'Klaar';
 
   @override

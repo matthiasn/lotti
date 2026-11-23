@@ -3332,6 +3332,9 @@
       }
     }
   },
+  "documentProposalKindNew": "Novo documento proposto",
+  "documentProposalKindVersion": "Nova versão proposta",
+  "documentProposalRead": "Ler rascunho",
   "doneButton": "Concluído",
   "downloadSizeMegabytes": "{megabytes} MB",
   "editLinkTypeCounterpartLabel": "Tarefa vinculada",

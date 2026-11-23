@@ -7094,6 +7094,15 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get documentProposalKindNew => 'Föreslaget nytt dokument';
+
+  @override
+  String get documentProposalKindVersion => 'Föreslagen ny version';
+
+  @override
+  String get documentProposalRead => 'Läs utkast';
+
+  @override
   String get doneButton => 'Klart';
 
   @override

@@ -9,7 +9,9 @@ restore an older version, and copy the markdown out.
 The feature is being built in steps (ADR 0166). Today a user can write a
 document by hand, read it, edit it, look back through its versions, restore
 one, delete it and copy it out, and the task's agent drafts and revises
-documents when a voice note or note asks it to; chat cannot ask yet.
+documents when a voice note, a note or the task's chat asks it to. A
+proposed version can be read before it is confirmed, and the document page
+opens the task's chat beside the document.
 
 ## What it does
 
@@ -60,8 +62,7 @@ It implements the task agent's `TaskDocumentSource` port
 and reads a task's documents and a version the user confirmed is written;
 the agent's tools and their rules live in the agents feature.
 
-Still to come: the side-by-side review of a proposed version, and proposing
-versions from the task's chat.
+Still to come: the side-by-side review of a proposed version.
 
 ## Where it sits
 

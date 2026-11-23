@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/state/proposal_task_title_provider.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
+import 'package:lotti/features/agents/ui/document_proposal_preview.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_de.dart';
@@ -1091,6 +1092,52 @@ void main() {
 
       expect(find.textContaining('Status auf'), findsOneWidget);
       expect(find.textContaining('setzen'), findsOneWidget);
+    });
+  });
+
+  group('AiSummaryCard – document proposal', () {
+    testWidgets('Read draft opens the proposed text, and confirming there '
+        "confirms the row's own item", (tester) async {
+      final service = MockChangeSetConfirmationService();
+      when(() => service.confirmItem(any(), any())).thenAnswer(
+        (_) async => const ToolExecutionResult(success: true, output: 'ok'),
+      );
+      final bench = AgentTestBench(
+        mediaQueryData: const MediaQueryData(
+          size: Size(900, 800),
+          disableAnimations: true,
+        ),
+        confirmationService: service,
+        updateNotifications: MockUpdateNotifications(),
+        suggestions: UnifiedSuggestionList(
+          open: [
+            makePending(
+              id: 'p1',
+              toolName: 'propose_document_version',
+              args: const {
+                'newTitle': 'Habitat brief',
+                'markdown': 'Feed the penguins at noon.',
+                'changeSummary': 'A brief for the habitat.',
+              },
+              humanSummary: 'Create document "Habitat brief"',
+            ),
+          ],
+          activity: const [],
+        ),
+      );
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.byKey(DocumentProposalPreviewKeys.read));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Feed the penguins at noon.'), findsOneWidget);
+      verifyNever(() => service.confirmItem(any(), any()));
+
+      await tester.tap(find.byKey(DocumentProposalPreviewKeys.confirm));
+      await tester.pumpAndSettle();
+
+      verify(() => service.confirmItem(any(), 0)).called(1);
     });
   });
 }

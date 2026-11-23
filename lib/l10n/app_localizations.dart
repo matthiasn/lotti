@@ -11981,6 +11981,24 @@ abstract class AppLocalizations {
   /// **'Remove {deviceName} from your sync account? It will be signed out and will need to be paired again before it can sync.'**
   String deviceDeleteQuestion(String deviceName);
 
+  /// Line at the top of the proposal preview sheet when the agent proposes a new document.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed new document'**
+  String get documentProposalKindNew;
+
+  /// Line at the top of the proposal preview sheet when the agent proposes a new version of an existing document.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed new version'**
+  String get documentProposalKindVersion;
+
+  /// Button under an agent document proposal, in the AI summary card and in chat, that opens the proposed text before the user confirms it.
+  ///
+  /// In en, this message translates to:
+  /// **'Read draft'**
+  String get documentProposalRead;
+
   /// No description provided for @doneButton.
   ///
   /// In en, this message translates to:

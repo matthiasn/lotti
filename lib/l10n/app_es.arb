@@ -3022,6 +3022,9 @@
       }
     }
   },
+  "documentProposalKindNew": "Nuevo documento propuesto",
+  "documentProposalKindVersion": "Nueva versión propuesta",
+  "documentProposalRead": "Leer borrador",
   "doneButton": "Listo",
   "downloadSizeMegabytes": "{megabytes} MB",
   "editLinkTypeCounterpartLabel": "Tarea vinculada",

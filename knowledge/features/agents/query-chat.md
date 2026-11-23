@@ -5,8 +5,8 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: claude-code/fable-5.2, at: 2026-11-23T10:00:00Z }
-stale_after: 2027-02-01
+generated: { by: claude-code/opus-5.5, at: 2026-11-23T12:00:00Z }
+stale_after: 2027-02-23
 sources:
   - id: controller
     resource: ../../../lib/features/agents/query/query_chat_controller.dart
@@ -478,11 +478,29 @@ live task metadata from `QueryTaskActionContextLoader`: owned checklist items,
 linked time entries, visible same-category task targets, eligible labels and
 the current timer when it belongs to the task. No neighbour raw entries are
 loaded. This supports checklist additions/updates, time recording and timer
-text, task fields, labels, follow-up tasks, relationships and migrations. It is
-not given `set_task_project`, `create_task_project`, `link_pull_request` or
-`propose_document_version`: the chat's context carries no project directory, no
-pull request listing and no list of the task's documents, so an id there could
-only be invented.
+text, task fields, labels, follow-up tasks, relationships, migrations and the
+task's documents. It is not given `set_task_project`, `create_task_project` or
+`link_pull_request`: the chat's context carries no project directory and no
+pull request listing, so an id there could only be invented.
+
+**Documents** ([Task documents](../documents.md), ADR 0166). With the
+documents feature wired (`taskDocumentSourceProvider`), the loader reads the
+task's documents through that port, text included, and the planner offers
+`propose_document_version`. The planner lists each document by id, title and
+version, with its text while the texts fit what the input budget leaves
+(oldest first, keeping 1 KiB for a repair attempt). A text that does not fit
+is marked `textOmitted`, and a revision of that document is dropped as an
+unavailable target: without the text the model could only have rewritten it
+from nothing. A recorded proposal carries the document's `title` and
+`baseVersionId` from the context, never from the model, which is the same
+shape a task wake records, so one dispatcher handler applies both. Confirmation
+re-validates it on fresh context with those two keys set aside. The chat
+history shows earlier document proposals without their text. Transcripts are
+still not loaded: a revision works from the document's text, the conversation
+and the user's message. In both the chat review and the AI card, a document
+proposal carries **Read draft**, a sheet with the proposed text and that
+host's own Accept/Dismiss (Confirm/Reject on the card)
+([`document_proposal_preview.dart`](../../../lib/features/agents/ui/document_proposal_preview.dart)).
 Checklist targets use the journal metadata ID; nullable or stale legacy IDs
 inside checklist data cannot overwrite it. Chat-specific guidance allows
 migration to a supplied existing task as well as a newly proposed follow-up.

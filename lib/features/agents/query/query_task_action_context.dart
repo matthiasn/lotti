@@ -1,6 +1,7 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/shown_checklist_items.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/query/query_task_action_planner.dart';
@@ -8,11 +9,31 @@ import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 
 /// Loads bounded, live task metadata for explicit user-requested changes.
-/// No report, transcript, neighbour body or historical instruction is included.
+/// No report, transcript, neighbour body or historical instruction is
+/// included. The task's own documents are, text and all: revising one is a
+/// change the user can ask for, and the planner decides how much of their
+/// text fits (ADR 0166).
 class QueryTaskActionContextLoader {
-  const QueryTaskActionContextLoader({required this.access});
+  const QueryTaskActionContextLoader({required this.access, this.documents});
 
   final QuerySourceAccess access;
+
+  /// Where the task's documents are read; null leaves them out of the
+  /// context, and the planner then offers no document proposal.
+  final TaskDocumentSource? documents;
+
+  /// The live documents of [taskId] by id, oldest first, each with its
+  /// current text; null without a [documents] source.
+  Future<Map<String, TaskDocumentText>?> _documentsOf(String taskId) async {
+    final source = documents;
+    if (source == null) return null;
+    final texts = <String, TaskDocumentText>{};
+    for (final summary in await source.documentsOf(taskId)) {
+      final text = await source.read(taskId: taskId, documentId: summary.id);
+      if (text != null) texts[summary.id] = text;
+    }
+    return texts;
+  }
 
   static String _preview(String text) =>
       text.length > 200 ? text.substring(0, 200) : text;
@@ -128,6 +149,7 @@ class QueryTaskActionContextLoader {
         for (final entry in linkedEntries)
           entry.meta.id: timeEntryFields(entry),
       },
+      documents: await _documentsOf(taskId),
       input: {
         'task': {
           'id': taskId,

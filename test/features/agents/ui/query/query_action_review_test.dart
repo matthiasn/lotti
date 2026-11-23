@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
+import 'package:lotti/features/agents/ui/document_proposal_preview.dart';
 import 'package:lotti/features/agents/ui/query/query_action_review.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -686,5 +687,94 @@ void main() {
         verifyZeroInteractions(service);
       });
     }
+  });
+
+  group('document proposals', () {
+    const draft = ChangeItem(
+      toolName: 'propose_document_version',
+      args: {
+        'documentId': 'brief',
+        'title': 'Habitat brief',
+        'baseVersionId': 'brief-v1',
+        'markdown': 'Feed the penguins at noon.',
+        'changeSummary': 'Moves feeding to noon.',
+      },
+      humanSummary: 'New version of "Habitat brief"',
+    );
+    QueryChatAnswer answerWith(List<ChangeItem> items) => QueryChatAnswer(
+      questionId: 'question',
+      text: 'Here is a shorter brief.',
+      coverage: const QueryCoverage(),
+      proposedActions: items,
+    );
+
+    Future<void> openDraft(WidgetTester tester) async {
+      await tester.tap(find.byKey(DocumentProposalPreviewKeys.read));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Feed the penguins at noon.'), findsOneWidget);
+    }
+
+    testWidgets('a lone draft is read, then accepted from the sheet as the '
+        'whole answer', (tester) async {
+      stub((approved) async => const []);
+      await pump(tester, response: answerWith(const [draft]));
+      await openDraft(tester);
+
+      await tester.tap(find.byKey(DocumentProposalPreviewKeys.confirm));
+      // The accepted answer keeps a spinner until the saved set arrives.
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      verify(
+        () => service.resolve(
+          agentId: 'agent',
+          chatId: 'chat',
+          questionId: 'question',
+          approved: true,
+        ),
+      ).called(1);
+    });
+
+    testWidgets('beside other changes, the sheet dismisses only the draft', (
+      tester,
+    ) async {
+      when(
+        () => service.resolveItem(
+          agentId: 'agent',
+          chatId: 'chat',
+          questionId: 'question',
+          itemIndex: any(named: 'itemIndex'),
+          approved: any(named: 'approved'),
+        ),
+      ).thenAnswer((_) async => null);
+      await pump(
+        tester,
+        response: answerWith([draft, answer.proposedActions.first]),
+      );
+      await openDraft(tester);
+
+      await tester.tap(find.byKey(DocumentProposalPreviewKeys.reject));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => service.resolveItem(
+          agentId: 'agent',
+          chatId: 'chat',
+          questionId: 'question',
+          itemIndex: 0,
+          approved: false,
+        ),
+      ).called(1);
+    });
+
+    testWidgets('once the answer is dismissed, the draft is only read', (
+      tester,
+    ) async {
+      await pump(tester, response: answerWith(const [draft]), approved: false);
+      await openDraft(tester);
+
+      expect(find.byKey(DocumentProposalPreviewKeys.confirm), findsNothing);
+      expect(find.byKey(DocumentProposalPreviewKeys.reject), findsNothing);
+    });
   });
 }

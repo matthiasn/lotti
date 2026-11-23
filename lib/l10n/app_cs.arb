@@ -3029,6 +3029,9 @@
       }
     }
   },
+  "documentProposalKindNew": "Navržený nový dokument",
+  "documentProposalKindVersion": "Navržená nová verze",
+  "documentProposalRead": "Přečíst návrh",
   "doneButton": "Hotovo",
   "downloadSizeMegabytes": "{megabytes} MB",
   "editLinkTypeCounterpartLabel": "Propojený úkol",

@@ -4515,6 +4515,18 @@
       }
     }
   },
+  "documentProposalKindNew": "Proposed new document",
+  "@documentProposalKindNew": {
+    "description": "Line at the top of the proposal preview sheet when the agent proposes a new document."
+  },
+  "documentProposalKindVersion": "Proposed new version",
+  "@documentProposalKindVersion": {
+    "description": "Line at the top of the proposal preview sheet when the agent proposes a new version of an existing document."
+  },
+  "documentProposalRead": "Read draft",
+  "@documentProposalRead": {
+    "description": "Button under an agent document proposal, in the AI summary card and in chat, that opens the proposed text before the user confirms it."
+  },
   "doneButton": "Done",
   "downloadSizeMegabytes": "{megabytes} MB",
   "@downloadSizeMegabytes": {

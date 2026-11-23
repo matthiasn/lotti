@@ -3332,6 +3332,9 @@
       }
     }
   },
+  "documentProposalKindNew": "Voorgesteld nieuw document",
+  "documentProposalKindVersion": "Voorgestelde nieuwe versie",
+  "documentProposalRead": "Concept lezen",
   "doneButton": "Klaar",
   "downloadSizeMegabytes": "{megabytes} MB",
   "editLinkTypeCounterpartLabel": "Gekoppelde taak",

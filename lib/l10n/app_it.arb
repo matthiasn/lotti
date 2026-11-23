@@ -3333,6 +3333,9 @@
       }
     }
   },
+  "documentProposalKindNew": "Nuovo documento proposto",
+  "documentProposalKindVersion": "Nuova versione proposta",
+  "documentProposalRead": "Leggi la bozza",
   "doneButton": "Fatto",
   "downloadSizeMegabytes": "{megabytes} MB",
   "editLinkTypeCounterpartLabel": "Attività collegata",

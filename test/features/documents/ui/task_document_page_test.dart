@@ -1,10 +1,14 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task_document_data.dart';
 import 'package:lotti/classes/task_document_merge.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
+import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/task_document_editor.dart';
@@ -58,6 +62,7 @@ void main() {
     TaskDocumentEntry? shown,
     bool gone = false,
     VoidCallback? onClose,
+    bool chat = false,
   }) async {
     final doc = gone ? null : (shown ?? document);
     await withClock(
@@ -79,6 +84,7 @@ void main() {
               taskDocumentVersionsProvider(key).overrideWith(
                 (ref) async => [version],
               ),
+              queryChatEnabledProvider.overrideWithValue(chat),
             ],
           ),
         );
@@ -227,5 +233,29 @@ void main() {
     await tester.pump();
 
     expect(closed, 1);
+  });
+
+  testWidgets('without chat there is nothing to ask', (tester) async {
+    await pump(tester);
+    expect(find.text('Ask about this task'), findsNothing);
+  });
+
+  testWidgets("Ask opens the task's own chat beside the document", (
+    tester,
+  ) async {
+    await pump(tester, chat: true);
+    const scope = QueryScope(kind: QueryScopeKind.task, id: 'task-1');
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(TaskDocumentPage)),
+    );
+    expect(container.read(queryPaneOpenProvider(scope)), isFalse);
+
+    await tester.tap(find.text('Ask about this task'));
+    // Only the open state is under test; the pane itself is QueryCompanion's.
+    expect(container.read(queryPaneOpenProvider(scope)), isTrue);
+    expect(
+      tester.widget<QueryCompanion>(find.byType(QueryCompanion)).scope,
+      scope,
+    );
   });
 }

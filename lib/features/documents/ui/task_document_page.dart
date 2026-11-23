@@ -1,6 +1,9 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
+import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -10,6 +13,7 @@ import 'package:lotti/features/documents/ui/task_document_copy.dart';
 import 'package:lotti/features/documents/ui/task_document_editor.dart';
 import 'package:lotti/features/documents/ui/task_document_history.dart';
 import 'package:lotti/features/documents/ui/task_document_labels.dart';
+import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart' show BackWidget;
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
@@ -27,7 +31,8 @@ abstract final class TaskDocumentPageKeys {
 
 /// One document of a task, for reading (ADR 0166): its title, where the
 /// version on show came from, and its text rendered at the prose measure —
-/// with Edit, Copy, History and Delete.
+/// with Edit, Copy, History and Delete, and Ask, which opens the task's chat
+/// beside the document to ask for a revision there.
 ///
 /// The text stays on screen while a newer version loads and is replaced in
 /// place ([taskDocumentCurrentVersionProvider]); only the very first load
@@ -78,50 +83,64 @@ class TaskDocumentPage extends ConsumerWidget {
     }
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step2,
-                vertical: tokens.spacing.step2,
+      // The task's chat docks beside the document, so a revision can be
+      // asked for while reading; it is the task's own discussion, the one
+      // its page opens, and its proposals carry a Read draft.
+      body: QueryCompanion(
+        scope: QueryScope(kind: QueryScopeKind.task, id: taskId),
+        entryViewBuilder: (entryId) =>
+            EntryDetailsPage(itemId: entryId, showBackButton: false),
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step2,
+                  vertical: tokens.spacing.step2,
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: BackWidget(onPressed: onClose),
+                ),
               ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: BackWidget(onPressed: onClose),
-              ),
-            ),
-            Expanded(
-              child: document == null
-                  ? Center(
-                      child: Text(
-                        messages.taskDocumentsGone,
-                        style: tokens.typography.styles.body.bodyMedium
-                            .copyWith(color: tokens.colors.text.mediumEmphasis),
-                      ),
-                    )
-                  : _DocumentBody(
-                      document: document,
-                      version: version,
-                      onEdit: () async => showTaskDocumentEditor(
-                        context,
-                        taskId: taskId,
+              Expanded(
+                child: document == null
+                    ? Center(
+                        child: Text(
+                          messages.taskDocumentsGone,
+                          style: tokens.typography.styles.body.bodyMedium
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
+                      )
+                    : _DocumentBody(
                         document: document,
+                        version: version,
+                        onEdit: () async => showTaskDocumentEditor(
+                          context,
+                          taskId: taskId,
+                          document: document,
+                        ),
+                        onCopy: version == null
+                            ? null
+                            : () async => copyTaskDocumentMarkdown(
+                                context,
+                                version.data.markdown,
+                              ),
+                        onHistory: version == null
+                            ? null
+                            : () async => showTaskDocumentHistory(context, key),
+                        onDelete: delete,
+                        chatScope: QueryScope(
+                          kind: QueryScopeKind.task,
+                          id: taskId,
+                        ),
                       ),
-                      onCopy: version == null
-                          ? null
-                          : () async => copyTaskDocumentMarkdown(
-                              context,
-                              version.data.markdown,
-                            ),
-                      onHistory: version == null
-                          ? null
-                          : () async => showTaskDocumentHistory(context, key),
-                      onDelete: delete,
-                    ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -136,6 +155,7 @@ class _DocumentBody extends StatelessWidget {
     required this.onCopy,
     required this.onHistory,
     required this.onDelete,
+    required this.chatScope,
   });
 
   final TaskDocumentEntry document;
@@ -146,6 +166,9 @@ class _DocumentBody extends StatelessWidget {
   final VoidCallback? onCopy;
   final VoidCallback? onHistory;
   final VoidCallback onDelete;
+
+  /// The task's discussion, which the Ask button opens beside the page.
+  final QueryScope chatScope;
 
   @override
   Widget build(BuildContext context) {
@@ -215,6 +238,7 @@ class _DocumentBody extends StatelessWidget {
                       variant: DesignSystemButtonVariant.tertiary,
                       onPressed: onHistory,
                     ),
+                    QueryAskButton(scope: chatScope, fullLabel: true),
                     DesignSystemButton(
                       key: TaskDocumentPageKeys.delete,
                       label: '',

@@ -7180,6 +7180,15 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get documentProposalKindNew => 'Navržený nový dokument';
+
+  @override
+  String get documentProposalKindVersion => 'Navržená nová verze';
+
+  @override
+  String get documentProposalRead => 'Přečíst návrh';
+
+  @override
   String get doneButton => 'Hotovo';
 
   @override

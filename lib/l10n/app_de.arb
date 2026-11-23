@@ -3022,6 +3022,9 @@
       }
     }
   },
+  "documentProposalKindNew": "Vorgeschlagenes neues Dokument",
+  "documentProposalKindVersion": "Vorgeschlagene neue Version",
+  "documentProposalRead": "Entwurf lesen",
   "doneButton": "Fertig",
   "downloadSizeMegabytes": "{megabytes} MB",
   "editLinkTypeCounterpartLabel": "Verknüpfte Aufgabe",

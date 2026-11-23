@@ -7201,6 +7201,15 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get documentProposalKindNew => 'Nouveau document proposé';
+
+  @override
+  String get documentProposalKindVersion => 'Nouvelle version proposée';
+
+  @override
+  String get documentProposalRead => 'Lire le brouillon';
+
+  @override
   String get doneButton => 'Terminé';
 
   @override

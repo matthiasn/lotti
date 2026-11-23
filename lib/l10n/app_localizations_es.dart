@@ -7180,6 +7180,15 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get documentProposalKindNew => 'Nuevo documento propuesto';
+
+  @override
+  String get documentProposalKindVersion => 'Nueva versión propuesta';
+
+  @override
+  String get documentProposalRead => 'Leer borrador';
+
+  @override
   String get doneButton => 'Listo';
 
   @override

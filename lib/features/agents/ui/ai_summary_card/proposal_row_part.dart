@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/backfill_actions.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_kind_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
+import 'package:lotti/features/agents/ui/document_proposal_preview.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -858,7 +859,13 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
                         onReject: _reject,
                         onConfirm: _confirm,
                       ),
-                      ?widget.details,
+                      widget.details ??
+                          DocumentProposalReadButton(
+                            toolName: _toolName,
+                            args: _args,
+                            onConfirm: widget.isResolved ? null : _confirm,
+                            onReject: widget.isResolved ? null : _reject,
+                          ),
                     ],
                   ),
                 ),

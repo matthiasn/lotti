@@ -3022,6 +3022,9 @@
       }
     }
   },
+  "documentProposalKindNew": "Nouveau document proposé",
+  "documentProposalKindVersion": "Nouvelle version proposée",
+  "documentProposalRead": "Lire le brouillon",
   "doneButton": "Terminé",
   "downloadSizeMegabytes": "{megabytes} Mo",
   "editLinkTypeCounterpartLabel": "Tâche liée",
