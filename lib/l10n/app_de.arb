@@ -4612,14 +4612,7 @@
   "navTabTitleProjects": "Projekte",
   "navTabTitleSettings": "Einstellungen",
   "navTabTitleTasks": "Aufgaben",
-  "nestedAiResponsesTitle": "{count} KI-Antwort{count, plural, =1{} other{en}}",
-  "@nestedAiResponsesTitle": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "nestedAiResponsesLoadFailed": "Die KI-Ergebnisse zu diesem Eintrag wurden nicht geladen.",
   "noDefaultLanguage": "Keine Standardsprache",
   "noTasksFound": "Keine Aufgaben gefunden",
   "noTasksToLink": "Keine Aufgaben zum Verknüpfen verfügbar",

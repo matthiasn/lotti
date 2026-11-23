@@ -5098,14 +5098,7 @@
   "navTabTitleProjects": "Projekter",
   "navTabTitleSettings": "Indstillinger",
   "navTabTitleTasks": "Opgaver",
-  "nestedAiResponsesTitle": "{count} AI-svar{count, plural, =1{} other{}}",
-  "@nestedAiResponsesTitle": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "nestedAiResponsesLoadFailed": "AI-resultaterne for denne post blev ikke indlæst.",
   "noDefaultLanguage": "Intet standardsprog",
   "noTasksFound": "Ingen opgaver fundet",
   "noTasksToLink": "Ingen opgaver tilgængelige at linke",

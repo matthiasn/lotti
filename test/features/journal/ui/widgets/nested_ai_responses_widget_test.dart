@@ -10,9 +10,9 @@ import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_butt
 import 'package:lotti/features/ai/ui/ai_response_card.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/widgets/layout/viewport_stable_animated_size.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
@@ -306,10 +306,11 @@ void main() {
         ),
       );
 
-      // Should not show header during loading
+      expect(find.byType(AiResponseSummary), findsNothing);
+      expect(find.byType(Text), findsNothing);
       expect(
-        find.byKey(NestedAiResponsesWidget.headerKey),
-        findsNothing,
+        tester.getSize(find.byType(NestedAiResponsesWidget)).height,
+        0,
       );
     });
 
@@ -322,45 +323,55 @@ void main() {
 
       await pumpWidget(tester);
 
+      expect(find.byType(AiResponseSummary), findsNothing);
+      expect(find.byType(Text), findsNothing);
       expect(
-        find.byKey(NestedAiResponsesWidget.headerKey),
-        findsNothing,
+        tester.getSize(find.byType(NestedAiResponsesWidget)).height,
+        0,
       );
     });
 
-    testWidgets('shows nothing on initial error state', (tester) async {
+    testWidgets('says so when the responses could not be loaded', (
+      tester,
+    ) async {
       when(
         () => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id),
       ).thenThrow(Exception('Database error'));
 
       await pumpWidget(tester);
 
+      // Not a blank: an entry whose AI results failed to load must not look
+      // like one the agent made nothing of.
+      final context = tester.element(find.byType(NestedAiResponsesWidget));
       expect(
-        find.byKey(NestedAiResponsesWidget.headerKey),
-        findsNothing,
-      );
-    });
-
-    testWidgets('renders header and AI responses when data is available', (
-      tester,
-    ) async {
-      setupSingleAiResponse();
-
-      await pumpWidget(tester);
-
-      // Should show header with key
-      expect(
-        find.byKey(NestedAiResponsesWidget.headerKey),
+        find.text(context.messages.nestedAiResponsesLoadFailed),
         findsOneWidget,
       );
-      // Should show the AI icon in header
-      expect(
-        find.byIcon(LottiIcons.magic),
-        findsAtLeastNWidgets(1),
-      );
-      // Should have Dismissible for the AI response
-      expect(find.byType(Dismissible), findsOneWidget);
+      expect(find.byType(AiResponseSummary), findsNothing);
     });
+
+    testWidgets(
+      'draws each response on the entry gutter at full width, with no '
+      'thread header, count or toggle of its own',
+      (tester) async {
+        setupSingleAiResponse();
+
+        await pumpWidget(tester);
+
+        final thread = find.byType(NestedAiResponsesWidget);
+        final card = find.byType(Dismissible);
+        expect(card, findsOneWidget);
+        // No indent and no connector: the card spans the thread edge to edge.
+        expect(tester.getTopLeft(card).dx, tester.getTopLeft(thread).dx);
+        expect(tester.getSize(card).width, tester.getSize(thread).width);
+        // The only text is the response's own: no "1 AI response" row.
+        expect(find.textContaining('AI response'), findsNothing);
+        expect(
+          find.descendant(of: thread, matching: find.byType(SizeTransition)),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets(
       'a long analysis starts collapsed inside the nested tree '
@@ -567,92 +578,6 @@ void main() {
         findsOneWidget,
       );
       expect(find.byType(AiResponseSummary), findsOneWidget);
-    });
-  });
-
-  group('Expand/Collapse Behavior', () {
-    testWidgets('starts expanded and collapses when header is tapped', (
-      tester,
-    ) async {
-      setupSingleAiResponse();
-      await pumpWidget(tester);
-
-      // Verify initially expanded (SizeTransition should have value 1.0)
-      final sizeTransition = tester.widget<SizeTransition>(
-        find.byType(SizeTransition),
-      );
-      expect(sizeTransition.sizeFactor.value, equals(1.0));
-
-      // Tap the header to collapse using the key
-      await tester.tap(find.byKey(NestedAiResponsesWidget.headerKey));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Verify collapsed (SizeTransition should have value 0.0)
-      final collapsedSizeTransition = tester.widget<SizeTransition>(
-        find.byType(SizeTransition),
-      );
-      expect(collapsedSizeTransition.sizeFactor.value, equals(0.0));
-    });
-
-    testWidgets('expands when header is tapped after collapse', (tester) async {
-      setupSingleAiResponse();
-      await pumpWidget(tester);
-
-      final headerFinder = find.byKey(NestedAiResponsesWidget.headerKey);
-
-      // Collapse first
-      await tester.tap(headerFinder);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Verify collapsed
-      var sizeTransition = tester.widget<SizeTransition>(
-        find.byType(SizeTransition),
-      );
-      expect(sizeTransition.sizeFactor.value, equals(0.0));
-
-      // Expand again
-      await tester.tap(headerFinder);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Verify expanded
-      sizeTransition = tester.widget<SizeTransition>(
-        find.byType(SizeTransition),
-      );
-      expect(sizeTransition.sizeFactor.value, equals(1.0));
-    });
-
-    testWidgets('shows rotation animation on expand icon', (tester) async {
-      setupSingleAiResponse();
-      await pumpWidget(tester);
-
-      final headerFinder = find.byKey(NestedAiResponsesWidget.headerKey);
-      final rotationTransition = find.descendant(
-        of: headerFinder,
-        matching: find.byType(RotationTransition),
-      );
-      expect(rotationTransition, findsOneWidget);
-
-      // Get initial rotation value — when expanded, the natural
-      // downward `LottiIcons.expand` icon is at 0 turns.
-      final initialRotation = tester.widget<RotationTransition>(
-        rotationTransition,
-      );
-      expect(initialRotation.turns.value, equals(0));
-
-      // Collapse
-      await tester.tap(headerFinder);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Verify rotation changed — when collapsed, the icon rotates
-      // -0.25 turns so the chevron points right.
-      final collapsedRotation = tester.widget<RotationTransition>(
-        rotationTransition,
-      );
-      expect(collapsedRotation.turns.value, equals(-0.25));
     });
   });
 

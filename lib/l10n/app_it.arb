@@ -5098,14 +5098,7 @@
   "navTabTitleProjects": "Progetti",
   "navTabTitleSettings": "Impostazioni",
   "navTabTitleTasks": "Attività",
-  "nestedAiResponsesTitle": "{count} rispost{count, plural, =1{a} other{e}} IA",
-  "@nestedAiResponsesTitle": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "nestedAiResponsesLoadFailed": "I risultati IA di questa voce non sono stati caricati.",
   "noDefaultLanguage": "Nessuna lingua predefinita",
   "noTasksFound": "Nessun compito trovato",
   "noTasksToLink": "Nessun compito disponibile per il collegamento",

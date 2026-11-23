@@ -171,6 +171,42 @@ void main() {
       );
     }
 
+    testWidgets('paints only the photo: rounded like its card, capped at '
+        '400 tall, with no letterbox fill behind it', (tester) async {
+      final image = buildJournalImage();
+      createInvalidImageFile(image);
+
+      await tester.pumpWidget(makeSubject(image));
+      await tester.pump();
+
+      final subject = find.byType(EntryImageWidget);
+      final clip = tester.widget<ClipRRect>(
+        find.descendant(of: subject, matching: find.byType(ClipRRect)),
+      );
+      expect(
+        clip.borderRadius,
+        BorderRadius.circular(tester.element(subject).designTokens.radii.s),
+      );
+      expect(
+        find.descendant(of: subject, matching: find.byType(ColoredBox)),
+        findsNothing,
+      );
+      final cap = tester.widget<ConstrainedBox>(
+        find.ancestor(
+          of: find.byType(Image),
+          matching: find.descendant(
+            of: subject,
+            matching: find.byType(ConstrainedBox),
+          ),
+        ),
+      );
+      expect(cap.constraints.maxHeight, 400);
+      // The decode is capped to the same height, at the device pixel ratio.
+      final resize =
+          tester.widget<Image>(find.byType(Image)).image as ResizeImage;
+      expect(resize.height, 1200);
+    });
+
     testWidgets('decodes via ResizeImage with a positive cacheHeight cap', (
       tester,
     ) async {
@@ -210,7 +246,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pumpAndSettle();
 
-        // Outer scaffolding (GestureDetector → ColoredBox → Hero) must still
+        // Outer scaffolding (GestureDetector → Hero) must still
         // be in the tree even after the inner Image.file fails to decode the
         // invalid bytes.
         expect(find.byType(EntryImageWidget), findsOneWidget);

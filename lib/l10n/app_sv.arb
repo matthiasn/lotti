@@ -5098,14 +5098,7 @@
   "navTabTitleProjects": "Projekt",
   "navTabTitleSettings": "Inställningar",
   "navTabTitleTasks": "Uppgifter",
-  "nestedAiResponsesTitle": "{count} AI-respons{count, plural, =1{} other{s}}",
-  "@nestedAiResponsesTitle": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "nestedAiResponsesLoadFailed": "AI-resultaten för den här posten kunde inte laddas.",
   "noDefaultLanguage": "Inget standardspråk",
   "noTasksFound": "Inga uppgifter hittades",
   "noTasksToLink": "Inga uppgifter tillgängliga att länka",

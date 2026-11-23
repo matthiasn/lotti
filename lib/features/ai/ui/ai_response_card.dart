@@ -103,6 +103,9 @@ class AiResponseCard extends StatelessWidget {
     if (!framed) return content;
 
     return Container(
+      // Full width, so sibling responses share both edges whatever the
+      // length of their text.
+      width: double.infinity,
       decoration: BoxDecoration(
         // Half-strength tint: keeps the AI color identity while letting the
         // entry card's surface blend through, so the nested card stays

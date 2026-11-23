@@ -2033,10 +2033,6 @@ void main() {
           tester.getSize(find.byType(NestedAiResponsesWidget)).height,
           0,
         );
-        expect(
-          find.byKey(NestedAiResponsesWidget.headerKey),
-          findsNothing,
-        );
         // AudioPlayerWidget is still the detail section for audio entries.
         expect(find.byType(AudioPlayerWidget), findsOneWidget);
       },
@@ -2129,10 +2125,11 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // Two chevrons confirm the collapsible code path: the header's collapse
-        // chevron (absent on the non-collapsible header) plus the nested
-        // section's own. The nested section + audio player render in the body.
-        expect(find.byIcon(LottiIcons.expand), findsNWidgets(2));
+        // The header's collapse chevron (absent on the non-collapsible
+        // header) confirms the collapsible code path; the nested responses
+        // add no disclosure of their own. They and the audio player render
+        // in the body.
+        expect(find.byIcon(LottiIcons.expand), findsOneWidget);
         expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
         expect(find.byType(AudioPlayerWidget), findsOneWidget);
       },
@@ -3937,7 +3934,15 @@ void main() {
         (tester) async {
           await pumpCollapsedAudio(tester, const []);
 
-          expect(find.text('test image entry text'), findsOneWidget);
+          final preview = find.text('test image entry text');
+          expect(preview, findsOneWidget);
+          // What the user said stays in neutral ink, with no agent mark.
+          final tokens = tester.element(preview).designTokens;
+          expect(
+            tester.widget<Text>(preview).style?.color,
+            tokens.colors.text.mediumEmphasis,
+          );
+          expect(find.byIcon(LottiIcons.magic), findsNothing);
         },
       );
 
@@ -3952,11 +3957,23 @@ void main() {
             ),
           ]);
 
-          expect(
-            find.text('Agreed to ship the export flow behind a flag.'),
-            findsOneWidget,
+          final line = find.text(
+            'Agreed to ship the export flow behind a flag.',
           );
+          expect(line, findsOneWidget);
           expect(find.text('test image entry text'), findsNothing);
+
+          // Two voices: the model's words read in the agent's violet behind
+          // its sparkle, so they cannot pass for the user's own note.
+          final accent = tester.element(line).designTokens.colors.aiCard.accent;
+          expect(tester.widget<Text>(line).style?.color, accent);
+          final sparkle = find.byIcon(LottiIcons.magic);
+          expect(sparkle, findsOneWidget);
+          expect(tester.widget<Icon>(sparkle).color, accent);
+          expect(
+            tester.getCenter(sparkle).dx,
+            lessThan(tester.getTopLeft(line).dx),
+          );
         },
       );
 

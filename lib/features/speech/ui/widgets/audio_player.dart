@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/audio_player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
@@ -23,14 +24,11 @@ const List<double> _speedSequence = <double>[
   2,
 ];
 
-/// Diameter of the circular play/pause control. The timecode/speed row is
-/// indented by this width (plus the control gap) so it aligns under the
-/// waveform rather than sitting under — and visually colliding with — the
-/// play button.
-const double _playControlDiameter = 48;
-const double _playControlDiameterCompact = 40;
+/// Diameter of the circular play/pause control, which is also the height of
+/// the whole player: everything else sits on its row.
+const double _playControlDiameter = 40;
 
-/// Minimal audio player card embedding play controls, progress, and speed toggle.
+/// One-row audio player: play control, waveform, time and speed.
 class AudioPlayerWidget extends ConsumerWidget {
   const AudioPlayerWidget(this.journalAudio, {super.key});
 
@@ -42,68 +40,6 @@ class AudioPlayerWidget extends ConsumerWidget {
     final controller = ref.read(audioPlayerControllerProvider.notifier);
     final isActive = state.audioNote?.meta.id == journalAudio.meta.id;
 
-    // No outer vertical padding: the player is a body section whose surrounding
-    // spacing is owned by its container (the entry card's vertical rhythm, the
-    // captures panel's explicit gaps). Self-padding here double-counted against
-    // that rhythm and bloated the gap above an audio entry's transcript.
-    return _AudioPlayerCardShell(
-      journalAudio: journalAudio,
-      state: state,
-      controller: controller,
-      isActive: isActive,
-    );
-  }
-}
-
-/// Provides responsive layout selection for the audio player card.
-class _AudioPlayerCardShell extends StatelessWidget {
-  const _AudioPlayerCardShell({
-    required this.journalAudio,
-    required this.state,
-    required this.controller,
-    required this.isActive,
-  });
-
-  final JournalAudio journalAudio;
-  final AudioPlayerState state;
-  final AudioPlayerController controller;
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final isCompact = constraints.maxWidth < 360;
-        return _PlayerBody(
-          controller: controller,
-          journalAudio: journalAudio,
-          state: state,
-          isActive: isActive,
-          isCompact: isCompact,
-        );
-      },
-    );
-  }
-}
-
-/// Horizontal row containing play control, progress bar, timestamps, and speed toggle.
-class _PlayerBody extends StatelessWidget {
-  const _PlayerBody({
-    required this.controller,
-    required this.journalAudio,
-    required this.state,
-    required this.isActive,
-    required this.isCompact,
-  });
-
-  final AudioPlayerController controller;
-  final JournalAudio journalAudio;
-  final AudioPlayerState state;
-  final bool isActive;
-  final bool isCompact;
-
-  @override
-  Widget build(BuildContext context) {
     final totalDuration = state.totalDuration == Duration.zero
         ? journalAudio.data.duration
         : state.totalDuration;
@@ -130,80 +66,55 @@ class _PlayerBody extends StatelessWidget {
     }
 
     final tokens = context.designTokens;
-    // lowEmphasis so the timecode recedes to the same quiet tone as the card's
-    // timestamp — it is supporting metadata, not a payload value.
-    final timeColor = tokens.colors.text.lowEmphasis;
-    final captionStyle = tokens.typography.styles.others.caption;
-    // Shared numeric badge features (tabular + open four/six/nine + slashed
-    // zero): constant digit advance so the elapsed counter does not "breathe"
-    // as it ticks, and open-digit glyphs that stay legible at this small size.
-    final timeStyle = captionStyle.copyWith(
-      color: timeColor,
-      fontFeatures: numericBadgeFontFeatures,
-    );
+    final speedLabel = _speedLabel(state.speed);
 
-    final controlSpacing = tokens.spacing.step2;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    // No outer padding: the player is a body section whose surrounding
+    // spacing is owned by its container.
+    return Row(
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            _PlayButton(
-              isPlaying: isPlaying,
-              status: state.status,
-              isActive: isActive,
-              isCompact: isCompact,
-              onPressed: handleTap,
-            ),
-            SizedBox(width: controlSpacing),
-            Expanded(
-              child: _WaveformArea(
-                journalAudio: journalAudio,
-                progress: progress,
-                buffered: buffered,
-                totalDuration: totalDuration,
-                isActive: isActive,
-                isCompact: isCompact,
-                onSeek: controller.seek,
-              ),
-            ),
-          ],
+        _PlayButton(
+          isPlaying: isPlaying,
+          status: state.status,
+          isActive: isActive,
+          onPressed: handleTap,
         ),
-        Row(
-          children: <Widget>[
-            // Indent the elapsed/total + speed pill to line up under the
-            // waveform's left edge (past the play button + its gap) so the
-            // timecode no longer sits under and collides with the play control.
-            SizedBox(
-              width:
-                  (isCompact
-                      ? _playControlDiameterCompact
-                      : _playControlDiameter) +
-                  controlSpacing,
-            ),
-            // Elapsed / total and the speed pill are grouped together with an
-            // explicit separator so the pair reads unambiguously as
-            // elapsed-vs-total; the speed pill sits right beside them and
-            // trailing space falls to the right like every other value line.
-            // The timecode is Flexible so it gives way (rather than overflowing)
-            // once the indent + pill leave too little room on very narrow cards.
-            Flexible(
-              child: Text(
-                '${formatElapsed(progress)} / '
-                '${formatElapsed(totalDuration)}',
-                style: timeStyle,
-                maxLines: 1,
-                overflow: TextOverflow.clip,
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step4),
-            _SpeedButton(
-              controller: controller,
-              currentSpeed: state.speed,
-              isActive: isActive,
-            ),
-          ],
+        SizedBox(width: tokens.spacing.step3),
+        Expanded(
+          child: _WaveformArea(
+            journalAudio: journalAudio,
+            progress: progress,
+            buffered: buffered,
+            totalDuration: totalDuration,
+            isActive: isActive,
+            onSeek: controller.seek,
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step3),
+        // One label: the recording's length at rest, the position while it
+        // is the one loaded. The waveform already shows position against
+        // length, so the pair is not spelled out twice. lowEmphasis, as it is
+        // supporting metadata like the card's timestamp; tabular figures so
+        // the ticking counter does not shift the row.
+        Text(
+          formatElapsed(isActive ? progress : totalDuration),
+          maxLines: 1,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.lowEmphasis,
+            fontFeatures: numericBadgeFontFeatures,
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step2),
+        // Speed belongs to the loaded recording, so every other player's
+        // control is disabled rather than drawn live and inert.
+        DesignSystemButton(
+          label: speedLabel,
+          semanticsLabel: context.messages.audioPlayerSpeed(speedLabel),
+          variant: DesignSystemButtonVariant.tertiary,
+          size: DesignSystemButtonSize.dense,
+          tabularFigures: true,
+          onPressed: isActive
+              ? () => controller.setSpeed(_nextSpeed(state.speed))
+              : null,
         ),
       ],
     );
@@ -217,7 +128,6 @@ class _WaveformArea extends ConsumerWidget {
     required this.buffered,
     required this.totalDuration,
     required this.isActive,
-    required this.isCompact,
     required this.onSeek,
   });
 
@@ -226,7 +136,6 @@ class _WaveformArea extends ConsumerWidget {
   final Duration buffered;
   final Duration totalDuration;
   final bool isActive;
-  final bool isCompact;
   final ValueChanged<Duration> onSeek;
 
   static const int _minBars = 24;
@@ -263,26 +172,19 @@ class _WaveformArea extends ConsumerWidget {
           total: totalDuration,
           onSeek: onSeek,
           enabled: isActive,
-          compact: isCompact,
         );
 
-        return asyncWaveform.when(
-          data: (data) {
-            if (data == null || data.amplitudes.isEmpty) {
-              return progressBar;
-            }
-            return AudioWaveformScrubber(
-              amplitudes: data.amplitudes,
-              progress: progress,
-              buffered: buffered,
-              total: totalDuration,
-              onSeek: onSeek,
-              enabled: isActive,
-              compact: isCompact,
-            );
-          },
-          loading: () => progressBar,
-          error: (_, _) => progressBar,
+        // `.value`, not `.when`: a reload keeps the drawn waveform instead of
+        // dropping back to the bar.
+        final amplitudes = asyncWaveform.value?.amplitudes;
+        if (amplitudes == null || amplitudes.isEmpty) return progressBar;
+        return AudioWaveformScrubber(
+          amplitudes: amplitudes,
+          progress: progress,
+          buffered: buffered,
+          total: totalDuration,
+          onSeek: onSeek,
+          enabled: isActive,
         );
       },
     );
@@ -297,22 +199,18 @@ class _PlayButton extends StatelessWidget {
     required this.isPlaying,
     required this.status,
     required this.isActive,
-    required this.isCompact,
     required this.onPressed,
   });
 
   final bool isPlaying;
   final AudioPlayerStatus status;
   final bool isActive;
-  final bool isCompact;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final diameter = isCompact
-        ? _playControlDiameterCompact
-        : _playControlDiameter;
+    const diameter = _playControlDiameter;
     final isLoading = status == AudioPlayerStatus.initializing && isActive;
 
     final iconColor = tokens.colors.text.highEmphasis;
@@ -320,8 +218,8 @@ class _PlayButton extends StatelessWidget {
 
     final icon = isLoading
         ? SizedBox(
-            width: isCompact ? 16 : 20,
-            height: isCompact ? 16 : 20,
+            width: IconSizes.s,
+            height: IconSizes.s,
             child: CircularProgressIndicator(
               strokeWidth: 2,
               valueColor: AlwaysStoppedAnimation<Color>(iconColor),
@@ -329,7 +227,7 @@ class _PlayButton extends StatelessWidget {
           )
         : Icon(
             isPlaying ? LottiIcons.pause : LottiIcons.play,
-            size: isCompact ? 20 : 24,
+            size: IconSizes.m,
             color: iconColor,
           );
 
@@ -362,77 +260,6 @@ class _PlayButton extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Displays the current playback speed and cycles through presets on tap.
-class _SpeedButton extends StatelessWidget {
-  const _SpeedButton({
-    required this.controller,
-    required this.currentSpeed,
-    required this.isActive,
-  });
-
-  final AudioPlayerController controller;
-  final double currentSpeed;
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final tokens = context.designTokens;
-    final label = _speedLabel(currentSpeed);
-    final nextSpeed = _nextSpeed(currentSpeed);
-
-    final captionStyle = tokens.typography.styles.others.caption;
-    final speedTextColor = currentSpeed != 1
-        ? scheme.error
-        : tokens.colors.text.mediumEmphasis;
-    final speedTextStyle = captionStyle.copyWith(
-      color: speedTextColor,
-      fontFeatures: numericBadgeFontFeatures,
-    );
-
-    // A filled chip with a mediumEmphasis boundary (well above the WCAG 1.4.11
-    // 3:1 floor) so the speed control reads as a real, tappable pill rather than
-    // near-invisible chrome — important because the entry card's resting state
-    // shows this control while playback is inactive.
-    final pillBorder = tokens.colors.text.mediumEmphasis;
-    final child = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: currentSpeed != 1 ? scheme.error : pillBorder,
-        ),
-        color: scheme.surfaceTint.withValues(alpha: 0.14),
-      ),
-      child: Text(label, style: speedTextStyle),
-    );
-
-    return Semantics(
-      button: isActive,
-      enabled: isActive,
-      label: context.messages.audioPlayerSpeed(label),
-      onTap: isActive ? () => controller.setSpeed(nextSpeed) : null,
-      child: ExcludeSemantics(
-        child: isActive
-            ? Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
-                  splashColor: scheme.primary.withValues(alpha: 0.08),
-                  highlightColor: scheme.primary.withValues(alpha: 0.04),
-                  onTap: () => controller.setSpeed(nextSpeed),
-                  child: child,
-                ),
-              )
-            // Not tappable until playback is active, but kept at full
-            // contrast so it still reads as the pending speed control.
-            : child,
       ),
     );
   }

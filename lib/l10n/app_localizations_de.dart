@@ -12036,15 +12036,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navTabTitleTasks => 'Aufgaben';
 
   @override
-  String nestedAiResponsesTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'en',
-      one: '',
-    );
-    return '$count KI-Antwort$_temp0';
-  }
+  String get nestedAiResponsesLoadFailed =>
+      'Die KI-Ergebnisse zu diesem Eintrag wurden nicht geladen.';
 
   @override
   String get noDefaultLanguage => 'Keine Standardsprache';

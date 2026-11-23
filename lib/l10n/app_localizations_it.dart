@@ -12115,15 +12115,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get navTabTitleTasks => 'Attività';
 
   @override
-  String nestedAiResponsesTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'e',
-      one: 'a',
-    );
-    return '$count rispost$_temp0 IA';
-  }
+  String get nestedAiResponsesLoadFailed =>
+      'I risultati IA di questa voce non sono stati caricati.';
 
   @override
   String get noDefaultLanguage => 'Nessuna lingua predefinita';

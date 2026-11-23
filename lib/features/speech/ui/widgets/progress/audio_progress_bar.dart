@@ -123,7 +123,6 @@ class AudioProgressBar extends StatefulWidget {
     required this.total,
     required this.onSeek,
     required this.enabled,
-    required this.compact,
     this.semanticLabel,
     super.key,
   });
@@ -142,9 +141,6 @@ class AudioProgressBar extends StatefulWidget {
 
   /// Whether tap/drag scrubbing is enabled.
   final bool enabled;
-
-  /// Compact layout flag for a thinner track and smaller thumb.
-  final bool compact;
 
   /// Accessibility label for the timeline; defaults to "Audio timeline".
   final String? semanticLabel;
@@ -171,8 +167,10 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
     // despite being the least informative; slimming it lets the content lead,
     // while the grab affordance moves into the prominent thumb so the scrubber
     // stays easy to see and drag without precise aim (low-vision / motor).
-    final trackHeight = widget.compact ? 4.0 : 5.0;
-    final thumbRadius = widget.compact ? 7.5 : 9.0;
+    const trackHeight = 4.0;
+    const thumbRadius = 7.5;
+    // The touch band the track is centred in; a control size, not a gap.
+    const barHeight = 32.0;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -192,7 +190,7 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
 
         final Widget bar = SizedBox(
           width: double.infinity,
-          height: widget.compact ? 32 : 36,
+          height: barHeight,
           child: RepaintBoundary(
             child: CustomPaint(
               painter: _ProgressBarPainter(

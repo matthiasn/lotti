@@ -13,6 +13,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_activity_filter_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -602,6 +603,71 @@ void main() {
 
       expect(entryDetails(flaggedEntry.meta.id), findsOneWidget);
       expect(entryDetails(testTextEntry.meta.id), findsOneWidget);
+    });
+
+    testWidgets('filters that hide every entry say so and offer the way back', (
+      tester,
+    ) async {
+      mockLinkedEntries([testLink]);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(LinkedEntriesWidget(testTask)),
+      );
+      await tester.pumpAndSettle();
+
+      final messages = tester
+          .element(find.byType(LinkedEntriesWidget))
+          .messages;
+      Finder entryDetails() => find.byWidgetPredicate(
+        (widget) =>
+            widget is EntryDetailsWidget &&
+            widget.itemId == testTextEntry.meta.id,
+      );
+
+      // Nothing is narrowed: the entry shows and there is no empty line.
+      expect(entryDetails(), findsOneWidget);
+      expect(find.text(messages.logbookNoMatchesTitle), findsNothing);
+
+      // The only entry is not flagged, so flagged-only empties the list.
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(LinkedEntriesWidget)),
+      );
+      container
+          .read(showFlaggedOnlyControllerProvider(testTask.meta.id).notifier)
+          .setShowFlaggedOnly(value: true);
+      container
+          .read(
+            linkedEntriesActivityFilterControllerProvider(
+              testTask.meta.id,
+            ).notifier,
+          )
+          .toggle(LinkedEntryActivityFilter.audio);
+      await tester.pumpAndSettle();
+
+      expect(entryDetails(), findsNothing);
+      expect(find.text(messages.logbookNoMatchesTitle), findsOneWidget);
+      // The filter bar stays, so the filters can also be undone one by one.
+      expect(find.byType(LinkedEntriesActivityFilterBar), findsOneWidget);
+
+      await tester.tap(find.text(messages.projectsClearFilters));
+      await tester.pumpAndSettle();
+
+      // Both the flagged-only toggle and the kind set are back to default.
+      expect(entryDetails(), findsOneWidget);
+      expect(find.text(messages.logbookNoMatchesTitle), findsNothing);
+      expect(
+        container.read(showFlaggedOnlyControllerProvider(testTask.meta.id)),
+        isFalse,
+      );
+      expect(
+        container.read(
+          linkedEntriesActivityFilterControllerProvider(testTask.meta.id),
+        ),
+        LinkedEntryActivityFilter.values.toSet(),
+      );
     });
   });
 }

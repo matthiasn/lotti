@@ -12187,15 +12187,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get navTabTitleTasks => 'Sarcini';
 
   @override
-  String nestedAiResponsesTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count răspunsuri AI',
-      one: '1 răspuns AI',
-    );
-    return '$_temp0';
-  }
+  String get nestedAiResponsesLoadFailed =>
+      'Rezultatele IA pentru această intrare nu s-au încărcat.';
 
   @override
   String get noDefaultLanguage => 'Fără limbă implicită';
