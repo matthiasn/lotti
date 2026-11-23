@@ -268,6 +268,24 @@ void main() {
       expect(find.byType(TaskDocumentEditor), findsNothing);
     });
 
+    testWidgets('a rename that does not store says to try again and stays '
+        'open', (tester) async {
+      when(
+        () => repository.rename(any(), any()),
+      ).thenAnswer((_) async => false);
+      await open(tester, editing: document);
+
+      await tester.enterText(
+        field(TaskDocumentEditorKeys.titleField),
+        'Launch brief, final',
+      );
+      await tester.pump();
+      await save(tester);
+
+      expect(find.text("That didn't save — please try again."), findsWidgets);
+      expect(find.byType(TaskDocumentEditor), findsOneWidget);
+    });
+
     testWidgets(
       'with new text writes a version over the one it opened on, by the user',
       (tester) async {

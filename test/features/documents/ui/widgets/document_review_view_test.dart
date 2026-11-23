@@ -268,6 +268,44 @@ void main() {
       expect(closed, 1);
     });
 
+    testWidgets('a confirm that applies with a warning says so, and closes', (
+      tester,
+    ) async {
+      when(() => service.confirmItem(any(), any())).thenAnswer(
+        (_) async => const ToolExecutionResult(
+          success: true,
+          output: 'ok',
+          errorMessage: 'the title was kept',
+        ),
+      );
+      await pump(tester);
+
+      await tester.tap(find.byKey(DocumentReviewViewKeys.confirm));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.text('Applied with warning: the title was kept'),
+        findsWidgets,
+      );
+      expect(closed, 1);
+    });
+
+    testWidgets('a decision the service throws on is logged, says it failed, '
+        'and keeps the review open', (tester) async {
+      when(
+        () => service.confirmItem(any(), any()),
+      ).thenThrow(StateError('store unavailable'));
+      await pump(tester);
+
+      await tester.tap(find.byKey(DocumentReviewViewKeys.confirm));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Failed to apply change'), findsWidgets);
+      expect(closed, 0);
+    });
+
     testWidgets('Ask for changes opens the task chat', (tester) async {
       await pump(tester);
 
@@ -448,6 +486,37 @@ void main() {
 
     verifyNever(() => service.rejectItem(any(), any()));
     expect(closed, 0);
+  });
+
+  testWidgets('a draft written before the document had text, now stale, '
+      'says so without a base version', (tester) async {
+    open = [documentDraft(base: null)];
+    document = documentShowing(v2);
+    await pump(tester);
+
+    expect(
+      tester
+          .widget<Text>(
+            find.descendant(
+              of: find.byKey(DocumentReviewViewKeys.stale),
+              matching: find.byType(Text),
+            ),
+          )
+          .data,
+      'Written before the document had text; it is now v2, and confirming '
+      'would overwrite it.',
+    );
+  });
+
+  testWidgets('the rows are found by their index key, which is their '
+      'identity while the review is open', (tester) async {
+    await pump(tester);
+
+    final delegate =
+        tester.widget<SliverList>(find.byType(SliverList)).delegate
+            as SliverChildBuilderDelegate;
+    expect(delegate.findChildIndexCallback!(const ValueKey<int>(2)), 2);
+    expect(delegate.findChildIndexCallback!(const ValueKey('row')), isNull);
   });
 
   testWidgets('a stale draft with a newer one waiting offers the newer one '

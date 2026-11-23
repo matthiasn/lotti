@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
@@ -441,6 +443,131 @@ void main() {
           },
         );
       }
+
+      test('a failed listing leaves the task as holding no document: the '
+          'wake goes on, offering only the proposal', () async {
+        final documents = FakeTaskDocumentSource()
+          ..documents = const [
+            TaskDocumentSummary(id: 'doc-1', title: 'Launch brief'),
+          ]
+          ..listError = Exception('documents unavailable');
+
+        final perTurn = await exposedToolNamesPerTurn(
+          createTaskAgentWorkflowTestBench(taskDocuments: documents),
+        );
+
+        expect(
+          perTurn.first.handedOver,
+          contains(TaskAgentToolNames.proposeDocumentVersion),
+        );
+        expect(
+          perTurn.first.handedOver,
+          isNot(contains(TaskAgentToolNames.readDocument)),
+        );
+      });
+
+      test('a version an earlier wake proposed, still waiting, keeps the '
+          'agent from proposing another of that document', () async {
+        final documents = FakeTaskDocumentSource()
+          ..documents = const [
+            TaskDocumentSummary(
+              id: 'doc-1',
+              title: 'Launch brief',
+              versionId: 'version-1',
+              versionNumber: 1,
+            ),
+          ];
+        final bench = createTaskAgentWorkflowTestBench(
+          taskDocuments: documents,
+        );
+        stubFullExecutePath(
+          mockAgentRepository: bench.mockAgentRepository,
+          mockAiInputRepository: bench.mockAiInputRepository,
+          mockAiConfigRepository: bench.mockAiConfigRepository,
+          mockConversationManager: bench.mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
+        when(
+          () => bench.mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => bareTask());
+        when(
+          () => bench.mockAgentRepository.getProposalLedger(
+            any(),
+            taskId: any(named: 'taskId'),
+            changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+            resolvedLimit: any(named: 'resolvedLimit'),
+          ),
+        ).thenAnswer(
+          (_) async => ProposalLedger(
+            open: [
+              LedgerEntry(
+                changeSetId: 'cs-earlier',
+                itemIndex: 0,
+                toolName: TaskAgentToolNames.proposeDocumentVersion,
+                args: const {'documentId': 'doc-1', 'markdown': 'Earlier.'},
+                humanSummary: 'New version of "Launch brief"',
+                fingerprint: 'fp-earlier',
+                status: ChangeItemStatus.pending,
+                createdAt: DateTime(2026, 11, 20),
+              ),
+            ],
+            resolved: const [],
+          ),
+        );
+        bench.mockConversationRepository.maxDelegateCalls = 1;
+        bench.mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              await (strategy! as TaskAgentStrategy).processToolCalls(
+                toolCalls: [
+                  ChatCompletionMessageToolCall(
+                    id: 'doc-call',
+                    type: ChatCompletionMessageToolCallType.function,
+                    function: ChatCompletionMessageFunctionCall(
+                      name: TaskAgentToolNames.proposeDocumentVersion,
+                      arguments: jsonEncode({
+                        'documentId': 'doc-1',
+                        'markdown': 'Again.',
+                        'changeSummary': 'Another pass.',
+                      }),
+                    ),
+                  ),
+                ],
+                manager: bench.mockConversationManager,
+              );
+              return null;
+            };
+
+        await bench.workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        final response =
+            verify(
+                  () => bench.mockConversationManager.addToolResponse(
+                    toolCallId: 'doc-call',
+                    response: captureAny(named: 'response'),
+                  ),
+                ).captured.single
+                as String;
+        expect(response, contains('is already waiting for the user'));
+      });
     });
 
     test('offers the pull request tools with the flag off once the task has '

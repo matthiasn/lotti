@@ -188,4 +188,62 @@ void main() {
       }
     },
   );
+
+  test(
+    'a document deleted while the version is written is refused for good; a '
+    'version that could not be stored, for now',
+    () async {
+      final doc = await documentWith('# Brief');
+      for (final (status, permanent) in [
+        (TaskDocumentWriteStatus.missing, true),
+        (TaskDocumentWriteStatus.failed, false),
+      ]) {
+        final racing = TaskDocumentAgentSource(
+          _WritesWith(
+            status,
+            journalDb: harness.journalDb,
+            persistenceLogic: harness.persistenceLogic,
+            journalRepository: harness.journalRepository(),
+          ),
+        );
+
+        final outcome = await racing.apply(
+          taskId: taskId,
+          markdown: '# Brief, revised',
+          documentId: doc.documentId,
+          baseVersionId: doc.versionId,
+          documentUuidV5Input: 'change-effect:x:task-document',
+          versionUuidV5Input: 'change-effect:x:task-document-version',
+        );
+
+        expect(outcome, isA<TaskDocumentApplyRefused>());
+        expect((outcome as TaskDocumentApplyRefused).permanent, permanent);
+      }
+    },
+  );
+}
+
+/// The real repository, except that every version write ends with [status]
+/// — what a document deleted, or a store that fails, mid-write returns.
+class _WritesWith extends TaskDocumentRepository {
+  _WritesWith(
+    this.status, {
+    required super.journalDb,
+    required super.persistenceLogic,
+    required super.journalRepository,
+  });
+
+  final TaskDocumentWriteStatus status;
+
+  @override
+  Future<TaskDocumentWriteResult> writeVersion({
+    required String documentId,
+    required String markdown,
+    required TaskDocumentAuthor author,
+    required String? baseVersionId,
+    String? changeSummary,
+    String? changeEffectKey,
+    String? restoredFromVersionId,
+    String? uuidV5Input,
+  }) async => (status: status, version: null);
 }

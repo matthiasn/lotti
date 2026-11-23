@@ -1,6 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/document_proposal_preview.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -25,6 +27,7 @@ void main() {
     Future<void> Function()? onConfirm,
     Future<void> Function()? onReject,
     VoidCallback? onRead,
+    bool inRow = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -34,6 +37,7 @@ void main() {
           onConfirm: onConfirm,
           onReject: onReject,
           onRead: onRead,
+          inRow: inRow,
         ),
       ),
     );
@@ -155,6 +159,22 @@ void main() {
 
     expect(read, 1);
     expect(find.textContaining('Feed the penguins at noon.'), findsNothing);
+  });
+
+  testWidgets('a decided draft in a row of buttons is an inline action that '
+      'hugs its label, and still opens the text', (tester) async {
+    await pumpButton(tester, inRow: true);
+
+    final read = find.byKey(DocumentProposalPreviewKeys.read);
+    expect(tester.widget(read), isA<DesignSystemInlineAction>());
+    expect(
+      find.ancestor(of: read, matching: find.byType(IntrinsicWidth)),
+      findsOneWidget,
+    );
+    expect(find.byType(DesignSystemButton), findsNothing);
+
+    await openPreview(tester);
+    expect(find.byType(DocumentProposalPreview), findsOneWidget);
   });
 
   testWidgets('a heading that repeats the title is not shown twice', (

@@ -17,6 +17,7 @@ import 'package:lotti/features/documents/ui/task_document_editor.dart';
 import 'package:lotti/features/documents/ui/task_document_history.dart';
 import 'package:lotti/features/documents/ui/task_document_page.dart';
 import 'package:lotti/features/documents/ui/widgets/document_review_view.dart';
+import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart' show BackWidget;
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:mocktail/mocktail.dart';
@@ -73,20 +74,32 @@ void main() {
     DocumentReviewKey? initialReview,
     VoidCallback? onInitialReviewOpened,
     List<PendingSuggestion> drafts = const [],
+    bool pushed = false,
   }) async {
     final doc = gone ? null : (shown ?? document);
+    final page = TaskDocumentPage(
+      taskId: key.taskId,
+      documentId: key.documentId,
+      onClose: onClose,
+      initialReview: initialReview,
+      onInitialReviewOpened: onInitialReviewOpened,
+    );
     await withClock(
       Clock.fixed(taskDocFixtureEpoch.add(const Duration(hours: 2))),
       () async {
         await tester.pumpWidget(
           makeTestableWidgetNoScroll(
-            TaskDocumentPage(
-              taskId: key.taskId,
-              documentId: key.documentId,
-              onClose: onClose,
-              initialReview: initialReview,
-              onInitialReviewOpened: onInitialReviewOpened,
-            ),
+            // Pushed: a launcher under the page, which it was pushed from.
+            pushed
+                ? Builder(
+                    builder: (context) => TextButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => page),
+                      ),
+                      child: const Text('Open the document'),
+                    ),
+                  )
+                : page,
             overrides: [
               taskDocumentRepositoryProvider.overrideWithValue(repository),
               taskDocumentProvider(key).overrideWith((ref) => doc),
@@ -224,6 +237,23 @@ void main() {
     },
   );
 
+  testWidgets('pushed without onClose, a confirmed delete pops back to '
+      'where the page was opened from', (tester) async {
+    await pump(tester, pushed: true);
+    await tester.tap(find.text('Open the document'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(TaskDocumentPageKeys.delete));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text('Delete').last);
+    await tester.pumpAndSettle();
+
+    verify(() => repository.delete('doc-brief')).called(1);
+    expect(find.byType(TaskDocumentPage), findsNothing);
+    expect(find.text('Open the document'), findsOneWidget);
+  });
+
   testWidgets('Delete cancelled deletes nothing and stays', (tester) async {
     var closed = 0;
     await pump(tester, onClose: () => closed++);
@@ -249,6 +279,33 @@ void main() {
     await tester.pump();
 
     expect(closed, 1);
+  });
+
+  testWidgets('pushed without onClose, the back arrow pops back to where it '
+      'was opened from', (tester) async {
+    await pump(tester, pushed: true);
+    await tester.tap(find.text('Open the document'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TaskDocumentPage), findsOneWidget);
+
+    await tester.tap(find.byType(BackWidget));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TaskDocumentPage), findsNothing);
+    expect(find.text('Open the document'), findsOneWidget);
+  });
+
+  testWidgets("the task's chat opens an entry as its details page, without "
+      'a back button of its own', (tester) async {
+    await pump(tester, chat: true);
+
+    final entry = tester
+        .widget<QueryCompanion>(find.byType(QueryCompanion))
+        .entryViewBuilder('entry-7');
+
+    expect(entry, isA<EntryDetailsPage>());
+    expect((entry as EntryDetailsPage).itemId, 'entry-7');
+    expect(entry.showBackButton, isFalse);
   });
 
   testWidgets('without chat there is nothing to ask', (tester) async {
@@ -427,6 +484,28 @@ void main() {
         tester.widget<PopScope<void>>(find.byType(PopScope<void>)).canPop,
         isTrue,
       );
+    });
+
+    testWidgets('while reviewing, the system back closes the review too, and '
+        'the page stays', (tester) async {
+      var left = 0;
+      await pump(
+        tester,
+        drafts: [draft],
+        initialReview: reviewOf(draft),
+        onClose: () => left++,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(DocumentReviewView), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(DocumentReviewView), findsNothing);
+      expect(find.byType(TaskDocumentPage), findsOneWidget);
+      expect(left, 0);
     });
 
     testWidgets('while a draft waits, Review changes is the filled button '

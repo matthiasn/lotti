@@ -745,6 +745,26 @@ void main() {
       ).called(1);
     });
 
+    testWidgets('a lone draft discarded from its sheet dismisses the whole '
+        'answer', (tester) async {
+      stub((approved) async => const []);
+      await pump(tester, response: answerWith(const [draft]));
+      await openDraft(tester);
+
+      await tester.tap(find.byKey(DocumentProposalPreviewKeys.reject));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      verify(
+        () => service.resolve(
+          agentId: 'agent',
+          chatId: 'chat',
+          questionId: 'question',
+          approved: false,
+        ),
+      ).called(1);
+    });
+
     testWidgets('beside other changes, the sheet dismisses only the draft', (
       tester,
     ) async {

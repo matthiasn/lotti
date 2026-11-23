@@ -18,6 +18,9 @@ class _RacingPersistenceLogic extends PersistenceLogic {
 
   Future<void> Function()? afterVersionCreated;
 
+  /// When set, storing a version row fails, as a full disk would.
+  bool refuseVersions = false;
+
   @override
   Future<bool?> createDbEntity(
     JournalEntity journalEntity, {
@@ -26,6 +29,9 @@ class _RacingPersistenceLogic extends PersistenceLogic {
     String? linkedId,
     bool linkCollapsed = false,
   }) async {
+    if (refuseVersions && journalEntity is TaskDocumentVersionEntry) {
+      return false;
+    }
     final created = await super.createDbEntity(
       journalEntity,
       shouldAddGeolocation: shouldAddGeolocation,
@@ -280,6 +286,29 @@ void main() {
         expect(
           (await repository.document(document.id))?.data.current?.id,
           v2.id,
+        );
+      },
+    );
+
+    test(
+      'a version row that cannot be stored fails the write and leaves the '
+      'document as it was',
+      () async {
+        final document = await created();
+        persistence.refuseVersions = true;
+
+        final result = await repository.writeVersion(
+          documentId: document.id,
+          markdown: 'one',
+          author: TaskDocumentAuthor.user,
+          baseVersionId: null,
+        );
+
+        expect(result.status, TaskDocumentWriteStatus.failed);
+        expect(result.version, isNull);
+        expect(
+          (await repository.document(document.id))?.data.current,
+          isNull,
         );
       },
     );

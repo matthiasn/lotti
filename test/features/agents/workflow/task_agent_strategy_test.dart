@@ -3753,6 +3753,27 @@ void main() {
             contains('is already waiting for the user'),
           );
         });
+
+        test('the same new document proposed twice in one wake is queued '
+            'once, and the repeat is told it was skipped', () async {
+          final b = docBench();
+          final args = {
+            'newTitle': 'Meeting summary',
+            'markdown': '# Summary',
+            'changeSummary': 'A summary of the meeting.',
+          };
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('propose_document_version', args),
+              call('propose_document_version', args, id: 'call-2'),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items, hasLength(1));
+          expect(responseTo('call-2'), startsWith('Skipped: '));
+        });
       });
 
       group('link_pull_request', () {

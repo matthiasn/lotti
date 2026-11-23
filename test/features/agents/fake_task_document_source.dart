@@ -19,6 +19,9 @@ class FakeTaskDocumentSource implements TaskDocumentSource {
   /// What [documentsOf] answers.
   List<TaskDocumentSummary> documents = const [];
 
+  /// When set, [documentsOf] throws it instead, as a failed read would.
+  Exception? listError;
+
   /// What [read] answers, by document id.
   Map<String, TaskDocumentText> texts = const {};
 
@@ -31,8 +34,10 @@ class FakeTaskDocumentSource implements TaskDocumentSource {
   final List<TaskDocumentApplyCall> applied = [];
 
   @override
-  Future<List<TaskDocumentSummary>> documentsOf(String taskId) async =>
-      documents;
+  Future<List<TaskDocumentSummary>> documentsOf(String taskId) async {
+    if (listError case final Exception error) throw error;
+    return documents;
+  }
 
   @override
   Future<TaskDocumentText?> read({

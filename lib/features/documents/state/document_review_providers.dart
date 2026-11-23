@@ -68,8 +68,6 @@ class DocumentReviewSnapshot {
 
   ChangeItem get item => proposal.item;
 
-  String get proposedMarkdown => item.args['markdown'] as String? ?? '';
-
   /// The agent's line on what the draft changes; null when it gave none.
   String? get changeSummary => switch (item.args['changeSummary']) {
     final String summary when summary.trim().isNotEmpty => summary.trim(),
@@ -84,44 +82,18 @@ class DocumentReviewSnapshot {
 /// The draft a review is of, by its fingerprint, which a reload of the
 /// task's proposals leaves alone: what the review snapshot watches, so it is
 /// built again only when the draft stops waiting, never because something
-/// else changed. Null while the proposals load.
-final ProviderFamily<_DraftState?, DocumentReviewKey> _draftStateProvider =
-    Provider.autoDispose.family<_DraftState?, DocumentReviewKey>((ref, key) {
+/// else changed. Null while the proposals load; `waiting` null once the
+/// draft no longer waits. A record, so equal states compare equal.
+final ProviderFamily<({String? waiting})?, DocumentReviewKey>
+_draftStateProvider = Provider.autoDispose
+    .family<({String? waiting})?, DocumentReviewKey>((ref, key) {
       final drafts = ref.watch(pendingDocumentProposalsProvider(key.document));
       if (drafts == null) return null;
       final draft = drafts.where(key.names).firstOrNull;
-      return draft == null
-          ? const _DraftGone()
-          : _DraftWaiting(ChangeItem.fingerprint(draft.item));
+      return (
+        waiting: draft == null ? null : ChangeItem.fingerprint(draft.item),
+      );
     });
-
-@immutable
-sealed class _DraftState {
-  const _DraftState();
-}
-
-class _DraftWaiting extends _DraftState {
-  const _DraftWaiting(this.fingerprint);
-
-  final String fingerprint;
-
-  @override
-  bool operator ==(Object other) =>
-      other is _DraftWaiting && other.fingerprint == fingerprint;
-
-  @override
-  int get hashCode => fingerprint.hashCode;
-}
-
-class _DraftGone extends _DraftState {
-  const _DraftGone();
-
-  @override
-  bool operator ==(Object other) => other is _DraftGone;
-
-  @override
-  int get hashCode => 0;
-}
 
 /// The rows a review shows, pinned (ADR 0167, direction B).
 ///
@@ -136,7 +108,7 @@ class _DraftGone extends _DraftState {
 final FutureProviderFamily<DocumentReviewSnapshot?, DocumentReviewKey>
 documentReviewSnapshotProvider = FutureProvider.autoDispose
     .family<DocumentReviewSnapshot?, DocumentReviewKey>((ref, key) async {
-      if (ref.watch(_draftStateProvider(key)) is! _DraftWaiting) return null;
+      if (ref.watch(_draftStateProvider(key))?.waiting == null) return null;
       final draft = ref
           .read(pendingDocumentProposalsProvider(key.document))!
           .firstWhere(key.names);

@@ -39,6 +39,11 @@ extension _AnyBlocks on Any {
 
 void main() {
   group('splitMarkdownBlocks', () {
+    test('an unclosed fence at the end keeps its text, not its trailing '
+        'blank lines', () {
+      expect(splitMarkdownBlocks('```\ncode\n\n\n'), ['```\ncode']);
+    });
+
     test('splits paragraphs on blank lines and keeps headings apart', () {
       expect(
         splitMarkdownBlocks(
@@ -104,6 +109,31 @@ void main() {
       expect(splitMarkdownBlocks(''), isEmpty);
       expect(splitMarkdownBlocks('\n \n\t\n'), isEmpty);
     });
+  });
+
+  test('a pair and the stats are values, and say what they hold', () {
+    const pair = MarkdownBlockPair(
+      kind: MarkdownBlockChange.rewritten,
+      base: 'Feed at noon.',
+      proposed: 'Feed at one.',
+    );
+    const same = MarkdownBlockPair(
+      kind: MarkdownBlockChange.rewritten,
+      base: 'Feed at noon.',
+      proposed: 'Feed at one.',
+    );
+    expect(pair, same);
+    expect(pair.hashCode, same.hashCode);
+    expect(
+      pair.toString(),
+      'MarkdownBlockPair(rewritten, Feed at noon. | Feed at one.)',
+    );
+
+    final stats = MarkdownBlockDiffStats.of(const [pair]);
+    const expected = MarkdownBlockDiffStats(added: 0, removed: 0, rewritten: 1);
+    expect(stats, expected);
+    expect(stats.hashCode, expected.hashCode);
+    expect(stats.toString(), 'MarkdownBlockDiffStats(+0, -0, ~1)');
   });
 
   group('alignMarkdownBlocks', () {

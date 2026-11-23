@@ -49,7 +49,10 @@ void main() {
     stubRestore(TaskDocumentWriteStatus.written);
   });
 
-  Future<void> openHistory(WidgetTester tester) async {
+  Future<void> openHistory(
+    WidgetTester tester, {
+    bool documentGone = false,
+  }) async {
     await withClock(
       Clock.fixed(taskDocFixtureEpoch.add(const Duration(hours: 2))),
       () async {
@@ -64,7 +67,9 @@ void main() {
             ),
             overrides: [
               taskDocumentRepositoryProvider.overrideWithValue(repository),
-              taskDocumentProvider(key).overrideWith((ref) => document),
+              taskDocumentProvider(
+                key,
+              ).overrideWith((ref) => documentGone ? null : document),
               taskDocumentVersionsProvider(
                 key,
               ).overrideWith((ref) async => [v2, v1]),
@@ -159,4 +164,48 @@ void main() {
       await tester.pump(const Duration(seconds: 4));
     },
   );
+
+  testWidgets(
+    'a restore that could not be stored, or whose document went, says to '
+    'try again and stays',
+    (tester) async {
+      for (final status in [
+        TaskDocumentWriteStatus.missing,
+        TaskDocumentWriteStatus.failed,
+      ]) {
+        stubRestore(status);
+        await openHistory(tester);
+        await openVersion(tester, 'version-1');
+
+        await tester.tap(find.byKey(TaskDocumentHistoryKeys.restore));
+        await tester.pump();
+
+        expect(
+          find.text("That didn't save — please try again."),
+          findsWidgets,
+        );
+        expect(find.byType(TaskDocumentVersionView), findsOneWidget);
+        await tester.pump(const Duration(seconds: 4));
+      }
+    },
+  );
+
+  testWidgets('a version is titled by its document and its number', (
+    tester,
+  ) async {
+    await openHistory(tester);
+    await openVersion(tester, 'version-1');
+
+    expect(find.text('Client one-pager · v1'), findsOneWidget);
+  });
+
+  testWidgets('a version whose document is gone is titled by its number', (
+    tester,
+  ) async {
+    await openHistory(tester, documentGone: true);
+    await openVersion(tester, 'version-1');
+
+    expect(find.text('Client one-pager · v1'), findsNothing);
+    expect(find.text('v1'), findsOneWidget);
+  });
 }
