@@ -114,13 +114,23 @@ void main() {
       MediaQueryData? mediaQueryData,
       HealthSignalRefreshService? healthRefreshService,
       List<Override> extraOverrides = const [],
+      double? sidebarWidth,
     }) async {
       final controller = FakeHabitsController(state);
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const AppCommandHost(
-            handlers: {},
-            child: HabitsTabPage(),
+          AppCommandHost(
+            handlers: const {},
+            // As the desktop shell lays it out: the page in what the
+            // navigation sidebar leaves of the window.
+            child: sidebarWidth == null
+                ? const HabitsTabPage()
+                : Row(
+                    children: [
+                      SizedBox(width: sidebarWidth),
+                      const Expanded(child: HabitsTabPage()),
+                    ],
+                  ),
           ),
           mediaQueryData: mediaQueryData,
           overrides: [
@@ -139,6 +149,21 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
       return controller;
+    }
+
+    /// The left and right inset of the page's first block.
+    (double, double) sidePadding(WidgetTester tester) {
+      final padding = tester
+          .widgetList<SliverPadding>(
+            find.descendant(
+              of: find.byType(HabitsTabPage),
+              matching: find.byType(SliverPadding),
+            ),
+          )
+          .first
+          .padding
+          .resolve(TextDirection.ltr);
+      return (padding.left, padding.right);
     }
 
     testWidgets('habits page is rendered', (tester) async {
@@ -285,6 +310,38 @@ void main() {
       // overflow at this width; consume it — the point here is that the
       // centred-padding branch is exercised and the page still builds.
       tester.takeException();
+      // A 1400 pane holds the 1100 measure with 150 either side.
+      expect(sidePadding(tester), (150, 150));
+    });
+
+    testWidgets('beside the navigation sidebar the side margin is measured '
+        "against the page's own pane, not the window", (tester) async {
+      tester.view.physicalSize = const Size(1400, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // A 1400 window with a 500 sidebar leaves a 900 pane: narrower than
+      // the measure, so the page sits on the gutter. Window-width
+      // arithmetic gave it 150 a side.
+      await pump(
+        tester,
+        HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing],
+          openNow: [habitFlossing],
+          displayFilter: HabitDisplayFilter.all,
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(1400, 1000)),
+        sidebarWidth: 500,
+      );
+      tester.takeException();
+
+      final gutter = tester
+          .element(find.byType(HabitsTabPage))
+          .designTokens
+          .spacing
+          .step5;
+      expect(sidePadding(tester), (gutter, gutter));
     });
 
     testWidgets('bottom chart clears the docked navigation bar', (
@@ -326,9 +383,10 @@ void main() {
       expect(
         chartPadding.padding,
         EdgeInsets.fromLTRB(
-          context.designTokens.spacing.step6,
+          // The side gutter Tasks, People and Goals sit on.
+          context.designTokens.spacing.step5,
           0,
-          context.designTokens.spacing.step6,
+          context.designTokens.spacing.step5,
           context.designTokens.spacing.step6 + occupied,
         ),
       );

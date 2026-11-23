@@ -161,7 +161,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     final contentWidth =
         math.min(
           kUnifiedGoalsContentMaxWidth,
-          paneWidth - railWidth - tokens.spacing.step6 * 2,
+          paneWidth - railWidth - tokens.spacing.step5 * 2,
         ) -
         tokens.spacing.cardPadding * 2;
     final fit = pitch <= 0 || contentWidth <= pitch

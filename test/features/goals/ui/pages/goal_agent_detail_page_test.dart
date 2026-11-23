@@ -311,6 +311,21 @@ void main() {
           )
           .first,
     );
+    // The page sits on the app's content gutter, as a task's and a
+    // person's page do: its cards line up with theirs.
+    final gutter = tester
+        .element(find.byType(GoalAgentDetailPage))
+        .designTokens
+        .spacing
+        .step5;
+    final pagePadding = tester
+        .widget<SingleChildScrollView>(
+          find.byType(SingleChildScrollView).first,
+        )
+        .padding!
+        .resolve(TextDirection.ltr);
+    expect((pagePadding.left, pagePadding.right), (gutter, gutter));
+
     scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
     await tester.pump();
     expect(find.text('Signals'), findsOneWidget);
@@ -3199,7 +3214,7 @@ void main() {
     final contentWidth =
         math.min(
           kUnifiedGoalsContentMaxWidth,
-          paneWidth - tokens.spacing.step6 * 2,
+          paneWidth - tokens.spacing.step5 * 2,
         ) -
         tokens.spacing.cardPadding * 2;
     final expectedFit = (contentWidth / pitch).floor().clamp(7, 90);

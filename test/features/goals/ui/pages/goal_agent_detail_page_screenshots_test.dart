@@ -1,7 +1,8 @@
 /// Deterministic design-review captures of the goal agent's page, framed on
 /// its hero "Agent's read" card: a goal at risk with a stale report, at phone
 /// and desktop widths, dark and light, with the companion on and off — and a
-/// journaling goal whose structured report answers what the user said.
+/// journaling goal whose structured report answers what the user said, and
+/// that goal's full check-in history.
 ///
 /// PNGs are written to `LOTTI_SCREENSHOT_DIR`, or
 /// `screenshots/goal_agent_detail` when only `LOTTI_CAPTURE_SCREENSHOTS=true`
@@ -38,6 +39,7 @@ import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
+import 'package:lotti/features/goals/ui/pages/goal_timeline_page.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
@@ -199,6 +201,7 @@ Future<void> _capture(
   bool journal = false,
   bool menuOpen = false,
   bool loadFailed = false,
+  bool history = false,
 }) async {
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pump();
@@ -254,7 +257,10 @@ Future<void> _capture(
       RepaintBoundary(
         key: screenshotBoundaryKey,
         child: makeTestableWidgetNoScroll(
-          const GoalAgentDetailPage(agentId: _agentId),
+          // The goal's own page, or its full check-in history.
+          history
+              ? const GoalTimelinePage(agentId: _agentId)
+              : const GoalAgentDetailPage(agentId: _agentId),
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
               : DesignSystemTheme.light(),
@@ -343,6 +349,8 @@ Future<void> _capture(
     tester,
     loadFailed
         ? 'load_failed_${device.name}_$theme'
+        : history
+        ? 'check_in_history_${device.name}_$theme'
         : journal
         ? 'journal_report_${device.name}_$theme'
         : menuOpen
@@ -397,6 +405,16 @@ void main() {
           brightness: brightness,
           companion: false,
           loadFailed: true,
+        );
+      });
+      testWidgets('${device.name} check-in history $theme', (tester) async {
+        await _capture(
+          tester,
+          device: device,
+          brightness: brightness,
+          companion: false,
+          journal: true,
+          history: true,
         );
       });
       testWidgets('${device.name} journal report $theme', (tester) async {

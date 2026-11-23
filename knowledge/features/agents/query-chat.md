@@ -5,73 +5,73 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
-stale_after: 2026-11-22
+generated: { by: claude-code/fable-5.2, at: 2026-11-23T10:00:00Z }
+stale_after: 2027-02-01
 sources:
   - id: controller
     resource: ../../../lib/features/agents/query/query_chat_controller.dart
     title: Request lifecycle and safe failure diagnostics
-    last_modified: 2026-09-12
+    last_modified: 2026-10-31
   - id: providers
     resource: ../../../lib/features/agents/query/query_chat_providers.dart
     title: Query profile resolution and runtime wiring
-    last_modified: 2026-09-11
+    last_modified: 2026-10-31
   - id: models
     resource: ../../../lib/classes/agents/query_chat_models.dart
     title: Query scope, evidence and chat events
-    last_modified: 2026-09-12
+    last_modified: 2026-10-31
   - id: crawler
     resource: ../../../lib/features/agents/query/query_journal_crawler.dart
     title: Bounded journal discovery and project attribution
-    last_modified: 2026-09-12
+    last_modified: 2026-11-14
   - id: guards
     resource: ../../../lib/features/agents/query/query_answer_guards.dart
     title: The per-window source gate and the citation guard
-    last_modified: 2026-11-02
+    last_modified: 2026-11-14
   - id: builder
     resource: ../../../lib/features/agents/query/query_answer_builder.dart
     title: Summary-first routing and home-entry evidence verification
-    last_modified: 2026-09-13
+    last_modified: 2026-11-14
   - id: summary-reader
     resource: ../../../lib/features/agents/query/query_summary_reader.dart
     title: Maintained task and project report layers
-    last_modified: 2026-09-12
+    last_modified: 2026-10-04
   - id: summary-answer
     resource: ../../../lib/features/agents/query/query_summary_answer_builder.dart
     title: TLDR selection and attributed summary answers
-    last_modified: 2026-09-13
+    last_modified: 2026-10-04
   - id: inference
     resource: ../../../lib/features/agents/query/query_text_inference.dart
     title: Profile routing, fresh device clock context and lenient JSON escapes
-    last_modified: 2026-09-16
+    last_modified: 2026-10-04
   - id: access
     resource: ../../../lib/features/agents/query/query_source_access.dart
     title: Live visibility gate
-    last_modified: 2026-09-11
+    last_modified: 2026-10-31
   - id: store
     resource: ../../../lib/features/agents/query/query_chat_store.dart
     title: Synced history and atomic publication
-    last_modified: 2026-09-22
+    last_modified: 2026-10-31
   - id: action-planner
     resource: ../../../lib/features/agents/query/query_task_action_planner.dart
     title: Isolated task-tool proposal planning
-    last_modified: 2026-09-13
+    last_modified: 2026-11-05
   - id: action-context
     resource: ../../../lib/features/agents/query/query_task_action_context.dart
     title: Live task action targets
-    last_modified: 2026-09-13
+    last_modified: 2026-10-04
   - id: action-service
     resource: ../../../lib/features/agents/query/query_chat_action_service.dart
     title: Human approval and guarded task dispatch
-    last_modified: 2026-09-22
+    last_modified: 2026-11-14
   - id: action-review
     resource: ../../../lib/features/agents/ui/query/query_action_review.dart
     title: Inline action review and retry
-    last_modified: 2026-09-22
+    last_modified: 2026-11-14
   - id: action-eval
     resource: ../../../test/features/ai/eval/query_actions_eval_live_test.dart
     title: Synthetic live action routing and review latency eval
-    last_modified: 2026-09-13
+    last_modified: 2026-10-04
   - id: audio-controller
     resource: ../../../lib/features/agents/query/query_audio_controller.dart
     title: Chat-owned audio and live authorization
@@ -79,7 +79,7 @@ sources:
   - id: audio-controls
     resource: ../../../lib/features/agents/ui/query/query_audio_controls.dart
     title: Playback, preparation and adjacent recovery actions
-    last_modified: 2026-09-12
+    last_modified: 2026-10-28
   - id: timing
     resource: ../../../lib/classes/audio_transcript_timing.dart
     title: Recording-bound transcript timing sidecar
@@ -87,31 +87,31 @@ sources:
   - id: alignment
     resource: ../../../lib/features/agents/query/query_audio_excerpt.dart
     title: Unique word matching and playback ranges
-    last_modified: 2026-09-11
+    last_modified: 2026-10-04
   - id: timing-provider
     resource: ../../../lib/features/agents/query/query_audio_timing_service.dart
     title: Explicit attributed timestamp generation
-    last_modified: 2026-09-11
+    last_modified: 2026-10-06
   - id: timing-writer
     resource: ../../../lib/features/agents/query/query_audio_timing_writer.dart
     title: Transactional source check and sidecar persistence
-    last_modified: 2026-09-11
+    last_modified: 2026-10-04
   - id: pane
     resource: ../../../lib/features/agents/ui/query/query_chat_pane.dart
     title: Conversation, navigation and deletion UI
-    last_modified: 2026-09-12
+    last_modified: 2026-11-08
   - id: companion
     resource: ../../../lib/features/agents/ui/query/query_companion.dart
     title: Retained task detail and adaptive chat companion
-    last_modified: 2026-09-12
+    last_modified: 2026-10-14
   - id: transcription-routing
     resource: ../../../lib/features/agents/query/query_transcription_provider.dart
     title: Category-default dictation routing
-    last_modified: 2026-09-12
+    last_modified: 2026-11-01
   - id: evidence-card
     resource: ../../../lib/features/agents/ui/query/query_evidence_card.dart
     title: Source attribution and verbatim passage disclosure
-    last_modified: 2026-09-12
+    last_modified: 2026-11-14
 ---
 
 # Ownership and entry points
@@ -145,7 +145,8 @@ a sync deletion cannot remove the chat Close control or strand its open flag. Wi
 enough width, chat docks on the right with a keyboard- and pointer-resizable
 divider. Fit uses the existing chat/detail reading measures at the current text
 scale. `TasksRootPage` and `ProjectsTabPage` temporarily hide their mounted lists when both reading
-columns would otherwise be squeezed, and suppresses the metadata column.
+columns would otherwise be squeezed. `TasksRootPage` also drops its metadata
+column for as long as chat is open.
 `AppScreen` hides its mounted day-view column while the selected task's chat is
 open. Neither suppression writes the saved pane preferences. Close restores the
 previous arrangement; explicitly showing the task list closes chat when space
@@ -180,10 +181,14 @@ stateDiagram-v2
 ```
 
 The header leads with the current scope title and provides a dedicated Close
-control in companion mode. Narrow or enlarged-text headers place the chat picker
-on its own row; search reach and filters open through a labelled disclosure.
-The scope title also exposes reach as an accessibility tooltip. Wide standalone headers show the agent attribution and
-filters inline. The empty view offers three editable question suggestions; short landscape
+control in companion mode. In the conversation view the chat picker always
+has a row of its own; while a reader has an evidence source open
+(`_sourceId`), the header shows neither the picker nor reach and filters. On a
+header narrower than `kPageHeaderFoldWidth` at the current text scale the
+agent attribution is dropped and search reach and filters open through a
+labelled disclosure; a wider header shows the attribution and the filters
+inline, in companion and standalone mode alike.
+The scope title also exposes reach as an accessibility tooltip. The empty view offers three editable question suggestions; short landscape
 reading areas omit the welcome heading to leave room for suggestions. Choosing a question populates an editable draft.
 
 Each answer keeps its numbered evidence inside the reply surface. Evidence
@@ -245,8 +250,10 @@ reader may see, or `journal:<sorted ids>` (`''` for uncategorized), which
 reads only those (ADR 0153). No query chat pane hosts it —
 `queryChatTargetProvider` throws `QueryScopeUnavailable` for it. It is used
 headless by the [front agent](../front_agent.md): `FrontDoorWalker` answers a
-`journal` question by building `QueryScope.journalIn(her allowedCategoryIds)`
-and calling `QueryAnswerBuilder.build` as `front_agent`.
+`journal` question by building `QueryScope.journalIn` over her
+`allowedCategoryIds` narrowed to the categories chosen for that message
+(`frontNarrowedCategories`) and calling `QueryAnswerBuilder.build` as
+`front_agent`.
 
 - **Profile:** no category's profile applies. `queryProfileProvider` resolves
   it standalone from the Settings default, then the built-in model.
@@ -281,7 +288,7 @@ flowchart LR
   M --> C["candidates in visible categories,<br/>meaning first"]
   K --> C
   C --> S["shortlist"]
-  S --> D["each task followed by up to 4<br/>linked notes, recordings, checklists"]
+  S --> D["each task followed by up to 4<br/>linked notes, recordings, photos, checklists"]
   D --> E["exact passages,<br/>task facts per evidence"]
   E --> A["FrontDoorAnswer with<br/>numbered evidence"]
 ```
@@ -290,8 +297,9 @@ flowchart LR
 says; what was said and done about it, and when, is in what is linked to it.
 After the shortlist, `QueryJournalCrawler.withTaskDetails` follows each
 chosen task with up to four of its linked entries (`maxDetailsPerTask`),
-newest first: notes, recordings, checklists — never another task or a
-project, which are neighbours rather than details. Each passes the filters a
+newest first: notes, recordings, photos, checklists and their items, and
+events while events are on — never another task or a project, which are
+neighbours rather than details. Each passes the filters a
 discovered document does: one of the source types discovery reads (an event
 only while events are on), visible, in the corpus's categories — which keep
 the categories the question named (`QueryCorpus.narrowedTo`), so a task in
@@ -612,8 +620,13 @@ only the leading JSON `answer` string incrementally, buffering incomplete
 escapes and surrogate pairs; other field orders stay buffered. Inspection,
 reasoning and the durable conclusion are never rendered. The draft uses plain
 text with a visible unverified label, so citations and URLs are inert. The final
-parsed text must extend the displayed prefix without changing it; existing
-citation and live-access checks still run before transactional publication.
+parsed text must extend the displayed prefix without changing it
+(`QueryTextInference.complete`). The guards then run on it, and when one
+drops something the draft showed — a citation naming no evidence, a roast
+paragraph without a source — the builder replaces the draft on screen with
+the guarded text (`onAnswerText`), so what is displayed is what is
+published. The live-access checks still run before transactional
+publication.
 
 `QueryChatLocal.provisional` holds the answer's dependencies and text only in
 memory. Active history notifications recheck those dependencies and category
@@ -628,7 +641,8 @@ A pinned activity row above the composer groups phase, a checked-source count
 when nonzero and Cancel, with a live-region announcement. Provisional text stays
 in the message history. The query composer omits the duplicate helper
 status. The switcher exposes running/unread indicators, last-message previews,
-one labelled overflow menu per chat and the archived count. The selected chat
+an overflow menu per chat (under the design system's generic *Show menu*
+label) and the archived count. The selected chat
 uses the design-system activated row fill as well as selected semantics.
 Archive confirms that conclusions
 remain available; Delete names the selected keep/forget consequence.
@@ -665,7 +679,8 @@ and scroll offsets cannot collide. Evidence cards use stable storage identities
 separate from their navigation keys to retain disclosure across chat switches.
 
 Unexpected failures are logged under `chat/query.send` with their stage,
-exception type and a numeric Melious HTTP status when available. Exception
+exception type and the numeric HTTP status of an `InferenceHttpException`
+(any provider's) when available. Exception
 messages and response bodies are not logged: they may contain private source
 text or credentials. The diagnostic stack identifies the failing code path.
 Cancellation, visibility changes and an unavailable inference setup do not
@@ -864,9 +879,6 @@ preventing duplicate or late replies from resurrecting a deleted chat.
 - Controllers retain database subscriptions after leaving the pane only while
   requests are active. Keeping an unsent draft does not keep crawling history
   on every journal change.
-- Category details keep their edit controller subscribed while the query pane
-  replaces the form. Returning from chat therefore preserves unsaved category
-  fields; the controller still disposes when the details page is left.
 
 # Voice input
 
@@ -983,13 +995,20 @@ failures in the speech logging domain without exposing recording paths or
 content. Existing journal audio and query playback stop each other from
 speaking simultaneously.
 
-Read answer aloud uses the existing on-device [TTS engine](../tts.md), including
-its settings and `enable_ai_summary_tts` gate. Playback is always user-triggered
+Read answer aloud goes through the app's [TTS playback](../tts.md), including
+its settings and `enable_ai_summary_tts` gate, in the voice the chat's
+profile names: a cloud speech model when the profile has one
+(`TtsCloudRoute.fromProfile`), else the on-device engine. Playback is always user-triggered
 and rechecks live chat visibility before starting. With the device-local
 **Prepare chat audio automatically** preference enabled, the selected chat's
 `QueryAudioController` schedules the latest published answer as soon as the
 saved projection or preference becomes available. It does not synthesize the
-whole history, streamed provisional text, questions or action proposals.
+whole history, streamed provisional text or questions, and a chat whose
+profile names a cloud voice prepares nothing: a cloud voice is only ever
+called on an explicit play. The latest answer is taken as it stands
+(`_prepareLatestAnswer` does not look at `proposedActions`), so the text of an
+answer that carries action proposals is prepared too, although the pane
+offers no Play control for such an answer.
 
 Preparation checks current access and saved answer identity/text before and
 after native synthesis. Chat/source visibility loss, deletion, recording,
