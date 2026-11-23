@@ -5,7 +5,7 @@ description: Markdown documents a task holds, drafted and revised by its agent t
 resource: ../../lib/features/documents
 tags: [documents, tasks, agents, proposals, markdown, versions, review]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-23T15:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-23T20:00:00Z }
 stale_after: 2027-04-03
 sources:
   - id: tool-definitions
@@ -476,7 +476,19 @@ stateDiagram-v2
   OtherTask --> Task: the task selected again
 ```
 
-### Side-by-side review (desktop, not built yet)
+### Side-by-side review (desktop, partly built)
+
+Built so far: the alignment the rows come from,
+[`markdown_block_diff.dart`](../../lib/features/documents/logic/markdown_block_diff.dart).
+`splitMarkdownBlocks` cuts a version into headings, paragraphs, whole lists
+(a loose list stays one block, so an ordered list never restarts at "1." in
+a cell) and fenced code. `alignMarkdownBlocks` matches unchanged blocks by a
+longest common subsequence on whitespace-collapsed text; between two
+matches, a removed and an added block whose word sets overlap by at least
+half (Dice) become one rewritten row. Every block of each side lands in
+exactly one row, in its order, which a property test holds; a moved block
+reads as removed in one place and added in another. The rest of this
+section is the plan.
 
 Reviewing a proposal is a mode of the document page. The current version is
 on the left and the proposed one on the right, aligned block by block

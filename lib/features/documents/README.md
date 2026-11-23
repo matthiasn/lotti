@@ -62,7 +62,9 @@ It implements the task agent's `TaskDocumentSource` port
 and reads a task's documents and a version the user confirmed is written;
 the agent's tools and their rules live in the agents feature.
 
-Still to come: the side-by-side review of a proposed version.
+Still to come: the side-by-side review of a proposed version. Its block
+alignment is in `logic/markdown_block_diff.dart`; the review view is not
+built yet.
 
 ## Where it sits
 
