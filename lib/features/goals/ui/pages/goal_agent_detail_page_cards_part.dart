@@ -764,7 +764,7 @@ class _CheckInRail extends StatelessWidget {
         // padding of its own, so the rail keeps it off the divider.
         tokens.spacing.step5,
         tokens.spacing.step5,
-        tokens.spacing.step6,
+        tokens.spacing.step5,
         // The page no longer cuts the device's bottom inset off (its bar
         // spends it), so the rail clears it here.
         tokens.spacing.step5 + MediaQuery.paddingOf(context).bottom,

@@ -298,16 +298,19 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: kUnifiedGoalsContentMaxWidth + tokens.spacing.step6 * 2,
+              maxWidth: kUnifiedGoalsContentMaxWidth + tokens.spacing.step5 * 2,
             ),
             child: CustomScrollView(
               controller: _scrollController,
               slivers: [
                 SliverPadding(
+                  // The side gutter every list page shares — Tasks and
+                  // People sit on `step5` too — so the cards line up from
+                  // one tab to the next.
                   padding: EdgeInsets.fromLTRB(
-                    tokens.spacing.step6,
                     tokens.spacing.step5,
-                    tokens.spacing.step6,
+                    tokens.spacing.step5,
+                    tokens.spacing.step5,
                     tokens.spacing.step6 +
                         DesignSystemBottomNavigationBar.occupiedHeight(
                           context,

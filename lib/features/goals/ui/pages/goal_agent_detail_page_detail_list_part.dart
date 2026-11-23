@@ -284,13 +284,13 @@ extension _GoalDetailList on _GoalAgentDetailPageState {
       // docked bar (reserved by its Scaffold as the bottom inset), the
       // device's own inset where there is no bar, and the shell's
       // navigation where that is overlaid.
-      // The Habits dashboard's behavior: a step6 gutter that holds on
-      // small screens, with the centered cap binding on wide ones — the
-      // goals list and this page share both numbers with Habits.
+      // The app's content gutter (`step5`, as a task's and a person's page)
+      // holds on small screens, with the centered cap binding on wide ones —
+      // the goals list and this page share both numbers with Habits.
       padding: EdgeInsets.fromLTRB(
-        tokens.spacing.step6,
         tokens.spacing.step5,
-        tokens.spacing.step6,
+        tokens.spacing.step5,
+        tokens.spacing.step5,
         tokens.spacing.step5 +
             MediaQuery.paddingOf(context).bottom +
             DesignSystemBottomNavigationBar.occupiedHeight(context),

@@ -326,9 +326,10 @@ void main() {
       expect(
         chartPadding.padding,
         EdgeInsets.fromLTRB(
-          context.designTokens.spacing.step6,
+          // The side gutter Tasks, People and Goals sit on.
+          context.designTokens.spacing.step5,
           0,
-          context.designTokens.spacing.step6,
+          context.designTokens.spacing.step5,
           context.designTokens.spacing.step6 + occupied,
         ),
       );

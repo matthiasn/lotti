@@ -108,9 +108,9 @@ class GoalTimelinePage extends ConsumerWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
-            tokens.spacing.step6,
             tokens.spacing.step5,
-            tokens.spacing.step6,
+            tokens.spacing.step5,
+            tokens.spacing.step5,
             tokens.spacing.step5 +
                 DesignSystemBottomNavigationBar.occupiedHeight(context),
           ),

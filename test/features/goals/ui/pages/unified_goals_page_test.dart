@@ -579,6 +579,31 @@ void main() {
     expect(headerRect.left, greaterThan(200));
   });
 
+  testWidgets('on a phone the list sits on the side gutter Tasks and People '
+      'use, so the cards line up from one tab to the next', (tester) async {
+    await pump(tester, baseState(), viewport: const Size(430, 2600));
+
+    final tokens = tester.element(find.byType(UnifiedGoalsPage)).designTokens;
+    final padding = tester
+        .widgetList<SliverPadding>(find.byType(SliverPadding))
+        .first
+        .padding
+        .resolve(TextDirection.ltr);
+    expect(
+      (padding.left, padding.right),
+      (
+        tokens.spacing.step5,
+        tokens.spacing.step5,
+      ),
+    );
+    // The title starts on that gutter, and a goals card ends on it.
+    expect(tester.getRect(find.text('Goals')).left, tokens.spacing.step5);
+    expect(
+      tester.getRect(find.byType(DsRowsCard).first).right,
+      430 - tokens.spacing.step5,
+    );
+  });
+
   testWidgets('a narrow window folds the filter tabs under the title', (
     tester,
   ) async {

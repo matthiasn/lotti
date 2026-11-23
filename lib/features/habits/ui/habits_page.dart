@@ -216,9 +216,10 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
     // capped + centred on a wide window, full-bleed minus a gutter when narrow.
     // The heatmap no longer breaks out wider than everything else (the "cross").
     final width = MediaQuery.sizeOf(context).width;
-    final pagePadding = width > _maxContentWidth + tokens.spacing.step6 * 2
+    // The gutter is the one Tasks, People and Goals sit on.
+    final pagePadding = width > _maxContentWidth + tokens.spacing.step5 * 2
         ? (width - _maxContentWidth) / 2
-        : tokens.spacing.step6;
+        : tokens.spacing.step5;
 
     final displayFilter = state.displayFilter;
     final showAll = displayFilter == HabitDisplayFilter.all;
