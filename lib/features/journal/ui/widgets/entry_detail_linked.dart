@@ -80,15 +80,21 @@ class LinkedEntriesWidget extends ConsumerWidget {
     final isNarrowed =
         showFlaggedOnly ||
         activeKinds.length < LinkedEntryActivityFilter.values.length;
+    final listed = !isNarrowed
+        ? const <JournalEntity>[]
+        : ref
+              .watch(resolvedOutgoingLinkedEntriesProvider(item.id))
+              .where(
+                (entry) => _isListed(entry, hideTaskEntries: hideTaskEntries),
+              )
+              .toList();
+    // Entries the list would draw, none of which the filters let through. A
+    // list with nothing to draw in the first place is not "filtered".
     final filteredToNothing =
-        isNarrowed &&
-        !ref
-            .watch(resolvedOutgoingLinkedEntriesProvider(item.id))
-            .any(
-              (entry) =>
-                  _isListed(entry, hideTaskEntries: hideTaskEntries) &&
-                  _passesFilters(entry, activeKinds, showFlaggedOnly),
-            );
+        listed.isNotEmpty &&
+        !listed.any(
+          (entry) => _passesFilters(entry, activeKinds, showFlaggedOnly),
+        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -142,7 +148,8 @@ bool _isListed(JournalEntity entry, {required bool hideTaskEntries}) {
   if (entry is AiResponseEntry) {
     return entry.data.type == AiResponseType.promptGeneration;
   }
-  return !(hideTaskEntries && (entry is Task || entry is PullRequestEntry));
+  if (!hideTaskEntries) return true;
+  return entry is! Task && entry is! PullRequestEntry;
 }
 
 /// What the list shows when its filters hide every entry: that nothing

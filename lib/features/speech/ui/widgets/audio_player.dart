@@ -81,6 +81,9 @@ class AudioPlayerWidget extends ConsumerWidget {
         SizedBox(width: tokens.spacing.step3),
         Expanded(
           child: _WaveformArea(
+            // Keyed by recording, so one recording's drawn waveform is never
+            // carried over to another.
+            key: ValueKey(journalAudio.meta.id),
             journalAudio: journalAudio,
             progress: progress,
             buffered: buffered,
@@ -129,6 +132,7 @@ class _WaveformArea extends ConsumerStatefulWidget {
     required this.totalDuration,
     required this.isActive,
     required this.onSeek,
+    super.key,
   });
 
   final JournalAudio journalAudio;
@@ -151,14 +155,6 @@ class _WaveformAreaState extends ConsumerState<_WaveformArea> {
   /// a longer speed label, a resized window — would otherwise drop back to
   /// the plain bar until the new instance has loaded.
   List<double>? _drawn;
-
-  @override
-  void didUpdateWidget(_WaveformArea oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.journalAudio.meta.id != widget.journalAudio.meta.id) {
-      _drawn = null;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

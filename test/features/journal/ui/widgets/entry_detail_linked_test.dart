@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -668,6 +670,82 @@ void main() {
         ),
         LinkedEntryActivityFilter.values.toSet(),
       );
+    });
+
+    testWidgets('entries the list never draws do not count as filtered out', (
+      tester,
+    ) async {
+      EntryLink linkTo(String id) => EntryLink.basic(
+        id: 'link-$id',
+        fromId: testTask.meta.id,
+        toId: id,
+        createdAt: DateTime(2024, 1, 2),
+        updatedAt: DateTime(2024, 1, 2),
+        vectorClock: null,
+      );
+      AiResponseEntry response(String id, AiResponseType type) =>
+          AiResponseEntry(
+            meta: testTextEntry.meta.copyWith(id: id),
+            data: AiResponseData(
+              model: 'test-model',
+              systemMessage: '',
+              prompt: '',
+              thoughts: '',
+              response: '## Summary\nCount the sardines\n\n## Prompt\nDo it',
+              type: type,
+            ),
+          );
+      final deleted = testTextEntry.copyWith(
+        meta: testTextEntry.meta.copyWith(
+          id: 'deleted-entry',
+          deletedAt: DateTime(2024, 1, 3),
+        ),
+      );
+      final analysis = response('analysis', AiResponseType.imageAnalysis);
+      final prompt = response('prompt', AiResponseType.promptGeneration);
+
+      Future<void> pumpWith(List<JournalEntity> entries) async {
+        mockLinkedEntries([for (final e in entries) linkTo(e.meta.id)]);
+        for (final e in entries) {
+          when(
+            () => mockJournalDb.journalEntityById(e.meta.id),
+          ).thenAnswer((_) async => e);
+        }
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            LinkedEntriesWidget(testTask, hideTaskEntries: true),
+          ),
+        );
+        await tester.pumpAndSettle();
+        ProviderScope.containerOf(
+              tester.element(find.byType(LinkedEntriesWidget)),
+            )
+            .read(
+              linkedEntriesActivityFilterControllerProvider(
+                testTask.meta.id,
+              ).notifier,
+            )
+            .toggle(LinkedEntryActivityFilter.code);
+        await tester.pumpAndSettle();
+      }
+
+      // A deleted entry and a transcript-style response are never drawn, so
+      // with Code off there is nothing the filter took away.
+      await pumpWith([deleted, analysis]);
+      final messages = tester
+          .element(find.byType(LinkedEntriesWidget))
+          .messages;
+      expect(find.text(messages.logbookNoMatchesTitle), findsNothing);
+
+      // A coding prompt is drawn, so switching Code off does empty the list.
+      // The linked task beside it has its own section and is not drawn here,
+      // so it does not count as an entry that still matches.
+      final linkedTask = testTask.copyWith(
+        meta: testTask.meta.copyWith(id: 'linked-task'),
+      );
+      await pumpWith([deleted, analysis, prompt, linkedTask]);
+      expect(find.text(messages.logbookNoMatchesTitle), findsOneWidget);
     });
   });
 }
