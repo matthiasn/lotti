@@ -15308,6 +15308,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipUpdateFromContact => 'Mettre à jour depuis le contact';
 
   @override
+  String get reportTodoAddFailed =>
+      'Impossible de l’ajouter à la liste de contrôle';
+
+  @override
+  String get reportTodoAddToChecklist => 'Ajouter à la liste de contrôle';
+
+  @override
+  String get reportTodoOnChecklist => 'Dans la liste de contrôle';
+
+  @override
   String get saveButton => 'Enregistrer';
 
   @override

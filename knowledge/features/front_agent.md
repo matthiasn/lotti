@@ -983,6 +983,12 @@ kind and rows. A report written as Markdown (before ADR 0166, or by a model
 that ignored the schema) comes back as its text, marked as one
 `ReportSections` cannot show; she answers from its words.
 
+It also takes a plain *"where does the seam walk stand?"*: in the live
+answer runs (Mistral Large 4, DeepSeek V4.1 Flash and GLM 5.3 Flash, two each,
+2026-11-23) she read the report every time rather than dispatching the
+question to the task's agent. A question about a project is still dispatched,
+since only tasks have `read_report`.
+
 Her reply places sections with `ReportSections(caption, task, sections)`:
 the task as listed and the section numbers, never their words.
 `readFrontReply` accepts only a task whose sectioned report this turn read
@@ -992,7 +998,7 @@ of the task's summary never changes an answer already given; the card says
 how old its report is. `FrontReportSectionsCard` draws a quote in the AI
 summary's violet card: the task as its header, which opens it, *AI summary ·
 2 days ago* under it, then the same `AgentReportSectionsView` the task page
-draws.
+draws, with the task page's *Add to checklist* beside each open to-do.
 
 ```mermaid
 sequenceDiagram

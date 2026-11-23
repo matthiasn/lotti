@@ -15158,6 +15158,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipUpdateFromContact => 'Aus Kontakt aktualisieren';
 
   @override
+  String get reportTodoAddFailed =>
+      'Konnte nicht zur Checkliste hinzugefügt werden';
+
+  @override
+  String get reportTodoAddToChecklist => 'Zur Checkliste hinzufügen';
+
+  @override
+  String get reportTodoOnChecklist => 'Steht auf der Checkliste';
+
+  @override
   String get saveButton => 'Speichern';
 
   @override

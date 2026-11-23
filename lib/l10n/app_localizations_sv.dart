@@ -15078,6 +15078,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipUpdateFromContact => 'Uppdatera från kontakt';
 
   @override
+  String get reportTodoAddFailed => 'Kunde inte läggas till i checklistan';
+
+  @override
+  String get reportTodoAddToChecklist => 'Lägg till i checklistan';
+
+  @override
+  String get reportTodoOnChecklist => 'Finns i checklistan';
+
+  @override
   String get saveButton => 'Spara';
 
   @override

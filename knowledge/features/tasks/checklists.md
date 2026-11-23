@@ -16,6 +16,14 @@ sources:
     resource: ../../../lib/features/tasks/ui/pages/task_details_page.dart
     title: Task details toast scope
     last_modified: 2026-08-30
+  - id: report-todos
+    resource: ../../../lib/features/tasks/ui/widgets/report_todo_checklist_action.dart
+    title: ReportTodoChecklistAction — a report to-do onto the task's checklist
+    last_modified: 2026-11-23
+  - id: report-todo-titles
+    resource: ../../../lib/features/tasks/state/task_checklist_titles.dart
+    title: The task's active checklist titles, and adding a to-do to them
+    last_modified: 2026-11-23
   - id: checklist-feature
     resource: ../../../lib/features/checklist
     title: Correction capture and undo
@@ -334,6 +342,31 @@ an inline `WidgetSpan`, instead of being truncated. While task chat is enabled,
 tapping the caption selects the approval's conversation in
 `queryChatControllerProvider` and opens the task's companion pane — the same
 switch the chat's Ask button flips.
+
+# A report to-do joins the checklist on a tap
+
+An open to-do in the task agent's report — on the task page or quoted by the
+companion — carries `ReportTodoChecklistAction`. It watches
+`taskChecklistTitleKeysProvider`, composed from the task's checklist and item
+controllers, so it follows every add, rename and removal: a to-do whose
+`checklistTitleKey` (plain words, lower case, no closing punctuation) the
+active items already hold shows a quiet mark; any other shows *Add to
+checklist*. A tap writes through `addTodoToTaskChecklist`: the plain title
+(`plainChecklistTitle` drops link and emphasis marks) as an open item of the
+task's first checklist, or a new checklist holding it when the task has none.
+The user's tap is the consent, so nothing is proposed or confirmed.
+
+```mermaid
+flowchart LR
+  Todo["Open report to-do"] --> Keys["taskChecklistTitleKeysProvider"]
+  Keys -->|holds its key| Mark["On the checklist"]
+  Keys -->|does not| Button["Add to checklist"]
+  Button -->|tap| Add["addTodoToTaskChecklist"]
+  Add -->|first checklist| Item["addItemToChecklist"]
+  Add -->|no checklist| New["createChecklist with the item"]
+  Item --> Keys
+  New --> Keys
+```
 
 # Stale-while-revalidate rendering
 

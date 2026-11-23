@@ -132,6 +132,71 @@ class JudgmentValidationTest(unittest.TestCase):
             )
         )
 
+    def test_a_sectioned_report_is_judged_as_the_markdown_the_app_stores(
+        self,
+    ) -> None:
+        sectioned = {
+            "oneLiner": "Feeder test next",
+            "tldr": "The feeder test is next.",
+            "sections": [
+                {"kind": "text", "text": "Seals held overnight."},
+                {
+                    "kind": "checklist",
+                    "title": "Next actions",
+                    "items": [
+                        {"text": "Run the feeder test"},
+                        {"text": "Load sardines", "done": True},
+                        {"text": "  "},
+                    ],
+                },
+                {"kind": "points", "title": "Links", "items": ["[Spec](https://x.y)"]},
+                {"kind": "table", "title": "Unknown"},
+                {"kind": "text", "title": "Empty", "text": " "},
+            ],
+        }
+        result = {
+            "toolCalls": [
+                {"name": "update_report", "argumentsJson": json.dumps(sectioned)}
+            ]
+        }
+
+        self.assertEqual(
+            judge._product_report(result)["content"],
+            "Seals held overnight.\n\n"
+            "## Next actions\n\n"
+            "- [ ] Run the feeder test\n"
+            "- [x] Load sardines\n\n"
+            "## Links\n\n"
+            "- [Spec](https://x.y)",
+        )
+        # The array sent as its JSON text reads the same.
+        as_text = {**sectioned, "sections": json.dumps(sectioned["sections"])}
+        self.assertEqual(
+            judge._product_report(
+                {
+                    "toolCalls": [
+                        {"name": "update_report", "argumentsJson": json.dumps(as_text)}
+                    ]
+                }
+            )["content"],
+            judge._product_report(result)["content"],
+        )
+        # Sections with nothing usable are no report.
+        self.assertIsNone(
+            judge._product_report(
+                {
+                    "toolCalls": [
+                        {
+                            "name": "update_report",
+                            "argumentsJson": json.dumps(
+                                {**sectioned, "sections": [{"kind": "table"}]}
+                            ),
+                        }
+                    ]
+                }
+            )
+        )
+
     def test_judge_payload_identifies_the_product_report(self) -> None:
         scenario = _report()["scenarios"][0]
         result = _report()["results"][0]

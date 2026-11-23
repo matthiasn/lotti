@@ -858,6 +858,17 @@ either `items` (`{text, done}`) or `text`; row and paragraph text is inline
 Markdown. Both built-in directives describe the report in sections, and a
 heading a custom directive names becomes a section title.
 
+Both directives open the report with an untitled `text` section on where the
+task stands — its decision, outcome, deadline and purpose, estimate or risk —
+and call `checklist` *the report's* pending actions, never the task's
+checklist. Without that, the live matrix (18 production scenarios,
+2026-11-23) found Mistral Large 4 and GLM 5.3 Flash shortening reports by
+about a third (median 529 → 351 and 563 → 372 characters) and writing some as
+a bare action list (3 and 2 of 16). With it, both write a situation paragraph
+followed by the checklist (median 452 and 479). A missing section `kind` is
+read from the section's shape, and the forced-report retry asks for
+`sections` too.
+
 ```mermaid
 flowchart LR
   Tool["update_report(sections)"] --> Parse["parseAgentReportSections"]

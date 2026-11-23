@@ -6,6 +6,8 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -14,10 +16,12 @@ import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/front_agent/model/front_logged_time_chart.dart';
 import 'package:lotti/features/front_agent/model/front_reply_surface.dart';
+import 'package:lotti/features/front_agent/model/front_report_quote.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
+import 'package:lotti/features/front_agent/workflow/front_report_lookups.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -35,6 +39,7 @@ class _AnswerScenario {
     this.proseOnly = false,
     this.cardIds = const {},
     this.dueNone = false,
+    this.quotes = const {},
   });
 
   final String id;
@@ -51,6 +56,9 @@ class _AnswerScenario {
 
   /// Whether the due lookup finds nothing this turn.
   final bool dueNone;
+
+  /// Report section titles her `ReportSections` must quote, by task id.
+  final Map<String, Set<String>> quotes;
 }
 
 const _scenarios = [
@@ -70,6 +78,31 @@ const _scenarios = [
     id: 'time_past_week',
     input: 'How much time did I log in the past seven days?',
     wants: {FrontReplyComponents.loggedTimeChart},
+  ),
+  // Where a task stands: she reads its report and shows the sections that
+  // answer, rather than retelling them (rule 17).
+  _AnswerScenario(
+    id: 'report_next',
+    input: "What's next on the Bay C seam?",
+    wants: {FrontReplyComponents.reportSections},
+    quotes: {
+      'task-bay-c-seam': {'Next actions'},
+    },
+  ),
+  _AnswerScenario(
+    id: 'report_blockers_two_tasks',
+    input: "What's blocking the Bay C seam walk and the iceberg survey?",
+    wants: {FrontReplyComponents.reportSections},
+    quotes: {
+      'task-bay-c-seam': {'Blockers'},
+      'task-iceberg-survey': {'Blockers'},
+    },
+  ),
+  // Observed, not required: whether she reads the report or hands the
+  // question to the task's agent ("dispatched a question" marks the second).
+  _AnswerScenario(
+    id: 'task_where_stands',
+    input: 'Where does the Bay C seam walk stand?',
   ),
   // Nothing was found: there is nothing to draw, only to say.
   _AnswerScenario(
@@ -223,6 +256,11 @@ void main() {
                   categoryIds: {},
                 ),
               ),
+              reports: FrontReportLookups(
+                reader: (ids) async => {
+                  for (final id in ids) id: ?_reports[id],
+                },
+              ),
             );
 
             var strategy = newStrategy();
@@ -294,6 +332,18 @@ void main() {
                 if (component case {'items': final List<Object?> items})
                   for (final item in items) (item! as Map)['id'],
             };
+            final quoted = <String, Set<String>>{};
+            for (final component in strategy.replyComponents) {
+              if (component['component'] !=
+                  FrontReplyComponents.reportSections) {
+                continue;
+              }
+              final quote = FrontReportQuote.fromJson(component['quote']);
+              if (quote == null) continue;
+              quoted
+                  .putIfAbsent(quote.taskId, () => {})
+                  .addAll(quote.sections.map((section) => section.title));
+            }
             final failed = <String>[
               if (failure != null) 'threw',
               if (strategy.replyToUser == null) 'no answer taken',
@@ -306,6 +356,11 @@ void main() {
               for (final id in scenario.cardIds)
                 if (!cards.contains(id)) 'missing card $id',
               if (strategy.dispatch != null) 'dispatched a question',
+              for (final MapEntry(key: taskId, value: titles)
+                  in scenario.quotes.entries)
+                for (final title in titles)
+                  if (!(quoted[taskId]?.contains(title) ?? false))
+                    'did not quote $title of $taskId',
             ];
             if (failed.isEmpty) passed++;
             rows.add({
@@ -315,6 +370,10 @@ void main() {
               'answer': strategy.replyToUser,
               'drawn': drawn,
               'cards': cards.toList(),
+              'quoted': {
+                for (final MapEntry(:key, :value) in quoted.entries)
+                  key: value.toList(),
+              },
               'formatFailures': formatFailures,
               'lookupCalls': strategy.lookupCalls,
               'providerCalls': providerCalls,
@@ -353,3 +412,64 @@ Future<void> _withBackoff(Future<void> Function() body) async {
     }
   }
 }
+
+/// The reports `read_report` finds: two penguin-world tasks whose agents wrote
+/// sections, so rule 17 has something to quote.
+final Map<String, AgentReportEntity> _reports = {
+  'task-bay-c-seam': _report('r-bay-c-seam', const [
+    AgentReportSection(
+      kind: AgentReportSectionKind.points,
+      title: 'Findings',
+      items: [
+        AgentReportSectionItem(text: 'Seam C-4 weeps under load'),
+        AgentReportSectionItem(text: 'Seams C-1 to C-3 held overnight'),
+      ],
+    ),
+    AgentReportSection(
+      kind: AgentReportSectionKind.checklist,
+      title: 'Next actions',
+      items: [
+        AgentReportSectionItem(text: 'Reseal C-4 with the cold-cure sealant'),
+        AgentReportSectionItem(text: 'Pressure-test Bay C after the reseal'),
+        AgentReportSectionItem(text: 'Walk the full seam', done: true),
+      ],
+    ),
+    AgentReportSection(
+      kind: AgentReportSectionKind.points,
+      title: 'Blockers',
+      items: [
+        AgentReportSectionItem(text: 'The sealant delivery slipped to Friday'),
+      ],
+    ),
+  ]),
+  'task-iceberg-survey': _report('r-iceberg-survey', const [
+    AgentReportSection(
+      kind: AgentReportSectionKind.text,
+      text: 'Half of the north shelf is mapped.',
+    ),
+    AgentReportSection(
+      kind: AgentReportSectionKind.checklist,
+      title: 'Next actions',
+      items: [AgentReportSectionItem(text: 'Map the eastern half')],
+    ),
+    AgentReportSection(
+      kind: AgentReportSectionKind.points,
+      title: 'Blockers',
+      items: [
+        AgentReportSectionItem(text: 'The drone battery fails below -30 °C'),
+      ],
+    ),
+  ]),
+};
+
+AgentReportEntity _report(String id, List<AgentReportSection> sections) =>
+    AgentDomainEntity.agentReport(
+          id: id,
+          agentId: 'agent-$id',
+          scope: 'current',
+          createdAt: DateTime(2026, 11, 20, 9),
+          vectorClock: null,
+          content: renderAgentReportSectionsMarkdown(sections),
+          sections: sections,
+        )
+        as AgentReportEntity;

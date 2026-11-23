@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'agent_report_section.freezed.dart';
@@ -53,17 +55,29 @@ abstract class AgentReportSectionItem with _$AgentReportSectionItem {
       _$AgentReportSectionItemFromJson(json);
 }
 
-/// Reads the model's `sections` argument, dropping anything malformed: an
-/// unknown kind, a paragraph with no text, a list with no usable rows. Returns
-/// an empty list when nothing usable remains.
+/// Reads the model's `sections` argument, dropping anything malformed: a
+/// paragraph with no text, a list with no usable rows. A missing or unknown
+/// `kind` is read from the section's shape — `text` makes a paragraph, rows
+/// with a `done` mark a checklist, other rows a list — since models leave it
+/// out. Returns an empty list when nothing usable remains.
 List<AgentReportSection> parseAgentReportSections(Object? raw) {
+  // Some models send a nested array as its JSON text.
+  if (raw is String && raw.trimLeft().startsWith('[')) {
+    try {
+      return parseAgentReportSections(jsonDecode(raw));
+    } on FormatException {
+      return const [];
+    }
+  }
   if (raw is! List) return const [];
   final sections = <AgentReportSection>[];
   for (final entry in raw) {
     if (entry is! Map) continue;
-    final kind = AgentReportSectionKind.values
-        .where((value) => value.name == entry['kind'])
-        .firstOrNull;
+    final kind =
+        AgentReportSectionKind.values
+            .where((value) => value.name == entry['kind'])
+            .firstOrNull ??
+        _kindOfShape(entry);
     if (kind == null) continue;
     final title = _trimmed(entry['title']);
     if (kind == AgentReportSectionKind.text) {
@@ -109,3 +123,12 @@ String renderAgentReportSectionsMarkdown(List<AgentReportSection> sections) => [
 ].join('\n\n');
 
 String _trimmed(Object? value) => value is String ? value.trim() : '';
+
+AgentReportSectionKind? _kindOfShape(Map<Object?, Object?> entry) {
+  if (_trimmed(entry['text']).isNotEmpty) return AgentReportSectionKind.text;
+  final items = entry['items'];
+  if (items is! List || items.isEmpty) return null;
+  return items.any((item) => item is Map && item['done'] is bool)
+      ? AgentReportSectionKind.checklist
+      : AgentReportSectionKind.points;
+}

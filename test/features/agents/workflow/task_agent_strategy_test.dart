@@ -1615,7 +1615,14 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-report',
-            response: 'Error: "sections" must be a non-empty array.',
+            // The refusal names the shape, so a model can repair it.
+            response: any(
+              named: 'response',
+              that: allOf(
+                startsWith('Error: "sections" must be a non-empty array'),
+                contains('"kind": "points" | "checklist" | "text"'),
+              ),
+            ),
           ),
         ).called(1);
       });

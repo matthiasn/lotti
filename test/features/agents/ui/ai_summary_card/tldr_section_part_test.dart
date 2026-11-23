@@ -753,6 +753,10 @@ void main() {
               items: [AgentReportSectionItem(text: 'Run the test')],
             ),
           ],
+          openTodoAction: (item) => SizedBox.square(
+            key: ValueKey('action: ${item.text}'),
+            dimension: 8,
+          ),
           onToggle: () {},
           disclosureKey: const ValueKey('disclosure'),
         ),
@@ -764,6 +768,10 @@ void main() {
 
       await tester.pumpWidget(body(expanded: true));
       expect(find.byType(AgentReportSectionsView), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('action: Run the test')),
+        findsOneWidget,
+      );
       expect(find.text('Run the test'), findsOneWidget);
       // Only the summary is still drawn as Markdown.
       expect(find.byType(AgentMarkdownView), findsNWidgets(2));

@@ -11,6 +11,7 @@ import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_preview_modal.dart';
+import 'package:lotti/features/tasks/ui/widgets/report_todo_checklist_action.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/widgets/layout/viewport_stable_animated_size.dart';
 import 'package:material_ui/material_ui.dart';
@@ -183,6 +184,7 @@ class TaskForm extends ConsumerWidget {
                 taskId: linkedTaskId,
               ),
               showAssignCta: !isFirstRun,
+              reportTodoAction: reportTodoChecklistActionFor(taskId),
             ),
           ),
         ),

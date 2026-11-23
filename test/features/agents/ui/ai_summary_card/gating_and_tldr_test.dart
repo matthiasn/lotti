@@ -319,6 +319,8 @@ void main() {
             ),
           ],
         ),
+        reportTodoAction: (text) =>
+            SizedBox.square(key: ValueKey('todo: $text'), dimension: 8),
       );
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
@@ -331,6 +333,8 @@ void main() {
       );
       expect(view.sections.single.title, 'Next actions');
       expect(find.text('Ship it'), findsOneWidget);
+      // The host's action stands beside the open to-do.
+      expect(find.byKey(const ValueKey('todo: Ship it')), findsOneWidget);
     });
 
     testWidgets('Agent details pill (under expanded report) opens it', (

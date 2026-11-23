@@ -15276,6 +15276,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipUpdateFromContact => 'Aktualizovat z kontaktu';
 
   @override
+  String get reportTodoAddFailed =>
+      'Nepodařilo se přidat do kontrolního seznamu';
+
+  @override
+  String get reportTodoAddToChecklist => 'Přidat do kontrolního seznamu';
+
+  @override
+  String get reportTodoOnChecklist => 'Je v kontrolním seznamu';
+
+  @override
   String get saveButton => 'Uložit';
 
   @override
