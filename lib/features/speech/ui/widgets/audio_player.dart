@@ -28,6 +28,19 @@ const List<double> _speedSequence = <double>[
 /// the whole player: everything else sits on its row.
 const double _playControlDiameter = 40;
 
+/// The laid-out width of [text] in [style] at the ambient text scale.
+double _labelWidth(BuildContext context, String text, TextStyle style) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    maxLines: 1,
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width;
+}
+
 /// One-row audio player: play control, waveform, time and speed.
 class AudioPlayerWidget extends ConsumerWidget {
   const AudioPlayerWidget(this.journalAudio, {super.key});
@@ -67,6 +80,10 @@ class AudioPlayerWidget extends ConsumerWidget {
 
     final tokens = context.designTokens;
     final speedLabel = _speedLabel(state.speed);
+    final timeStyle = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.lowEmphasis,
+      fontFeatures: numericBadgeFontFeatures,
+    );
 
     // No outer padding: the player is a body section whose surrounding
     // spacing is owned by its container.
@@ -98,12 +115,16 @@ class AudioPlayerWidget extends ConsumerWidget {
         // length, so the pair is not spelled out twice. lowEmphasis, as it is
         // supporting metadata like the card's timestamp; tabular figures so
         // the ticking counter does not shift the row.
-        Text(
-          formatElapsed(isActive ? progress : totalDuration),
-          maxLines: 1,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.lowEmphasis,
-            fontFeatures: numericBadgeFontFeatures,
+        // Held at the width of the longest value it can show, the
+        // recording's length, so the waveform beside it keeps its width when
+        // the position gains or loses an hours field.
+        SizedBox(
+          width: _labelWidth(context, formatElapsed(totalDuration), timeStyle),
+          child: Text(
+            formatElapsed(isActive ? progress : totalDuration),
+            maxLines: 1,
+            textAlign: TextAlign.end,
+            style: timeStyle,
           ),
         ),
         SizedBox(width: tokens.spacing.step2),

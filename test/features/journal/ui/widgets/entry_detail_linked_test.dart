@@ -8,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
@@ -23,6 +24,7 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -747,5 +749,63 @@ void main() {
       await pumpWith([deleted, analysis, prompt, linkedTask]);
       expect(find.text(messages.logbookNoMatchesTitle), findsOneWidget);
     });
+
+    for (final eventsEnabled in [false, true]) {
+      testWidgets('a linked event counts as a match only while Events is '
+          '${eventsEnabled ? 'on' : 'off'}, as only then is it drawn', (
+        tester,
+      ) async {
+        EntryLink linkTo(String id) => EntryLink.basic(
+          id: 'link-$id',
+          fromId: testTask.meta.id,
+          toId: id,
+          createdAt: DateTime(2024, 1, 2),
+          updatedAt: DateTime(2024, 1, 2),
+          vectorClock: null,
+        );
+        mockLinkedEntries([
+          linkTo(testTextEntry.meta.id),
+          linkTo(testRehearsalEvent.meta.id),
+        ]);
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testRehearsalEvent.meta.id),
+        ).thenAnswer((_) async => testRehearsalEvent);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            LinkedEntriesWidget(testTask),
+            overrides: [
+              configFlagProvider(
+                enableEventsFlag,
+              ).overrideWith((ref) => Stream.value(eventsEnabled)),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Timer off hides the text entry; the event has no kind of its own.
+        ProviderScope.containerOf(
+              tester.element(find.byType(LinkedEntriesWidget)),
+            )
+            .read(
+              linkedEntriesActivityFilterControllerProvider(
+                testTask.meta.id,
+              ).notifier,
+            )
+            .toggle(LinkedEntryActivityFilter.timer);
+        await tester.pumpAndSettle();
+
+        final messages = tester
+            .element(find.byType(LinkedEntriesWidget))
+            .messages;
+        expect(
+          find.text(messages.logbookNoMatchesTitle),
+          eventsEnabled ? findsNothing : findsOneWidget,
+        );
+      });
+    }
   });
 }

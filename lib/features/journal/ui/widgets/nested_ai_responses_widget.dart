@@ -143,32 +143,30 @@ class _NestedAiResponsesWidgetState
     if (aiResponses.isEmpty) return const SizedBox.shrink();
 
     final newlyArrived = _newlyArrivedResponseIds;
-    final section = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final response in aiResponses)
-          _entrance(
-            animate: newlyArrived.contains(response.meta.id),
-            key: ValueKey('nested-ai-response-${response.meta.id}'),
-            child: Padding(
-              padding: EdgeInsets.only(top: tokens.spacing.cardItemSpacing),
-              child: _buildAiResponseCard(context, response),
-            ),
-          ),
-      ],
-    );
-    if (!_animateSection) return section;
+    // The entrance wrappers are always mounted, keyed, and only told whether
+    // to animate: [SizeFadeEntrance] plays once, when it mounts. Adding the
+    // wrapper for an arrival and dropping it on the next build would change
+    // the widget type at that slot, remount the card under it and throw away
+    // its expanded state.
     return SizeFadeEntrance(
       key: ValueKey('nested-ai-section-${widget.parentEntryId}'),
-      child: section,
+      animate: _animateSection,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final response in aiResponses)
+            SizeFadeEntrance(
+              key: ValueKey('nested-ai-response-${response.meta.id}'),
+              animate: newlyArrived.contains(response.meta.id),
+              child: Padding(
+                padding: EdgeInsets.only(top: tokens.spacing.cardItemSpacing),
+                child: _buildAiResponseCard(context, response),
+              ),
+            ),
+        ],
+      ),
     );
   }
-
-  Widget _entrance({
-    required bool animate,
-    required Key key,
-    required Widget child,
-  }) => animate ? SizeFadeEntrance(key: key, child: child) : child;
 
   Widget _buildAiResponseCard(BuildContext context, AiResponseEntry response) {
     final tokens = context.designTokens;

@@ -426,6 +426,51 @@ void main() {
     );
   });
 
+  testWidgets('the waveform keeps its width when the time label gains or '
+      'loses its hours field', (WidgetTester tester) async {
+    final journalAudio = buildJournalAudio();
+    const total = Duration(hours: 1, minutes: 5);
+    double waveformWidth() =>
+        tester.getSize(find.byType(AudioProgressBar)).width;
+
+    // At rest the label is the length, "01:05:00".
+    await pumpPlayer(
+      tester,
+      journalAudio: journalAudio,
+      state: buildState(
+        status: AudioPlayerStatus.stopped,
+        totalDuration: total,
+        progress: Duration.zero,
+        pausedAt: Duration.zero,
+        speed: 1,
+      ),
+    );
+    expect(find.text('01:05:00'), findsOneWidget);
+    final atRest = waveformWidth();
+
+    // Loaded, the label is the position: "00:30", then "01:00:30".
+    for (final position in const [
+      Duration(seconds: 30),
+      Duration(hours: 1, seconds: 30),
+    ]) {
+      await tester.pumpWidget(Container());
+      await pumpPlayer(
+        tester,
+        journalAudio: journalAudio,
+        state: buildState(
+          status: AudioPlayerStatus.playing,
+          totalDuration: total,
+          progress: position,
+          pausedAt: Duration.zero,
+          speed: 1,
+          audioNote: journalAudio,
+        ),
+      );
+      expect(find.text(formatElapsed(position)), findsOneWidget);
+      expect(waveformWidth(), atRest);
+    }
+  });
+
   testWidgets('scrubbing progress calls seek with target duration', (
     WidgetTester tester,
   ) async {

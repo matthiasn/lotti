@@ -94,6 +94,15 @@ final testAiResponseEntry2 = AiResponseEntry(
   ),
 );
 
+/// Every mounted entrance wrapper is at rest: nothing is animating in.
+void expectNoEntranceAnimates(WidgetTester tester) {
+  final entrances = tester.widgetList<SizeFadeEntrance>(
+    find.byType(SizeFadeEntrance),
+  );
+  expect(entrances, isNotEmpty);
+  expect(entrances.map((entrance) => entrance.animate), everyElement(isFalse));
+}
+
 void main() {
   late MockJournalRepository mockJournalRepository;
 
@@ -274,7 +283,7 @@ void main() {
         await tester.pump();
 
         expect(find.byKey(Key(testAiResponseEntry1.meta.id)), findsOneWidget);
-        expect(find.byType(SizeFadeEntrance), findsNothing);
+        expectNoEntranceAnimates(tester);
 
         setParent(() => parent = otherParent);
         await tester.pump();
@@ -282,7 +291,7 @@ void main() {
 
         expect(find.byKey(Key(testAiResponseEntry1.meta.id)), findsNothing);
         expect(find.byKey(Key(testAiResponseEntry2.meta.id)), findsOneWidget);
-        expect(find.byType(SizeFadeEntrance), findsNothing);
+        expectNoEntranceAnimates(tester);
       },
     );
 
@@ -366,10 +375,78 @@ void main() {
         expect(tester.getSize(card).width, tester.getSize(thread).width);
         // The only text is the response's own: no "1 AI response" row.
         expect(find.textContaining('AI response'), findsNothing);
-        expect(
+        // Its entrance wrappers are mounted but at rest: initial data does
+        // not animate in.
+        for (final entrance in tester.widgetList<SizeFadeEntrance>(
+          find.descendant(of: thread, matching: find.byType(SizeFadeEntrance)),
+        )) {
+          expect(entrance.animate, isFalse);
+        }
+        for (final transition in tester.widgetList<SizeTransition>(
           find.descendant(of: thread, matching: find.byType(SizeTransition)),
-          findsNothing,
+        )) {
+          expect(transition.sizeFactor.value, 1);
+        }
+      },
+    );
+
+    testWidgets(
+      'a response the reader expanded stays expanded when another arrives '
+      'and when its own entrance has played',
+      (tester) async {
+        final longAnalysis = testAiResponseEntry2.copyWith(
+          data: testAiResponseEntry2.data.copyWith(
+            response: List.generate(
+              30,
+              (i) => 'Manifest line $i: sardine pod $i cleared for Bay 7.',
+            ).join('\n'),
+            type: AiResponseType.imageAnalysis,
+          ),
         );
+        final controller = _ControllableLinkedAiResponsesController(
+          entryId: testAudioEntry.meta.id,
+          initialResponses: const [],
+        );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            // Scrollable: the expanded analysis is taller than the surface.
+            SingleChildScrollView(
+              child: NestedAiResponsesWidget(
+                parentEntryId: testAudioEntry.meta.id,
+                linkedFromEntity: testAudioEntry,
+              ),
+            ),
+            overrides: [
+              linkedAiResponsesControllerProvider(
+                testAudioEntry.meta.id,
+              ).overrideWith(() => controller),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        // The analysis arrives (the section animates in) and starts
+        // collapsed; the reader expands it.
+        controller.emit([longAnalysis]);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        final context = tester.element(find.byType(NestedAiResponsesWidget));
+        await tester.tap(find.text(context.messages.aiResponseShowMore));
+        await tester.pump();
+        expect(find.text(context.messages.aiResponseShowLess), findsOneWidget);
+
+        // A second response arrives, then a further update clears every
+        // arrival flag. The expanded card must not be rebuilt from scratch.
+        controller.emit([testAiResponseEntry1, longAnalysis]);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text(context.messages.aiResponseShowLess), findsOneWidget);
+
+        controller.emit([testAiResponseEntry1, longAnalysis]);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text(context.messages.aiResponseShowLess), findsOneWidget);
+        expect(find.text(context.messages.aiResponseShowMore), findsNothing);
       },
     );
 

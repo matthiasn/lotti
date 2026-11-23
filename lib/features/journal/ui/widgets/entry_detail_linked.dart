@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_activity_filter_bar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Renders the outgoing linked-entries list for `item` (the entries this
@@ -80,12 +82,21 @@ class LinkedEntriesWidget extends ConsumerWidget {
     final isNarrowed =
         showFlaggedOnly ||
         activeKinds.length < LinkedEntryActivityFilter.values.length;
+    // Read only while narrowed, like the entries: events are drawn only with
+    // their feature on, so one that is hidden must not count as a match.
+    final eventsEnabled =
+        isNarrowed &&
+        (ref.watch(configFlagProvider(enableEventsFlag)).value ?? false);
     final listed = !isNarrowed
         ? const <JournalEntity>[]
         : ref
               .watch(resolvedOutgoingLinkedEntriesProvider(item.id))
               .where(
-                (entry) => _isListed(entry, hideTaskEntries: hideTaskEntries),
+                (entry) => _isListed(
+                  entry,
+                  hideTaskEntries: hideTaskEntries,
+                  eventsEnabled: eventsEnabled,
+                ),
               )
               .toList();
     // Entries the list would draw, none of which the filters let through. A
@@ -143,8 +154,13 @@ bool _passesFilters(
 
 /// Whether [entry] is one the list draws at all, filters aside — the rule
 /// [EntryDetailsWidget] applies to a linked row.
-bool _isListed(JournalEntity entry, {required bool hideTaskEntries}) {
+bool _isListed(
+  JournalEntity entry, {
+  required bool hideTaskEntries,
+  required bool eventsEnabled,
+}) {
   if (entry.meta.deletedAt != null) return false;
+  if (entry is JournalEvent) return eventsEnabled;
   if (entry is AiResponseEntry) {
     return entry.data.type == AiResponseType.promptGeneration;
   }
