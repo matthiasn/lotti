@@ -173,6 +173,16 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
     }
   }
 
+  /// The title row's icon buttons: the glyph inside one `step3` of padding
+  /// on each side, with no minimum beyond that. The stock compact button is
+  /// 40 tall, which left the title floating in a row twice its own height.
+  static ButtonStyle _headerButtonStyle(DsTokens tokens) =>
+      IconButton.styleFrom(
+        padding: EdgeInsets.all(tokens.spacing.step3),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      );
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -189,7 +199,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
                 ? AiResponseType.imagePromptGeneration.icon
                 : AiResponseType.promptGeneration.icon,
             color: ai.accent,
-            size: tokens.spacing.step5,
+            size: IconSizes.s,
           ),
           SizedBox(width: tokens.spacing.step2),
           Expanded(
@@ -206,9 +216,9 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
             icon: Icon(
               LottiIcons.copy,
               color: ai.accent,
-              size: tokens.spacing.step5,
+              size: IconSizes.s,
             ),
-            visualDensity: VisualDensity.compact,
+            style: _headerButtonStyle(tokens),
             tooltip: _isImagePrompt
                 ? context.messages.imagePromptGenerationCopyTooltip
                 : context.messages.promptGenerationCopyTooltip,
@@ -221,9 +231,9 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
               icon: Icon(
                 LottiIcons.expand,
                 color: ai.metaText,
-                size: tokens.spacing.step5,
+                size: IconSizes.s,
               ),
-              visualDensity: VisualDensity.compact,
+              style: _headerButtonStyle(tokens),
               tooltip: _isImagePrompt
                   ? context.messages.imagePromptGenerationExpandTooltip
                   : context.messages.promptGenerationExpandTooltip,
@@ -235,7 +245,6 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: tokens.spacing.step1),
           // Summary (always visible)
           GestureDetector(
             onDoubleTap: () {
@@ -270,9 +279,12 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: tokens.spacing.step4),
-                Divider(color: ai.rowBorder),
-                SizedBox(height: tokens.spacing.step2),
+                // One step either side of a hairline. A bare `Divider`
+                // reserves 16 of height around its line, which with the gap
+                // above it opened a hole under the summary.
+                SizedBox(height: tokens.spacing.step3),
+                Divider(height: 1, color: ai.rowBorder),
+                SizedBox(height: tokens.spacing.step3),
                 Row(
                   spacing: tokens.spacing.step2,
                   children: [

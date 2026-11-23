@@ -51,6 +51,47 @@ Please provide step-by-step guidance.
       ),
     );
 
+    testWidgets('the title row is no taller than its 32 px buttons and the '
+        'summary follows it directly', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: GeneratedPromptCard(testAiResponseEntry),
+        ),
+      );
+
+      final copy = find.widgetWithIcon(IconButton, LottiIcons.copy);
+      expect(tester.getSize(copy), const Size(32, 32));
+      final title = find.text('AI Coding Prompt');
+      final summary = find.textContaining('This prompt helps implement');
+      // The title is centred in that row, so the summary starts within a
+      // few pixels of it rather than a button's overhang away.
+      final gap =
+          tester.getTopLeft(summary).dy - tester.getBottomLeft(title).dy;
+      expect(gap, inInclusiveRange(0, 8));
+    });
+
+    testWidgets('expanded, a hairline with one step either side separates '
+        'the summary from the full prompt', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: SingleChildScrollView(
+            child: GeneratedPromptCard(testAiResponseEntry),
+          ),
+        ),
+      );
+      await tester.tap(find.byIcon(LottiIcons.expand));
+      await tester.pumpAndSettle();
+
+      final divider = find.byType(Divider);
+      expect(tester.widget<Divider>(divider).height, 1);
+      final tokens = tester.element(divider).designTokens;
+      final summary = find.textContaining('This prompt helps implement');
+      expect(
+        tester.getTopLeft(divider).dy - tester.getBottomLeft(summary).dy,
+        tokens.spacing.step3,
+      );
+    });
+
     testWidgets('displays header with icon and title', (tester) async {
       await tester.pumpWidget(
         WidgetTestBench(

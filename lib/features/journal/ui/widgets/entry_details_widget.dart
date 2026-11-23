@@ -524,16 +524,6 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
             stabilizeGeneratedText:
                 item is JournalImage || item is JournalAudio,
           ),
-        if (item is JournalImage)
-          AiAttributionSummary(
-            artifact: AiArtifactReference(
-              type: AiArtifactType.journalImage,
-              id: item.id,
-            ),
-            attribution: item.data.aiAttribution,
-            asCaption: true,
-            includeTopSpacing: false,
-          ),
       ];
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -550,6 +540,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
           if (!_bodyOpensWithPromptTitleRow(item, hasLabels: hasLabels))
             SizedBox(height: context.designTokens.spacing.step3),
           ..._withRhythm(context, body),
+          if (item is JournalImage) _imageAttribution(item),
           if (item is JournalAudio || item is JournalImage)
             NestedAiResponsesWidget(
               parentEntryId: itemId,
@@ -574,22 +565,13 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
           itemId,
           stabilizeGeneratedText: item is JournalImage || item is JournalAudio,
         ),
-      if (item is JournalImage)
-        AiAttributionSummary(
-          artifact: AiArtifactReference(
-            type: AiArtifactType.journalImage,
-            id: item.id,
-          ),
-          attribution: item.data.aiAttribution,
-          asCaption: true,
-          includeTopSpacing: false,
-        ),
     ];
     final expandedContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         ..._withRhythm(context, collapsibleBody),
+        if (item is JournalImage) _imageAttribution(item),
         if (item is JournalAudio || item is JournalImage)
           NestedAiResponsesWidget(
             parentEntryId: itemId,
@@ -632,6 +614,19 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       ],
     );
   }
+
+  /// Who made a generated or analysed image, as a caption under it. It
+  /// renders nothing for a photo with no AI work behind it, so it brings its
+  /// own leading gap instead of taking a rhythm step that would stay behind
+  /// as a hole when it is empty.
+  Widget _imageAttribution(JournalImage image) => AiAttributionSummary(
+    artifact: AiArtifactReference(
+      type: AiArtifactType.journalImage,
+      id: image.id,
+    ),
+    attribution: image.data.aiAttribution,
+    asCaption: true,
+  );
 
   /// The entry's body/note editor, nudged left so its text hangs from the same
   /// content gutter as the timestamp and value lines. flutter_quill insets a

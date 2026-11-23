@@ -4247,6 +4247,68 @@ void main() {
         );
       });
 
+      testWidgets('an expanded photo with no attribution leaves no hole where '
+          'the caption would be', (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.getLinksFromId(testImageEntry.meta.id),
+        ).thenAnswer((_) async => <EntryLink>[]);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  testImageEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testImageEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+                linkedAiResponsesControllerProvider(
+                  testImageEntry.meta.id,
+                ).overrideWith(
+                  () => _FakeLinkedAiResponsesController(
+                    testImageEntry.meta.id,
+                    [
+                      analysisEntry(
+                        id: 'analysis-1',
+                        dateFrom: DateTime(2024, 6),
+                      ),
+                    ],
+                  ),
+                ),
+                ...attribution(null),
+              ],
+              child: SingleChildScrollView(
+                child: EntryDetailsWidget(
+                  itemId: testImageEntry.meta.id,
+                  showAiEntry: false,
+                  linkedFrom: testTask,
+                  link: collapsedImageLink.copyWith(collapsed: false),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(AppTheme.chevronRotationDuration);
+
+        // The photo's own caption renders nothing, and takes no rhythm step
+        // with it: the analysis follows the note directly, behind the one
+        // gap the nested responses bring themselves.
+        final caption = find.byWidgetPredicate(
+          (widget) =>
+              widget is AiAttributionSummary &&
+              widget.key == null &&
+              widget.artifact.type == AiArtifactType.journalImage,
+        );
+        expect(tester.getSize(caption).height, 0);
+        expect(
+          tester.getTopLeft(find.byType(NestedAiResponsesWidget)).dy,
+          tester.getBottomLeft(find.byType(EditorWidget)).dy,
+        );
+      });
+
       testWidgets('a photo with no AI work behind it shows no attribution', (
         tester,
       ) async {
