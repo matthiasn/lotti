@@ -3475,6 +3475,7 @@
   "frontChatMessageCopied": "Besked kopieret",
   "frontChatMessageCopy": "Kopiér",
   "frontChatMessageEdit": "Rediger",
+  "frontChatMessageSentAt": "{day}, {time}",
   "frontChatMessageStopped": "Stoppet",
   "frontChatNoChats": "Ingen chats endnu. Spørg om noget for at starte en.",
   "frontChatNoMatchingChats": "Ingen chattitel passer.",

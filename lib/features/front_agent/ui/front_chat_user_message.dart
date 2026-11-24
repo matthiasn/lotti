@@ -8,19 +8,24 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_day_label.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/device_datetime.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Where a turn of the user's stands, as far as what can be done with it.
 enum FrontUserMessageStatus {
-  /// She answered it, or it failed: its words can be copied.
+  /// She answered it, or it failed: its words can be copied, or taken back
+  /// into the box to change and send again — the edit, sent, replaces it
+  /// and her answer.
   settled,
 
   /// She is working on it: it is hers until it is stopped.
   working,
 
-  /// The user stopped it before she answered: its words can be copied, or
-  /// taken back into the box to change and send again.
+  /// The user stopped it before she answered: like [settled], and marked
+  /// so.
   stopped,
 }
 
@@ -40,12 +45,13 @@ abstract final class FrontChatUserMessageKeys {
 }
 
 /// The user's [bubble] in the companion's thread, with what can be done with
-/// its [text]: copied, and — once stopped — edited, which hands the words to
-/// [onEdit] for the box.
+/// its [text]: copied, and edited, which hands the words to [onEdit] for the
+/// box — any time but while she is working on it.
 ///
-/// On a phone the actions are a long press away, in a menu under the
-/// bubble; a long press on a turn she is still working on says it cannot be
-/// edited until it is stopped. On a desktop they show as icons beside the
+/// On a phone or tablet the actions are a long press away, in a small
+/// window under the bubble headed by when it was sent ([sentAt]); a long
+/// press on a turn she is still working on says it cannot be edited until
+/// it is stopped. On a desktop they show as icons beside the
 /// bubble while the pointer is over it or focus is in them, their room kept
 /// so nothing shifts — a pencil dimmed while she works, which says the same
 /// when clicked; a secondary click opens the same menu where it was made.
@@ -56,6 +62,7 @@ class FrontChatUserMessage extends StatefulWidget {
     required this.status,
     required this.onEdit,
     required this.bubble,
+    required this.sentAt,
     this.onStop,
     super.key,
   });
@@ -65,6 +72,9 @@ class FrontChatUserMessage extends StatefulWidget {
   final FrontUserMessageStatus status;
   final ValueChanged<String> onEdit;
   final Widget bubble;
+
+  /// When the turn was sent: the heading of its window of actions.
+  final DateTime sentAt;
 
   /// Stops the turn she is working on — offered on the warning that it
   /// cannot be edited yet, so the way forward is one tap away.
@@ -128,16 +138,27 @@ class _FrontChatUserMessageState extends State<FrontChatUserMessage> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final desktop = isDesktopLayout(context);
+    // A pointer to hover with: a desktop's, never a touch screen's, however
+    // wide.
+    final desktop = !isMobile && isDesktopLayout(context);
     final id = widget.messageId;
     final showIcons = desktop && (_hovered || _focused);
 
     final menu = DesignSystemContextMenuAnchor(
       controller: _menu,
       semanticsLabel: messages.frontChatMessageActions,
-      // Raised off the thread, which sits on the menu's own base level.
+      header: messages.frontChatMessageSentAt(
+        frontChatDayLabel(
+          context,
+          widget.sentAt,
+          Localizations.localeOf(context).toLanguageTag(),
+        ),
+        deviceClockLabel(context, widget.sentAt),
+      ),
+      // A small window raised off the thread, which sits on the menu's own
+      // base level, its edge drawn where it meets the bubbles.
       surfaceColor: dsCardSurface(context),
-      fitContent: true,
+      outlined: true,
       items: [
         DesignSystemContextMenuItem(
           key: FrontChatUserMessageKeys.menuCopy(id),
@@ -145,13 +166,12 @@ class _FrontChatUserMessageState extends State<FrontChatUserMessage> {
           icon: LottiIcons.copy,
           onTap: _copy,
         ),
-        if (_stopped)
-          DesignSystemContextMenuItem(
-            key: FrontChatUserMessageKeys.menuEdit(id),
-            label: messages.frontChatMessageEdit,
-            icon: LottiIcons.edit,
-            onTap: _edit,
-          ),
+        DesignSystemContextMenuItem(
+          key: FrontChatUserMessageKeys.menuEdit(id),
+          label: messages.frontChatMessageEdit,
+          icon: LottiIcons.edit,
+          onTap: _edit,
+        ),
       ],
       builder: (context, {required toggle, required isOpen}) => Semantics(
         onLongPressHint: messages.frontChatMessageActions,
@@ -222,23 +242,22 @@ class _FrontChatUserMessageState extends State<FrontChatUserMessage> {
                       tooltip: messages.frontChatMessageCopy,
                       onPressed: _copy,
                     ),
-                    if (widget.status != FrontUserMessageStatus.settled)
-                      DesignSystemIconAction(
-                        key: FrontChatUserMessageKeys.edit(id),
-                        icon: LottiIcons.edit,
-                        // While she works on it: dimmed, and a click says why
-                        // not yet — what a long press says on a phone.
-                        tooltip: working
-                            ? messages.frontChatMessageBusyHint
-                            : messages.frontChatMessageEdit,
-                        // The disabled ink and dimming, though still live:
-                        // a click says why not yet.
-                        tone: working ? tokens.colors.text.lowEmphasis : null,
-                        onPressed: working ? _warnBusy : _edit,
-                      ).withDisabledOpacity(
-                        enabled: !working,
-                        disabledOpacity: tokens.colors.text.lowEmphasis.a,
-                      ),
+                    DesignSystemIconAction(
+                      key: FrontChatUserMessageKeys.edit(id),
+                      icon: LottiIcons.edit,
+                      // While she works on it: dimmed, and a click says why
+                      // not yet — what a long press says on a phone.
+                      tooltip: working
+                          ? messages.frontChatMessageBusyHint
+                          : messages.frontChatMessageEdit,
+                      // The disabled ink and dimming, though still live:
+                      // a click says why not yet.
+                      tone: working ? tokens.colors.text.lowEmphasis : null,
+                      onPressed: working ? _warnBusy : _edit,
+                    ).withDisabledOpacity(
+                      enabled: !working,
+                      disabledOpacity: tokens.colors.text.lowEmphasis.a,
+                    ),
                   ],
                 ),
               ),

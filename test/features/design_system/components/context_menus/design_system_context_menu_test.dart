@@ -199,6 +199,42 @@ void main() {
       expect((box.decoration! as BoxDecoration).color, raised);
     });
 
+    testWidgets('an outlined menu draws its edge; by default it has none', (
+      tester,
+    ) async {
+      BoxDecoration surfaceOf(Key key) =>
+          tester
+                  .widget<Container>(
+                    find
+                        .descendant(
+                          of: find.byKey(key),
+                          matching: find.byType(Container),
+                        )
+                        .first,
+                  )
+                  .decoration!
+              as BoxDecoration;
+
+      await _pumpContextMenu(
+        tester,
+        const DesignSystemContextMenu(
+          key: Key('plain'),
+          items: [DesignSystemContextMenuItem(label: 'Edit')],
+        ),
+      );
+      expect(surfaceOf(const Key('plain')).border, isNull);
+
+      await _pumpContextMenu(
+        tester,
+        const DesignSystemContextMenu(
+          key: Key('outlined'),
+          outlined: true,
+          items: [DesignSystemContextMenuItem(label: 'Edit')],
+        ),
+      );
+      expect(surfaceOf(const Key('outlined')).border, isA<Border>());
+    });
+
     testWidgets('a long, scrolling menu keeps its group rules', (
       tester,
     ) async {

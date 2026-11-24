@@ -12749,6 +12749,12 @@ abstract class AppLocalizations {
   /// **'Edit'**
   String get frontChatMessageEdit;
 
+  /// Heading of the actions window on a companion chat message: when it was sent, e.g. "Today, 14:04".
+  ///
+  /// In en, this message translates to:
+  /// **'{day}, {time}'**
+  String frontChatMessageSentAt(String day, String time);
+
   /// Caption under a companion chat message the user stopped before it was answered.
   ///
   /// In en, this message translates to:

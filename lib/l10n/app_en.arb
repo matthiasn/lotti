@@ -4803,6 +4803,18 @@
   "@frontChatMessageEdit": {
     "description": "Action that puts a stopped companion chat message back into the input to change and send again."
   },
+  "frontChatMessageSentAt": "{day}, {time}",
+  "@frontChatMessageSentAt": {
+    "description": "Heading of the actions window on a companion chat message: when it was sent, e.g. \"Today, 14:04\".",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "frontChatMessageStopped": "Stopped",
   "@frontChatMessageStopped": {
     "description": "Caption under a companion chat message the user stopped before it was answered."

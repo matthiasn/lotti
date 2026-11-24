@@ -3157,6 +3157,7 @@
   "frontChatMessageCopied": "Zpráva zkopírována",
   "frontChatMessageCopy": "Kopírovat",
   "frontChatMessageEdit": "Upravit",
+  "frontChatMessageSentAt": "{day}, {time}",
   "frontChatMessageStopped": "Zastaveno",
   "frontChatNoChats": "Zatím žádné chaty. Na něco se zeptej a jeden začne.",
   "frontChatNoMatchingChats": "Žádný název chatu neodpovídá.",

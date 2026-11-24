@@ -7513,6 +7513,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatMessageEdit => 'Rediger';
 
   @override
+  String frontChatMessageSentAt(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
   String get frontChatMessageStopped => 'Stoppet';
 
   @override

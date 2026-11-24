@@ -572,6 +572,14 @@ class FrontAgentWorkflow with AgentErrorLogging {
     };
     final conversation =
         conversationOf[sourceMessageId] ?? earlierConversationId;
+    // Turns the user edited and sent again — this one too, if it is an
+    // edit: what was said is the edit, not the words it replaced.
+    final replaced = {
+      for (final turn in userTurns)
+        if (turnPayloads[turn.contentEntryId]
+            case final AgentMessagePayloadEntity payload)
+          ?frontTurnReplaces(payload.content),
+    };
     final visible =
         messages.where((m) {
           if (m.id == sourceMessageId || m.deletedAt != null) return false;
@@ -629,10 +637,15 @@ class FrontAgentWorkflow with AgentErrorLogging {
             !answered.contains(message.metadata.operationId))
           message.metadata.operationId,
     };
-    // A door record renders as no turn: it is read only for its tasks.
+    // A door record renders as no turn: it is read only for its tasks. A
+    // replaced turn and her answer to it are gone from what was said; the
+    // tasks they made stay hers to know.
     final turns = [
       for (final (message, payload) in withPayloads)
-        if (!stopped.contains(message.id)) ?frontRecentTurnOf(message, payload),
+        if (!stopped.contains(message.id) &&
+            !replaced.contains(message.id) &&
+            !replaced.contains(message.metadata.operationId))
+          ?frontRecentTurnOf(message, payload),
     ];
     return (
       recent: turns.length <= frontRecentTurns

@@ -1,9 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:a2ui_flutter/a2ui_flutter.dart';
-import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
@@ -37,6 +35,7 @@ import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_surfaces.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_day_label.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_drawer.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_user_message.dart';
@@ -818,6 +817,7 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
             FrontChatUserMessage(
               messageId: message.id,
               text: message.text,
+              sentAt: message.createdAt,
               status: thread?.stoppedMessageIds.contains(message.id) ?? false
                   ? FrontUserMessageStatus.stopped
                   : message.id == composer.sendingMessageId
@@ -963,31 +963,14 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
         },
         dividerBuilder: (context, message, previous) {
           if (previous != null &&
-              _sameDay(previous.createdAt, message.createdAt)) {
+              frontChatSameDay(previous.createdAt, message.createdAt)) {
             return null;
           }
           return DesignSystemDivider(
-            label: _dayLabel(context, message.createdAt, locale),
+            label: frontChatDayLabel(context, message.createdAt, locale),
           );
         },
       ),
     );
-  }
-
-  static bool _sameDay(DateTime a, DateTime b) {
-    final la = a.toLocal();
-    final lb = b.toLocal();
-    return la.year == lb.year && la.month == lb.month && la.day == lb.day;
-  }
-
-  /// Today and yesterday by name, every other day by date.
-  static String _dayLabel(BuildContext context, DateTime at, String locale) {
-    final day = at.toLocal();
-    final today = clock.now();
-    if (_sameDay(day, today)) return context.messages.calendarTodayLabel;
-    if (_sameDay(day, today.subtract(const Duration(days: 1)))) {
-      return context.messages.frontChatYesterday;
-    }
-    return DateFormat.yMMMMEEEEd(locale).format(day);
   }
 }

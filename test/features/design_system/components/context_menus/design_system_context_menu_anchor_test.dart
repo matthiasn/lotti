@@ -58,6 +58,7 @@ void main() {
             DesignSystemContextMenuAnchor(
               fitContent: true,
               surfaceColor: raised,
+              outlined: true,
               items: [
                 DesignSystemContextMenuItem(
                   label: 'Show done',
@@ -84,6 +85,7 @@ void main() {
         );
         expect(menu.fitContent, isTrue);
         expect(menu.surfaceColor, raised);
+        expect(menu.outlined, isTrue);
         expect(menu.items.first.checked, isTrue);
         expect(menu.items.last.startsGroup, isTrue);
         expect(menu.items.last.isDestructive, isTrue);

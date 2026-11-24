@@ -1198,36 +1198,44 @@ stateDiagram-v2
 
 On the surface each of the user's bubbles is wrapped by
 `FrontChatUserMessage` (`AgentChatView.userMessageDecorator`): a *Stopped*
-caption, led by Stop's filled square, under a stopped turn; on a phone a
-long press opens a menu under the bubble and its caption — a secondary
-click opens it where the pointer is — with *Copy* (to the clipboard, with a
-toast) and, on a stopped turn, *Edit*, which puts the words in the box
-(`FrontChatController.edit`). The menu sits on the card surface
-(`dsCardSurface`, through `DesignSystemContextMenuAnchor.surfaceColor`), off
-the thread's base level. A long press on the turn she is working on opens
-no menu but warns it cannot be edited until stopped, with a *Stop* action
-on the warning. On a desktop the same actions are icons beside the bubble,
-shown while the pointer is over it or focus is in them and taking no taps
-while hidden, their room kept so nothing shifts; while she works on the
-turn *Edit* is dimmed and a click on it gives the same warning, and on an
-answered turn it is absent.
+caption, led by Stop's filled square, under a stopped turn; on a phone or
+tablet (`isMobile`, whatever the width) a long press opens a small window
+under the bubble and its caption — a secondary click opens it where the
+pointer is — headed by when the turn was sent (*Today, 14:04*,
+`frontChatDayLabel` and `deviceClockLabel`), with *Copy* (to the clipboard,
+with a toast) and *Edit*, which puts the words in the box
+(`FrontChatController.edit`), on a stopped turn and an answered one alike.
+The window sits on the card surface (`dsCardSurface`, through
+`DesignSystemContextMenuAnchor.surfaceColor`) with its edge drawn
+(`outlined`), off the thread's base level and apart from her bubbles. A
+long press on the turn she is working on opens no window but warns it
+cannot be edited until stopped, with a *Stop* action on the warning. On a
+desktop the same actions are icons beside the bubble, shown while the
+pointer is over it or focus is in them and taking no taps while hidden,
+their room kept so nothing shifts; while she works on the turn *Edit* is
+dimmed and a click on it gives the same warning.
 
-The edit, sent, takes the stopped turn's place. The controller holds the
+The edit, sent, takes the place of the turn it was made from — and of her
+answer to it, which the edit gets anew. The controller holds the
 turn as `editingMessageId` while the box has words in it — emptying the box
 gives the edit up, and a chip tapped under her question is never an edit —
 and the new turn's payload names it under `replaces`
 (`frontTurnReplacesKey`). A send of the edit that fails keeps it an edit —
 as `failedReplaces` for *Try again*, and as `editingMessageId` when its
 words go back in the box. Nothing is rewritten: the thread builder drops a
-turn some later turn replaces, provided it is stopped and she never answered
-it, so an edit can never hide words of hers. An older build, which does not
-read the key, shows both turns.
+turn some later turn replaces, with her replies and questions to it —
+however late they land — and its doors' cards; what those doors did (a task
+filed, a person asked) is done all the same. Her recent turns
+(`_recentTurns`) drop the replaced turn and her answer too, so she answers
+the edit without the words it corrected; the tasks they made stay among her
+conversation's tasks. An older build, which does not read the key, shows
+both turns.
 
 Edit never throws away what the box held. The box is a set of pages
 (`FrontDraftPages`, in `front_draft_pages.dart`): the composer state keeps
 the page in the box as `draft` and `editingMessageId`, and the others as
 `asideDrafts`, with `draftPage` its place among them. Edit over words
-already typed adds the stopped turn's words as a new last page — or shows
+already typed adds the edited turn's words as a new last page — or shows
 the page it is already on — and a pager (`FrontDraftPager`, ‹ 2/2 ›) at the
 start of the box flips between them (`showDraftPage`); a page left blank is
 dropped once another is shown. Only the page in the box is sent, so the

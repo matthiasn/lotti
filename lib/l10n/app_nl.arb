@@ -3474,6 +3474,7 @@
   "frontChatMessageCopied": "Bericht gekopieerd",
   "frontChatMessageCopy": "Kopiëren",
   "frontChatMessageEdit": "Bewerken",
+  "frontChatMessageSentAt": "{day}, {time}",
   "frontChatMessageStopped": "Gestopt",
   "frontChatNoChats": "Nog geen chats. Stel een vraag om er een te beginnen.",
   "frontChatNoMatchingChats": "Geen chattitel komt overeen.",

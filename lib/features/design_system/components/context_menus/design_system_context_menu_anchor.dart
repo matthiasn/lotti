@@ -40,6 +40,7 @@ class DesignSystemContextMenuAnchor extends StatefulWidget {
     this.fitContent = false,
     this.consumeOutsideTap = false,
     this.surfaceColor,
+    this.outlined = false,
     super.key,
   });
 
@@ -75,6 +76,9 @@ class DesignSystemContextMenuAnchor extends StatefulWidget {
   /// The menu's surface, for a menu opened over a page on the same base
   /// level it would otherwise blend into; null keeps the menu's default.
   final Color? surfaceColor;
+
+  /// Draws the menu's edge; see [DesignSystemContextMenu.outlined].
+  final bool outlined;
 
   @override
   State<DesignSystemContextMenuAnchor> createState() =>
@@ -122,6 +126,7 @@ class _DesignSystemContextMenuAnchorState
             size: widget.size,
             fitContent: widget.fitContent,
             surfaceColor: widget.surfaceColor,
+            outlined: widget.outlined,
             items: [
               for (final item in widget.items)
                 DesignSystemContextMenuItem(

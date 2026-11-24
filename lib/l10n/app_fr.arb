@@ -3150,6 +3150,7 @@
   "frontChatMessageCopied": "Message copié",
   "frontChatMessageCopy": "Copier",
   "frontChatMessageEdit": "Modifier",
+  "frontChatMessageSentAt": "{day}, {time}",
   "frontChatMessageStopped": "Arrêté",
   "frontChatNoChats": "Pas encore de chat. Pose une question pour en commencer un.",
   "frontChatNoMatchingChats": "Aucun titre de chat ne correspond.",

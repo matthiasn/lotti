@@ -7529,6 +7529,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatMessageEdit => 'Redigera';
 
   @override
+  String frontChatMessageSentAt(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
   String get frontChatMessageStopped => 'Stoppad';
 
   @override

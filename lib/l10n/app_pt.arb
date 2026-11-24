@@ -3474,6 +3474,7 @@
   "frontChatMessageCopied": "Mensagem copiada",
   "frontChatMessageCopy": "Copiar",
   "frontChatMessageEdit": "Editar",
+  "frontChatMessageSentAt": "{day}, {time}",
   "frontChatMessageStopped": "Parado",
   "frontChatNoChats": "Ainda não há chats. Pergunta algo para começar um.",
   "frontChatNoMatchingChats": "Nenhum título de chat corresponde.",

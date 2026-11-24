@@ -779,8 +779,12 @@ Filed under Garden.'''),
 
   group('a turn the user stopped', () {
     /// Runs a turn after a stopped one — answered after all when
-    /// [answered] — and returns what the model was sent.
-    Future<String?> sentAfterStop({required bool answered}) async {
+    /// [answered], and an edit of the earlier answered turn when
+    /// [editsOld] — and returns what the model was sent.
+    Future<String?> sentAfterStop({
+      required bool answered,
+      bool editsOld = false,
+    }) async {
       seedMessage();
       when(() => repository.getAgentMessages(frontAgentId)).thenAnswer(
         (_) async => [
@@ -846,7 +850,10 @@ Filed under Garden.'''),
         'payload-1': makeTestMessagePayload(
           id: 'payload-1',
           agentId: frontAgentId,
-          content: {'text': input},
+          content: {
+            'text': input,
+            if (editsOld) frontTurnReplacesKey: 'old-user',
+          },
         ),
         'old-user-payload': makeTestMessagePayload(
           id: 'old-user-payload',
@@ -901,6 +908,16 @@ Filed under Garden.'''),
         ),
       );
       expect(sent, isNot(contains('Count the hatchlings twice')));
+    });
+
+    test('an edit of an answered turn takes it, and her answer, out of her '
+        'recent turns: what was said is the edit', () async {
+      final sent = await sentAfterStop(answered: true, editsOld: true);
+
+      expect(sent, isNot(contains('What about the garden?')));
+      expect(sent, isNot(contains('Filed under Garden.')));
+      // Turns it did not replace are untouched.
+      expect(sent, contains('- user: Count the hatchlings twice\n'));
     });
 
     test('one she answered before the stop landed stays, with her answer, '

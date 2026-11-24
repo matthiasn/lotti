@@ -1,9 +1,11 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_user_message.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../helpers/test_app.dart';
@@ -46,6 +48,7 @@ void main() {
             status: status,
             onEdit: edited.add,
             onStop: onStop,
+            sentAt: DateTime(2026, 11, 23, 14, 4),
             bubble: const SizedBox(
               key: Key('bubble'),
               width: 240,
@@ -116,14 +119,37 @@ void main() {
       expect(edited, isEmpty);
     });
 
-    testWidgets('an answered turn can be copied, not edited', (tester) async {
-      await pump(tester, FrontUserMessageStatus.settled);
-      expect(find.byKey(FrontChatUserMessageKeys.stopped(id)), findsNothing);
+    testWidgets('an answered turn can be copied and edited too, in a window '
+        'headed by when it was sent', (tester) async {
+      await withClock(Clock.fixed(DateTime(2026, 11, 24, 9)), () async {
+        await pump(tester, FrontUserMessageStatus.settled);
+        expect(find.byKey(FrontChatUserMessageKeys.stopped(id)), findsNothing);
+
+        await longPress(tester);
+
+        expect(find.text('Yesterday, 2:04 PM'), findsOneWidget);
+        expect(
+          find.byKey(FrontChatUserMessageKeys.menuCopy(id)),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(FrontChatUserMessageKeys.menuEdit(id)));
+        await tester.pumpAndSettle();
+
+        expect(edited, [words]);
+      });
+    });
+
+    testWidgets('a phone or tablet as wide as a desktop still shows no '
+        'icons: a touch screen has no pointer to hover with', (tester) async {
+      final wasMobile = isMobile;
+      isMobile = true;
+      addTearDown(() => isMobile = wasMobile);
+      await pump(tester, FrontUserMessageStatus.stopped, desktop: true);
+
+      expect(find.byKey(FrontChatUserMessageKeys.copy(id)), findsNothing);
 
       await longPress(tester);
-
-      expect(find.byKey(FrontChatUserMessageKeys.menuCopy(id)), findsOneWidget);
-      expect(find.byKey(FrontChatUserMessageKeys.menuEdit(id)), findsNothing);
+      expect(find.byKey(FrontChatUserMessageKeys.menuEdit(id)), findsOneWidget);
     });
 
     testWidgets('a long press while she works on it warns it cannot be '
@@ -288,11 +314,16 @@ void main() {
       expect(copy.top, lessThan(bubble.bottom));
     });
 
-    testWidgets('an answered turn has Copy only', (tester) async {
+    testWidgets("an answered turn's icons copy it and edit it too", (
+      tester,
+    ) async {
       await pump(tester, FrontUserMessageStatus.settled, desktop: true);
+      await hover(tester);
 
-      expect(find.byKey(FrontChatUserMessageKeys.copy(id)), findsOneWidget);
-      expect(find.byKey(FrontChatUserMessageKeys.edit(id)), findsNothing);
+      await tester.tap(find.byKey(FrontChatUserMessageKeys.edit(id)));
+      await tester.pumpAndSettle();
+
+      expect(edited, [words]);
     });
 
     testWidgets('a secondary click opens the same menu', (tester) async {

@@ -3475,6 +3475,7 @@
   "frontChatMessageCopied": "Meddelandet kopierat",
   "frontChatMessageCopy": "Kopiera",
   "frontChatMessageEdit": "Redigera",
+  "frontChatMessageSentAt": "{day}, {time}",
   "frontChatMessageStopped": "Stoppad",
   "frontChatNoChats": "Inga chattar än. Fråga något för att starta en.",
   "frontChatNoMatchingChats": "Ingen chattitel matchar.",

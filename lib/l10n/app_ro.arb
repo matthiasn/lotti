@@ -3150,6 +3150,7 @@
   "frontChatMessageCopied": "Mesaj copiat",
   "frontChatMessageCopy": "Copiați",
   "frontChatMessageEdit": "Editați",
+  "frontChatMessageSentAt": "{day}, {time}",
   "frontChatMessageStopped": "Oprit",
   "frontChatNoChats": "Încă nu există conversații. Puneți o întrebare pentru a începe una.",
   "frontChatNoMatchingChats": "Niciun titlu de conversație nu se potrivește.",

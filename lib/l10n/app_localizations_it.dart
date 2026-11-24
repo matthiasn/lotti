@@ -7610,6 +7610,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontChatMessageEdit => 'Modifica';
 
   @override
+  String frontChatMessageSentAt(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
   String get frontChatMessageStopped => 'Interrotto';
 
   @override

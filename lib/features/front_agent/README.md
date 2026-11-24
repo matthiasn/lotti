@@ -100,11 +100,12 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 
 While she works on a turn, the composer's send is **Stop**: the turn stays
 in the thread marked *Stopped*, unanswered, and no device routes it later.
-A long press on one of the user's own messages (on a desktop, icons beside
-it while the pointer is over it) offers *Copy* — and, on a stopped one,
-*Edit*, which puts its words back in the box to change and send again, the
-edit taking the stopped turn's place — what the box already held stays a
-page back, behind a ‹ › pager; a long press on the turn she is working on says to stop it first, and
+A long press on one of the user's own messages opens a small window, headed
+by when it was sent (on a desktop, icons beside it while the pointer is over
+it), with *Copy* and *Edit*. Edit puts its words back in the box to change
+and send again; sent, the edit takes the place of the message and of her
+answer to it, and gets an answer of its own — what the box already held
+stays a page back, behind a ‹ › pager; a long press on the turn she is working on says to stop it first, and
 offers *Stop*.
 
 ## What it owns

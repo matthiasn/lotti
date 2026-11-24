@@ -7539,6 +7539,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontChatMessageEdit => 'Bewerken';
 
   @override
+  String frontChatMessageSentAt(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
   String get frontChatMessageStopped => 'Gestopt';
 
   @override

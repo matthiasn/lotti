@@ -59,7 +59,7 @@ class FrontChatThreadBuilder {
         if (isFrontUserTurn(row)) ?row.contentEntryId,
     });
     final turnTexts = <String, String>{};
-    // Stopped turns the user edited and sent again, by the edit's naming.
+    // Turns the user edited and sent again, by the edit's naming.
     final replaced = <String>{};
     for (final row in rows) {
       if (!isFrontUserTurn(row)) continue;
@@ -85,6 +85,8 @@ class FrontChatThreadBuilder {
     // Turns she answered with words — a reply or a question — whenever
     // the answer landed.
     final answered = <String>{};
+    // The turn each of her replies and questions answers.
+    final turnOf = <String, String>{};
 
     for (final row in rows) {
       if (isFrontUserTurn(row)) {
@@ -107,6 +109,7 @@ class FrontChatThreadBuilder {
             if (text is! String || text.trim().isEmpty) continue;
             messages.add(_message(row, AgentChatRole.agent, text));
             answered.add(row.metadata.operationId!);
+            turnOf[row.id] = row.metadata.operationId!;
             // A reply stored before replies had surfaces draws her words,
             // then what it carried.
             surfaces[row.id] =
@@ -137,6 +140,7 @@ class FrontChatThreadBuilder {
             if (question is! String || question.trim().isEmpty) continue;
             messages.add(_message(row, AgentChatRole.agent, question));
             answered.add(row.metadata.operationId!);
+            turnOf[row.id] = row.metadata.operationId!;
             final raw = payload!.content['options'];
             options[row.id] = [
               if (raw is List)
@@ -156,13 +160,12 @@ class FrontChatThreadBuilder {
       }
     }
 
-    // An edit takes the place of the stopped turn it was made from — unless
-    // she answered that turn after all, which then stays with her answer.
-    final superseded = {
-      for (final id in replaced)
-        if (stopped.contains(id) && !answered.contains(id)) id,
-    };
-    messages.removeWhere((m) => superseded.contains(m.id));
+    // An edit takes the place of the turn it was made from, and of her
+    // answer to it: the edit gets an answer of its own. What the old answer
+    // did — a task filed, a question asked — is done all the same.
+    messages.removeWhere(
+      (m) => replaced.contains(m.id) || replaced.contains(turnOf[m.id]),
+    );
 
     // The newest fifty — and every turn with a door still waiting on the
     // user, however old: the inbox is this thread filtered, so what the

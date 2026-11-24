@@ -308,32 +308,27 @@ void main() {
       },
     );
 
-    test('an edit replaces only a stopped turn she never answered', () async {
-      // Answered after all: the turn stays, with her answer.
+    test('an edit of a turn she answered takes the place of the turn and of '
+        'her answer, which the edit gets anew', () async {
       userTurn('u1', 'Count the hatchlings', at: DateTime(2026, 11, 1, 9));
-      stop('u1', DateTime(2026, 11, 1, 9, 1));
-      reply('r1', 'u1', 'Forty-two.', DateTime(2026, 11, 1, 9, 2));
-      // Never stopped: nothing to replace.
-      userTurn('u2', 'Count the eggs', at: DateTime(2026, 11, 1, 9, 3));
+      reply('r1', 'u1', 'Forty-two.', DateTime(2026, 11, 1, 9, 1));
+      userTurn('u2', 'Count the eggs', at: DateTime(2026, 11, 1, 9, 2));
+      reply('r2', 'u2', 'Twelve.', DateTime(2026, 11, 1, 9, 3));
       userTurn(
         'u3',
         'Count the chicks',
         at: DateTime(2026, 11, 1, 9, 4),
         replaces: 'u1',
       );
-      userTurn(
-        'u4',
-        'Count the nests',
-        at: DateTime(2026, 11, 1, 9, 5),
-        replaces: 'u2',
-      );
+      reply('r3', 'u3', 'Seven.', DateTime(2026, 11, 1, 9, 5));
 
       final thread = await builder.build(conversationId: earlierConversationId);
 
-      expect(thread.messages.map((m) => m.id), ['u1', 'r1', 'u2', 'u3', 'u4']);
+      expect(thread.messages.map((m) => m.id), ['u2', 'r2', 'u3', 'r3']);
+      expect(thread.surfacesByMessageId.keys, isNot(contains('r1')));
     });
 
-    test('a reply that lands after the edit was sent still keeps the turn it '
+    test('a reply that lands after the edit was sent goes with the turn it '
         'answers', () async {
       userTurn('u1', 'Count the hatchlings', at: DateTime(2026, 11, 1, 9));
       stop('u1', DateTime(2026, 11, 1, 9, 1));
@@ -348,7 +343,7 @@ void main() {
 
       final thread = await builder.build(conversationId: earlierConversationId);
 
-      expect(thread.messages.map((m) => m.id), ['u1', 'u2', 'r1']);
+      expect(thread.messages.map((m) => m.id), ['u2']);
       expect(thread.stoppedMessageIds, isEmpty);
     });
 

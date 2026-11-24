@@ -7613,6 +7613,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontChatMessageEdit => 'Editar';
 
   @override
+  String frontChatMessageSentAt(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
   String get frontChatMessageStopped => 'Detenido';
 
   @override
