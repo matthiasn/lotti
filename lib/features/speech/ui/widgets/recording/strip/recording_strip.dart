@@ -34,9 +34,10 @@ class RecordingStrip extends ConsumerWidget {
   static const Key pauseKey = ValueKey('recording-strip-pause');
   static const Key stopKey = ValueKey('recording-strip-stop');
 
-  /// The stretch the strip's level is drawn over: about ten bars.
+  /// The stretch the strip's level is drawn over: about eight bars — enough
+  /// to show the take is live, leaving the subject's name the most room.
   static double barsWidth(BuildContext context) =>
-      context.designTokens.spacing.step10;
+      context.designTokens.spacing.step9;
 
   /// Whether a row [width] wide keeps the bars: only while the leading part
   /// still has `spacing.step11` beside them. On the narrowest phone, or at

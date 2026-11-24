@@ -2987,9 +2987,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get audioRecordingPause => 'Pause';
 
   @override
-  String get audioRecordingRecord => 'Optag';
-
-  @override
   String get audioRecordingResume => 'Genoptag';
 
   @override
@@ -16685,9 +16682,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get sidebarActivityExpandTooltip => 'Udvid aktiviteten';
-
-  @override
-  String get sidebarAudioRecordingStatusLabel => 'Indspilning';
 
   @override
   String get sidebarRunningTimerLabel => 'Kørende timer';

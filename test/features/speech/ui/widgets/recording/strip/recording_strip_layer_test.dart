@@ -251,6 +251,36 @@ void main() {
       );
     });
 
+    testWidgets('brings its own Material: above the Scaffold, its words '
+        'never fall back to the debug underline', (tester) async {
+      // No Material above it, as where the shell puts it.
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const Align(
+            alignment: Alignment.bottomCenter,
+            child: RecordingStripLayer(),
+          ),
+          mediaQueryData: phoneMediaQueryData,
+          overrides: bench.overrides,
+        ),
+      );
+      await tester.pump();
+      await bench.startTake(tester);
+      await settleSwitch(tester);
+
+      final caption = tester.element(find.text('Recording for'));
+      expect(
+        DefaultTextStyle.of(caption).style.decoration,
+        isNot(
+          TextDecoration.underline,
+        ),
+      );
+      expect(
+        tester.widget<Material>(find.byKey(RecordingStripLayer.layerKey)).type,
+        MaterialType.transparency,
+      );
+    });
+
     testWidgets('caps itself at the prose measure on a wide window, centred', (
       tester,
     ) async {

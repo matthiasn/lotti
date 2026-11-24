@@ -3017,9 +3017,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordingPause => 'Pozastavit';
 
   @override
-  String get audioRecordingRecord => 'Nahrát';
-
-  @override
   String get audioRecordingResume => 'Pokračovat';
 
   @override
@@ -16903,9 +16900,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get sidebarActivityExpandTooltip => 'Rozbalit aktivitu';
-
-  @override
-  String get sidebarAudioRecordingStatusLabel => 'Nahrávání';
 
   @override
   String get sidebarRunningTimerLabel => 'Běžící časovač';

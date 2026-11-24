@@ -5052,12 +5052,6 @@ abstract class AppLocalizations {
   /// **'Pause'**
   String get audioRecordingPause;
 
-  /// No description provided for @audioRecordingRecord.
-  ///
-  /// In en, this message translates to:
-  /// **'Record'**
-  String get audioRecordingRecord;
-
   /// No description provided for @audioRecordingResume.
   ///
   /// In en, this message translates to:
@@ -27718,12 +27712,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Expand activity'**
   String get sidebarActivityExpandTooltip;
-
-  /// No description provided for @sidebarAudioRecordingStatusLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Recording'**
-  String get sidebarAudioRecordingStatusLabel;
 
   /// No description provided for @sidebarRunningTimerLabel.
   ///

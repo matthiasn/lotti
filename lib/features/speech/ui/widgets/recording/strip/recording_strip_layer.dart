@@ -138,31 +138,36 @@ class _RecordingStripLayerState extends ConsumerState<RecordingStripLayer> {
         receipt: receipt,
       ),
     };
-    return Align(
+    // Its own Material: the shell puts the strip above the Scaffold, where
+    // text would otherwise fall back to the debug underline.
+    return Material(
       key: RecordingStripLayer.layerKey,
-      alignment: Alignment.bottomCenter,
-      heightFactor: 1,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: kProseMeasureWidth),
-        child: AnimatedSwitcher(
-          duration: duration,
-          switchInCurve: MotionCurves.emphasizedDecelerate,
-          switchOutCurve: MotionCurves.standard,
-          layoutBuilder: (current, previous) => Stack(
-            alignment: Alignment.bottomCenter,
-            children: [...previous, ?current],
-          ),
-          transitionBuilder: (child, animation) => FadeTransition(
-            opacity: animation,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, 0.4),
-                end: Offset.zero,
-              ).animate(animation),
-              child: child,
+      type: MaterialType.transparency,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: kProseMeasureWidth),
+          child: AnimatedSwitcher(
+            duration: duration,
+            switchInCurve: MotionCurves.emphasizedDecelerate,
+            switchOutCurve: MotionCurves.standard,
+            layoutBuilder: (current, previous) => Stack(
+              alignment: Alignment.bottomCenter,
+              children: [...previous, ?current],
             ),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.4),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            ),
+            child: child,
           ),
-          child: child,
         ),
       ),
     );

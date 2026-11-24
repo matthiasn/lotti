@@ -3022,9 +3022,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get audioRecordingPause => 'Pausar';
 
   @override
-  String get audioRecordingRecord => 'Gravar';
-
-  @override
   String get audioRecordingResume => 'Retomar';
 
   @override
@@ -16861,9 +16858,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get sidebarActivityExpandTooltip => 'Expandir atividade';
-
-  @override
-  String get sidebarAudioRecordingStatusLabel => 'Gravação';
 
   @override
   String get sidebarRunningTimerLabel => 'Temporizador em execução';

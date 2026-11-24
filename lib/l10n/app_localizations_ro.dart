@@ -3030,9 +3030,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordingPause => 'Pauză';
 
   @override
-  String get audioRecordingRecord => 'Înregistrați';
-
-  @override
   String get audioRecordingResume => 'Reluare';
 
   @override
@@ -17004,9 +17001,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get sidebarActivityExpandTooltip => 'Extindeți activitatea';
-
-  @override
-  String get sidebarAudioRecordingStatusLabel => 'Înregistrare';
 
   @override
   String get sidebarRunningTimerLabel => 'Cronometru în execuție';

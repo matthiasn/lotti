@@ -2995,9 +2995,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get audioRecordingPause => 'Pausa';
 
   @override
-  String get audioRecordingRecord => 'Spela in';
-
-  @override
   String get audioRecordingResume => 'Återuppta';
 
   @override
@@ -16709,9 +16706,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get sidebarActivityExpandTooltip => 'Fäll ut aktivitet';
-
-  @override
-  String get sidebarAudioRecordingStatusLabel => 'Inspelning';
 
   @override
   String get sidebarRunningTimerLabel => 'Pågående timer';
