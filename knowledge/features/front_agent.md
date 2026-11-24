@@ -54,8 +54,16 @@ sources:
     last_modified: 2026-10-23
   - id: chat-service
     resource: ../../lib/features/front_agent/service/front_chat_service.dart
-    title: FrontChatService — persist, arm recovery, wake, await, consume
-    last_modified: 2026-11-11
+    title: FrontChatService — persist, arm recovery, wake, await, consume, stop
+    last_modified: 2026-11-24
+  - id: user-message
+    resource: ../../lib/features/front_agent/ui/front_chat_user_message.dart
+    title: FrontChatUserMessage — copy and edit on the user's own turns
+    last_modified: 2026-11-24
+  - id: cancel-wake
+    resource: ../../lib/features/agents/wake/wake_orchestrator.dart
+    title: WakeOrchestrator.cancelWake — stop one run by its key
+    last_modified: 2026-11-24
   - id: history-service
     resource: ../../lib/features/front_agent/service/front_chat_history_service.dart
     title: FrontChatHistoryService — which turns are still unanswered
@@ -1137,6 +1145,61 @@ logs, under `frontChat`, `front turn <status>: queued=… run=… total=…` —
 global concurrency cap (`defaultAgentWakeConcurrency`, 3), with no
 preference for a user waiting on her: a large `queued` means her turn sat
 behind other agents' wakes.
+
+# Stopping a turn
+
+While a turn of the user's is on its way, the composer offers **Stop** in
+Send's place (`AgentChatView.onStop`, drawn by `DesignSystemChatInput.onStop`).
+`FrontChatController` learns the turn's id from `sendMessage(onAppended:)`
+once it is durable — `sendingMessageId`, also set by a retry — and
+`stop()` calls `FrontChatService.stopMessage`, which:
+
+1. **records the stop** — an `action` row with `toolName: reply_to_user`,
+   `operationId` the turn, and a payload of only `{stopped: true}`
+   (`frontTurnStoppedKey`), under ids derived from the turn
+   (`frontChatStopMessageId`, `frontChatStopPayloadId`), so a stop pressed
+   twice or on two devices is one record. It is an answer row
+   (`isFrontAnswerRow`), so `pendingMessageIds` drops the turn and
+   maintenance never re-arms it; an older build, which shows no empty
+   reply, shows nothing for it;
+2. **consumes the turn's recovery record**, so no lease routes it;
+3. **cancels its wake** when this device is waiting on one, by run key
+   (`WakeOrchestrator.cancelWake`): dropped from the queue or the drain
+   with an aborted completion, or aborted if it is the run in flight — any
+   other wake of hers is left alone. The waiting `retryMessage` sees its
+   turn in `_stopped` and returns instead of throwing, so the composer
+   settles with nothing failed and no *Try again*.
+
+A wake that answers before the cancel lands keeps its answer: the thread
+builder lists a turn in `FrontChatThread.stoppedMessageIds` only when no
+reply or question of hers follows it. The stopped turn and its stop stay out
+of her recent turns (`_recentTurns`), and a conversation's preview reads past
+a stop to her latest words.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Durable: appendMessage
+  Durable --> Working: wake enqueued (sendingMessageId)
+  Working --> Answered: wake completed
+  Working --> Failed: wake failed
+  Failed --> Working: Try again
+  Working --> Stopped: Stop (stop record, recovery consumed, wake cancelled)
+  Stopped --> Answered: her reply landed before the cancel
+  Answered --> [*]
+  Stopped --> [*]
+```
+
+On the surface each of the user's bubbles is wrapped by
+`FrontChatUserMessage` (`AgentChatView.userMessageDecorator`): a *Stopped*
+caption under a stopped turn; on a phone a long press — or a secondary
+click — opens a menu at the finger with *Copy* (to the clipboard, with a
+toast) and, on a stopped turn, *Edit*, which puts the words in the box
+(`updateDraft`) to send as a new turn while the stopped one stays; a long
+press on the turn she is working on opens no menu but warns it cannot be
+edited until stopped. On a desktop the same actions are icons under the
+bubble, shown while the pointer is over it or focus is in them, their room
+kept so nothing shifts; *Edit* is off, its tooltip saying why, while she
+works on the turn, and absent on an answered one.
 
 # What a turn leaves behind
 
