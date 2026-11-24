@@ -40,6 +40,7 @@ import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_category_chip.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_drawer.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_user_message.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/front_agent/ui/front_companion_figure.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
@@ -805,6 +806,21 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
         },
         onDraftChanged: controller.updateDraft,
         onSend: controller.send,
+        // While she works on a turn it can be stopped; a stopped turn's
+        // words can be taken back into the box from the thread.
+        onStop: controller.stop,
+        userMessageDecorator: (context, message, bubble) =>
+            FrontChatUserMessage(
+              messageId: message.id,
+              text: message.text,
+              status: thread?.stoppedMessageIds.contains(message.id) ?? false
+                  ? FrontUserMessageStatus.stopped
+                  : message.id == composer.sendingMessageId
+                  ? FrontUserMessageStatus.working
+                  : FrontUserMessageStatus.settled,
+              onEdit: controller.updateDraft,
+              bubble: bubble,
+            ),
         // A spoken question gets a spoken answer, whichever of her views —
         // chat or stage — it was said in and is sent from.
         onSendSpoken: controller.sendSpoken,

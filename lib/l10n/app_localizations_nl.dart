@@ -3540,6 +3540,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get chatInputStopRealtime => 'Stop live transcriptie';
 
   @override
+  String get chatInputStopTooltip => 'Stoppen';
+
+  @override
   String get chatInputStopTranscribe => 'Stoppen en transcriberen';
 
   @override
@@ -7499,6 +7502,25 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Inbox';
+
+  @override
+  String get frontChatMessageActions => 'Berichtacties';
+
+  @override
+  String get frontChatMessageBusy =>
+      'De metgezel werkt er nog aan. Stop hem eerst om het te bewerken.';
+
+  @override
+  String get frontChatMessageCopied => 'Bericht gekopieerd';
+
+  @override
+  String get frontChatMessageCopy => 'Kopiëren';
+
+  @override
+  String get frontChatMessageEdit => 'Bewerken';
+
+  @override
+  String get frontChatMessageStopped => 'Gestopt';
 
   @override
   String get frontChatNoChats =>

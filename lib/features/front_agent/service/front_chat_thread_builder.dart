@@ -77,6 +77,7 @@ class FrontChatThreadBuilder {
     final options = <String, List<FrontAskOption>>{};
     final surfaces = <String, FrontReplySurface>{};
     final doorRecords = <String, List<(String, FrontDoorRecord)>>{};
+    final stopped = <String>{};
 
     for (final row in rows) {
       if (isFrontUserTurn(row)) {
@@ -90,6 +91,11 @@ class FrontChatThreadBuilder {
         switch (row.metadata.toolName) {
           case FrontAgentToolNames.replyToUser:
             final payload = await _payload(row.contentEntryId);
+            // The user stopped the turn: no words of hers to show.
+            if (payload != null && frontTurnStopped(payload.content)) {
+              stopped.add(row.metadata.operationId!);
+              continue;
+            }
             final text = payload?.content['text'];
             if (text is! String || text.trim().isEmpty) continue;
             messages.add(_message(row, AgentChatRole.agent, text));
@@ -199,6 +205,11 @@ class FrontChatThreadBuilder {
       },
       doorsByMessageId: doors,
       specialistAgentIds: specialists,
+      // Only turns she never answered: a reply that landed after all wins.
+      stoppedMessageIds: {
+        for (final id in stopped)
+          if (visibleIds.contains(id) && !_answeredByHer(id, messages)) id,
+      },
       entityPreviewsByMessageId: _entityPreviews(visible, doors),
       surfacesByMessageId: {
         for (final entry in surfaces.entries)
@@ -317,6 +328,15 @@ class FrontChatThreadBuilder {
     final payload = await _payload(payloadId);
     final text = payload?.content[key];
     return text is String && text.trim().isNotEmpty ? text : null;
+  }
+
+  /// Whether a reply or a question of hers follows user turn [turnId] in
+  /// [messages] before the next user turn.
+  static bool _answeredByHer(String turnId, List<AgentChatMessage> messages) {
+    final index = messages.indexWhere((m) => m.id == turnId);
+    return index >= 0 &&
+        index + 1 < messages.length &&
+        messages[index + 1].role == AgentChatRole.agent;
   }
 
   static int _chronological(AgentMessageEntity a, AgentMessageEntity b) {

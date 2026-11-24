@@ -2357,6 +2357,10 @@
   "chatInputRecordVoice": "Record voice message",
   "chatInputSendTooltip": "Send message",
   "chatInputStopRealtime": "Stop live transcription",
+  "chatInputStopTooltip": "Stop",
+  "@chatInputStopTooltip": {
+    "description": "Tooltip of the chat input button that stops the answer to a message already sent."
+  },
   "chatInputStopTranscribe": "Stop and transcribe",
   "chatInputTranscriptionFailed": "Transcribing the recording failed. Please try again.",
   "chatInputTranscriptionFailedKept": "Transcribing failed. Your recording is saved in the logbook, so nothing is lost.",
@@ -4743,6 +4747,30 @@
   },
   "frontChatInboxEmpty": "Nothing is waiting for you.",
   "frontChatInboxTitle": "Inbox",
+  "frontChatMessageActions": "Message actions",
+  "@frontChatMessageActions": {
+    "description": "Accessibility hint for long-pressing a companion chat message to open its actions."
+  },
+  "frontChatMessageBusy": "The companion is still working on this. Stop it first to edit it.",
+  "@frontChatMessageBusy": {
+    "description": "Warning when the user long-presses a message the companion is still working on: it can only be edited once stopped."
+  },
+  "frontChatMessageCopied": "Message copied",
+  "@frontChatMessageCopied": {
+    "description": "Toast after a companion chat message was copied."
+  },
+  "frontChatMessageCopy": "Copy",
+  "@frontChatMessageCopy": {
+    "description": "Action that copies a companion chat message the user sent."
+  },
+  "frontChatMessageEdit": "Edit",
+  "@frontChatMessageEdit": {
+    "description": "Action that puts a stopped companion chat message back into the input to change and send again."
+  },
+  "frontChatMessageStopped": "Stopped",
+  "@frontChatMessageStopped": {
+    "description": "Caption under a companion chat message the user stopped before it was answered."
+  },
   "frontChatNoChats": "No chats yet. Ask something to start one.",
   "frontChatNoMatchingChats": "No chat title matches.",
   "frontChatOlder": "Older",

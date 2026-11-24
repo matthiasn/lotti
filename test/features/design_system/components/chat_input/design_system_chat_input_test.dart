@@ -17,10 +17,11 @@ void main() {
   late int cancels;
   late int dones;
   late int retries;
+  late int stops;
 
   setUp(() {
     controller = TextEditingController();
-    sends = recordings = cancels = dones = retries = 0;
+    sends = recordings = cancels = dones = retries = stops = 0;
   });
 
   const categories = [
@@ -45,6 +46,7 @@ void main() {
     bool canSend = true,
     bool canRecord = true,
     bool enabled = true,
+    bool canStop = false,
     List<DesignSystemChatInputMention> mentions = const [],
   }) async {
     controller.value = TextEditingValue(
@@ -72,6 +74,7 @@ void main() {
               mentionOptions: mentions,
               onSend: canSend ? () => sends++ : null,
               onStartRecording: canRecord ? () => recordings++ : null,
+              onStop: canStop ? () => stops++ : null,
               onCancelRecording: () => cancels++,
               onFinishRecording: () => dones++,
             ),
@@ -378,6 +381,49 @@ void main() {
     expect(tester.widget<TextField>(find.byType(TextField)).enabled, false);
     expect(disc(tester, DesignSystemChatInputKeys.mic).onPressed, isNull);
     expect(disc(tester, DesignSystemChatInputKeys.send).onPressed, isNull);
+  });
+
+  group('stop', () {
+    testWidgets('while what was sent can be stopped, Stop stands alone in '
+        "the mic's and send's place and stops it", (tester) async {
+      await pump(
+        tester,
+        text: 'More',
+        busy: 'Finding who knows…',
+        canStop: true,
+      );
+
+      expect(find.byKey(DesignSystemChatInputKeys.mic), findsNothing);
+      expect(find.byKey(DesignSystemChatInputKeys.send), findsNothing);
+      expect(find.byTooltip('Stop'), findsOneWidget);
+
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.stop));
+      await tester.pump();
+
+      expect(stops, 1);
+      expect(sends, 0);
+    });
+
+    testWidgets('nothing to stop: the mic and send as usual', (tester) async {
+      await pump(tester, text: 'More');
+
+      expect(find.byKey(DesignSystemChatInputKeys.stop), findsNothing);
+      expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
+      expect(find.byKey(DesignSystemChatInputKeys.send), findsOneWidget);
+    });
+
+    testWidgets('while a take is transcribing, its cancel leads, not Stop', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        phase: DesignSystemChatInputPhase.transcribing,
+        canStop: true,
+      );
+
+      expect(find.byKey(DesignSystemChatInputKeys.stop), findsNothing);
+      expect(find.byKey(DesignSystemChatInputKeys.cancel), findsOneWidget);
+    });
   });
 
   testWidgets('an error stands above the card, the words kept, with Try '

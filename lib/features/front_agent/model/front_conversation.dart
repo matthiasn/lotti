@@ -16,6 +16,19 @@ String frontConversationOf(Map<String, Object?> content) {
   return id is String && id.trim().isNotEmpty ? id : earlierConversationId;
 }
 
+/// The key that marks a `reply_to_user` record as the user's stop of the
+/// turn it answers, not her words.
+///
+/// A stopped turn is recorded as a reply with no text and this key set, so
+/// it counts as answered everywhere — it is never routed again, on any
+/// device, by any build — and an older build, which shows no empty reply,
+/// shows nothing for it.
+const frontTurnStoppedKey = 'stopped';
+
+/// Whether a reply payload's [content] records the user stopping the turn.
+bool frontTurnStopped(Map<String, Object?> content) =>
+    content[frontTurnStoppedKey] == true;
+
 /// The key under which a user turn's payload names the categories its
 /// question is narrowed to — the conversation's chips when it was sent.
 const frontCategoriesKey = 'categoryIds';

@@ -23,6 +23,15 @@ typedef AgentReplyBodyBuilder =
       Widget Function(String markdown) prose,
     );
 
+/// Wraps the user's [bubble] for [message] — the host's own actions on
+/// what the user said, around or under it.
+typedef AgentUserMessageDecorator =
+    Widget Function(
+      BuildContext context,
+      AgentChatMessage message,
+      Widget bubble,
+    );
+
 class AgentChatView extends ConsumerStatefulWidget {
   const AgentChatView({
     required this.agentId,
@@ -33,6 +42,8 @@ class AgentChatView extends ConsumerStatefulWidget {
     required this.onSend,
     required this.onRetry,
     this.onSendSpoken,
+    this.onStop,
+    this.userMessageDecorator,
     this.draftSpoken,
     this.onDraftSpoken,
     this.hasFailedTurn = false,
@@ -114,6 +125,14 @@ class AgentChatView extends ConsumerStatefulWidget {
   final ValueChanged<String> onDraftChanged;
   final VoidCallback onSend;
   final VoidCallback onRetry;
+
+  /// Stops what was sent: while [isSending], the composer offers Stop in
+  /// Send's place. Null for a conversation that cannot be stopped.
+  final VoidCallback? onStop;
+
+  /// Wraps each of the user's bubbles, for a host with actions on what the
+  /// user said; null draws them bare.
+  final AgentUserMessageDecorator? userMessageDecorator;
 
   /// Sends a draft that came from what was said (read, perhaps corrected),
   /// so the host knows the turn was spoken; [onSend] when not given.
@@ -212,6 +231,7 @@ class _ChatComposer extends ConsumerWidget {
     required this.allowDraftWhileSending,
     required this.sendingLabel,
     required this.onSend,
+    this.onStop,
     this.leading,
     this.mentionOptions = const [],
     this.voiceFirst = false,
@@ -234,6 +254,7 @@ class _ChatComposer extends ConsumerWidget {
   final bool allowDraftWhileSending;
   final String sendingLabel;
   final VoidCallback onSend;
+  final VoidCallback? onStop;
   final ChatTranscriptionTargetResolver? resolveTranscriptionTarget;
   final ChatTranscriptCorrector? correctTranscript;
   final ChatDictionaryCategoryResolver? resolveDictionaryCategory;
@@ -262,6 +283,7 @@ class _ChatComposer extends ConsumerWidget {
       elapsed: recorderState.elapsed,
       partialTranscript: recorderState.partialTranscript,
       onSend: isSending ? null : onSend,
+      onStop: isSending ? onStop : null,
       onStartRecording: () => recorder.start(
         resolveTranscriptionTarget: resolveTranscriptionTarget,
         correctTranscript: correctTranscript,
@@ -312,9 +334,11 @@ class _MessageBubble extends StatelessWidget {
     this.onLinkTap,
     this.conversational = false,
     this.replyBodyBuilder,
+    this.userMessageDecorator,
     super.key,
   });
 
+  final AgentUserMessageDecorator? userMessageDecorator;
   final bool conversational;
   final AgentReplyBodyBuilder? replyBodyBuilder;
   final AgentChatMessage message;
@@ -343,7 +367,8 @@ class _MessageBubble extends StatelessWidget {
     final time = deviceClockLabel(context, message.createdAt);
     return Semantics(
       container: true,
-      explicitChildNodes: !isUser,
+      // A decorated bubble keeps its actions' own nodes.
+      explicitChildNodes: !isUser || userMessageDecorator != null,
       label: !isUser && onLinkTap != null
           ? context.messages.goalChatMessageFooter(author, time)
           : context.messages.goalChatMessageSemantics(
@@ -353,90 +378,94 @@ class _MessageBubble extends StatelessWidget {
             ),
       child: Align(
         alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: _bubbleWidth(
-              context,
-              isUser: isUser && conversational,
-            ),
-          ),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              // In a conversation her words are unboxed prose; the user's
-              // keep a soft, neutral bubble, a step off the ground — the
-              // accent stays for what can be pressed.
-              color: isUser
-                  ? conversational
-                        ? tokens.colors.background.level02
-                        : tokens.colors.surface.selected
-                  : conversational
-                  ? null
-                  : tokens.colors.background.level02,
-              borderRadius: BorderRadius.circular(tokens.radii.l),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: conversational && !isUser
-                    ? 0
-                    : tokens.spacing.step4,
-                vertical: tokens.spacing.step3,
+        child: _decorate(
+          context,
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: _bubbleWidth(
+                context,
+                isUser: isUser && conversational,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (isUser)
-                    ExcludeSemantics(
-                      child: Text(
-                        message.text,
-                        style: tokens.typography.styles.body.bodyMedium
-                            .copyWith(
-                              color: tokens.colors.text.highEmphasis,
+            ),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                // In a conversation her words are unboxed prose; the user's
+                // keep a soft, neutral bubble, a step off the ground — the
+                // accent stays for what can be pressed.
+                color: isUser
+                    ? conversational
+                          ? tokens.colors.background.level02
+                          : tokens.colors.surface.selected
+                    : conversational
+                    ? null
+                    : tokens.colors.background.level02,
+                borderRadius: BorderRadius.circular(tokens.radii.l),
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: conversational && !isUser
+                      ? 0
+                      : tokens.spacing.step4,
+                  vertical: tokens.spacing.step3,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (isUser)
+                      ExcludeSemantics(
+                        child: Text(
+                          message.text,
+                          style: tokens.typography.styles.body.bodyMedium
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                              ),
+                        ),
+                      )
+                    else
+                      ExcludeSemantics(
+                        excluding: onLinkTap == null,
+                        child:
+                            replyBodyBuilder?.call(
+                              context,
+                              message,
+                              (markdown) => AgentMarkdownView(
+                                markdown,
+                                style: _replyStyle(tokens),
+                                onLinkTap: onLinkTap,
+                              ),
+                            ) ??
+                            _CollapsibleAgentMarkdown(
+                              onLinkTap: onLinkTap,
+                              cacheKey: message.id,
+                              measuredHeights: measuredHeights,
+                              text: message.text,
+                              style: _replyStyle(tokens),
+                              fadeColor: conversational
+                                  ? tokens.colors.background.level01
+                                  : tokens.colors.background.level02,
                             ),
                       ),
-                    )
-                  else
-                    ExcludeSemantics(
-                      excluding: onLinkTap == null,
-                      child:
-                          replyBodyBuilder?.call(
-                            context,
-                            message,
-                            (markdown) => AgentMarkdownView(
-                              markdown,
-                              style: _replyStyle(tokens),
-                              onLinkTap: onLinkTap,
-                            ),
-                          ) ??
-                          _CollapsibleAgentMarkdown(
-                            onLinkTap: onLinkTap,
-                            cacheKey: message.id,
-                            measuredHeights: measuredHeights,
-                            text: message.text,
-                            style: _replyStyle(tokens),
-                            fadeColor: conversational
-                                ? tokens.colors.background.level01
-                                : tokens.colors.background.level02,
-                          ),
-                    ),
-                  if (attachment != null) ...[
-                    SizedBox(height: tokens.spacing.step3),
-                    Material(
-                      type: MaterialType.transparency,
-                      child: attachment,
-                    ),
-                  ],
-                  if (!conversational) ...[
-                    SizedBox(height: tokens.spacing.step1),
-                    ExcludeSemantics(
-                      child: Text(
-                        context.messages.goalChatMessageFooter(author, time),
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
+                    if (attachment != null) ...[
+                      SizedBox(height: tokens.spacing.step3),
+                      Material(
+                        type: MaterialType.transparency,
+                        child: attachment,
+                      ),
+                    ],
+                    if (!conversational) ...[
+                      SizedBox(height: tokens.spacing.step1),
+                      ExcludeSemantics(
+                        child: Text(
+                          context.messages.goalChatMessageFooter(author, time),
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.lowEmphasis,
+                              ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -444,4 +473,15 @@ class _MessageBubble extends StatelessWidget {
       ),
     );
   }
+
+  /// The user's bubble as the host decorates it; anything else bare.
+  Widget _decorate(BuildContext context, Widget bubble) =>
+      switch (userMessageDecorator) {
+        final decorate? when message.role == AgentChatRole.user => decorate(
+          context,
+          message,
+          bubble,
+        ),
+        _ => bubble,
+      };
 }

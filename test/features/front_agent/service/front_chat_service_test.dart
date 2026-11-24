@@ -14,6 +14,7 @@ import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
+import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -449,6 +450,174 @@ void main() {
       await service.retryMessage(messageId: 'm-1');
 
       expect(upserts.whereType<ScheduledWakeEntity>(), isEmpty);
+    });
+  });
+
+  group('stopMessage', () {
+    /// Reads back what the service wrote, so a consume sees its record.
+    void readBack() {
+      when(() => repository.getEntity(any())).thenAnswer((invocation) async {
+        final id = invocation.positionalArguments.first as String;
+        if (id == frontAgentId) return identity(AgentLifecycle.active);
+        for (final record in upserts.whereType<ScheduledWakeEntity>()) {
+          if (record.id == id) return record;
+        }
+        return null;
+      });
+    }
+
+    /// Enqueues `run-1`, which runs until it is cancelled.
+    void stubLongWake() {
+      when(
+        () => orchestrator.enqueueManualWake(
+          agentId: any(named: 'agentId'),
+          reason: any(named: 'reason'),
+          triggerTokens: any(named: 'triggerTokens'),
+          supersede: any(named: 'supersede'),
+          initiator: any(named: 'initiator'),
+        ),
+      ).thenReturn('run-1');
+    }
+
+    /// A cancel of [runKey] ends it aborted, as the orchestrator does.
+    void stubCancel(String runKey) {
+      when(() => orchestrator.cancelWake(frontAgentId, runKey)).thenAnswer((
+        _,
+      ) {
+        scheduleMicrotask(
+          () => completions.add(
+            WakeRunCompletion(
+              runKey: runKey,
+              agentId: frontAgentId,
+              status: WakeRunStatus.aborted,
+              reason: WakeReason.userMessage.name,
+              error: 'wake stopped by the user',
+            ),
+          ),
+        );
+        return true;
+      });
+    }
+
+    AgentMessageEntity stopRecord() => upserts
+        .whereType<AgentMessageEntity>()
+        .singleWhere((m) => m.kind == AgentMessageKind.action);
+
+    test('stopping a turn on its way cancels just its wake, and the send '
+        'returns as one that went through', () async {
+      readBack();
+      stubLongWake();
+      stubCancel('run-1');
+      String? appended;
+      final send = service.sendMessage(
+        text: 'Count the hatchlings',
+        conversationId: 'c-1',
+        onAppended: (id) => appended = id,
+      );
+      await pumpEventQueue();
+      expect(appended, isNotNull);
+
+      await service.stopMessage(messageId: appended!);
+
+      await expectLater(send, completes);
+      verify(() => orchestrator.cancelWake(frontAgentId, 'run-1')).called(1);
+      expect(recoveryOf(appended!).status, ScheduledWakeStatus.consumed);
+    });
+
+    test('the stop is recorded as an empty reply to the turn, marked '
+        'stopped, which counts as her answer', () async {
+      await service.stopMessage(messageId: 'm-1');
+
+      final record = stopRecord();
+      expect(record.id, frontChatStopMessageId('m-1'));
+      expect(record.threadId, 'm-1');
+      expect(record.metadata.operationId, 'm-1');
+      expect(record.metadata.toolName, FrontAgentToolNames.replyToUser);
+      expect(isFrontAnswerRow(record), isTrue);
+      final payload = upserts.whereType<AgentMessagePayloadEntity>().single;
+      expect(payload.id, frontChatStopPayloadId('m-1'));
+      expect(record.contentEntryId, payload.id);
+      expect(frontTurnStopped(payload.content), isTrue);
+      expect(payload.content.containsKey('text'), isFalse);
+      verify(
+        () => notifications.notifyUiOnly({frontAgentId, agentNotification}),
+      ).called(1);
+    });
+
+    test('a turn this device is not waiting on is stopped without cancelling '
+        'any wake, and its pending recovery is consumed', () async {
+      final pending =
+          AgentDomainEntity.scheduledWake(
+                id: frontChatRecoveryRecordId(frontAgentId, 'm-1'),
+                agentId: frontAgentId,
+                scheduledAt: now.toUtc(),
+                status: ScheduledWakeStatus.pending,
+                reason: WakeReason.userMessage.name,
+                updatedAt: now,
+                vectorClock: null,
+                workspaceKey: frontChatRecoveryWorkspaceKey('m-1'),
+              )
+              as ScheduledWakeEntity;
+      when(
+        () => repository.getEntity(pending.id),
+      ).thenAnswer((_) async => pending);
+
+      await withClock(Clock.fixed(now), () async {
+        await service.stopMessage(messageId: 'm-1');
+      });
+
+      verifyNever(() => orchestrator.cancelWake(any(), any()));
+      expect(recoveryOf('m-1').status, ScheduledWakeStatus.consumed);
+      expect(recoveryOf('m-1').consumedAt, now);
+      expect(stopRecord().metadata.operationId, 'm-1');
+    });
+
+    test('a stop pressed twice, or on two devices, is one record', () {
+      expect(frontChatStopMessageId('m-1'), frontChatStopMessageId('m-1'));
+      expect(frontChatStopPayloadId('m-1'), frontChatStopPayloadId('m-1'));
+      expect(
+        frontChatStopMessageId('m-1'),
+        isNot(frontChatStopMessageId('m-2')),
+      );
+      expect(
+        frontChatStopMessageId('m-1'),
+        isNot(frontChatStopPayloadId('m-1')),
+      );
+    });
+
+    test(
+      'an aborted wake of a turn nobody stopped is still a failure',
+      () async {
+        readBack();
+        stubWake(WakeRunStatus.aborted);
+
+        await expectLater(
+          service.sendMessage(text: 'Hello', conversationId: 'c-1'),
+          throwsA(isA<FrontChatTurnException>()),
+        );
+      },
+    );
+
+    test('once a stopped send has returned, a later wake of the same turn '
+        'that aborts fails again', () async {
+      readBack();
+      stubLongWake();
+      stubCancel('run-1');
+      String? appended;
+      final send = service.sendMessage(
+        text: 'Hello',
+        conversationId: 'c-1',
+        onAppended: (id) => appended = id,
+      );
+      await pumpEventQueue();
+      await service.stopMessage(messageId: appended!);
+      await send;
+
+      stubWake(WakeRunStatus.aborted);
+      await expectLater(
+        service.retryMessage(messageId: appended!),
+        throwsA(isA<FrontChatTurnException>()),
+      );
     });
   });
 

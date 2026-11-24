@@ -777,6 +777,108 @@ Filed under Garden.'''),
     });
   });
 
+  group('a turn the user stopped', () {
+    test('neither it nor its stop reaches her recent turns', () async {
+      seedMessage();
+      when(() => repository.getAgentMessages(frontAgentId)).thenAnswer(
+        (_) async => [
+          makeTestMessage(
+            id: 'msg-1',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.user,
+            contentEntryId: 'payload-1',
+          ),
+          makeTestMessage(
+            id: 'old-user',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.user,
+            contentEntryId: 'old-user-payload',
+            createdAt: DateTime(2026, 10, 22, 8),
+          ),
+          makeTestMessage(
+            id: 'old-reply',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.action,
+            metadata: const AgentMessageMetadata(
+              toolName: 'reply_to_user',
+              runKey: 'run-0',
+              operationId: 'old-user',
+            ),
+            contentEntryId: 'old-reply-payload',
+            createdAt: DateTime(2026, 10, 22, 9),
+          ),
+          makeTestMessage(
+            id: 'stopped-user',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.user,
+            contentEntryId: 'stopped-user-payload',
+            createdAt: DateTime(2026, 10, 22, 10),
+          ),
+          makeTestMessage(
+            id: 'stop',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.action,
+            metadata: const AgentMessageMetadata(
+              toolName: 'reply_to_user',
+              operationId: 'stopped-user',
+            ),
+            contentEntryId: 'stop-payload',
+            createdAt: DateTime(2026, 10, 22, 10, 1),
+          ),
+        ],
+      );
+      final payloads = {
+        'payload-1': makeTestMessagePayload(
+          id: 'payload-1',
+          agentId: frontAgentId,
+          content: {'text': input},
+        ),
+        'old-user-payload': makeTestMessagePayload(
+          id: 'old-user-payload',
+          agentId: frontAgentId,
+          content: const {'text': 'What about the garden?'},
+        ),
+        'old-reply-payload': makeTestMessagePayload(
+          id: 'old-reply-payload',
+          agentId: frontAgentId,
+          content: const {'text': 'Filed under Garden.'},
+        ),
+        'stopped-user-payload': makeTestMessagePayload(
+          id: 'stopped-user-payload',
+          agentId: frontAgentId,
+          content: const {'text': 'Count the hatchlings twice'},
+        ),
+        'stop-payload': makeTestMessagePayload(
+          id: 'stop-payload',
+          agentId: frontAgentId,
+          content: const {frontTurnStoppedKey: true},
+        ),
+      };
+      when(() => repository.getEntitiesByIds(any())).thenAnswer(
+        (invocation) async => {
+          for (final id in invocation.positionalArguments.first as Set<String>)
+            id: ?payloads[id],
+        },
+      );
+      String? sent;
+      stubModel(
+        onMessage: (message) => sent = message,
+        (_) => [call('dispatch', dispatchArgs())],
+      );
+
+      final result = await run();
+
+      expect(result.success, isTrue);
+      expect(
+        sent,
+        contains(
+          '- user: What about the garden?\n- reply: Filed under Garden.\n</',
+        ),
+      );
+      expect(sent, isNot(contains('Count the hatchlings twice')));
+    });
+  });
+
   group('the repair round', () {
     test('a turn that ends without a terminal call gets the repair '
         'instruction once, within the remaining budget', () async {

@@ -504,6 +504,8 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                                   conversational: widget.conversational,
                                   replyTextStyle: widget.replyTextStyle,
                                   replyBodyBuilder: widget.replyBodyBuilder,
+                                  userMessageDecorator:
+                                      widget.userMessageDecorator,
                                   onLinkTap: widget.onLinkTap == null
                                       ? null
                                       : (url, title) => widget.onLinkTap!(
@@ -596,6 +598,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                     widget.sendingLabel ??
                     context.messages.goalChatResponding(widget.agentName),
                 onSend: _send,
+                onStop: widget.onStop,
                 voiceFirst: widget.voiceFirst,
                 resolveTranscriptionTarget: widget.resolveTranscriptionTarget,
                 correctTranscript: widget.correctTranscript,

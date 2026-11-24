@@ -85,6 +85,98 @@ void main() {
       });
     }
 
+    group('cancelWake', () {
+      test('drops just the queued run it names, telling its waiters it was '
+          'aborted', () {
+        fakeAsync((async) {
+          final completions = <WakeRunCompletion>[];
+          final sub = orchestrator.runCompletions.listen(completions.add);
+          queue
+            ..enqueue(makeJob(runKey: 'stopped'))
+            ..enqueue(makeJob(runKey: 'kept', workspaceKey: 'day-b'));
+
+          expect(orchestrator.cancelWake('agent-1', 'stopped'), isTrue);
+          async.flushMicrotasks();
+
+          expect(queue.hasJobWhere((job) => job.runKey == 'stopped'), isFalse);
+          expect(queue.hasJobWhere((job) => job.runKey == 'kept'), isTrue);
+          expect(
+            completions.map((c) => (c.runKey, c.status)),
+            [('stopped', WakeRunStatus.aborted)],
+          );
+          unawaited(sub.cancel());
+          async.flushMicrotasks();
+        });
+      });
+
+      test('aborts the run in flight only when it is the one named', () {
+        fakeAsync((async) {
+          final executor = Completer<Map<String, VectorClock>?>();
+          orchestrator.wakeExecutor = (_, _, _, _) => executor.future;
+          queue.enqueue(makeJob(runKey: 'running'));
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+          expect(runner.isRunning('agent-1'), isTrue);
+
+          expect(orchestrator.cancelWake('agent-1', 'another'), isFalse);
+          async.flushMicrotasks();
+          expect(runner.isRunning('agent-1'), isTrue);
+
+          expect(orchestrator.cancelWake('agent-1', 'running'), isTrue);
+          async.flushMicrotasks();
+          expect(runner.isRunning('agent-1'), isFalse);
+          executor.complete(const {});
+          async.flushMicrotasks();
+        });
+      });
+
+      test('a run the drain has taken but not started is cancelled before '
+          'it runs', () {
+        fakeAsync((async) {
+          final policyLookupGate = Completer<AgentDomainEntity?>();
+          final executed = <String>[];
+          final completions = <WakeRunCompletion>[];
+          when(
+            () => mockRepository.getEntity('agent-1'),
+          ).thenAnswer((_) => policyLookupGate.future);
+          orchestrator.wakeExecutor = (_, runKey, _, _) {
+            executed.add(runKey);
+            return Future.value(const {});
+          };
+          final sub = orchestrator.runCompletions.listen(completions.add);
+          queue.enqueue(makeJob(runKey: 'taken'));
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+          // Out of the queue, held by the drain on its policy read.
+          expect(queue.hasJobWhere((job) => job.runKey == 'taken'), isFalse);
+
+          expect(orchestrator.cancelWake('agent-1', 'taken'), isTrue);
+          async.flushMicrotasks();
+          policyLookupGate.complete(null);
+          async.flushMicrotasks();
+
+          expect(executed, isEmpty);
+          expect(
+            completions.map((c) => (c.runKey, c.status)),
+            [('taken', WakeRunStatus.aborted)],
+          );
+          unawaited(sub.cancel());
+          async.flushMicrotasks();
+        });
+      });
+
+      test('a run of another agent with the same key is left alone', () {
+        fakeAsync((async) {
+          queue.enqueue(makeJob(runKey: 'shared', agentId: 'agent-2'));
+
+          expect(orchestrator.cancelWake('agent-1', 'shared'), isFalse);
+          async.flushMicrotasks();
+
+          expect(queue.hasJobWhere((job) => job.runKey == 'shared'), isTrue);
+        });
+      });
+    });
+
     group('subscription management', () {
       glados.Glados(
         glados.any.wakeRoutingScenario,

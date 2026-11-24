@@ -3579,6 +3579,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get chatInputStopRealtime => 'Opriți transcrierea în timp real';
 
   @override
+  String get chatInputStopTooltip => 'Opriți';
+
+  @override
   String get chatInputStopTranscribe => 'Opriți și transcrieți';
 
   @override
@@ -7606,6 +7609,25 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Primite';
+
+  @override
+  String get frontChatMessageActions => 'Acțiuni pentru mesaj';
+
+  @override
+  String get frontChatMessageBusy =>
+      'Însoțitorul încă lucrează la acest mesaj. Opriți-l mai întâi pentru a-l edita.';
+
+  @override
+  String get frontChatMessageCopied => 'Mesaj copiat';
+
+  @override
+  String get frontChatMessageCopy => 'Copiați';
+
+  @override
+  String get frontChatMessageEdit => 'Editați';
+
+  @override
+  String get frontChatMessageStopped => 'Oprit';
 
   @override
   String get frontChatNoChats =>

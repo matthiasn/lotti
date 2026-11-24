@@ -121,13 +121,15 @@ class FrontConversationService {
   }
 
   /// Where each conversation got to: the first line of her latest turn in
-  /// it — her reply, or the question she asked back — read in one batch.
-  /// A turn's conversation is the one of the user turn it answers.
+  /// it — her reply, or the question she asked back — read in batches. A
+  /// turn's conversation is the one of the user turn it answers. A turn the
+  /// user stopped has no words of hers, so the one before it speaks.
   Future<Map<String, String>> _previews(
     List<AgentMessageEntity> rows,
     Map<String, String> conversationOfTurn,
   ) async {
-    final latest = <String, AgentMessageEntity>{};
+    // Each conversation's replies and questions, newest first.
+    final candidates = <String, List<AgentMessageEntity>>{};
     for (final row in rows) {
       if (!isFrontAnswerRow(row)) continue;
       final tool = row.metadata.toolName;
@@ -137,20 +139,32 @@ class FrontConversationService {
       }
       final conversation = conversationOfTurn[row.metadata.operationId];
       if (conversation != null && row.contentEntryId != null) {
-        latest[conversation] = row;
+        candidates.putIfAbsent(conversation, () => []).insert(0, row);
       }
     }
-    final payloads = await _repository.getEntitiesByIds({
-      for (final row in latest.values) row.contentEntryId!,
-    });
-    return {
-      for (final MapEntry(key: id, value: row) in latest.entries)
+    final previews = <String, String>{};
+    var round = 0;
+    while (true) {
+      final asked = {
+        for (final MapEntry(key: id, value: newestFirst) in candidates.entries)
+          if (!previews.containsKey(id) && round < newestFirst.length)
+            id: newestFirst[round],
+      };
+      if (asked.isEmpty) return previews;
+      final payloads = await _repository.getEntitiesByIds({
+        for (final row in asked.values) row.contentEntryId!,
+      });
+      for (final MapEntry(key: id, value: row) in asked.entries) {
         if (payloads[row.contentEntryId]
-            case final AgentMessagePayloadEntity payload)
+            case final AgentMessagePayloadEntity payload) {
           if (payload.content['text'] ?? payload.content['question']
-              case final String text when text.trim().isNotEmpty)
-            id: titleOf(text),
-    };
+              case final String text when text.trim().isNotEmpty) {
+            previews[id] = titleOf(text);
+          }
+        }
+      }
+      round++;
+    }
   }
 
   Future<void> rename(String conversationId, String title) {

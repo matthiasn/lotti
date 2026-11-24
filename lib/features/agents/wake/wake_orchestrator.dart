@@ -933,6 +933,26 @@ class WakeOrchestrator with AgentErrorLogging {
     unawaited(processNext());
   }
 
+  /// Stops the one wake [runKey] of [agentId], wherever it is: dropped from
+  /// the queue — its waiters told it was aborted — or aborted when it is the
+  /// run in flight. Any other wake of the agent is left alone. Returns
+  /// whether there was a wake to stop.
+  bool cancelWake(String agentId, String runKey) {
+    const reason = 'wake stopped by the user';
+    final removed = queue.removeByAgentWhere(
+      agentId,
+      (job) => job.runKey == runKey,
+    );
+    final owned = _cancelDrainOwnedJobsWhere(
+      (job) => job.agentId == agentId && job.runKey == runKey,
+      reason: reason,
+    );
+    _emitRemovedRunCompletions([...removed, ...owned], reason: reason);
+    final running =
+        runner.runKeyFor(agentId) == runKey && runner.abort(agentId);
+    return running || removed.isNotEmpty || owned.isNotEmpty;
+  }
+
   /// Abort the in-flight wake for [agentId], if any.
   ///
   /// Used by the user-initiated cancel button on the ongoing wake row.

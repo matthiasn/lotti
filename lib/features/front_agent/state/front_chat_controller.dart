@@ -21,6 +21,7 @@ class FrontChatComposerState {
     this.draft = '',
     this.draftSpoken = false,
     this.isSending = false,
+    this.sendingMessageId,
     this.failedMessage,
     this.failedMessageId,
     this.failedConversationId,
@@ -37,6 +38,10 @@ class FrontChatComposerState {
   /// turn from whichever view sends it — her chat or her stage.
   final bool draftSpoken;
   final bool isSending;
+
+  /// The turn on its way, once it is durable: what Stop stops, and the one
+  /// message of the thread she is working on.
+  final String? sendingMessageId;
 
   /// Doors whose action — filing, declining, a chip — is in flight.
   final Set<String> busyDoorIds;
@@ -76,6 +81,7 @@ class FrontChatComposerState {
     String? draft,
     bool? draftSpoken,
     bool? isSending,
+    String? sendingMessageId,
     Set<String>? busyDoorIds,
     Set<String>? failedDoorIds,
   }) => FrontChatComposerState(
@@ -83,6 +89,7 @@ class FrontChatComposerState {
     draftSpoken:
         (draft ?? this.draft).isNotEmpty && (draftSpoken ?? this.draftSpoken),
     isSending: isSending ?? this.isSending,
+    sendingMessageId: sendingMessageId ?? this.sendingMessageId,
     busyDoorIds: busyDoorIds ?? this.busyDoorIds,
     failedDoorIds: failedDoorIds ?? this.failedDoorIds,
   );
@@ -134,6 +141,28 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   /// Sends the draft.
   Future<void> send() => sendText(state.draft);
 
+  /// Stops the turn on its way: she does not answer it, the thread shows it
+  /// stopped, and its words can be taken back into the box to send again.
+  /// The send then settles as one that went through. Nothing to stop until
+  /// the turn is durable.
+  Future<void> stop() async {
+    final messageId = state.sendingMessageId;
+    if (messageId == null) return;
+    // No answer is coming to speak.
+    ref.read(frontSpokenTurnProvider.notifier).settle();
+    try {
+      await ref
+          .read(frontChatServiceProvider)
+          .stopMessage(messageId: messageId);
+    } on Object {
+      // Not recorded: the turn goes on, and Stop can be pressed again.
+    }
+  }
+
+  void _sending(String messageId) {
+    state = state.copyWith(sendingMessageId: messageId);
+  }
+
   /// Sends the draft the user spoke — a transcript — so her reply is spoken
   /// back.
   Future<void> sendSpoken() => sendText(state.draft, spoken: true);
@@ -169,6 +198,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
             text: message,
             conversationId: landing,
             categoryIds: categoryIds,
+            onAppended: _sending,
           );
       await _unarchive(landing);
       // Listened before the index reloads, so the reload is seen.
@@ -293,8 +323,10 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
           text: failed,
           conversationId: conversationId,
           categoryIds: scopedTo,
+          onAppended: _sending,
         );
       } else {
+        _sending(messageId);
         await service.retryMessage(messageId: messageId);
       }
       _reproject();

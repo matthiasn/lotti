@@ -124,7 +124,11 @@ void main() {
 
   test('a draft is kept and clears a previous failure', () async {
     when(
-      () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+      () => chatService.sendMessage(
+        text: 'Hello',
+        conversationId: 'c-1',
+        onAppended: any(named: 'onAppended'),
+      ),
     ).thenThrow(StateError('db closed'));
     controller().updateDraft('Hello');
     await controller().send();
@@ -159,14 +163,22 @@ void main() {
 
     test('a send lands in where the user left off and pins it', () async {
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenAnswer((_) async {});
       expect(picked(), isNull);
 
       await controller().sendText('Hello');
 
       verify(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).called(1);
       expect(picked(), 'c-1');
     });
@@ -176,6 +188,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Count the hatchlings',
           conversationId: any(named: 'conversationId'),
+          onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async {});
       container.read(frontInboxFilterProvider.notifier).toggle();
@@ -190,6 +203,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Count the hatchlings',
           conversationId: fresh!,
+          onAppended: any(named: 'onAppended'),
         ),
       ).called(1);
     });
@@ -328,7 +342,11 @@ void main() {
         }
       });
       when(
-        () => chatService.sendMessage(text: 'More', conversationId: 'c-0'),
+        () => chatService.sendMessage(
+          text: 'More',
+          conversationId: 'c-0',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenAnswer((_) async {});
       when(
         () => conversations.archive(any(), archived: any(named: 'archived')),
@@ -345,7 +363,11 @@ void main() {
       expect(settled.failedMessage, isNull, reason: 'the turn was sent');
       expect(settled.isSending, isFalse);
       verify(
-        () => chatService.sendMessage(text: 'More', conversationId: 'c-0'),
+        () => chatService.sendMessage(
+          text: 'More',
+          conversationId: 'c-0',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).called(1);
     });
   });
@@ -355,7 +377,11 @@ void main() {
         'refreshes the thread, clears the composer and leaves the inbox '
         'filter', () async {
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenAnswer((_) async {});
       controller().updateDraft('  Hello ');
       final before = threadBuilder.builds;
@@ -371,7 +397,11 @@ void main() {
 
       verifyInOrder([
         () => agentService.getOrCreate(),
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ]);
       expect(state().draft, isEmpty);
       expect(state().isSending, isFalse);
@@ -388,17 +418,26 @@ void main() {
         () => chatService.sendMessage(
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
+          onAppended: any(named: 'onAppended'),
         ),
       );
     });
 
     test('a chip tap sends its label as the next turn', () async {
       when(
-        () => chatService.sendMessage(text: 'Swim 2 km', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Swim 2 km',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenAnswer((_) async {});
       await controller().sendText('Swim 2 km');
       verify(
-        () => chatService.sendMessage(text: 'Swim 2 km', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Swim 2 km',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).called(1);
     });
 
@@ -407,7 +446,11 @@ void main() {
       'remembers the durable id so the retry re-wakes the same turn',
       () async {
         when(
-          () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+          () => chatService.sendMessage(
+            text: 'Hello',
+            conversationId: 'c-1',
+            onAppended: any(named: 'onAppended'),
+          ),
         ).thenThrow(
           const FrontChatTurnException('boom', messageId: 'm-1'),
         );
@@ -426,7 +469,11 @@ void main() {
         'answer is in', () async {
       final answering = Completer<void>();
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenAnswer((_) => answering.future);
       controller().updateDraft('Hello');
 
@@ -444,7 +491,11 @@ void main() {
         'words still offered for a retry', () async {
       final answering = Completer<void>();
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenAnswer((_) => answering.future);
       controller().updateDraft('Hello');
 
@@ -465,7 +516,11 @@ void main() {
       () async {
         final answering = Completer<void>();
         when(
-          () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+          () => chatService.sendMessage(
+            text: 'Hello',
+            conversationId: 'c-1',
+            onAppended: any(named: 'onAppended'),
+          ),
         ).thenAnswer((_) => answering.future);
         controller().updateDraft('Hello');
 
@@ -482,7 +537,11 @@ void main() {
 
     test('an unexpected error fails the turn without a durable id', () async {
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenThrow(StateError('db closed'));
       controller().updateDraft('Hello');
 
@@ -500,6 +559,7 @@ void main() {
       () => chatService.sendMessage(
         text: 'Hello',
         conversationId: 'c-1',
+        onAppended: any(named: 'onAppended'),
       ),
     ).thenAnswer((_) async {
       if (calls++ == 0) throw StateError('first');
@@ -517,7 +577,11 @@ void main() {
   group('a spoken turn', () {
     test('marks its conversation for a spoken reply, as of the send', () async {
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenAnswer((_) async {
         // Her reply can land before the send returns: the mark is there.
         expect(container.read(frontSpokenTurnProvider)?.conversationId, 'c-1');
@@ -537,6 +601,7 @@ void main() {
         () => chatService.sendMessage(
           text: any(named: 'text'),
           conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async {});
       controller().updateDraft('Hello');
@@ -551,7 +616,11 @@ void main() {
 
     test('a spoken turn whose wake fails waits for no reply either', () async {
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenThrow(const FrontChatTurnException('boom', messageId: 'm-1'));
       controller().updateDraft('Hello');
 
@@ -563,7 +632,11 @@ void main() {
 
     test('a spoken turn that cannot be sent waits for no reply', () async {
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenThrow(StateError('db closed'));
       controller().updateDraft('Hello');
 
@@ -574,11 +647,158 @@ void main() {
     });
   });
 
+  group('stop', () {
+    /// A send of 'Hello' whose turn becomes durable as `m-1`, then waits
+    /// for its wake until [wake] completes.
+    void stubSendWaiting(Completer<void> wake) {
+      when(
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
+      ).thenAnswer((invocation) async {
+        (invocation.namedArguments[#onAppended] as void Function(String))(
+          'm-1',
+        );
+        await wake.future;
+      });
+    }
+
+    test('the turn on its way is known once durable, and Stop stops it; the '
+        'send then settles with nothing failed', () async {
+      final wake = Completer<void>();
+      stubSendWaiting(wake);
+      // The service's waiting wake returns once the stop lands.
+      when(
+        () => chatService.stopMessage(messageId: 'm-1'),
+      ).thenAnswer((_) async => wake.complete());
+      controller().updateDraft('Hello');
+
+      final send = controller().send();
+      await pumpEventQueue();
+      expect(state().isSending, isTrue);
+      expect(state().sendingMessageId, 'm-1');
+
+      await controller().stop();
+      await send;
+
+      verify(() => chatService.stopMessage(messageId: 'm-1')).called(1);
+      expect(state().isSending, isFalse);
+      expect(state().sendingMessageId, isNull);
+      expect(state().failedMessage, isNull);
+    });
+
+    test('nothing is stopped before the turn is durable', () async {
+      await controller().stop();
+
+      verifyNever(
+        () => chatService.stopMessage(messageId: any(named: 'messageId')),
+      );
+    });
+
+    test('a stopped spoken turn waits for no spoken reply', () async {
+      final wake = Completer<void>();
+      stubSendWaiting(wake);
+      when(
+        () => chatService.stopMessage(messageId: 'm-1'),
+      ).thenAnswer((_) async => wake.complete());
+      controller().updateDraft('Hello');
+
+      final send = controller().sendSpoken();
+      await pumpEventQueue();
+      expect(container.read(frontSpokenTurnProvider), isNotNull);
+
+      await controller().stop();
+      await send;
+
+      expect(container.read(frontSpokenTurnProvider), isNull);
+    });
+
+    test('a stop that could not be recorded leaves the turn going, to be '
+        'stopped again', () async {
+      final wake = Completer<void>();
+      stubSendWaiting(wake);
+      when(
+        () => chatService.stopMessage(messageId: 'm-1'),
+      ).thenAnswer((_) async => throw StateError('db closed'));
+      controller().updateDraft('Hello');
+
+      final send = controller().send();
+      await pumpEventQueue();
+      await controller().stop();
+
+      expect(state().isSending, isTrue);
+      expect(state().sendingMessageId, 'm-1');
+      wake.complete();
+      await send;
+    });
+
+    test('a retried durable turn can be stopped while it is on its way '
+        'again', () async {
+      when(
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
+      ).thenThrow(const FrontChatTurnException('boom', messageId: 'm-1'));
+      final wake = Completer<void>();
+      when(
+        () => chatService.retryMessage(messageId: 'm-1'),
+      ).thenAnswer((_) => wake.future);
+      controller().updateDraft('Hello');
+      await controller().send();
+
+      final retry = controller().retry();
+      await pumpEventQueue();
+
+      expect(state().sendingMessageId, 'm-1');
+      wake.complete();
+      await retry;
+      expect(state().sendingMessageId, isNull);
+    });
+
+    test(
+      'a retry that sends the turn anew knows it once it is durable',
+      () async {
+        var attempts = 0;
+        final wake = Completer<void>();
+        when(
+          () => chatService.sendMessage(
+            text: 'Hello',
+            conversationId: 'c-1',
+            onAppended: any(named: 'onAppended'),
+          ),
+        ).thenAnswer((invocation) async {
+          if (attempts++ == 0) throw StateError('db closed');
+          (invocation.namedArguments[#onAppended] as void Function(String))(
+            'm-2',
+          );
+          await wake.future;
+        });
+        controller().updateDraft('Hello');
+        await controller().send();
+
+        final retry = controller().retry();
+        await pumpEventQueue();
+
+        expect(state().sendingMessageId, 'm-2');
+        wake.complete();
+        await retry;
+      },
+    );
+  });
+
   group('retry', () {
     test("a failed turn keeps its cause; a retry's own failure replaces it "
         'and its success clears it', () async {
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenThrow(
         const FrontChatTurnException(
           'boom',
@@ -615,7 +835,11 @@ void main() {
       'with a durable id re-wakes that turn rather than sending again',
       () async {
         when(
-          () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+          () => chatService.sendMessage(
+            text: 'Hello',
+            conversationId: 'c-1',
+            onAppended: any(named: 'onAppended'),
+          ),
         ).thenThrow(
           const FrontChatTurnException('boom', messageId: 'm-1'),
         );
@@ -629,7 +853,11 @@ void main() {
 
         verify(() => chatService.retryMessage(messageId: 'm-1')).called(1);
         verify(
-          () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+          () => chatService.sendMessage(
+            text: 'Hello',
+            conversationId: 'c-1',
+            onAppended: any(named: 'onAppended'),
+          ),
         ).called(1);
         expect(state().failedMessage, isNull);
         expect(state().draft, isEmpty);
@@ -639,7 +867,11 @@ void main() {
     test('without a durable id sends the text again', () async {
       var calls = 0;
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenAnswer((
         _,
       ) async {
@@ -660,7 +892,11 @@ void main() {
     test('a failed turn stays with the conversation it was typed in', () async {
       var calls = 0;
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenAnswer((_) async {
         if (calls++ == 0) throw StateError('first');
       });
@@ -682,6 +918,7 @@ void main() {
         () => chatService.sendMessage(
           text: any(named: 'text'),
           conversationId: 'c-2',
+          onAppended: any(named: 'onAppended'),
         ),
       );
     });
@@ -689,12 +926,20 @@ void main() {
     test('a retry that fails again keeps the failure, with the id it '
         'learned', () async {
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenThrow(StateError('first'));
       controller().updateDraft('Hello');
       await controller().send();
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenThrow(
         const FrontChatTurnException('second', messageId: 'm-2'),
       );
@@ -709,7 +954,11 @@ void main() {
     test('a retry that fails for an unexpected reason keeps the id it '
         'already had', () async {
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenThrow(
         const FrontChatTurnException('boom', messageId: 'm-1'),
       );
@@ -733,6 +982,7 @@ void main() {
         () => chatService.sendMessage(
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
+          onAppended: any(named: 'onAppended'),
         ),
       );
     });
@@ -852,13 +1102,21 @@ void main() {
       when(() => filing.decline('d1')).thenThrow(StateError('gone'));
       await controller().decline('d1');
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenAnswer((_) async {});
       controller().updateDraft('Hello');
       await controller().send();
       expect(state().failedDoorIds, {'d1'});
       when(
-        () => chatService.sendMessage(text: 'Again', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Again',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenThrow(StateError('x'));
       controller().updateDraft('Again');
       await controller().send();
@@ -958,6 +1216,7 @@ void main() {
         text: any(named: 'text'),
         conversationId: any(named: 'conversationId'),
         categoryIds: any(named: 'categoryIds'),
+        onAppended: any(named: 'onAppended'),
       ),
     ).thenAnswer((_) async {});
 
@@ -967,6 +1226,7 @@ void main() {
                 text: text,
                 conversationId: any(named: 'conversationId'),
                 categoryIds: captureAny(named: 'categoryIds'),
+                onAppended: any(named: 'onAppended'),
               ),
             ).captured.single
             as Set<String>;
@@ -983,6 +1243,7 @@ void main() {
           text: 'How many chicks?',
           conversationId: 'c-1',
           categoryIds: {'cat-penguins'},
+          onAppended: any(named: 'onAppended'),
         ),
       ).called(1);
     });
@@ -1035,6 +1296,7 @@ void main() {
           text: 'Count them',
           conversationId: 'c-1',
           categoryIds: {'cat-penguins'},
+          onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(const FrontChatTurnException('offline'));
 
@@ -1053,6 +1315,7 @@ void main() {
           text: 'Count them',
           conversationId: 'c-1',
           categoryIds: {'cat-penguins'},
+          onAppended: any(named: 'onAppended'),
         ),
       ).called(2);
       expect(scoped.read(frontChatControllerProvider).failedMessage, isNull);
@@ -1066,6 +1329,7 @@ void main() {
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
           categoryIds: any(named: 'categoryIds'),
+          onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(StateError('db closed'));
 
@@ -1085,6 +1349,7 @@ void main() {
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
           categoryIds: any(named: 'categoryIds'),
+          onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(const FrontChatTurnException('offline'));
       await composer().sendText('Fix it');
@@ -1100,6 +1365,7 @@ void main() {
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
           categoryIds: any(named: 'categoryIds'),
+          onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(StateError('db closed'));
       await composer().retry();
@@ -1128,6 +1394,7 @@ void main() {
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
           categoryIds: any(named: 'categoryIds'),
+          onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async => storedScope = {'cat-penguins'});
 
@@ -1147,6 +1414,7 @@ void main() {
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
           categoryIds: any(named: 'categoryIds'),
+          onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async {
         storedScope = {'cat-penguins'};
@@ -1172,6 +1440,7 @@ void main() {
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
           categoryIds: any(named: 'categoryIds'),
+          onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async => storedScope = {'cat-habitat'});
 

@@ -34,6 +34,7 @@ abstract final class DesignSystemChatInputKeys {
   static const Key helper = Key('ds-chat-input-helper');
   static const Key mic = Key('ds-chat-input-mic');
   static const Key send = Key('ds-chat-input-send');
+  static const Key stop = Key('ds-chat-input-stop');
   static const Key cancel = Key('ds-chat-input-cancel');
   static const Key elapsed = Key('ds-chat-input-elapsed');
   static const Key waveform = Key('ds-chat-input-waveform');
@@ -78,6 +79,7 @@ class DesignSystemChatInput extends StatefulWidget {
     required this.hintText,
     required this.onSend,
     required this.onStartRecording,
+    this.onStop,
     this.phase = DesignSystemChatInputPhase.compose,
     this.levels = const [],
     this.sampleInterval = DesignSystemVoiceWaveform.defaultSampleInterval,
@@ -107,6 +109,10 @@ class DesignSystemChatInput extends StatefulWidget {
 
   /// Opens the microphone; null while it may not.
   final VoidCallback? onStartRecording;
+
+  /// Stops what was sent, while the conversation works on it: when set, the
+  /// row offers Stop alone in the mic's and send's place.
+  final VoidCallback? onStop;
 
   final DesignSystemChatInputPhase phase;
 
@@ -338,6 +344,7 @@ class _DesignSystemChatInputState extends State<DesignSystemChatInput> {
                       onCancel: widget.onCancelRecording,
                       onRecord: _canRecord ? widget.onStartRecording : null,
                       onSend: _canSend ? _send : null,
+                      onStop: transcribing ? null : widget.onStop,
                     ),
             ),
           ],
@@ -470,8 +477,9 @@ class _DesignSystemChatInputState extends State<DesignSystemChatInput> {
 }
 
 /// The row under the words while composing or transcribing: the helper,
-/// then the mic (always) and send (once there are words) — or, while
-/// transcribing, cancel and a spinner in their place.
+/// then the mic (always) and send (once there are words) — Stop alone while
+/// what was sent can be stopped — or, while transcribing, cancel and a
+/// spinner in their place.
 class _ControlsRow extends StatelessWidget {
   const _ControlsRow({
     required this.leading,
@@ -481,9 +489,11 @@ class _ControlsRow extends StatelessWidget {
     required this.onCancel,
     required this.onRecord,
     required this.onSend,
+    this.onStop,
     super.key,
   });
 
+  final VoidCallback? onStop;
   final Widget? leading;
   final String helper;
   final bool transcribing;
@@ -535,7 +545,15 @@ class _ControlsRow extends StatelessWidget {
               ),
             ),
           ),
-        ] else ...[
+        ] else if (onStop case final stop?)
+          DesignSystemChatInputDisc(
+            key: DesignSystemChatInputKeys.stop,
+            icon: LottiIcons.stop,
+            tooltip: messages.chatInputStopTooltip,
+            primary: true,
+            onPressed: stop,
+          )
+        else ...[
           DesignSystemChatInputDisc(
             key: DesignSystemChatInputKeys.mic,
             icon: LottiIcons.mic,

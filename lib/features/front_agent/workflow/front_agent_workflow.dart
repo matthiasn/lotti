@@ -609,10 +609,17 @@ class FrontAgentWorkflow with AgentErrorLogging {
             case final AgentMessagePayloadEntity payload)
           (message, payload),
     ];
+    // A turn the user stopped is not part of what was said — its words come
+    // back edited, as a turn of their own. The record of the stop has no
+    // words, so it renders as no turn.
+    final stopped = {
+      for (final (message, payload) in withPayloads)
+        if (frontTurnStopped(payload.content)) message.metadata.operationId,
+    };
     // A door record renders as no turn: it is read only for its tasks.
     final turns = [
       for (final (message, payload) in withPayloads)
-        ?frontRecentTurnOf(message, payload),
+        if (!stopped.contains(message.id)) ?frontRecentTurnOf(message, payload),
     ];
     return (
       recent: turns.length <= frontRecentTurns

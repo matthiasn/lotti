@@ -57,4 +57,11 @@ void main() {
       {'cat-habitat'},
     );
   });
+
+  test('only a reply marked stopped is the stop of its turn', () {
+    expect(frontTurnStopped(const {frontTurnStoppedKey: true}), isTrue);
+    expect(frontTurnStopped(const {'text': 'Forty-two.'}), isFalse);
+    expect(frontTurnStopped(const {frontTurnStoppedKey: 'yes'}), isFalse);
+    expect(frontTurnStopped(const {frontTurnStoppedKey: false}), isFalse);
+  });
 }

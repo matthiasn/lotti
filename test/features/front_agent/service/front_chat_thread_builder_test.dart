@@ -226,6 +226,76 @@ void main() {
     expect(thread.optionsByMessageId.containsKey('u2'), isFalse);
   });
 
+  group('stopped turns', () {
+    void stop(String turnId, DateTime at) => row(
+      id: 'stop-$turnId',
+      kind: AgentMessageKind.action,
+      toolName: FrontAgentToolNames.replyToUser,
+      operationId: turnId,
+      runKey: null,
+      content: const {frontTurnStoppedKey: true},
+      createdAt: at,
+    );
+
+    void reply(String id, String turnId, String text, DateTime at) => row(
+      id: id,
+      kind: AgentMessageKind.action,
+      toolName: FrontAgentToolNames.replyToUser,
+      operationId: turnId,
+      content: {'text': text},
+      createdAt: at,
+    );
+
+    test('a turn the user stopped is marked stopped, and its stop draws no '
+        'reply of hers', () async {
+      userTurn('u1', 'Count the hatchlings', at: DateTime(2026, 11, 1, 9));
+      stop('u1', DateTime(2026, 11, 1, 9, 1));
+
+      final thread = await builder.build(conversationId: earlierConversationId);
+
+      expect(thread.messages.map((m) => m.id), ['u1']);
+      expect(thread.stoppedMessageIds, {'u1'});
+      expect(thread.surfacesByMessageId, isEmpty);
+    });
+
+    test('a reply that landed after all wins over the stop', () async {
+      userTurn('u1', 'Count the hatchlings', at: DateTime(2026, 11, 1, 9));
+      stop('u1', DateTime(2026, 11, 1, 9, 1));
+      reply('r1', 'u1', 'Forty-two.', DateTime(2026, 11, 1, 9, 2));
+
+      final thread = await builder.build(conversationId: earlierConversationId);
+
+      expect(thread.messages.map((m) => m.id), ['u1', 'r1']);
+      expect(thread.stoppedMessageIds, isEmpty);
+    });
+
+    test('a stopped turn followed by the next one stays stopped', () async {
+      userTurn('u1', 'Count the hatchlings', at: DateTime(2026, 11, 1, 9));
+      stop('u1', DateTime(2026, 11, 1, 9, 1));
+      userTurn('u2', 'Count the eggs', at: DateTime(2026, 11, 1, 9, 2));
+      reply('r2', 'u2', 'Twelve.', DateTime(2026, 11, 1, 9, 3));
+
+      final thread = await builder.build(conversationId: earlierConversationId);
+
+      expect(thread.messages.map((m) => m.id), ['u1', 'u2', 'r2']);
+      expect(thread.stoppedMessageIds, {'u1'});
+    });
+
+    test('a stopped turn scrolled out of the window is not listed', () async {
+      final start = DateTime(2026, 11, 1, 9);
+      userTurn('u-old', 'Long ago', at: start);
+      stop('u-old', start.add(const Duration(seconds: 1)));
+      for (var i = 0; i < FrontChatThreadBuilder.maxMessages; i++) {
+        userTurn('u$i', 'Turn $i', at: start.add(Duration(minutes: i + 1)));
+      }
+
+      final thread = await builder.build(conversationId: earlierConversationId);
+
+      expect(thread.messages.map((m) => m.id), isNot(contains('u-old')));
+      expect(thread.stoppedMessageIds, isEmpty);
+    });
+  });
+
   group('reply surfaces', () {
     List<Object?> drawn(FrontReplySurface surface) => [
       for (final component

@@ -3551,6 +3551,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get chatInputStopRealtime => 'Live-Transkription beenden';
 
   @override
+  String get chatInputStopTooltip => 'Stoppen';
+
+  @override
   String get chatInputStopTranscribe => 'Stoppen und transkribieren';
 
   @override
@@ -7523,6 +7526,25 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Eingang';
+
+  @override
+  String get frontChatMessageActions => 'Aktionen für die Nachricht';
+
+  @override
+  String get frontChatMessageBusy =>
+      'Die Begleitung arbeitet noch daran. Stopp sie zuerst, dann kannst du es bearbeiten.';
+
+  @override
+  String get frontChatMessageCopied => 'Nachricht kopiert';
+
+  @override
+  String get frontChatMessageCopy => 'Kopieren';
+
+  @override
+  String get frontChatMessageEdit => 'Bearbeiten';
+
+  @override
+  String get frontChatMessageStopped => 'Gestoppt';
 
   @override
   String get frontChatNoChats =>

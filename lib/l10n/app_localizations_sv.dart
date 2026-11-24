@@ -3529,6 +3529,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get chatInputStopRealtime => 'Stoppa livetranskriptionen';
 
   @override
+  String get chatInputStopTooltip => 'Stoppa';
+
+  @override
   String get chatInputStopTranscribe => 'Stoppa och transkribera';
 
   @override
@@ -7489,6 +7492,25 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Inkorg';
+
+  @override
+  String get frontChatMessageActions => 'Meddelandeåtgärder';
+
+  @override
+  String get frontChatMessageBusy =>
+      'Följeslagaren arbetar fortfarande med det. Stoppa den först för att redigera det.';
+
+  @override
+  String get frontChatMessageCopied => 'Meddelandet kopierat';
+
+  @override
+  String get frontChatMessageCopy => 'Kopiera';
+
+  @override
+  String get frontChatMessageEdit => 'Redigera';
+
+  @override
+  String get frontChatMessageStopped => 'Stoppad';
 
   @override
   String get frontChatNoChats =>

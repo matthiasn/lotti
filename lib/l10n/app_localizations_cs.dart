@@ -3566,6 +3566,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get chatInputStopRealtime => 'Zastavit živý přepis';
 
   @override
+  String get chatInputStopTooltip => 'Zastavit';
+
+  @override
   String get chatInputStopTranscribe => 'Zastavit a přepsat';
 
   @override
@@ -7576,6 +7579,25 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Příchozí';
+
+  @override
+  String get frontChatMessageActions => 'Akce se zprávou';
+
+  @override
+  String get frontChatMessageBusy =>
+      'Společník na tom ještě pracuje. Nejdřív ho zastav, pak to můžeš upravit.';
+
+  @override
+  String get frontChatMessageCopied => 'Zpráva zkopírována';
+
+  @override
+  String get frontChatMessageCopy => 'Kopírovat';
+
+  @override
+  String get frontChatMessageEdit => 'Upravit';
+
+  @override
+  String get frontChatMessageStopped => 'Zastaveno';
 
   @override
   String get frontChatNoChats =>

@@ -412,6 +412,7 @@ void main() {
       () => chatService.sendMessage(
         text: 'What is due today?',
         conversationId: 'c-1',
+        onAppended: any(named: 'onAppended'),
       ),
     ).thenAnswer((_) async {});
     await pumpPane(tester);
@@ -424,6 +425,7 @@ void main() {
       () => chatService.sendMessage(
         text: 'What is due today?',
         conversationId: 'c-1',
+        onAppended: any(named: 'onAppended'),
       ),
     ).called(1);
   });
@@ -453,6 +455,7 @@ void main() {
       () => chatService.sendMessage(
         text: any(named: 'text'),
         conversationId: any(named: 'conversationId'),
+        onAppended: any(named: 'onAppended'),
       ),
     );
     expect(find.text('Order fish buckets'), findsOne);
@@ -684,6 +687,7 @@ void main() {
       () => chatService.sendMessage(
         text: 'Break it down',
         conversationId: 'c-1',
+        onAppended: any(named: 'onAppended'),
       ),
     ).thenAnswer((_) async {});
     Map<String, Object?> offer(String option) => {
@@ -763,6 +767,7 @@ void main() {
       () => chatService.sendMessage(
         text: 'Break it down',
         conversationId: 'c-1',
+        onAppended: any(named: 'onAppended'),
       ),
     ]);
   });
@@ -771,7 +776,11 @@ void main() {
     tester,
   ) async {
     when(
-      () => chatService.sendMessage(text: 'Swim 2 km', conversationId: 'c-1'),
+      () => chatService.sendMessage(
+        text: 'Swim 2 km',
+        conversationId: 'c-1',
+        onAppended: any(named: 'onAppended'),
+      ),
     ).thenAnswer((_) async {});
     await pumpPane(
       tester,
@@ -796,7 +805,11 @@ void main() {
 
     verifyInOrder([
       () => agentService.getOrCreate(),
-      () => chatService.sendMessage(text: 'Swim 2 km', conversationId: 'c-1'),
+      () => chatService.sendMessage(
+        text: 'Swim 2 km',
+        conversationId: 'c-1',
+        onAppended: any(named: 'onAppended'),
+      ),
     ]);
   });
 
@@ -806,7 +819,11 @@ void main() {
   ) async {
     final sent = Completer<void>();
     when(
-      () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+      () => chatService.sendMessage(
+        text: 'Hello',
+        conversationId: 'c-1',
+        onAppended: any(named: 'onAppended'),
+      ),
     ).thenAnswer((_) => sent.future);
     await pumpPane(
       tester,
@@ -872,10 +889,94 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  group('stopping a turn', () {
+    const words = 'Count the hatchlings';
+
+    testWidgets('a turn on its way offers Stop, and a long press on it '
+        'warns it cannot be edited yet; Stop stops it', (tester) async {
+      final wake = Completer<void>();
+      when(
+        () => chatService.sendMessage(
+          text: words,
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
+      ).thenAnswer((invocation) async {
+        (invocation.namedArguments[#onAppended] as void Function(String))(
+          'u1',
+        );
+        await wake.future;
+      });
+      when(
+        () => chatService.stopMessage(messageId: 'u1'),
+      ).thenAnswer((_) async => wake.complete());
+      await pumpPane(
+        tester,
+        thread: () async => FrontChatThread(
+          messages: [message('u1', AgentChatRole.user, words, now)],
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), words);
+      await tester.pump();
+      await tester.tap(find.byIcon(LottiIcons.arrowUp));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.longPress(find.text(words));
+      await tester.pump();
+      expect(
+        find.text(
+          'The companion is still working on this. Stop it first to edit it.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Edit'), findsNothing);
+
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.stop));
+      await tester.pumpAndSettle();
+
+      verify(() => chatService.stopMessage(messageId: 'u1')).called(1);
+      expect(find.byKey(DesignSystemChatInputKeys.stop), findsNothing);
+    });
+
+    testWidgets('a stopped turn reads Stopped, and Edit puts its words back '
+        'in the box', (tester) async {
+      await pumpPane(
+        tester,
+        thread: () async => FrontChatThread(
+          messages: [message('u1', AgentChatRole.user, words, now)],
+          stoppedMessageIds: const {'u1'},
+        ),
+      );
+      expect(find.text('Stopped'), findsOneWidget);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        '',
+      );
+
+      await tester.longPress(find.text(words));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        words,
+      );
+      // The stopped turn stays where it was.
+      expect(find.text('Stopped'), findsOneWidget);
+    });
+  });
+
   testWidgets('typing and sending goes through the chat service; a failed '
       'turn offers a retry that re-wakes the same turn', (tester) async {
     when(
-      () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+      () => chatService.sendMessage(
+        text: 'Hello',
+        conversationId: 'c-1',
+        onAppended: any(named: 'onAppended'),
+      ),
     ).thenThrow(
       const FrontChatTurnException('boom', messageId: 'm-1'),
     );
@@ -890,7 +991,11 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(
-      () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+      () => chatService.sendMessage(
+        text: 'Hello',
+        conversationId: 'c-1',
+        onAppended: any(named: 'onAppended'),
+      ),
     ).called(1);
     expect(find.text("That didn't send."), findsOneWidget);
 
@@ -944,7 +1049,11 @@ void main() {
     testWidgets('a turn that failed for $failure says why beside the retry, '
         'instead of a bare "that did not send"', (tester) async {
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenThrow(
         FrontChatTurnException('boom', messageId: 'm-1', failure: failure),
       );
@@ -970,7 +1079,11 @@ void main() {
   testWidgets("a turn that failed on an empty account relays the provider's "
       'own words', (tester) async {
     when(
-      () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+      () => chatService.sendMessage(
+        text: 'Hello',
+        conversationId: 'c-1',
+        onAppended: any(named: 'onAppended'),
+      ),
     ).thenThrow(
       FrontChatTurnException(
         'boom',
@@ -1605,7 +1718,11 @@ void main() {
     testWidgets('a send leaves the inbox filter, so the new turn lands in '
         'its conversation', (tester) async {
       when(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).thenAnswer((_) async {});
       await pumpPane(tester, thread: () async => waiting());
       await openInbox(tester);
@@ -1618,7 +1735,11 @@ void main() {
       await tester.pump();
 
       verify(
-        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+        () => chatService.sendMessage(
+          text: 'Hello',
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
       ).called(1);
       expect(find.text('Fine.'), findsOneWidget);
       final container = ProviderScope.containerOf(
@@ -2598,6 +2719,7 @@ void main() {
         text: any(named: 'text'),
         conversationId: 'c-1',
         categoryIds: {'colony'},
+        onAppended: any(named: 'onAppended'),
       ),
     ).thenAnswer((_) async => stored = {'colony'});
     await pumpPane(
@@ -2638,6 +2760,7 @@ void main() {
         text: 'How many chicks?',
         conversationId: 'c-1',
         categoryIds: {'colony'},
+        onAppended: any(named: 'onAppended'),
       ),
     ).called(1);
     verify(
@@ -2645,6 +2768,7 @@ void main() {
         text: 'And eggs?',
         conversationId: 'c-1',
         categoryIds: {'colony'},
+        onAppended: any(named: 'onAppended'),
       ),
     ).called(1);
   });
