@@ -73,9 +73,10 @@ class RecordingStripLeading extends ConsumerWidget {
         ? null
         : ref.watch(recordingSubjectProvider(subjectId));
     // A subject still loading keeps its place; one that is gone, or that
-    // never was, is a voice note.
+    // never was, is a voice note. One with no words to name it by is still
+    // somewhere to go back to.
     final title = recordingSubjectTitle(subject?.value);
-    final gone = subject != null && subject.hasValue && title == null;
+    final gone = subject != null && subject.hasValue && subject.value == null;
     final nav = ref.watch(navServiceProvider);
     return ListenableBuilder(
       listenable: nav.activeRouteChanges,

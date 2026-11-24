@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_data.dart';
@@ -9,6 +10,10 @@ import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_recording.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recording_receipt_controller.dart';
+import 'package:lotti/features/speech/state/recording_session.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
@@ -17,6 +22,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../relationships/helpers/check_in_speech_fakes.dart';
 
 void main() {
   late MockGoalRepository repository;
@@ -123,6 +129,97 @@ void main() {
     ).called(1);
     expect(transcribed.single.entityId, 'audio-1');
     expect(transcribed.single.skillId, skillTranscribeContextId);
+  });
+
+  group('on the recording strip (the default recorder)', () {
+    late FakeAudioRecorderController recorder;
+    late MockJournalRepository journalRepository;
+
+    setUp(() => journalRepository = MockJournalRepository());
+
+    Future<ProviderContainer> start(WidgetTester tester) async {
+      recorder = FakeAudioRecorderController();
+      when(
+        () => repository.attachCharterRecording(
+          agentId: any(named: 'agentId'),
+          audioId: any(named: 'audioId'),
+        ),
+      ).thenAnswer((_) async => true);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => DesignSystemButton(
+              label: 'record',
+              onPressed: () =>
+                  recordGoalCharterEntry(context, agentId: 'agent-1'),
+            ),
+          ),
+          overrides: [
+            goalRepositoryProvider.overrideWithValue(repository),
+            domainLoggerProvider.overrideWithValue(logger),
+            audioRecorderControllerProvider.overrideWith(() => recorder),
+            journalRepositoryProvider.overrideWithValue(journalRepository),
+            triggerSkillProvider.overrideWith((ref, params) async {
+              transcribed.add(params);
+            }),
+          ],
+        ),
+      );
+      await tester.tap(find.text('record'));
+      await tester.pump();
+      await tester.pump();
+      return ProviderScope.containerOf(tester.element(find.text('record')));
+    }
+
+    testWidgets("records with no parent in the goal's category, the caller "
+        'transcribing it, and links nothing until the take is committed', (
+      tester,
+    ) async {
+      final container = await start(tester);
+      expect(recorder.recordCalls, [(linkedId: null, handledByCaller: true)]);
+      expect(recorder.categoryIds, contains('cat-journal'));
+
+      await container.read(recordingSessionProvider).stop();
+      await tester.pump();
+      verifyNever(
+        () => repository.attachCharterRecording(
+          agentId: any(named: 'agentId'),
+          audioId: any(named: 'audioId'),
+        ),
+      );
+
+      container.read(recordingReceiptControllerProvider.notifier).commit();
+      await tester.pump();
+      await tester.pump();
+      verify(
+        () => repository.attachCharterRecording(
+          agentId: 'agent-1',
+          audioId: 'audio-1',
+        ),
+      ).called(1);
+      expect(transcribed.single.entityId, 'audio-1');
+    });
+
+    testWidgets('a take undone on its receipt is never linked', (
+      tester,
+    ) async {
+      when(
+        () => journalRepository.deleteJournalEntity(any()),
+      ).thenAnswer((_) async => true);
+      final container = await start(tester);
+      await container.read(recordingSessionProvider).stop();
+      await container.read(recordingReceiptControllerProvider.notifier).undo();
+      await tester.pump();
+      await tester.pump();
+
+      verifyNever(
+        () => repository.attachCharterRecording(
+          agentId: any(named: 'agentId'),
+          audioId: any(named: 'audioId'),
+        ),
+      );
+      expect(transcribed, isEmpty);
+    });
   });
 
   testWidgets('a cancelled recording changes nothing', (tester) async {

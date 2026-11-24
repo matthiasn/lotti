@@ -151,6 +151,19 @@ void main() {
       expect(back(), findsNothing);
     });
 
+    testWidgets('a subject with no words to name it by still has its way '
+        'back', (tester) async {
+      when(() => bench.db.journalEntityById(stripSubjectId)).thenAnswer(
+        (_) async =>
+            stripSubject.copyWith(data: stripSubject.data.copyWith(title: '')),
+      );
+      await pump(tester);
+      await bench.startTake(tester);
+
+      expect(back(), findsOneWidget);
+      expect(find.text('Voice note'), findsNothing);
+    });
+
     testWidgets('a take with no origin names its subject but offers no '
         'way back', (tester) async {
       await pump(tester);

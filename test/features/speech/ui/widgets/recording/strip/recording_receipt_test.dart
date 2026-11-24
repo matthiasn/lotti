@@ -27,6 +27,8 @@ void main() {
     String? subjectId,
     String? subjectTitle = 'Fix the airlock',
     RecordingOrigin? receiptOrigin,
+    bool noOrigin = false,
+    bool voiceNote = false,
     bool transcribing = true,
     MediaQueryData? mediaQueryData,
   }) async {
@@ -54,9 +56,9 @@ void main() {
         .show(
           entryId: 'audio-1',
           duration: const Duration(seconds: 42),
-          subjectId: subjectId ?? stripSubjectId,
+          subjectId: voiceNote ? null : subjectId ?? stripSubjectId,
           subjectTitle: subjectTitle,
-          origin: receiptOrigin ?? origin,
+          origin: noOrigin ? null : receiptOrigin ?? origin,
           transcribing: transcribing,
         );
     await tester.pump();
@@ -121,6 +123,38 @@ void main() {
       expect(open(), findsNothing);
       expect(undo(), findsOneWidget);
       container.read(recordingReceiptControllerProvider.notifier).commit();
+    });
+
+    testWidgets('is left out for a subject deleted mid-take: there is '
+        'nowhere to go', (tester) async {
+      final container = await pump(tester, subjectTitle: null);
+      expect(find.text('Voice note saved'), findsOneWidget);
+      expect(open(), findsNothing);
+      container.read(recordingReceiptControllerProvider.notifier).commit();
+    });
+
+    testWidgets('is left out for a take with no origin', (tester) async {
+      final container = await pump(tester, noOrigin: true);
+      expect(open(), findsNothing);
+      container.read(recordingReceiptControllerProvider.notifier).commit();
+    });
+
+    // Where it goes is the session's (`openReceipt`, tested there): this is
+    // that the button is offered and commits the take.
+    testWidgets('a voice note offers Open away from where it started, and it '
+        'commits the take', (tester) async {
+      final container = await pump(
+        tester,
+        voiceNote: true,
+        subjectTitle: null,
+        receiptOrigin: const RecordingOrigin(route: '/journal'),
+      );
+      expect(open(), findsOneWidget);
+
+      await tester.tap(open());
+      await tester.pump();
+      expect(container.read(recordingReceiptControllerProvider), isNull);
+      expect(bench.recorder.committedAutomation, ['audio-1']);
     });
 
     testWidgets('comes and goes with the route on screen', (tester) async {

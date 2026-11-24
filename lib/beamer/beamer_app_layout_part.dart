@@ -444,7 +444,7 @@ extension _AppScreenLayout on _AppScreenState {
 
   /// The mobile sidebar navigation's panel: the desktop rail's own sidebar,
   /// never collapsed and without its toggle, with the app-wide Recents list
-  /// beneath the destinations and the activity summary — recording, timer
+  /// beneath the destinations and the activity summary — the running timer
   /// and agent wakes — above Settings, as on desktop.
   ///
   /// Of the under-row subtrees the desktop rail shows, the saved filters

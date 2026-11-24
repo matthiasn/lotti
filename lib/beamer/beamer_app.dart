@@ -731,7 +731,7 @@ List<_AppNavigationDestinationKind> _enabledDestinationKinds({
 /// in the mobile drawer alike.
 ///
 /// All transient systems share one compact summary surface. Selecting it
-/// expands the detailed recording, timer, and agent controls in place without
+/// expands the detailed timer and agent controls in place without
 /// permanently letting those operational tools displace primary navigation.
 class _SidebarAboveSettings extends StatelessWidget {
   const _SidebarAboveSettings();

@@ -51,9 +51,9 @@ final audioRecorderControllerProvider =
 ///
 /// For a page that shows it — a goal's or a person's *Speak* pill turning to
 /// the recording red — without standing the recorder up just to ask: a
-/// recorder nobody has built is not recording. On a phone those pages slide
-/// the navigation bar and its recording indicator away, so the pill is the
-/// only sign on the screen that a take is still running.
+/// recorder nobody has built is not recording. The recording strip shows
+/// the take too, but the pill is the sign on the page itself, where the
+/// take belongs.
 final ProviderFamily<bool, String> subjectTakeLiveProvider = Provider
     .autoDispose
     .family<bool, String>(

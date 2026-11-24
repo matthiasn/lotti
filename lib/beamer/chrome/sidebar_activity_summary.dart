@@ -29,9 +29,9 @@ abstract final class SidebarActivitySummaryKeys {
 /// compact metric per activity. Expanding it in place restores the full
 /// timer and agent context plus direct controls without moving the user into
 /// a modal surface. A voice recording is not one of them: it has the
-/// recording strip, at the foot of the content column. The summary paints no fill or frame of its own;
-/// expanded, its heading drops the compact metrics, because each detail card
-/// already shows its own elapsed time or count.
+/// recording strip, at the foot of the content column. The summary paints no
+/// fill or frame of its own; expanded, its heading drops the compact metrics,
+/// because each detail card already shows its own elapsed time or count.
 class SidebarActivitySummary extends ConsumerStatefulWidget {
   const SidebarActivitySummary({super.key});
 

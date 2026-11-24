@@ -16,7 +16,8 @@ import 'package:material_ui/material_ui.dart';
 /// after Stop: *✓ Saved to …* (*Voice note saved*), the take's length — and
 /// that it is being transcribed, where it is — with **Undo**, which deletes
 /// the take, and **Open**, which goes to what it was saved to. Open shows
-/// only away from where the take started; there it would go nowhere.
+/// only where it leads somewhere: a voice note's own entry, or — away from
+/// where the take started — back to a subject that is still there.
 ///
 /// It is handed its [receipt] rather than watching for one, so it can leave
 /// with its words still on it once the receipt is gone.
@@ -39,6 +40,11 @@ class RecordingReceiptRow extends ConsumerWidget {
         ? messages.recordingReceiptSavedVoiceNote
         : messages.recordingReceiptSaved(title);
     final time = formatElapsed(receipt.duration);
+    // A subject's take goes back to its origin, which needs both; a voice
+    // note opens its own entry.
+    final canOpen =
+        receipt.subjectId == null ||
+        (receipt.subjectTitle != null && receipt.origin != null);
     final detail = receipt.transcribing
         ? messages.recordingReceiptTranscribing(time)
         : time;
@@ -92,7 +98,8 @@ class RecordingReceiptRow extends ConsumerWidget {
               ListenableBuilder(
                 listenable: nav.activeRouteChanges,
                 builder: (context, _) =>
-                    isOnRecordingOrigin(nav.activeRoute, receipt.origin)
+                    !canOpen ||
+                        isOnRecordingOrigin(nav.activeRoute, receipt.origin)
                     ? const SizedBox.shrink()
                     : DesignSystemButton(
                         key: openKey,
