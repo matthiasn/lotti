@@ -177,12 +177,11 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(
-      () => mockCreationService.showAudioRecordingModal(
-        any(),
+      () => mockCreationService.startRecording(
         linkedId: any(named: 'linkedId'),
         categoryId: any(named: 'categoryId'),
       ),
-    ).thenAnswer((_) {});
+    ).thenAnswer((_) async => null);
   });
 
   tearDown(() async {
@@ -601,7 +600,7 @@ void main() {
     ).called(1);
   });
 
-  testWidgets('audio button calls showAudioRecordingModal with task ids', (
+  testWidgets('audio button starts a recording with task ids', (
     tester,
   ) async {
     await pumpBar(tester);
@@ -610,8 +609,7 @@ void main() {
     await tester.pump();
 
     verify(
-      () => mockCreationService.showAudioRecordingModal(
-        any(),
+      () => mockCreationService.startRecording(
         linkedId: testTask.meta.id,
         categoryId: testTask.meta.categoryId,
       ),
@@ -973,8 +971,7 @@ void main() {
         ),
       );
       verifyNever(
-        () => mockCreationService.showAudioRecordingModal(
-          any(),
+        () => mockCreationService.startRecording(
           linkedId: any(named: 'linkedId'),
           categoryId: any(named: 'categoryId'),
         ),

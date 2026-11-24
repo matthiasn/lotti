@@ -4,8 +4,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
+import 'package:lotti/features/speech/state/recording_session.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -148,17 +148,21 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
   }
 }
 
-/// The real recorder opener — pure delegation to the app-wide recording
-/// sheet, which has its own tests, so it is excluded here.
+/// The real recorder opener — pure delegation to the recording strip's
+/// session, which has its own tests, so it is excluded here. The take's
+/// origin is the goal page the reflection is on.
 // coverage:ignore-start
 Future<String?> openReflectionRecorder(
   BuildContext context, {
   required String goalEntryId,
   String? categoryId,
-}) => AudioRecordingModal.show(
-  context,
-  linkedId: goalEntryId,
-  categoryId: categoryId,
-  useRootNavigator: false,
-);
+}) =>
+    ProviderScope.containerOf(
+          context,
+        )
+        .read(recordingSessionProvider)
+        .start(
+          linkedId: goalEntryId,
+          categoryId: categoryId,
+        );
 // coverage:ignore-end

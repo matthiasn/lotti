@@ -11,8 +11,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/beamer/chrome/mobile_activity_island.dart';
+import 'package:lotti/beamer/chrome/recording_strip_shell.dart';
 import 'package:lotti/beamer/chrome/sidebar_activity_summary.dart';
-import 'package:lotti/beamer/chrome/sidebar_audio_recording_section.dart';
 import 'package:lotti/beamer/desktop_menu.dart';
 import 'package:lotti/beamer/locations/events_location.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
@@ -82,6 +82,8 @@ import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_strip.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_strip_layer.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
@@ -468,6 +470,12 @@ Future<void> _stubNavService(
     () => navService.desktopShowAiImpact,
   ).thenReturn(ValueNotifier<bool>(false));
   when(() => navService.currentPath).thenReturn('/');
+  // The recording strip asks where the user is, to offer the way back.
+  final activeRoute = ValueNotifier<String>('/tasks');
+  addTearDown(activeRoute.dispose);
+  when(() => navService.activeRoute).thenAnswer((_) => activeRoute.value);
+  when(() => navService.activeRouteChanges).thenReturn(activeRoute);
+  when(() => navService.canBeamTo(any())).thenReturn(true);
 }
 
 Future<void> _pumpAppScreen(
@@ -1832,24 +1840,18 @@ void main() {
     }
 
     testWidgets(
-      'omits the recording half of the activity island when running inside '
-      'the Flatpak sandbox',
+      'a take has no strip inside the Flatpak sandbox, and nothing moves up '
+      'for one',
       (tester) async {
         debugIsRunningInFlatpakOverride = true;
         await pumpMobileShell(tester);
 
-        final island = tester.widget<MobileActivityIsland>(
-          find.byType(MobileActivityIsland),
-        );
-        expect(island.omitAudio, isTrue);
-        expect(find.byKey(MobileActivityIsland.recordingKey), findsNothing);
-        // Nothing else runs, so no island and no reserved height either.
+        expect(find.byType(RecordingStripLayer), findsNothing);
+        expect(find.byType(RecordingStrip), findsNothing);
+        // No timer runs either, so no island and no reserved height.
         expect(find.byKey(MobileActivityIsland.islandKey), findsNothing);
         final pageContext = tester.element(find.byType(IndexedStack));
-        expect(
-          DesignSystemBottomNavigationOverlayHeight.of(pageContext),
-          0,
-        );
+        expect(DesignSystemBottomNavigationOverlayHeight.of(pageContext), 0);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -1857,132 +1859,65 @@ void main() {
     );
 
     testWidgets(
-      'shows the recording capsule of the activity island outside the '
-      'Flatpak sandbox, inside the row',
+      'a take shows the recording strip at the bottom edge, and the launcher '
+      'and the pages move up by its height',
       (tester) async {
         debugIsRunningInFlatpakOverride = false;
         await pumpMobileShell(tester);
+        await tester.pump(RecordingStripLayer.motion);
 
-        final island = tester.widget<MobileActivityIsland>(
-          find.byType(MobileActivityIsland),
+        final strip = tester.getRect(find.byType(RecordingStrip));
+        final menu = tester.getRect(
+          find.byKey(MobileNavigationLauncherKeys.menuButton),
         );
-        expect(island.omitAudio, isFalse);
-        final recording = find.byKey(MobileActivityIsland.recordingKey);
-        expect(recording, findsOneWidget);
-        // A lone capsule sits level with the menu button, inside the row,
-        // so pages reserve nothing above the bar for it.
+        // The strip is the lowest thing on screen; the launcher row sits
+        // above it.
+        expect(menu.bottom, lessThan(strip.top));
         expect(
-          tester.getCenter(recording).dy,
+          strip.bottom,
           moreOrLessEquals(
-            tester
-                .getCenter(find.byKey(MobileNavigationLauncherKeys.menuButton))
-                .dy,
-            epsilon: 0.5,
+            _phoneViewportSize.height -
+                RecordingStripShell.bottomOffset(
+                  tester.element(find.byType(RecordingStripShell)),
+                ),
           ),
         );
+        // The island no longer carries a recording: with no timer, none.
+        expect(find.byKey(MobileActivityIsland.islandKey), findsNothing);
+        // What the pages see as the bottom inset now includes the strip
+        // and the gap above it.
         final pageContext = tester.element(find.byType(IndexedStack));
-        expect(DesignSystemBottomNavigationOverlayHeight.of(pageContext), 0);
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
-      'a timer and a recording share one capsule in the row while it fits',
-      (tester) async {
-        debugIsRunningInFlatpakOverride = false;
-        await pumpMobileShell(tester, runningTimer: _runningTimerEntry);
-        await tester.pump();
-
-        final island = tester.widget<MobileActivityIsland>(
-          find.byType(MobileActivityIsland),
-        );
-        expect(island.stacked, isFalse);
-        final timer = tester.getRect(find.byKey(MobileActivityIsland.timerKey));
-        final recording = tester.getRect(
-          find.byKey(MobileActivityIsland.recordingKey),
-        );
-        final menu = tester.getRect(
-          find.byKey(MobileNavigationLauncherKeys.menuButton),
-        );
-        // Side by side, level with the menu button, inside the row.
-        expect(timer.right, lessThanOrEqualTo(recording.left));
-        expect(timer.center.dy, moreOrLessEquals(menu.center.dy));
-        expect(recording.center.dy, moreOrLessEquals(menu.center.dy));
-        expect(find.byKey(MobileActivityIsland.dividerKey), findsOneWidget);
-        final pageContext = tester.element(find.byType(IndexedStack));
-        expect(DesignSystemBottomNavigationOverlayHeight.of(pageContext), 0);
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
-      'stacks the timer above the recording only when the shared capsule '
-      'does not fit, growing upward out of the row',
-      (tester) async {
-        debugIsRunningInFlatpakOverride = false;
-        // Find a width where the row holds the stack but not the shared
-        // capsule, measured from the shell's own launcher rather than
-        // hard-coded against one font's metrics.
-        await pumpMobileShell(tester, runningTimer: _runningTimerEntry);
-        await tester.pump();
-        final context = tester.element(find.byType(MobileNavigationLauncher));
-        final launcher = tester.widget<MobileNavigationLauncher>(
-          find.byType(MobileNavigationLauncher),
-        );
-        const both = MobileActivity(timer: true, recording: true);
-        final band = launcher.centerBand(context);
-        final chrome = band.start + band.end;
-        final shared = MobileActivityIsland.width(
-          context,
-          both,
-          stacked: false,
-        );
-        final stack = MobileActivityIsland.width(context, both, stacked: true);
-        final width = (chrome + (shared + stack) / 2).floorToDouble();
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-
-        await pumpMobileShell(
-          tester,
-          runningTimer: _runningTimerEntry,
-          viewportSize: Size(width, _phoneViewportSize.height),
-        );
-        await tester.pump();
-
-        final island = tester.widget<MobileActivityIsland>(
-          find.byType(MobileActivityIsland),
-        );
-        expect(island.stacked, isTrue);
-        final timer = tester.getRect(find.byKey(MobileActivityIsland.timerKey));
-        final recording = tester.getRect(
-          find.byKey(MobileActivityIsland.recordingKey),
-        );
-        final menu = tester.getRect(
-          find.byKey(MobileNavigationLauncherKeys.menuButton),
-        );
-        expect(timer.bottom, lessThan(recording.top));
-        // The lowest capsule keeps the row's centre line; the stack rises
-        // above the row's top rather than pushing the row down.
-        expect(recording.center.dy, moreOrLessEquals(menu.center.dy));
-        expect(timer.top, lessThan(menu.top));
-
-        // Pages pad by exactly what rises above the bar.
-        final pageContext = tester.element(find.byType(IndexedStack));
-        final above = MobileActivityIsland.heightAboveBar(
-          pageContext,
-          both,
-          inRow: true,
-          stacked: true,
-        );
-        expect(above, greaterThan(0));
         expect(
-          DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
-          MobileNavigationLauncher.barHeight(pageContext) + above,
+          MediaQuery.paddingOf(pageContext).bottom,
+          moreOrLessEquals(
+            _phoneViewportSize.height -
+                strip.top +
+                RecordingStripLayer.gap(pageContext),
+          ),
         );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'a timer and a take: the island keeps the timer in the row, the strip '
+      'the take beneath it',
+      (tester) async {
+        debugIsRunningInFlatpakOverride = false;
+        await pumpMobileShell(tester, runningTimer: _runningTimerEntry);
+        await tester.pump(RecordingStripLayer.motion);
+
+        final timer = tester.getRect(find.byKey(MobileActivityIsland.timerKey));
+        final menu = tester.getRect(
+          find.byKey(MobileNavigationLauncherKeys.menuButton),
+        );
+        final strip = tester.getRect(find.byType(RecordingStrip));
+        expect(timer.center.dy, moreOrLessEquals(menu.center.dy));
+        expect(timer.bottom, lessThan(strip.top));
+        final pageContext = tester.element(find.byType(IndexedStack));
+        expect(DesignSystemBottomNavigationOverlayHeight.of(pageContext), 0);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -2172,8 +2107,7 @@ void main() {
         launcher.reservedCenterWidth,
         MobileActivityIsland.width(
           barContext,
-          const MobileActivity(timer: true, recording: false),
-          stacked: false,
+          timerRuns: true,
         ),
       );
 
@@ -2239,8 +2173,7 @@ void main() {
           utilityAction: launcher.utilityAction,
           reservedCenterWidth: MobileActivityIsland.width(
             barContext,
-            const MobileActivity(timer: true, recording: false),
-            stacked: false,
+            timerRuns: true,
           ),
         );
         expect(
@@ -5250,46 +5183,6 @@ void main() {
 
         await unmount(tester);
       });
-
-      testWidgets('keeps the recording out of the summary on Flatpak', (
-        tester,
-      ) async {
-        debugIsRunningInFlatpakOverride = true;
-        addTearDown(() => debugIsRunningInFlatpakOverride = null);
-        final mockNavService = MockNavService();
-        await pumpShell(tester, mockNavService);
-        await openDrawer(tester);
-
-        final summary = tester.widget<SidebarActivitySummary>(
-          find.descendant(
-            of: panel,
-            matching: find.byType(SidebarActivitySummary),
-          ),
-        );
-        expect(summary.showAudio, isFalse);
-
-        await unmount(tester);
-      });
-
-      testWidgets('shows the recording in the summary off Flatpak', (
-        tester,
-      ) async {
-        debugIsRunningInFlatpakOverride = false;
-        addTearDown(() => debugIsRunningInFlatpakOverride = null);
-        final mockNavService = MockNavService();
-        await pumpShell(tester, mockNavService);
-        await openDrawer(tester);
-
-        final summary = tester.widget<SidebarActivitySummary>(
-          find.descendant(
-            of: panel,
-            matching: find.byType(SidebarActivitySummary),
-          ),
-        );
-        expect(summary.showAudio, isTrue);
-
-        await unmount(tester);
-      });
     });
 
     group('a route change', () {
@@ -6476,23 +6369,20 @@ void main() {
           find.byKey(SidebarActivitySummaryKeys.agents),
           findsOneWidget,
         );
+        // The take is not one of the summary's activities: it has the
+        // recording strip, at the foot of the content column.
         expect(
-          find.byKey(SidebarActivitySummaryKeys.audio),
+          find.byType(RecordingStrip),
           _isFlatpakTestHost() ? findsNothing : findsOneWidget,
         );
         expect(find.byType(SidebarTimerSection), findsNothing);
         expect(find.byType(SidebarWakeQueue), findsNothing);
-        expect(find.byType(SidebarAudioRecordingSection), findsNothing);
 
         await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
         await tester.pump(SidebarTimerSection.animationDuration);
         expect(find.byKey(SidebarActivitySummaryKeys.details), findsOneWidget);
         expect(find.byType(SidebarTimerSection), findsOneWidget);
         expect(find.byType(SidebarWakeQueue), findsOneWidget);
-        expect(
-          find.byType(SidebarAudioRecordingSection),
-          _isFlatpakTestHost() ? findsNothing : findsOneWidget,
-        );
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -6543,7 +6433,6 @@ void main() {
           findsOneWidget,
         );
         expect(find.byKey(SidebarActivitySummaryKeys.timer), findsNothing);
-        expect(find.byKey(SidebarActivitySummaryKeys.audio), findsNothing);
 
         await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
         await tester.pump(SidebarTimerSection.animationDuration);

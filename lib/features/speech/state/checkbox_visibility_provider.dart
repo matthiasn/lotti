@@ -31,7 +31,7 @@ Future<bool> hasProfileTranscription(Ref ref, String taskId) async {
 }
 
 /// Provider that computes which automatic prompt checkboxes should be visible
-/// in the audio recording modal based on profile-driven transcription
+/// on the recorder based on profile-driven transcription
 /// availability (when linked to a task).
 ///
 /// This extracts the business logic from the widget, making it testable

@@ -61,7 +61,7 @@ class CheckInFormHandle extends ChangeNotifier {
   void unfocus() => _unfocus?.call();
 
   /// The form hands over the app-wide recorder the moment it starts a
-  /// recording, so the sheet can put the floating indicator back once it
+  /// recording, so the sheet can hand a take to the recording strip once it
   /// has closed — and only then, and only if a recording was ever started:
   /// a composer that never dictated never touches the recorder at all.
   set recorder(AudioRecorderController recorder) => _recorder = recorder;
@@ -69,8 +69,8 @@ class CheckInFormHandle extends ChangeNotifier {
   /// The recorder a recording was started on, until the sheet releases it.
   AudioRecorderController? get recorder => _recorder;
 
-  /// Shows the floating indicator again for a recording the sheet left
-  /// running; a no-op when nothing was recorded.
+  /// Hands a recording the sheet left running to the recording strip; a
+  /// no-op when nothing was recorded.
   void releaseRecorder() {
     _recorder?.setInlineHostVisible(visible: false);
     _recorder = null;
@@ -209,10 +209,10 @@ Future<CheckInEntry?> _showComposer({
       builder: (modalContext) => form(handle, dialog: dialog),
     );
   } finally {
-    // The inline recorder hides the floating indicator while it is up. A
-    // sheet dismissed mid-recording leaves the recording running — the
-    // recording sheet's own rule — so the indicator has to come back here,
-    // once the sheet is gone, for the user to stop it from.
+    // The inline recorder hides the recording strip while it is up. A sheet
+    // dismissed mid-recording leaves the recording running, so the strip has
+    // to take it over here, once the sheet is gone, for the user to stop it
+    // from.
     handle.releaseRecorder();
   }
 }

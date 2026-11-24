@@ -8,7 +8,7 @@ import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
+import 'package:lotti/features/speech/state/recording_session.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -353,17 +353,16 @@ void showShutdownActionFailed(BuildContext context) {
   );
 }
 
-/// The real recorder: the standard audio recording sheet, linked under the
-/// reflection entry. Pure delegation, excluded like the goal check-in's.
+/// The real recorder: a take on the recording strip, linked under the
+/// reflection entry, its origin the shutdown page. Pure delegation, excluded
+/// like the goal check-in's.
 // coverage:ignore-start
 Future<String?> openShutdownReflectionRecorder(
   BuildContext context,
   String reflectionEntryId,
-) => AudioRecordingModal.show(
+) => ProviderScope.containerOf(
   context,
-  linkedId: reflectionEntryId,
-  useRootNavigator: false,
-);
+).read(recordingSessionProvider).start(linkedId: reflectionEntryId);
 // coverage:ignore-end
 
 class ShutdownFooter extends ConsumerStatefulWidget {

@@ -186,14 +186,19 @@ extension _AppScreenLayout on _AppScreenState {
           Expanded(
             child: KeyboardFocusRegion(
               debugLabel: 'app-content',
-              child: Stack(
-                children: [
-                  const IncomingVerificationWrapper(),
-                  _buildContentStack(
-                    index: index,
-                    beamerChildren: beamerChildren,
-                  ),
-                ],
+              // The recording strip sits at the foot of the content column,
+              // where the page being read is, not in the rail.
+              child: RecordingStripShell(
+                omitAudio: _isRunningInFlatpak(),
+                child: Stack(
+                  children: [
+                    const IncomingVerificationWrapper(),
+                    _buildContentStack(
+                      index: index,
+                      beamerChildren: beamerChildren,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -335,26 +340,20 @@ extension _AppScreenLayout on _AppScreenState {
     // launcher on screen, so the island never competes with that bar there.
     final showActivityIsland = barDocked;
 
-    // One watcher of the running timer and recorder drives the launcher's
-    // reserved centre, the island's place in the row and the estate pages
-    // pad by, so the three can never disagree. The page stack is built
-    // once outside it and passed through, so a timer tick does not rebuild
-    // it.
+    // One watcher of the running timer drives the launcher's reserved
+    // centre, the island's place in the row and the estate pages pad by, so
+    // the three can never disagree. The page stack is built once outside it
+    // and passed through, so a timer tick does not rebuild it.
     final body = MobileActivityBuilder(
-      // The recording capsule is omitted on Flatpak builds (MediaKit
-      // compatibility issues).
-      omitAudio: _isRunningInFlatpak(),
       child: _buildContentStack(index: index, beamerChildren: beamerChildren),
-      builder: (context, activity, content) {
-        // The island sits in the launcher row's centre band, the lowest
-        // capsule level with the chips; a timer and a recording share one
-        // capsule and stack only when the row cannot hold it. Past that it
-        // floats above the bar at full width and the launcher keeps its
-        // word. A sliding-away bar keeps this layout, so neither reflows
-        // mid-slide.
+      builder: (context, content, {required timerRuns}) {
+        // The island sits in the launcher row's centre band, level with the
+        // chips; past that it floats above the bar and the launcher keeps
+        // its word. A sliding-away bar keeps this layout, so neither
+        // reflows mid-slide.
         final layout = MobileIslandLayout.resolve(
           context,
-          activity: showBottomNav ? activity : MobileActivity.none,
+          timerRuns: showBottomNav && timerRuns,
           buildLauncher: buildLauncher,
         );
         final launcher = layout.launcher;
@@ -363,13 +362,9 @@ extension _AppScreenLayout on _AppScreenState {
             ? launcher.centerBand(context)
             : EdgeInsetsDirectional.zero;
         final islandBottom = !showActivityIsland
-            // Just below the bottom edge, top flush with it: off-screen
-            // whatever the stack's height, in the bar's own motion.
-            ? -MobileActivityIsland.stackHeight(
-                context,
-                activity,
-                stacked: layout.stacked,
-              )
+            // Just below the bottom edge, top flush with it: off-screen, in
+            // the bar's own motion.
+            ? -MobileActivityIsland.capsuleHeight(context)
             : inRow
             ? MobileActivityIsland.dockedBottom(context)
             : MobileNavigationLauncher.barHeight(context) +
@@ -388,9 +383,8 @@ extension _AppScreenLayout on _AppScreenState {
               height: showActivityIsland
                   ? MobileActivityIsland.heightAboveBar(
                       context,
-                      activity,
+                      timerRuns: timerRuns,
                       inRow: inRow,
-                      stacked: layout.stacked,
                     )
                   : 0,
               barDocked: barDocked,
@@ -406,12 +400,10 @@ extension _AppScreenLayout on _AppScreenState {
                   child: launcher,
                 ),
               ),
-              // The activity island (running timer / recording) is not part
-              // of the slide-away subtree, since a stack rises above the
-              // bar's own height. It leaves with the bar in the same motion
-              // instead — down past the bottom edge, inert — and comes back
-              // with it. Only a bottom offset is set, so a stack grows
-              // upward from it.
+              // The running-timer island is not part of the slide-away
+              // subtree, since floating it rises above the bar's own height.
+              // It leaves with the bar in the same motion instead — down past
+              // the bottom edge, inert — and comes back with it.
               AnimatedPositionedDirectional(
                 duration: reduceMotion
                     ? Duration.zero
@@ -422,10 +414,7 @@ extension _AppScreenLayout on _AppScreenState {
                 bottom: islandBottom,
                 child: _InertWhen(
                   inert: !showActivityIsland,
-                  child: MobileActivityIsland(
-                    omitAudio: _isRunningInFlatpak(),
-                    stacked: layout.stacked,
-                  ),
+                  child: const MobileActivityIsland(),
                 ),
               ),
             ],
@@ -433,8 +422,12 @@ extension _AppScreenLayout on _AppScreenState {
         );
       },
     );
-    // The whole mobile shell — page, launcher and activity island — is what
-    // the drawer pushes aside, so nothing of it floats over the panel.
+    // The whole mobile shell — page, launcher, timer island and recording
+    // strip — is what the drawer pushes aside, so nothing of it floats over
+    // the panel. The strip wraps the Scaffold rather than sitting in it, so
+    // an open keyboard covers it instead of lifting it, and it is the one
+    // thing on the bottom edge: the launcher, a page's sticky bar and the
+    // island all move up by its height while it shows.
     return MobileNavigationDrawerHost(
       controller: _mobileDrawer,
       drawerBuilder: (context) => _buildMobileDrawer(
@@ -442,7 +435,10 @@ extension _AppScreenLayout on _AppScreenState {
         index: index,
         destinations: destinations,
       ),
-      child: Scaffold(extendBody: true, body: body),
+      child: RecordingStripShell(
+        omitAudio: _isRunningInFlatpak(),
+        child: Scaffold(extendBody: true, body: body),
+      ),
     );
   }
 

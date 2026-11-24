@@ -34,12 +34,11 @@ void main() {
     beamToNamedOverride = paths.add;
     await setUpTestGetIt();
     when(
-      () => creation.showAudioRecordingModal(
-        any(),
+      () => creation.startRecording(
         linkedId: any(named: 'linkedId'),
         categoryId: any(named: 'categoryId'),
       ),
-    ).thenAnswer((_) {});
+    ).thenAnswer((_) async => null);
     when(
       () => creation.createTextEntry(
         linkedId: any(named: 'linkedId'),
@@ -99,8 +98,7 @@ void main() {
 
     await tester.tap(find.byKey(ProjectActionBar.audioKey));
     verify(
-      () => creation.showAudioRecordingModal(
-        any(),
+      () => creation.startRecording(
         linkedId: 'project-1',
         categoryId: 'cat-1',
       ),

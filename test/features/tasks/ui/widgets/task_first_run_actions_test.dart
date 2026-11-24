@@ -111,12 +111,11 @@ void main() {
       () => creation.createChecklist(task: any(named: 'task')),
     ).thenAnswer((_) async => null);
     when(
-      () => creation.showAudioRecordingModal(
-        any(),
+      () => creation.startRecording(
         linkedId: any(named: 'linkedId'),
         categoryId: any(named: 'categoryId'),
       ),
-    ).thenAnswer((_) {});
+    ).thenAnswer((_) async => null);
   });
 
   tearDown(tearDownTestGetIt);
@@ -466,8 +465,7 @@ void main() {
       await tester.pump();
 
       verify(
-        () => creation.showAudioRecordingModal(
-          any(),
+        () => creation.startRecording(
           linkedId: 'task-1',
           categoryId: 'cat-1',
         ),

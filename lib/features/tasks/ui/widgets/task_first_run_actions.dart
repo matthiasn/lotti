@@ -210,17 +210,17 @@ class TaskFirstRunActions extends ConsumerWidget {
         // tapping start recording?": the tap only opens the recorder sheet,
         // and nothing is captured until the user starts it there.
         subtitle: context.messages.taskFirstRunRecordAudioHint,
-        // Opens a modal and returns; the recording (and the entry it makes)
-        // happens in there. Nothing to latch off — cancelling the sheet has to
-        // leave the row live.
+        // Starts the take on the recording strip and returns; the entry it
+        // makes lands when the take is stopped. Nothing to latch off — a take
+        // undone or discarded has to leave the row live.
         onTap: () async {
           ref
               .read(entryCreationServiceProvider)
-              .showAudioRecordingModal(
-                context,
+              .startRecording(
                 linkedId: task.meta.id,
                 categoryId: task.meta.categoryId,
-              );
+              )
+              .ignore();
           return false;
         },
       ),

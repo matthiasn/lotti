@@ -127,10 +127,10 @@ class AutomaticPromptTrigger {
   ///
   /// This runs here, on the controller's stop path, rather than in the goal
   /// composer that opened the recorder, because the composer only learns of a
-  /// recording it awaited. A recording stopped from the sidebar's Stop button
-  /// or the floating indicator after the sheet was dismissed reaches
-  /// `AudioRecorderController.stop` — and therefore this method — without the
-  /// composer ever hearing back. Handling it once, here, covers every way a
+  /// recording it awaited. A recording stopped from the recording strip after
+  /// the sheet was dismissed reaches `AudioRecorderController.stop` — and,
+  /// once its receipt commits it, this method — without the composer ever
+  /// hearing back. Handling it once, here, covers every way a
   /// recording ends.
   ///
   /// The consent signal is the goal agent's own automatic-updates switch, the

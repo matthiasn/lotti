@@ -65,12 +65,11 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(
-      () => creationService.showAudioRecordingModal(
-        any(),
+      () => creationService.startRecording(
         linkedId: any(named: 'linkedId'),
         categoryId: any(named: 'categoryId'),
       ),
-    ).thenAnswer((_) {});
+    ).thenAnswer((_) async => null);
   });
 
   tearDown(tearDownTestGetIt);
@@ -416,8 +415,7 @@ void main() {
       await tester.pump();
 
       verify(
-        () => creationService.showAudioRecordingModal(
-          any(),
+        () => creationService.startRecording(
           linkedId: _entry.meta.id,
           categoryId: categoryMindfulness.id,
         ),

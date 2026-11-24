@@ -16,7 +16,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
+import 'package:lotti/features/speech/state/recording_start_guard.dart';
+import 'package:lotti/features/speech/state/recording_tray_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -508,7 +509,7 @@ void main() {
   });
 
   // These tests exercise the thin UI-delegating methods of the service
-  // (showAudioRecordingModal / importImage / showCreateEntryModal). They need a
+  // (startRecording / importImage / showCreateEntryModal). They need a
   // real BuildContext, so they live in their own group with widget-test
   // GetIt + provider wiring, independent of the database-backed group above.
   group('EntryCreationService UI delegators', () {
@@ -599,37 +600,53 @@ void main() {
     }
 
     testWidgets(
-      'showAudioRecordingModal opens the recording modal and marks it visible',
+      'startRecording starts a take on the recording strip for the subject '
+      'and category, answering what the session answers',
       (tester) async {
         late ProviderContainer container;
-        final service = await pumpServiceHost(
+        Future<String?>? started;
+        await pumpServiceHost(
           tester,
           overrides: [
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
+            navServiceProvider.overrideWithValue(mockNavService),
           ],
           onTap: (service, context) {
             container = ProviderScope.containerOf(context);
-            service.showAudioRecordingModal(context, categoryId: 'cat-1');
+            started = service.startRecording(
+              linkedId: 'task-1',
+              categoryId: 'cat-1',
+            );
           },
         );
-        expect(service, isNotNull);
 
         await tester.tap(find.text('go'));
-        // Bounded settle: one frame to start the modal route, then enough
-        // time for the sheet's open transition to finish.
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
 
-        // The modal content rendered (its RECORD button carries this key).
-        expect(find.byType(AudioRecordingModalContent), findsOneWidget);
-        expect(find.byKey(const ValueKey('record')), findsOneWidget);
+        // The microphone is refused here, so the session opens the strip's
+        // tray on that card and answers null.
+        expect(await started, isNull);
+        expect(
+          container.read(recordingTrayControllerProvider),
+          (open: true, failure: InlineRecordingFailure.microphoneDenied),
+        );
+        expect(
+          container.read(audioRecorderControllerProvider.notifier).categoryId,
+          'cat-1',
+        );
+      },
+    );
 
-        // .show() flips the controller's modalVisible flag and forwards the
-        // categoryId — observable side effects of the delegated call.
-        final state = container.read(audioRecorderControllerProvider);
-        expect(state.inlineHostVisible, isTrue);
+    test(
+      'startRecording without a Ref answers null and touches nothing',
+      () async {
+        final service = EntryCreationService(domainLogger: MockDomainLogger());
+        expect(
+          await service.startRecording(linkedId: 'task-1', categoryId: 'cat-1'),
+          isNull,
+        );
       },
     );
 

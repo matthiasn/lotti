@@ -221,15 +221,12 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
         );
   }
 
-  void _onAudioPressed() {
-    ref
-        .read(entryCreationServiceProvider)
-        .showAudioRecordingModal(
-          context,
-          linkedId: widget.task.meta.id,
-          categoryId: widget.task.meta.categoryId,
-        );
-  }
+  Future<void> _onAudioPressed() => ref
+      .read(entryCreationServiceProvider)
+      .startRecording(
+        linkedId: widget.task.meta.id,
+        categoryId: widget.task.meta.categoryId,
+      );
 
   Future<void> _onMorePressed() async {
     await ref

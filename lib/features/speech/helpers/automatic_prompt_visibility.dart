@@ -1,5 +1,5 @@
 /// Simple value object describing which automatic prompt checkboxes
-/// should be visible in the audio recording modal.
+/// should be visible on the recorder.
 class AutomaticPromptVisibility {
   const AutomaticPromptVisibility({
     required this.speech,

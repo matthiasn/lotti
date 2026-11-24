@@ -8,6 +8,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/beamer/chrome/mobile_activity_island.dart';
+import 'package:lotti/beamer/chrome/recording_strip_shell.dart';
 import 'package:lotti/beamer/chrome/sidebar_activity_summary.dart';
 import 'package:lotti/beamer/desktop_menu.dart';
 import 'package:lotti/beamer/drawer_first_back_button_dispatcher.dart';
@@ -737,6 +738,6 @@ class _SidebarAboveSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SidebarActivitySummary(showAudio: !_isRunningInFlatpak());
+    return const SidebarActivitySummary();
   }
 }

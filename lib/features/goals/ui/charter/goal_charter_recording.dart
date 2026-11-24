@@ -4,25 +4,29 @@ import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
+import 'package:lotti/features/speech/state/recording_session.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Records one recording and returns the id of the audio entry it became, or
-/// null when the user cancelled — the shared recording sheet in production,
-/// a fake in tests. It must save the recording with no parent and stay put.
+/// null when the user discarded or undid it — the recording strip in
+/// production, a fake in tests. It must save the recording with no parent
+/// and stay put.
 typedef GoalCharterAudioRecorder =
     Future<String?> Function(BuildContext context, {String? categoryId});
 
-Future<String?> _recordWithSheet(BuildContext context, {String? categoryId}) =>
-    AudioRecordingModal.show(
-      context,
-      categoryId: categoryId,
-      transcriptionHandledByCaller: true,
-      openCreatedEntry: false,
-    );
+/// The recording strip's take, answered when it is committed — after its
+/// receipt, so a take undone there is never linked to the goal.
+Future<String?> _recordOnStrip(BuildContext context, {String? categoryId}) =>
+    ProviderScope.containerOf(context)
+        .read(recordingSessionProvider)
+        .start(
+          categoryId: categoryId,
+          transcriptionHandledByCaller: true,
+          openCreatedEntry: false,
+        );
 
 /// Records a spoken charter entry for the goal coached by [agentId]
 /// (ADR 0140): the recording kept and playable, its transcript what the
@@ -31,11 +35,12 @@ Future<String?> _recordWithSheet(BuildContext context, {String? categoryId}) =>
 /// Three steps, in an order that keeps the recording from ever being a
 /// check-in:
 ///
-/// 1. The shared recording sheet saves it with **no parent**. The recorder
-///    links a recording FROM its parent, and a recording linked from the
-///    goal is by definition a check-in. With no parent the sheet must not
-///    open the new entry either (`openCreatedEntry: false`): the user stays
-///    on the goal.
+/// 1. The recording strip saves it with **no parent**. The recorder links a
+///    recording FROM its parent, and a recording linked from the goal is by
+///    definition a check-in. With no parent the strip must not open the new
+///    entry either (`openCreatedEntry: false`): the user stays on the goal.
+///    The id arrives when the take is committed — once its receipt is gone
+///    without an Undo.
 /// 2. `GoalRepository.attachCharterRecording` links it INTO the goal.
 /// 3. Its transcription is started here (`transcriptionHandledByCaller`):
 ///    the recorder's own automation keys on a parent this recording does not
@@ -48,7 +53,7 @@ Future<String?> _recordWithSheet(BuildContext context, {String? categoryId}) =>
 Future<void> recordGoalCharterEntry(
   BuildContext context, {
   required String agentId,
-  GoalCharterAudioRecorder recordAudio = _recordWithSheet,
+  GoalCharterAudioRecorder recordAudio = _recordOnStrip,
 }) async {
   // The app-wide container, read before the first await: the card that
   // asked may be rebuilt or gone by the time the recording is saved.
