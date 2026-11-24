@@ -159,6 +159,8 @@ class _FrontChatUserMessageState extends State<FrontChatUserMessage> {
       // base level, its edge drawn where it meets the bubbles.
       surfaceColor: dsCardSurface(context),
       outlined: true,
+      // As wide as its longest line, not a full menu's width.
+      fitContent: true,
       items: [
         DesignSystemContextMenuItem(
           key: FrontChatUserMessageKeys.menuCopy(id),

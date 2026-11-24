@@ -4,6 +4,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_user_message.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_ui/material_ui.dart';
@@ -128,6 +129,12 @@ void main() {
         await longPress(tester);
 
         expect(find.text('Yesterday, 2:04 PM'), findsOneWidget);
+        // A small window: as wide as its longest line, its edge drawn.
+        final window = tester.widget<DesignSystemContextMenu>(
+          find.byType(DesignSystemContextMenu),
+        );
+        expect(window.fitContent, isTrue);
+        expect(window.outlined, isTrue);
         expect(
           find.byKey(FrontChatUserMessageKeys.menuCopy(id)),
           findsOneWidget,
