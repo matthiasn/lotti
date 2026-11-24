@@ -52,5 +52,24 @@ void main() {
         'Friday, November 20, 2026',
       );
     });
+    // Just after midnight, yesterday's late evening is still yesterday —
+    // counted by the calendar, not by 24 hours.
+    withClock(Clock.fixed(DateTime(2026, 3, 30, 0, 30)), () {
+      expect(
+        frontChatDayLabel(context, DateTime(2026, 3, 29, 23, 45), 'en'),
+        'Yesterday',
+      );
+      expect(
+        frontChatDayLabel(context, DateTime(2026, 3, 28, 23, 45), 'en'),
+        'Saturday, March 28, 2026',
+      );
+    });
+    // Across the start of a month.
+    withClock(Clock.fixed(DateTime(2026, 12, 1, 8)), () {
+      expect(
+        frontChatDayLabel(context, DateTime(2026, 11, 30, 20), 'en'),
+        'Yesterday',
+      );
+    });
   });
 }

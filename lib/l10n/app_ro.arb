@@ -3146,7 +3146,7 @@
   "frontChatInboxTitle": "Primite",
   "frontChatMessageActions": "Acțiuni pentru mesaj",
   "frontChatMessageBusy": "Încă se lucrează la el",
-  "frontChatMessageBusyHint": "Opriți mai întâi însoțitorul pentru a-l edita.",
+  "frontChatMessageBusyHint": "Opriți mai întâi însoțitorul pentru a edita mesajul.",
   "frontChatMessageCopied": "Mesaj copiat",
   "frontChatMessageCopy": "Copiați",
   "frontChatMessageEdit": "Editați",

@@ -820,11 +820,18 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
               sentAt: message.createdAt,
               status: thread?.stoppedMessageIds.contains(message.id) ?? false
                   ? FrontUserMessageStatus.stopped
-                  : message.id == composer.sendingMessageId
+                  // Waiting on her, on this device or another.
+                  : message.id == composer.sendingMessageId ||
+                        (thread?.pendingMessageIds.contains(message.id) ??
+                            false)
                   ? FrontUserMessageStatus.working
                   : FrontUserMessageStatus.settled,
-              onEdit: (text) => controller.edit(message.id, text),
-              onStop: controller.stop,
+              // The inbox lists turns of every conversation: an edit is made
+              // in the turn's own.
+              onEdit: inboxOnly
+                  ? null
+                  : (text) => controller.edit(message.id, text),
+              onStop: () => controller.stop(message.id),
               bubble: bubble,
             ),
         // A spoken question gets a spoken answer, whichever of her views —

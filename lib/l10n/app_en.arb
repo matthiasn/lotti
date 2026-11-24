@@ -4787,7 +4787,7 @@
   "@frontChatMessageBusy": {
     "description": "Toast title when the user long-presses their message while the companion is still working on it"
   },
-  "frontChatMessageBusyHint": "Stop the companion first to edit it.",
+  "frontChatMessageBusyHint": "Stop the companion first to edit this message.",
   "@frontChatMessageBusyHint": {
     "description": "Toast line and tooltip saying the user must stop the companion before editing the message"
   },

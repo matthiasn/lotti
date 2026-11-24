@@ -3471,7 +3471,7 @@
   "frontChatInboxTitle": "In arrivo",
   "frontChatMessageActions": "Azioni del messaggio",
   "frontChatMessageBusy": "Ancora in corso",
-  "frontChatMessageBusyHint": "Interrompi prima il compagno per modificarlo.",
+  "frontChatMessageBusyHint": "Interrompi prima il compagno per modificare il messaggio.",
   "frontChatMessageCopied": "Messaggio copiato",
   "frontChatMessageCopy": "Copia",
   "frontChatMessageEdit": "Modifica",

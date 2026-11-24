@@ -17,6 +17,7 @@ import 'package:lotti/features/front_agent/state/front_chat_category.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
+import 'package:lotti/features/front_agent/state/front_draft_pages.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
@@ -712,6 +713,26 @@ void main() {
       expect(state().failedMessage, isNull);
     });
 
+    test('a turn waiting on her that this device did not send can be '
+        'stopped by its id, and its own spoken reply still waits', () async {
+      final wake = Completer<void>();
+      stubSendWaiting(wake);
+      when(
+        () => chatService.stopMessage(messageId: 'remote-1'),
+      ).thenAnswer((_) async {});
+      controller().updateDraft('Hello');
+
+      final send = controller().sendSpoken();
+      await pumpEventQueue();
+      await controller().stop('remote-1');
+
+      verify(() => chatService.stopMessage(messageId: 'remote-1')).called(1);
+      verifyNever(() => chatService.stopMessage(messageId: 'm-1'));
+      expect(container.read(frontSpokenTurnProvider), isNotNull);
+      wake.complete();
+      await send;
+    });
+
     test('nothing is stopped before the turn is durable', () async {
       await controller().stop();
 
@@ -1065,6 +1086,161 @@ void main() {
       expect(pages(), [typed]);
       expect(state().failedMessage, isNull);
     });
+
+    test('a retry sends only the page put back, never another that shares '
+        'its words', () async {
+      var attempts = 0;
+      when(
+        () => chatService.sendMessage(
+          text: words,
+          conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
+          onAppended: any(named: 'onAppended'),
+        ),
+      ).thenAnswer((_) async {
+        if (attempts++ == 0) throw StateError('db closed');
+      });
+      // Typed by hand, then the same words taken back from a stopped turn.
+      controller()
+        ..updateDraft(words)
+        ..edit('u1', words);
+
+      await controller().send();
+      expect(state().draftPages.pages, [
+        const FrontDraftPage(words),
+        const FrontDraftPage(words, editingMessageId: 'u1'),
+      ]);
+
+      await controller().retry();
+
+      expect(state().draftPages.pages, [const FrontDraftPage(words)]);
+    });
+
+    test(
+      'pages made while a send is on its way are kept when it settles',
+      () async {
+        final wake = Completer<void>();
+        when(
+          () => chatService.sendMessage(
+            text: typed,
+            conversationId: 'c-1',
+            replaces: any(named: 'replaces'),
+            onAppended: any(named: 'onAppended'),
+          ),
+        ).thenAnswer((_) => wake.future);
+        controller().updateDraft(typed);
+
+        final send = controller().send();
+        await pumpEventQueue();
+        controller()
+          ..edit('u5', 'Count the nests')
+          ..edit('u6', 'Count the eggs');
+        wake.complete();
+        await send;
+
+        expect(pages(), ['Count the nests', 'Count the eggs']);
+        expect(state().editingMessageId, 'u6');
+      },
+    );
+
+    test('a failure with words typed since keeps them in the box, the words '
+        'that did not go a page back, still the edit', () async {
+      final wake = Completer<void>();
+      when(
+        () => chatService.sendMessage(
+          text: words,
+          conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
+          onAppended: any(named: 'onAppended'),
+        ),
+      ).thenAnswer((_) async {
+        await wake.future;
+        throw StateError('db closed');
+      });
+      controller().edit('u1', words);
+
+      final send = controller().send();
+      await pumpEventQueue();
+      controller().updateDraft('And the eggs?');
+      wake.complete();
+      await send;
+
+      expect(state().draftPages.pages, [
+        const FrontDraftPage(words, editingMessageId: 'u1'),
+        const FrontDraftPage('And the eggs?'),
+      ]);
+      expect(state().draft, 'And the eggs?');
+    });
+
+    test('a send that settles after the user moved to another conversation '
+        'leaves that box alone, and its pages wait in their own', () async {
+      final wake = Completer<void>();
+      when(
+        () => chatService.sendMessage(
+          text: words,
+          conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
+          onAppended: any(named: 'onAppended'),
+        ),
+      ).thenAnswer((_) async {
+        await wake.future;
+        throw StateError('db closed');
+      });
+      controller()
+        ..openConversation('c-1')
+        ..updateDraft(typed)
+        ..edit('u1', words);
+
+      final send = controller().send();
+      await pumpEventQueue();
+      controller()
+        ..openConversation('c-2')
+        ..updateDraft('In the other one');
+      wake.complete();
+      await send;
+
+      expect(pages(), ['In the other one']);
+
+      controller().openConversation('c-1');
+      expect(pages(), [typed, words]);
+      expect(state().editingMessageId, 'u1');
+    });
+
+    test(
+      'words typed while a retry runs stay, whichever way it ends',
+      () async {
+        var attempts = 0;
+        final wake = Completer<void>();
+        when(
+          () => chatService.sendMessage(
+            text: words,
+            conversationId: 'c-1',
+            replaces: any(named: 'replaces'),
+            onAppended: any(named: 'onAppended'),
+          ),
+        ).thenAnswer((_) async {
+          attempts++;
+          if (attempts == 1) throw StateError('db closed');
+          await wake.future;
+          if (attempts == 2) throw StateError('db closed');
+        });
+        controller().edit('u1', words);
+        await controller().send();
+
+        // Fails again: the box keeps what was typed meanwhile.
+        final failing = controller().retry();
+        await pumpEventQueue();
+        controller().updateDraft('Typed meanwhile');
+        wake.complete();
+        await failing;
+        expect(state().draft, 'Typed meanwhile');
+        expect(state().failedMessage, words);
+
+        // Goes through: only its page left, and that was replaced by typing.
+        await controller().retry();
+        expect(pages(), ['Typed meanwhile']);
+      },
+    );
 
     test("a retry's own failure keeps every page", () async {
       when(

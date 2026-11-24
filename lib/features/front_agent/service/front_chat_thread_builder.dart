@@ -160,6 +160,13 @@ class FrontChatThreadBuilder {
       }
     }
 
+    // What the whole conversation cost — replaced answers included, whose
+    // runs were spent all the same — before the window and the edits.
+    final runKeys = {
+      for (final m in messages)
+        if (m.role == AgentChatRole.agent) ?m.runKey,
+    };
+
     // An edit takes the place of the turn it was made from, and of her
     // answer to it: the edit gets an answer of its own. What the old answer
     // did — a task filed, a question asked — is done all the same.
@@ -214,11 +221,7 @@ class FrontChatThreadBuilder {
 
     return FrontChatThread(
       messages: visible,
-      // Before the window: what the whole conversation cost.
-      runKeys: {
-        for (final m in messages)
-          if (m.role == AgentChatRole.agent) ?m.runKey,
-      },
+      runKeys: runKeys,
       optionsByMessageId: {
         for (final entry in options.entries)
           if (visibleIds.contains(entry.key)) entry.key: entry.value,
@@ -229,6 +232,13 @@ class FrontChatThreadBuilder {
       stoppedMessageIds: {
         for (final id in stopped)
           if (visibleIds.contains(id) && !answered.contains(id)) id,
+      },
+      pendingMessageIds: {
+        for (final m in visible)
+          if (m.role == AgentChatRole.user &&
+              !answered.contains(m.id) &&
+              !stopped.contains(m.id))
+            m.id,
       },
       entityPreviewsByMessageId: _entityPreviews(visible, doors),
       surfacesByMessageId: {

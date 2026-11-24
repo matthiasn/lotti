@@ -98,7 +98,14 @@ class FrontDoorWalker {
 
   /// Walks every unwalked segment of the dispatch that answered
   /// [messageId]. A turn that ended in a question or a reply has no
-  /// dispatch and nothing to walk.
+  /// dispatch and nothing to walk; one the user stopped walks no further
+  /// door — asked before each, so a stop that lands mid-walk ends it there.
+  /// Whether the user stopped turn [messageId]: its stop record exists.
+  Future<bool> _stopped(String messageId) async {
+    final stop = await _repository.getEntity(frontChatStopMessageId(messageId));
+    return stop is AgentMessageEntity && stop.deletedAt == null;
+  }
+
   Future<void> walk(String messageId) async {
     final dispatchRecord = await _dispatchRecordFor(messageId);
     if (dispatchRecord == null || dispatchRecord.contentEntryId == null) {
@@ -110,6 +117,7 @@ class FrontDoorWalker {
     if (dispatch == null) return;
 
     for (var index = 0; index < dispatch.segments.length; index++) {
+      if (await _stopped(messageId)) return;
       final segment = dispatch.segments[index];
       final claim = await _claim(
         dispatchRecord: dispatchRecord,

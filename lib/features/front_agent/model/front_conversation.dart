@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:uuid/uuid.dart';
 
 /// The conversation every turn written before conversations existed belongs
 /// to. It is fixed rather than minted, so every device derives the same one
@@ -28,6 +30,21 @@ const frontTurnStoppedKey = 'stopped';
 /// Whether a reply payload's [content] records the user stopping the turn.
 bool frontTurnStopped(Map<String, Object?> content) =>
     content[frontTurnStoppedKey] == true;
+
+/// The id of the record of the user stopping turn [messageId] — derived
+/// from the turn, so a stop pressed twice, or on two devices, is one record,
+/// and anything can ask whether a turn was stopped without reading a
+/// payload.
+String frontChatStopMessageId(String messageId) => const Uuid().v5(
+  Namespace.url.value,
+  'lotti://front-agent/$frontAgentId/$messageId/stop',
+);
+
+/// The id of that record's payload.
+String frontChatStopPayloadId(String messageId) => const Uuid().v5(
+  Namespace.url.value,
+  'lotti://front-agent/$frontAgentId/$messageId/stop-payload',
+);
 
 /// The key under which a user turn's payload names the stopped turn it was
 /// edited from: the thread shows the edit in that turn's place.

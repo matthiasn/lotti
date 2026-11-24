@@ -34,6 +34,7 @@ void main() {
     String text, {
     String? conversation,
     List<String>? categories,
+    String? replaces,
     int minute = 0,
   }) async {
     final at = start.add(Duration(minutes: minute));
@@ -47,6 +48,7 @@ void main() {
           'text': text,
           'conversationId': ?conversation,
           frontCategoriesKey: ?categories,
+          frontTurnReplacesKey: ?replaces,
         },
       ),
     );
@@ -359,6 +361,27 @@ void main() {
 
       expect(index.byId('c-1')!.preview, isNull);
     });
+  });
+
+  test('an answer to a turn an edit replaced is no preview: the one before '
+      'it speaks until the edit is answered', () async {
+    await turn('u1', 'Plan the census', conversation: 'c-1');
+    await answer('r1', 'u1', 'Saturday works.', minute: 1);
+    await turn('u2', 'Who counts?', conversation: 'c-1', minute: 2);
+    await answer('r2', 'u2', 'The volunteers.', minute: 3);
+    await turn(
+      'u3',
+      'Who counts the chicks?',
+      conversation: 'c-1',
+      replaces: 'u2',
+      minute: 4,
+    );
+
+    expect((await service.load()).byId('c-1')!.preview, 'Saturday works.');
+
+    await answer('r3', 'u3', 'The rangers.', minute: 5);
+
+    expect((await service.load()).byId('c-1')!.preview, 'The rangers.');
   });
 
   test('nothing said yet is no conversation', () async {

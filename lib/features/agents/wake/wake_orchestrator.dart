@@ -409,8 +409,13 @@ class WakeOrchestrator with AgentErrorLogging {
 
   /// Jobs a drain pass took out of [queue] and holds back — their agent's
   /// runner was taken, or their agent is throttled — until the pass requeues
-  /// them. Tracked only so pending-work probes can see them.
+  /// them. Tracked so pending-work probes can see them, and so a cancel can
+  /// reach them ([_cancelledHeldBackRunKeys]).
   final _heldBackJobs = <String, WakeJob>{};
+
+  /// Held-back jobs cancelled while their pass held them: the pass drops
+  /// them instead of requeueing them.
+  final _cancelledHeldBackRunKeys = <String>{};
 
   /// Cancellation reason for drain-owned jobs removed by a newer request or
   /// explicit cancellation while an asynchronous pre-dispatch step was active.
@@ -947,10 +952,25 @@ class WakeOrchestrator with AgentErrorLogging {
       (job) => job.agentId == agentId && job.runKey == runKey,
       reason: reason,
     );
-    _emitRemovedRunCompletions([...removed, ...owned], reason: reason);
+    // Held back behind another of its agent's runs: dropped when the pass
+    // would requeue it.
+    final held = _heldBackJobs[runKey];
+    final heldBack = [if (held != null && held.agentId == agentId) held];
+    for (final job in heldBack) {
+      _heldBackJobs.remove(job.runKey);
+      _cancelledHeldBackRunKeys.add(job.runKey);
+    }
+    _emitRemovedRunCompletions([
+      ...removed,
+      ...owned,
+      ...heldBack,
+    ], reason: reason);
     final running =
         runner.runKeyFor(agentId) == runKey && runner.abort(agentId);
-    return running || removed.isNotEmpty || owned.isNotEmpty;
+    return running ||
+        removed.isNotEmpty ||
+        owned.isNotEmpty ||
+        heldBack.isNotEmpty;
   }
 
   /// Abort the in-flight wake for [agentId], if any.

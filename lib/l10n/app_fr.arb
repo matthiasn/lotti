@@ -3146,7 +3146,7 @@
   "frontChatInboxTitle": "Boîte de réception",
   "frontChatMessageActions": "Actions du message",
   "frontChatMessageBusy": "Encore en cours",
-  "frontChatMessageBusyHint": "Arrête d’abord le compagnon pour le modifier.",
+  "frontChatMessageBusyHint": "Arrête d’abord le compagnon pour modifier le message.",
   "frontChatMessageCopied": "Message copié",
   "frontChatMessageCopy": "Copier",
   "frontChatMessageEdit": "Modifier",

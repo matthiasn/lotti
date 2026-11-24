@@ -70,7 +70,10 @@ class FrontChatUserMessage extends StatefulWidget {
   final String messageId;
   final String text;
   final FrontUserMessageStatus status;
-  final ValueChanged<String> onEdit;
+
+  /// Null where the turn cannot be edited from here — the inbox, which
+  /// lists turns of every conversation: Edit is not offered.
+  final ValueChanged<String>? onEdit;
   final Widget bubble;
 
   /// When the turn was sent: the heading of its window of actions.
@@ -102,7 +105,9 @@ class _FrontChatUserMessageState extends State<FrontChatUserMessage> {
     );
   }
 
-  void _edit() => widget.onEdit(widget.text);
+  void _edit() => widget.onEdit?.call(widget.text);
+
+  bool get _editable => widget.onEdit != null;
 
   /// Says the turn cannot be edited until it is stopped.
   void _warnBusy() {
@@ -168,12 +173,13 @@ class _FrontChatUserMessageState extends State<FrontChatUserMessage> {
           icon: LottiIcons.copy,
           onTap: _copy,
         ),
-        DesignSystemContextMenuItem(
-          key: FrontChatUserMessageKeys.menuEdit(id),
-          label: messages.frontChatMessageEdit,
-          icon: LottiIcons.edit,
-          onTap: _edit,
-        ),
+        if (_editable)
+          DesignSystemContextMenuItem(
+            key: FrontChatUserMessageKeys.menuEdit(id),
+            label: messages.frontChatMessageEdit,
+            icon: LottiIcons.edit,
+            onTap: _edit,
+          ),
       ],
       builder: (context, {required toggle, required isOpen}) => Semantics(
         onLongPressHint: messages.frontChatMessageActions,
@@ -244,22 +250,23 @@ class _FrontChatUserMessageState extends State<FrontChatUserMessage> {
                       tooltip: messages.frontChatMessageCopy,
                       onPressed: _copy,
                     ),
-                    DesignSystemIconAction(
-                      key: FrontChatUserMessageKeys.edit(id),
-                      icon: LottiIcons.edit,
-                      // While she works on it: dimmed, and a click says why
-                      // not yet — what a long press says on a phone.
-                      tooltip: working
-                          ? messages.frontChatMessageBusyHint
-                          : messages.frontChatMessageEdit,
-                      // The disabled ink and dimming, though still live:
-                      // a click says why not yet.
-                      tone: working ? tokens.colors.text.lowEmphasis : null,
-                      onPressed: working ? _warnBusy : _edit,
-                    ).withDisabledOpacity(
-                      enabled: !working,
-                      disabledOpacity: tokens.colors.text.lowEmphasis.a,
-                    ),
+                    if (_editable)
+                      DesignSystemIconAction(
+                        key: FrontChatUserMessageKeys.edit(id),
+                        icon: LottiIcons.edit,
+                        // While she works on it: dimmed, and a click says why
+                        // not yet — what a long press says on a phone.
+                        tooltip: working
+                            ? messages.frontChatMessageBusyHint
+                            : messages.frontChatMessageEdit,
+                        // The disabled ink and dimming, though still live:
+                        // a click says why not yet.
+                        tone: working ? tokens.colors.text.lowEmphasis : null,
+                        onPressed: working ? _warnBusy : _edit,
+                      ).withDisabledOpacity(
+                        enabled: !working,
+                        disabledOpacity: tokens.colors.text.lowEmphasis.a,
+                      ),
                   ],
                 ),
               ),

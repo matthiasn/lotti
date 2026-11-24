@@ -229,13 +229,15 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   Future<void> send() =>
       sendText(state.draft, replaces: state.editingMessageId);
 
-  /// Stops the turn on its way: she does not answer it, the thread shows it
-  /// stopped, and its words can be taken back into the box to send again.
-  /// The send then settles as one that went through. Nothing to stop until
-  /// the turn is durable.
-  Future<void> stop() async {
-    final messageId = state.sendingMessageId;
+  /// Stops the turn on its way — or [turnId], a turn still waiting on her
+  /// that this device did not send, or no longer remembers sending: she
+  /// does not answer it, the thread shows it stopped, and its words can be
+  /// taken back into the box to send again. The send then settles as one
+  /// that went through. Nothing to stop until the turn is durable.
+  Future<void> stop([String? turnId]) async {
+    final messageId = turnId ?? state.sendingMessageId;
     if (messageId == null) return;
+    final ours = messageId == state.sendingMessageId;
     try {
       await ref
           .read(frontChatServiceProvider)
@@ -245,8 +247,8 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
       // asked aloud — and Stop can be pressed again.
       return;
     }
-    // No answer is coming to speak.
-    ref.read(frontSpokenTurnProvider.notifier).settle();
+    // No answer is coming to speak — if the one stopped was the one asked.
+    if (ours) ref.read(frontSpokenTurnProvider.notifier).settle();
   }
 
   void _sending(String messageId) {
@@ -276,6 +278,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     // straight away — and come back only if the send fails. Its other pages
     // wait aside until the send settles.
     final rest = state.asideDrafts;
+    final sentFrom = _open;
     state = state.copyWith(
       isSending: true,
       draft: '',
@@ -312,16 +315,20 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
       state = state.settled(
         draft: state.draft,
         editingMessageId: state.editingMessageId,
-        aside: rest,
+        aside: _asideAfterSend(sentFrom, rest),
       );
     } on FrontChatTurnException catch (error) {
       // No answer is coming for a turn that did not go through.
       ref.read(frontSpokenTurnProvider.notifier).settle();
       _reproject();
       state = state.settled(
-        draft: _draftAfterFailure(message),
-        editingMessageId: _editAfterFailure(replaces),
-        aside: rest,
+        draft: state.draft,
+        editingMessageId: state.editingMessageId,
+        aside: _asideAfterSend(
+          sentFrom,
+          rest,
+          FrontDraftPage(message, editingMessageId: replaces),
+        ),
         failedMessage: message,
         failedMessageId: error.messageId,
         failedConversationId: conversationId,
@@ -333,9 +340,13 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     } catch (_) {
       ref.read(frontSpokenTurnProvider.notifier).settle();
       state = state.settled(
-        draft: _draftAfterFailure(message),
-        editingMessageId: _editAfterFailure(replaces),
-        aside: rest,
+        draft: state.draft,
+        editingMessageId: state.editingMessageId,
+        aside: _asideAfterSend(
+          sentFrom,
+          rest,
+          FrontDraftPage(message, editingMessageId: replaces),
+        ),
         failedMessage: message,
         failedConversationId: conversationId,
         failedCategoryIds: categoryIds,
@@ -398,16 +409,30 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     });
   }
 
-  /// The box after a send of [message] failed: what the user typed since,
-  /// else the words that did not go, so nothing they said is lost.
-  String _draftAfterFailure(String message) =>
-      state.draft.isEmpty ? message : state.draft;
-
-  /// The edit the box is after a failed send that [replaces] a stopped
-  /// turn: still that edit when its words are put back, none when the box
-  /// keeps what the user typed since.
-  String? _editAfterFailure(String? replaces) =>
-      state.draft.isEmpty ? replaces : null;
+  /// The pages beside the box once a send from [sentFrom] settles: [rest],
+  /// set aside as it started, then [back] — the words a failure puts back,
+  /// still the edit they were — then the pages made while it was on its
+  /// way. Nothing said is lost: whatever was typed since stays in the box,
+  /// the words that did not go a page back.
+  ///
+  /// When the user has moved to another conversation since, those pages go
+  /// to the one they were typed in — parked, before any typed there during
+  /// the send — and the box shown is left as it is.
+  List<FrontDraftPage> _asideAfterSend(
+    String? sentFrom,
+    List<FrontDraftPage> rest, [
+    FrontDraftPage? back,
+  ]) {
+    if (sentFrom != null && sentFrom != _open) {
+      _drafts[sentFrom] = FrontDraftPages.settle([
+        ...rest,
+        ?back,
+        ...?_drafts[sentFrom]?.pages,
+      ]);
+      return state.asideDrafts;
+    }
+    return [...rest, ?back, ...state.asideDrafts];
+  }
 
   /// Talking in an archived conversation brings it back: it is in use. Best
   /// effort — the turn is sent, so a failure here must not offer a retry
@@ -434,11 +459,6 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     final scopedTo = state.failedCategoryIds;
     final replaces = state.failedReplaces;
     if (failed == null || state.isSending) return;
-    // The box's pages but the failed words, which this sends.
-    final rest = [
-      for (final page in state.draftPages.pages)
-        if (page.text.trim() != failed) page,
-    ];
     state = state.copyWith(isSending: true);
     try {
       final service = ref.read(frontChatServiceProvider);
@@ -457,13 +477,15 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         await service.retryMessage(messageId: messageId);
       }
       _reproject();
-      state = state.settled(aside: rest);
+      state = _settledWithout(failed, replaces);
     } on FrontChatTurnException catch (error) {
       _reproject();
+      // The box as it is now: the words are on the failure, and whatever
+      // was typed while it was retried stays.
       state = state.settled(
-        draft: failed,
-        editingMessageId: replaces,
-        aside: rest,
+        draft: state.draft,
+        editingMessageId: state.editingMessageId,
+        aside: state.asideDrafts,
         failedMessage: failed,
         failedMessageId: error.messageId ?? messageId,
         failedConversationId: typedIn,
@@ -474,9 +496,9 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
       );
     } catch (_) {
       state = state.settled(
-        draft: failed,
-        editingMessageId: replaces,
-        aside: rest,
+        draft: state.draft,
+        editingMessageId: state.editingMessageId,
+        aside: state.asideDrafts,
         failedMessage: failed,
         failedMessageId: messageId,
         failedConversationId: typedIn,
@@ -484,6 +506,28 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         failedReplaces: replaces,
       );
     }
+  }
+
+  /// The state once a retry of [failed] went through: the page it was put
+  /// back on — the last with its words and edit, never another that only
+  /// shares its words — leaves the box, and the box shows the page before
+  /// it if it was in it. Anything typed while the retry ran stays.
+  FrontChatComposerState _settledWithout(String failed, String? replaces) {
+    final pages = state.draftPages;
+    final sent = pages.pages.lastIndexWhere(
+      (page) => page.text.trim() == failed && page.editingMessageId == replaces,
+    );
+    final others = [
+      for (var i = 0; i < pages.pages.length; i++)
+        if (i != sent && i != pages.index) pages.pages[i],
+    ];
+    return sent == pages.index
+        ? state.settled(aside: others)
+        : state.settled(
+            draft: state.draft,
+            editingMessageId: state.editingMessageId,
+            aside: others,
+          );
   }
 
   /// The conversation a send lands in: the active one, pinned, so a newer

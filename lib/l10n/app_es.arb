@@ -3146,7 +3146,7 @@
   "frontChatInboxTitle": "Bandeja",
   "frontChatMessageActions": "Acciones del mensaje",
   "frontChatMessageBusy": "Todavía en marcha",
-  "frontChatMessageBusyHint": "Detén primero al acompañante para editarlo.",
+  "frontChatMessageBusyHint": "Detén primero al acompañante para editar el mensaje.",
   "frontChatMessageCopied": "Mensaje copiado",
   "frontChatMessageCopy": "Copiar",
   "frontChatMessageEdit": "Editar",

@@ -246,6 +246,7 @@ void main() {
       id: id,
       kind: AgentMessageKind.action,
       toolName: FrontAgentToolNames.replyToUser,
+      runKey: 'run-$id',
       operationId: turnId,
       content: {'text': text},
       createdAt: at,
@@ -284,6 +285,19 @@ void main() {
 
       expect(thread.messages.map((m) => m.id), ['u1', 'u2', 'r2']);
       expect(thread.stoppedMessageIds, {'u1'});
+      // Neither waits on her: one stopped, one answered.
+      expect(thread.pendingMessageIds, isEmpty);
+    });
+
+    test('a turn neither answered nor stopped waits on her, whichever device '
+        'works on it', () async {
+      userTurn('u1', 'Count the hatchlings', at: DateTime(2026, 11, 1, 9));
+      reply('r1', 'u1', 'Forty-two.', DateTime(2026, 11, 1, 9, 1));
+      userTurn('u2', 'Count the eggs', at: DateTime(2026, 11, 1, 9, 2));
+
+      final thread = await builder.build(conversationId: earlierConversationId);
+
+      expect(thread.pendingMessageIds, {'u2'});
     });
 
     test(
@@ -326,6 +340,8 @@ void main() {
 
       expect(thread.messages.map((m) => m.id), ['u2', 'r2', 'u3', 'r3']);
       expect(thread.surfacesByMessageId.keys, isNot(contains('r1')));
+      // Its run was spent all the same: the conversation's cost keeps it.
+      expect(thread.runKeys, containsAll(['run-r1', 'run-r2', 'run-r3']));
     });
 
     test('a reply that lands after the edit was sent goes with the turn it '

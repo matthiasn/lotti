@@ -148,6 +148,8 @@ extension WakeDrainEngine on WakeOrchestrator {
   void _requeueHeldBack(List<WakeJob> heldBack) {
     for (final job in heldBack) {
       _heldBackJobs.remove(job.runKey);
+      // Cancelled while held: its completion is already out.
+      if (_cancelledHeldBackRunKeys.remove(job.runKey)) continue;
       queue.requeue(job);
     }
     heldBack.clear();

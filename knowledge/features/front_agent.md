@@ -1161,18 +1161,32 @@ once it is durable — `sendingMessageId`, also set by a retry — and
 1. **records the stop** — an `action` row with `toolName: reply_to_user`,
    `operationId` the turn, and a payload of only `{stopped: true}`
    (`frontTurnStoppedKey`), under ids derived from the turn
-   (`frontChatStopMessageId`, `frontChatStopPayloadId`), so a stop pressed
-   twice or on two devices is one record. It is an answer row
-   (`isFrontAnswerRow`), so `pendingMessageIds` drops the turn and
-   maintenance never re-arms it; an older build, which shows no empty
-   reply, shows nothing for it;
+   (`frontChatStopMessageId`, `frontChatStopPayloadId`, in
+   `front_conversation.dart`), so a stop pressed twice or on two devices is
+   one record, and its presence alone says the turn was stopped. It is an
+   answer row (`isFrontAnswerRow`), and `pendingMessageIds` skips a stopped
+   turn even when its dispatch has doors left to walk, so maintenance never
+   re-arms it; `FrontDoorWalker.walk` asks for the stop record before each
+   door, so a stop that lands mid-walk ends it there. An older build, which
+   shows no empty reply, shows nothing for it;
 2. **consumes the turn's recovery record**, so no lease routes it;
 3. **cancels its wake** when this device is waiting on one, by run key
-   (`WakeOrchestrator.cancelWake`): dropped from the queue or the drain
-   with an aborted completion, or aborted if it is the run in flight — any
-   other wake of hers is left alone. The waiting `retryMessage` sees its
-   turn in `_stopped` and returns instead of throwing, so the composer
-   settles with nothing failed and no *Try again*.
+   (`WakeOrchestrator.cancelWake`): dropped from the queue, from the
+   drain, or from a drain pass that holds it back behind another of her
+   runs (`_cancelledHeldBackRunKeys`, so the pass does not requeue it) —
+   each with an aborted completion — or aborted if it is the run in
+   flight; any other wake of hers is left alone. The waiting
+   `retryMessage` returns instead of throwing once the stop is recorded
+   (`_stopping`): a wake that ends while the stop is still being written
+   waits for the write, and one that ends after a failed write is a
+   failure as ever. The composer settles with nothing failed and no
+   *Try again*.
+
+The cancel and the thread's notification run even when consuming the
+recovery record fails. A stop of a turn this device is not waiting on —
+the warning's *Stop* on a turn another device works on — is written only
+while the turn still needs her (`FrontChatHistoryService.pendingMessageIds`),
+so a Stop pressed after she finished stops nothing.
 
 A wake that answers before the cancel lands keeps its answer: the thread
 builder lists a turn in `FrontChatThread.stoppedMessageIds` only when no
@@ -1181,7 +1195,7 @@ answer synced in after later turns still counts. A stopped turn she never
 answered, and every stop record, stay out of her recent turns
 (`_recentTurns`); one she answered stays there with its answer, as the
 thread shows it. A conversation's preview reads past a stop to her latest
-words.
+words, and past her answer to a turn an edit replaced.
 
 ```mermaid
 stateDiagram-v2
@@ -1208,8 +1222,13 @@ with a toast) and *Edit*, which puts the words in the box
 The window sits on the card surface (`dsCardSurface`, through
 `DesignSystemContextMenuAnchor.surfaceColor`) with its edge drawn
 (`outlined`), off the thread's base level and apart from her bubbles. A
-long press on the turn she is working on opens no window but warns it
-cannot be edited until stopped, with a *Stop* action on the warning. On a
+long press on a turn still waiting on her opens no window but warns it
+cannot be edited until stopped, with a *Stop* action on the warning that
+stops that turn (`FrontChatController.stop(turnId)`). Waiting is read from
+the thread, not from this device's memory: `FrontChatThread.pendingMessageIds`
+lists every visible turn neither answered nor stopped, so a turn another
+device is working on — or this one was, before a restart — cannot be edited
+into running twice. On a
 desktop the same actions are icons beside the bubble, shown while the
 pointer is over it or focus is in them and taking no taps while hidden,
 their room kept so nothing shifts; while she works on the turn *Edit* is
@@ -1228,8 +1247,12 @@ however late they land — and its doors' cards; what those doors did (a task
 filed, a person asked) is done all the same. Her recent turns
 (`_recentTurns`) drop the replaced turn and her answer too, so she answers
 the edit without the words it corrected; the tasks they made stay among her
-conversation's tasks. An older build, which does not read the key, shows
-both turns.
+conversation's tasks, and their runs stay in the conversation's cost
+(`FrontChatThread.runKeys` is collected before the removal). An edit only
+replaces a turn of its own conversation — `appendMessage` drops a
+`replaces` that names any other — and the inbox, which lists turns of
+every conversation, offers no *Edit*. An older build, which does not read
+the key, shows both turns.
 
 Edit never throws away what the box held. The box is a set of pages
 (`FrontDraftPages`, in `front_draft_pages.dart`): the composer state keeps
@@ -1238,10 +1261,19 @@ the page in the box as `draft` and `editingMessageId`, and the others as
 already typed adds the edited turn's words as a new last page — or shows
 the page it is already on — and a pager (`FrontDraftPager`, ‹ 2/2 ›) at the
 start of the box flips between them (`showDraftPage`); a page left blank is
-dropped once another is shown. Only the page in the box is sent, so the
+dropped once another is shown. A *Try again* sends the failed words and
+takes back only the page they were put back on — matched by words and edit
+together, the last such page — never another that only shares its words.
+Only the page in the box is sent, so the
 edit replaces its turn only when sent from its own page. A send sets the
 other pages aside and puts them back once it settles, the last in the box —
-so sending the edit brings back what was typed before it. The pages, edit
+so sending the edit brings back what was typed before it — followed by any
+page made while it was on its way; a failure puts its words back a page
+behind whatever was typed since, still the edit. If the user has switched
+conversations meanwhile, those pages go to the parked pages of the one the
+send came from and the box shown is left alone. A retry reconciles with
+the box as it is when it settles: it removes only its own page on
+success, and leaves the box untouched on failure. The pages, edit
 included, stay with their conversation when the user switches.
 
 # What a turn leaves behind

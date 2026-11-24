@@ -7634,7 +7634,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontChatMessageBusyHint =>
-      'Opriți mai întâi însoțitorul pentru a-l edita.';
+      'Opriți mai întâi însoțitorul pentru a edita mesajul.';
 
   @override
   String get frontChatMessageCopied => 'Mesaj copiat';

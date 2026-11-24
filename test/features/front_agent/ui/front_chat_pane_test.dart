@@ -901,6 +901,33 @@ void main() {
   group('stopping a turn', () {
     const words = 'Count the hatchlings';
 
+    testWidgets('a turn waiting on her that this device did not send — '
+        'after a restart, or on another device — cannot be edited, and the '
+        "warning's Stop stops that turn", (tester) async {
+      when(
+        () => chatService.stopMessage(messageId: 'u1'),
+      ).thenAnswer((_) async {});
+      await pumpPane(
+        tester,
+        thread: () async => FrontChatThread(
+          messages: [message('u1', AgentChatRole.user, words, now)],
+          pendingMessageIds: const {'u1'},
+        ),
+      );
+
+      await tester.longPress(find.text(words).first);
+      // The warning slides in before its Stop can be tapped.
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Still working on this'), findsOneWidget);
+      expect(find.text('Edit'), findsNothing);
+
+      await tester.tap(find.text('Stop'));
+      await tester.pump();
+
+      verify(() => chatService.stopMessage(messageId: 'u1')).called(1);
+    });
+
     testWidgets('Edit over words already typed keeps them a page back, and '
         'the arrow flips to them', (tester) async {
       const typed = 'Also check the ridge nests';
@@ -967,7 +994,10 @@ void main() {
       await tester.longPress(find.text(words));
       await tester.pump();
       expect(find.text('Still working on this'), findsOneWidget);
-      expect(find.text('Stop the companion first to edit it.'), findsOneWidget);
+      expect(
+        find.text('Stop the companion first to edit this message.'),
+        findsOneWidget,
+      );
       expect(find.text('Edit'), findsNothing);
 
       await tester.tap(find.byKey(DesignSystemChatInputKeys.stop));
@@ -1742,6 +1772,18 @@ void main() {
       );
       await settleDrawer(tester);
       expect(find.text('Fine.'), findsOneWidget);
+    });
+
+    testWidgets('in the inbox your messages can be copied, not edited: an '
+        "edit is made in the message's own conversation", (tester) async {
+      await pumpPane(tester, thread: () async => waiting());
+      await openInbox(tester);
+
+      await tester.longPress(find.text('The hinge arrived.').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Copy'), findsOneWidget);
+      expect(find.text('Edit'), findsNothing);
     });
 
     testWidgets('back closes the drawer, then leaves the inbox, before the '

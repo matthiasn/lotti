@@ -39,6 +39,7 @@ void main() {
     FrontUserMessageStatus status, {
     bool desktop = false,
     VoidCallback? onStop,
+    bool editable = true,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -47,7 +48,7 @@ void main() {
             messageId: id,
             text: words,
             status: status,
-            onEdit: edited.add,
+            onEdit: editable ? edited.add : null,
             onStop: onStop,
             sentAt: DateTime(2026, 11, 23, 14, 4),
             bubble: const SizedBox(
@@ -166,7 +167,10 @@ void main() {
       await longPress(tester);
 
       expect(find.text('Still working on this'), findsOneWidget);
-      expect(find.text('Stop the companion first to edit it.'), findsOneWidget);
+      expect(
+        find.text('Stop the companion first to edit this message.'),
+        findsOneWidget,
+      );
       expect(find.byKey(FrontChatUserMessageKeys.menuCopy(id)), findsNothing);
     });
 
@@ -209,6 +213,25 @@ void main() {
       expect(find.byKey(FrontChatUserMessageKeys.menuEdit(id)), findsOneWidget);
       semantics.dispose();
     });
+  });
+
+  testWidgets('where it cannot be edited from — the inbox — only Copy is '
+      'offered', (tester) async {
+    await pump(tester, FrontUserMessageStatus.settled, editable: false);
+    await longPress(tester);
+    expect(find.byKey(FrontChatUserMessageKeys.menuCopy(id)), findsOneWidget);
+    expect(find.byKey(FrontChatUserMessageKeys.menuEdit(id)), findsNothing);
+    await tester.tapAt(Offset.zero);
+    await tester.pumpAndSettle();
+
+    await pump(
+      tester,
+      FrontUserMessageStatus.settled,
+      editable: false,
+      desktop: true,
+    );
+    expect(find.byKey(FrontChatUserMessageKeys.copy(id)), findsOneWidget);
+    expect(find.byKey(FrontChatUserMessageKeys.edit(id)), findsNothing);
   });
 
   group('on a desktop', () {
@@ -287,7 +310,7 @@ void main() {
       final edit = tester.widget<DesignSystemIconAction>(
         find.byKey(FrontChatUserMessageKeys.edit(id)),
       );
-      expect(edit.tooltip, 'Stop the companion first to edit it.');
+      expect(edit.tooltip, 'Stop the companion first to edit this message.');
       // Dimmed, so it reads unavailable before it is clicked.
       expect(
         tester

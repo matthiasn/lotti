@@ -12728,7 +12728,7 @@ abstract class AppLocalizations {
   /// Toast line and tooltip saying the user must stop the companion before editing the message
   ///
   /// In en, this message translates to:
-  /// **'Stop the companion first to edit it.'**
+  /// **'Stop the companion first to edit this message.'**
   String get frontChatMessageBusyHint;
 
   /// Toast after a companion chat message was copied.

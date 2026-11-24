@@ -65,6 +65,13 @@ void main() {
     expect(frontTurnStopped(const {frontTurnStoppedKey: false}), isFalse);
   });
 
+  test('a stop pressed twice, or on two devices, is one record', () {
+    expect(frontChatStopMessageId('m-1'), frontChatStopMessageId('m-1'));
+    expect(frontChatStopPayloadId('m-1'), frontChatStopPayloadId('m-1'));
+    expect(frontChatStopMessageId('m-1'), isNot(frontChatStopMessageId('m-2')));
+    expect(frontChatStopMessageId('m-1'), isNot(frontChatStopPayloadId('m-1')));
+  });
+
   test('a turn names the stopped turn it replaces only by a non-empty id', () {
     expect(frontTurnReplaces(const {frontTurnReplacesKey: 'u1'}), 'u1');
     expect(frontTurnReplaces(const {'text': 'Count the eggs'}), isNull);

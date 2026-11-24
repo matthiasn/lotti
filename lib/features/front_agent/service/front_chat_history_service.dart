@@ -2,6 +2,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
@@ -43,13 +44,16 @@ class FrontChatHistoryService {
   /// recovery record is consumed when its wake is enqueued, before the
   /// doors finish, so a walk that died after the dispatch was written must
   /// stay eligible for the next recovery pass — which walks the doors
-  /// without routing the turn again.
+  /// without routing the turn again. A turn the user stopped needs nothing
+  /// more, whatever its doors: the stop ends it.
   Future<List<String>> pendingMessageIds() async {
     final messages = await _liveMessages();
     final answered = _answeredIds(messages);
+    final ids = {for (final message in messages) message.id};
     final pending = <String>[];
     for (final message in messages) {
       if (!isFrontUserTurn(message)) continue;
+      if (ids.contains(frontChatStopMessageId(message.id))) continue;
       if (!answered.contains(message.id) ||
           await _doorsUnfinished(message.id, messages)) {
         pending.add(message.id);

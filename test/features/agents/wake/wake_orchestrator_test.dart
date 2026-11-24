@@ -109,6 +109,53 @@ void main() {
         });
       });
 
+      test('a run the drain holds back is dropped, not requeued, and its '
+          'waiters are told it was aborted', () {
+        fakeAsync((async) {
+          final policyA = Completer<AgentDomainEntity?>();
+          final policyB = Completer<AgentDomainEntity?>();
+          final completions = <WakeRunCompletion>[];
+          when(
+            () => mockRepository.getEntity('agent-a'),
+          ).thenAnswer((_) => policyA.future);
+          when(
+            () => mockRepository.getEntity('agent-b'),
+          ).thenAnswer((_) => policyB.future);
+          orchestrator.wakeExecutor = (_, _, _, _) => Future.value(const {});
+          final sub = orchestrator.runCompletions.listen(completions.add);
+          queue
+            ..enqueue(makeJob(runKey: 'rk-a', agentId: 'agent-a'))
+            ..enqueue(makeJob(runKey: 'rk-b', agentId: 'agent-b'));
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+          // agent-a's throttle arms while its policy read is in flight, so
+          // the drain holds its job back and moves on to agent-b.
+          orchestrator.setThrottleDeadline(
+            'agent-a',
+            clock.now().add(const Duration(minutes: 2)),
+          );
+          policyA.complete(null);
+          async.flushMicrotasks();
+          expect(orchestrator.hasPendingOrActiveWake('agent-a'), isTrue);
+
+          // Another agent's run of that key is not this one.
+          expect(orchestrator.cancelWake('agent-b', 'rk-a'), isFalse);
+          expect(orchestrator.cancelWake('agent-a', 'rk-a'), isTrue);
+          async.flushMicrotasks();
+          expect(
+            completions.map((c) => (c.runKey, c.status)),
+            [('rk-a', WakeRunStatus.aborted)],
+          );
+
+          policyB.complete(null);
+          async.flushMicrotasks();
+          expect(queue.hasJobWhere((job) => job.runKey == 'rk-a'), isFalse);
+          expect(orchestrator.hasPendingOrActiveWake('agent-a'), isFalse);
+          unawaited(sub.cancel());
+          async.flushMicrotasks();
+        });
+      });
+
       test('aborts the run in flight only when it is the one named', () {
         fakeAsync((async) {
           final executor = Completer<Map<String, VectorClock>?>();

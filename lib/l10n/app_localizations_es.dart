@@ -7601,7 +7601,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get frontChatMessageBusyHint =>
-      'Detén primero al acompañante para editarlo.';
+      'Detén primero al acompañante para editar el mensaje.';
 
   @override
   String get frontChatMessageCopied => 'Mensaje copiado';

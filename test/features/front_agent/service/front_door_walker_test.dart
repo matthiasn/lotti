@@ -510,6 +510,73 @@ void main() {
     });
   });
 
+  group('a turn the user stopped', () {
+    List<FrontDispatchSegment> twoProposals() => [
+      for (final (start, end) in [(0, 9), (30, 39)])
+        segment(
+          start: start,
+          end: end,
+          kind: FrontDestinationKind.task,
+          id: 'garden',
+          intent: FrontSegmentIntent.instruction,
+        ),
+    ];
+
+    AgentMessageEntity stopRecord() => makeTestMessage(
+      id: frontChatStopMessageId(messageId),
+      agentId: frontAgentId,
+      kind: AgentMessageKind.action,
+      metadata: const AgentMessageMetadata(
+        toolName: FrontAgentToolNames.replyToUser,
+        operationId: messageId,
+      ),
+    );
+
+    setUp(() {
+      taskAgents['garden'] = makeTestIdentity(
+        id: 'agent-garden',
+        agentId: 'agent-garden',
+      );
+    });
+
+    test('walks none of its doors', () async {
+      seedDispatch(twoProposals());
+      when(
+        () => repository.getEntity(frontChatStopMessageId(messageId)),
+      ).thenAnswer((_) async => stopRecord());
+
+      await walker.walk(messageId);
+
+      expect(doors(), isEmpty);
+    });
+
+    test('mid-walk walks no further door', () async {
+      seedDispatch(twoProposals());
+      var asked = 0;
+      // Not stopped before the first door; stopped by the second.
+      when(
+        () => repository.getEntity(frontChatStopMessageId(messageId)),
+      ).thenAnswer((_) async => asked++ == 0 ? null : stopRecord());
+
+      await walker.walk(messageId);
+
+      expect(doors().keys, [0]);
+    });
+
+    test('a stop record since deleted stops nothing', () async {
+      seedDispatch(twoProposals());
+      when(
+        () => repository.getEntity(frontChatStopMessageId(messageId)),
+      ).thenAnswer(
+        (_) async => stopRecord().copyWith(deletedAt: DateTime(2026, 11, 24)),
+      );
+
+      await walker.walk(messageId);
+
+      expect(doors().keys, [0, 1]);
+    });
+  });
+
   group('statements and instructions', () {
     test('under a task become a proposal that waits for the user, nothing '
         'written', () async {
