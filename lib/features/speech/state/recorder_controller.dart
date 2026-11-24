@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/audio_note.dart';
@@ -78,6 +79,21 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   bool _terminalActionInProgress = false;
   bool _startInProgress = false;
   final Map<String, _DeferredAutomation> _deferredAutomation = {};
+  final StreamController<String?> _takeEnded =
+      StreamController<String?>.broadcast(sync: true);
+
+  /// Every take that ends, whoever ended it: the audio entry's id for one
+  /// saved, `null` for one discarded or that could not be saved. For a
+  /// surface that started a take and must hear how it ended even when
+  /// another host stopped it — the recording strip's session.
+  Stream<String?> get takeEnded => _takeEnded.stream;
+
+  /// Tells [takeEnded] a take ended as [entryId]. Called by [stop] and
+  /// [cancel]; a subclass that replaces them calls it the same way.
+  @protected
+  void reportTakeEnded(String? entryId) {
+    if (!_takeEnded.isClosed) _takeEnded.add(entryId);
+  }
 
   /// Whether a stop or cancel is in flight. Once either has claimed the
   /// take, the other returns at once without doing anything — so a host
@@ -121,6 +137,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
 
     ref.onDispose(() async {
       await _amplitudeSub?.cancel();
+      await _takeEnded.close();
     });
 
     // Deliberately no permission probe here. `hasPermission()` *requests* the
@@ -286,6 +303,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
           }
         }
 
+        reportTakeEnded(entryId);
         return entryId;
       }
     } catch (exception, stackTrace) {
@@ -304,6 +322,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     } finally {
       _terminalActionInProgress = false;
     }
+    if (note != null) reportTakeEnded(null);
     return null;
   }
 
@@ -362,6 +381,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         subDomain: 'cancel',
       );
       _terminalActionInProgress = false;
+      reportTakeEnded(null);
     }
   }
 

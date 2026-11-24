@@ -462,6 +462,57 @@ void main() {
         });
       });
 
+      group('takeEnded', () {
+        test(
+          'reports a saved take with its id, a discarded one with null',
+          () async {
+            final controller = container.read(
+              audioRecorderControllerProvider.notifier,
+            );
+            final ended = <String?>[];
+            final sub = controller.takeEnded.listen(ended.add);
+            addTearDown(sub.cancel);
+
+            await controller.record(linkedId: 'linked-task-id');
+            await controller.stop();
+            await controller.record(linkedId: 'linked-task-id');
+            await controller.cancel();
+
+            expect(ended, ['round-trip-entry-id', null]);
+          },
+        );
+
+        test('reports a take that could not be saved with null', () async {
+          when(
+            () => mockAudioRecorderRepository.stopRecording(),
+          ).thenThrow(StateError('recorder gone'));
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          final ended = <String?>[];
+          final sub = controller.takeEnded.listen(ended.add);
+          addTearDown(sub.cancel);
+
+          await controller.record(linkedId: 'linked-task-id');
+          await controller.stop();
+
+          expect(ended, [null]);
+        });
+
+        test('a stop with no take reports nothing', () async {
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          final ended = <String?>[];
+          final sub = controller.takeEnded.listen(ended.add);
+          addTearDown(sub.cancel);
+
+          await controller.stop();
+
+          expect(ended, isEmpty);
+        });
+      });
+
       group('deferred automation (the commit moment)', () {
         List<String> triggeredIds() => verify(
           () => mockTrigger.triggerAutomaticPrompts(

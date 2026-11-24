@@ -145,6 +145,14 @@ class _InlineRecorderState extends ConsumerState<InlineRecorder> {
       // recording strip when it closes still knows its way back.
       origin: captureRecordingOrigin(ref.read, subjectId: widget.linkedId),
     );
+    // A start that failed, or that its host left before it was under way,
+    // has no take drawn in place: give the flag back, or the recording
+    // strip would stay hidden for the next take wherever it starts. A host
+    // that left after its take did start hands that take to the strip the
+    // same way.
+    if (failure != null || leaving()) {
+      _controller.setInlineHostVisible(visible: false);
+    }
     if (!mounted || failure == null) return;
     widget.onFailed(failureOfStart(failure));
   }

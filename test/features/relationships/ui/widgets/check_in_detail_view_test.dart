@@ -713,7 +713,7 @@ void main() {
       );
       expect(scope.canPop, isFalse, reason: 'a live take holds the route');
       // Edit is held too: an edit sheet over a running recorder, with the
-      // floating indicator hidden, was the one door left to the same leak.
+      // recording strip hidden, was the one door left to the same leak.
       expect(editItem(tester).onTap, isNull);
       expect(factTap(tester, 'check-in-topics-tag'), isNull);
       // And the header facts: a picker sheet over a running recorder was
@@ -858,7 +858,7 @@ void main() {
       expect(find.text('Discard recording?'), findsNothing);
     });
 
-    testWidgets('a page torn down mid-take gives the floating indicator back, '
+    testWidgets('a page torn down mid-take gives the recording strip back, '
         'so the escaped recording can still be stopped', (tester) async {
       await startRecording(tester);
       expect(recorder.inlineHostVisibleLog, [true]);

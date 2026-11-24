@@ -578,7 +578,7 @@ void main() {
   // which belongs to no task and no category — so the category gate above
   // always declines it. The goal agent's own automatic-updates switch decides
   // instead, and it decides HERE, on the stop path, because a recording
-  // stopped from the sidebar or the floating indicator never reports back to
+  // stopped from the recording strip never reports back to
   // the composer that opened the recorder.
   group('goal check-in fallback', () {
     const goalEntryId = 'goal-entry-1';

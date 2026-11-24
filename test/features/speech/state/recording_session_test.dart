@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recording_origin.dart';
 import 'package:lotti/features/speech/state/recording_receipt_controller.dart';
@@ -20,8 +21,11 @@ import '../../relationships/helpers/check_in_speech_fakes.dart';
 /// A session wired to a scriptable recorder, a mocked navigation service and
 /// journal, and the real receipt, tray and scroll state.
 class _Bench {
-  _Bench({FakeAudioRecorderController? recorder, bool withNav = true})
-    : recorder = recorder ?? FakeAudioRecorderController() {
+  _Bench({
+    FakeAudioRecorderController? recorder,
+    bool withNav = true,
+    this.profileTranscribes = true,
+  }) : recorder = recorder ?? FakeAudioRecorderController() {
     when(() => nav.activeRoute).thenReturn('/tasks/${testTask.meta.id}');
     when(() => nav.canBeamTo(any())).thenReturn(true);
     when(
@@ -36,11 +40,19 @@ class _Bench {
         journalRepositoryProvider.overrideWithValue(repository),
         journalDbProvider.overrideWithValue(db),
         if (withNav) navServiceProvider.overrideWithValue(nav),
+        hasProfileTranscriptionProvider.overrideWith(
+          (ref, id) async =>
+              profileTranscribes ?? (throw StateError('profiles unreadable')),
+        ),
       ],
     );
   }
 
   final FakeAudioRecorderController recorder;
+
+  /// Whether a transcription profile handles the subject's takes; null for
+  /// a profile lookup that fails.
+  final bool? profileTranscribes;
   final nav = MockNavService();
   final db = MockJournalDb();
   final repository = MockJournalRepository();
@@ -234,6 +246,10 @@ void main() {
         final stopping = bench.session.stop();
         await pumpEventQueue();
         expect(bench.container.read(recordingSavingProvider), isTrue);
+        expect(
+          bench.container.read(recordingSavingProvider.notifier).saving,
+          isTrue,
+        );
 
         bench.recorder.stopGate!.complete();
         await stopping;
@@ -405,6 +421,21 @@ void main() {
       expect(await transcribingAfterStop(), isFalse);
     });
 
+    test('not where no transcription profile handles the subject — the '
+        'rule the Transcribe option follows', () async {
+      bench.container.dispose();
+      bench = _Bench(profileTranscribes: false);
+      bench.startTaskTake().ignore();
+      expect(await transcribingAfterStop(), isFalse);
+    });
+
+    test('not where the profile lookup fails', () async {
+      bench.container.dispose();
+      bench = _Bench(profileTranscribes: null);
+      bench.startTaskTake().ignore();
+      expect(await transcribingAfterStop(), isFalse);
+    });
+
     test('not for a voice note', () async {
       bench.session.start().ignore();
       expect(await transcribingAfterStop(), isFalse);
@@ -468,6 +499,59 @@ void main() {
         expect(bench.receipt, isNull);
         expect(bench.recorder.committedAutomation, ['audio-9']);
         verifyNever(() => bench.nav.beamToNamed(any()));
+      },
+    );
+  });
+
+  group('a take another host ends', () {
+    test('a stop elsewhere answers the take with the saved id', () async {
+      final done = bench.startTaskTake();
+      await pumpEventQueue();
+
+      await bench.recorder.stop();
+
+      expect(await done, 'audio-1');
+      expect(bench.receipt, isNull);
+    });
+
+    test('a discard elsewhere answers the take with null', () async {
+      final done = bench.startTaskTake();
+      await pumpEventQueue();
+
+      await bench.recorder.cancel();
+
+      expect(await done, isNull);
+    });
+
+    test("the session's own stop is not answered twice", () async {
+      final answers = <String?>[];
+      bench.startTaskTake().then(answers.add).ignore();
+      await pumpEventQueue();
+
+      await bench.session.stop();
+      bench.receipts.commit();
+      await pumpEventQueue();
+
+      expect(answers, ['audio-1']);
+    });
+  });
+
+  group('two presses while the first start is on its way', () {
+    test(
+      'the second attaches to the first take instead of replacing it',
+      () async {
+        bench.recorder.recordGate = Completer<void>();
+        final first = bench.startTaskTake();
+        await pumpEventQueue();
+        final second = bench.startTaskTake();
+        bench.recorder.recordGate!.complete();
+        await pumpEventQueue();
+
+        expect(bench.recorder.recordCalls, hasLength(1));
+        await bench.session.stop();
+        bench.receipts.commit();
+        expect(await first, 'audio-1');
+        expect(await second, 'audio-1');
       },
     );
   });

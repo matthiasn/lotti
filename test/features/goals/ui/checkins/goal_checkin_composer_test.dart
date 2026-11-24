@@ -728,7 +728,7 @@ void main() {
     }
 
     testWidgets('dismissed mid-take, the take keeps running and goes back '
-        'to the floating indicator, where it can be stopped', (tester) async {
+        'to the recording strip, where it can be stopped', (tester) async {
       await openSheet(tester, GoalCheckInStart.speaking);
       // The sheet is titled with the goal, so the recorder is never
       // anonymous and no second line has to name it.

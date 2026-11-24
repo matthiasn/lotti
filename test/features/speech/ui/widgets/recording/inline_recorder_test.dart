@@ -99,7 +99,7 @@ void main() {
       .toBoolOrNull()!;
 
   testWidgets('starts recording on mount, linked to the person, with '
-      'transcription left to the caller, and hides the floating indicator', (
+      'transcription left to the caller, and hides the recording strip', (
     tester,
   ) async {
     await pump(tester);
@@ -198,6 +198,26 @@ void main() {
     expect(enabled(tester, 'stop_recording'), isFalse);
     expect(enabled(tester, 'pause_resume_button'), isFalse);
     semantics.dispose();
+  });
+
+  testWidgets('a refused start gives the in-place flag back, so the '
+      'recording strip is not left hidden for the next take', (tester) async {
+    await pump(tester, recordFailure: AudioRecordingFailure.permissionDenied);
+
+    expect(recorder.inlineHostVisibleLog, [true, false]);
+    expect(
+      ProviderScope.containerOf(
+        tester.element(find.byType(InlineRecorder)),
+      ).read(audioRecorderControllerProvider).inlineHostVisible,
+      isFalse,
+    );
+  });
+
+  testWidgets('a start that succeeds keeps the take drawn in place', (
+    tester,
+  ) async {
+    await pump(tester);
+    expect(recorder.inlineHostVisibleLog, [true]);
   });
 
   testWidgets('a start the recorder refuses as busy or failed is a failed '
@@ -339,6 +359,8 @@ void main() {
       AudioRecorderStatus.stopped,
     );
     expect(failed, isEmpty);
+    // Nothing is drawn in place any more: the flag is given back.
+    expect(recorder.inlineHostVisibleLog, [true, false]);
   });
 
   testWidgets('a take already running for this subject is attached to, '

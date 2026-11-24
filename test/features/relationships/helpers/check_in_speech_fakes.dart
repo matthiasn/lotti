@@ -200,6 +200,7 @@ class FakeAudioRecorderController extends AudioRecorderController {
         progress: Duration.zero,
         origin: null,
       );
+      reportTakeEnded(stopResult);
       return stopResult;
     } finally {
       _finishing = false;
@@ -220,6 +221,7 @@ class FakeAudioRecorderController extends AudioRecorderController {
       status: AudioRecorderStatus.stopped,
       progress: Duration.zero,
     );
+    reportTakeEnded(null);
   }
 
   @override

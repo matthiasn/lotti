@@ -1445,8 +1445,11 @@ void main() {
       expect(saveReason(tester), 'Add a few words to save');
       expect(
         recorder.inlineHostVisibleLog,
-        [true, false],
-        reason: 'the floating indicator is given back on a failed start',
+        [true, false, false],
+        reason:
+            'a failed start gives the recording strip back — the recorder '
+            'itself, and the sheet as before; giving it back twice is the '
+            'same as once',
       );
 
       await tester.tap(find.byKey(const ValueKey('check-in-open-settings')));
@@ -2128,7 +2131,7 @@ void main() {
     });
 
     testWidgets('discarded mid-recording, the sheet cancels the take and '
-        'gives the floating indicator back', (tester) async {
+        'gives the recording strip back', (tester) async {
       await openSheet(tester);
       await startDictation(tester);
       expect(recorder.inlineHostVisibleLog, [true]);
