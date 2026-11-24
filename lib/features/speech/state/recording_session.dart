@@ -59,10 +59,6 @@ final recordingSessionProvider = Provider<RecordingSession>(
   name: 'recordingSessionProvider',
 );
 
-/// A take started here, and what its caller asked to happen once it is
-/// committed.
-typedef _Take = ({Completer<String?> done, bool openCreatedEntry});
-
 /// The one way a microphone starts a take: on the recording strip, at once,
 /// with no sheet in between.
 ///
@@ -77,15 +73,13 @@ class RecordingSession {
   RecordingSession(this._ref);
 
   final Ref _ref;
-  _Take? _take;
+
+  /// The take started here, answered when it is committed or dropped.
+  Completer<String?>? _take;
 
   /// True while [stop] saves, so a second Stop — a double tap — cannot stop
   /// again and report a saved take as not saved.
   bool _stopping = false;
-
-  /// Set by [openReceipt] for the commit it causes: a voice note opened
-  /// from its receipt opens its entry whatever its caller asked for.
-  bool _openingReceipt = false;
 
   AudioRecorderController get _recorder =>
       _ref.read(audioRecorderControllerProvider.notifier);
@@ -104,14 +98,13 @@ class RecordingSession {
   /// A receipt still on screen is committed first. [origin] defaults to the
   /// route on screen, with the scroll offset its page reported.
   /// [transcriptionHandledByCaller] keeps the recorder's own automation off
-  /// this take; the caller transcribes it once it hears the id. A take with
-  /// no [linkedId] opens its entry when committed, unless
-  /// [openCreatedEntry] is false — for a caller that links it itself.
+  /// this take; the caller transcribes it once it hears the id. Nothing
+  /// navigates on its own when a take is committed: the receipt's *Open* is
+  /// the one way to its entry.
   Future<String?> start({
     String? linkedId,
     String? categoryId,
     bool transcriptionHandledByCaller = false,
-    bool openCreatedEntry = true,
     RecordingOrigin? origin,
   }) async {
     switch (decideRecordingStart(
@@ -123,16 +116,13 @@ class RecordingSession {
         return null;
       case RecordingStartDecision.attach:
         _tray.open();
-        return _take?.done.future;
+        return _take?.future;
       case RecordingStartDecision.start:
         break;
     }
     _ref.read(recordingReceiptControllerProvider.notifier).commit();
     _tray.fold();
-    final take = (
-      done: Completer<String?>(),
-      openCreatedEntry: openCreatedEntry,
-    );
+    final take = Completer<String?>();
     _take = take;
     _recorder.setCategoryId(categoryId);
     final failure = await _recorder.record(
@@ -144,7 +134,7 @@ class RecordingSession {
       _settle(take, null);
       _tray.openWithFailure(failureOfStart(failure));
     }
-    return take.done.future;
+    return take.future;
   }
 
   /// Stops and saves the running take and puts up its receipt; the take is
@@ -196,11 +186,6 @@ class RecordingSession {
               running.enableSpeechRecognition != false,
           onSettled: (committed) {
             if (take != null) _settle(take, committed);
-            if (committed != null &&
-                subjectId == null &&
-                (_openingReceipt || (take?.openCreatedEntry ?? false))) {
-              _ref.read(navServiceProvider).beamToNamed('/journal/$committed');
-            }
           },
         );
   }
@@ -211,16 +196,13 @@ class RecordingSession {
   Future<void> openReceipt() async {
     final receipt = _ref.read(recordingReceiptControllerProvider);
     if (receipt == null) return;
-    _openingReceipt = true;
-    try {
-      _ref.read(recordingReceiptControllerProvider.notifier).commit();
-    } finally {
-      _openingReceipt = false;
+    _ref.read(recordingReceiptControllerProvider.notifier).commit();
+    if (receipt.subjectId == null) {
+      _ref.read(navServiceProvider).beamToNamed('/journal/${receipt.entryId}');
+      return;
     }
     final origin = receipt.origin;
-    if (receipt.subjectId != null && origin != null) {
-      await returnToOrigin(origin);
-    }
+    if (origin != null) await returnToOrigin(origin);
   }
 
   /// Throws the running take away, after the tray's ✕ was confirmed.
@@ -266,7 +248,7 @@ class RecordingSession {
     return true;
   }
 
-  void _settle(_Take take, String? entryId) {
-    if (!take.done.isCompleted) take.done.complete(entryId);
+  void _settle(Completer<String?> take, String? entryId) {
+    if (!take.isCompleted) take.complete(entryId);
   }
 }

@@ -348,29 +348,20 @@ void main() {
   });
 
   group('a voice note', () {
-    Future<String?> startVoiceNote({bool openCreatedEntry = true}) async {
-      final done = bench.session.start(openCreatedEntry: openCreatedEntry);
+    Future<String?> startVoiceNote() async {
+      final done = bench.session.start();
       await pumpEventQueue();
       await bench.session.stop();
       return done;
     }
 
-    test('opens its entry when committed', () async {
+    test('stays where the user is when its receipt commits on its own — '
+        'only Open goes to its entry', () async {
       final done = startVoiceNote();
       await pumpEventQueue();
       expect(bench.receipt?.subjectTitle, isNull);
-      verifyNever(() => bench.nav.beamToNamed(any()));
 
       bench.receipts.commit();
-      expect(await done, 'audio-1');
-      verify(() => bench.nav.beamToNamed('/journal/audio-1')).called(1);
-    });
-
-    test('stays where it is when its caller links it itself', () async {
-      final done = startVoiceNote(openCreatedEntry: false);
-      await pumpEventQueue();
-      bench.receipts.commit();
-
       expect(await done, 'audio-1');
       verifyNever(() => bench.nav.beamToNamed(any()));
     });
@@ -451,31 +442,31 @@ void main() {
       },
     );
 
-    test("opens a voice note's entry, even for a caller that keeps it "
-        'closed otherwise', () async {
-      bench.session.start(openCreatedEntry: false).ignore();
+    test("opens a voice note's own entry, and commits it", () async {
+      final done = bench.session.start();
       await pumpEventQueue();
       await bench.session.stop();
 
       await bench.session.openReceipt();
 
+      expect(await done, 'audio-1');
       verify(() => bench.nav.beamToNamed('/journal/audio-1')).called(1);
     });
 
     test(
-      'a later voice note committed by its timer stays closed again',
+      'a subject take with no origin is committed and goes nowhere',
       () async {
-        bench.session.start(openCreatedEntry: false).ignore();
-        await pumpEventQueue();
-        await bench.session.stop();
+        bench.receipts.show(
+          entryId: 'audio-9',
+          duration: Duration.zero,
+          subjectId: testTask.meta.id,
+          subjectTitle: 'Task',
+        );
+
         await bench.session.openReceipt();
-        clearInteractions(bench.nav);
 
-        bench.session.start(openCreatedEntry: false).ignore();
-        await pumpEventQueue();
-        await bench.session.stop();
-        bench.receipts.commit();
-
+        expect(bench.receipt, isNull);
+        expect(bench.recorder.committedAutomation, ['audio-9']);
         verifyNever(() => bench.nav.beamToNamed(any()));
       },
     );

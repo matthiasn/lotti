@@ -25,7 +25,6 @@ Future<String?> _recordOnStrip(BuildContext context, {String? categoryId}) =>
         .start(
           categoryId: categoryId,
           transcriptionHandledByCaller: true,
-          openCreatedEntry: false,
         );
 
 /// Records a spoken charter entry for the goal coached by [agentId]
@@ -37,8 +36,8 @@ Future<String?> _recordOnStrip(BuildContext context, {String? categoryId}) =>
 ///
 /// 1. The recording strip saves it with **no parent**. The recorder links a
 ///    recording FROM its parent, and a recording linked from the goal is by
-///    definition a check-in. With no parent the strip must not open the new
-///    entry either (`openCreatedEntry: false`): the user stays on the goal.
+///    definition a check-in. The strip opens nothing on its own: the user
+///    stays on the goal unless they tap the receipt's Open.
 ///    The id arrives when the take is committed — once its receipt is gone
 ///    without an Undo.
 /// 2. `GoalRepository.attachCharterRecording` links it INTO the goal.

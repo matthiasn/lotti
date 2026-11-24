@@ -2556,8 +2556,8 @@ flowchart LR
   `ChatRecorderController` and adds the transcript to the field, answering
   only to a take it started — the goal chat shares that recorder. A
   recording made from the card (`recordGoalCharterEntry`) is a take on the
-  recording strip (`RecordingSession.start`) with **no parent** and
-  `openCreatedEntry: false`; its id arrives only once the take is committed
+  recording strip (`RecordingSession.start`) with **no parent**, and the
+  user stays on the goal; its id arrives only once the take is committed
   — its receipt gone without an Undo, so an undone take is never linked —
   then it is linked by `GoalRepository.attachCharterRecording` and transcribed by
   the caller, since the recorder's own automation keys on a parent. A

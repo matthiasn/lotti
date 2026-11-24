@@ -271,8 +271,8 @@ caller hears `null`; a delete that does not land commits the take after
 all. Nothing is deleted without Undo: if the app dies inside the window the
 entry stays, untranscribed, and reads *Not transcribed · Retry* by the grace
 rule below. **Open** goes back to the origin for a subject's take, or into
-a voice note's own entry; a voice note whose caller left `openCreatedEntry`
-on opens its entry at commit anyway.
+a voice note's own entry. Nothing navigates on its own at commit: Open is
+the only way the receipt moves the user.
 
 ## Back to the exact place
 

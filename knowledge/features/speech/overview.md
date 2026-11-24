@@ -195,11 +195,11 @@ decline instead of skipping. The goal side of this is in
 `RecordingSession.start` returns a future that completes when the take is
 **committed** — its receipt timed out, opened, or replaced by a new take —
 with the audio entry's id, or with `null` when it was discarded, undone or
-never started. There is no sheet route to pop: an unlinked recording opens
-its new entry (`/journal/<id>`) at commit, unless its caller passed
-`openCreatedEntry: false` and links it itself — a goal's charter recording,
-which must not take the parent link that would make it a check-in
-(ADR 0140), and stays on the goal.
+never started. There is no sheet route to pop, and nothing navigates at
+commit: an unlinked recording opens its entry (`/journal/<id>`) only from the
+receipt's *Open*. A caller that links the take itself — a goal's charter
+recording, which must not take the parent link that would make it a check-in
+(ADR 0140) — keeps the user on the goal.
 
 The persisted `JournalAudio` is created from `AudioData` through
 `PersistenceLogic`, and the file lives under `/audio/YYYY-MM-DD/`.
