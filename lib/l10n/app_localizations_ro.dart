@@ -7614,8 +7614,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatMessageActions => 'Acțiuni pentru mesaj';
 
   @override
-  String get frontChatMessageBusy =>
-      'Însoțitorul încă lucrează la acest mesaj. Opriți-l mai întâi pentru a-l edita.';
+  String get frontChatMessageBusy => 'Încă se lucrează la el';
+
+  @override
+  String get frontChatMessageBusyHint =>
+      'Opriți mai întâi însoțitorul pentru a-l edita.';
 
   @override
   String get frontChatMessageCopied => 'Mesaj copiat';

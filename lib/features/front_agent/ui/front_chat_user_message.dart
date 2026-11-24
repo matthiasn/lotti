@@ -6,6 +6,8 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -41,11 +43,12 @@ abstract final class FrontChatUserMessageKeys {
 /// its [text]: copied, and — once stopped — edited, which hands the words to
 /// [onEdit] for the box.
 ///
-/// On a phone the actions are a long press away, in a menu where the finger
-/// is; a long press on a turn she is still working on says it cannot be
-/// edited until it is stopped. On a desktop they show as icons under the
-/// bubble while the pointer is over it or focus is in it, the row's room
-/// kept so nothing shifts; a secondary click opens the same menu there.
+/// On a phone the actions are a long press away, in a menu under the
+/// bubble; a long press on a turn she is still working on says it cannot be
+/// edited until it is stopped. On a desktop they show as icons beside the
+/// bubble while the pointer is over it or focus is in them, their room kept
+/// so nothing shifts — a pencil dimmed while she works, which says the same
+/// when clicked; a secondary click opens the same menu where it was made.
 class FrontChatUserMessage extends StatefulWidget {
   const FrontChatUserMessage({
     required this.messageId,
@@ -53,6 +56,7 @@ class FrontChatUserMessage extends StatefulWidget {
     required this.status,
     required this.onEdit,
     required this.bubble,
+    this.onStop,
     super.key,
   });
 
@@ -61,6 +65,10 @@ class FrontChatUserMessage extends StatefulWidget {
   final FrontUserMessageStatus status;
   final ValueChanged<String> onEdit;
   final Widget bubble;
+
+  /// Stops the turn she is working on — offered on the warning that it
+  /// cannot be edited yet, so the way forward is one tap away.
+  final VoidCallback? onStop;
 
   @override
   State<FrontChatUserMessage> createState() => _FrontChatUserMessageState();
@@ -80,22 +88,39 @@ class _FrontChatUserMessageState extends State<FrontChatUserMessage> {
     context.showToast(
       tone: DesignSystemToastTone.success,
       title: messages.frontChatMessageCopied,
+      replaceCurrent: true,
     );
   }
 
   void _edit() => widget.onEdit(widget.text);
 
-  /// Opens the menu at [position] — or, while she works on the turn, says
-  /// why there is nothing to do with it yet.
-  void _open(Offset position) {
+  /// Says the turn cannot be edited until it is stopped.
+  void _warnBusy() {
+    final messages = context.messages;
+    context.showToast(
+      tone: DesignSystemToastTone.warning,
+      title: messages.frontChatMessageBusy,
+      description: messages.frontChatMessageBusyHint,
+      action: switch (widget.onStop) {
+        final stop? => ToastAction(
+          label: messages.chatInputStopTooltip,
+          onPressed: stop,
+        ),
+        null => null,
+      },
+      replaceCurrent: true,
+    );
+  }
+
+  /// Opens the menu — under the bubble, or at [position] — or, while she
+  /// works on the turn, says why there is nothing to do with it yet.
+  void _open([Offset? position]) {
+    // Felt either way: the press was taken, whatever it can do.
+    HapticFeedback.mediumImpact();
     if (widget.status == FrontUserMessageStatus.working) {
-      context.showToast(
-        tone: DesignSystemToastTone.warning,
-        title: context.messages.frontChatMessageBusy,
-      );
+      _warnBusy();
       return;
     }
-    HapticFeedback.mediumImpact();
     _menu.open(position: position);
   }
 
@@ -110,6 +135,9 @@ class _FrontChatUserMessageState extends State<FrontChatUserMessage> {
     final menu = DesignSystemContextMenuAnchor(
       controller: _menu,
       semanticsLabel: messages.frontChatMessageActions,
+      // Raised off the thread, which sits on the menu's own base level.
+      surfaceColor: dsCardSurface(context),
+      fitContent: true,
       items: [
         DesignSystemContextMenuItem(
           key: FrontChatUserMessageKeys.menuCopy(id),
@@ -127,66 +155,96 @@ class _FrontChatUserMessageState extends State<FrontChatUserMessage> {
       ],
       builder: (context, {required toggle, required isOpen}) => Semantics(
         onLongPressHint: messages.frontChatMessageActions,
-        onLongPress: () => _open(Offset.zero),
+        onLongPress: _open,
         child: GestureDetector(
-          onLongPressStart: (details) => _open(details.localPosition),
+          // Under the bubble, clear of the words it acts on.
+          onLongPress: _open,
           onSecondaryTapUp: (details) => _open(details.localPosition),
-          child: widget.bubble,
+          // The caption rides with the bubble, so the menu opens below both.
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              widget.bubble,
+              if (_stopped)
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.step2,
+                    vertical: tokens.spacing.step1,
+                  ),
+                  // Led by Stop's own mark: what was pressed, and what it did.
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: tokens.spacing.step1,
+                    children: [
+                      Icon(
+                        LottiIconsFilled.square,
+                        size: IconSizes.xs,
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                      Text(
+                        messages.frontChatMessageStopped,
+                        key: FrontChatUserMessageKeys.stopped(id),
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
 
-    final row = <Widget>[
-      if (_stopped)
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
-          child: Text(
-            messages.frontChatMessageStopped,
-            key: FrontChatUserMessageKeys.stopped(id),
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-            ),
-          ),
-        ),
-      if (desktop)
-        // Kept in the tree, so the row keeps its room and the icons stay
+    final working = widget.status == FrontUserMessageStatus.working;
+    final icons = desktop
+        // Kept in the tree, so the bubble keeps its place and the icons stay
         // in the focus order; drawn only while wanted.
-        Focus(
-          canRequestFocus: false,
-          skipTraversal: true,
-          onFocusChange: (focused) => setState(() => _focused = focused),
-          // Hidden icons take no taps — a touch screen at desktop width never
-          // hovers to show them first.
-          child: IgnorePointer(
-            ignoring: !showIcons,
-            child: AnimatedOpacity(
-              opacity: showIcons ? 1 : 0,
-              duration: MotionDurations.short3,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DesignSystemIconAction(
-                    key: FrontChatUserMessageKeys.copy(id),
-                    icon: LottiIcons.copy,
-                    tooltip: messages.frontChatMessageCopy,
-                    onPressed: _copy,
-                  ),
-                  if (widget.status != FrontUserMessageStatus.settled)
+        ? Focus(
+            canRequestFocus: false,
+            skipTraversal: true,
+            onFocusChange: (focused) => setState(() => _focused = focused),
+            // Hidden icons take no taps — a touch screen at desktop width
+            // never hovers to show them first.
+            child: IgnorePointer(
+              ignoring: !showIcons,
+              child: AnimatedOpacity(
+                opacity: showIcons ? 1 : 0,
+                duration: MotionDurations.short3,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     DesignSystemIconAction(
-                      key: FrontChatUserMessageKeys.edit(id),
-                      icon: LottiIcons.edit,
-                      // While she works on it, the tooltip says why not yet.
-                      tooltip: _stopped
-                          ? messages.frontChatMessageEdit
-                          : messages.frontChatMessageBusy,
-                      onPressed: _stopped ? _edit : null,
+                      key: FrontChatUserMessageKeys.copy(id),
+                      icon: LottiIcons.copy,
+                      tooltip: messages.frontChatMessageCopy,
+                      onPressed: _copy,
                     ),
-                ],
+                    if (widget.status != FrontUserMessageStatus.settled)
+                      DesignSystemIconAction(
+                        key: FrontChatUserMessageKeys.edit(id),
+                        icon: LottiIcons.edit,
+                        // While she works on it: dimmed, and a click says why
+                        // not yet — what a long press says on a phone.
+                        tooltip: working
+                            ? messages.frontChatMessageBusyHint
+                            : messages.frontChatMessageEdit,
+                        // The disabled ink and dimming, though still live:
+                        // a click says why not yet.
+                        tone: working ? tokens.colors.text.lowEmphasis : null,
+                        onPressed: working ? _warnBusy : _edit,
+                      ).withDisabledOpacity(
+                        enabled: !working,
+                        disabledOpacity: tokens.colors.text.lowEmphasis.a,
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ),
-    ];
+          )
+        : null;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -195,11 +253,17 @@ class _FrontChatUserMessageState extends State<FrontChatUserMessage> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          menu,
-          if (row.isNotEmpty)
+          if (icons == null)
+            menu
+          else
             Row(
               mainAxisSize: MainAxisSize.min,
-              children: row,
+              // Level with the bubble's top, whatever caption is under it.
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                icons,
+                Flexible(child: menu),
+              ],
             ),
         ],
       ),

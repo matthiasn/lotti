@@ -12695,11 +12695,17 @@ abstract class AppLocalizations {
   /// **'Message actions'**
   String get frontChatMessageActions;
 
-  /// Warning when the user long-presses a message the companion is still working on: it can only be edited once stopped.
+  /// Toast title when the user long-presses their message while the companion is still working on it
   ///
   /// In en, this message translates to:
-  /// **'The companion is still working on this. Stop it first to edit it.'**
+  /// **'Still working on this'**
   String get frontChatMessageBusy;
+
+  /// Toast line and tooltip saying the user must stop the companion before editing the message
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the companion first to edit it.'**
+  String get frontChatMessageBusyHint;
 
   /// Toast after a companion chat message was copied.
   ///

@@ -4751,9 +4751,13 @@
   "@frontChatMessageActions": {
     "description": "Accessibility hint for long-pressing a companion chat message to open its actions."
   },
-  "frontChatMessageBusy": "The companion is still working on this. Stop it first to edit it.",
+  "frontChatMessageBusy": "Still working on this",
   "@frontChatMessageBusy": {
-    "description": "Warning when the user long-presses a message the companion is still working on: it can only be edited once stopped."
+    "description": "Toast title when the user long-presses their message while the companion is still working on it"
+  },
+  "frontChatMessageBusyHint": "Stop the companion first to edit it.",
+  "@frontChatMessageBusyHint": {
+    "description": "Toast line and tooltip saying the user must stop the companion before editing the message"
   },
   "frontChatMessageCopied": "Message copied",
   "@frontChatMessageCopied": {

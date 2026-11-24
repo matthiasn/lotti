@@ -548,7 +548,7 @@ class _ControlsRow extends StatelessWidget {
         ] else if (onStop case final stop?)
           DesignSystemChatInputDisc(
             key: DesignSystemChatInputKeys.stop,
-            icon: LottiIcons.stop,
+            icon: LottiIconsFilled.square,
             tooltip: messages.chatInputStopTooltip,
             primary: true,
             onPressed: stop,

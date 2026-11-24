@@ -7497,8 +7497,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatMessageActions => 'Meddelandeåtgärder';
 
   @override
-  String get frontChatMessageBusy =>
-      'Följeslagaren arbetar fortfarande med det. Stoppa den först för att redigera det.';
+  String get frontChatMessageBusy => 'Arbetar fortfarande med det';
+
+  @override
+  String get frontChatMessageBusyHint =>
+      'Stoppa följeslagaren först för att redigera det.';
 
   @override
   String get frontChatMessageCopied => 'Meddelandet kopierat';

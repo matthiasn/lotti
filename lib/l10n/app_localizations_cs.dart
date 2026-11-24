@@ -7584,8 +7584,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatMessageActions => 'Akce se zprávou';
 
   @override
-  String get frontChatMessageBusy =>
-      'Společník na tom ještě pracuje. Nejdřív ho zastav, pak to můžeš upravit.';
+  String get frontChatMessageBusy => 'Ještě se na tom pracuje';
+
+  @override
+  String get frontChatMessageBusyHint =>
+      'Nejdřív zastav společníka, pak to můžeš upravit.';
 
   @override
   String get frontChatMessageCopied => 'Zpráva zkopírována';

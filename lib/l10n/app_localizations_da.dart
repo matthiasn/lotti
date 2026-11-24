@@ -7481,8 +7481,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatMessageActions => 'Beskedhandlinger';
 
   @override
-  String get frontChatMessageBusy =>
-      'Ledsageren arbejder stadig på det. Stop den først, så kan du redigere det.';
+  String get frontChatMessageBusy => 'Arbejder stadig på det';
+
+  @override
+  String get frontChatMessageBusyHint =>
+      'Stop ledsageren først, så kan du redigere det.';
 
   @override
   String get frontChatMessageCopied => 'Besked kopieret';

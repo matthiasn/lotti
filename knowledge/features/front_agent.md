@@ -1194,15 +1194,19 @@ stateDiagram-v2
 
 On the surface each of the user's bubbles is wrapped by
 `FrontChatUserMessage` (`AgentChatView.userMessageDecorator`): a *Stopped*
-caption under a stopped turn; on a phone a long press — or a secondary
-click — opens a menu at the finger with *Copy* (to the clipboard, with a
+caption, led by Stop's filled square, under a stopped turn; on a phone a
+long press opens a menu under the bubble and its caption — a secondary
+click opens it where the pointer is — with *Copy* (to the clipboard, with a
 toast) and, on a stopped turn, *Edit*, which puts the words in the box
-(`FrontChatController.edit`); a long
-press on the turn she is working on opens no menu but warns it cannot be
-edited until stopped. On a desktop the same actions are icons under the
-bubble, shown while the pointer is over it or focus is in them, their room
-kept so nothing shifts; *Edit* is off, its tooltip saying why, while she
-works on the turn, and absent on an answered one.
+(`FrontChatController.edit`). The menu sits on the card surface
+(`dsCardSurface`, through `DesignSystemContextMenuAnchor.surfaceColor`), off
+the thread's base level. A long press on the turn she is working on opens
+no menu but warns it cannot be edited until stopped, with a *Stop* action
+on the warning. On a desktop the same actions are icons beside the bubble,
+shown while the pointer is over it or focus is in them and taking no taps
+while hidden, their room kept so nothing shifts; while she works on the
+turn *Edit* is dimmed and a click on it gives the same warning, and on an
+answered turn it is absent.
 
 The edit, sent, takes the stopped turn's place. The controller holds the
 turn as `editingMessageId` while the box has words in it — emptying the box

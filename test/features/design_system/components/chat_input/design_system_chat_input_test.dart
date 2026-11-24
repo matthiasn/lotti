@@ -396,6 +396,14 @@ void main() {
       expect(find.byKey(DesignSystemChatInputKeys.mic), findsNothing);
       expect(find.byKey(DesignSystemChatInputKeys.send), findsNothing);
       expect(find.byTooltip('Stop'), findsOneWidget);
+      // A filled square: the media stop, not an empty box.
+      expect(
+        find.descendant(
+          of: find.byKey(DesignSystemChatInputKeys.stop),
+          matching: find.byIcon(LottiIconsFilled.square),
+        ),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byKey(DesignSystemChatInputKeys.stop));
       await tester.pump();

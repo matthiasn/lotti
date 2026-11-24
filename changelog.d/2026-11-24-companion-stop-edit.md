@@ -8,5 +8,5 @@
   words back in the chat box so you can change them and send them again,
   and the edited message takes the stopped one's place.
   Long-pressing a message she is still working on tells you to stop it
-  first. On a desktop, the same actions appear as small icons under your
-  message when you point at it.
+  first, with a **Stop** button right there. On a desktop, the same actions
+  appear as small icons beside your message when you point at it.

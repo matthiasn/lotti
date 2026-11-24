@@ -7581,8 +7581,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontChatMessageActions => 'Acciones del mensaje';
 
   @override
-  String get frontChatMessageBusy =>
-      'El acompañante todavía está trabajando en esto. Detenlo primero para editarlo.';
+  String get frontChatMessageBusy => 'Todavía en marcha';
+
+  @override
+  String get frontChatMessageBusyHint =>
+      'Detén primero al acompañante para editarlo.';
 
   @override
   String get frontChatMessageCopied => 'Mensaje copiado';

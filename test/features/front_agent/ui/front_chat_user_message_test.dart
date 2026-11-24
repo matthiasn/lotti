@@ -35,6 +35,7 @@ void main() {
     WidgetTester tester,
     FrontUserMessageStatus status, {
     bool desktop = false,
+    VoidCallback? onStop,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -44,6 +45,7 @@ void main() {
             text: words,
             status: status,
             onEdit: edited.add,
+            onStop: onStop,
             bubble: const SizedBox(
               key: Key('bubble'),
               width: 240,
@@ -83,6 +85,15 @@ void main() {
 
       await longPress(tester);
       expect(find.byKey(FrontChatUserMessageKeys.menuCopy(id)), findsOneWidget);
+      // Under the bubble and its caption, clear of the words it acts on.
+      expect(
+        tester.getTopLeft(find.byKey(FrontChatUserMessageKeys.menuCopy(id))).dy,
+        greaterThan(
+          tester
+              .getBottomLeft(find.byKey(FrontChatUserMessageKeys.stopped(id)))
+              .dy,
+        ),
+      );
 
       await tester.tap(find.byKey(FrontChatUserMessageKeys.menuEdit(id)));
       await tester.pumpAndSettle();
@@ -121,13 +132,25 @@ void main() {
 
       await longPress(tester);
 
-      expect(
-        find.text(
-          'The companion is still working on this. Stop it first to edit it.',
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('Still working on this'), findsOneWidget);
+      expect(find.text('Stop the companion first to edit it.'), findsOneWidget);
       expect(find.byKey(FrontChatUserMessageKeys.menuCopy(id)), findsNothing);
+    });
+
+    testWidgets('the warning offers Stop, so the way forward is one tap '
+        'away', (tester) async {
+      var stops = 0;
+      await pump(
+        tester,
+        FrontUserMessageStatus.working,
+        onStop: () => stops++,
+      );
+      await longPress(tester);
+
+      await tester.tap(find.text('Stop'));
+      await tester.pump();
+
+      expect(stops, 1);
     });
 
     testWidgets('no icons under the bubble: the actions are a long press '
@@ -223,19 +246,46 @@ void main() {
       expect(edited, [words]);
     });
 
-    testWidgets('while she works on it, Edit is off and says why', (
-      tester,
-    ) async {
+    testWidgets('while she works on it, Edit is dimmed, and a click says '
+        'why not yet', (tester) async {
       await pump(tester, FrontUserMessageStatus.working, desktop: true);
+      await hover(tester);
 
       final edit = tester.widget<DesignSystemIconAction>(
         find.byKey(FrontChatUserMessageKeys.edit(id)),
       );
-      expect(edit.onPressed, isNull);
+      expect(edit.tooltip, 'Stop the companion first to edit it.');
+      // Dimmed, so it reads unavailable before it is clicked.
       expect(
-        edit.tooltip,
-        'The companion is still working on this. Stop it first to edit it.',
+        tester
+            .widget<Opacity>(
+              find.ancestor(
+                of: find.byKey(FrontChatUserMessageKeys.edit(id)),
+                matching: find.byType(Opacity),
+              ),
+            )
+            .opacity,
+        lessThan(1),
       );
+
+      await tester.tap(find.byKey(FrontChatUserMessageKeys.edit(id)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Still working on this'), findsOneWidget);
+      expect(edited, isEmpty);
+    });
+
+    testWidgets('the icons sit beside the bubble, not under it', (
+      tester,
+    ) async {
+      await pump(tester, FrontUserMessageStatus.stopped, desktop: true);
+
+      final bubble = tester.getRect(find.byKey(const Key('bubble')));
+      final copy = tester.getRect(
+        find.byKey(FrontChatUserMessageKeys.copy(id)),
+      );
+      expect(copy.right, lessThanOrEqualTo(bubble.left));
+      expect(copy.top, lessThan(bubble.bottom));
     });
 
     testWidgets('an answered turn has Copy only', (tester) async {

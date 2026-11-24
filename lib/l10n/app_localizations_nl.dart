@@ -7507,8 +7507,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontChatMessageActions => 'Berichtacties';
 
   @override
-  String get frontChatMessageBusy =>
-      'De metgezel werkt er nog aan. Stop hem eerst om het te bewerken.';
+  String get frontChatMessageBusy => 'Wordt nog aan gewerkt';
+
+  @override
+  String get frontChatMessageBusyHint =>
+      'Stop eerst de metgezel om het te bewerken.';
 
   @override
   String get frontChatMessageCopied => 'Bericht gekopieerd';

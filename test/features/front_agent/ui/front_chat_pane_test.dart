@@ -934,12 +934,8 @@ void main() {
 
       await tester.longPress(find.text(words));
       await tester.pump();
-      expect(
-        find.text(
-          'The companion is still working on this. Stop it first to edit it.',
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('Still working on this'), findsOneWidget);
+      expect(find.text('Stop the companion first to edit it.'), findsOneWidget);
       expect(find.text('Edit'), findsNothing);
 
       await tester.tap(find.byKey(DesignSystemChatInputKeys.stop));
