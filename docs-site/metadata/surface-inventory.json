@@ -1127,8 +1127,8 @@
       "id": "workflow-audio-recording",
       "title": "Audio recording",
       "kind": "workflow",
-      "source": "lib/features/speech/ui/widgets/recording/audio_recording_modal.dart",
-      "sourcePattern": "class AudioRecordingModal",
+      "source": "lib/features/speech/ui/widgets/recording/strip/recording_strip.dart",
+      "sourcePattern": "class RecordingStrip ",
       "locator": "Create audio recording",
       "page": "plan-and-capture/recordings",
       "status": "verified"

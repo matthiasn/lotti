@@ -5,17 +5,25 @@ description: Audio capture, app-wide playback, waveform extraction, and the tran
 resource: ../../../lib/features/speech
 tags: [speech, audio, recording, playback, transcripts]
 status: stable
-generated: { by: claude-code/fable-5.2, at: 2026-11-23T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-24T12:00:00Z }
 stale_after: 2027-02-15
 sources:
   - id: src
     resource: ../../../lib/features/speech
     title: Speech feature source
-    last_modified: 2026-09-09
+    last_modified: 2026-11-24
+  - id: recorder-controller
+    resource: ../../../lib/features/speech/state/recorder_controller.dart
+    title: AudioRecorderController — record, stop with deferred automation, cancel
+    last_modified: 2026-11-24
+  - id: recording-session
+    resource: ../../../lib/features/speech/state/recording_session.dart
+    title: RecordingSession — the one way a microphone starts a take on the strip
+    last_modified: 2026-11-24
   - id: recording-controls
     resource: ../../../lib/features/speech/ui/widgets/recording/recording_controls.dart
     title: The app's one recorder anatomy — level line, clock, transport row
-    last_modified: 2026-10-11
+    last_modified: 2026-11-24
 ---
 
 The speech feature owns audio capture, playback, waveform extraction and
@@ -40,12 +48,14 @@ the persisted summary and rendering its tiers belongs to the journal UI
 
 ```mermaid
 flowchart LR
-  User["User"] --> RecordingUI["AudioRecordingModal / sidebar + mobile indicators"]
+  User["User"] --> RecordingUI["Recording strip, tray and receipt / check-in InlineRecorder"]
   User --> PlaybackUI["AudioPlayerWidget"]
   User --> TranscriptUI["SpeechModalContent"]
   User --> EditorUI["Editor context menu"]
 
-  RecordingUI --> RecorderCtl["AudioRecorderController"]
+  RecordingUI --> Session["RecordingSession + RecordingReceiptController"]
+  Session --> RecorderCtl["AudioRecorderController"]
+  RecordingUI --> RecorderCtl
   RecorderCtl --> RecorderRepo["AudioRecorderRepository"]
   RecorderCtl --> SpeechRepo["SpeechRepository"]
   RecorderCtl --> AutoPrompt["AutomaticPromptTrigger"]
@@ -73,13 +83,11 @@ file-backed recording at 48 kHz, pause/resume, stop/dispose, and **amplitude
 sampling every 20 ms**.
 
 `AudioRecorderController` adds Riverpod state, live dBFS for the recorder's
-level line and the mobile recording pill,
-linked-entry and category context, coordination with app-wide playback,
-persistence through `SpeechRepository`, and optional hand-off to profile-driven
-transcription automation.
-
-**The desktop sidebar row deliberately does not visualize dBFS** — it shows a red
-accent card, a pulsing record dot and elapsed time only.
+level line and the recording strip's bars, linked-entry and category
+context, the take's `RecordingOrigin` (where it started, held while it
+runs), whether a check-in draws the take in place (`inlineHostVisible`),
+coordination with app-wide playback, persistence through `SpeechRepository`,
+and optional hand-off to profile-driven transcription automation.
 
 The recorder draws the level line from that dBFS feed, and nothing else: no
 orb, no VU meter. The whole recorder — the level line and the transport
@@ -87,14 +95,17 @@ row (discard ✕, the red Stop pill carrying the running time, pause ⏸ /
 resume ▶) —
 is `RecordingStage` in
 [`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart),
-laid out in [Recording UI](recording-ui.md), and every surface that records
-— the recording sheet, a person's check-in composer and page and a goal's
-check-in sheet — hosts the one
+laid out in [Recording UI](recording-ui.md). A microphone starts its take
+through `RecordingSession.start`, at once, on the
+[recording strip](recording-ui.md#the-recording-strip), whose tray draws the
+stage; a person's check-in composer and page and a goal's check-in sheet
+record in place with the one
 [`InlineRecorder`](recording-ui.md#the-inline-recorder), which starts the
-take as it mounts. The host keeps the meaning of each act (where a stopped
-take goes, what a discard loses); the controls are inert while a stop or a
-discard is in flight. The stage runs no ticker of its own: the level line
-repaints only when the recorder reports a sample.
+take as it mounts. Both ask one start rule, `decideRecordingStart`. The host
+keeps the meaning of each act (where a stopped take goes, what a discard
+loses); the controls are inert while a stop or a discard is in flight. The
+stage runs no ticker of its own: the level line repaints only when the
+recorder reports a sample.
 
 ## `record()` is a toggle
 
@@ -122,50 +133,56 @@ silence either is logged and never blocks the recording.
 
 Concurrent starts are rejected with `AudioRecordingFailure.busy` before changing
 the linked subject. Permission denial and failed starts return typed failures
-for localized UI feedback rather than silently swallowing the tap. The modal
-also disables Record while initialization is pending. Its startup cancellation
-callback checks route currency as well as mounting, preventing microphone
-startup as soon as dismissal begins, including the exit animation; a late platform start is
-stopped and its partial file discarded. A null stop/save result
-keeps the modal open with an error instead of dismissing as though it succeeded.
-`transcriptionHandledByCaller` hides automation controls and suppresses the
-recorder's automatic trigger for that recording. The flag survives dismissal
-and resets on stop/cancel; it never changes shared preferences. The caller owns
-the explicit request after save. Opening a new recording clears a previous
-category even when its new category is null.
+for localized UI feedback rather than silently swallowing the tap — the
+strip's tray opens on the failure card, a check-in rests on it. An
+`InlineRecorder`'s startup cancellation callback (`shouldCancel`) checks route
+currency as well as mounting, preventing microphone startup as soon as
+dismissal begins, including the exit animation; a late platform start is
+stopped and its partial file discarded. A null stop/save result opens the
+tray on the *not saved* card (or the check-in's) instead of passing as
+though it succeeded. `transcriptionHandledByCaller` hides the *Transcribe*
+option and suppresses the recorder's automatic trigger for that recording.
+The flag survives the take leaving its screen and resets on stop/cancel; it
+never changes shared preferences. The caller owns the explicit request after
+save. Starting a new recording clears a previous category even when its new
+category is null.
 
 
 **Both `stop()` and `cancel()` land in `Stopped`, but only `stop()` persists.**
 `stop()` creates a `JournalAudio` and normally fires automatic prompts; `cancel()` stops
 the recorder, **deletes the partial file** and creates no entry — nothing is
-transcribed and no task agent is woken. The modal's discard control asks for
+transcribed and no task agent is woken. The tray's discard control asks for
 confirmation first, so the page returns to exactly how it looked before.
+Discard lives only in the tray and the check-ins: the strip's own Stop always
+saves, and the receipt's *Undo* is what takes a saved take back.
 
-The modal surfaces `pause()` and `resume()` alongside stop and discard. While
-the microphone is live, its localized recording announcement is exposed as a
-live region so assistive technology receives the transition immediately.
+`stop(deferAutomation: true)` — the strip's stop — saves the entry but holds
+its automatic prompts until the receipt commits the take
+(`commitAutomation`), or forgets them on *Undo* (`dropAutomation`); see
+[the commit moment](recording-ui.md#the-receipt-and-the-commit-moment).
 
 There is no asynchronous recorder initialization state: `build()` returns
-`stopped` immediately. The vestigial `showIndicator` field remains easy to
-misread because the desktop and mobile indicators derive visibility from
-`status == recording && !modalVisible` instead.
+`stopped` immediately. The strip shows while `isTakeActive &&
+!inlineHostVisible`; there is no separate indicator flag.
 
 **`build()` must never touch the microphone.** `AudioRecorderRepository
 .hasPermission()` delegates to the `record` package, where on Android and iOS
 the check *is* the permission request. The app shell watches
-`audioRecorderControllerProvider` to size the recording-indicator strip
-(`lib/beamer/beamer_app.dart`), so the controller is constructed on the first
-frame of any route — a probe in `build()` popped the OS microphone dialog over
+`recordingStripContentProvider`, which watches
+`audioRecorderControllerProvider`, to reserve room for the recording strip
+([`recording_strip_shell.dart`](../../../lib/beamer/chrome/recording_strip_shell.dart)),
+so the controller is constructed on the first frame of any route — a probe in `build()` popped the OS microphone dialog over
 the task list on a fresh install. Permission is requested lazily, in `record()`.
 
 ## Ordinary recordings run automation, and a goal gets its own gate
 
 Unless transcription is handled by its caller, `stop()` hands each linked
 created entry to `AutomaticPromptTrigger`, whichever
-control stopped it — the sheet's stop button, the sidebar's, or the floating
-indicator's. That is why the post-recording decision lives here and not in
-the surface that opened the recorder: a surface only learns of a recording it
-awaited, and a sheet dismissed mid-recording never hears back. The trigger
+control stopped it — the strip's Stop, the tray's, or a check-in's — at once
+from a check-in, and at commit from the strip. That is why the
+post-recording decision lives here and not in the surface that opened the
+recorder: a surface only learns of a recording it awaited, and a check-in
+dismissed mid-recording never hears back. The trigger
 gates on the linked subject's category; a goal check-in has no category, so
 when the category gate declines and the subject's agent is a goal agent, the
 trigger falls back to that agent's automatic-updates switch and calls
@@ -173,19 +190,16 @@ trigger falls back to that agent's automatic-updates switch and calls
 decline instead of skipping. The goal side of this is in
 [goals](../goals.md).
 
-## Navigation is kept out of teardown
+## A take answers its caller at commit
 
-`AudioRecordingModal.show()` hosts the Wolt sheet on the **root navigator** by
-default; callers can opt into their local navigator. Finishing a recording
-returns the created entry id through the modal route.
-
-**The content pops the route exactly once, and an unlinked recording navigates to
-its new entry only after the Wolt route has completed.** Keeping navigation out of
-the sheet's teardown prevents nested task navigators from trying to reactivate an
-element that has already been removed. A caller that saves a recording with no
-parent on purpose and links it itself passes `openCreatedEntry: false` and stays
-where it is — a goal's charter recording, which must not take the parent link
-that would make it a check-in (ADR 0140).
+`RecordingSession.start` returns a future that completes when the take is
+**committed** — its receipt timed out, opened, or replaced by a new take —
+with the audio entry's id, or with `null` when it was discarded, undone or
+never started. There is no sheet route to pop: an unlinked recording opens
+its new entry (`/journal/<id>`) at commit, unless its caller passed
+`openCreatedEntry: false` and links it itself — a goal's charter recording,
+which must not take the parent link that would make it a check-in
+(ADR 0140), and stays on the goal.
 
 The persisted `JournalAudio` is created from `AudioData` through
 `PersistenceLogic`, and the file lives under `/audio/YYYY-MM-DD/`.

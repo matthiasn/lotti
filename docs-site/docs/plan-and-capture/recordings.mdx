@@ -13,20 +13,32 @@ matter. A recording can stand alone or live inside a task.
 1. Open the journal or the task that should own the recording.
 2. Open **Add** and choose **Record a voice note**. In a task, the microphone
    button on its action bar does the same.
-3. The sheet opens already recording. Speak clearly.
-4. Switch **Transcribe** off if you do not want a transcript, then choose
-   **Stop** when finished.
+3. Recording starts at once, and a strip at the bottom of the screen shows it.
+   Speak clearly.
+4. Choose **Stop** on the strip when you are finished.
+
+<ManualScreenshot
+  caseId="recordings/strip"
+  alt="Recording strip at the bottom of the screen, recording for Inspect orbital penguin habitat, with live level bars, pause, and Stop showing the elapsed time"
+/>
+
+The strip shows what the recording is for, a pause button, and **Stop** with the
+elapsed time. It stays at the bottom of the screen while you move around the
+app, so you can look something up mid-recording. When you are somewhere else,
+tap the name on the strip to go back to exactly where the recording started.
+
+Tap the strip to open the full recorder above it, with the live level line.
+There you can **Discard** the take, or switch **Transcribe** off if you do not
+want a transcript. Swipe it down to fold it back into the strip.
 
 <ManualScreenshot
   caseId="recordings/active"
-  alt="Active audio recording sheet showing the live visualizer, elapsed time, pause, discard, stop, and the Transcribe switch"
+  alt="Full recorder opened above the recording strip, with the live level line, discard, pause, Stop showing the elapsed time, and the Transcribe switch"
 />
 
-During capture, the sheet keeps elapsed time and the live input visualizer in
-view. You can pause and resume without ending the recording, discard the take,
-or choose **Stop** to save it. When transcription is available, the
-**Transcribe** switch controls whether transcription begins after the
-recording is saved.
+**Stop** always saves the recording. For five seconds afterwards a receipt takes
+the strip's place: choose **Undo** to delete the recording, or **Open** to go to
+it. Once the receipt is gone, transcription begins if it is switched on.
 
 When an inference profile and transcription skill are configured, Lotti can
 transcribe the recording after capture. Task recordings may also offer
