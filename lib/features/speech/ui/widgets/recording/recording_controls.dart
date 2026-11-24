@@ -2,7 +2,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_timer_pill.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
-import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -158,53 +157,18 @@ class _RecordingLevelLineState extends State<RecordingLevelLine> {
   );
 }
 
-/// An option under the recorder — its name in the recorder's caption
-/// voice, then a small toggle, the whole row one tap — quiet enough that it
-/// never competes with the take.
-class RecordingOption extends StatelessWidget {
-  const RecordingOption({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-    super.key,
-  });
-
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => onChanged(!value),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: ExcludeSemantics(
-              child: Text(label, style: recordingCaptionStyle(tokens)),
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          DesignSystemToggle(
-            value: value,
-            onChanged: onChanged,
-            semanticsLabel: label,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// The transport row: discard ✕, pause ⏸ / resume ▶, then the red Stop pill
 /// that carries the running time — the only colour in the row, the one way a
 /// take becomes an entry, grey while the take is paused. Stop comes last, as
-/// on the recording strip, so it is in the same place on every recorder. Every action is inert while [busy] — a
-/// stop or discard already on its way — and the host decides what each one
-/// means (whether discarding asks first, where a stopped take goes).
+/// on the recording strip, so it is in the same place on every recorder.
+/// Every action is inert while [busy] — a stop or discard already on its
+/// way — and the host decides what each one means (whether discarding asks
+/// first, where a stopped take goes).
+///
+/// Centred at [rowWidth] by default; [spread] across the host's width —
+/// discard at the start, pause and Stop at the end, where the recording
+/// strip keeps them — so the tray opened from the strip has its controls
+/// where the strip had them.
 class RecordingTransportControls extends StatelessWidget {
   const RecordingTransportControls({
     required this.paused,
@@ -214,10 +178,14 @@ class RecordingTransportControls extends StatelessWidget {
     required this.onStop,
     this.progressSemanticsLabel,
     this.busy = false,
+    this.spread = false,
     super.key,
   });
 
   final bool paused;
+
+  /// Across the host's whole width rather than centred.
+  final bool spread;
 
   /// How long the take has run, shown in the Stop pill.
   final Duration progress;
@@ -250,6 +218,40 @@ class RecordingTransportControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final discard = RecordingRingButton(
+      key: discardKey,
+      label: messages.checkInDiscardRecording,
+      icon: LottiIcons.close,
+      onTap: busy ? null : onDiscard,
+    );
+    final pause = RecordingRingButton(
+      key: pauseKey,
+      emphasized: paused,
+      label: paused
+          ? messages.audioRecordingResume
+          : messages.audioRecordingPause,
+      icon: paused ? LottiIconsFilled.play : LottiIconsFilled.pause,
+      solid: true,
+      onTap: busy ? null : onTogglePause,
+    );
+    final stop = RecordingStopPill(
+      key: stopKey,
+      paused: paused,
+      progress: progress,
+      progressSemanticsLabel: progressSemanticsLabel,
+      onTap: busy ? null : onStop,
+    );
+    if (spread) {
+      return Row(
+        children: [
+          discard,
+          const Spacer(),
+          pause,
+          SizedBox(width: tokens.spacing.step3),
+          stop,
+        ],
+      );
+    }
     // Wraps rather than overflows on a very narrow screen at a large text
     // size; at any ordinary width it is one centred row.
     return Wrap(
@@ -257,31 +259,7 @@ class RecordingTransportControls extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       spacing: tokens.spacing.step6,
       runSpacing: tokens.spacing.step3,
-      children: [
-        RecordingRingButton(
-          key: discardKey,
-          label: messages.checkInDiscardRecording,
-          icon: LottiIcons.close,
-          onTap: busy ? null : onDiscard,
-        ),
-        RecordingRingButton(
-          key: pauseKey,
-          emphasized: paused,
-          label: paused
-              ? messages.audioRecordingResume
-              : messages.audioRecordingPause,
-          icon: paused ? LottiIconsFilled.play : LottiIconsFilled.pause,
-          solid: true,
-          onTap: busy ? null : onTogglePause,
-        ),
-        RecordingStopPill(
-          key: stopKey,
-          paused: paused,
-          progress: progress,
-          progressSemanticsLabel: progressSemanticsLabel,
-          onTap: busy ? null : onStop,
-        ),
-      ],
+      children: [discard, pause, stop],
     );
   }
 }

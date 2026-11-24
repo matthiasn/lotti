@@ -55,8 +55,8 @@ void main() {
       expect(tester.getSize(strip()).height, 56);
     });
 
-    testWidgets('grows with the text size, so the caption and the title '
-        'never clip', (tester) async {
+    testWidgets('grows with the text size, as the receipt it turns into '
+        'does, and stays one capsule row', (tester) async {
       await pump(
         tester,
         mediaQueryData: phoneMediaQueryData.copyWith(
@@ -66,25 +66,17 @@ void main() {
       final context = tester.element(strip());
       final tokens = context.designTokens;
       final lines = tokens.typography.lineHeight;
-      // Stacked: the subject's line over the controls' row.
-      expect(RecordingStrip.stacked(context), isTrue);
-      expect(
-        tester.getSize(strip()).height,
-        // The caption and the subject, never shorter than a tap target,
-        // over the controls' row.
-        math.max(
-              tokens.spacing.step9,
-              lines.caption * 2 + lines.bodySmall * 2,
-            ) +
-            tokens.spacing.step2 +
-            tokens.spacing.step9 +
-            tokens.spacing.step2 * 2,
-      );
+      final height =
+          math.max(
+            tokens.spacing.step9,
+            lines.caption * 2 + lines.bodySmall * 2,
+          ) +
+          tokens.spacing.step2 * 2;
+      expect(tester.getSize(strip()).height, height);
       expect(
         tester.getCenter(find.byType(RecordingStripLeading)).dy,
-        lessThan(tester.getCenter(stop()).dy),
+        closeTo(tester.getCenter(stop()).dy, 0.5),
       );
-      // Two rows are no capsule: the corners are the tray's.
       final fill = tester
           .widgetList<DecoratedBox>(
             find.descendant(of: strip(), matching: find.byType(DecoratedBox)),
@@ -92,63 +84,60 @@ void main() {
           .map((box) => box.decoration)
           .whereType<BoxDecoration>()
           .first;
-      expect(fill.borderRadius, BorderRadius.circular(tokens.radii.xl));
+      expect(fill.borderRadius, BorderRadius.circular(height / 2));
       expect(tester.takeException(), isNull);
     });
   });
 
   group('the bars', () {
-    testWidgets("draw the recorder's level line over a short stretch, where "
-        "the subject's name keeps its room", (tester) async {
-      await pump(
-        tester,
-        width: 600,
-        mediaQueryData: desktopLayoutMediaQueryData,
-      );
-      final context = tester.element(strip());
-      expect(
-        tester.getSize(bars()).width,
-        RecordingStrip.barsWidth(context),
-      );
-      expect(
-        find.descendant(of: bars(), matching: find.byType(RecordingLevelLine)),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets("give way on a row too narrow for the subject's name", (
-      tester,
-    ) async {
-      await pump(tester, width: 300);
-      expect(bars(), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('showsBars keeps them exactly while the leading part keeps '
-        'step11 beside them', (tester) async {
+    testWidgets("draw the recorder's level line over all the room between "
+        'the way back and pause', (tester) async {
       await pump(tester);
       final context = tester.element(strip());
-      final spacing = context.designTokens.spacing;
-      final controls =
-          spacing.step9 +
-          DesignSystemTimerPill.heldWidth(
-            context,
-            DesignSystemTimerPill.elapsedWidthTemplate,
-          ) +
-          spacing.step3 * 6;
-      final leading = RecordingStripLeading.glyphSlot + spacing.step3 * 3;
-      final boundary =
-          controls +
-          leading +
-          RecordingStrip.barsWidth(context) +
-          MediaQuery.textScalerOf(context).scale(spacing.step11);
-      expect(RecordingStrip.showsBars(context, boundary), isTrue);
-      expect(RecordingStrip.showsBars(context, boundary - 1), isFalse);
+      final gap = context.designTokens.spacing.step3;
+      final level = tester.getRect(bars());
       expect(
-        RecordingStrip.showsBars(context, boundary * 2, paused: true),
-        isFalse,
+        level.left,
+        tester.getRect(find.byType(RecordingStripLeading)).right + gap,
+      );
+      expect(level.right, tester.getRect(pause()).left - gap);
+      expect(
+        tester
+            .getSize(
+              find.descendant(
+                of: bars(),
+                matching: find.byType(RecordingLevelLine),
+              ),
+            )
+            .width,
+        level.width,
       );
     });
+
+    testWidgets('stay, held still, while the take is paused', (tester) async {
+      await pump(tester);
+      await tester.tap(pause());
+      await tester.pump();
+      expect(bars(), findsOneWidget);
+    });
+
+    testWidgets('keep a row on the narrowest phone whole', (tester) async {
+      await pump(tester, width: 300);
+      expect(bars(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  testWidgets("no words on the row: the subject's title is what a screen "
+      'reader hears for the way back', (tester) async {
+    await pump(tester);
+    await tester.pumpAndSettle();
+    expect(find.text(stripSubject.data.title), findsNothing);
+    expect(find.text('Recording for'), findsNothing);
+    expect(
+      find.bySemanticsLabel('Back to ${stripSubject.data.title}'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a level tick and a sub-second tick never rebuild the row; a '
@@ -284,25 +273,14 @@ void main() {
       );
     });
 
-    testWidgets('the way back is only as wide as its words: a tap beside '
-        'them opens the tray instead of going back', (tester) async {
-      when(() => bench.db.journalEntityById(stripSubjectId)).thenAnswer(
-        (_) async => stripSubject.copyWith(
-          data: stripSubject.data.copyWith(title: 'Feed'),
-        ),
-      );
-      // Room beside the words: the test font's glyphs are far wider than
-      // Inter's.
-      await pump(
-        tester,
-        width: 600,
-        mediaQueryData: desktopLayoutMediaQueryData,
-      );
-      final back = tester.getRect(find.byKey(RecordingStripLeading.backKey));
-      final leading = tester.getRect(find.byType(RecordingStripLeading));
-      expect(back.width, lessThan(leading.width));
+    testWidgets('the way back is the arrow alone, a full tap target; a tap '
+        'on the level opens the tray instead of going back', (tester) async {
+      await pump(tester);
+      final back = tester.getSize(find.byKey(RecordingStripLeading.backKey));
+      final step9 = tester.element(strip()).designTokens.spacing.step9;
+      expect(back, Size.square(step9));
 
-      await tester.tapAt(Offset(back.right + 4, back.center.dy));
+      await tester.tap(bars());
       await tester.pump();
       expect(
         containerOf(tester).read(recordingTrayControllerProvider).open,

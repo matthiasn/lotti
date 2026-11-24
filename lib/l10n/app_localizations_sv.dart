@@ -3004,9 +3004,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get audioRecordingStop => 'Stoppa';
 
   @override
-  String get audioRecordingTranscribeOption => 'Transkribera';
-
-  @override
   String get avatarCropHint => 'Dra för att flytta · nyp för att zooma';
 
   @override

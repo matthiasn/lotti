@@ -50,14 +50,15 @@ void main() {
 
     Finder back() => find.byKey(RecordingStripLeading.backKey);
 
-    testWidgets('away from the origin it is the way back: ←, "Recording '
-        'for" and the subject, one button that goes there', (tester) async {
+    testWidgets('away from the origin it is the way back: ← and the '
+        'subject on one line, one button that goes there; "Recording for" '
+        'is what a reader hears', (tester) async {
       final semantics = tester.ensureSemantics();
       await pump(tester);
       await bench.startTake(tester);
 
       expect(find.byIcon(LottiIcons.back), findsOneWidget);
-      expect(find.text('Recording for'), findsOneWidget);
+      expect(find.text('Recording for'), findsNothing);
       expect(find.text(stripSubject.data.title), findsOneWidget);
       expect(
         find.bySemanticsLabel('Back to ${stripSubject.data.title}'),
@@ -74,13 +75,15 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('paused, the caption says so', (tester) async {
+    testWidgets('paused, a reader hears so', (tester) async {
+      final semantics = tester.ensureSemantics();
       await pump(tester);
       await bench.startTake(tester);
       await bench.recorder.pause();
       await tester.pump();
 
-      expect(find.text('Paused'), findsOneWidget);
+      expect(tester.getSemantics(back()).value, 'Paused');
+      semantics.dispose();
     });
 
     testWidgets('on the origin it says "Recording here" beside the red dot, '
@@ -171,10 +174,13 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('Recording for'), findsOneWidget);
       expect(find.text(stripSubject.data.title), findsOneWidget);
       expect(back(), findsNothing);
       expect(find.byType(DesignSystemBadge), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(stripSubject.data.title),
+        findsOneWidget,
+      );
     });
 
     testWidgets('a long title ellipsises on one line rather than wrapping', (
@@ -200,6 +206,89 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    group('compact, on the strip', () {
+      Future<void> pumpCompact(WidgetTester tester) => bench.pump(
+        tester,
+        const Center(child: RecordingStripLeading(compact: true)),
+      );
+
+      testWidgets('away, it is the arrow alone in a full tap target, named '
+          'for where it goes', (tester) async {
+        await pumpCompact(tester);
+        await bench.startTake(tester);
+
+        final step9 = tester
+            .element(find.byType(RecordingStripLeading))
+            .designTokens
+            .spacing
+            .step9;
+        expect(tester.getSize(back()), Size.square(step9));
+        expect(find.byType(Text), findsNothing);
+        expect(
+          find.bySemanticsLabel('Back to ${stripSubject.data.title}'),
+          findsOneWidget,
+        );
+
+        await tester.tap(back());
+        await tester.pump();
+        await tester.pump();
+        verify(() => bench.nav.beamToNamed(stripSubjectRoute)).called(1);
+      });
+
+      testWidgets('here, it is the red dot alone, its words a live label', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        bench.route = stripSubjectRoute;
+        await pumpCompact(tester);
+        await bench.startTake(tester);
+
+        expect(find.byType(Text), findsNothing);
+        expect(find.byType(DesignSystemBadge), findsOneWidget);
+        expect(
+          tester.getSize(find.byType(RecordingStripLeading)),
+          Size.square(
+            tester
+                .element(find.byType(RecordingStripLeading))
+                .designTokens
+                .spacing
+                .step9,
+          ),
+        );
+        final node = tester.getSemantics(
+          find.bySemanticsLabel('Recording here'),
+        );
+        expect(node.flagsCollection.isLiveRegion, isTrue);
+        semantics.dispose();
+      });
+
+      testWidgets('a voice note is the dot, labelled "Voice note"', (
+        tester,
+      ) async {
+        await pumpCompact(tester);
+        await bench.startTake(tester, voiceNote: true, route: '/journal');
+
+        expect(find.byType(Text), findsNothing);
+        expect(find.bySemanticsLabel('Voice note'), findsOneWidget);
+      });
+
+      testWidgets('with no origin, the dot is labelled by the subject', (
+        tester,
+      ) async {
+        await pumpCompact(tester);
+        await bench.recorder.record(linkedId: stripSubjectId);
+        await tester.pump();
+        await tester.pump();
+
+        expect(back(), findsNothing);
+        expect(find.byType(Text), findsNothing);
+        expect(
+          find.bySemanticsLabel(stripSubject.data.title),
+          findsOneWidget,
+        );
+      });
+    });
+
     testWidgets('its words come from the typography tokens', (tester) async {
       await pump(tester);
       await bench.startTake(tester);
@@ -207,10 +296,6 @@ void main() {
           .element(find.byType(RecordingStripLeading))
           .designTokens;
 
-      expect(
-        tester.widget<Text>(find.text('Recording for')).style?.fontSize,
-        tokens.typography.styles.others.caption.fontSize,
-      );
       expect(
         tester.widget<Text>(find.text(stripSubject.data.title)).style?.fontSize,
         tokens.typography.styles.body.bodySmall.fontSize,

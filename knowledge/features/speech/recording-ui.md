@@ -62,12 +62,14 @@ and a person's — still record in place, with
 [`InlineRecorder`](#the-inline-recorder), and hand a running take to the
 strip when their screen closes.
 
-Every recorder is one layout, `RecordingStage` in
-[`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart):
-one centred column whose parts share one measure — the level line takes the
+Every recorder is made of the same parts in
+[`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart).
+The check-ins lay them out as `RecordingStage`: one centred column whose
+parts share one measure — the level line takes the
 transport row's width (`RecordingTransportControls.rowWidth`: two rings, two
 gaps and the Stop pill at its held width), so the two share their edges in
-every host. Every word on it that is not the running time speaks in one
+every host. The strip's tray lays the same parts across its own width
+instead ([the tray](#the-tray)). Every word on it that is not the running time speaks in one
 caption voice (`recordingCaptionStyle`). Top to bottom:
 
 - **The level line** — `RecordingLevelLine`, the app's one voice waveform
@@ -99,9 +101,11 @@ caption voice (`recordingCaptionStyle`). Top to bottom:
   one name and one key each on every surface (`discardKey`, `pauseKey`,
   `stopKey`). Taps are felt (a firmer one on Stop) when the user's haptics
   switch is on.
-- **A footer**, where a host has a setting for the take — the tray's
-  *Transcribe* toggle (`RecordingOption`: the caption, then a small
-  design-system toggle), shown only where a transcription would run.
+- **A footer**, where a host has something to add under the controls.
+
+There is no per-take *Transcribe* option: a take linked to a subject whose
+profile automates transcription is transcribed once committed, and one that
+is not, is not — the receipt says which (`hasProfileTranscriptionProvider`).
 
 The level line is one semantics label the host names; it is a live region
 where no status line of the host's announces each transition.
@@ -188,43 +192,36 @@ stateDiagram-v2
 ## The row
 
 [`RecordingStrip`](../../../lib/features/speech/ui/widgets/recording/strip/recording_strip.dart)
-is one glass row (the island's chip glass, `radii.l`), 56 px at the default
-text size and growing with the text scale (`RecordingStrip.height`), so its
-two lines never clip. Left to right:
+is one glass capsule (the island's chip glass), 56 px at the default text
+size and growing with the text scale (`RecordingStrip.height`, which the
+receipt's two lines share). It carries no words: a title cut to a few
+letters said little, so the level takes that room. Left to right:
 
-- **The leading part**
-  ([`RecordingStripLeading`](../../../lib/features/speech/ui/widgets/recording/strip/recording_strip_leading.dart)),
-  which takes the room the controls leave and follows the route on screen
-  (`NavService.activeRouteChanges`):
-  - **away** from the origin — ↩, a small *Recording for* (*Paused ·
-    Recording for*) over the subject's title, the whole part one button back
-    (`RecordingSession.returnToOrigin`);
-  - **here**, on the origin — a red dot (a pause glyph while paused) and
-    *Recording here* (*Paused here*), not a button. `isOnRecordingOrigin`
-    compares the two routes without query or trailing slash;
+- **The leading glyph**
+  ([`RecordingStripLeading`](../../../lib/features/speech/ui/widgets/recording/strip/recording_strip_leading.dart)
+  with `compact: true`), a `spacing.step9` square that follows the route on
+  screen (`NavService.activeRouteChanges`):
+  - **away** from the origin — ↩, one button back
+    (`RecordingSession.returnToOrigin`), named *Back to …* with the status
+    (*Recording for* / *Paused*) as its value;
+  - **here**, on the origin — a red dot (a pause glyph while paused),
+    labelled *Recording here* (*Paused here*), not a button.
+    `isOnRecordingOrigin` compares the two routes without query or trailing
+    slash;
   - **voice note** — a take linked to nothing, or whose subject is gone —
-    the dot and *Voice note*, never a button. A subject that is there but
-    has no title keeps its way back.
+    the dot, labelled *Voice note*, never a button. A subject that is there
+    but has no title keeps its way back.
 
-  Away from the origin the way back is a button only as wide as its words,
-  so the rest of the row still opens the tray.
-
-  Its status words are a live region, so a pause or resume is announced
-  once, not every second.
-- **The bars** — the level line over a short stretch (`spacing.step9`), and
-  the one part of the row that watches every sample. They drop out
-  (`showsBars`) while paused, and when the subject's name would keep less
-  than `spacing.step11` (scaled with the text) beside them — a narrow phone
-  — so the name comes first.
+  The words are a live region, so a pause or resume is announced once, not
+  every second.
+- **The bars** — the level line over all the room between the glyph and
+  pause, held still while paused; the one part of the row that watches
+  every sample.
 - **Pause / resume** — the transport row's ring; while paused, resume is the
   filled accent disc, the one primary on the row.
 - **Stop** — the timer pill carrying the running time, always last; a quiet
   neutral fill while paused. **Stop always saves**; the ✕ that discards
   lives only in the tray.
-
-Past `TextScales.large` the strip stacks (`RecordingStrip.stacked`): the
-caption and the subject on a line of their own, the controls beneath, with
-rounded corners rather than a capsule.
 
 From the Stop tap until the receipt is up, `recordingSavingProvider` holds
 the strip's place with an inert empty capsule (`RecordingStripContent.saving`),
@@ -237,9 +234,12 @@ origin, subject — so a level sample never rebuilds it.
 
 Tapping the row anywhere outside its buttons, or swiping it up, opens
 [`RecordingStripTray`](../../../lib/features/speech/ui/widgets/recording/strip/recording_strip_tray.dart)
-in the strip's place (`RecordingTrayController`): a grabber, the same leading
-part, the full `RecordingStage` with discard ✕ (asked first), pause and
-Stop, and the *Transcribe* footer where a transcription would run. It has no
+in the strip's place (`RecordingTrayController`): a grabber, the leading part
+with its words — ↩ and the subject's title on one line, or *Recording here* /
+*Voice note* by the dot — then the level line and the transport row across
+the tray's whole width (`RecordingTransportControls(spread: true)`): discard
+✕ (asked first) at the start, pause and Stop at the end, where the strip
+keeps them. It has no
 scrim — the page above stays usable — and it folds back on the grabber, a
 swipe down, or when a text field takes focus. A failed start opens it on
 `RecordingFailureCallout` instead, over the live stage when a take still
@@ -350,8 +350,8 @@ settings* goes through, on every surface.
 
 | Surface | Shows |
 |---------|-------|
-| Recording strip | The leading part (way back / *Recording here* / *Voice note*), the bars where there is room, pause, and the Stop pill carrying the running time — on every page, phone and desktop, while a take runs that no check-in draws in place. Not on Flatpak |
-| Strip tray | The full stage under the strip's leading part — discard ✕, pause, Stop, the wide level line — with *Transcribe* as its footer, or a failure card |
+| Recording strip | The leading glyph (↩ back / the live dot), the bars filling the row, pause, and the Stop pill carrying the running time — no words — on every page, phone and desktop, while a take runs that no check-in draws in place. Not on Flatpak |
+| Strip tray | The subject's title by the way back, the level line, and discard ✕ · pause · Stop across its width — or a failure card |
 | Receipt | ✓ *Saved · 0:42* (*· transcribing* where it will be) over the subject, *Undo*, and *Open* where it leads somewhere — for 5 s after Stop |
 | Goal check-in sheet | `InlineRecorder` under the sheet's title — the goal's name — and the agent's question — no status line: the red Stop pill carrying the running time says it is recording |
 | Check-in page dock | The stage embedded in place by `CheckInInlineRecorder` (the person's wrapper over `InlineRecorder`), with its own status line in the stage's notice slot (`showStatus`: `● Recording` / `Paused` in the composer header's grammar, a live region), since no header above it says so |

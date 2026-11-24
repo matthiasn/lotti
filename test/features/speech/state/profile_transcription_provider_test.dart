@@ -1,8 +1,6 @@
-// Tests for lib/features/speech/state/checkbox_visibility_provider.dart.
-//
-// Covers hasProfileTranscription (delegation to ProfileAutomationService and
-// invalidation when profiles change) and checkboxVisibility (null linkedId,
-// loading, error, and data branches).
+// Tests for lib/features/speech/state/profile_transcription_provider.dart:
+// hasProfileTranscription's delegation to ProfileAutomationService and its
+// invalidation when profiles change.
 
 import 'dart:async';
 
@@ -13,7 +11,7 @@ import 'package:lotti/classes/ai/skill_type.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
-import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
+import 'package:lotti/features/speech/state/profile_transcription_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -129,102 +127,5 @@ void main() {
         ),
       ).called(2);
     });
-  });
-
-  group('checkboxVisibility', () {
-    test('hides speech and never queries the service without a linkedId', () {
-      final container = makeContainer();
-
-      final visibility = container.read(
-        checkboxVisibilityProvider((categoryId: 'cat-1', linkedId: null)),
-      );
-
-      expect(visibility.speech, isFalse);
-      expect(visibility.none, isTrue);
-      verifyNever(
-        () => automationService.hasAutomatedSkillType(
-          subjectId: any(named: 'subjectId'),
-          skillType: any(named: 'skillType'),
-        ),
-      );
-    });
-
-    test('treats a still-loading transcription check as hidden', () {
-      // Never-completing future keeps hasProfileTranscription in loading.
-      when(
-        () => automationService.hasAutomatedSkillType(
-          subjectId: any(named: 'subjectId'),
-          skillType: any(named: 'skillType'),
-        ),
-      ).thenAnswer((_) => Completer<bool>().future);
-      final container = makeContainer();
-
-      final visibility = container.read(
-        checkboxVisibilityProvider((categoryId: 'cat-1', linkedId: 'task-1')),
-      );
-
-      expect(visibility.speech, isFalse);
-    });
-
-    test('treats a failed transcription check as hidden', () async {
-      when(
-        () => automationService.hasAutomatedSkillType(
-          subjectId: any(named: 'subjectId'),
-          skillType: any(named: 'skillType'),
-        ),
-      ).thenThrow(Exception('profile lookup failed'));
-      final container = makeContainer();
-
-      // Hold subscriptions so the autoDispose providers survive long enough
-      // to surface the error state.
-      final transcriptionSub = container.listen(
-        hasProfileTranscriptionProvider('task-1'),
-        (_, _) {},
-      );
-      addTearDown(transcriptionSub.close);
-      final visibilitySub = container.listen(
-        checkboxVisibilityProvider((categoryId: 'cat-1', linkedId: 'task-1')),
-        (_, _) {},
-      );
-      addTearDown(visibilitySub.close);
-
-      await pumpEventQueue();
-
-      // Riverpod's retry handling may have already flipped the state back to
-      // AsyncLoading-with-error, so assert on hasError rather than AsyncError.
-      expect(transcriptionSub.read().hasError, isTrue);
-      expect(visibilitySub.read().speech, isFalse);
-    });
-
-    test(
-      'shows speech once the linked task has profile transcription',
-      () async {
-        stubHasTranscription(result: true);
-        final container = makeContainer();
-
-        await container.read(hasProfileTranscriptionProvider('task-1').future);
-        final visibility = container.read(
-          checkboxVisibilityProvider((categoryId: 'cat-1', linkedId: 'task-1')),
-        );
-
-        expect(visibility.speech, isTrue);
-        expect(visibility.none, isFalse);
-      },
-    );
-
-    test(
-      'keeps speech hidden when the linked task has no transcription',
-      () async {
-        stubHasTranscription(result: false);
-        final container = makeContainer();
-
-        await container.read(hasProfileTranscriptionProvider('task-1').future);
-        final visibility = container.read(
-          checkboxVisibilityProvider((categoryId: 'cat-1', linkedId: 'task-1')),
-        );
-
-        expect(visibility.speech, isFalse);
-      },
-    );
   });
 }

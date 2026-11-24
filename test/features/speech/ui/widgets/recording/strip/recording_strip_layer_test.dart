@@ -293,8 +293,11 @@ void main() {
       await tester.pump();
       await bench.startTake(tester);
       await settleSwitch(tester);
+      // The strip has no words of its own; the tray opened from it does.
+      container(tester).read(recordingTrayControllerProvider.notifier).open();
+      await settleSwitch(tester);
 
-      final caption = tester.element(find.text('Recording for'));
+      final caption = tester.element(find.text(stripSubject.data.title));
       expect(
         DefaultTextStyle.of(caption).style.decoration,
         isNot(

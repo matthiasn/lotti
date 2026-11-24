@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/app_settings_opener.dart';
-import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/recording_session.dart';
@@ -19,9 +18,10 @@ import 'package:material_ui/material_ui.dart';
 /// The recording strip opened up: the full recorder ([RecordingStage]) drawn
 /// above the strip's place, with no scrim, so the page above stays usable.
 ///
-/// It carries what the slim row leaves out — discard ✕ (asked first), the
-/// wide level line and the take's *Transcribe* option — under the strip's
-/// own leading part, and a grabber that folds it back (as does a swipe
+/// It carries what the slim row leaves out — the subject's title by the
+/// way back, and discard ✕ (asked first) — over the level line and the
+/// controls across its whole width, pause and Stop at the end where the
+/// strip keeps them, and a grabber that folds it back (as does a swipe
 /// down). When a start failed, it opens on that failure's card instead:
 /// *Open settings* for a refused microphone, *Stop that recording* for a
 /// take running elsewhere.
@@ -33,7 +33,6 @@ class RecordingStripTray extends ConsumerStatefulWidget {
 
   static const Key trayKey = ValueKey('recording-strip-tray');
   static const Key grabberKey = ValueKey('recording-strip-tray-grabber');
-  static const Key transcribeKey = Key('speech_recognition_checkbox');
 
   @override
   ConsumerState<RecordingStripTray> createState() => _RecordingStripTrayState();
@@ -98,7 +97,7 @@ class _RecordingStripTrayState extends ConsumerState<RecordingStripTray> {
             tokens.spacing.step4,
             tokens.spacing.step2,
             tokens.spacing.step4,
-            tokens.spacing.step5,
+            tokens.spacing.step4,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -109,14 +108,7 @@ class _RecordingStripTrayState extends ConsumerState<RecordingStripTray> {
                 onTap: tray.fold,
               ),
               if (live) ...[
-                // On the level line's own edges, so the header and the
-                // recorder share one axis.
-                Center(
-                  child: SizedBox(
-                    width: RecordingTransportControls.rowWidth(context),
-                    child: const RecordingStripLeading(),
-                  ),
-                ),
+                const RecordingStripLeading(),
                 SizedBox(height: tokens.spacing.step3),
               ],
               if (failure != null) ...[
@@ -128,27 +120,36 @@ class _RecordingStripTrayState extends ConsumerState<RecordingStripTray> {
                 ),
                 if (live) SizedBox(height: tokens.spacing.step5),
               ],
-              if (live)
-                RecordingStage(
-                  state: state,
-                  levelSemanticsLabel: paused
+              if (live) ...[
+                Semantics(
+                  label: paused
                       ? messages.checkInStatusPaused
                       : messages.audioRecordingLive,
-                  footer: _TranscribeOption(linkedId: state.linkedId),
-                  controls: RecordingTransportControls(
-                    paused: paused,
-                    progress: state.progress,
-                    progressSemanticsLabel: spokenClockLabel(
-                      messages,
-                      state.progress,
+                  child: ExcludeSemantics(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) => RecordingLevelLine(
+                        state: state,
+                        width: constraints.maxWidth,
+                      ),
                     ),
-                    busy: _busy,
-                    onDiscard: _discard,
-                    onTogglePause: () =>
-                        paused ? recorder.resume() : recorder.pause(),
-                    onStop: () => _run(_session.stop),
                   ),
                 ),
+                SizedBox(height: tokens.spacing.step4),
+                RecordingTransportControls(
+                  spread: true,
+                  paused: paused,
+                  progress: state.progress,
+                  progressSemanticsLabel: spokenClockLabel(
+                    messages,
+                    state.progress,
+                  ),
+                  busy: _busy,
+                  onDiscard: _discard,
+                  onTogglePause: () =>
+                      paused ? recorder.resume() : recorder.pause(),
+                  onStop: () => _run(_session.stop),
+                ),
+              ],
             ],
           ),
         ),
@@ -183,41 +184,6 @@ class _Grabber extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// The take's *Transcribe* toggle, or nothing where no transcription would
-/// run: a take its caller transcribes itself, or one filed nowhere and
-/// linked to nothing, or a category and subject with no automation.
-class _TranscribeOption extends ConsumerWidget {
-  const _TranscribeOption({required this.linkedId});
-
-  final String? linkedId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final recorder = ref.read(audioRecorderControllerProvider.notifier);
-    final categoryId = recorder.categoryId;
-    if (recorder.transcriptionHandledByCaller ||
-        (categoryId == null && linkedId == null)) {
-      return const SizedBox.shrink();
-    }
-    final visibility = ref.watch(
-      checkboxVisibilityProvider((categoryId: categoryId, linkedId: linkedId)),
-    );
-    if (visibility.none) return const SizedBox.shrink();
-    return RecordingOption(
-      key: RecordingStripTray.transcribeKey,
-      label: context.messages.audioRecordingTranscribeOption,
-      value:
-          ref.watch(
-            audioRecorderControllerProvider.select(
-              (state) => state.enableSpeechRecognition,
-            ),
-          ) ??
-          true,
-      onChanged: (value) => recorder.setEnableSpeechRecognition(enable: value),
     );
   }
 }

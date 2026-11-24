@@ -11,8 +11,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/chrome/recording_strip_shell.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
-import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
-import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/recording_origin.dart';
@@ -100,13 +98,9 @@ void main() {
         expect(find.byType(RecordingStripTray), findsOneWidget);
         expect(find.text('00:42'), findsOneWidget);
         expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
-        expect(
-          find.widgetWithText(
-            RecordingOption,
-            messages.audioRecordingTranscribeOption,
-          ),
-          findsOneWidget,
-        );
+        // The title on one line, and no option under the controls.
+        expect(find.text(messages.recordingStripRecordingFor), findsNothing);
+        expect(find.byType(Switch), findsNothing);
         await captureScreenshot(
           tester,
           'recording_active_${viewport}_$theme',
@@ -135,7 +129,7 @@ Future<void> _pumpActiveRecording(
   final fixedState = AudioRecorderState(
     status: AudioRecorderStatus.recording,
     // The ticks below bring it to 0:00:42.
-    progress: const Duration(milliseconds: 40400),
+    progress: const Duration(milliseconds: 37200),
     dBFS: -12,
     inlineHostVisible: false,
     linkedId: _linkedTaskId,
@@ -143,7 +137,6 @@ Future<void> _pumpActiveRecording(
       route: '/tasks/$_linkedTaskId',
       subjectId: _linkedTaskId,
     ),
-    enableSpeechRecognition: true,
   );
 
   await tester.pumpWidget(
@@ -157,12 +150,6 @@ Future<void> _pumpActiveRecording(
           // The strip names the task it records for.
           journalDbProvider.overrideWithValue(_journalDbWithTask()),
           navServiceProvider.overrideWithValue(nav),
-          checkboxVisibilityProvider((
-            categoryId: _categoryId,
-            linkedId: _linkedTaskId,
-          )).overrideWithValue(
-            const AutomaticPromptVisibility(speech: true),
-          ),
         ],
         child: MaterialApp(
           builder: LegacyMaterialBridge.builder,
@@ -202,7 +189,7 @@ Future<void> _pumpActiveRecording(
   await settleFrames(tester, 8);
   // A few seconds of speech-shaped levels, so the bars show a take in
   // progress rather than their resting baseline.
-  for (var i = 0; i < 80; i++) {
+  for (var i = 0; i < RecordingLevelLine.levelWindow; i++) {
     controller.tick(-38 + 26 * math.sin(i / 3).abs());
     await tester.pump(const Duration(milliseconds: 20));
   }

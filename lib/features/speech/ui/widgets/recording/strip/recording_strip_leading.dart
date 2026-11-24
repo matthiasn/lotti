@@ -40,20 +40,27 @@ enum RecordingStripPlace {
   voiceNote,
 }
 
-/// The strip's leading part, which fills the room the controls leave:
+/// The leading part of the strip and of its tray's header:
 ///
-/// - **away** — ↩, a small *Recording for* (*Paused · Recording for*) over
-///   the subject's title; the whole part one button back to where the take
-///   started ([RecordingSession.returnToOrigin]);
+/// - **away** — ↩ and the subject's title, one button back to where the
+///   take started ([RecordingSession.returnToOrigin]);
 /// - **here** — a red dot (a pause glyph while paused) and *Recording here*
 ///   (*Paused here*); not a button;
 /// - **voice note** — the dot and *Voice note*; never a button.
 ///
+/// [compact] — on the strip — it is the glyph alone, in a square as tall as
+/// the controls, and the words are only what a screen reader hears: a
+/// title cut to a few letters says little, and the strip gives its room to
+/// the level instead.
+///
 /// It follows the route on screen, so arriving at the origin turns the way
-/// back into *here* without a tap. The status words are a live region, so a
+/// back into *here* without a tap. The status is a live region, so a
 /// screen reader hears a pause or a resume once.
 class RecordingStripLeading extends ConsumerWidget {
-  const RecordingStripLeading({super.key});
+  const RecordingStripLeading({this.compact = false, super.key});
+
+  /// The glyph alone, its words for a screen reader only.
+  final bool compact;
 
   static const Key backKey = ValueKey('recording-strip-back');
 
@@ -95,6 +102,7 @@ class RecordingStripLeading extends ConsumerWidget {
         return switch (place) {
           RecordingStripPlace.away => _BackToOrigin(
             paused: paused,
+            compact: compact,
             title: title,
             onTap: origin == null
                 ? null
@@ -103,12 +111,14 @@ class RecordingStripLeading extends ConsumerWidget {
           ),
           RecordingStripPlace.here => _Status(
             paused: paused,
+            compact: compact,
             label: paused
                 ? context.messages.recordingStripPausedHere
                 : context.messages.recordingStripRecordingHere,
           ),
           RecordingStripPlace.voiceNote => _Status(
             paused: paused,
+            compact: compact,
             label: context.messages.recordingStripVoiceNote,
           ),
         };
@@ -144,16 +154,32 @@ class _LiveGlyph extends StatelessWidget {
   }
 }
 
-/// The dot and one line of words — *Recording here*, *Voice note*.
+/// The dot and one line of words — *Recording here*, *Voice note* — or,
+/// [compact], the dot alone, the words its label.
 class _Status extends StatelessWidget {
-  const _Status({required this.paused, required this.label});
+  const _Status({
+    required this.paused,
+    required this.compact,
+    required this.label,
+  });
 
   final bool paused;
+  final bool compact;
   final String label;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    if (compact) {
+      return Semantics(
+        liveRegion: true,
+        label: label,
+        child: SizedBox.square(
+          dimension: tokens.spacing.step9,
+          child: _LiveGlyph(paused: paused),
+        ),
+      );
+    }
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
       child: Row(
@@ -177,15 +203,17 @@ class _Status extends StatelessWidget {
   }
 }
 
-/// ↩ and *Recording for* over the subject's title: one button back.
+/// ↩ and the subject's title — [compact], ↩ alone: one button back.
 class _BackToOrigin extends StatelessWidget {
   const _BackToOrigin({
     required this.paused,
+    required this.compact,
     required this.title,
     required this.onTap,
   });
 
   final bool paused;
+  final bool compact;
 
   /// The subject's title; null while it loads.
   final String? title;
@@ -202,51 +230,50 @@ class _BackToOrigin extends StatelessWidget {
         : messages.recordingStripRecordingFor;
     final name = title ?? '';
     final tap = onTap;
-    final content = Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
-      child: Row(
-        // As wide as its words, so the way back is a bounded target and the
-        // rest of the strip still opens the tray.
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (tap != null) ...[
-            Icon(
-              LottiIcons.back,
-              size: RecordingStripLeading.glyphSlot,
-              color: tokens.colors.interactive.enabled,
+    final glyph = tap != null
+        ? Icon(
+            LottiIcons.back,
+            size: RecordingStripLeading.glyphSlot,
+            color: tokens.colors.interactive.enabled,
+          )
+        : _LiveGlyph(paused: paused);
+    final Widget content;
+    if (compact) {
+      content = SizedBox.square(
+        dimension: tokens.spacing.step9,
+        child: Center(child: glyph),
+      );
+    } else {
+      content = Padding(
+        padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
+        child: Row(
+          // As wide as its words, so the way back is a bounded target and
+          // the rest of the tray's header is not.
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            glyph,
+            SizedBox(width: tokens.spacing.step3),
+            Flexible(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: recordingTitleStyle(tokens),
+              ),
             ),
-            SizedBox(width: tokens.spacing.step3),
-          ] else ...[
-            _LiveGlyph(paused: paused),
-            SizedBox(width: tokens.spacing.step3),
           ],
-          Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    caption,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: recordingCaptionStyle(tokens),
-                  ),
-                ),
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: recordingTitleStyle(tokens),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-    if (tap == null) return content;
+        ),
+      );
+    }
+    if (tap == null) {
+      return Semantics(
+        label: name,
+        value: caption,
+        liveRegion: true,
+        excludeSemantics: true,
+        child: content,
+      );
+    }
     // One button by the way back; its value is the status, live, so a
     // pause or a resume is heard once.
     return Align(

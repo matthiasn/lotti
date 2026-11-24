@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
+import 'package:lotti/features/speech/state/profile_transcription_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recording_origin.dart';
 import 'package:lotti/features/speech/state/recording_receipt_controller.dart';
@@ -406,13 +406,6 @@ void main() {
       expect(await transcribingAfterStop(), isTrue);
     });
 
-    test('not with Transcribe switched off', () async {
-      bench.startTaskTake().ignore();
-      await pumpEventQueue();
-      bench.recorder.setEnableSpeechRecognition(enable: false);
-      expect(await transcribingAfterStop(), isFalse);
-    });
-
     test('not for a take its caller transcribes', () async {
       bench.container.dispose();
       bench = _Bench(
@@ -421,8 +414,7 @@ void main() {
       expect(await transcribingAfterStop(), isFalse);
     });
 
-    test('not where no transcription profile handles the subject — the '
-        'rule the Transcribe option follows', () async {
+    test('not where no transcription profile handles the subject', () async {
       bench.container.dispose();
       bench = _Bench(profileTranscribes: false);
       bench.startTaskTake().ignore();

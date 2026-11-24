@@ -2,7 +2,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_timer_pill.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
-import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -259,46 +258,6 @@ void main() {
     }
   });
 
-  group('RecordingOption', () {
-    testWidgets('its name in the caption voice, then a small toggle; the '
-        'whole row flips it, and a reader hears one switch by its name', (
-      tester,
-    ) async {
-      final semantics = tester.ensureSemantics();
-      final changes = <bool>[];
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          RecordingOption(
-            label: 'Transcribe',
-            value: true,
-            onChanged: changes.add,
-          ),
-        ),
-      );
-      final toggle = tester.widget<DesignSystemToggle>(
-        find.byType(DesignSystemToggle),
-      );
-      expect(toggle.size, DesignSystemToggleSize.small);
-      expect(toggle.value, isTrue);
-      expect(
-        tester.getRect(find.text('Transcribe')).right,
-        lessThan(tester.getRect(find.byType(DesignSystemToggle)).left),
-      );
-      final tokens = tester.element(find.byType(RecordingOption)).designTokens;
-      expect(
-        tester.widget<Text>(find.text('Transcribe')).style,
-        recordingCaptionStyle(tokens),
-      );
-
-      await tester.tap(find.text('Transcribe'));
-      await tester.tap(find.byType(DesignSystemToggle));
-      expect(changes, [false, false]);
-
-      expect(find.bySemanticsLabel('Transcribe'), findsOneWidget);
-      semantics.dispose();
-    });
-  });
-
   group('RecordingTransportControls', () {
     final calls = <String>[];
     setUp(calls.clear);
@@ -307,10 +266,12 @@ void main() {
       WidgetTester tester, {
       bool paused = false,
       bool busy = false,
+      bool spread = false,
     }) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           RecordingTransportControls(
+            spread: spread,
             paused: paused,
             progress: const Duration(seconds: 65),
             busy: busy,
@@ -367,6 +328,29 @@ void main() {
       expect(pill.running, isTrue);
       expect(pill.label, '01:05');
       expect(find.text('01:05'), findsOneWidget);
+    });
+
+    testWidgets('spread, discard holds the start and pause and Stop the '
+        'end, a step apart, as the strip keeps them', (tester) async {
+      await pump(tester, spread: true);
+      final row = tester.getRect(find.byType(RecordingTransportControls));
+      final discard = tester.getRect(key('cancel_recording'));
+      final pause = tester.getRect(key('pause_resume_button'));
+      final stop = tester.getRect(key('stop_recording'));
+      final tokens = tester
+          .element(find.byType(RecordingTransportControls))
+          .designTokens;
+
+      expect(discard.left, row.left);
+      expect(stop.right, row.right);
+      expect(stop.left - pause.right, tokens.spacing.step3);
+      expect(pause.left - discard.right, greaterThan(tokens.spacing.step6));
+      expect(discard.center.dy, closeTo(stop.center.dy, 0.5));
+
+      await tester.tap(key('cancel_recording'));
+      await tester.tap(key('pause_resume_button'));
+      await tester.tap(key('stop_recording'));
+      expect(calls, ['discard', 'pause', 'stop']);
     });
 
     testWidgets('Stop is one button named Stop whose value is the time, in '

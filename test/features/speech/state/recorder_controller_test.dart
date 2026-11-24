@@ -325,7 +325,6 @@ void main() {
         when(
           () => mockTrigger.triggerAutomaticPrompts(
             any(),
-            any(),
             linkedSubjectId: any(named: 'linkedSubjectId'),
           ),
         ).thenAnswer((_) async {});
@@ -517,7 +516,6 @@ void main() {
         List<String> triggeredIds() => verify(
           () => mockTrigger.triggerAutomaticPrompts(
             captureAny(),
-            any(),
             linkedSubjectId: any(named: 'linkedSubjectId'),
           ),
         ).captured.cast<String>();
@@ -532,7 +530,6 @@ void main() {
           expect(id, 'round-trip-entry-id');
           verifyNever(
             () => mockTrigger.triggerAutomaticPrompts(
-              any(),
               any(),
               linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
@@ -555,36 +552,9 @@ void main() {
           verify(
             () => mockTrigger.triggerAutomaticPrompts(
               id,
-              any(),
               linkedSubjectId: 'linked-task-id',
             ),
           ).called(1);
-        });
-
-        test("commitAutomation passes the take's own Transcribe choice, as "
-            'it stood at stop', () async {
-          final controller = container.read(
-            audioRecorderControllerProvider.notifier,
-          );
-          await controller.record(linkedId: 'linked-task-id');
-          controller.setEnableSpeechRecognition(enable: false);
-          final id = (await controller.stop(deferAutomation: true))!;
-          // A later change belongs to the next take, not to this one.
-          controller
-            ..setEnableSpeechRecognition(enable: true)
-            ..commitAutomation(id);
-          await pumpEventQueue();
-
-          final passed =
-              verify(
-                    () => mockTrigger.triggerAutomaticPrompts(
-                      id,
-                      captureAny(),
-                      linkedSubjectId: 'linked-task-id',
-                    ),
-                  ).captured.single
-                  as AudioRecorderState;
-          expect(passed.enableSpeechRecognition, isFalse);
         });
 
         test('dropAutomation forgets the prompt: a later commit fires '
@@ -602,7 +572,6 @@ void main() {
 
           verifyNever(
             () => mockTrigger.triggerAutomaticPrompts(
-              any(),
               any(),
               linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
@@ -625,7 +594,6 @@ void main() {
           verifyNever(
             () => mockTrigger.triggerAutomaticPrompts(
               any(),
-              any(),
               linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
           );
@@ -643,7 +611,6 @@ void main() {
 
           verifyNever(
             () => mockTrigger.triggerAutomaticPrompts(
-              any(),
               any(),
               linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
@@ -933,21 +900,6 @@ void main() {
         expect(result, isNull);
       });
 
-      test('should preserve inference preferences when stopping', () async {
-        // Arrange
-        container
-            .read(audioRecorderControllerProvider.notifier)
-            .setEnableSpeechRecognition(enable: true);
-
-        // Act
-        await container.read(audioRecorderControllerProvider.notifier).stop();
-
-        // Assert - Preferences should be preserved
-        final state = container.read(audioRecorderControllerProvider);
-        expect(state.enableSpeechRecognition, equals(true));
-        expect(state.status, equals(AudioRecorderStatus.stopped));
-      });
-
       test('should update status to stopped and reset state', () async {
         // Arrange
         final controller = container.read(
@@ -1141,27 +1093,12 @@ void main() {
         ).called(1);
       });
 
-      test('preserves inference preferences', () async {
-        final controller = await startRecording(container);
-        controller.setEnableSpeechRecognition(enable: true);
-
-        await controller.cancel();
-
-        expect(
-          container
-              .read(audioRecorderControllerProvider)
-              .enableSpeechRecognition,
-          isTrue,
-        );
-      });
-
       test(
         'does not trigger automatic prompts for a linked recording',
         () async {
           final mockTrigger = MockAutomaticPromptTrigger();
           when(
             () => mockTrigger.triggerAutomaticPrompts(
-              any(),
               any(),
               linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
@@ -1183,7 +1120,6 @@ void main() {
 
           verifyNever(
             () => mockTrigger.triggerAutomaticPrompts(
-              any(),
               any(),
               linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
@@ -1376,11 +1312,6 @@ void main() {
             () => mockAudioRecorderRepository.startRecording(),
           ).thenAnswer((_) async => mockAudioNote);
 
-          container
-              .read(audioRecorderControllerProvider.notifier)
-              // Set some preferences before recording
-              .setEnableSpeechRecognition(enable: true);
-
           // Act
           await container
               .read(audioRecorderControllerProvider.notifier)
@@ -1391,8 +1322,6 @@ void main() {
           final state = container.read(audioRecorderControllerProvider);
           expect(state.status, equals(AudioRecorderStatus.recording));
           expect(state.linkedId, equals('test-linked-id'));
-          // Preferences should be preserved when starting recording
-          expect(state.enableSpeechRecognition, isTrue);
         },
       );
 
@@ -1791,78 +1720,6 @@ void main() {
     });
   });
 
-  group('AudioRecorderController - Automatic Prompt Triggering', () {
-    group('setEnableSpeechRecognition', () {
-      test('should update enableSpeechRecognition in state', () {
-        // Arrange
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier)
-              // Act
-              ..setEnableSpeechRecognition(enable: true);
-
-        // Assert
-        expect(
-          container
-              .read(audioRecorderControllerProvider)
-              .enableSpeechRecognition,
-          isTrue,
-        );
-
-        // Act again
-        controller.setEnableSpeechRecognition(enable: false);
-
-        // Assert
-        expect(
-          container
-              .read(audioRecorderControllerProvider)
-              .enableSpeechRecognition,
-          isFalse,
-        );
-
-        // Act with null
-        controller.setEnableSpeechRecognition(enable: null);
-
-        // Assert
-        expect(
-          container
-              .read(audioRecorderControllerProvider)
-              .enableSpeechRecognition,
-          isNull,
-        );
-      });
-    });
-
-    // NOTE: Tests for _triggerAutomaticPrompts functionality
-    //
-    // The automatic prompt triggering logic is private and tested indirectly
-    // through integration tests that verify the complete recording flow.
-    // These integration tests ensure:
-    //
-    // 1. When category has automatic prompts configured:
-    //    - Speech recognition is triggered based on user preference
-    //    - Task summary is triggered for linked tasks when enabled
-    //
-    // 2. When category has no automatic prompts:
-    //    - No AI inference is triggered after recording
-    //
-    // 3. User preferences (checkboxes) override defaults:
-    //    - Disabling speech recognition prevents transcription
-    //    - Disabling task summary prevents summary generation
-    //    - Disabling checklist updates prevents checklist processing
-    //
-    // 4. Error handling:
-    //    - Exceptions during prompt triggering are caught and logged
-    //    - Recording entry is still created even if AI fails
-    //
-    // Unit testing this would require extensive mocking of:
-    // - SpeechRepository
-    // - AutomaticPromptTrigger
-    // - CategoryDetailsController
-    // - UnifiedAiController (via triggerNewInferenceProvider)
-    //
-    // The integration tests provide better coverage with less brittleness.
-  });
-
   group('AudioRecorderController - Additional Coverage', () {
     group('stop() triggers automatic prompts (lines 276, 282-283)', () {
       test(
@@ -1904,7 +1761,6 @@ void main() {
           final mockTrigger = MockAutomaticPromptTrigger();
           when(
             () => mockTrigger.triggerAutomaticPrompts(
-              any(),
               any(),
               linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
@@ -1950,8 +1806,6 @@ void main() {
             audioRecorderControllerProvider.notifier,
           );
 
-          // ignore: cascade_invocations
-          controller.setEnableSpeechRecognition(enable: true);
           await controller.record(
             linkedId: 'relationship-id',
             transcriptionHandledByCaller: true,
@@ -1961,15 +1815,8 @@ void main() {
           verifyNever(
             () => mockTrigger.triggerAutomaticPrompts(
               any(),
-              any(),
               linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
-          );
-          expect(
-            localContainer
-                .read(audioRecorderControllerProvider)
-                .enableSpeechRecognition,
-            isTrue,
           );
 
           // Start recording with a linkedId so _linkedId is set
@@ -1994,7 +1841,6 @@ void main() {
           verify(
             () => mockTrigger.triggerAutomaticPrompts(
               'stop-entry-id',
-              any(),
               linkedSubjectId: 'linked-task-id',
             ),
           ).called(1);
@@ -2081,7 +1927,6 @@ void main() {
         expect(entryId, 'no-link-entry-id');
         verifyNever(
           () => mockTrigger.triggerAutomaticPrompts(
-            any(),
             any(),
             linkedSubjectId: any(named: 'linkedSubjectId'),
           ),

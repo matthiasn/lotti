@@ -15,8 +15,6 @@ import '../../agents/test_utils.dart';
 
 enum _GeneratedAutomationOperation {
   transcribeDefault,
-  transcribeOptIn,
-  transcribeOptOut,
   analyzeImage,
 }
 
@@ -63,14 +61,9 @@ class _GeneratedAutomationServiceScenario {
   final List<_GeneratedAutomationAssignmentSpec> assignmentSpecs;
 
   SkillType get targetSkillType => switch (operation) {
-    _GeneratedAutomationOperation.transcribeDefault ||
-    _GeneratedAutomationOperation.transcribeOptIn ||
-    _GeneratedAutomationOperation.transcribeOptOut => SkillType.transcription,
+    _GeneratedAutomationOperation.transcribeDefault => SkillType.transcription,
     _GeneratedAutomationOperation.analyzeImage => SkillType.imageAnalysis,
   };
-
-  bool get speechOptedOut =>
-      operation == _GeneratedAutomationOperation.transcribeOptOut;
 
   List<SkillAssignment> get assignments => [
     for (var index = 0; index < assignmentSpecs.length; index++)
@@ -81,7 +74,7 @@ class _GeneratedAutomationServiceScenario {
   ];
 
   List<String> get expectedLookupIds {
-    if (profileMissing || speechOptedOut) return const [];
+    if (profileMissing) return const [];
     return [
       for (var index = 0; index < assignmentSpecs.length; index++)
         if (assignmentSpecs[index].automate)
@@ -90,7 +83,7 @@ class _GeneratedAutomationServiceScenario {
   }
 
   bool get expectedHandled {
-    if (profileMissing || speechOptedOut || !modelSlotPresent) {
+    if (profileMissing || !modelSlotPresent) {
       return false;
     }
     return matchingAssignmentIndices.length == 1;
@@ -672,27 +665,8 @@ void main() {
         },
       );
 
-      test(
-        'returns not-handled when user opted out of speech recognition',
-        () async {
-          final result = await service.tryTranscribe(
-            subjectId: 'task-1',
-            enableSpeechRecognition: false,
-          );
-
-          expect(result.handled, isFalse);
-          verifyNever(() => mockResolver.resolveForSubject(any()));
-          verifyNever(
-            () => mockResolver.resolveTranscriptionProfile(
-              categoryId: any(named: 'categoryId'),
-              subjectId: any(named: 'subjectId'),
-            ),
-          );
-        },
-      );
-
-      test('proceeds when enableSpeechRecognition is null '
-          '(profile-driven default)', () async {
+      test('transcribes through the profile when its skill is '
+          'automated', () async {
         const assignment = SkillAssignment(
           skillId: 'skill-transcribe',
           automate: true,
@@ -1046,28 +1020,11 @@ void main() {
     // the category's automatic transcription and image analysis off, and no
     // later model change repairs it, because the agent keeps resolving to the
     // same bare route.
-    // This service declines silently in five independent places, and the
+    // This service declines silently in four independent places, and the
     // caller only reports the generic "did not handle X". Each decline has to
     // name itself in the app log, or a missing transcript is only diagnosable
     // by reading the code.
     group('skip reasons reach the log', () {
-      test('the per-recording opt-out says so', () async {
-        await service.tryTranscribe(
-          subjectId: 'task-1',
-          enableSpeechRecognition: false,
-        );
-
-        expect(
-          loggedLines(),
-          contains(
-            allOf(
-              startsWith('perRecordingOptOut:'),
-              contains('switched off for this recording'),
-            ),
-          ),
-        );
-      });
-
       test('the category gate says so', () async {
         categoryAllowsAutomation = false;
 
@@ -1738,23 +1695,13 @@ void main() {
         final result = switch (scenario.operation) {
           _GeneratedAutomationOperation.transcribeDefault =>
             await localService.tryTranscribe(subjectId: 'generated-task'),
-          _GeneratedAutomationOperation.transcribeOptIn =>
-            await localService.tryTranscribe(
-              subjectId: 'generated-task',
-              enableSpeechRecognition: true,
-            ),
-          _GeneratedAutomationOperation.transcribeOptOut =>
-            await localService.tryTranscribe(
-              subjectId: 'generated-task',
-              enableSpeechRecognition: false,
-            ),
           _GeneratedAutomationOperation.analyzeImage =>
             await localService.tryAnalyzeImage(subjectId: 'generated-task'),
         };
 
         expect(
           resolverCalls,
-          scenario.speechOptedOut ? 0 : 1,
+          1,
           reason: '$scenario',
         );
         expect(

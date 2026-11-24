@@ -23,14 +23,6 @@ const intervalMs = 20;
 /// A failed start is returned to the recording surface for localized feedback.
 enum AudioRecordingFailure { permissionDenied, startFailed, busy }
 
-/// The automatic prompts a stopped take is owed, held until the take is
-/// committed — so an *Undo* inside the receipt's window never pays for
-/// inference on a recording that is about to be deleted.
-typedef _DeferredAutomation = ({
-  String linkedSubjectId,
-  bool? enableSpeechRecognition,
-});
-
 /// Main controller for audio recording functionality.
 ///
 /// This Riverpod controller manages the complete recording lifecycle including:
@@ -78,7 +70,12 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   bool _transcriptionHandledByCaller = false;
   bool _terminalActionInProgress = false;
   bool _startInProgress = false;
-  final Map<String, _DeferredAutomation> _deferredAutomation = {};
+
+  /// The automatic prompts each stopped take is owed — by its entry id, the
+  /// subject it is linked to — held until the take is committed, so an
+  /// *Undo* inside the receipt's window never pays for inference on a
+  /// recording that is about to be deleted.
+  final Map<String, String> _deferredAutomation = {};
   final StreamController<String?> _takeEnded =
       StreamController<String?>.broadcast(sync: true);
 
@@ -266,16 +263,11 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     try {
       await _recorderRepository.stopRecording();
 
-      // Preserve the inference preferences before resetting state
-      final enableSpeechRecognition = state.enableSpeechRecognition;
-
       state = AudioRecorderState(
         status: AudioRecorderStatus.stopped,
         dBFS: -160,
         progress: Duration.zero,
         inlineHostVisible: false,
-        // Preserve the inference preferences
-        enableSpeechRecognition: enableSpeechRecognition,
       );
 
       if (note != null) {
@@ -292,14 +284,10 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         if (entryId != null &&
             linkedSubjectId != null &&
             !transcriptionHandledByCaller) {
-          final owed = (
-            linkedSubjectId: linkedSubjectId,
-            enableSpeechRecognition: enableSpeechRecognition,
-          );
           if (deferAutomation) {
-            _deferredAutomation[entryId] = owed;
+            _deferredAutomation[entryId] = linkedSubjectId;
           } else {
-            _startAutomaticPrompts(entryId, owed);
+            _startAutomaticPrompts(entryId, linkedSubjectId);
           }
         }
 
@@ -354,14 +342,11 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     _linkedId = null;
     _transcriptionHandledByCaller = false;
 
-    // Preserve the inference preferences before resetting state.
-    final enableSpeechRecognition = state.enableSpeechRecognition;
     state = AudioRecorderState(
       status: AudioRecorderStatus.stopped,
       dBFS: -160,
       progress: Duration.zero,
       inlineHostVisible: false,
-      enableSpeechRecognition: enableSpeechRecognition,
     );
 
     try {
@@ -418,8 +403,8 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// owed, in the background, now that it is committed. Nothing for an id
   /// that owes none, or that was already committed or dropped.
   void commitAutomation(String entryId) {
-    final owed = _deferredAutomation.remove(entryId);
-    if (owed != null) _startAutomaticPrompts(entryId, owed);
+    final subjectId = _deferredAutomation.remove(entryId);
+    if (subjectId != null) _startAutomaticPrompts(entryId, subjectId);
   }
 
   /// Forgets the automatic prompts a deferred take was owed — its entry was
@@ -439,12 +424,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     if (categoryId != _categoryId) {
       _categoryId = categoryId;
     }
-  }
-
-  /// Sets whether to enable speech recognition for the recording.
-  /// If null, uses category default settings.
-  void setEnableSpeechRecognition({required bool? enable}) {
-    state = state.copyWith(enableSpeechRecognition: enable);
   }
 
   /// Pauses any currently playing audio before a recording starts.
@@ -472,23 +451,13 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     }
   }
 
-  /// Starts [_triggerAutomaticPrompts] without waiting for it, so the
-  /// recorder moves on at once. The trigger catches and logs its own
-  /// failures, so nothing is lost by not awaiting it here.
-  void _startAutomaticPrompts(String entryId, _DeferredAutomation owed) =>
-      unawaited(_triggerAutomaticPrompts(entryId, owed));
-
-  /// Triggers automatic prompts based on category settings and the take's
-  /// own *Transcribe* choice, as it stood when the take stopped.
-  Future<void> _triggerAutomaticPrompts(
-    String entryId,
-    _DeferredAutomation owed,
-  ) async {
-    final trigger = ref.read(automaticPromptTriggerProvider);
-    await trigger.triggerAutomaticPrompts(
-      entryId,
-      state.copyWith(enableSpeechRecognition: owed.enableSpeechRecognition),
-      linkedSubjectId: owed.linkedSubjectId,
-    );
-  }
+  /// Starts the automatic prompts a take linked to [subjectId] is owed —
+  /// the transcription its subject's profile automates — without waiting
+  /// for them, so the recorder moves on at once. The trigger catches and
+  /// logs its own failures, so nothing is lost by not awaiting it here.
+  void _startAutomaticPrompts(String entryId, String subjectId) => unawaited(
+    ref
+        .read(automaticPromptTriggerProvider)
+        .triggerAutomaticPrompts(entryId, linkedSubjectId: subjectId),
+  );
 }

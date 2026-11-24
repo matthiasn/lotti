@@ -3024,9 +3024,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get audioRecordingStop => 'Parar';
 
   @override
-  String get audioRecordingTranscribeOption => 'Transcribir';
-
-  @override
   String get avatarCropHint => 'Arrastra para mover · pellizca para ampliar';
 
   @override

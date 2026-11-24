@@ -22,9 +22,7 @@ mixin _$AudioRecorderState {
 /// recorder on screen.
  bool get inlineHostVisible;/// Optional ID to link recording to existing journal entry.
  String? get linkedId;/// Where the running take was started; null while nothing records.
- RecordingOrigin? get origin;/// Whether to trigger speech recognition after recording.
-/// If null, uses category default settings.
- bool? get enableSpeechRecognition;
+ RecordingOrigin? get origin;
 /// Create a copy of AudioRecorderState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -35,16 +33,16 @@ $AudioRecorderStateCopyWith<AudioRecorderState> get copyWith => _$AudioRecorderS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.inlineHostVisible, inlineHostVisible) || other.inlineHostVisible == inlineHostVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.inlineHostVisible, inlineHostVisible) || other.inlineHostVisible == inlineHostVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.origin, origin) || other.origin == origin));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,status,progress,dBFS,inlineHostVisible,linkedId,origin,enableSpeechRecognition);
+int get hashCode => Object.hash(runtimeType,status,progress,dBFS,inlineHostVisible,linkedId,origin);
 
 @override
 String toString() {
-  return 'AudioRecorderState(status: $status, progress: $progress, dBFS: $dBFS, inlineHostVisible: $inlineHostVisible, linkedId: $linkedId, origin: $origin, enableSpeechRecognition: $enableSpeechRecognition)';
+  return 'AudioRecorderState(status: $status, progress: $progress, dBFS: $dBFS, inlineHostVisible: $inlineHostVisible, linkedId: $linkedId, origin: $origin)';
 }
 
 
@@ -55,7 +53,7 @@ abstract mixin class $AudioRecorderStateCopyWith<$Res>  {
   factory $AudioRecorderStateCopyWith(AudioRecorderState value, $Res Function(AudioRecorderState) _then) = _$AudioRecorderStateCopyWithImpl;
 @useResult
 $Res call({
- AudioRecorderStatus status, Duration progress, double dBFS, bool inlineHostVisible, String? linkedId, RecordingOrigin? origin, bool? enableSpeechRecognition
+ AudioRecorderStatus status, Duration progress, double dBFS, bool inlineHostVisible, String? linkedId, RecordingOrigin? origin
 });
 
 
@@ -72,7 +70,7 @@ class _$AudioRecorderStateCopyWithImpl<$Res>
 
 /// Create a copy of AudioRecorderState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? progress = null,Object? dBFS = null,Object? inlineHostVisible = null,Object? linkedId = freezed,Object? origin = freezed,Object? enableSpeechRecognition = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? progress = null,Object? dBFS = null,Object? inlineHostVisible = null,Object? linkedId = freezed,Object? origin = freezed,}) {
   return _then(_self.copyWith(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as AudioRecorderStatus,progress: null == progress ? _self.progress : progress // ignore: cast_nullable_to_non_nullable
@@ -80,8 +78,7 @@ as Duration,dBFS: null == dBFS ? _self.dBFS : dBFS // ignore: cast_nullable_to_n
 as double,inlineHostVisible: null == inlineHostVisible ? _self.inlineHostVisible : inlineHostVisible // ignore: cast_nullable_to_non_nullable
 as bool,linkedId: freezed == linkedId ? _self.linkedId : linkedId // ignore: cast_nullable_to_non_nullable
 as String?,origin: freezed == origin ? _self.origin : origin // ignore: cast_nullable_to_non_nullable
-as RecordingOrigin?,enableSpeechRecognition: freezed == enableSpeechRecognition ? _self.enableSpeechRecognition : enableSpeechRecognition // ignore: cast_nullable_to_non_nullable
-as bool?,
+as RecordingOrigin?,
   ));
 }
 /// Create a copy of AudioRecorderState
@@ -178,10 +175,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool inlineHostVisible,  String? linkedId,  RecordingOrigin? origin,  bool? enableSpeechRecognition)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool inlineHostVisible,  String? linkedId,  RecordingOrigin? origin)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AudioRecorderState() when $default != null:
-return $default(_that.status,_that.progress,_that.dBFS,_that.inlineHostVisible,_that.linkedId,_that.origin,_that.enableSpeechRecognition);case _:
+return $default(_that.status,_that.progress,_that.dBFS,_that.inlineHostVisible,_that.linkedId,_that.origin);case _:
   return orElse();
 
 }
@@ -199,10 +196,10 @@ return $default(_that.status,_that.progress,_that.dBFS,_that.inlineHostVisible,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool inlineHostVisible,  String? linkedId,  RecordingOrigin? origin,  bool? enableSpeechRecognition)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool inlineHostVisible,  String? linkedId,  RecordingOrigin? origin)  $default,) {final _that = this;
 switch (_that) {
 case _AudioRecorderState():
-return $default(_that.status,_that.progress,_that.dBFS,_that.inlineHostVisible,_that.linkedId,_that.origin,_that.enableSpeechRecognition);case _:
+return $default(_that.status,_that.progress,_that.dBFS,_that.inlineHostVisible,_that.linkedId,_that.origin);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -219,10 +216,10 @@ return $default(_that.status,_that.progress,_that.dBFS,_that.inlineHostVisible,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool inlineHostVisible,  String? linkedId,  RecordingOrigin? origin,  bool? enableSpeechRecognition)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool inlineHostVisible,  String? linkedId,  RecordingOrigin? origin)?  $default,) {final _that = this;
 switch (_that) {
 case _AudioRecorderState() when $default != null:
-return $default(_that.status,_that.progress,_that.dBFS,_that.inlineHostVisible,_that.linkedId,_that.origin,_that.enableSpeechRecognition);case _:
+return $default(_that.status,_that.progress,_that.dBFS,_that.inlineHostVisible,_that.linkedId,_that.origin);case _:
   return null;
 
 }
@@ -234,7 +231,7 @@ return $default(_that.status,_that.progress,_that.dBFS,_that.inlineHostVisible,_
 
 
 class _AudioRecorderState implements AudioRecorderState {
-   _AudioRecorderState({required this.status, required this.progress, required this.dBFS, required this.inlineHostVisible, this.linkedId, this.origin, this.enableSpeechRecognition});
+   _AudioRecorderState({required this.status, required this.progress, required this.dBFS, required this.inlineHostVisible, this.linkedId, this.origin});
   
 
 /// Current status of the recorder.
@@ -251,9 +248,6 @@ class _AudioRecorderState implements AudioRecorderState {
 @override final  String? linkedId;
 /// Where the running take was started; null while nothing records.
 @override final  RecordingOrigin? origin;
-/// Whether to trigger speech recognition after recording.
-/// If null, uses category default settings.
-@override final  bool? enableSpeechRecognition;
 
 /// Create a copy of AudioRecorderState
 /// with the given fields replaced by the non-null parameter values.
@@ -265,16 +259,16 @@ _$AudioRecorderStateCopyWith<_AudioRecorderState> get copyWith => __$AudioRecord
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.inlineHostVisible, inlineHostVisible) || other.inlineHostVisible == inlineHostVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.inlineHostVisible, inlineHostVisible) || other.inlineHostVisible == inlineHostVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.origin, origin) || other.origin == origin));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,status,progress,dBFS,inlineHostVisible,linkedId,origin,enableSpeechRecognition);
+int get hashCode => Object.hash(runtimeType,status,progress,dBFS,inlineHostVisible,linkedId,origin);
 
 @override
 String toString() {
-  return 'AudioRecorderState(status: $status, progress: $progress, dBFS: $dBFS, inlineHostVisible: $inlineHostVisible, linkedId: $linkedId, origin: $origin, enableSpeechRecognition: $enableSpeechRecognition)';
+  return 'AudioRecorderState(status: $status, progress: $progress, dBFS: $dBFS, inlineHostVisible: $inlineHostVisible, linkedId: $linkedId, origin: $origin)';
 }
 
 
@@ -285,7 +279,7 @@ abstract mixin class _$AudioRecorderStateCopyWith<$Res> implements $AudioRecorde
   factory _$AudioRecorderStateCopyWith(_AudioRecorderState value, $Res Function(_AudioRecorderState) _then) = __$AudioRecorderStateCopyWithImpl;
 @override @useResult
 $Res call({
- AudioRecorderStatus status, Duration progress, double dBFS, bool inlineHostVisible, String? linkedId, RecordingOrigin? origin, bool? enableSpeechRecognition
+ AudioRecorderStatus status, Duration progress, double dBFS, bool inlineHostVisible, String? linkedId, RecordingOrigin? origin
 });
 
 
@@ -302,7 +296,7 @@ class __$AudioRecorderStateCopyWithImpl<$Res>
 
 /// Create a copy of AudioRecorderState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? progress = null,Object? dBFS = null,Object? inlineHostVisible = null,Object? linkedId = freezed,Object? origin = freezed,Object? enableSpeechRecognition = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? progress = null,Object? dBFS = null,Object? inlineHostVisible = null,Object? linkedId = freezed,Object? origin = freezed,}) {
   return _then(_AudioRecorderState(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as AudioRecorderStatus,progress: null == progress ? _self.progress : progress // ignore: cast_nullable_to_non_nullable
@@ -310,8 +304,7 @@ as Duration,dBFS: null == dBFS ? _self.dBFS : dBFS // ignore: cast_nullable_to_n
 as double,inlineHostVisible: null == inlineHostVisible ? _self.inlineHostVisible : inlineHostVisible // ignore: cast_nullable_to_non_nullable
 as bool,linkedId: freezed == linkedId ? _self.linkedId : linkedId // ignore: cast_nullable_to_non_nullable
 as String?,origin: freezed == origin ? _self.origin : origin // ignore: cast_nullable_to_non_nullable
-as RecordingOrigin?,enableSpeechRecognition: freezed == enableSpeechRecognition ? _self.enableSpeechRecognition : enableSpeechRecognition // ignore: cast_nullable_to_non_nullable
-as bool?,
+as RecordingOrigin?,
   ));
 }
 

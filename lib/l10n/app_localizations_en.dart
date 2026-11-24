@@ -2984,9 +2984,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get audioRecordingStop => 'Stop';
 
   @override
-  String get audioRecordingTranscribeOption => 'Transcribe';
-
-  @override
   String get avatarCropHint => 'Drag to move · pinch to zoom';
 
   @override

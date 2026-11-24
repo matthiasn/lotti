@@ -3031,9 +3031,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get audioRecordingStop => 'Parar';
 
   @override
-  String get audioRecordingTranscribeOption => 'Transcrever';
-
-  @override
   String get avatarCropHint => 'Arrasta para mover · belisca para ampliar';
 
   @override

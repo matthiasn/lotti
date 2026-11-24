@@ -8,7 +8,6 @@ import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
-import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/providers/service_providers.dart'
     show domainLoggerProvider, journalDbProvider;
@@ -42,8 +41,7 @@ class AutomaticPromptTrigger {
   /// transcription skill assigned. If no profile handles it, logs and returns
   /// silently.
   Future<void> triggerAutomaticPrompts(
-    String entryId,
-    AudioRecorderState state, {
+    String entryId, {
     String? linkedSubjectId,
   }) async {
     try {
@@ -60,7 +58,6 @@ class AutomaticPromptTrigger {
       final automationService = ref.read(profileAutomationServiceProvider);
       final result = await automationService.tryTranscribe(
         subjectId: linkedSubjectId,
-        enableSpeechRecognition: state.enableSpeechRecognition,
       );
 
       if (!result.handled) {

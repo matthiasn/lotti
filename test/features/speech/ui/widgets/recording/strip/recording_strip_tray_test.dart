@@ -2,9 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
-import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
-import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recording_receipt_controller.dart';
 import 'package:lotti/features/speech/state/recording_start_guard.dart';
 import 'package:lotti/features/speech/state/recording_tray_controller.dart';
@@ -14,14 +11,7 @@ import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_strip
 import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_strip_tray.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../../../relationships/helpers/check_in_speech_fakes.dart';
 import 'strip_test_bench.dart';
-
-/// A recorder whose take its caller transcribes itself.
-class _CallerTranscribes extends FakeAudioRecorderController {
-  @override
-  bool get transcriptionHandledByCaller => true;
-}
 
 void main() {
   late StripBench bench;
@@ -33,24 +23,11 @@ void main() {
     tester.element(find.byType(RecordingStripTray)),
   );
 
-  Future<void> pump(
-    WidgetTester tester, {
-    AutomaticPromptVisibility visibility = const AutomaticPromptVisibility(
-      speech: true,
-    ),
-    bool take = true,
-  }) async {
+  Future<void> pump(WidgetTester tester, {bool take = true}) async {
     await bench.pump(
       tester,
       const SizedBox(width: 390, child: RecordingStripTray()),
-      extra: [
-        checkboxVisibilityProvider((
-          categoryId: 'category-7',
-          linkedId: stripSubjectId,
-        )).overrideWithValue(visibility),
-      ],
     );
-    bench.recorder.setCategoryId('category-7');
     if (take) await bench.startTake(tester);
   }
 
@@ -63,16 +40,33 @@ void main() {
     }
   }
 
-  testWidgets("over a take it is the full recorder under the strip's own "
-      'leading part', (tester) async {
+  testWidgets("over a take it is the full recorder under the subject's "
+      'title — no caption, no option — the level and the controls across '
+      'its whole width', (tester) async {
     await pump(tester);
+    await tester.pumpAndSettle();
 
     expect(find.byType(RecordingStripLeading), findsOneWidget);
-    expect(find.byType(RecordingStage), findsOneWidget);
-    expect(key(RecordingTransportControls.discardKey), findsOneWidget);
-    expect(key(RecordingTransportControls.stopKey), findsOneWidget);
-    expect(key(RecordingTransportControls.pauseKey), findsOneWidget);
+    expect(find.text(stripSubject.data.title), findsOneWidget);
+    expect(find.text('Recording for'), findsNothing);
+    expect(find.byType(Switch), findsNothing);
     expect(find.byType(RecordingFailureCallout), findsNothing);
+
+    final level = tester.getRect(find.byType(RecordingLevelLine));
+    final discard = tester.getRect(key(RecordingTransportControls.discardKey));
+    final stop = tester.getRect(key(RecordingTransportControls.stopKey));
+    final pause = tester.getRect(key(RecordingTransportControls.pauseKey));
+    // The level and the row share the tray's inner edges; pause and Stop
+    // sit at the end, where the strip keeps them.
+    expect(discard.left, level.left);
+    expect(stop.right, level.right);
+    expect(pause.right, lessThan(stop.left));
+    expect(discard.right, lessThan(pause.left));
+    expect(
+      level.top,
+      greaterThan(tester.getRect(find.text(stripSubject.data.title)).bottom),
+    );
+    expect(discard.top, greaterThan(level.bottom));
   });
 
   testWidgets('the grabber folds it, and is named for it', (tester) async {
@@ -174,47 +168,6 @@ void main() {
     });
   });
 
-  group('Transcribe', () {
-    testWidgets("shows the take's choice and changes it", (tester) async {
-      await pump(tester);
-      expect(key(RecordingStripTray.transcribeKey), findsOneWidget);
-
-      await tester.tap(key(RecordingStripTray.transcribeKey));
-      await tester.pump();
-      expect(
-        container(
-          tester,
-        ).read(audioRecorderControllerProvider).enableSpeechRecognition,
-        isFalse,
-      );
-    });
-
-    testWidgets('is left out where the category and subject have no '
-        'automation', (tester) async {
-      await pump(
-        tester,
-        visibility: const AutomaticPromptVisibility(speech: false),
-      );
-      expect(key(RecordingStripTray.transcribeKey), findsNothing);
-    });
-
-    testWidgets('is left out for a take its caller transcribes itself', (
-      tester,
-    ) async {
-      bench.dispose();
-      bench = StripBench(recorder: _CallerTranscribes());
-      await pump(tester);
-      expect(key(RecordingStripTray.transcribeKey), findsNothing);
-    });
-
-    testWidgets('is left out for a voice note filed nowhere', (tester) async {
-      await pump(tester, take: false);
-      bench.recorder.setCategoryId(null);
-      await bench.startTake(tester, voiceNote: true);
-      expect(key(RecordingStripTray.transcribeKey), findsNothing);
-    });
-  });
-
   group('opened for a failed start', () {
     Future<void> openOn(
       WidgetTester tester,
@@ -236,7 +189,7 @@ void main() {
         key(const ValueKey('recording-failure-microphoneDenied')),
         findsOneWidget,
       );
-      expect(find.byType(RecordingStage), findsNothing);
+      expect(find.byType(RecordingLevelLine), findsNothing);
       expect(find.byType(RecordingStripLeading), findsNothing);
 
       await tester.tap(key(RecordingFailureCallout.openSettingsKey));
@@ -251,7 +204,7 @@ void main() {
         InlineRecordingFailure.recorderBusy,
         take: true,
       );
-      expect(find.byType(RecordingStage), findsOneWidget);
+      expect(find.byType(RecordingLevelLine), findsOneWidget);
 
       await tester.tap(key(RecordingFailureCallout.stopRunningKey));
       await tester.pump();

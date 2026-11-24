@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_timer_pill.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_chip_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -16,16 +15,20 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The recording strip: one slim row that stays on screen, on every page,
-/// while a take runs — the leading part ([RecordingStripLeading]), the live
-/// level, pause, and Stop carrying the running time.
+/// while a take runs — the leading glyph ([RecordingStripLeading]: the way
+/// back, or the live dot), the live level filling the room between it and
+/// the controls, pause, and Stop carrying the running time.
+///
+/// No words: a title cut to a few letters said little, and the level says
+/// the take is live. The tray, opened from the row, names what it is for.
 ///
 /// Stop always saves; the receipt that follows offers Undo. The row's body
 /// — anywhere outside its buttons — opens the full recorder above it as a
 /// tray, as does a swipe up.
 ///
-/// It watches the recorder through selectors: the status, the running time
-/// in whole seconds and what the take is for. The level samples feed only
-/// the bars, so a level tick never rebuilds the row.
+/// It watches the recorder through selectors: the status and the running
+/// time in whole seconds. The level samples feed only the bars, so a level
+/// tick never rebuilds the row.
 class RecordingStrip extends ConsumerWidget {
   const RecordingStrip({super.key});
 
@@ -34,47 +37,10 @@ class RecordingStrip extends ConsumerWidget {
   static const Key pauseKey = ValueKey('recording-strip-pause');
   static const Key stopKey = ValueKey('recording-strip-stop');
 
-  /// The stretch the strip's level is drawn over: about eight bars — enough
-  /// to show the take is live, leaving the subject's name the most room.
-  static double barsWidth(BuildContext context) =>
-      context.designTokens.spacing.step9;
-
-  /// Whether a row [width] wide keeps the bars: never while [paused] —
-  /// there is no level to show — and otherwise only while the subject's
-  /// name keeps at least `spacing.step11`, scaled with the text, beside
-  /// them. On the narrowest phone, or at a large text size, the name comes
-  /// first: the bars are the first thing to go.
-  static bool showsBars(
-    BuildContext context,
-    double width, {
-    bool paused = false,
-  }) {
-    if (paused) return false;
-    final spacing = context.designTokens.spacing;
-    final controls =
-        spacing.step9 +
-        DesignSystemTimerPill.heldWidth(
-          context,
-          DesignSystemTimerPill.elapsedWidthTemplate,
-        ) +
-        spacing.step3 * 4 +
-        spacing.step3 * 2;
-    final leadingChrome = RecordingStripLeading.glyphSlot + spacing.step3 * 3;
-    final name = MediaQuery.textScalerOf(context).scale(spacing.step11);
-    return width - controls - leadingChrome - barsWidth(context) >= name;
-  }
-
-  /// Whether the text is set so large that the strip stacks: the subject on
-  /// a line of its own, the controls beneath it. Past [TextScales.large] —
-  /// where every component takes its large-text layout — one row would
-  /// leave the subject a few letters beside the grown Stop pill.
-  static bool stacked(BuildContext context) =>
-      MediaQuery.textScalerOf(context).scale(1) > TextScales.large;
-
-  /// The strip's height: room for the controls with `spacing.step2` above
-  /// and below — 56 at the default text size — growing with the text scale
-  /// the way the island's capsule does, so the caption and the title never
-  /// clip. Stacked, the subject's line over the controls' row.
+  /// The strip's height — the receipt's too: room for the controls with
+  /// `spacing.step2` above and below — 56 at the default text size —
+  /// growing with the text scale the way the island's capsule does, so the
+  /// receipt's caption and title never clip.
   static double height(BuildContext context) {
     final tokens = context.designTokens;
     final scaler = MediaQuery.textScalerOf(context);
@@ -82,18 +48,12 @@ class RecordingStrip extends ConsumerWidget {
     final text =
         scaler.scale(lines.caption).ceilToDouble() +
         scaler.scale(lines.bodySmall).ceilToDouble();
-    if (stacked(context)) {
-      return math.max(tokens.spacing.step9, text) +
-          tokens.spacing.step2 +
-          tokens.spacing.step9 +
-          tokens.spacing.step2 * 2;
-    }
     return math.max(tokens.spacing.step9, text) + tokens.spacing.step2 * 2;
   }
 
   /// The strip's surface: the island's glass. The strip and the receipt are
-  /// full capsules around their round controls (no [radius]), and take
-  /// `radii.xl` once stacked; the taller tray takes a radius of its own.
+  /// full capsules around their round controls (no [radius]); the taller
+  /// tray takes a radius of its own.
   static Widget surface(
     BuildContext context, {
     required Widget child,
@@ -102,7 +62,7 @@ class RecordingStrip extends ConsumerWidget {
   }) {
     final tokens = context.designTokens;
     final corner = BorderRadius.circular(
-      radius ?? (stacked(context) ? tokens.radii.xl : height(context) / 2),
+      radius ?? height(context) / 2,
     );
     return DsGlassChipSurface(
       key: key,
@@ -146,6 +106,7 @@ class RecordingStrip extends ConsumerWidget {
     final paused = status == AudioRecorderStatus.paused;
     final recorder = ref.read(audioRecorderControllerProvider.notifier);
     final tray = ref.read(recordingTrayControllerProvider.notifier);
+    final gap = SizedBox(width: tokens.spacing.step3);
 
     return surface(
       context,
@@ -162,13 +123,14 @@ class RecordingStrip extends ConsumerWidget {
           child: SizedBox(
             height: height(context),
             child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step3,
-                vertical: stacked(context) ? tokens.spacing.step2 : 0,
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final pause = RecordingRingButton(
+              padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
+              child: Row(
+                children: [
+                  const RecordingStripLeading(compact: true),
+                  gap,
+                  const Expanded(child: _StripBars(key: barsKey)),
+                  gap,
+                  RecordingRingButton(
                     key: pauseKey,
                     emphasized: paused,
                     label: paused
@@ -179,8 +141,9 @@ class RecordingStrip extends ConsumerWidget {
                         : LottiIconsFilled.pause,
                     solid: true,
                     onTap: () => paused ? recorder.resume() : recorder.pause(),
-                  );
-                  final stop = RecordingStopPill(
+                  ),
+                  gap,
+                  RecordingStopPill(
                     key: stopKey,
                     paused: paused,
                     progress: progress,
@@ -189,40 +152,8 @@ class RecordingStrip extends ConsumerWidget {
                       progress,
                     ),
                     onTap: () => ref.read(recordingSessionProvider).stop(),
-                  );
-                  final gap = SizedBox(width: tokens.spacing.step3);
-                  if (stacked(context)) {
-                    // Large text: the subject keeps a line of its own, the
-                    // controls the line beneath it, Stop still last.
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Expanded(child: RecordingStripLeading()),
-                        SizedBox(height: tokens.spacing.step2),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [pause, gap, stop],
-                        ),
-                      ],
-                    );
-                  }
-                  return Row(
-                    children: [
-                      const Expanded(child: RecordingStripLeading()),
-                      if (showsBars(
-                        context,
-                        constraints.maxWidth + tokens.spacing.step3 * 2,
-                        paused: paused,
-                      )) ...[
-                        const _StripBars(key: barsKey),
-                        gap,
-                      ],
-                      pause,
-                      gap,
-                      stop,
-                    ],
-                  );
-                },
+                  ),
+                ],
               ),
             ),
           ),
@@ -232,16 +163,18 @@ class RecordingStrip extends ConsumerWidget {
   }
 }
 
-/// The strip's level: the recorder's own level line over a short stretch.
-/// The one part of the strip that watches every sample.
+/// The strip's level: the recorder's own level line over all the room the
+/// row leaves it, held still while the take is paused. The one part of the
+/// strip that watches every sample.
 class _StripBars extends ConsumerWidget {
   const _StripBars({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return RecordingLevelLine(
-      state: ref.watch(audioRecorderControllerProvider),
-      width: RecordingStrip.barsWidth(context),
+    final state = ref.watch(audioRecorderControllerProvider);
+    return LayoutBuilder(
+      builder: (context, constraints) =>
+          RecordingLevelLine(state: state, width: constraints.maxWidth),
     );
   }
 }

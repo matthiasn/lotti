@@ -2996,9 +2996,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get audioRecordingStop => 'Stop';
 
   @override
-  String get audioRecordingTranscribeOption => 'Transskriber';
-
-  @override
   String get avatarCropHint => 'Træk for at flytte · knib for at zoome';
 
   @override

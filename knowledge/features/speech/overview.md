@@ -140,8 +140,8 @@ currency as well as mounting, preventing microphone startup as soon as
 dismissal begins, including the exit animation; a late platform start is
 stopped and its partial file discarded. A null stop/save result opens the
 tray on the *not saved* card (or the check-in's) instead of passing as
-though it succeeded. `transcriptionHandledByCaller` hides the *Transcribe*
-option and suppresses the recorder's automatic trigger for that recording.
+though it succeeded. `transcriptionHandledByCaller` suppresses the
+recorder's automatic trigger for that recording.
 The flag survives the take leaving its screen and resets on stop/cancel; it
 never changes shared preferences. The caller owns the explicit request after
 save. Starting a new recording clears a previous category even when its new

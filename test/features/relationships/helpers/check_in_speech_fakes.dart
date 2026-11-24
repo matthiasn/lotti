@@ -109,7 +109,6 @@ class FakeAudioRecorderController extends AudioRecorderController {
     this.recordFailure,
     this.stopResult = 'audio-1',
     this.stopThrows = false,
-    this.enableSpeechRecognition,
     this.runningFor,
   });
 
@@ -119,7 +118,6 @@ class FakeAudioRecorderController extends AudioRecorderController {
   /// What `stop` answers; null is a recording that could not be saved.
   String? stopResult;
   bool stopThrows;
-  final bool? enableSpeechRecognition;
 
   /// When set, the recorder starts out already recording for this entry —
   /// a take left running when an earlier sheet was dismissed.
@@ -159,7 +157,6 @@ class FakeAudioRecorderController extends AudioRecorderController {
     dBFS: -160,
     inlineHostVisible: false,
     linkedId: runningFor,
-    enableSpeechRecognition: enableSpeechRecognition,
   );
 
   @override

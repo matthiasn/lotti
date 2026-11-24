@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
+import 'package:lotti/features/speech/state/profile_transcription_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/recording_origin.dart';
@@ -208,14 +208,9 @@ class RecordingSession {
           subjectTitle: recordingSubjectTitle(subject),
           origin: running.origin,
           // The recorder's own automation transcribes only a take linked to
-          // a subject that is still there and has a transcription profile —
-          // the rule the Transcribe option follows — with Transcribe left
-          // on; a caller that transcribes the take itself says so on its
-          // own.
-          transcribing:
-              canTranscribe &&
-              !handledByCaller &&
-              running.enableSpeechRecognition != false,
+          // a subject that is still there and has a transcription profile;
+          // a caller that transcribes the take itself says so on its own.
+          transcribing: canTranscribe && !handledByCaller,
           onSettled: (committed) {
             if (take != null) _settle(take, committed);
           },

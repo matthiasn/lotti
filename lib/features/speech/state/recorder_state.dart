@@ -42,10 +42,6 @@ abstract class AudioRecorderState with _$AudioRecorderState {
 
     /// Where the running take was started; null while nothing records.
     RecordingOrigin? origin,
-
-    /// Whether to trigger speech recognition after recording.
-    /// If null, uses category default settings.
-    bool? enableSpeechRecognition,
   }) = _AudioRecorderState;
 }
 

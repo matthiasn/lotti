@@ -192,27 +192,7 @@ class ProfileAutomationService {
   ///
   /// Returns [AutomationResult.handled] = `true` if a transcription skill
   /// with `automate: true` was found on the subject's agent's profile.
-  ///
-  /// Respects the user's per-recording opt-out:
-  /// - If [enableSpeechRecognition] is `false`, returns not-handled
-  ///   immediately (the user explicitly opted out for this recording).
-  /// - If `null`, defaults to `true` when a profile-driven transcription
-  ///   skill is available with `automate: true`.
-  Future<AutomationResult> tryTranscribe({
-    required String subjectId,
-    bool? enableSpeechRecognition,
-  }) async {
-    // User explicitly opted out for this recording.
-    if (enableSpeechRecognition == false) {
-      _logSkip(
-        'speech recognition was switched off for this recording on subject '
-        '${DomainLogger.sanitizeId(subjectId)}',
-        subDomain: 'perRecordingOptOut',
-        intent: _CallIntent.run,
-      );
-      return AutomationResult.notHandled;
-    }
-
+  Future<AutomationResult> tryTranscribe({required String subjectId}) async {
     if (!await _categoryAllowsAutomation(subjectId, _CallIntent.run)) {
       return AutomationResult.notHandled;
     }
