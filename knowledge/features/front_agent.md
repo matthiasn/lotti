@@ -1173,8 +1173,10 @@ once it is durable — `sendingMessageId`, also set by a retry — and
    from before the segment is claimed, and cancels that segment's
    `QueryCancellation` once the stop record is there (a lookup that fails
    is logged and cancels nothing), recording the door `FrontDoorSkipped(stopped)`; an answer that
-   landed first stands. An older build, which shows no empty reply, shows
-   nothing for it;
+   landed first stands. The same token is checked before any door is
+   walked and before a goal or person is handed the turn, so a stop that
+   lands during the claim or the specialist lookup hands nothing on. An
+   older build, which shows no empty reply, shows nothing for it;
 2. **consumes the turn's recovery record**, so no lease routes it;
 3. **cancels its wake** when this device is waiting on one, by run key
    (`WakeOrchestrator.cancelWake`): dropped from the queue, from the

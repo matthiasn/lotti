@@ -577,6 +577,105 @@ void main() {
       expect(doors().keys, [0]);
     });
 
+    group('a stop that lands as a door is about to be walked', () {
+      var stopped = false;
+
+      setUp(() {
+        stopped = false;
+        when(
+          () => repository.getEntity(frontChatStopMessageId(messageId)),
+        ).thenAnswer((_) async => stopped ? stopRecord() : null);
+      });
+
+      /// Lands the stop, and lets its notification reach the walk.
+      Future<void> stop() async {
+        stopped = true;
+        updates.add({frontAgentId});
+        await pumpEventQueue();
+      }
+
+      test('while the segment is claimed walks no door', () async {
+        seedDispatch(twoProposals().take(1).toList());
+        when(() => titles.titleFor(any(), any())).thenAnswer((_) async {
+          await stop();
+          return 'Garden';
+        });
+
+        await walker.walk(messageId);
+
+        expect(
+          (doors()[0]!.outcome! as FrontDoorSkipped).reason,
+          FrontDoorSkipReason.stopped,
+        );
+      });
+
+      test('while the goal is looked up hands it no turn', () async {
+        seedDispatch([
+          segment(
+            start: 19,
+            end: 24,
+            kind: FrontDestinationKind.goal,
+            id: 'goal-swim',
+          ),
+        ]);
+        when(() => repository.getEntity('goal-swim')).thenAnswer((_) async {
+          await stop();
+          return makeTestIdentity(
+            id: 'goal-swim',
+            agentId: 'goal-swim',
+            kind: AgentKinds.goalAgent,
+          );
+        });
+
+        await walker.walk(messageId);
+
+        expect(
+          (doors()[0]!.outcome! as FrontDoorSkipped).reason,
+          FrontDoorSkipReason.stopped,
+        );
+        verifyNever(
+          () => goalChat.appendMessage(
+            agentId: any(named: 'agentId'),
+            text: any(named: 'text'),
+          ),
+        );
+      });
+
+      test('while the person is looked up hands them no turn', () async {
+        seedDispatch([
+          segment(
+            start: 25,
+            end: 29,
+            kind: FrontDestinationKind.person,
+            id: 'pip',
+          ),
+        ]);
+        when(
+          () => repository.getEntity(relationshipAgentIdFor('pip')),
+        ).thenAnswer((_) async {
+          await stop();
+          return makeTestIdentity(
+            id: relationshipAgentIdFor('pip'),
+            agentId: relationshipAgentIdFor('pip'),
+            kind: AgentKinds.relationshipAgent,
+          );
+        });
+
+        await walker.walk(messageId);
+
+        expect(
+          (doors()[0]!.outcome! as FrontDoorSkipped).reason,
+          FrontDoorSkipReason.stopped,
+        );
+        verifyNever(
+          () => personChat.appendMessage(
+            agentId: any(named: 'agentId'),
+            text: any(named: 'text'),
+          ),
+        );
+      });
+    });
+
     group('while a question is being answered', () {
       late Completer<QueryBuiltAnswer> answer;
       var stopped = false;

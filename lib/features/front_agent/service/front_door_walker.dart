@@ -320,6 +320,8 @@ class FrontDoorWalker {
     required String sourceMessageId,
     required QueryCancellation cancellation,
   }) async {
+    // A stop that landed while the segment was claimed walks no door.
+    cancellation.check();
     final id = segment.destinationId;
     final question = segment.intent == FrontSegmentIntent.question;
     switch (segment.kind) {
@@ -347,6 +349,8 @@ class FrontDoorWalker {
             identity.lifecycle != AgentLifecycle.active) {
           return const FrontDoorSkipped(FrontDoorSkipReason.noAgent);
         }
+        // Nor does one that landed while the goal was looked up.
+        cancellation.check();
         final messageId = await _goalChat.appendMessage(
           agentId: id,
           text: segment.text,
@@ -362,6 +366,7 @@ class FrontDoorWalker {
             null) {
           return const FrontDoorSkipped(FrontDoorSkipReason.noAgent);
         }
+        cancellation.check();
         final messageId = await _personChat.appendMessage(
           agentId: agentId,
           text: segment.text,
