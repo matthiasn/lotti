@@ -1170,8 +1170,9 @@ once it is durable — `sendingMessageId`, also set by a retry — and
    door, so a stop that lands mid-walk ends it there. A question a door is
    already answering is cancelled too: the walk listens to the front
    agent's update notifications — the stop's own, or the synced record's —
-   and cancels that segment's `QueryCancellation` once the stop record is
-   there, recording the door `FrontDoorSkipped(stopped)`; an answer that
+   from before the segment is claimed, and cancels that segment's
+   `QueryCancellation` once the stop record is there (a lookup that fails
+   is logged and cancels nothing), recording the door `FrontDoorSkipped(stopped)`; an answer that
    landed first stands. An older build, which shows no empty reply, shows
    nothing for it;
 2. **consumes the turn's recovery record**, so no lease routes it;

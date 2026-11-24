@@ -145,6 +145,19 @@ class FrontChatComposerState {
         failedDoorIds: failedDoorIds,
       );
 
+  /// The state once a send settled while another conversation was open:
+  /// nothing in flight — no send, and no turn for Stop to target — and the
+  /// box as it is, its pages, the one shown and how its words came, kept.
+  FrontChatComposerState idle() => FrontChatComposerState(
+    draft: draft,
+    draftSpoken: draftSpoken,
+    editingMessageId: editingMessageId,
+    asideDrafts: asideDrafts,
+    draftPage: draftPage,
+    busyDoorIds: busyDoorIds,
+    failedDoorIds: failedDoorIds,
+  );
+
   /// The state after a send settled, with the doors' state kept. A draft
   /// put back after a failure stays the edit of [editingMessageId]; the
   /// pages set [aside] come before it, and with nothing in the box the last
@@ -488,7 +501,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
               if (i != sent) parked.pages[i],
           ]);
         }
-        state = state.copyWith(isSending: false);
+        state = state.idle();
       } else {
         state = _settledWithout(failed, replaces);
       }

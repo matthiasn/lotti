@@ -22,6 +22,7 @@ import 'package:lotti/features/front_agent/service/front_door_walker.dart';
 import 'package:lotti/features/front_agent/service/front_owner_titles.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -139,6 +140,7 @@ void main() {
   /// The door records written so far, by segment index.
   late StreamController<Set<String>> updates;
   late MockUpdateNotifications notifications;
+  late MockDomainLogger logger;
   tearDown(() => updates.close());
 
   Map<int, FrontDoorRecord> doors() {
@@ -154,6 +156,7 @@ void main() {
   setUp(() {
     updates = StreamController<Set<String>>.broadcast();
     notifications = MockUpdateNotifications();
+    logger = MockDomainLogger();
     when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
@@ -191,7 +194,7 @@ void main() {
       personChat: personChat,
       ownerTitles: titles,
       configFlag: (name) async => name == enableDailyOsPageFlag && dayPlanning,
-      domainLogger: MockDomainLogger(),
+      domainLogger: logger,
       notifications: notifications,
     );
   });
@@ -623,6 +626,64 @@ void main() {
         await walk;
 
         expect(doors().keys, [0]);
+        expect(
+          (doors()[0]!.outcome! as FrontDoorSkipped).reason,
+          FrontDoorSkipReason.stopped,
+        );
+      });
+
+      test('a stop that lands while the segment is being claimed still '
+          'cancels its question', () async {
+        // The claim names the owner: the stop lands right then.
+        when(() => titles.titleFor(any(), any())).thenAnswer((_) async {
+          stopped = true;
+          updates.add({frontAgentId});
+          return 'Garden';
+        });
+
+        await walker.walk(messageId);
+
+        expect(doors().keys, [0]);
+        expect(
+          (doors()[0]!.outcome! as FrontDoorSkipped).reason,
+          FrontDoorSkipReason.stopped,
+        );
+      });
+
+      test('a stop lookup that fails is logged and stops nothing; the next '
+          'change asks again', () async {
+        var asked = 0;
+        when(
+          () => repository.getEntity(frontChatStopMessageId(messageId)),
+        ).thenAnswer((_) async {
+          switch (asked++) {
+            case 0:
+              return null;
+            case 1:
+              throw StateError('db closed');
+            default:
+              return stopRecord();
+          }
+        });
+        final walk = walker.walk(messageId);
+        await pumpEventQueue();
+
+        updates.add({frontAgentId});
+        await pumpEventQueue();
+        expect(answer.isCompleted, isFalse);
+        verify(
+          () => logger.error(
+            LogDomain.agentWorkflow,
+            any(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'FrontDoorWalker',
+            message: 'stop lookup failed',
+          ),
+        ).called(1);
+
+        updates.add({frontAgentId});
+        await walk;
+
         expect(
           (doors()[0]!.outcome! as FrontDoorSkipped).reason,
           FrontDoorSkipReason.stopped,

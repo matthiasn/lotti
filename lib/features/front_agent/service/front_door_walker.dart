@@ -130,46 +130,86 @@ class FrontDoorWalker {
     if (dispatch == null) return;
 
     for (var index = 0; index < dispatch.segments.length; index++) {
-      if (await _stopped(messageId)) return;
-      final segment = dispatch.segments[index];
-      final claim = await _claim(
-        dispatchRecord: dispatchRecord,
-        sourceMessageId: messageId,
-        index: index,
-        segment: segment,
-      );
-      if (claim == null) continue;
-      FrontDoorOutcome outcome;
+      // Listening before the stop is asked for: a stop that lands while
+      // the segment is claimed still reaches its query.
       final cancellation = QueryCancellation();
-      final onStop = _notifications.updateStream
-          .where((ids) => ids.contains(frontAgentId))
-          .asyncMap((_) => _stopped(messageId))
-          .where((stopped) => stopped)
-          .listen((_) => cancellation.cancel());
+      final onStop = _cancelOnStop(messageId, cancellation);
       try {
-        outcome = await _walkSegment(
-          segment,
-          sourceMessageId: messageId,
+        if (await _stopped(messageId)) return;
+        await _walkClaimed(
+          dispatchRecord: dispatchRecord,
+          messageId: messageId,
+          index: index,
+          segment: dispatch.segments[index],
           cancellation: cancellation,
         );
-      } on QueryCancelled {
-        outcome = const FrontDoorSkipped(FrontDoorSkipReason.stopped);
-      } catch (error, stackTrace) {
-        // A door's failure is its own: recorded by type, never by text, and
-        // never a reason to stop the other segments.
-        _domainLogger.error(
+      } finally {
+        await onStop.cancel();
+      }
+    }
+  }
+
+  /// Cancels [cancellation] once turn [messageId] is stopped: each change
+  /// to the front agent's rows — the stop's own notification here, or the
+  /// synced record's — asks for the stop record. A lookup that fails is
+  /// logged and stops nothing; the next change asks again.
+  StreamSubscription<bool> _cancelOnStop(
+    String messageId,
+    QueryCancellation cancellation,
+  ) => _notifications.updateStream
+      .where((ids) => ids.contains(frontAgentId))
+      .asyncMap((_) => _stopped(messageId))
+      .listen(
+        (stopped) {
+          if (stopped) cancellation.cancel();
+        },
+        onError: (Object error, StackTrace stackTrace) => _domainLogger.error(
           LogDomain.agentWorkflow,
           error,
           stackTrace: stackTrace,
           subDomain: 'FrontDoorWalker',
-          message: 'door ${segment.kind.wireName} failed',
-        );
-        outcome = FrontDoorFailed(error.runtimeType.toString());
-      } finally {
-        await onStop.cancel();
-      }
-      await _record(claim.id, claim.record.done(outcome), dispatchRecord);
+          message: 'stop lookup failed',
+        ),
+      );
+
+  /// Claims segment [index] and, unless another walker owns it, walks its
+  /// door and records the outcome.
+  Future<void> _walkClaimed({
+    required AgentMessageEntity dispatchRecord,
+    required String messageId,
+    required int index,
+    required FrontDispatchSegment segment,
+    required QueryCancellation cancellation,
+  }) async {
+    final claim = await _claim(
+      dispatchRecord: dispatchRecord,
+      sourceMessageId: messageId,
+      index: index,
+      segment: segment,
+    );
+    if (claim == null) return;
+    FrontDoorOutcome outcome;
+    try {
+      outcome = await _walkSegment(
+        segment,
+        sourceMessageId: messageId,
+        cancellation: cancellation,
+      );
+    } on QueryCancelled {
+      outcome = const FrontDoorSkipped(FrontDoorSkipReason.stopped);
+    } catch (error, stackTrace) {
+      // A door's failure is its own: recorded by type, never by text, and
+      // never a reason to stop the other segments.
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'FrontDoorWalker',
+        message: 'door ${segment.kind.wireName} failed',
+      );
+      outcome = FrontDoorFailed(error.runtimeType.toString());
     }
+    await _record(claim.id, claim.record.done(outcome), dispatchRecord);
   }
 
   /// The newest dispatch record keyed to [messageId], or null.

@@ -1274,8 +1274,11 @@ void main() {
           replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
-      ).thenAnswer((_) async {
+      ).thenAnswer((invocation) async {
         if (attempts++ == 0) throw StateError('db closed');
+        (invocation.namedArguments[#onAppended] as void Function(String))(
+          'm-9',
+        );
         await wake.future;
       });
       controller()
@@ -1295,6 +1298,8 @@ void main() {
       expect(pages(), [words]);
       expect(state().editingMessageId, 'u1');
       expect(state().isSending, isFalse);
+      // The retried turn is done: Stop has nothing here to target.
+      expect(state().sendingMessageId, isNull);
 
       controller().openConversation('c-1');
       expect(pages(), [typed]);
