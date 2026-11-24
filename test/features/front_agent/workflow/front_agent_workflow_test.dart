@@ -778,7 +778,9 @@ Filed under Garden.'''),
   });
 
   group('a turn the user stopped', () {
-    test('neither it nor its stop reaches her recent turns', () async {
+    /// Runs a turn after a stopped one — answered after all when
+    /// [answered] — and returns what the model was sent.
+    Future<String?> sentAfterStop({required bool answered}) async {
       seedMessage();
       when(() => repository.getAgentMessages(frontAgentId)).thenAnswer(
         (_) async => [
@@ -825,6 +827,19 @@ Filed under Garden.'''),
             contentEntryId: 'stop-payload',
             createdAt: DateTime(2026, 10, 22, 10, 1),
           ),
+          if (answered)
+            makeTestMessage(
+              id: 'late-reply',
+              agentId: frontAgentId,
+              kind: AgentMessageKind.action,
+              metadata: const AgentMessageMetadata(
+                toolName: 'reply_to_user',
+                runKey: 'run-1',
+                operationId: 'stopped-user',
+              ),
+              contentEntryId: 'late-reply-payload',
+              createdAt: DateTime(2026, 10, 22, 10, 2),
+            ),
         ],
       );
       final payloads = {
@@ -853,6 +868,11 @@ Filed under Garden.'''),
           agentId: frontAgentId,
           content: const {frontTurnStoppedKey: true},
         ),
+        'late-reply-payload': makeTestMessagePayload(
+          id: 'late-reply-payload',
+          agentId: frontAgentId,
+          content: const {'text': 'Twice is forty-two.'},
+        ),
       };
       when(() => repository.getEntitiesByIds(any())).thenAnswer(
         (invocation) async => {
@@ -867,8 +887,13 @@ Filed under Garden.'''),
       );
 
       final result = await run();
-
       expect(result.success, isTrue);
+      return sent;
+    }
+
+    test('neither it nor its stop reaches her recent turns', () async {
+      final sent = await sentAfterStop(answered: false);
+
       expect(
         sent,
         contains(
@@ -876,6 +901,19 @@ Filed under Garden.'''),
         ),
       );
       expect(sent, isNot(contains('Count the hatchlings twice')));
+    });
+
+    test('one she answered before the stop landed stays, with her answer, '
+        'as the thread shows it', () async {
+      final sent = await sentAfterStop(answered: true);
+
+      expect(
+        sent,
+        contains(
+          '- user: Count the hatchlings twice\n'
+          '- reply: Twice is forty-two.\n</',
+        ),
+      );
     });
   });
 

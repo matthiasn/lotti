@@ -128,7 +128,7 @@ class FrontConversationService {
     List<AgentMessageEntity> rows,
     Map<String, String> conversationOfTurn,
   ) async {
-    // Each conversation's replies and questions, newest first.
+    // Each conversation's replies and questions, oldest first.
     final candidates = <String, List<AgentMessageEntity>>{};
     for (final row in rows) {
       if (!isFrontAnswerRow(row)) continue;
@@ -139,16 +139,16 @@ class FrontConversationService {
       }
       final conversation = conversationOfTurn[row.metadata.operationId];
       if (conversation != null && row.contentEntryId != null) {
-        candidates.putIfAbsent(conversation, () => []).insert(0, row);
+        candidates.putIfAbsent(conversation, () => []).add(row);
       }
     }
     final previews = <String, String>{};
     var round = 0;
     while (true) {
       final asked = {
-        for (final MapEntry(key: id, value: newestFirst) in candidates.entries)
-          if (!previews.containsKey(id) && round < newestFirst.length)
-            id: newestFirst[round],
+        for (final MapEntry(key: id, value: oldestFirst) in candidates.entries)
+          if (!previews.containsKey(id) && round < oldestFirst.length)
+            id: oldestFirst[oldestFirst.length - 1 - round],
       };
       if (asked.isEmpty) return previews;
       final payloads = await _repository.getEntitiesByIds({

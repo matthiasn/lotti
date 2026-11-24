@@ -818,7 +818,7 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
                   : message.id == composer.sendingMessageId
                   ? FrontUserMessageStatus.working
                   : FrontUserMessageStatus.settled,
-              onEdit: controller.updateDraft,
+              onEdit: (text) => controller.edit(message.id, text),
               bubble: bubble,
             ),
         // A spoken question gets a spoken answer, whichever of her views —

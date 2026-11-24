@@ -22,10 +22,12 @@ class FrontChatComposerState {
     this.draftSpoken = false,
     this.isSending = false,
     this.sendingMessageId,
+    this.editingMessageId,
     this.failedMessage,
     this.failedMessageId,
     this.failedConversationId,
     this.failedCategoryIds = const {},
+    this.failedReplaces,
     this.failure,
     this.failureCause,
     this.busyDoorIds = const {},
@@ -42,6 +44,10 @@ class FrontChatComposerState {
   /// The turn on its way, once it is durable: what Stop stops, and the one
   /// message of the thread she is working on.
   final String? sendingMessageId;
+
+  /// The stopped turn whose words [draft] was taken from: the draft, sent,
+  /// takes its place in the thread.
+  final String? editingMessageId;
 
   /// Doors whose action — filing, declining, a chip — is in flight.
   final Set<String> busyDoorIds;
@@ -64,6 +70,10 @@ class FrontChatComposerState {
   /// scope it was typed under, whatever is picked since.
   final Set<String> failedCategoryIds;
 
+  /// The stopped turn the failed turn was edited from, so a retry that has
+  /// to write it again still takes that turn's place.
+  final String? failedReplaces;
+
   /// Why that turn did not go through, so the chat can say what to do.
   final FrontTurnFailure? failure;
 
@@ -75,13 +85,14 @@ class FrontChatComposerState {
   /// start of a send both clear it, and a failure is only ever set whole.
   /// The doors' state rides along untouched.
   ///
-  /// An empty draft is never spoken: emptying the field, or a send, clears
-  /// [draftSpoken] with it.
+  /// An empty draft is never spoken, nor an edit: emptying the field, or a
+  /// send, clears [draftSpoken] and [editingMessageId] with it.
   FrontChatComposerState copyWith({
     String? draft,
     bool? draftSpoken,
     bool? isSending,
     String? sendingMessageId,
+    String? editingMessageId,
     Set<String>? busyDoorIds,
     Set<String>? failedDoorIds,
   }) => FrontChatComposerState(
@@ -90,25 +101,33 @@ class FrontChatComposerState {
         (draft ?? this.draft).isNotEmpty && (draftSpoken ?? this.draftSpoken),
     isSending: isSending ?? this.isSending,
     sendingMessageId: sendingMessageId ?? this.sendingMessageId,
+    editingMessageId: (draft ?? this.draft).isEmpty
+        ? null
+        : editingMessageId ?? this.editingMessageId,
     busyDoorIds: busyDoorIds ?? this.busyDoorIds,
     failedDoorIds: failedDoorIds ?? this.failedDoorIds,
   );
 
-  /// The state after a send settled, with the doors' state kept.
+  /// The state after a send settled, with the doors' state kept. A draft
+  /// put back after a failure stays the edit of [editingMessageId].
   FrontChatComposerState settled({
     String draft = '',
+    String? editingMessageId,
     String? failedMessage,
     String? failedMessageId,
     String? failedConversationId,
     Set<String> failedCategoryIds = const {},
+    String? failedReplaces,
     FrontTurnFailure? failure,
     Object? failureCause,
   }) => FrontChatComposerState(
     draft: draft,
+    editingMessageId: draft.isEmpty ? null : editingMessageId,
     failedMessage: failedMessage,
     failedMessageId: failedMessageId,
     failedConversationId: failedConversationId,
     failedCategoryIds: failedCategoryIds,
+    failedReplaces: failedMessage == null ? null : failedReplaces,
     failure: failedMessage == null ? null : failure ?? FrontTurnFailure.unknown,
     failureCause: failedMessage == null ? null : failureCause,
     busyDoorIds: busyDoorIds,
@@ -138,8 +157,15 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     state = state.copyWith(draftSpoken: true);
   }
 
+  /// Takes the words of stopped turn [messageId] back into the box; sent,
+  /// they take its place in the thread.
+  void edit(String messageId, String text) {
+    state = state.copyWith(draft: text, editingMessageId: messageId);
+  }
+
   /// Sends the draft.
-  Future<void> send() => sendText(state.draft);
+  Future<void> send() =>
+      sendText(state.draft, replaces: state.editingMessageId);
 
   /// Stops the turn on its way: she does not answer it, the thread shows it
   /// stopped, and its words can be taken back into the box to send again.
@@ -148,15 +174,17 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   Future<void> stop() async {
     final messageId = state.sendingMessageId;
     if (messageId == null) return;
-    // No answer is coming to speak.
-    ref.read(frontSpokenTurnProvider.notifier).settle();
     try {
       await ref
           .read(frontChatServiceProvider)
           .stopMessage(messageId: messageId);
     } on Object {
-      // Not recorded: the turn goes on, and Stop can be pressed again.
+      // Not recorded: the turn goes on — its answer still spoken if it was
+      // asked aloud — and Stop can be pressed again.
+      return;
     }
+    // No answer is coming to speak.
+    ref.read(frontSpokenTurnProvider.notifier).settle();
   }
 
   void _sending(String messageId) {
@@ -165,13 +193,19 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
 
   /// Sends the draft the user spoke — a transcript — so her reply is spoken
   /// back.
-  Future<void> sendSpoken() => sendText(state.draft, spoken: true);
+  Future<void> sendSpoken() =>
+      sendText(state.draft, spoken: true, replaces: state.editingMessageId);
 
   /// Sends [text] as the user's next turn — the draft, or the label of a
   /// chip the user tapped under a clarifying question. A [spoken] turn's
   /// reply is spoken back; any other turn's only written. The turn carries
-  /// the category its conversation is scoped to ([frontChatCategoryOf]).
-  Future<void> sendText(String text, {bool spoken = false}) async {
+  /// the category its conversation is scoped to ([frontChatCategoryOf]), and
+  /// the stopped turn it [replaces] when it was edited from one.
+  Future<void> sendText(
+    String text, {
+    bool spoken = false,
+    String? replaces,
+  }) async {
     final message = text.trim();
     if (state.isSending || message.isEmpty) return;
     // A send is a new turn, and its conversation is where it lands.
@@ -198,6 +232,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
             text: message,
             conversationId: landing,
             categoryIds: categoryIds,
+            replaces: replaces,
             onAppended: _sending,
           );
       await _unarchive(landing);
@@ -212,10 +247,12 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
       _reproject();
       state = state.settled(
         draft: _draftAfterFailure(message),
+        editingMessageId: _editAfterFailure(replaces),
         failedMessage: message,
         failedMessageId: error.messageId,
         failedConversationId: conversationId,
         failedCategoryIds: categoryIds,
+        failedReplaces: replaces,
         failure: error.failure,
         failureCause: error.cause,
       );
@@ -223,9 +260,11 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
       ref.read(frontSpokenTurnProvider.notifier).settle();
       state = state.settled(
         draft: _draftAfterFailure(message),
+        editingMessageId: _editAfterFailure(replaces),
         failedMessage: message,
         failedConversationId: conversationId,
         failedCategoryIds: categoryIds,
+        failedReplaces: replaces,
       );
     }
   }
@@ -289,6 +328,12 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   String _draftAfterFailure(String message) =>
       state.draft.isEmpty ? message : state.draft;
 
+  /// The edit the box is after a failed send that [replaces] a stopped
+  /// turn: still that edit when its words are put back, none when the box
+  /// keeps what the user typed since.
+  String? _editAfterFailure(String? replaces) =>
+      state.draft.isEmpty ? replaces : null;
+
   /// Talking in an archived conversation brings it back: it is in use. Best
   /// effort — the turn is sent, so a failure here must not offer a retry
   /// that would write it twice.
@@ -312,6 +357,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     final messageId = state.failedMessageId;
     final typedIn = state.failedConversationId;
     final scopedTo = state.failedCategoryIds;
+    final replaces = state.failedReplaces;
     if (failed == null || state.isSending) return;
     state = state.copyWith(isSending: true);
     try {
@@ -323,6 +369,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
           text: failed,
           conversationId: conversationId,
           categoryIds: scopedTo,
+          replaces: replaces,
           onAppended: _sending,
         );
       } else {
@@ -335,20 +382,24 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
       _reproject();
       state = state.settled(
         draft: failed,
+        editingMessageId: replaces,
         failedMessage: failed,
         failedMessageId: error.messageId ?? messageId,
         failedConversationId: typedIn,
         failedCategoryIds: scopedTo,
+        failedReplaces: replaces,
         failure: error.failure,
         failureCause: error.cause,
       );
     } catch (_) {
       state = state.settled(
         draft: failed,
+        editingMessageId: replaces,
         failedMessage: failed,
         failedMessageId: messageId,
         failedConversationId: typedIn,
         failedCategoryIds: scopedTo,
+        failedReplaces: replaces,
       );
     }
   }

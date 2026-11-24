@@ -127,6 +127,7 @@ void main() {
       () => chatService.sendMessage(
         text: 'Hello',
         conversationId: 'c-1',
+        replaces: any(named: 'replaces'),
         onAppended: any(named: 'onAppended'),
       ),
     ).thenThrow(StateError('db closed'));
@@ -166,6 +167,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async {});
@@ -177,6 +179,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).called(1);
@@ -188,6 +191,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Count the hatchlings',
           conversationId: any(named: 'conversationId'),
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async {});
@@ -203,6 +207,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Count the hatchlings',
           conversationId: fresh!,
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).called(1);
@@ -345,6 +350,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'More',
           conversationId: 'c-0',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async {});
@@ -366,6 +372,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'More',
           conversationId: 'c-0',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).called(1);
@@ -380,6 +387,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async {});
@@ -400,6 +408,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ]);
@@ -418,6 +427,7 @@ void main() {
         () => chatService.sendMessage(
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       );
@@ -428,6 +438,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Swim 2 km',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async {});
@@ -436,6 +447,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Swim 2 km',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).called(1);
@@ -449,6 +461,7 @@ void main() {
           () => chatService.sendMessage(
             text: 'Hello',
             conversationId: 'c-1',
+            replaces: any(named: 'replaces'),
             onAppended: any(named: 'onAppended'),
           ),
         ).thenThrow(
@@ -472,6 +485,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) => answering.future);
@@ -494,6 +508,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) => answering.future);
@@ -519,6 +534,7 @@ void main() {
           () => chatService.sendMessage(
             text: 'Hello',
             conversationId: 'c-1',
+            replaces: any(named: 'replaces'),
             onAppended: any(named: 'onAppended'),
           ),
         ).thenAnswer((_) => answering.future);
@@ -540,6 +556,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(StateError('db closed'));
@@ -559,6 +576,7 @@ void main() {
       () => chatService.sendMessage(
         text: 'Hello',
         conversationId: 'c-1',
+        replaces: any(named: 'replaces'),
         onAppended: any(named: 'onAppended'),
       ),
     ).thenAnswer((_) async {
@@ -580,6 +598,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async {
@@ -601,6 +620,7 @@ void main() {
         () => chatService.sendMessage(
           text: any(named: 'text'),
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async {});
@@ -619,6 +639,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(const FrontChatTurnException('boom', messageId: 'm-1'));
@@ -635,6 +656,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(StateError('db closed'));
@@ -655,6 +677,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((invocation) async {
@@ -734,12 +757,31 @@ void main() {
       await send;
     });
 
+    test('a spoken turn whose stop could not be recorded still gets its '
+        'spoken reply', () async {
+      final wake = Completer<void>();
+      stubSendWaiting(wake);
+      when(
+        () => chatService.stopMessage(messageId: 'm-1'),
+      ).thenAnswer((_) async => throw StateError('db closed'));
+      controller().updateDraft('Hello');
+
+      final send = controller().sendSpoken();
+      await pumpEventQueue();
+      await controller().stop();
+
+      expect(container.read(frontSpokenTurnProvider)?.conversationId, 'c-1');
+      wake.complete();
+      await send;
+    });
+
     test('a retried durable turn can be stopped while it is on its way '
         'again', () async {
       when(
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(const FrontChatTurnException('boom', messageId: 'm-1'));
@@ -768,6 +810,7 @@ void main() {
           () => chatService.sendMessage(
             text: 'Hello',
             conversationId: 'c-1',
+            replaces: any(named: 'replaces'),
             onAppended: any(named: 'onAppended'),
           ),
         ).thenAnswer((invocation) async {
@@ -790,6 +833,136 @@ void main() {
     );
   });
 
+  group('editing a stopped turn', () {
+    void stubSend(String text) => when(
+      () => chatService.sendMessage(
+        text: text,
+        conversationId: 'c-1',
+        replaces: any(named: 'replaces'),
+        onAppended: any(named: 'onAppended'),
+      ),
+    ).thenAnswer((_) async {});
+
+    String? replacesOfSend(String text) =>
+        verify(
+              () => chatService.sendMessage(
+                text: text,
+                conversationId: 'c-1',
+                replaces: captureAny(named: 'replaces'),
+                onAppended: any(named: 'onAppended'),
+              ),
+            ).captured.single
+            as String?;
+
+    test('its words land in the box, and sent, they replace it', () async {
+      stubSend('Count the chicks');
+
+      controller().edit('u1', 'Count the hatchlings');
+      expect(state().draft, 'Count the hatchlings');
+      expect(state().editingMessageId, 'u1');
+
+      controller().updateDraft('Count the chicks');
+      await controller().send();
+
+      expect(replacesOfSend('Count the chicks'), 'u1');
+      expect(state().editingMessageId, isNull);
+    });
+
+    test('a spoken send of the edit replaces it too', () async {
+      stubSend('Count the chicks');
+      controller().edit('u1', 'Count the chicks');
+
+      await controller().sendSpoken();
+
+      expect(replacesOfSend('Count the chicks'), 'u1');
+    });
+
+    test('emptying the box gives the edit up: the next turn is new', () async {
+      stubSend('Count the eggs');
+      controller().edit('u1', 'Count the hatchlings');
+
+      controller().updateDraft('');
+      expect(state().editingMessageId, isNull);
+      controller().updateDraft('Count the eggs');
+      await controller().send();
+
+      expect(replacesOfSend('Count the eggs'), isNull);
+    });
+
+    test('an edit that could not be written stays the edit: in the box, '
+        'and on a retry', () async {
+      var attempts = 0;
+      when(
+        () => chatService.sendMessage(
+          text: 'Count the chicks',
+          conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
+          onAppended: any(named: 'onAppended'),
+        ),
+      ).thenAnswer((_) async {
+        if (attempts++ == 0) throw StateError('db closed');
+      });
+      controller().edit('u1', 'Count the chicks');
+
+      await controller().send();
+
+      expect(state().draft, 'Count the chicks');
+      expect(state().editingMessageId, 'u1');
+      expect(state().failedReplaces, 'u1');
+
+      await controller().retry();
+
+      final replaced = verify(
+        () => chatService.sendMessage(
+          text: 'Count the chicks',
+          conversationId: 'c-1',
+          replaces: captureAny(named: 'replaces'),
+          onAppended: any(named: 'onAppended'),
+        ),
+      ).captured;
+      expect(replaced, ['u1', 'u1']);
+      expect(state().failedReplaces, isNull);
+    });
+
+    test(
+      'a failed edit gives the edit up when the box keeps newer words',
+      () async {
+        final wake = Completer<void>();
+        when(
+          () => chatService.sendMessage(
+            text: 'Count the chicks',
+            conversationId: 'c-1',
+            replaces: any(named: 'replaces'),
+            onAppended: any(named: 'onAppended'),
+          ),
+        ).thenAnswer((_) async {
+          await wake.future;
+          throw StateError('db closed');
+        });
+        controller().edit('u1', 'Count the chicks');
+
+        final send = controller().send();
+        await pumpEventQueue();
+        controller().updateDraft('And the eggs?');
+        wake.complete();
+        await send;
+
+        expect(state().draft, 'And the eggs?');
+        expect(state().editingMessageId, isNull);
+        expect(state().failedReplaces, 'u1');
+      },
+    );
+
+    test('a chip tapped under her question is never an edit', () async {
+      stubSend('Yes');
+      controller().edit('u1', 'Count the hatchlings');
+
+      await controller().sendText('Yes');
+
+      expect(replacesOfSend('Yes'), isNull);
+    });
+  });
+
   group('retry', () {
     test("a failed turn keeps its cause; a retry's own failure replaces it "
         'and its success clears it', () async {
@@ -797,6 +970,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(
@@ -838,6 +1012,7 @@ void main() {
           () => chatService.sendMessage(
             text: 'Hello',
             conversationId: 'c-1',
+            replaces: any(named: 'replaces'),
             onAppended: any(named: 'onAppended'),
           ),
         ).thenThrow(
@@ -856,6 +1031,7 @@ void main() {
           () => chatService.sendMessage(
             text: 'Hello',
             conversationId: 'c-1',
+            replaces: any(named: 'replaces'),
             onAppended: any(named: 'onAppended'),
           ),
         ).called(1);
@@ -870,6 +1046,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((
@@ -895,6 +1072,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async {
@@ -918,6 +1096,7 @@ void main() {
         () => chatService.sendMessage(
           text: any(named: 'text'),
           conversationId: 'c-2',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       );
@@ -929,6 +1108,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(StateError('first'));
@@ -938,6 +1118,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(
@@ -957,6 +1138,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(
@@ -982,6 +1164,7 @@ void main() {
         () => chatService.sendMessage(
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       );
@@ -1105,6 +1288,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Hello',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async {});
@@ -1115,6 +1299,7 @@ void main() {
         () => chatService.sendMessage(
           text: 'Again',
           conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(StateError('x'));
@@ -1216,6 +1401,7 @@ void main() {
         text: any(named: 'text'),
         conversationId: any(named: 'conversationId'),
         categoryIds: any(named: 'categoryIds'),
+        replaces: any(named: 'replaces'),
         onAppended: any(named: 'onAppended'),
       ),
     ).thenAnswer((_) async {});
@@ -1226,6 +1412,7 @@ void main() {
                 text: text,
                 conversationId: any(named: 'conversationId'),
                 categoryIds: captureAny(named: 'categoryIds'),
+                replaces: any(named: 'replaces'),
                 onAppended: any(named: 'onAppended'),
               ),
             ).captured.single
@@ -1243,6 +1430,7 @@ void main() {
           text: 'How many chicks?',
           conversationId: 'c-1',
           categoryIds: {'cat-penguins'},
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).called(1);
@@ -1296,6 +1484,7 @@ void main() {
           text: 'Count them',
           conversationId: 'c-1',
           categoryIds: {'cat-penguins'},
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(const FrontChatTurnException('offline'));
@@ -1315,6 +1504,7 @@ void main() {
           text: 'Count them',
           conversationId: 'c-1',
           categoryIds: {'cat-penguins'},
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).called(2);
@@ -1329,6 +1519,7 @@ void main() {
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
           categoryIds: any(named: 'categoryIds'),
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(StateError('db closed'));
@@ -1349,6 +1540,7 @@ void main() {
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
           categoryIds: any(named: 'categoryIds'),
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(const FrontChatTurnException('offline'));
@@ -1365,6 +1557,7 @@ void main() {
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
           categoryIds: any(named: 'categoryIds'),
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenThrow(StateError('db closed'));
@@ -1394,6 +1587,7 @@ void main() {
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
           categoryIds: any(named: 'categoryIds'),
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async => storedScope = {'cat-penguins'});
@@ -1414,6 +1608,7 @@ void main() {
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
           categoryIds: any(named: 'categoryIds'),
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async {
@@ -1440,6 +1635,7 @@ void main() {
           text: any(named: 'text'),
           conversationId: any(named: 'conversationId'),
           categoryIds: any(named: 'categoryIds'),
+          replaces: any(named: 'replaces'),
           onAppended: any(named: 'onAppended'),
         ),
       ).thenAnswer((_) async => storedScope = {'cat-habitat'});

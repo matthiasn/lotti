@@ -610,11 +610,24 @@ class FrontAgentWorkflow with AgentErrorLogging {
           (message, payload),
     ];
     // A turn the user stopped is not part of what was said — its words come
-    // back edited, as a turn of their own. The record of the stop has no
-    // words, so it renders as no turn.
+    // back edited, as a turn of their own — unless she answered it before
+    // the stop landed, when the thread keeps it with her answer, and so does
+    // this. The record of the stop has no words, so it renders as no turn.
+    final answered = {
+      for (final (message, payload) in withPayloads)
+        if (switch (message.metadata.toolName) {
+              FrontAgentToolNames.replyToUser => payload.content['text'],
+              FrontAgentToolNames.askUser => payload.content['question'],
+              _ => null,
+            }
+            case final String words when words.trim().isNotEmpty)
+          message.metadata.operationId,
+    };
     final stopped = {
       for (final (message, payload) in withPayloads)
-        if (frontTurnStopped(payload.content)) message.metadata.operationId,
+        if (frontTurnStopped(payload.content) &&
+            !answered.contains(message.metadata.operationId))
+          message.metadata.operationId,
     };
     // A door record renders as no turn: it is read only for its tasks.
     final turns = [

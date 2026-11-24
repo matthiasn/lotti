@@ -155,29 +155,34 @@ class _FrontChatUserMessageState extends State<FrontChatUserMessage> {
           canRequestFocus: false,
           skipTraversal: true,
           onFocusChange: (focused) => setState(() => _focused = focused),
-          child: AnimatedOpacity(
-            opacity: showIcons ? 1 : 0,
-            duration: MotionDurations.short3,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DesignSystemIconAction(
-                  key: FrontChatUserMessageKeys.copy(id),
-                  icon: LottiIcons.copy,
-                  tooltip: messages.frontChatMessageCopy,
-                  onPressed: _copy,
-                ),
-                if (widget.status != FrontUserMessageStatus.settled)
+          // Hidden icons take no taps — a touch screen at desktop width never
+          // hovers to show them first.
+          child: IgnorePointer(
+            ignoring: !showIcons,
+            child: AnimatedOpacity(
+              opacity: showIcons ? 1 : 0,
+              duration: MotionDurations.short3,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   DesignSystemIconAction(
-                    key: FrontChatUserMessageKeys.edit(id),
-                    icon: LottiIcons.edit,
-                    // While she works on it, the tooltip says why not yet.
-                    tooltip: _stopped
-                        ? messages.frontChatMessageEdit
-                        : messages.frontChatMessageBusy,
-                    onPressed: _stopped ? _edit : null,
+                    key: FrontChatUserMessageKeys.copy(id),
+                    icon: LottiIcons.copy,
+                    tooltip: messages.frontChatMessageCopy,
+                    onPressed: _copy,
                   ),
-              ],
+                  if (widget.status != FrontUserMessageStatus.settled)
+                    DesignSystemIconAction(
+                      key: FrontChatUserMessageKeys.edit(id),
+                      icon: LottiIcons.edit,
+                      // While she works on it, the tooltip says why not yet.
+                      tooltip: _stopped
+                          ? messages.frontChatMessageEdit
+                          : messages.frontChatMessageBusy,
+                      onPressed: _stopped ? _edit : null,
+                    ),
+                ],
+              ),
             ),
           ),
         ),

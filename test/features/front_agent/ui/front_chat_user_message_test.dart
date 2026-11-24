@@ -183,6 +183,24 @@ void main() {
       expect(iconsOpacity(tester), 0);
     });
 
+    testWidgets('hidden icons take no taps — a touch never hovers to show '
+        'them first', (tester) async {
+      await pump(tester, FrontUserMessageStatus.stopped, desktop: true);
+
+      await tester.tap(
+        find.byKey(FrontChatUserMessageKeys.copy(id)),
+        warnIfMissed: false,
+      );
+      await tester.tap(
+        find.byKey(FrontChatUserMessageKeys.edit(id)),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+
+      expect(copied, isEmpty);
+      expect(edited, isEmpty);
+    });
+
     testWidgets('focus in the icons shows them too', (tester) async {
       await pump(tester, FrontUserMessageStatus.stopped, desktop: true);
 

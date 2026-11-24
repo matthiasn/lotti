@@ -199,6 +199,8 @@ void main() {
         final payload = upserts.whereType<AgentMessagePayloadEntity>().single;
         expect(payload.content.containsKey(frontCategoriesKey), isFalse);
         expect(frontCategoriesOf(payload.content), isEmpty);
+        // Nor, typed fresh, a turn it replaces.
+        expect(payload.content.containsKey(frontTurnReplacesKey), isFalse);
       },
     );
 
@@ -310,6 +312,7 @@ void main() {
         text: 'Hello',
         conversationId: 'c-1',
         categoryIds: {'cat-penguins'},
+        replaces: 'u-stopped',
       );
 
       final message = upserts.whereType<AgentMessageEntity>().single;
@@ -322,6 +325,13 @@ void main() {
           upserts.whereType<AgentMessagePayloadEntity>().single.content,
         ),
         {'cat-penguins'},
+      );
+      // So does the stopped turn it was edited from.
+      expect(
+        frontTurnReplaces(
+          upserts.whereType<AgentMessagePayloadEntity>().single.content,
+        ),
+        'u-stopped',
       );
     });
 

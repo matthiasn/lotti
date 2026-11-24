@@ -102,8 +102,8 @@ While she works on a turn, the composer's send is **Stop**: the turn stays
 in the thread marked *Stopped*, unanswered, and no device routes it later.
 A long press on one of the user's own messages (on a desktop, icons under
 it while the pointer is over it) offers *Copy* — and, on a stopped one,
-*Edit*, which puts its words back in the box to change and send as a new
-turn; a long press on the turn she is working on says to stop it first.
+*Edit*, which puts its words back in the box to change and send again, the
+edit taking the stopped turn's place; a long press on the turn she is working on says to stop it first.
 
 ## What it owns
 

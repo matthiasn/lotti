@@ -29,6 +29,17 @@ const frontTurnStoppedKey = 'stopped';
 bool frontTurnStopped(Map<String, Object?> content) =>
     content[frontTurnStoppedKey] == true;
 
+/// The key under which a user turn's payload names the stopped turn it was
+/// edited from: the thread shows the edit in that turn's place.
+const frontTurnReplacesKey = 'replaces';
+
+/// The stopped turn a user turn's payload [content] was edited from, if any.
+String? frontTurnReplaces(Map<String, Object?> content) =>
+    switch (content[frontTurnReplacesKey]) {
+      final String id when id.isNotEmpty => id,
+      _ => null,
+    };
+
 /// The key under which a user turn's payload names the categories its
 /// question is narrowed to — the conversation's chips when it was sent.
 const frontCategoriesKey = 'categoryIds';

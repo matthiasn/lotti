@@ -64,4 +64,11 @@ void main() {
     expect(frontTurnStopped(const {frontTurnStoppedKey: 'yes'}), isFalse);
     expect(frontTurnStopped(const {frontTurnStoppedKey: false}), isFalse);
   });
+
+  test('a turn names the stopped turn it replaces only by a non-empty id', () {
+    expect(frontTurnReplaces(const {frontTurnReplacesKey: 'u1'}), 'u1');
+    expect(frontTurnReplaces(const {'text': 'Count the eggs'}), isNull);
+    expect(frontTurnReplaces(const {frontTurnReplacesKey: ''}), isNull);
+    expect(frontTurnReplaces(const {frontTurnReplacesKey: 7}), isNull);
+  });
 }

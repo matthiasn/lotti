@@ -79,17 +79,20 @@ class FrontChatService {
   /// re-runs it.
   ///
   /// [onAppended] is told the turn's id once it is durable, before its wake
-  /// is enqueued — what [stopMessage] takes.
+  /// is enqueued — what [stopMessage] takes. A turn edited from a stopped
+  /// one names it in [replaces], and the thread shows it in that one's place.
   Future<void> sendMessage({
     required String text,
     required String conversationId,
     Set<String> categoryIds = const {},
+    String? replaces,
     void Function(String messageId)? onAppended,
   }) async {
     final messageId = await appendMessage(
       text: text,
       conversationId: conversationId,
       categoryIds: categoryIds,
+      replaces: replaces,
     );
     if (messageId == null) return;
     onAppended?.call(messageId);
@@ -104,7 +107,8 @@ class FrontChatService {
   /// rewrites — an older build ignores the key and shows the turn in its
   /// one thread. So are the [categoryIds] the conversation is scoped to,
   /// which narrow her answer to them (`frontNarrowedCategories`); none
-  /// writes no key.
+  /// writes no key. So is the stopped turn it [replaces], if it was edited
+  /// from one — an older build shows both.
   ///
   /// The turn is durable before the wake, so a process that dies while
   /// routing still leaves it a way to be routed — by the lease, after the
@@ -115,6 +119,7 @@ class FrontChatService {
     required String text,
     required String conversationId,
     Set<String> categoryIds = const {},
+    String? replaces,
   }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return null;
@@ -141,6 +146,7 @@ class FrontChatService {
           frontConversationKey: conversationId,
           if (categoryIds.isNotEmpty)
             frontCategoriesKey: [...categoryIds]..sort(),
+          frontTurnReplacesKey: ?replaces,
         },
       ),
     );

@@ -83,11 +83,16 @@ void main() {
     String text, {
     DateTime? at,
     String? conversation,
+    String? replaces,
   }) => row(
     id: id,
     kind: AgentMessageKind.user,
     runKey: null,
-    content: {'text': text, frontConversationKey: ?conversation},
+    content: {
+      'text': text,
+      frontConversationKey: ?conversation,
+      frontTurnReplacesKey: ?replaces,
+    },
     createdAt: at,
   );
 
@@ -279,6 +284,72 @@ void main() {
 
       expect(thread.messages.map((m) => m.id), ['u1', 'u2', 'r2']);
       expect(thread.stoppedMessageIds, {'u1'});
+    });
+
+    test(
+      'an edit takes the place of the stopped turn it was made from',
+      () async {
+        userTurn('u1', 'Count the hatchlings', at: DateTime(2026, 11, 1, 9));
+        stop('u1', DateTime(2026, 11, 1, 9, 1));
+        userTurn(
+          'u2',
+          'Count the chicks',
+          at: DateTime(2026, 11, 1, 9, 2),
+          replaces: 'u1',
+        );
+        reply('r2', 'u2', 'Twelve.', DateTime(2026, 11, 1, 9, 3));
+
+        final thread = await builder.build(
+          conversationId: earlierConversationId,
+        );
+
+        expect(thread.messages.map((m) => m.id), ['u2', 'r2']);
+        expect(thread.stoppedMessageIds, isEmpty);
+      },
+    );
+
+    test('an edit replaces only a stopped turn she never answered', () async {
+      // Answered after all: the turn stays, with her answer.
+      userTurn('u1', 'Count the hatchlings', at: DateTime(2026, 11, 1, 9));
+      stop('u1', DateTime(2026, 11, 1, 9, 1));
+      reply('r1', 'u1', 'Forty-two.', DateTime(2026, 11, 1, 9, 2));
+      // Never stopped: nothing to replace.
+      userTurn('u2', 'Count the eggs', at: DateTime(2026, 11, 1, 9, 3));
+      userTurn(
+        'u3',
+        'Count the chicks',
+        at: DateTime(2026, 11, 1, 9, 4),
+        replaces: 'u1',
+      );
+      userTurn(
+        'u4',
+        'Count the nests',
+        at: DateTime(2026, 11, 1, 9, 5),
+        replaces: 'u2',
+      );
+
+      final thread = await builder.build(conversationId: earlierConversationId);
+
+      expect(thread.messages.map((m) => m.id), ['u1', 'r1', 'u2', 'u3', 'u4']);
+    });
+
+    test('a reply that lands after the edit was sent still keeps the turn it '
+        'answers', () async {
+      userTurn('u1', 'Count the hatchlings', at: DateTime(2026, 11, 1, 9));
+      stop('u1', DateTime(2026, 11, 1, 9, 1));
+      userTurn(
+        'u2',
+        'Count the chicks',
+        at: DateTime(2026, 11, 1, 9, 2),
+        replaces: 'u1',
+      );
+      // Her wake on u1 finished on another device after the edit went out.
+      reply('r1', 'u1', 'Forty-two.', DateTime(2026, 11, 1, 9, 3));
+
+      final thread = await builder.build(conversationId: earlierConversationId);
+
+      expect(thread.messages.map((m) => m.id), ['u1', 'u2', 'r1']);
+      expect(thread.stoppedMessageIds, isEmpty);
     });
 
     test('a stopped turn scrolled out of the window is not listed', () async {

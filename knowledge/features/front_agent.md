@@ -1172,9 +1172,12 @@ once it is durable — `sendingMessageId`, also set by a retry — and
 
 A wake that answers before the cancel lands keeps its answer: the thread
 builder lists a turn in `FrontChatThread.stoppedMessageIds` only when no
-reply or question of hers follows it. The stopped turn and its stop stay out
-of her recent turns (`_recentTurns`), and a conversation's preview reads past
-a stop to her latest words.
+reply or question of hers answers it — matched by `operationId`, so an
+answer synced in after later turns still counts. A stopped turn she never
+answered, and every stop record, stay out of her recent turns
+(`_recentTurns`); one she answered stays there with its answer, as the
+thread shows it. A conversation's preview reads past a stop to her latest
+words.
 
 ```mermaid
 stateDiagram-v2
@@ -1194,12 +1197,23 @@ On the surface each of the user's bubbles is wrapped by
 caption under a stopped turn; on a phone a long press — or a secondary
 click — opens a menu at the finger with *Copy* (to the clipboard, with a
 toast) and, on a stopped turn, *Edit*, which puts the words in the box
-(`updateDraft`) to send as a new turn while the stopped one stays; a long
+(`FrontChatController.edit`); a long
 press on the turn she is working on opens no menu but warns it cannot be
 edited until stopped. On a desktop the same actions are icons under the
 bubble, shown while the pointer is over it or focus is in them, their room
 kept so nothing shifts; *Edit* is off, its tooltip saying why, while she
 works on the turn, and absent on an answered one.
+
+The edit, sent, takes the stopped turn's place. The controller holds the
+turn as `editingMessageId` while the box has words in it — emptying the box
+gives the edit up, and a chip tapped under her question is never an edit —
+and the new turn's payload names it under `replaces`
+(`frontTurnReplacesKey`). A send of the edit that fails keeps it an edit —
+as `failedReplaces` for *Try again*, and as `editingMessageId` when its
+words go back in the box. Nothing is rewritten: the thread builder drops a
+turn some later turn replaces, provided it is stopped and she never answered
+it, so an edit can never hide words of hers. An older build, which does not
+read the key, shows both turns.
 
 # What a turn leaves behind
 
