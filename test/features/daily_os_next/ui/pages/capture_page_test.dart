@@ -19,7 +19,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -126,7 +126,7 @@ void main() {
           findsOneWidget,
         );
         expect(find.byType(VoiceButton), findsOneWidget);
-        expect(find.byType(LiveWaveform), findsNothing);
+        expect(find.byType(DesignSystemVoiceWaveform), findsNothing);
         expect(
           find.text(messages.dailyOsNextCaptureReconcileCta),
           findsNothing,
@@ -262,7 +262,7 @@ void main() {
         find.text(messages.dailyOsNextCaptureListeningStatus),
         findsOneWidget,
       );
-      expect(find.byType(LiveWaveform), findsOneWidget);
+      expect(find.byType(DesignSystemVoiceWaveform), findsOneWidget);
 
       await harness.dispose();
     });
@@ -349,7 +349,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.byType(VoiceButton), findsOneWidget);
-      expect(find.byType(LiveWaveform), findsNothing);
+      expect(find.byType(DesignSystemVoiceWaveform), findsNothing);
     });
 
     // Greeting cases: (label, fixed hour, expected, also-not).
@@ -499,7 +499,7 @@ void main() {
           find.text(messages.dailyOsNextCaptureTranscribing),
           findsOneWidget,
         );
-        expect(find.byType(LiveWaveform), findsOneWidget);
+        expect(find.byType(DesignSystemVoiceWaveform), findsOneWidget);
       },
     );
 

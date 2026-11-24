@@ -25,7 +25,6 @@ import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/notifications/ui/notification_settings_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
-import 'package:lotti/features/onboarding/ui/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/domain/settings_node.dart';
 import 'package:lotti/features/settings/domain/settings_tree_data.dart';
 import 'package:lotti/features/settings/routing/settings_routes.dart';
@@ -224,10 +223,6 @@ void main() {
         NotificationSettingsPage,
         NotificationSettingsBody,
       ),
-      'preferences/recording-style': (
-        RecordingStyleSettingsPage,
-        RecordingStyleSettingsBody,
-      ),
       'preferences/speech': (SpeechSettingsPage, SpeechSettingsBody),
       'preferences/companion': (
         CompanionSettingsPage,
@@ -389,10 +384,6 @@ void main() {
         '/settings/keyboard-shortcuts',
       );
       expect(
-        pathToBeamUrl(['preferences', 'preferences/recording-style']),
-        '/settings/recording-style',
-      );
-      expect(
         pathToBeamUrl(['preferences', 'preferences/notifications']),
         '/settings/notifications',
       );
@@ -536,10 +527,6 @@ void main() {
         'preferences',
         'preferences/keyboard-shortcuts',
       ]);
-      expect(beamUrlToPath('/settings/recording-style'), [
-        'preferences',
-        'preferences/recording-style',
-      ]);
       expect(beamUrlToPath('/settings/notifications'), [
         'preferences',
         'preferences/notifications',
@@ -561,7 +548,6 @@ void main() {
         '/settings/theming',
         '/settings/keyboard-shortcuts',
         '/settings/notifications',
-        '/settings/recording-style',
         '/settings/speech',
       ]) {
         expect(beamUrlToPath(url), hasLength(2), reason: url);

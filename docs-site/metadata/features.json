@@ -281,15 +281,6 @@
       ]
     },
     {
-      "id": "recording-style",
-      "title": "Recording style",
-      "page": "reference/recording-style",
-      "status": "verified",
-      "screenshotCases": [
-        "recording-style/preview"
-      ]
-    },
-    {
       "id": "speech",
       "title": "Speech and reading aloud",
       "page": "reference/speech",

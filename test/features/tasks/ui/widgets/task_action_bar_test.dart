@@ -84,7 +84,6 @@ class _FakeTimeService implements TimeService {
 AudioRecorderState _idleRecorderState() => AudioRecorderState(
   status: AudioRecorderStatus.stopped,
   progress: Duration.zero,
-  vu: -20,
   dBFS: -160,
   showIndicator: false,
   modalVisible: false,
@@ -94,7 +93,6 @@ AudioRecorderState _recordingRecorderState({required String linkedId}) =>
     AudioRecorderState(
       status: AudioRecorderStatus.recording,
       progress: const Duration(seconds: 5),
-      vu: -10,
       dBFS: -100,
       showIndicator: true,
       modalVisible: false,
@@ -198,6 +196,7 @@ void main() {
     WidgetTester tester, {
     AudioRecorderState? recorderState,
     Widget? topSlot,
+    Widget? bottomSlot,
     MediaQueryData? mediaQueryData,
     List<Override> extraOverrides = const [],
   }) async {
@@ -207,6 +206,7 @@ void main() {
           child: TaskActionBar(
             task: testTask,
             topSlot: topSlot,
+            bottomSlot: bottomSlot,
           ),
         ),
         mediaQueryData: mediaQueryData,
@@ -306,6 +306,33 @@ void main() {
       lessThanOrEqualTo(
         tester.getRect(find.byKey(TaskActionBar.trackTimeKey)).top,
       ),
+    );
+  });
+
+  testWidgets('renders an optional line under the action row, inside the '
+      'strip — where the running activity is named, clear of the bars above', (
+    tester,
+  ) async {
+    await pumpBar(
+      tester,
+      topSlot: const SizedBox(key: ValueKey('bars'), height: 24),
+      bottomSlot: const SizedBox(key: ValueKey('label'), height: 16),
+    );
+
+    final label = tester.getRect(find.byKey(const ValueKey('label')));
+    expect(
+      label.top,
+      greaterThanOrEqualTo(
+        tester.getRect(find.byKey(TaskActionBar.trackTimeKey)).bottom,
+      ),
+    );
+    expect(
+      label.top,
+      greaterThan(tester.getRect(find.byKey(const ValueKey('bars'))).bottom),
+    );
+    expect(
+      label.bottom,
+      lessThanOrEqualTo(tester.getRect(find.byType(TaskActionBar)).bottom),
     );
   });
 

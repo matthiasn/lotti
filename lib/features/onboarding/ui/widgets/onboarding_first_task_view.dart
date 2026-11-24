@@ -6,9 +6,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_choice_chip.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_stage.dart';
-import 'package:lotti/features/speech/state/recording_style.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The visible state of the in-panel first-task moment.
@@ -36,9 +33,7 @@ enum OnboardingFirstTaskPhase {
 /// prompt and the live caption while listening. At the prompt the tray
 /// holds the destination picker and tappable starter-task suggestions, and
 /// the main button opens the mic. While listening and thinking it holds one
-/// **active band**: the recording-style preference ([RecordingStyle.modern]
-/// orb by default, or the [RecordingStyle.analogue] VU meter when chosen
-/// under Settings → Recording Style) riding the voice, then the thinking
+/// **active band**: the voice orb riding the voice, then the thinking
 /// cluster while structuring. The main button ends the recording, and — on
 /// the created frame, where the band gives way to the landed task as a
 /// glowing tappable card — opens the task ([onOpenTask]); "Rather type?" is
@@ -50,9 +45,7 @@ enum OnboardingFirstTaskPhase {
 class OnboardingFirstTaskView extends StatelessWidget {
   const OnboardingFirstTaskView({
     required this.phase,
-    required this.style,
     required this.accent,
-    required this.colorScheme,
     required this.title,
     required this.guidance,
     required this.suggestionsLabel,
@@ -91,14 +84,7 @@ class OnboardingFirstTaskView extends StatelessWidget {
 
   final OnboardingFirstTaskPhase phase;
 
-  /// The recording visual chosen in the style step — the payoff of that pick.
-  final RecordingStyle style;
-
   final Color accent;
-
-  /// Colour scheme handed to the analog VU meter (a dark scheme on the dark
-  /// onboarding surface).
-  final ColorScheme colorScheme;
 
   /// Step headline while composing ("Create your first task").
   final String title;
@@ -352,81 +338,15 @@ class OnboardingFirstTaskView extends StatelessWidget {
         transcript: transcript,
       );
     }
-    switch (style) {
-      case RecordingStyle.modern:
-        return VoiceOrbZone(
-          phase: CapturePhase.listening,
-          caption: '',
-          captionColor: tokens.colors.text.mediumEmphasis,
-          semanticLabel: recordSemanticLabel,
-          onTap: onRecordTap,
-          amplitudes: amplitudes,
-          dbfs: dbfs,
-          listeningCoreColor: tokens.colors.background.level02,
-        );
-      case RecordingStyle.analogue:
-        return _AnalogueRecorder(
-          tokens: tokens,
-          colorScheme: colorScheme,
-          semanticLabel: recordSemanticLabel,
-          onTap: onRecordTap,
-          amplitudes: amplitudes,
-          dbfs: dbfs,
-        );
-    }
-  }
-}
-
-/// The analogue counterpart of [VoiceOrbZone]: a tappable skeuomorphic VU meter
-/// + neutral waveform pair, riding the same live level.
-class _AnalogueRecorder extends StatelessWidget {
-  const _AnalogueRecorder({
-    required this.tokens,
-    required this.colorScheme,
-    required this.semanticLabel,
-    required this.onTap,
-    required this.amplitudes,
-    required this.dbfs,
-  });
-
-  final DsTokens tokens;
-  final ColorScheme colorScheme;
-  final String semanticLabel;
-  final VoidCallback onTap;
-  final List<double> amplitudes;
-  final double dbfs;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(tokens.radii.l),
-          focusColor: tokens.colors.surface.focusPressed,
-          hoverColor: tokens.colors.surface.hover,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnalogVuMeter(
-                // 0 VU ≈ -18 dBFS, so VU ≈ dBFS + 18, clamped to the meter range.
-                vu: (dbfs + 18).clamp(-20.0, 3.0),
-                dBFS: dbfs,
-                size: tokens.spacing.step11 * 3,
-                colorScheme: colorScheme,
-              ),
-              SizedBox(height: tokens.spacing.step3),
-              LiveWaveform(
-                amplitudes: amplitudes,
-                color: tokens.colors.text.highEmphasis,
-              ),
-            ],
-          ),
-        ),
-      ),
+    return VoiceOrbZone(
+      phase: CapturePhase.listening,
+      caption: '',
+      captionColor: tokens.colors.text.mediumEmphasis,
+      semanticLabel: recordSemanticLabel,
+      onTap: onRecordTap,
+      amplitudes: amplitudes,
+      dbfs: dbfs,
+      listeningCoreColor: tokens.colors.background.level02,
     );
   }
 }

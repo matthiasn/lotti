@@ -12,12 +12,12 @@ import 'package:lotti/features/design_system/components/textareas/design_system_
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_duration.dart';
 import 'package:lotti/features/speech/state/app_settings_opener.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_failure_callout.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:material_ui/material_ui.dart';
@@ -77,7 +77,6 @@ class GoalCheckInComposer extends ConsumerStatefulWidget {
     required this.goalTitle,
     this.start = GoalCheckInStart.idle,
     this.preparedLine,
-    this.personaName,
     this.categoryId,
     this.saveText = saveCheckInText,
     this.pickDuration = showGoalCheckInDurationPicker,
@@ -100,7 +99,6 @@ class GoalCheckInComposer extends ConsumerStatefulWidget {
   /// One agent-authored sentence to reflect on. Absent is normal and fine —
   /// the composer's job is capture, and the prompt is additive.
   final String? preparedLine;
-  final String? personaName;
 
   /// The goal's category, when the host already has it; otherwise the
   /// composer reads it from the goal row before it writes anything.
@@ -114,20 +112,20 @@ class GoalCheckInComposer extends ConsumerStatefulWidget {
     required String goalTitle,
     GoalCheckInStart start = GoalCheckInStart.idle,
     String? preparedLine,
-    String? personaName,
     String? categoryId,
   }) async {
     final container = ProviderScope.containerOf(context, listen: false);
     try {
       await DsActionModal.show<void>(
         context: context,
-        title: context.messages.goalCheckInComposerTitle,
+        // The goal's own name: the recorder is never anonymous, and no
+        // second line has to say what the sheet is about.
+        title: goalTitle,
         builder: (_) => GoalCheckInComposer(
           agentId: agentId,
           goalTitle: goalTitle,
           start: start,
           preparedLine: preparedLine,
-          personaName: personaName,
           categoryId: categoryId,
         ),
       );
@@ -331,21 +329,11 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // What the check-in is about: the sheet's title says *Check in*, and
-        // this names the goal, so the recorder is never anonymous.
-        Text(
-          widget.goalTitle,
-          key: const ValueKey('goal-checkin-goal-title'),
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-        ),
         if (widget.preparedLine case final line?) ...[
-          SizedBox(height: tokens.spacing.step4),
-          _PreparedCard(line: line, personaName: widget.personaName),
+          _PreparedCard(line: line),
+          SizedBox(height: tokens.spacing.step5),
         ],
         if (targetFailed) ...[
-          SizedBox(height: tokens.spacing.step4),
           DesignSystemInlineCallout(
             key: const ValueKey('goal-checkin-target-failed'),
             icon: LottiIcons.warning,
@@ -366,18 +354,35 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
               ),
             ],
           ),
+          SizedBox(height: tokens.spacing.step5),
         ],
         if (failure != null) ...[
-          SizedBox(height: tokens.spacing.step4),
-          _FailureCallout(
+          RecordingFailureCallout(
             failure: failure,
             stopping: _stopping,
             onOpenSettings: () => ref.read(appSettingsOpenerProvider)(),
             onStopRunning: _stopRunning,
-            onWrite: _write,
+            // This sheet's own words: writing always works here.
+            bodyOf: (failure) => switch (failure) {
+              InlineRecordingFailure.microphoneDenied =>
+                messages.goalCheckInMicrophoneDeniedBody,
+              InlineRecordingFailure.startFailed =>
+                messages.checkInRecordingFailedBody,
+              InlineRecordingFailure.notSaved =>
+                messages.checkInRecordingNotSavedBody,
+              InlineRecordingFailure.recorderBusy => null,
+            },
+            leadingAction: DesignSystemButton(
+              key: const ValueKey('goal-checkin-failure-write'),
+              label: messages.goalCheckInWriteInstead,
+              variant: DesignSystemButtonVariant.quiet,
+              size: DesignSystemButtonSize.medium,
+              tapTargetSize: MaterialTapTargetSize.padded,
+              onPressed: _write,
+            ),
           ),
+          SizedBox(height: tokens.spacing.step5),
         ],
-        SizedBox(height: tokens.spacing.step5),
         switch (_mode) {
           _Mode.speaking when !ready && !targetFailed => Padding(
             padding: EdgeInsets.symmetric(vertical: tokens.spacing.step6),
@@ -392,13 +397,13 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
             onPressed: null,
           ),
           _Mode.speaking => InlineRecorder(
-            linkedId: goalEntryId!,
+            linkedId: goalEntryId,
             categoryId: categoryId,
             // The recorder's own automation transcribes a goal's take, under
             // the goal's automatic-updates switch.
             transcriptionHandledByCaller: false,
-            // No "● Recording" line: the red Stop pill carrying the running
-            // time already says so, as it does on the recording sheet.
+            // This surface's own words: the audio goes, the check-in stays.
+            discardMessage: messages.checkInDiscardRecordingBody,
             onRecorded: _onRecorded,
             onDiscarded: () => setState(() => _mode = _Mode.idle),
             onFailed: (failure) => setState(() {
@@ -495,15 +500,14 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
   }
 }
 
-/// The agent's opening question, in the agent's own voice: its violet card
-/// and its name, so the user is never answering a prompt without knowing
-/// where it came from (the Two Voices rule — it used to wear the user's
-/// teal).
+/// The agent's opening question, in the agent's own card — its violet, so
+/// the user is never answering a prompt that looks like their own words
+/// (the Two Voices rule). The question alone: who prepared it is the card's
+/// colour, not another line of copy over the recorder.
 class _PreparedCard extends StatelessWidget {
-  const _PreparedCard({required this.line, this.personaName});
+  const _PreparedCard({required this.line});
 
   final String line;
-  final String? personaName;
 
   @override
   Widget build(BuildContext context) {
@@ -513,126 +517,13 @@ class _PreparedCard extends StatelessWidget {
       decoration: aiCardDecoration(context),
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.messages.goalCheckInPreparedBy(
-                personaName ?? context.messages.agentsPageTitle,
-              ),
-              style: calmEyebrowStyle(
-                tokens,
-                color: tokens.colors.aiCard.accent,
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step2),
-            Text(
-              line,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.highEmphasis,
-              ),
-            ),
-          ],
+        child: Text(
+          line,
+          style: tokens.typography.styles.body.bodyMedium.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
         ),
       ),
-    );
-  }
-}
-
-/// Why the recorder has nothing to hand back, and what to do about it: the
-/// reason in plain words, writing as the way that always works, and *Open
-/// settings* where a refused microphone is the reason. Trying again is the
-/// sheet's *Speak* button beneath it.
-class _FailureCallout extends StatelessWidget {
-  const _FailureCallout({
-    required this.failure,
-    required this.stopping,
-    required this.onOpenSettings,
-    required this.onStopRunning,
-    required this.onWrite,
-  });
-
-  final InlineRecordingFailure failure;
-
-  /// True while the running take is being stopped and saved.
-  final bool stopping;
-  final VoidCallback onOpenSettings;
-  final VoidCallback onStopRunning;
-  final VoidCallback onWrite;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final alert = tokens.colors.alert;
-    final denied = failure == InlineRecordingFailure.microphoneDenied;
-    final (tone, icon, title, body) = switch (failure) {
-      InlineRecordingFailure.microphoneDenied => (
-        alert.error.defaultColor,
-        LottiIcons.micIdle,
-        messages.checkInMicrophoneDeniedCalloutTitle,
-        messages.goalCheckInMicrophoneDeniedBody,
-      ),
-      InlineRecordingFailure.startFailed => (
-        alert.error.defaultColor,
-        LottiIcons.micIdle,
-        messages.checkInRecordingFailedTitle,
-        messages.checkInRecordingFailedBody,
-      ),
-      InlineRecordingFailure.recorderBusy => (
-        alert.warning.defaultColor,
-        LottiIcons.mic,
-        messages.checkInRecorderBusyTitle,
-        messages.goalCheckInRecorderBusyBody,
-      ),
-      InlineRecordingFailure.notSaved => (
-        alert.error.defaultColor,
-        LottiIcons.micIdle,
-        messages.checkInRecordingNotSavedTitle,
-        messages.checkInRecordingNotSavedBody,
-      ),
-    };
-    return DesignSystemInlineCallout(
-      key: ValueKey('goal-checkin-failure-${failure.name}'),
-      icon: icon,
-      tone: tone,
-      title: title,
-      text: body,
-      announce: true,
-      actions: [
-        DesignSystemButton(
-          key: const ValueKey('goal-checkin-failure-write'),
-          label: messages.goalCheckInWriteInstead,
-          variant: DesignSystemButtonVariant.quiet,
-          size: DesignSystemButtonSize.medium,
-          tapTargetSize: MaterialTapTargetSize.padded,
-          onPressed: onWrite,
-        ),
-        // Trying again is the sheet's own Speak button, right under this
-        // callout; a refused microphone and a take running elsewhere each
-        // need a door of their own.
-        if (failure == InlineRecordingFailure.recorderBusy)
-          DesignSystemButton(
-            key: const ValueKey('goal-checkin-stop-running'),
-            label: messages.goalCheckInStopRunning,
-            leadingIcon: LottiIcons.stop,
-            variant: DesignSystemButtonVariant.secondary,
-            size: DesignSystemButtonSize.medium,
-            tapTargetSize: MaterialTapTargetSize.padded,
-            isLoading: stopping,
-            onPressed: onStopRunning,
-          ),
-        if (denied)
-          DesignSystemButton(
-            key: const ValueKey('goal-checkin-open-settings'),
-            label: messages.checkInOpenSettingsButton,
-            leadingIcon: LottiIcons.settings,
-            variant: DesignSystemButtonVariant.secondary,
-            size: DesignSystemButtonSize.medium,
-            tapTargetSize: MaterialTapTargetSize.padded,
-            onPressed: onOpenSettings,
-          ),
-      ],
     );
   }
 }

@@ -2976,9 +2976,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get audioPlayerWaveform => 'Ljudvågform';
 
   @override
-  String get audioRecordingCancel => 'Avbryt';
-
-  @override
   String get audioRecordingDiscardDialogBody =>
       'Denna inspelning kommer att raderas. Ingen ljudinmatning, transkription eller uppgiftssammanfattning kommer att skapas.';
 
@@ -8448,9 +8445,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalCheckInClose => 'Stäng';
 
   @override
-  String get goalCheckInComposerTitle => 'Avstämning';
-
-  @override
   String goalCheckInDimensionsRated(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -8482,11 +8476,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get goalCheckInNoteKeptSeparate =>
       'Hålls skild från din skrivna anteckning';
-
-  @override
-  String goalCheckInPreparedBy(String name) {
-    return '$name · förberett åt dig';
-  }
 
   @override
   String get goalCheckInRecorderBusyBody =>
@@ -12328,15 +12317,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get onboardingMetricsYes => 'ja';
 
   @override
-  String get onboardingRecordingStyleAnalogue => 'Analog — VU-mätare';
-
-  @override
-  String get onboardingRecordingStyleModern => 'Modern — energiklot';
-
-  @override
-  String get onboardingRecordingStyleTryVoice => 'Prova med din röst';
-
-  @override
   String onboardingStageProgress(int current, int total) {
     return 'Steg $current av $total';
   }
@@ -14268,10 +14248,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipCaptureHeard => 'Det här hörde jag';
 
   @override
-  String get relationshipCaptureHint =>
-      'Ett samtal du haft, något att minnas eller en plan.';
-
-  @override
   String get relationshipCaptureKeepVoiceNote => 'Behåll som röstanteckning';
 
   @override
@@ -14304,20 +14280,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipCaptureNoDue => 'Inget förfallodatum';
 
   @override
-  String get relationshipCaptureNoSorter =>
-      'Ingen modell att sortera med – den förblir en röstanteckning.';
-
-  @override
   String get relationshipCaptureNote => 'Behåll som anteckning';
 
   @override
   String relationshipCaptureNotPlaced(String name) {
     return 'Inspelningen är sparad i din dagbok, men den kunde inte läggas på tidslinjen för $name.';
-  }
-
-  @override
-  String relationshipCaptureSortedBy(String route) {
-    return 'Sorteras av $route';
   }
 
   @override
@@ -16377,21 +16344,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Tematisering, animationer, aviseringar, inspelningsstil, tal och genvägar';
+      'Tematisering, animationer, aviseringar, tal och genvägar';
 
   @override
   String get settingsPreferencesTitle => 'Preferenser';
-
-  @override
-  String get settingsRecordingStyleExplanation =>
-      'Välj hur mikrofonen ser ut medan du spelar in.';
-
-  @override
-  String get settingsRecordingStyleSubtitle =>
-      'VU-mätare eller energikula under inspelning';
-
-  @override
-  String get settingsRecordingStyleTitle => 'Inspelningsstil';
 
   @override
   String get settingsResetGeminiConfirm => 'Återställ';

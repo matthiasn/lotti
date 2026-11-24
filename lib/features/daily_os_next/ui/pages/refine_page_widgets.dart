@@ -76,10 +76,13 @@ class _RefinementPanel extends ConsumerWidget {
                   final amplitudes = ref.watch(
                     captureControllerProvider.select((s) => s.amplitudes),
                   );
-                  return LiveWaveform(
-                    amplitudes: amplitudes,
-                    width: 180,
-                    height: 22,
+                  return SizedBox(
+                    width: VoiceOrbZone.waveformWidth,
+                    child: DesignSystemVoiceWaveform(
+                      levels: amplitudes,
+                      // One level per recorder sample.
+                      sampleInterval: const Duration(milliseconds: intervalMs),
+                    ),
                   );
                 },
               ),

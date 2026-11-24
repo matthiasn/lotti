@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_label.dart';
 import 'package:lotti/features/checklist/ui/correction_undo_snackbar.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
@@ -623,13 +624,11 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
         topSlot: AiRunningDecoderBars(
           entryId: widget.taskId,
           isInteractive: true,
-          responseTypes: const {
-            AiResponseType.imageAnalysis,
-            AiResponseType.audioTranscription,
-            AiResponseType.audioSummary,
-            AiResponseType.promptGeneration,
-            AiResponseType.imageGeneration,
-          },
+          responseTypes: _aiRunningTypes,
+        ),
+        bottomSlot: AiRunningLabel(
+          entryId: widget.taskId,
+          responseTypes: _aiRunningTypes,
         ),
       ),
       // Builder so MediaQuery.paddingOf reads the Scaffold-modified
@@ -944,3 +943,13 @@ class _FirstSliverState extends State<_FirstSliver> {
     );
   }
 }
+
+/// The runs a task's action bar shows as running: its bars, and the line
+/// under its controls that names the one in flight.
+const Set<AiResponseType> _aiRunningTypes = {
+  AiResponseType.imageAnalysis,
+  AiResponseType.audioTranscription,
+  AiResponseType.audioSummary,
+  AiResponseType.promptGeneration,
+  AiResponseType.imageGeneration,
+};

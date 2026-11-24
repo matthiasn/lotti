@@ -53,7 +53,6 @@ void main() {
     return AudioRecorderState(
       status: status,
       progress: progress,
-      vu: -6,
       dBFS: dBFS,
       showIndicator: true,
       modalVisible: modalVisible,
@@ -196,6 +195,31 @@ void main() {
     await pumpSection(tester, recorderState());
 
     expect(find.text('Audio recording in progress'), findsOneWidget);
+  });
+
+  testWidgets('a paused take stays on the card: with its sheet closed it '
+      'has no other way back on a desktop', (tester) async {
+    await pumpSection(
+      tester,
+      recorderState(status: AudioRecorderStatus.paused, linkedId: 'task-1'),
+      linkedEntry: makeTask('task-1'),
+    );
+    await tester.pump(SidebarAudioRecordingSection.animationDuration);
+
+    expect(find.text('Implement recording orb'), findsOneWidget);
+    expect(find.text('00:07:40'), findsOneWidget);
+  });
+
+  testWidgets("a paused take whose sheet is open is the sheet's to show", (
+    tester,
+  ) async {
+    await pumpSection(
+      tester,
+      recorderState(status: AudioRecorderStatus.paused, modalVisible: true),
+    );
+    await tester.pump(SidebarAudioRecordingSection.animationDuration);
+
+    expect(find.byKey(const Key('sidebar_audio_recording_card')), findsNothing);
   });
 
   testWidgets(

@@ -2998,9 +2998,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioPlayerWaveform => 'Zvuková křivka';
 
   @override
-  String get audioRecordingCancel => 'Zrušit';
-
-  @override
   String get audioRecordingDiscardDialogBody =>
       'Tahle nahrávka se smaže. Nevytvoří se žádný audiozáznam, přepis ani shrnutí úkolu.';
 
@@ -8539,9 +8536,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalCheckInClose => 'Zavřít';
 
   @override
-  String get goalCheckInComposerTitle => 'Hlášení';
-
-  @override
   String goalCheckInDimensionsRated(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -8574,11 +8568,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get goalCheckInNoteKeptSeparate =>
       'Uchováno odděleně od napsané poznámky';
-
-  @override
-  String goalCheckInPreparedBy(String name) {
-    return '$name · připraveno pro tebe';
-  }
 
   @override
   String get goalCheckInRecorderBusyBody =>
@@ -12467,15 +12456,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingMetricsYes => 'ano';
 
   @override
-  String get onboardingRecordingStyleAnalogue => 'Analogový — VU metr';
-
-  @override
-  String get onboardingRecordingStyleModern => 'Moderní — energetická koule';
-
-  @override
-  String get onboardingRecordingStyleTryVoice => 'Vyzkoušej svým hlasem';
-
-  @override
   String onboardingStageProgress(int current, int total) {
     return 'Krok $current z $total';
   }
@@ -14456,10 +14436,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipCaptureHeard => 'Tohle zaznělo';
 
   @override
-  String get relationshipCaptureHint =>
-      'Rozhovor, který jsi měl/a, něco k zapamatování nebo plán.';
-
-  @override
   String get relationshipCaptureKeepVoiceNote =>
       'Ponechat jako hlasovou poznámku';
 
@@ -14493,20 +14469,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipCaptureNoDue => 'Bez termínu';
 
   @override
-  String get relationshipCaptureNoSorter =>
-      'Žádný model k třídění – zůstane hlasovou poznámkou.';
-
-  @override
   String get relationshipCaptureNote => 'Ponechat jako poznámku';
 
   @override
   String relationshipCaptureNotPlaced(String name) {
     return 'Nahrávka je uložená v tvém deníku, ale nepodařilo se ji přidat na časovou osu osoby $name.';
-  }
-
-  @override
-  String relationshipCaptureSortedBy(String route) {
-    return 'Třídí $route';
   }
 
   @override
@@ -16571,21 +16538,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Vzhled, animace, oznámení, styl nahrávání, řeč a klávesové zkratky';
+      'Vzhled, animace, oznámení, řeč a klávesové zkratky';
 
   @override
   String get settingsPreferencesTitle => 'Předvolby';
-
-  @override
-  String get settingsRecordingStyleExplanation =>
-      'Vyber, jak má mikrofon vypadat při nahrávání.';
-
-  @override
-  String get settingsRecordingStyleSubtitle =>
-      'VU metr nebo energetická koule při nahrávání';
-
-  @override
-  String get settingsRecordingStyleTitle => 'Styl nahrávání';
 
   @override
   String get settingsResetGeminiConfirm => 'Obnovit';

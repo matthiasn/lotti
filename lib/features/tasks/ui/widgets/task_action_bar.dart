@@ -44,11 +44,19 @@ class TaskActionBar extends ConsumerStatefulWidget {
   const TaskActionBar({
     required this.task,
     this.topSlot,
+    this.bottomSlot,
     super.key,
   });
 
   final Task task;
+
+  /// Optional activity area above the action row — the AI running bars. It
+  /// collapses to nothing while idle.
   final Widget? topSlot;
+
+  /// Optional line under the action row — what the bars above stand for.
+  /// It collapses to nothing while idle.
+  final Widget? bottomSlot;
 
   /// Stable test key for the Track time pill body — the outer tap zone.
   /// Idle: tapping starts a timer. Tracking-this-task: tapping
@@ -384,6 +392,7 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                 );
               },
             ),
+            ?widget.bottomSlot,
           ],
         ),
       ),

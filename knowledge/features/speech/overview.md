@@ -5,20 +5,16 @@ description: Audio capture, app-wide playback, waveform extraction, and the tran
 resource: ../../../lib/features/speech
 tags: [speech, audio, recording, playback, transcripts]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-01T17:53:53Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-23T18:00:00Z }
 stale_after: 2027-02-15
 sources:
   - id: src
     resource: ../../../lib/features/speech
     title: Speech feature source
     last_modified: 2026-09-09
-  - id: vu
-    resource: ../../../lib/features/speech/state/vu_meter.dart
-    title: VuMeter — sliding-window RMS→VU
-    last_modified: 2026-06-13
   - id: recording-controls
     resource: ../../../lib/features/speech/ui/widgets/recording/recording_controls.dart
-    title: The app's one recorder anatomy — visualizer, clock, transport row
+    title: The app's one recorder anatomy — level line, clock, transport row
     last_modified: 2026-10-11
 ---
 
@@ -76,9 +72,8 @@ flowchart LR
 file-backed recording at 48 kHz, pause/resume, stop/dispose, and **amplitude
 sampling every 20 ms**.
 
-`AudioRecorderController` adds Riverpod state, VU calculation from dBFS via the
-standalone `VuMeter` (a self-contained sliding-window RMS→VU unit, unit-tested
-directly), live dBFS for the modal visualizer and the mobile recording pill,
+`AudioRecorderController` adds Riverpod state, live dBFS for the recorder's
+level line and the mobile recording pill,
 linked-entry and category context, coordination with app-wide playback,
 persistence through `SpeechRepository`, and optional hand-off to profile-driven
 transcription automation.
@@ -86,20 +81,20 @@ transcription automation.
 **The desktop sidebar row deliberately does not visualize dBFS** — it shows a red
 accent card, a pulsing record dot and elapsed time only.
 
-The modal renders either the skeuomorphic VU meter or the energy orb depending on
-`recordingStyleProvider`, from the same dBFS feed, with the level line beneath
-either. The whole recorder — that choice, the level line and the transport
+The recorder draws the level line from that dBFS feed, and nothing else: no
+orb, no VU meter. The whole recorder — the level line and the transport
 row (discard ✕, the red Stop pill carrying the running time, pause ⏸ /
 resume ▶) —
 is `RecordingStage` in
 [`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart),
-laid out in [Recording UI](recording-ui.md), so every surface that records in place — a person's check-in composer and
-page and a goal's check-in sheet (through the shared
-[`InlineRecorder`](recording-ui.md#the-inline-recorder)) as well as this
-modal — wears one recorder rather than drawing its own buttons. The host keeps the meaning of each act (whether
-a discard asks first, where a stopped take goes) and may name the controls'
-keys; the controls are inert while it reports `busy`. The visualizer keeps
-moving while paused, so a test with one mounted pumps by hand.
+laid out in [Recording UI](recording-ui.md), and every surface that records
+— the recording sheet, a person's check-in composer and page and a goal's
+check-in sheet — hosts the one
+[`InlineRecorder`](recording-ui.md#the-inline-recorder), which starts the
+take as it mounts. The host keeps the meaning of each act (where a stopped
+take goes, what a discard loses); the controls are inert while a stop or a
+discard is in flight. The stage runs no ticker of its own: the level line
+repaints only when the recorder reports a sample.
 
 ## `record()` is a toggle
 

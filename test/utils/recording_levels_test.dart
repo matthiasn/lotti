@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/speech/state/recording_levels.dart';
+import 'package:lotti/utils/recording_levels.dart';
 
 void main() {
   group('normaliseDbfs', () {

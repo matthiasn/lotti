@@ -5,7 +5,6 @@ import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
-import 'package:lotti/features/ai/ui/animation/ai_running_label.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -54,9 +53,11 @@ void _listenForInferenceErrors({
 ///
 /// Watches the inference-running signal for [entryId] / [responseTypes] and
 /// drives [AiThinkingShaderPresence] (which owns the fade/scale-in, exit, and
-/// collapse-to-zero envelope). When [isInteractive] is true the bars become a
-/// labelled button that opens the AI progress view. The `default*` statics
-/// expose the shared shader defaults so other surfaces can match this look.
+/// collapse-to-zero envelope). When [isInteractive] is true the bars are a
+/// button that opens the AI progress view; what is running is said by
+/// `AiRunningLabel`, under the host's controls, never over the bars. The
+/// `default*` statics expose the shared shader defaults so other surfaces
+/// can match this look.
 class AiRunningDecoderBars extends ConsumerWidget {
   const AiRunningDecoderBars({
     required this.entryId,
@@ -120,45 +121,18 @@ class AiRunningDecoderBars extends ConsumerWidget {
       return bars;
     }
 
-    // Which job is in flight, so the band can name it — read from the same
-    // per-type status that makes the band run at all. Every type is watched
-    // on every build, so the subscriptions never depend on order.
-    final running = [
-      for (final type in responseTypes)
-        if (ref.watch(
-              inferenceStatusControllerProvider((
-                id: entryId,
-                aiResponseType: type,
-              )),
-            ) ==
-            InferenceStatus.running)
-          type,
-    ];
-
     return Semantics(
       button: true,
       label: context.messages.aiRunningActivityOpenProgress,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => _handleAiActivityTap(
+        onTap: () => openAiRunningProgress(
           context: context,
           ref: ref,
           entryId: entryId,
           responseTypes: responseTypes,
         ),
-        // Positioned, so an idle band still collapses to the bars' zero
-        // height instead of to the label's.
-        child: Stack(
-          children: [
-            bars,
-            if (isRunning)
-              Positioned.fill(
-                child: Center(
-                  child: AiRunningLabel(type: running.firstOrNull),
-                ),
-              ),
-          ],
-        ),
+        child: bars,
       ),
     );
   }
@@ -339,7 +313,10 @@ class _AiThinkingShaderPresenceState extends State<AiThinkingShaderPresence>
   }
 }
 
-Future<void> _handleAiActivityTap({
+/// Opens the progress view of the run in flight for [entryId], if one of
+/// [responseTypes] is running — what a tap on the AI-running bars or on
+/// their label does.
+Future<void> openAiRunningProgress({
   required BuildContext context,
   required WidgetRef ref,
   required String entryId,

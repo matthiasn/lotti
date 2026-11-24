@@ -114,7 +114,6 @@ void main() {
         'preferences/companion',
         'preferences/animations',
         'preferences/notifications',
-        'preferences/recording-style',
         // No Speech: with the companion on, her page holds the voice.
         'preferences/keyboard-shortcuts',
       ]);
@@ -131,7 +130,6 @@ void main() {
     // The unconditional siblings still render.
     expect(find.text('Theming'), findsOneWidget);
     expect(find.text('Keyboard shortcuts'), findsOneWidget);
-    expect(find.text('Recording Style'), findsOneWidget);
   });
 
   testWidgets(
@@ -174,7 +172,6 @@ void main() {
         // Animations came from Advanced and kept that URL.
         'preferences/animations': '/settings/advanced/animations',
         'preferences/notifications': '/settings/notifications',
-        'preferences/recording-style': '/settings/recording-style',
         'preferences/keyboard-shortcuts': '/settings/keyboard-shortcuts',
       };
       for (final entry in expected.entries) {

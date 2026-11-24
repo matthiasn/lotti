@@ -21,6 +21,7 @@ import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/recording_levels.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 // ignore_for_file: unnecessary_lambdas
@@ -1694,7 +1695,8 @@ void main() {
     ).called(greaterThanOrEqualTo(1));
   });
 
-  test('getNormalizedAmplitudeHistory clamps and scales as expected', () async {
+  test("getNormalizedAmplitudeHistory is on the recorder's own scale, so a "
+      'voice is as tall in a chat field as on the recording sheet', () async {
     final container = ProviderContainer(
       overrides: [
         audioTranscriptionServiceProvider.overrideWithValue(
@@ -1707,21 +1709,22 @@ void main() {
     final controller = container.read(chatRecorderControllerProvider.notifier);
     // Inject sample dBFS values
     controller.state = controller.state.copyWith(
-      amplitudeHistory: <double>[-100, -80, -50, -10, 0],
+      amplitudeHistory: <double>[-100, minDbfs, minDbfs / 2, -9, 0, 12],
     );
 
     final normalized = controller.getNormalizedAmplitudeHistory();
-    expect(normalized.length, 5);
-    // Values below min clamp to 0.05
-    expect(normalized[0], closeTo(0.05, 1e-6));
-    // Exactly min dBFS
-    expect(normalized[1], closeTo(0.05, 1e-6));
-    // Mid-range maps between 0.05 and 1.0
-    expect(normalized[2], closeTo(0.1555555556, 1e-6));
-    // Exactly max dBFS
-    expect(normalized[3], closeTo(1.0, 1e-6));
-    // Above max clamps to 1.0
-    expect(normalized[4], closeTo(1.0, 1e-6));
+    // Below the floor and at it: silence, the hairline alone.
+    expect(normalized[0], 0);
+    expect(normalized[1], 0);
+    // Half-way up the range, linearly.
+    expect(normalized[2], closeTo(0.5, 1e-9));
+    expect(normalized[3], closeTo(0.8, 1e-9));
+    // Full scale, and never past it.
+    expect(normalized[4], 1);
+    expect(normalized[5], 1);
+    expect(normalized, [
+      for (final dbfs in controller.state.amplitudeHistory) normaliseDbfs(dbfs),
+    ]);
   });
 
   test(

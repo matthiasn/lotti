@@ -3,7 +3,7 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_helper.dart';
@@ -71,14 +71,14 @@ void main() {
     tester,
   ) async {
     await pumpZone(tester, amplitudes: const [0.4, 0.6]);
-    expect(find.byType(LiveWaveform), findsNothing);
+    expect(find.byType(DesignSystemVoiceWaveform), findsNothing);
 
     await pumpZone(
       tester,
       phase: CapturePhase.listening,
       amplitudes: const [0.4, 0.6],
     );
-    expect(find.byType(LiveWaveform), findsOneWidget);
+    expect(find.byType(DesignSystemVoiceWaveform), findsOneWidget);
 
     await pumpZone(
       tester,
@@ -87,7 +87,7 @@ void main() {
     );
     final dimmed = tester.widget<AnimatedOpacity>(
       find.ancestor(
-        of: find.byType(LiveWaveform),
+        of: find.byType(DesignSystemVoiceWaveform),
         matching: find.byType(AnimatedOpacity),
       ),
     );
@@ -95,7 +95,7 @@ void main() {
     expect(dimmed.opacity, lessThan(1));
 
     await pumpZone(tester, phase: CapturePhase.captured);
-    expect(find.byType(LiveWaveform), findsNothing);
+    expect(find.byType(DesignSystemVoiceWaveform), findsNothing);
   });
 
   testWidgets('caption renders with the given color on one line', (

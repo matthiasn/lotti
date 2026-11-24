@@ -166,7 +166,7 @@ void main() {
     expect(input.phase, DesignSystemChatInputPhase.recording);
     expect(input.levels, const [0.3, 0.6]);
     expect(input.sampleInterval, const Duration(milliseconds: 20));
-    expect(find.text('0:12'), findsOne);
+    expect(find.text('00:12'), findsOne);
     // No chip may open a flow over a take that is still recording.
     expect(find.text('Quick refinements'), findsNothing);
     expect(find.text('The microphone is off'), findsOneWidget);

@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/fable-5.2, at: 2026-11-23T09:00:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-23T18:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: tla-lifecycle
@@ -2379,8 +2379,6 @@ embedded in the field (and in the check-in page's action bar) rather than
 pushed as a sheet, and it wears the recording sheet's anatomy — the one a
 task's microphone opens — from
 [`recording_controls.dart`](../../lib/features/speech/ui/widgets/recording/recording_controls.dart):
-the level visualizer the user chose (`RecordingLevelVisualizer`: the orb, or
-the VU meter — left out in the check-in page's dock, which is `compact`),
 the level line, the transport row (`RecordingTransportControls`: discard ✕
 asking in this surface's words, pause ⏸ / resume ▶, and the red Stop pill
 carrying the running time, read to assistive technology in words) — and no
@@ -2388,9 +2386,9 @@ footer, where the sheet keeps its one option. Every control is inert — no
 tap — before `record` has landed, after a refused start, and while a stop
 or a discard is in flight. A Capture-shaped recorder — the Daily OS orb
 doubling as Stop over Discard · Pause in words — read as a second app's
-recorder beside the sheet. Because the visualizer keeps moving while the
-take is live or paused, a test with a mounted recorder pumps by hand;
-`pumpAndSettle` never returns. It drives the app-wide
+recorder beside the sheet. The stage runs no ticker of its own — its level
+line repaints only when the recorder reports a sample — so a test with a
+mounted recorder settles. It drives the app-wide
 `AudioRecorderController` the way the recording sheet does — `record` on
 mount with the person as `linkedId` and `transcriptionHandledByCaller`,
 `stop` handing back the entry id and the length the clock stood at — and
@@ -2428,8 +2426,10 @@ a goal's check-ins follow. The transcription model and provider must both
 resolve. There is no provider ranking, model discovery, or fallback on
 failure. A person whose category cannot be read is treated as filed under no
 category, so the remaining tiers still transcribe. Preflight refuses
-recording when no profile can transcribe. `canTranscribe` and `route` take
-the person's id for that reason.
+recording when no profile can transcribe. `canTranscribe` takes the
+person's id for that reason. A take's line in the composer gives its length
+and nothing else: the model and provider that make its words are never named
+beside a recording.
 
 Dictation into the person's agent chat follows the same rule:
 `RelationshipChatPane` hands `AgentChatView` the person's
@@ -2819,9 +2819,11 @@ shrink-wraps.
 
 The bar's *Speak* and a long press on a People row open *Speak about Pip*
 ([person_capture_sheet.dart](../../lib/features/relationships/ui/widgets/person_capture_sheet.dart)):
-the recorder, under a hint at what a capture can be and over a caption naming
-the model and provider that will sort it, so nothing leaves the device
-unannounced. The capture is driven by a pure machine,
+the recorder and nothing else — no hint, and no model or provider name:
+where the words are sorted is the person's AI profile, shown in its
+settings. While the take is listened back and sorted the sheet shows the
+app's AI-running bars (`AiThinkingShaderPresence`) over the one line saying
+which, not a spinner. The capture is driven by a pure machine,
 `personCaptureNext` in
 [person_capture_flow.dart](../../lib/features/relationships/model/person_capture_flow.dart),
 table-tested like `CheckInSpeechPhase`:

@@ -405,14 +405,6 @@ class CheckInTakeRow extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final clock = formatElapsed(take.length);
-    final route = take.route;
-    // The route is the first thing a narrow row sheds, and it only matters
-    // while the words are on their way; the length is the fact.
-    final tiers = [
-      if (take.words == CheckInTakeWords.transcribing && route != null)
-        '$clock · $route',
-      clock,
-    ];
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -446,7 +438,7 @@ class CheckInTakeRow extends StatelessWidget {
                 Expanded(
                   child: DsTieredText(
                     textKey: const ValueKey('check-in-take-meta'),
-                    tiers: tiers,
+                    tiers: [clock],
                     semanticsLabel: checkInSpokenClockLabel(
                       messages,
                       take.length,

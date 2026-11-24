@@ -25,8 +25,12 @@ bool sidebarAudioRecordingHasVisibleContent(WidgetRef ref) {
   );
 }
 
+/// A session in flight — recording, or paused mid-session — with its sheet
+/// closed: a paused take has no other way back on a desktop.
 bool _recordingIsVisible(AudioRecorderState state) {
-  return state.status == AudioRecorderStatus.recording && !state.modalVisible;
+  return (state.status == AudioRecorderStatus.recording ||
+          state.status == AudioRecorderStatus.paused) &&
+      !state.modalVisible;
 }
 
 /// Detailed audio recording panel rendered from the expanded desktop sidebar
@@ -91,10 +95,9 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
     final linkedEntry = linkedId == null
         ? null
         : ref.watch(sidebarAudioRecordingLinkedEntryProvider(linkedId)).value;
-    final title = _resolveTitle(
-      linkedEntry: linkedEntry,
-      fallback: messages.taskActionBarAudioRecordingActive,
-    );
+    final title =
+        recordingSubjectTitle(linkedEntry) ??
+        messages.taskActionBarAudioRecordingActive;
     final durationText = formatDuration(progress);
 
     // Red "live" accent card with a static mic glyph plus a gentle pulsing
@@ -120,20 +123,6 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
         onStop: () => unawaited(_stop(ref)),
       ),
     );
-  }
-
-  String _resolveTitle({
-    required JournalEntity? linkedEntry,
-    required String fallback,
-  }) {
-    if (linkedEntry is Task) {
-      final title = linkedEntry.data.title.trim();
-      if (title.isNotEmpty) return title;
-    }
-
-    final linkedText = linkedEntry?.entryText?.plainText.trim();
-    if (linkedText != null && linkedText.isNotEmpty) return linkedText;
-    return fallback;
   }
 
   Future<void> _stop(WidgetRef ref) async {

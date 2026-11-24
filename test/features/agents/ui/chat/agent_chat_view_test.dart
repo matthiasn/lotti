@@ -2465,11 +2465,11 @@ void main() {
           ],
         ),
       );
-      final clock = tester.getRect(find.text('0:59'));
+      final clock = tester.getRect(find.text('00:59'));
       final stop = tester.getRect(find.byKey(DesignSystemChatInputKeys.done));
       recorder.updateElapsed(const Duration(minutes: 1));
       await tester.pump();
-      expect(tester.getRect(find.text('1:00')), clock);
+      expect(tester.getRect(find.text('01:00')), clock);
       expect(tester.getRect(find.byKey(DesignSystemChatInputKeys.done)), stop);
       await tester.tap(find.byKey(DesignSystemChatInputKeys.done));
       // The recording row gives way to the controls as it ends.
@@ -2477,7 +2477,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pump();
       expect(stopped, 1);
-      expect(find.text('1:00'), findsNothing);
+      expect(find.text('01:00'), findsNothing);
       await tester.pumpWidget(const SizedBox());
     },
   );

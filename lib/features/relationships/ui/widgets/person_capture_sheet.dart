@@ -3,18 +3,16 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
-import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/person_capture.dart';
 import 'package:lotti/features/relationships/model/person_capture_flow.dart';
 import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
-import 'package:lotti/features/relationships/service/person_capture_sorter.dart';
 import 'package:lotti/features/relationships/state/person_capture_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
@@ -75,7 +73,6 @@ class PersonCaptureFlowView extends ConsumerStatefulWidget {
 
 class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
   late PersonCapturePhase _phase;
-  late final Future<PersonCaptureModel?> _model;
   CheckInTranscriptWait? _wait;
   CheckInSpeechFailureKind? _failure;
 
@@ -89,7 +86,6 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
   @override
   void initState() {
     super.initState();
-    _model = ref.read(personCaptureSorterProvider).modelFor(widget.person);
     final again = widget.sortAgain;
     if (again == null) {
       _phase = const PersonCaptureRecording();
@@ -249,7 +245,6 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
       ),
       PersonCaptureRecording() => _Recording(
         person: widget.person,
-        model: _model,
         onRecorded: _onRecorded,
         onDiscarded: () => _go(const PersonCaptureThrownAway()),
         onFailed: (kind) => setState(() => _failure = kind),
@@ -349,80 +344,33 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
   }
 }
 
-/// The recorder, under what a capture can be and over where it will be
-/// sorted — named before anything is sent, as the briefing names its model
-/// before *Brief now*.
+/// The recorder, and nothing else: the sheet's title says who the capture
+/// is about, and the recorder is the app's one recorder.
 class _Recording extends StatelessWidget {
   const _Recording({
     required this.person,
-    required this.model,
     required this.onRecorded,
     required this.onDiscarded,
     required this.onFailed,
   });
 
   final RelationshipEntry person;
-  final Future<PersonCaptureModel?> model;
   final void Function(String audioEntryId, Duration length) onRecorded;
   final VoidCallback onDiscarded;
   final void Function(CheckInSpeechFailureKind failure) onFailed;
 
   @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final quiet = tokens.colors.text.mediumEmphasis;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          messages.relationshipCaptureHint,
-          key: const ValueKey('person-capture-hint'),
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: quiet,
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        CheckInInlineRecorder(
-          linkedId: person.meta.id,
-          categoryId: person.meta.categoryId,
-          onRecorded: onRecorded,
-          onDiscarded: onDiscarded,
-          onFailed: onFailed,
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        FutureBuilder<PersonCaptureModel?>(
-          future: model,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const SizedBox.shrink();
-            }
-            final model = snapshot.data;
-            return Text(
-              model == null
-                  ? messages.relationshipCaptureNoSorter
-                  : messages.relationshipCaptureSortedBy(
-                      inferenceRouteIdentityTiers(
-                        model.route,
-                        viaLabel: messages.taskAgentRouteVia,
-                        alwaysNameProvider: true,
-                      ).first,
-                    ),
-              key: const ValueKey('person-capture-route'),
-              textAlign: TextAlign.center,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: quiet,
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => CheckInInlineRecorder(
+    linkedId: person.meta.id,
+    categoryId: person.meta.categoryId,
+    onRecorded: onRecorded,
+    onDiscarded: onDiscarded,
+    onFailed: onFailed,
+  );
 }
 
-/// Work under way: a spinner beside what it is.
+/// Work under way: the app's AI-running bars over what is running — the
+/// animation a task wears while its recording is transcribed.
 class _Working extends StatelessWidget {
   const _Working({required this.text, super.key});
 
@@ -431,19 +379,20 @@ class _Working extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step5),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return Semantics(
+      liveRegion: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const DesignSystemSpinner(),
-          SizedBox(width: tokens.spacing.step3),
-          Flexible(
-            child: Text(
-              text,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
+          const ExcludeSemantics(
+            child: AiThinkingShaderPresence(isRunning: true),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
         ],

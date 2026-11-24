@@ -653,12 +653,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       }
       expect(recorder.recordCalls.single.linkedId, 'c-1');
-      // The dock is compact — the level line, no orb over the check-in it
-      // adds to.
-      expect(find.byType(RecordingLevelVisualizer), findsNothing);
+      // The app's one recorder: the level line over the controls.
       expect(find.byType(RecordingLevelLine), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+      await tester.tap(find.byKey(const ValueKey('stop_recording')));
       for (var i = 0; i < 4; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
@@ -814,7 +812,7 @@ void main() {
       final backs = await startRecording(tester);
       final gate = Completer<void>();
       recorder.stopGate = gate;
-      await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+      await tester.tap(find.byKey(const ValueKey('stop_recording')));
       await tester.pump();
       expect(recorder.stopCalls, 1);
 
@@ -884,7 +882,7 @@ void main() {
     for (var i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    await tester.tap(find.byKey(const ValueKey('check-in-recorder-discard')));
+    await tester.tap(find.byKey(const ValueKey('cancel_recording')));
     for (var i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }

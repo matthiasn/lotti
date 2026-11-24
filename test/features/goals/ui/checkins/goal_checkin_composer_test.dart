@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/speech/state/app_settings_opener.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_failure_callout.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
@@ -49,7 +51,6 @@ void main() {
     WidgetTester tester, {
     String? captureTarget = 'goal-1',
     String? preparedLine,
-    String? personaName,
     Clock? clockOverride,
     Duration? pickedDuration,
     String? hostCategory = 'cat-1',
@@ -66,7 +67,6 @@ void main() {
           goalTitle: 'Fitness',
           start: start,
           preparedLine: preparedLine,
-          personaName: personaName,
           categoryId: hostCategory,
           saveText:
               ({
@@ -188,16 +188,6 @@ void main() {
     });
   });
 
-  testWidgets('names the goal it is about', (tester) async {
-    await pump(tester);
-    await tester.pump();
-
-    expect(
-      tester.widget<Text>(key('goal-checkin-goal-title')).data,
-      'Fitness',
-    );
-  });
-
   group('speaking', () {
     testWidgets('opened from Speak it is already recording: one sheet, no '
         'second tap, linked to the goal and left to the recorder to '
@@ -206,7 +196,6 @@ void main() {
         tester,
         start: GoalCheckInStart.speaking,
         preparedLine: 'What got in the way on Tuesday?',
-        personaName: 'Juno',
       );
       await settle(tester);
 
@@ -233,7 +222,7 @@ void main() {
         start: GoalCheckInStart.speaking,
       );
 
-      await tester.tap(key('check-in-recorder-stop'));
+      await tester.tap(key('stop_recording'));
       await settle(tester);
 
       expect(recorder.stopCalls, 1);
@@ -279,7 +268,7 @@ void main() {
       await pump(tester, start: GoalCheckInStart.speaking);
       await settle(tester);
 
-      await tester.tap(key('check-in-recorder-discard'));
+      await tester.tap(key('cancel_recording'));
       await settle(tester);
       await tester.tap(find.text('Discard').last);
       await settle(tester);
@@ -305,7 +294,7 @@ void main() {
       // The slashed mic belongs here: the microphone IS unavailable.
       expect(
         find.descendant(
-          of: key('goal-checkin-failure-microphoneDenied'),
+          of: key('recording-failure-microphoneDenied'),
           matching: find.byIcon(LottiIcons.micIdle),
         ),
         findsOneWidget,
@@ -313,7 +302,7 @@ void main() {
       // One Write instead, in the callout — not a second under it.
       expect(find.text('Write instead'), findsOneWidget);
 
-      await tester.tap(key('goal-checkin-open-settings'));
+      await tester.tap(find.byKey(RecordingFailureCallout.openSettingsKey));
       expect(settingsOpened, 1);
 
       // Speak tries again, and the failure is cleared while it does.
@@ -334,7 +323,7 @@ void main() {
       expect(recorder.recordCalls, isEmpty);
       expect(recorder.stopCalls, 0);
       // No settings door: the microphone is fine.
-      expect(key('goal-checkin-open-settings'), findsNothing);
+      expect(find.byKey(RecordingFailureCallout.openSettingsKey), findsNothing);
     });
 
     testWidgets('the running take can be stopped from the callout — a '
@@ -346,7 +335,7 @@ void main() {
 
       // Says where the stopped take goes, not to look for an indicator.
       expect(find.textContaining('saved where it was started'), findsOneWidget);
-      await tester.tap(key('goal-checkin-stop-running'));
+      await tester.tap(find.byKey(RecordingFailureCallout.stopRunningKey));
       await settle(tester);
 
       // Stopped, which saves it under its own subject; never `record`, which
@@ -372,7 +361,7 @@ void main() {
       await pump(tester, start: GoalCheckInStart.speaking);
       await settle(tester);
 
-      await tester.tap(key('goal-checkin-stop-running'));
+      await tester.tap(find.byKey(RecordingFailureCallout.stopRunningKey));
       await settle(tester);
 
       expect(find.text("Recording couldn't be saved"), findsOneWidget);
@@ -434,7 +423,7 @@ void main() {
         await pump(tester, start: GoalCheckInStart.speaking);
         await settle(tester);
         if (find.byType(InlineRecorder).evaluate().isNotEmpty) {
-          await tester.tap(key('check-in-recorder-stop'));
+          await tester.tap(key('stop_recording'));
           await settle(tester);
         }
 
@@ -502,7 +491,6 @@ void main() {
     await pump(
       tester,
       preparedLine: 'You said you would walk after lunch. It is 14:20.',
-      personaName: 'Juno',
     );
     await tester.pump();
 
@@ -510,11 +498,20 @@ void main() {
       find.text('You said you would walk after lunch. It is 14:20.'),
       findsOneWidget,
     );
-    // Provenance is explicit: the user is never answering a prompt without
-    // knowing whose it is — in words and in the agent's colour.
-    final label = tester.widget<Text>(find.text('Juno · prepared for you'));
-    final tokens = tester.element(key('goal-checkin-prepared')).designTokens;
-    expect(label.style?.color, tokens.colors.aiCard.accent);
+    // Provenance is the agent's own card — its violet — and nothing more:
+    // no line of copy over the recorder saying who prepared it.
+    final card = tester.widget<DecoratedBox>(key('goal-checkin-prepared'));
+    expect(
+      card.decoration,
+      aiCardDecoration(tester.element(key('goal-checkin-prepared'))),
+    );
+    expect(
+      find.descendant(
+        of: key('goal-checkin-prepared'),
+        matching: find.byType(Text),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets("opened before the host knew the goal's category, a note is "
@@ -687,7 +684,7 @@ void main() {
     await tester.pump();
 
     // An absent prompt is normal; capture is the job, the prompt is additive.
-    expect(find.textContaining('prepared for you'), findsNothing);
+    expect(key('goal-checkin-prepared'), findsNothing);
   });
 
   group('opened as a sheet', () {
@@ -733,7 +730,9 @@ void main() {
     testWidgets('dismissed mid-take, the take keeps running and goes back '
         'to the floating indicator, where it can be stopped', (tester) async {
       await openSheet(tester, GoalCheckInStart.speaking);
-      expect(find.text('Check in'), findsOneWidget);
+      // The sheet is titled with the goal, so the recorder is never
+      // anonymous and no second line has to name it.
+      expect(find.text('Fitness'), findsOneWidget);
       expect(recorder.modalVisibleLog.last, isTrue);
 
       Navigator.of(tester.element(find.byType(GoalCheckInComposer))).pop();

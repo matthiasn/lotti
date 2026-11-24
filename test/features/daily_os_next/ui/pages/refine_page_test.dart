@@ -15,8 +15,8 @@ import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/diff_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -218,7 +218,7 @@ void main() {
       final messages = tester.element(find.byType(RefinePage)).messages;
       expect(find.text(messages.dailyOsNextRefineStatusIdle), findsOneWidget);
       expect(find.byType(VoiceButton), findsOneWidget);
-      expect(find.byType(LiveWaveform), findsNothing);
+      expect(find.byType(DesignSystemVoiceWaveform), findsNothing);
       expect(find.byType(DiffRow), findsNothing);
     });
 
@@ -233,7 +233,7 @@ void main() {
       await tester.pump();
 
       final messages = tester.element(find.byType(RefinePage)).messages;
-      expect(find.byType(LiveWaveform), findsOneWidget);
+      expect(find.byType(DesignSystemVoiceWaveform), findsOneWidget);
       expect(
         find.text(messages.dailyOsNextRefineStatusListening),
         findsOneWidget,
@@ -661,7 +661,7 @@ void main() {
 
       final messages = tester.element(find.byType(RefinePage)).messages;
       expect(find.text(messages.dailyOsNextRefineStatusIdle), findsOneWidget);
-      expect(find.byType(LiveWaveform), findsNothing);
+      expect(find.byType(DesignSystemVoiceWaveform), findsNothing);
     });
 
     testWidgets('close button pops the page', (tester) async {

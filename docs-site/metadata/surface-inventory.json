@@ -934,19 +934,6 @@
       "status": "verified"
     },
     {
-      "id": "settings-recording-style",
-      "title": "Recording Style",
-      "kind": "settings-page",
-      "source": "lib/features/settings/domain/settings_tree_data.dart",
-      "sourcePattern": "'preferences/recording-style'",
-      "locator": "/settings/recording-style",
-      "routes": [
-        "/settings/recording-style"
-      ],
-      "page": "reference/recording-style",
-      "status": "verified"
-    },
-    {
       "id": "settings-notifications",
       "title": "Notifications",
       "kind": "settings-page",

@@ -17,6 +17,7 @@ import 'package:lotti/features/goals/state/goal_dictation_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Opens the sheet for one charter entry of the goal coached by [agentId]
@@ -366,7 +367,7 @@ class GoalCharterDictation extends ConsumerWidget {
             SizedBox(
               width: tokens.spacing.step9,
               child: Text(
-                _elapsedLabel(elapsed),
+                formatElapsed(elapsed),
                 key: const ValueKey('goal-charter-elapsed'),
                 style: tokens.typography.styles.others.caption.copyWith(
                   color: tokens.colors.text.mediumEmphasis,
@@ -412,10 +413,4 @@ class GoalCharterDictation extends ConsumerWidget {
         );
     }
   }
-}
-
-String _elapsedLabel(Duration elapsed) {
-  final minutes = elapsed.inMinutes.toString().padLeft(2, '0');
-  final seconds = (elapsed.inSeconds % 60).toString().padLeft(2, '0');
-  return '$minutes:$seconds';
 }

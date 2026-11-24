@@ -27,7 +27,6 @@ AudioRecorderState _recorderState({
 }) => AudioRecorderState(
   status: status,
   progress: Duration.zero,
-  vu: -20,
   dBFS: -160,
   showIndicator: false,
   modalVisible: false,
@@ -82,6 +81,7 @@ void main() {
     JournalEntity? entry,
     AudioRecorderState? recorderState,
     Widget? topSlot,
+    Widget? bottomSlot,
     MediaQueryData? mediaQueryData,
     List<Override> extraOverrides = const [],
   }) async {
@@ -91,6 +91,7 @@ void main() {
           child: EntryActionBar(
             entry: entry ?? _entry,
             topSlot: topSlot,
+            bottomSlot: bottomSlot,
           ),
         ),
         mediaQueryData: mediaQueryData,
@@ -207,6 +208,26 @@ void main() {
         lessThanOrEqualTo(
           tester.getRect(find.byKey(EntryActionBar.addTaskKey)).top,
         ),
+      );
+    });
+
+    testWidgets('renders an optional line under the action row, inside '
+        'the strip', (tester) async {
+      await pumpBar(
+        tester,
+        bottomSlot: const SizedBox(key: ValueKey('label'), height: 16),
+      );
+
+      final label = tester.getRect(find.byKey(const ValueKey('label')));
+      expect(
+        label.top,
+        greaterThanOrEqualTo(
+          tester.getRect(find.byKey(EntryActionBar.addTaskKey)).bottom,
+        ),
+      );
+      expect(
+        label.bottom,
+        lessThanOrEqualTo(tester.getRect(find.byType(EntryActionBar)).bottom),
       );
     });
 

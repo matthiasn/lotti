@@ -1,59 +1,79 @@
+import 'dart:math' as math;
+
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The live voice of a take, as a row of thin bars that spans all the width
-/// it is given — on a phone and on the widest desktop row alike.
+/// The live voice of a take — the app's one level meter, on the recorder
+/// and in every field that takes dictation: thin accent bars travelling
+/// from *now*, at the right, towards the past, over a hairline that is what
+/// silence looks like.
 ///
-/// The row shows the last [window] of the take, however wide it is: the bar
-/// count follows the width (one bar and one gap per slot), and each bar is
-/// its slice of the window, read between the samples around it. So the row
-/// is full a few seconds into a take and stays full, rather than filling at
-/// one bar per sample and leaving most of a wide row for time before the
-/// take. Nothing is drawn for that time: a take grows in from the right.
+/// The bars move at one pace wherever they are drawn: each stands for
+/// [barDuration] of the take, and as many are drawn as fit the width given.
+/// So a phone's sheet and the widest desktop row read alike, and a wider row
+/// simply reaches further back. Nothing is drawn for the time before the
+/// take: the hairline grows in from the right with it, and the oldest end
+/// fades out so the eye rests on the newest bars.
 ///
-/// Bars are centred and grow both ways; loudness is eased in, so room noise
-/// stays near a dot and speech uses most of the height. One quiet ink: the
-/// voice is content of the composer, never its action.
+/// Under reduced motion the bars are left out and the hairline lies still
+/// across the whole width; the surface's own clock and controls still say a
+/// take is running.
 class DesignSystemVoiceWaveform extends StatelessWidget {
   const DesignSystemVoiceWaveform({
     required this.levels,
     this.sampleInterval = defaultSampleInterval,
-    this.window = defaultWindow,
     this.color,
     super.key,
   });
 
-  /// How far back the row reaches.
-  static const Duration defaultWindow = Duration(seconds: 4);
+  /// The stretch of a take one bar stands for.
+  static const Duration barDuration = Duration(milliseconds: 40);
 
-  /// How often a level is taken: the recorder's amplitude interval.
+  /// How often a level is taken, unless the host says otherwise.
   static const Duration defaultSampleInterval = Duration(milliseconds: 100);
 
   /// Loudness in `0..1`, oldest first, one per [sampleInterval].
   final List<double> levels;
   final Duration sampleInterval;
-  final Duration window;
 
-  /// The bars' ink; medium emphasis when null.
+  /// The bars' ink; the accent when null.
   final Color? color;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final height = tokens.spacing.step7;
+    final height = tokens.spacing.step6;
+    final fade = LinearGradient(
+      colors: [
+        tokens.colors.text.highEmphasis.withValues(alpha: 0),
+        tokens.colors.text.highEmphasis,
+      ],
+      stops: const [0, 0.18],
+    );
     return ExcludeSemantics(
-      child: SizedBox(
-        height: height,
-        child: LayoutBuilder(
-          builder: (context, constraints) => CustomPaint(
-            size: Size(constraints.maxWidth, height),
-            painter: DesignSystemVoiceWaveformPainter(
-              levels: levels,
-              samplesPerWindow:
-                  window.inMicroseconds / sampleInterval.inMicroseconds,
-              barWidth: tokens.spacing.step1,
-              barSpacing: tokens.spacing.step1,
-              color: color ?? tokens.colors.text.mediumEmphasis,
+      child: RepaintBoundary(
+        child: SizedBox(
+          height: height,
+          child: LayoutBuilder(
+            builder: (context, constraints) => ShaderMask(
+              blendMode: BlendMode.dstIn,
+              shaderCallback: fade.createShader,
+              child: CustomPaint(
+                size: Size(constraints.maxWidth, height),
+                painter: DesignSystemVoiceWaveformPainter(
+                  levels: levels,
+                  samplesPerBar:
+                      barDuration.inMicroseconds /
+                      sampleInterval.inMicroseconds,
+                  barWidth: tokens.spacing.step1,
+                  barSpacing: tokens.spacing.step2,
+                  color: color ?? tokens.colors.interactive.enabled,
+                  baselineColor: tokens.colors.decorative.level02,
+                  // The hairline weight of the recorder's control rings.
+                  baselineWidth: tokens.spacing.step1 / 2,
+                  reducedMotion: MediaQuery.disableAnimationsOf(context),
+                ),
+              ),
             ),
           ),
         ),
@@ -67,19 +87,26 @@ class DesignSystemVoiceWaveform extends StatelessWidget {
 class DesignSystemVoiceWaveformPainter extends CustomPainter {
   DesignSystemVoiceWaveformPainter({
     required this.levels,
-    required this.samplesPerWindow,
+    required this.samplesPerBar,
     required this.barWidth,
     required this.barSpacing,
     required this.color,
+    required this.baselineColor,
+    required this.baselineWidth,
+    this.reducedMotion = false,
   });
 
   final List<double> levels;
 
-  /// How many samples the row spans, end to end.
-  final double samplesPerWindow;
+  /// How many samples one bar stands for: above one, a bar is the loudest
+  /// of its samples; below one, it reads between the two around it.
+  final double samplesPerBar;
   final double barWidth;
   final double barSpacing;
   final Color color;
+  final Color baselineColor;
+  final double baselineWidth;
+  final bool reducedMotion;
 
   /// How many bars fit [width].
   int capacity(double width) =>
@@ -96,29 +123,55 @@ class DesignSystemVoiceWaveformPainter extends CustomPainter {
     return levels[low] * (1 - t) + levels[low + 1] * t;
   }
 
-  /// The height of a bar for [level]: a dot (as tall as it is wide) at the
-  /// bottom of the range, all of [maxHeight] at the top.
-  double barHeight(double level, double maxHeight) {
-    final eased = Curves.easeOut.transform(level.clamp(0.0, 1.0));
-    return barWidth + eased * (maxHeight - barWidth);
+  /// The level of the bar whose newest sample is at fractional index [at]:
+  /// the loudest of the [samplesPerBar] samples it stands for, so a fast
+  /// recorder's samples move the bars smoothly rather than each one jolting
+  /// them; null before the take.
+  double? barLevelAt(double at) {
+    if (samplesPerBar <= 1) return levelAt(at);
+    if (levels.isEmpty || at < 0) return null;
+    final last = math.min(at.floor(), levels.length - 1);
+    final first = math.max((at - samplesPerBar).floor() + 1, 0);
+    var loudest = levels[last];
+    for (var i = first; i < last; i++) {
+      loudest = math.max(loudest, levels[i]);
+    }
+    return loudest;
   }
 
   @override
   void paint(Canvas canvas, Size size) {
     final slots = capacity(size.width);
-    if (slots <= 0 || levels.isEmpty) return;
-    final paint = Paint()..color = color;
-    final radius = Radius.circular(barWidth / 2);
+    if (slots <= 0) return;
     final centreY = size.height / 2;
     final step = barWidth + barSpacing;
     // Right-aligned: the last slot is the newest sample.
     final offset = size.width - (slots * step - barSpacing);
     final newest = (levels.length - 1).toDouble();
-    final perSlot = slots > 1 ? samplesPerWindow / (slots - 1) : 0.0;
-    for (var slot = 0; slot < slots; slot++) {
-      final level = levelAt(newest - (slots - 1 - slot) * perSlot);
+    // The slots the take has reached so far.
+    final reached = reducedMotion
+        ? slots
+        : math.min(slots, (newest / samplesPerBar).floor() + 1);
+    if (!reducedMotion && levels.isEmpty) return;
+
+    final start = offset + (slots - reached) * step;
+    canvas.drawLine(
+      Offset(reducedMotion ? 0 : start, centreY),
+      Offset(size.width, centreY),
+      Paint()
+        ..color = baselineColor
+        ..strokeWidth = baselineWidth,
+    );
+    if (reducedMotion) return;
+
+    final paint = Paint()..color = color;
+    final radius = Radius.circular(barWidth / 2);
+    for (var slot = slots - reached; slot < slots; slot++) {
+      final level = barLevelAt(newest - (slots - 1 - slot) * samplesPerBar);
       if (level == null) continue;
-      final height = barHeight(level, size.height);
+      final height = level.clamp(0.0, 1.0) * size.height;
+      // Silence is the hairline alone.
+      if (height <= baselineWidth) continue;
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromLTWH(
@@ -137,8 +190,11 @@ class DesignSystemVoiceWaveformPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant DesignSystemVoiceWaveformPainter oldDelegate) =>
       oldDelegate.levels != levels ||
-      oldDelegate.samplesPerWindow != samplesPerWindow ||
+      oldDelegate.samplesPerBar != samplesPerBar ||
       oldDelegate.color != color ||
+      oldDelegate.baselineColor != baselineColor ||
+      oldDelegate.baselineWidth != baselineWidth ||
+      oldDelegate.reducedMotion != reducedMotion ||
       oldDelegate.barWidth != barWidth ||
       oldDelegate.barSpacing != barSpacing;
 }

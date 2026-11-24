@@ -8,7 +8,6 @@ import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_view.dart';
-import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -21,9 +20,7 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// Hosts the presentational [OnboardingFirstTaskView] and wires it to the
 /// **shared** [captureControllerProvider] (the same mic/transcription pipeline the
-/// Daily OS capture screen uses — no bespoke audio wiring), to the persisted
-/// [recordingStyleProvider] (the orb unless the user picked the VU meter in
-/// Settings → Recording Style), and to the
+/// Daily OS capture screen uses — no bespoke audio wiring) and to the
 /// [onboardingCaptureToTaskServiceProvider] orchestrator that turns the
 /// transcript into a real task.
 ///
@@ -155,12 +152,6 @@ class _OnboardingFirstTaskStepState
       _maybeStructure(next);
     });
 
-    // The recording-style preference — the orb unless the user chose the VU
-    // meter in Settings; while it loads (or on a load error) the orb stands in.
-    final style =
-        ref.watch(recordingStyleProvider).asData?.value ??
-        RecordingStyle.modern;
-
     final messages = context.messages;
     final phase = _viewPhase(captureState.phase);
     // The area the task was sent to, not whatever is picked now: a pick
@@ -174,9 +165,7 @@ class _OnboardingFirstTaskStepState
         .label;
     return OnboardingFirstTaskView(
       phase: phase,
-      style: style,
       accent: context.designTokens.colors.interactive.enabled,
-      colorScheme: Theme.of(context).colorScheme,
       title: messages.onboardingFirstTaskTitle,
       guidance: messages.onboardingFirstTaskGuidance,
       suggestionsLabel: messages.onboardingFirstTaskSuggestionsLabel,

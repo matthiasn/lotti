@@ -122,20 +122,7 @@ extension _CheckInCaptureFormActions on _CheckInCaptureFormState {
     bool retry = false,
   }) async {
     final transcription = ref.read(checkInTranscriptionServiceProvider);
-    final messages = context.messages;
     _updateTake(audioEntryId, (take) => take.transcribing());
-    // The route is a courtesy on the take's line: a slow read must never
-    // hold the transcript, and a failed one must never fail it. A take
-    // listened to again still carries the one it was given.
-    if (request) {
-      unawaited(
-        _labelRoute(
-          transcription,
-          audioEntryId: audioEntryId,
-          via: messages.taskAgentRouteVia,
-        ),
-      );
-    }
 
     final failure = inferenceErrorControllerProvider((
       id: audioEntryId,
@@ -180,30 +167,5 @@ extension _CheckInCaptureFormActions on _CheckInCaptureFormState {
         _forgetTranscriptWait(audioEntryId);
       }
     }
-  }
-
-  Future<void> _labelRoute(
-    CheckInTranscriptionService transcription, {
-    required String audioEntryId,
-    required String via,
-  }) async {
-    final CheckInTranscriptionRoute? route;
-    try {
-      route = await transcription.route(
-        relationshipId: widget.relationshipId,
-      );
-    } catch (exception, stackTrace) {
-      _logger.error(
-        LogDomain.speech,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'CheckInCaptureForm',
-        message: 'Could not name the transcription route',
-      );
-      return;
-    }
-    if (route == null) return;
-    final label = '${route.model} · $via ${route.provider}';
-    _updateTake(audioEntryId, (take) => take.withRoute(label));
   }
 }

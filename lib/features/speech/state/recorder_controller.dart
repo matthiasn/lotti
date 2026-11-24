@@ -7,7 +7,6 @@ import 'package:lotti/classes/audio_player_state.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/features/speech/state/vu_meter.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/providers/audio_player_controller.dart';
@@ -26,7 +25,7 @@ enum AudioRecordingFailure { permissionDenied, startFailed, busy }
 ///
 /// This Riverpod controller manages the complete recording lifecycle including:
 /// - Recording state (start, stop, pause, resume)
-/// - Real-time audio level monitoring for VU meter display
+/// - Real-time audio level monitoring for the level line
 /// - Integration with audio player to pause playback during recording
 /// - Stopping the read-aloud voice, so the microphone never records it
 /// - UI state management (modal visibility, indicator visibility)
@@ -76,16 +75,11 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// `cancel` would be a no-op and the take would land anyway.
   bool get isFinishing => _terminalActionInProgress;
 
-  /// Sliding-window VU meter driving the live level display.
-  final VuMeter _vuMeter = VuMeter(
-    windowSamples: defaultVuWindowMs ~/ intervalMs,
-  );
-
   /// Initializes the controller with dependencies and sets up amplitude monitoring.
   ///
   /// This method:
   /// - Injects required dependencies (repository, services)
-  /// - Sets up amplitude stream subscription for VU meter updates
+  /// - Sets up amplitude stream subscription for level updates
   /// - Configures cleanup on disposal
   /// - Returns initial recording state
   ///
@@ -101,19 +95,17 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     _amplitudeSub = _recorderRepository.amplitudeStream.listen((Amplitude amp) {
       // While paused the recorder keeps polling amplitude, but the elapsed
       // timer and level meter must freeze so the displayed duration matches the
-      // audio actually captured. Dropping these samples holds progress/vu/dBFS
+      // audio actually captured. Dropping these samples holds progress/dBFS
       // at their pre-pause values until the recording resumes.
       if (state.status == AudioRecorderStatus.paused) return;
 
       final dBFS = amp.current;
-      final vu = _vuMeter.addSample(dBFS);
 
       state = state.copyWith(
         progress: Duration(
           milliseconds: state.progress.inMilliseconds + intervalMs,
         ),
         dBFS: dBFS,
-        vu: vu,
       );
     });
 
@@ -128,8 +120,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     // Permission is requested lazily, in `record()`.
     return AudioRecorderState(
       status: AudioRecorderStatus.stopped,
-      vu: -20,
-      // Start at -20 VU (quiet)
       dBFS: -160,
       progress: Duration.zero,
       showIndicator: false,
@@ -240,7 +230,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
 
     try {
       await _recorderRepository.stopRecording();
-      _vuMeter.reset();
 
       // Preserve the inference preferences before resetting state
       final enableSpeechRecognition = state.enableSpeechRecognition;
@@ -248,7 +237,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       state = AudioRecorderState(
         status: AudioRecorderStatus.stopped,
         dBFS: -160,
-        vu: -20,
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: false,
@@ -289,12 +277,10 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         subDomain: 'recorder_controller',
       );
       // Ensure state is updated even if an error occurs during stop/save
-      _vuMeter.reset();
       state = state.copyWith(
         status: AudioRecorderStatus.stopped,
         progress: Duration.zero,
         dBFS: -160,
-        vu: -20,
       );
     } finally {
       _terminalActionInProgress = false;
@@ -329,14 +315,12 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     _audioNote = null;
     _linkedId = null;
     _transcriptionHandledByCaller = false;
-    _vuMeter.reset();
 
     // Preserve the inference preferences before resetting state.
     final enableSpeechRecognition = state.enableSpeechRecognition;
     state = AudioRecorderState(
       status: AudioRecorderStatus.stopped,
       dBFS: -160,
-      vu: -20,
       progress: Duration.zero,
       showIndicator: false,
       modalVisible: false,
@@ -366,7 +350,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// Pauses the current recording.
   ///
   /// Updates the state to paused and drops the level meter to its resting
-  /// (silent) values so the VU meter / orb visualizer reads as quiet rather
+  /// (silent) values so the level line reads as quiet rather
   /// than frozen mid-level — a frozen loud needle would look like the app
   /// hung. The elapsed [AudioRecorderState.progress] is intentionally left
   /// untouched so the timer holds; the amplitude listener in [build] then drops
@@ -375,7 +359,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     await _recorderRepository.pauseRecording();
     state = state.copyWith(
       status: AudioRecorderStatus.paused,
-      vu: -20,
       dBFS: -160,
     );
   }

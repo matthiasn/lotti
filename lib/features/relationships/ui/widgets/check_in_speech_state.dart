@@ -118,7 +118,6 @@ class CheckInTake {
     required this.length,
     this.words = CheckInTakeWords.transcribing,
     this.transcript,
-    this.route,
     this.detail,
   });
 
@@ -132,37 +131,23 @@ class CheckInTake {
   /// The words, once [words] is [CheckInTakeWords.heard].
   final String? transcript;
 
-  /// `model · via provider`, when the transcription service could name it.
-  final String? route;
-
   /// The provider's own words about a missing transcript, when it left any.
   final String? detail;
 
   CheckInTake transcribing() =>
-      CheckInTake(audioEntryId: audioEntryId, length: length, route: route);
-
-  CheckInTake withRoute(String route) => CheckInTake(
-    audioEntryId: audioEntryId,
-    length: length,
-    words: words,
-    transcript: transcript,
-    route: route,
-    detail: detail,
-  );
+      CheckInTake(audioEntryId: audioEntryId, length: length);
 
   CheckInTake heard(String transcript) => CheckInTake(
     audioEntryId: audioEntryId,
     length: length,
     words: CheckInTakeWords.heard,
     transcript: transcript,
-    route: route,
   );
 
   CheckInTake missing(String? detail) => CheckInTake(
     audioEntryId: audioEntryId,
     length: length,
     words: CheckInTakeWords.missing,
-    route: route,
     detail: detail,
   );
 
@@ -173,12 +158,11 @@ class CheckInTake {
       other.length == length &&
       other.words == words &&
       other.transcript == transcript &&
-      other.route == route &&
       other.detail == detail;
 
   @override
   int get hashCode =>
-      Object.hash(audioEntryId, length, words, transcript, route, detail);
+      Object.hash(audioEntryId, length, words, transcript, detail);
 }
 
 /// Why Save is held, so the action bar can say so instead of going quiet

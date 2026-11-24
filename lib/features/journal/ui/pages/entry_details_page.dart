@@ -6,6 +6,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_label.dart';
 import 'package:lotti/features/checklist/ui/correction_undo_snackbar.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -199,12 +200,11 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
         topSlot: AiRunningDecoderBars(
           entryId: widget.itemId,
           isInteractive: true,
-          responseTypes: const {
-            AiResponseType.imageAnalysis,
-            AiResponseType.audioTranscription,
-            AiResponseType.audioSummary,
-            AiResponseType.promptGeneration,
-          },
+          responseTypes: _aiRunningTypes,
+        ),
+        bottomSlot: AiRunningLabel(
+          entryId: widget.itemId,
+          responseTypes: _aiRunningTypes,
         ),
       ),
       // Builder so MediaQuery.paddingOf reads the Scaffold-modified value:
@@ -317,3 +317,12 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
     );
   }
 }
+
+/// The runs an entry's action bar shows as running: its bars, and the line
+/// under its controls that names the one in flight.
+const Set<AiResponseType> _aiRunningTypes = {
+  AiResponseType.imageAnalysis,
+  AiResponseType.audioTranscription,
+  AiResponseType.audioSummary,
+  AiResponseType.promptGeneration,
+};

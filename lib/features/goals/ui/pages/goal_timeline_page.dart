@@ -74,7 +74,6 @@ class GoalTimelinePage extends ConsumerWidget {
       goalTitle: title,
       // One tap and it is listening, as the goal page's Speak is.
       start: GoalCheckInStart.speaking,
-      personaName: goalIdentity.displayName,
       // The goal row's category, so a check-in is filed with its goal.
       categoryId: goalCategoryId,
     );

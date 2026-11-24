@@ -3011,9 +3011,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioPlayerWaveform => 'Formă de undă audio';
 
   @override
-  String get audioRecordingCancel => 'Anulați';
-
-  @override
   String get audioRecordingDiscardDialogBody =>
       'Această înregistrare va fi ștearsă. Nu se va crea nicio intrare audio, transcriere sau rezumat al sarcinii.';
 
@@ -8576,9 +8573,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalCheckInClose => 'Închideți';
 
   @override
-  String get goalCheckInComposerTitle => 'Raportare';
-
-  @override
   String goalCheckInDimensionsRated(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -8610,11 +8604,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalCheckInNoteKeptSeparate => 'Păstrată separat de nota scrisă';
-
-  @override
-  String goalCheckInPreparedBy(String name) {
-    return '$name · pregătit pentru dvs.';
-  }
 
   @override
   String get goalCheckInRecorderBusyBody =>
@@ -12548,15 +12537,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingMetricsYes => 'da';
 
   @override
-  String get onboardingRecordingStyleAnalogue => 'Analogic — VU-metru';
-
-  @override
-  String get onboardingRecordingStyleModern => 'Modern — orb de energie';
-
-  @override
-  String get onboardingRecordingStyleTryVoice => 'Încercați cu vocea';
-
-  @override
   String onboardingStageProgress(int current, int total) {
     return 'Pasul $current din $total';
   }
@@ -14526,10 +14506,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipCaptureHeard => 'Iată ce am auzit';
 
   @override
-  String get relationshipCaptureHint =>
-      'O conversație pe care ați avut-o, ceva de reținut sau un plan.';
-
-  @override
   String get relationshipCaptureKeepVoiceNote => 'Păstrați ca notă vocală';
 
   @override
@@ -14562,20 +14538,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipCaptureNoDue => 'Fără termen';
 
   @override
-  String get relationshipCaptureNoSorter =>
-      'Niciun model pentru sortare – rămâne o notă vocală.';
-
-  @override
   String get relationshipCaptureNote => 'Păstrați ca notă';
 
   @override
   String relationshipCaptureNotPlaced(String name) {
     return 'Înregistrarea este salvată în jurnalul dumneavoastră, dar nu a putut fi pusă pe cronologia lui $name.';
-  }
-
-  @override
-  String relationshipCaptureSortedBy(String route) {
-    return 'Sortat de $route';
   }
 
   @override
@@ -16664,21 +16631,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsPreferencesSubtitle =>
-      'Tematică, animații, notificări, stil de înregistrare, voce și scurtături';
+      'Tematică, animații, notificări, voce și scurtături';
 
   @override
   String get settingsPreferencesTitle => 'Preferințe';
-
-  @override
-  String get settingsRecordingStyleExplanation =>
-      'Alegeți cum arată microfonul în timp ce înregistrați.';
-
-  @override
-  String get settingsRecordingStyleSubtitle =>
-      'VU-metru sau orb de energie în timpul înregistrării';
-
-  @override
-  String get settingsRecordingStyleTitle => 'Stil de înregistrare';
 
   @override
   String get settingsResetGeminiConfirm => 'Resetați';

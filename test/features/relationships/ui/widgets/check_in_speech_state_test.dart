@@ -86,19 +86,17 @@ void main() {
         'what it is', () {
       expect(take.words, CheckInTakeWords.transcribing);
 
-      final routed = take.withRoute('whisper · via Melious');
-      final heard = routed.heard('Pip wants the krill memo.');
+      final heard = take.heard('Pip wants the krill memo.');
       expect(
-        (heard.words, heard.transcript, heard.route, heard.length),
+        (heard.words, heard.transcript, heard.length),
         (
           CheckInTakeWords.heard,
           'Pip wants the krill memo.',
-          'whisper · via Melious',
           const Duration(seconds: 23),
         ),
       );
 
-      final missing = routed.missing('HTTP 503');
+      final missing = take.missing('HTTP 503');
       expect(
         (missing.words, missing.transcript, missing.detail),
         (CheckInTakeWords.missing, null, 'HTTP 503'),
@@ -107,10 +105,9 @@ void main() {
       // Try again: back to waiting, the error and any old words gone.
       final retried = missing.transcribing();
       expect(
-        (retried.words, retried.detail, retried.route),
-        (CheckInTakeWords.transcribing, null, 'whisper · via Melious'),
+        (retried.words, retried.detail),
+        (CheckInTakeWords.transcribing, null),
       );
-      expect(missing.withRoute('r').words, CheckInTakeWords.missing);
     });
 
     test('is a value', () {

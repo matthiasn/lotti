@@ -10,8 +10,8 @@ check-in.
 ## What it does for the user
 
 - **Records a voice note anywhere.** From the journal, from a task, or as part of
-  a day check-in — with a live level meter (a classic VU meter or an energy orb,
-  whichever the user picked in settings) so it is obvious the mic is working.
+  a day check-in — the same recorder everywhere, recording from the moment it
+  opens, with a live level line so it is obvious the mic is working.
 - **Never keeps a recording the user threw away.** Discarding during a recording
   deletes the partial file and creates nothing — nothing is transcribed and no
   agent is woken.

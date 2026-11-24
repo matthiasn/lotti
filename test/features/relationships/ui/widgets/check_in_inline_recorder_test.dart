@@ -24,7 +24,6 @@ void main() {
     AudioRecordingFailure? recordFailure,
     String? stopResult = 'audio-1',
     String? runningFor,
-    bool compact = false,
     bool showStatus = false,
   }) async {
     final recorder = FakeAudioRecorderController(
@@ -37,7 +36,6 @@ void main() {
         CheckInInlineRecorder(
           linkedId: 'person-1',
           categoryId: 'category-7',
-          compact: compact,
           showStatus: showStatus,
           onRecorded: (id, length) => recorded.add((id, length)),
           onDiscarded: () {},
@@ -55,17 +53,21 @@ void main() {
 
   testWidgets('records for the person, the host transcribing, and hands the '
       'take back', (tester) async {
-    final recorder = await pump(tester, compact: true, showStatus: true);
+    final recorder = await pump(tester, showStatus: true);
 
     expect(recorder.recordCalls, [
       (linkedId: 'person-1', handledByCaller: true),
     ]);
     expect(recorder.categoryIds, ['category-7']);
     final inner = tester.widget<InlineRecorder>(find.byType(InlineRecorder));
-    expect(inner.compact, isTrue);
     expect(inner.showStatus, isTrue);
+    // This surface's own words: the audio goes, the check-in stays.
+    expect(
+      inner.discardMessage,
+      'The audio is deleted. Your check-in stays open.',
+    );
 
-    await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+    await tester.tap(find.byKey(const ValueKey('stop_recording')));
     await tester.pump();
     expect(recorded, [('audio-1', Duration.zero)]);
   });
@@ -99,7 +101,7 @@ void main() {
 
   testWidgets('a take that could not be saved says so', (tester) async {
     await pump(tester, stopResult: null);
-    await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+    await tester.tap(find.byKey(const ValueKey('stop_recording')));
     await tester.pump();
 
     expect(failed, [CheckInSpeechFailureKind.recordingNotSaved]);

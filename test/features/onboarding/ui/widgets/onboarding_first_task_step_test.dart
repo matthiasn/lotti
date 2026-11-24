@@ -14,26 +14,14 @@ import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_se
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_choice_chip.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_step.dart';
-import 'package:lotti/features/speech/state/recording_style.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
-import 'package:lotti/services/app_prefs_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
-
-/// In-memory [AppPrefs] backing the recording-style provider, so the step's
-/// style resolution never touches SharedPreferences.
-AppPrefs _fakePrefs({Future<String?>? styleValue}) => AppPrefs(
-  getBool: (_) async => null,
-  setBool: ({required key, required value}) async => true,
-  getString: (_) => styleValue ?? Future.value(),
-  setString: ({required key, required value}) async => true,
-);
 
 void main() {
   const categoryId = 'cat-1';
@@ -111,7 +99,6 @@ void main() {
     VoidCallback? onDone,
     void Function(String taskId)? onTaskCreated,
     List<OnboardingCaptureCategory>? categories,
-    Future<String?>? styleValue,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -138,9 +125,6 @@ void main() {
         overrides: [
           captureControllerProvider.overrideWith(() => controller),
           onboardingCaptureToTaskServiceProvider.overrideWithValue(service),
-          recordingStyleAppPrefsProvider.overrideWithValue(
-            _fakePrefs(styleValue: styleValue),
-          ),
           // Her own flag off: onboarding has her regardless.
           configFlagProvider.overrideWith(
             (ref, flagName) => Stream.value(false),
@@ -156,47 +140,6 @@ void main() {
     );
     await tester.pump();
   }
-
-  group('recording style resolution', () {
-    testWidgets('the persisted analogue pick drives the VU meter visual', (
-      tester,
-    ) async {
-      await pumpStep(tester, styleValue: Future.value('analogue'));
-      // Let the style preference future resolve into the provider.
-      await tester.pump();
-      // The recorder stands in the tray once the mic is open.
-      controller.emit(
-        const CaptureState(
-          phase: CapturePhase.listening,
-          transcript: '',
-          amplitudes: <double>[],
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(AnalogVuMeter), findsOneWidget);
-      expect(find.byType(VoiceOrbZone), findsNothing);
-    });
-
-    testWidgets('falls back to the orb while the preference is unresolved', (
-      tester,
-    ) async {
-      // A never-completing preference load: the step must not blank out — the
-      // signature orb stands in until the style resolves.
-      await pumpStep(tester, styleValue: Completer<String?>().future);
-      controller.emit(
-        const CaptureState(
-          phase: CapturePhase.listening,
-          transcript: '',
-          amplitudes: <double>[],
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(VoiceOrbZone), findsOneWidget);
-      expect(find.byType(AnalogVuMeter), findsNothing);
-    });
-  });
 
   testWidgets('renders the prompt frame with guided suggestions at rest', (
     tester,

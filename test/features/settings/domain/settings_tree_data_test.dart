@@ -203,7 +203,7 @@ void main() {
     });
 
     test(
-      'categories, labels, measurables, preferences/recording-style, '
+      'categories, labels, measurables, '
       'preferences/theming, advanced/flags always present',
       () {
         final ids = _ids(
@@ -223,7 +223,6 @@ void main() {
             'definitions/measurables',
             'preferences',
             'preferences/notifications',
-            'preferences/recording-style',
             'preferences/theming',
             'preferences/keyboard-shortcuts',
             'advanced/flags',
@@ -440,7 +439,6 @@ void main() {
         'preferences/theming',
         'preferences/animations',
         'preferences/notifications',
-        'preferences/recording-style',
         'preferences/speech',
         'preferences/keyboard-shortcuts',
       ]);
@@ -510,7 +508,6 @@ void main() {
         'preferences/theming',
         'preferences/animations',
         'preferences/notifications',
-        'preferences/recording-style',
         'preferences/keyboard-shortcuts',
       ]);
     });

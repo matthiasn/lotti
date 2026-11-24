@@ -73,11 +73,6 @@ class _NoTranscription implements CheckInTranscriptionService {
   Future<bool> canTranscribe({required String relationshipId}) async => false;
 
   @override
-  Future<CheckInTranscriptionRoute?> route({
-    required String relationshipId,
-  }) async => null;
-
-  @override
   CheckInTranscriptWait transcribe({
     required String audioEntryId,
     required String relationshipId,

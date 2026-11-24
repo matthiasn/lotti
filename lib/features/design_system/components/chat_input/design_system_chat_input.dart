@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/inputs/design_system_tex
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:material_ui/material_ui.dart';
 
 export 'design_system_chat_input_mentions.dart'
@@ -574,9 +575,6 @@ class _RecordingRow extends StatelessWidget {
   final Duration elapsed;
   final VoidCallback? onCancel;
   final VoidCallback? onDone;
-
-  static String formatElapsed(Duration elapsed) =>
-      '${elapsed.inMinutes}:${(elapsed.inSeconds % 60).toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {

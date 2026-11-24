@@ -54,7 +54,6 @@ Future<void> _capture(
                   preparedLine:
                       'Two of four sessions so far. What got in the way on '
                       'Tuesday?',
-                  personaName: 'Stretch coach',
                 ),
                 child: const Text('open'),
               ),

@@ -1,8 +1,9 @@
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
+import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -92,10 +93,13 @@ class VoiceOrbZone extends StatelessWidget {
               ? AnimatedOpacity(
                   opacity: phase == CapturePhase.listening ? 1.0 : 0.4,
                   duration: const Duration(milliseconds: 200),
-                  child: LiveWaveform(
-                    amplitudes: amplitudes,
+                  child: SizedBox(
                     width: waveformWidth,
-                    height: waveformSlotHeight,
+                    child: DesignSystemVoiceWaveform(
+                      levels: amplitudes,
+                      // One level per recorder sample.
+                      sampleInterval: const Duration(milliseconds: intervalMs),
+                    ),
                   ),
                 )
               : null,

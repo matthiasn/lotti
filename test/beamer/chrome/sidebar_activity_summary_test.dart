@@ -45,7 +45,6 @@ void main() {
     return AudioRecorderState(
       status: status,
       progress: progress,
-      vu: -20,
       dBFS: -40,
       showIndicator: status == AudioRecorderStatus.recording,
       modalVisible: false,

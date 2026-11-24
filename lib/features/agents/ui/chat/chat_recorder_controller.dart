@@ -16,6 +16,7 @@ import 'package:lotti/logic/audio_import.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/recording_levels.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart' as record;
 
@@ -616,10 +617,11 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     }
   }
 
-  /// Maps the raw dBFS [ChatRecorderState.amplitudeHistory] to the 0.05..1.0
-  /// bar heights the waveform widget expects. See `chat_amplitude_history.dart`.
+  /// Maps the raw dBFS [ChatRecorderState.amplitudeHistory] to the `0..1`
+  /// levels the waveform draws — the recorder's own scale ([normaliseDbfs]),
+  /// so a voice is as tall in a chat field as on the recording sheet.
   List<double> getNormalizedAmplitudeHistory() =>
-      normalizeAmplitudeHistory(state.amplitudeHistory);
+      state.amplitudeHistory.map(normaliseDbfs).toList();
 
   Future<void> _cleanupInternal() =>
       _cleanupFuture ??= _cleanupResources().whenComplete(() {

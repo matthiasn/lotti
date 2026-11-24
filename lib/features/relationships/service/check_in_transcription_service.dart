@@ -55,10 +55,6 @@ class CheckInTranscriptWait {
   void cancel() => _cancel();
 }
 
-/// Where a spoken check-in's words come from, as the two names the user
-/// can recognise from AI settings.
-typedef CheckInTranscriptionRoute = ({String model, String provider});
-
 /// Gets a transcript for a spoken check-in.
 ///
 /// Two jobs, because they are one decision: whether anything *can* transcribe
@@ -111,20 +107,6 @@ class CheckInTranscriptionService {
   /// owns a transcription slot.
   Future<bool> canTranscribe({required String relationshipId}) async =>
       await _resolveProfile(relationshipId) != null;
-
-  /// The names of the model and the provider a transcript about the person
-  /// [relationshipId] would come from, for the composer's saved-audio line —
-  /// or null when nothing can transcribe. Names only: never a key, an
-  /// endpoint or a channel.
-  Future<CheckInTranscriptionRoute?> route({
-    required String relationshipId,
-  }) async {
-    final profile = await _resolveProfile(relationshipId);
-    final model = profile?.transcriptionModel;
-    final provider = profile?.transcriptionProvider;
-    if (profile == null || model == null || provider == null) return null;
-    return (model: model.name, provider: provider.name);
-  }
 
   /// The profile that transcribes for the person [relationshipId]: their
   /// agent's, their own, their category's, else the Settings default —

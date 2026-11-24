@@ -40,13 +40,13 @@ String spokenClockLabel(AppLocalizations messages, Duration length) {
   ].join(' ');
 }
 
-/// The recorder a sheet or a page embeds to record about one subject — a
-/// person's check-in, a goal's — wearing the app's one recorder anatomy
-/// (`recording_controls.dart`): the level visualizer the user chose, the
-/// running clock, and discard ✕ · pause ⏸ · the red Stop.
+/// The recorder every sheet and page embeds — the recording sheet a task's
+/// or a project's microphone opens, a person's check-in, a goal's — wearing
+/// the app's one recorder anatomy (`recording_controls.dart`): the level
+/// line, and discard ✕ · the red Stop carrying the running clock · pause ⏸.
 ///
 /// It starts recording the moment it is mounted — the user already pressed
-/// *Speak* or *Dictate* — and reports one of three outcomes:
+/// a microphone, *Speak* or *Dictate* — and reports one of three outcomes:
 ///
 /// - [onRecorded] with the audio entry the recording became and how long it
 ///   ran;
@@ -76,14 +76,16 @@ class InlineRecorder extends ConsumerStatefulWidget {
     required this.onDiscarded,
     required this.onFailed,
     this.categoryId,
-    this.compact = false,
     this.showStatus = false,
     this.transcriptionHandledByCaller = true,
+    this.discardMessage,
+    this.footer,
     super.key,
   });
 
-  /// The entry the recording is linked to.
-  final String linkedId;
+  /// The entry the recording is linked to; null for a recording that
+  /// stands on its own.
+  final String? linkedId;
 
   /// Its category, so the audio entry files where its other entries do.
   final String? categoryId;
@@ -91,10 +93,6 @@ class InlineRecorder extends ConsumerStatefulWidget {
   final void Function(String audioEntryId, Duration length) onRecorded;
   final VoidCallback onDiscarded;
   final void Function(InlineRecordingFailure failure) onFailed;
-
-  /// Whether to leave the orb or meter out, as a page's dock does, so
-  /// recording never covers the thing it adds to.
-  final bool compact;
 
   /// Whether the recorder says *Recording* / *Paused* itself — for a host
   /// with no status line of its own — in the header's own grammar: the red
@@ -105,6 +103,14 @@ class InlineRecorder extends ConsumerStatefulWidget {
   /// recorder's own post-recording automation, which also covers a take
   /// stopped from the floating indicator after the host is gone.
   final bool transcriptionHandledByCaller;
+
+  /// What the discard confirmation says is lost, where the host has words
+  /// of its own for it; the recorder's otherwise.
+  final String? discardMessage;
+
+  /// An option under the controls, such as the recording sheet's
+  /// *Transcribe*.
+  final Widget? footer;
 
   @override
   ConsumerState<InlineRecorder> createState() => _InlineRecorderState();
@@ -189,8 +195,8 @@ class _InlineRecorderState extends ConsumerState<InlineRecorder> {
     final confirmed = await showConfirmationModal(
       context: context,
       title: messages.audioRecordingDiscardDialogTitle,
-      // This surface's own words: the audio goes, the check-in stays.
-      message: messages.checkInDiscardRecordingBody,
+      message:
+          widget.discardMessage ?? messages.audioRecordingDiscardDialogBody,
       cancelLabel: messages.audioRecordingDiscardDialogCancel,
       confirmLabel: messages.audioRecordingDiscardDialogConfirm,
     );
@@ -219,7 +225,6 @@ class _InlineRecorderState extends ConsumerState<InlineRecorder> {
     return RecordingStage(
       key: const ValueKey('check-in-inline-recorder'),
       state: state,
-      compact: widget.compact,
       notice: widget.showStatus
           ? Semantics(
               liveRegion: true,
@@ -253,8 +258,10 @@ class _InlineRecorderState extends ConsumerState<InlineRecorder> {
               ),
             )
           : null,
-      // Named, not live: the status line announces recording and paused, so
-      // a reader hears each transition once.
+      // Live only where no status line announces recording and paused, so a
+      // reader hears each transition once.
+      announceLevel: !widget.showStatus,
+      footer: widget.footer,
       levelSemanticsLabel: live
           ? messages.audioRecordingLive
           : paused
@@ -269,10 +276,6 @@ class _InlineRecorderState extends ConsumerState<InlineRecorder> {
         // actually running: before `record` lands, or after a refused
         // start, there is nothing to pause or stop.
         busy: _busy || !(live || paused),
-        discardLabel: messages.checkInDiscardRecording,
-        discardKey: const ValueKey('check-in-recorder-discard'),
-        pauseKey: const ValueKey('check-in-recorder-pause'),
-        stopKey: const ValueKey('check-in-recorder-stop'),
         onDiscard: _discard,
         onTogglePause: () => _togglePause(state.status),
         onStop: _stop,

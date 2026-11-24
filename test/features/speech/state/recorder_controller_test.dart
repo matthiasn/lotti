@@ -84,7 +84,6 @@ void main() {
       AudioRecorderState(
         status: AudioRecorderStatus.stopped,
         progress: Duration.zero,
-        vu: 0,
         dBFS: -160,
         showIndicator: false,
         modalVisible: false,
@@ -465,6 +464,78 @@ void main() {
         );
       });
 
+      test('a host gone while permission is still being asked never gets a '
+          'take started behind it', () async {
+        final permission = Completer<bool>();
+        when(
+          () => mockAudioRecorderRepository.hasPermission(),
+        ).thenAnswer((_) => permission.future);
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
+        );
+        var gone = false;
+
+        final started = controller.record(shouldCancel: () => gone);
+        gone = true;
+        permission.complete(true);
+
+        expect(await started, isNull);
+        verifyNever(() => mockAudioRecorderRepository.startRecording());
+        expect(
+          container.read(audioRecorderControllerProvider).status,
+          AudioRecorderStatus.stopped,
+        );
+      });
+
+      test('a host gone while the platform is still starting has the take '
+          'stopped and deleted, not left running', () async {
+        final start = Completer<AudioNote?>();
+        final note = AudioNote(
+          createdAt: DateTime(2024, 3, 15),
+          audioFile: 'aborted.m4a',
+          audioDirectory: '/audio/',
+          duration: Duration.zero,
+        );
+        when(
+          () => mockAudioRecorderRepository.hasPermission(),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockAudioRecorderRepository.isPaused(),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockAudioRecorderRepository.isRecording(),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockAudioRecorderRepository.startRecording(),
+        ).thenAnswer((_) => start.future);
+        when(
+          () => mockAudioRecorderRepository.deleteRecording(note),
+        ).thenAnswer((_) async {});
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
+        );
+        var gone = false;
+
+        final started = controller.record(
+          linkedId: 'person',
+          shouldCancel: () => gone,
+        );
+        // The start has reached the platform call when the host leaves.
+        await untilCalled(() => mockAudioRecorderRepository.startRecording());
+        gone = true;
+        start.complete(note);
+
+        expect(await started, isNull);
+        verify(() => mockAudioRecorderRepository.stopRecording()).called(1);
+        verify(
+          () => mockAudioRecorderRepository.deleteRecording(note),
+        ).called(1);
+        expect(
+          container.read(audioRecorderControllerProvider).status,
+          AudioRecorderStatus.stopped,
+        );
+      });
+
       test('should log no permission event when permission denied', () async {
         // Arrange
         final controller = container.read(
@@ -536,7 +607,6 @@ void main() {
         final initialProgress = container
             .read(audioRecorderControllerProvider)
             .progress;
-        final initialVu = container.read(audioRecorderControllerProvider).vu;
         final initialDbfs = container
             .read(audioRecorderControllerProvider)
             .dBFS;
@@ -549,7 +619,6 @@ void main() {
         expect(state.status, equals(AudioRecorderStatus.paused));
         expect(state.showIndicator, isFalse); // showIndicator remains false
         expect(state.progress, equals(initialProgress));
-        expect(state.vu, equals(initialVu));
         expect(state.dBFS, equals(initialDbfs));
       });
     });
@@ -648,7 +717,6 @@ void main() {
         final state = container.read(audioRecorderControllerProvider);
         expect(state.status, equals(AudioRecorderStatus.stopped));
         expect(state.progress, equals(Duration.zero));
-        expect(state.vu, equals(-20.0));
         expect(state.dBFS, equals(-160.0));
         expect(state.showIndicator, isFalse);
         expect(state.modalVisible, isFalse);
@@ -724,7 +792,6 @@ void main() {
           final state = container.read(audioRecorderControllerProvider);
           expect(state.status, AudioRecorderStatus.stopped);
           expect(state.progress, Duration.zero);
-          expect(state.vu, -20.0);
           expect(state.dBFS, -160.0);
           expect(state.showIndicator, isFalse);
           expect(state.modalVisible, isFalse);
@@ -928,7 +995,6 @@ void main() {
 
       // Assert
       expect(state.status, equals(AudioRecorderStatus.stopped));
-      expect(state.vu, equals(-20.0));
       expect(state.dBFS, equals(-160.0));
       expect(state.progress, equals(Duration.zero));
       expect(state.showIndicator, isFalse);
@@ -1182,7 +1248,6 @@ void main() {
         final state = container.read(audioRecorderControllerProvider);
         expect(state.status, equals(AudioRecorderStatus.stopped));
         expect(state.progress, equals(Duration.zero));
-        expect(state.vu, equals(-20.0));
         expect(state.dBFS, equals(-160.0));
         expect(state.showIndicator, isFalse);
         expect(state.modalVisible, isFalse);
@@ -1244,8 +1309,8 @@ void main() {
             ..elapse(const Duration(milliseconds: 100))
             ..flushMicrotasks();
 
-          // Fill the VU sliding window (300 ms / 20 ms = 15 samples).
-          fillVuBuffer(amplitudeController, mockAmplitude, async);
+          // Fifteen samples, 300 ms of the take.
+          feedSamples(amplitudeController, mockAmplitude, async);
 
           // Wait for all stream events to be processed
           async
@@ -1257,12 +1322,6 @@ void main() {
 
           expect(state.dBFS, equals(-50.0)); // Direct dBFS value
 
-          // VU calculation with constant -50 dBFS input:
-          // - RMS of constant -50 dBFS values = -50 dBFS
-          // - VU = RMS_dB - vuReferenceLevelDbfs = -50 - (-18) = -32
-          // - However, VU is clamped to range [-20, +3] in the implementation
-          // - Therefore, -32 gets clamped to -20 (the minimum VU value)
-          expect(state.vu, equals(-20.0));
           expect(state.progress.inMilliseconds, greaterThan(0));
 
           // Clean up
@@ -1297,7 +1356,7 @@ void main() {
             ..flushMicrotasks();
 
           // Live samples advance the elapsed timer (false branch of the guard).
-          fillVuBuffer(amplitudeController, mockAmplitude, async, count: 5);
+          feedSamples(amplitudeController, mockAmplitude, async, count: 5);
           final beforePause = testContainer.read(
             audioRecorderControllerProvider,
           );
@@ -1310,17 +1369,16 @@ void main() {
           expect(paused.status, AudioRecorderStatus.paused);
 
           // Samples arriving while paused are dropped (true branch of guard):
-          // progress, dBFS and vu all hold their pre-pause values.
-          fillVuBuffer(amplitudeController, mockAmplitude, async, count: 10);
+          // progress and dBFS both hold their pre-pause values.
+          feedSamples(amplitudeController, mockAmplitude, async, count: 10);
           final duringPause = testContainer.read(
             audioRecorderControllerProvider,
           );
           expect(duringPause.progress, paused.progress);
           expect(duringPause.dBFS, paused.dBFS);
-          expect(duringPause.vu, paused.vu);
 
           // Act — resume. The timer AND level metering advance again on the
-          // next samples (not just progress — a regression that left vu/dBFS
+          // next samples (not just progress — a regression that left dBFS
           // frozen must fail here too).
           controller.resume();
           async.flushMicrotasks();
@@ -1329,15 +1387,14 @@ void main() {
             AudioRecorderStatus.recording,
           );
 
-          // Feed a new, louder level and fill the sliding VU window (15 samples)
+          // Feed a new, louder level and feed fifteen samples
           // so the meter reflects the post-resume input.
           when(() => mockAmplitude.current).thenReturn(-10);
-          fillVuBuffer(amplitudeController, mockAmplitude, async, count: 15);
+          feedSamples(amplitudeController, mockAmplitude, async, count: 15);
           final afterResume = testContainer.read(
             audioRecorderControllerProvider,
           );
           expect(afterResume.dBFS, -10);
-          expect(afterResume.vu, greaterThan(duringPause.vu));
           expect(
             afterResume.progress.inMilliseconds,
             greaterThan(duringPause.progress.inMilliseconds),
@@ -1494,7 +1551,6 @@ void main() {
       expect(state.modalVisible, isTrue);
       expect(state.status, equals(AudioRecorderStatus.stopped));
       expect(state.progress, equals(Duration.zero));
-      expect(state.vu, equals(-20.0));
       expect(state.dBFS, equals(-160.0));
     });
   });
@@ -1957,9 +2013,9 @@ void main() {
 }
 
 /// Replays [count] amplitude events through [amplitudeController], flushing
-/// the fake-async microtask queue after each so the recorder's VU sliding
+/// the fake-async microtask queue after each so the recorder's
 /// window (15 × 20 ms samples) fills deterministically.
-void fillVuBuffer(
+void feedSamples(
   StreamController<Amplitude> amplitudeController,
   Amplitude amplitude,
   FakeAsync async, {
