@@ -112,10 +112,10 @@ void main() {
     expect(failed, isEmpty);
   });
 
-  group("the recording sheet's anatomy", () {
-    testWidgets('the level line over the transport row, with the timed Stop '
-        'between discard and pause, and a footer under them when the host '
-        'has one', (tester) async {
+  group("the recorder's anatomy", () {
+    testWidgets('the level line over the transport row — discard, pause, '
+        'then the timed Stop — and a footer under them when the host has '
+        'one', (tester) async {
       final semantics = tester.ensureSemantics();
       await pump(tester, footer: const Text('an option'));
 
@@ -127,12 +127,13 @@ void main() {
         controls.bottom,
         lessThan(tester.getRect(find.text('an option')).top),
       );
-      // Discard, Stop, Pause: the sheet's order, left to right.
+      // Discard, pause, Stop: the recorder's order on every surface, Stop
+      // last as on the recording strip.
       final discard = tester.getRect(key('cancel_recording'));
       final pause = tester.getRect(key('pause_resume_button'));
       final stop = tester.getRect(key('stop_recording'));
-      expect(discard.right, lessThan(stop.left));
-      expect(stop.right, lessThan(pause.left));
+      expect(discard.right, lessThan(pause.left));
+      expect(pause.right, lessThan(stop.left));
       // Each is named for a reader, the same on every surface.
       expect(labelOf(tester, 'stop_recording'), 'Stop');
       expect(labelOf(tester, 'cancel_recording'), 'Discard');

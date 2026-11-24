@@ -202,20 +202,33 @@ two lines never clip. Left to right:
   - **here**, on the origin — a red dot (a pause glyph while paused) and
     *Recording here* (*Paused here*), not a button. `isOnRecordingOrigin`
     compares the two routes without query or trailing slash;
-  - **voice note** — a take linked to nothing, or whose subject is gone or
-    has no title (`recordingSubjectTitle` returns null) — the dot and *Voice
-    note*, never a button.
+  - **voice note** — a take linked to nothing, or whose subject is gone —
+    the dot and *Voice note*, never a button. A subject that is there but
+    has no title keeps its way back.
+
+  Away from the origin the way back is a button only as wide as its words,
+  so the rest of the row still opens the tray.
 
   Its status words are a live region, so a pause or resume is announced
   once, not every second.
 - **The bars** — the level line over a short stretch (`spacing.step9`), and
   the one part of the row that watches every sample. They drop out
-  (`showsBars`) when the leading part would have less than `spacing.step11`
-  beside them — a narrow phone or a large text size — so the name comes
-  first.
-- **Pause / resume** — the transport row's ring.
-- **Stop** — the timer pill carrying the running time, grey while paused.
-  **Stop always saves**; the ✕ that discards lives only in the tray.
+  (`showsBars`) while paused, and when the subject's name would keep less
+  than `spacing.step11` (scaled with the text) beside them — a narrow phone
+  — so the name comes first.
+- **Pause / resume** — the transport row's ring; while paused, resume is the
+  filled accent disc, the one primary on the row.
+- **Stop** — the timer pill carrying the running time, always last; a quiet
+  neutral fill while paused. **Stop always saves**; the ✕ that discards
+  lives only in the tray.
+
+Past `TextScales.large` the strip stacks (`RecordingStrip.stacked`): the
+caption and the subject on a line of their own, the controls beneath, with
+rounded corners rather than a capsule.
+
+From the Stop tap until the receipt is up, `recordingSavingProvider` holds
+the strip's place with an inert empty capsule (`RecordingStripContent.saving`),
+so the page never drops back under a second tap.
 
 The row watches the recorder through selectors — status, whole seconds,
 origin, subject — so a level sample never rebuilds it.
@@ -240,9 +253,13 @@ hands it to
 [`RecordingReceiptController`](../../../lib/features/speech/state/recording_receipt_controller.dart),
 which replaces the strip in place for `recordingReceiptWindow` (5 s) with
 [`RecordingReceiptRow`](../../../lib/features/speech/ui/widgets/recording/strip/recording_receipt.dart):
-✓ *Saved to {subject}* (*Voice note saved*), the take's length — with
-*· transcribing* only where the recorder's own automation will run — **Open**,
-shown only away from the origin, and **Undo**.
+a tick, then *Saved · 0:42* (*· transcribing* only where the recorder's own
+automation will run) over the subject's title (*Voice note* for a take saved
+to nothing), then **Undo** as a neutral outline and **Open** as the primary
+at the trailing edge — shown only where it leads somewhere: away from the
+origin to a subject still there, or into a voice note's own entry. The row
+takes no tap for `RecordingReceiptRow.armDelay` after it appears, with or
+without motion, so a second tap meant for Stop never lands on Undo.
 
 **A take is committed when its receipt times out, when Open is tapped, or
 when a new take starts.** Only then does `commitAutomation` start the take's
@@ -335,7 +352,7 @@ settings* goes through, on every surface.
 |---------|-------|
 | Recording strip | The leading part (way back / *Recording here* / *Voice note*), the bars where there is room, pause, and the Stop pill carrying the running time — on every page, phone and desktop, while a take runs that no check-in draws in place. Not on Flatpak |
 | Strip tray | The full stage under the strip's leading part — discard ✕, pause, Stop, the wide level line — with *Transcribe* as its footer, or a failure card |
-| Receipt | ✓ *Saved to …* (*Voice note saved*), the length and *· transcribing* where it will be, *Open* away from the origin, *Undo* — for 5 s after Stop |
+| Receipt | ✓ *Saved · 0:42* (*· transcribing* where it will be) over the subject, *Undo*, and *Open* where it leads somewhere — for 5 s after Stop |
 | Goal check-in sheet | `InlineRecorder` under the sheet's title — the goal's name — and the agent's question — no status line: the red Stop pill carrying the running time says it is recording |
 | Check-in page dock | The stage embedded in place by `CheckInInlineRecorder` (the person's wrapper over `InlineRecorder`), with its own status line in the stage's notice slot (`showStatus`: `● Recording` / `Paused` in the composer header's grammar, a live region), since no header above it says so |
 | Check-in composer and *Speak about …* sheet | The stage, under the composer's header and its status line, or under the sheet's title |

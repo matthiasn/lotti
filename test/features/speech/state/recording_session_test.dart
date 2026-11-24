@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -205,6 +207,53 @@ void main() {
   });
 
   group('stop', () {
+    test('a second Stop while the first saves does nothing — no second '
+        'stop, no "not saved" over a saved take', () async {
+      bench.startTaskTake().ignore();
+      await pumpEventQueue();
+      bench.recorder.stopGate = Completer<void>();
+
+      final first = bench.session.stop();
+      final second = bench.session.stop();
+      bench.recorder.stopGate!.complete();
+      await Future.wait([first, second]);
+
+      expect(bench.recorder.stopCalls, 1);
+      expect(bench.receipt?.entryId, 'audio-1');
+      expect(bench.tray.failure, isNull);
+      bench.receipts.commit();
+    });
+
+    test(
+      "holds the strip's place from the Stop tap until the receipt is up",
+      () async {
+        bench.startTaskTake().ignore();
+        await pumpEventQueue();
+        bench.recorder.stopGate = Completer<void>();
+
+        final stopping = bench.session.stop();
+        await pumpEventQueue();
+        expect(bench.container.read(recordingSavingProvider), isTrue);
+
+        bench.recorder.stopGate!.complete();
+        await stopping;
+        expect(bench.container.read(recordingSavingProvider), isFalse);
+        expect(bench.receipt, isNotNull);
+        bench.receipts.commit();
+      },
+    );
+
+    test(
+      'a take that could not be saved releases the held place too',
+      () async {
+        bench.recorder.stopResult = null;
+        bench.startTaskTake().ignore();
+        await pumpEventQueue();
+        await bench.session.stop();
+        expect(bench.container.read(recordingSavingProvider), isFalse);
+      },
+    );
+
     test('with nothing recording does nothing', () async {
       await bench.session.stop();
 

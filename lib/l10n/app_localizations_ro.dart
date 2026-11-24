@@ -14256,16 +14256,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get recordingReceiptOpen => 'Deschideți';
 
   @override
-  String recordingReceiptSaved(String subject) {
-    return 'Salvat în $subject';
+  String recordingReceiptSaved(String time) {
+    return 'Salvat · $time';
   }
 
   @override
-  String get recordingReceiptSavedVoiceNote => 'Notă vocală salvată';
-
-  @override
   String recordingReceiptTranscribing(String time) {
-    return '$time · se transcrie';
+    return 'Salvat · $time · se transcrie';
   }
 
   @override
@@ -14283,7 +14280,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get recordingStripOpenRecorder => 'Deschideți reportofonul';
 
   @override
-  String get recordingStripPausedFor => 'În pauză · Înregistrare pentru';
+  String get recordingStripPausedFor => 'În pauză';
 
   @override
   String get recordingStripPausedHere => 'În pauză aici';

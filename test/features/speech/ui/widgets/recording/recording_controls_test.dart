@@ -223,11 +223,11 @@ void main() {
       final discard = tester.getRect(
         find.byKey(RecordingTransportControls.discardKey),
       );
-      final pause = tester.getRect(
-        find.byKey(RecordingTransportControls.pauseKey),
+      final stop = tester.getRect(
+        find.byKey(RecordingTransportControls.stopKey),
       );
       expect(line.left, closeTo(discard.left, 0.5));
-      expect(line.right, closeTo(pause.right, 0.5));
+      expect(line.right, closeTo(stop.right, 0.5));
       expect(line.center.dx, closeTo(row.center.dx, 0.5));
     });
 
@@ -325,14 +325,15 @@ void main() {
 
     Finder key(String name) => find.byKey(ValueKey(name));
 
-    testWidgets('discard, the red Stop and pause, left to right, each its '
+    testWidgets('discard, pause and the red Stop, left to right — Stop last, '
+        'as on the strip — each its '
         'own act', (tester) async {
       await pump(tester);
       final discard = tester.getRect(key('cancel_recording'));
       final pause = tester.getRect(key('pause_resume_button'));
       final stop = tester.getRect(key('stop_recording'));
-      expect(discard.right, lessThan(stop.left));
-      expect(stop.right, lessThan(pause.left));
+      expect(discard.right, lessThan(pause.left));
+      expect(pause.right, lessThan(stop.left));
       // The quiet rings and the Stop pill are one height, full 48px
       // targets, on one centre line; the solid pause glyph a size below the
       // stroked ✕, so the two rings weigh the same.
@@ -408,6 +409,36 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('while paused, resume is the filled accent disc; running, '
+        'pause is a quiet ring', (tester) async {
+      BoxDecoration ringOf() =>
+          tester
+                  .widget<Container>(
+                    find
+                        .descendant(
+                          of: key('pause_resume_button'),
+                          matching: find.byType(Container),
+                        )
+                        .first,
+                  )
+                  .decoration!
+              as BoxDecoration;
+      await pump(tester);
+      final tokens = tester
+          .element(find.byType(RecordingTransportControls))
+          .designTokens;
+      expect(ringOf().color, isNull);
+      expect(ringOf().border, isNotNull);
+
+      await pump(tester, paused: true);
+      expect(ringOf().color, tokens.colors.interactive.enabled);
+      expect(ringOf().border, isNull);
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIconsFilled.play)).color,
+        tokens.colors.text.onInteractiveAlert,
+      );
+    });
+
     testWidgets('Stop is red while the take runs and grey while it is '
         'paused, the time held on it', (tester) async {
       DesignSystemTimerPill pill() => tester.widget(
@@ -458,8 +489,8 @@ void main() {
         expect(control.left, greaterThanOrEqualTo(row.left - 0.5));
         expect(control.right, lessThanOrEqualTo(row.right + 0.5));
       }
-      // Pause took a line of its own beneath discard and Stop.
-      expect(pause.top, greaterThan(stop.bottom - 0.5));
+      // Stop, last, took a line of its own beneath discard and pause.
+      expect(stop.top, greaterThan(pause.bottom - 0.5));
       await tester.tap(key('stop_recording'));
       await tester.tap(key('pause_resume_button'));
       expect(calls, ['stop', 'pause']);

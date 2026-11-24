@@ -39,10 +39,17 @@ class RecordingStrip extends ConsumerWidget {
   static double barsWidth(BuildContext context) =>
       context.designTokens.spacing.step9;
 
-  /// Whether a row [width] wide keeps the bars: only while the leading part
-  /// still has `spacing.step11` beside them. On the narrowest phone, or at
-  /// a large text size, the subject's name comes first.
-  static bool showsBars(BuildContext context, double width) {
+  /// Whether a row [width] wide keeps the bars: never while [paused] —
+  /// there is no level to show — and otherwise only while the subject's
+  /// name keeps at least `spacing.step11`, scaled with the text, beside
+  /// them. On the narrowest phone, or at a large text size, the name comes
+  /// first: the bars are the first thing to go.
+  static bool showsBars(
+    BuildContext context,
+    double width, {
+    bool paused = false,
+  }) {
+    if (paused) return false;
     final spacing = context.designTokens.spacing;
     final controls =
         spacing.step9 +
@@ -50,14 +57,24 @@ class RecordingStrip extends ConsumerWidget {
           context,
           DesignSystemTimerPill.elapsedWidthTemplate,
         ) +
-        spacing.step3 * 3 +
-        spacing.step2 * 2;
-    return width - controls - barsWidth(context) >= spacing.step11;
+        spacing.step3 * 4 +
+        spacing.step3 * 2;
+    final leadingChrome = RecordingStripLeading.glyphSlot + spacing.step3 * 3;
+    final name = MediaQuery.textScalerOf(context).scale(spacing.step11);
+    return width - controls - leadingChrome - barsWidth(context) >= name;
   }
 
-  /// The row's height: room for the controls with `spacing.step2` above and
-  /// below — 56 at the default text size — growing with the text scale the
-  /// way the island's capsule does, so the caption and the title never clip.
+  /// Whether the text is set so large that the strip stacks: the subject on
+  /// a line of its own, the controls beneath it. Past [TextScales.large] —
+  /// where every component takes its large-text layout — one row would
+  /// leave the subject a few letters beside the grown Stop pill.
+  static bool stacked(BuildContext context) =>
+      MediaQuery.textScalerOf(context).scale(1) > TextScales.large;
+
+  /// The strip's height: room for the controls with `spacing.step2` above
+  /// and below — 56 at the default text size — growing with the text scale
+  /// the way the island's capsule does, so the caption and the title never
+  /// clip. Stacked, the subject's line over the controls' row.
   static double height(BuildContext context) {
     final tokens = context.designTokens;
     final scaler = MediaQuery.textScalerOf(context);
@@ -65,11 +82,18 @@ class RecordingStrip extends ConsumerWidget {
     final text =
         scaler.scale(lines.caption).ceilToDouble() +
         scaler.scale(lines.bodySmall).ceilToDouble();
+    if (stacked(context)) {
+      return math.max(tokens.spacing.step9, text) +
+          tokens.spacing.step2 +
+          tokens.spacing.step9 +
+          tokens.spacing.step2 * 2;
+    }
     return math.max(tokens.spacing.step9, text) + tokens.spacing.step2 * 2;
   }
 
-  /// The strip's surface: the island's glass, one radius for the strip, the
-  /// receipt and the tray alike.
+  /// The strip's surface: the island's glass. The strip and the receipt are
+  /// full capsules around their round controls (no [radius]), and take
+  /// `radii.xl` once stacked; the taller tray takes a radius of its own.
   static Widget surface(
     BuildContext context, {
     required Widget child,
@@ -77,7 +101,9 @@ class RecordingStrip extends ConsumerWidget {
     double? radius,
   }) {
     final tokens = context.designTokens;
-    final corner = BorderRadius.circular(radius ?? tokens.radii.l);
+    final corner = BorderRadius.circular(
+      radius ?? (stacked(context) ? tokens.radii.xl : height(context) / 2),
+    );
     return DsGlassChipSurface(
       key: key,
       radius: corner,
@@ -136,43 +162,67 @@ class RecordingStrip extends ConsumerWidget {
           child: SizedBox(
             height: height(context),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step3,
+                vertical: stacked(context) ? tokens.spacing.step2 : 0,
+              ),
               child: LayoutBuilder(
-                builder: (context, constraints) => Row(
-                  children: [
-                    const Expanded(child: RecordingStripLeading()),
-                    if (showsBars(
-                      context,
-                      constraints.maxWidth + tokens.spacing.step2 * 2,
-                    )) ...[
-                      const _StripBars(key: barsKey),
-                      SizedBox(width: tokens.spacing.step3),
+                builder: (context, constraints) {
+                  final pause = RecordingRingButton(
+                    key: pauseKey,
+                    emphasized: paused,
+                    label: paused
+                        ? messages.audioRecordingResume
+                        : messages.audioRecordingPause,
+                    icon: paused
+                        ? LottiIconsFilled.play
+                        : LottiIconsFilled.pause,
+                    solid: true,
+                    onTap: () => paused ? recorder.resume() : recorder.pause(),
+                  );
+                  final stop = RecordingStopPill(
+                    key: stopKey,
+                    paused: paused,
+                    progress: progress,
+                    progressSemanticsLabel: spokenClockLabel(
+                      messages,
+                      progress,
+                    ),
+                    onTap: () => ref.read(recordingSessionProvider).stop(),
+                  );
+                  final gap = SizedBox(width: tokens.spacing.step3);
+                  if (stacked(context)) {
+                    // Large text: the subject keeps a line of its own, the
+                    // controls the line beneath it, Stop still last.
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Expanded(child: RecordingStripLeading()),
+                        SizedBox(height: tokens.spacing.step2),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [pause, gap, stop],
+                        ),
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      const Expanded(child: RecordingStripLeading()),
+                      if (showsBars(
+                        context,
+                        constraints.maxWidth + tokens.spacing.step3 * 2,
+                        paused: paused,
+                      )) ...[
+                        const _StripBars(key: barsKey),
+                        gap,
+                      ],
+                      pause,
+                      gap,
+                      stop,
                     ],
-                    RecordingRingButton(
-                      key: pauseKey,
-                      label: paused
-                          ? messages.audioRecordingResume
-                          : messages.audioRecordingPause,
-                      icon: paused
-                          ? LottiIconsFilled.play
-                          : LottiIconsFilled.pause,
-                      solid: true,
-                      onTap: () =>
-                          paused ? recorder.resume() : recorder.pause(),
-                    ),
-                    SizedBox(width: tokens.spacing.step3),
-                    RecordingStopPill(
-                      key: stopKey,
-                      paused: paused,
-                      progress: progress,
-                      progressSemanticsLabel: spokenClockLabel(
-                        messages,
-                        progress,
-                      ),
-                      onTap: () => ref.read(recordingSessionProvider).stop(),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ),

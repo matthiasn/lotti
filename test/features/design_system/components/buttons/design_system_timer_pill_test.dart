@@ -80,16 +80,30 @@ void main() {
 
   for (final theme in [DesignSystemTheme.light, DesignSystemTheme.dark]) {
     testWidgets('paused, a running clock keeps its stop circle and time on '
-        'the same grey in either theme, the ink still white '
+        "a quiet neutral fill in the text's own ink, so it steps back "
         '(${theme().brightness})', (tester) async {
       await pump(tester, running: true, paused: true, theme: theme());
+      final tokens = tester
+          .element(find.byType(DesignSystemTimerPill))
+          .designTokens;
 
-      expect(fillOf(tester).color, dsTokensLight.colors.text.mediumEmphasis);
+      expect(fillOf(tester).color, tokens.colors.decorative.level02);
       expect(
         tester.widget<Text>(find.text('00:09')).style?.color,
-        dsTokensLight.colors.text.onInteractiveAlert,
+        tokens.colors.text.highEmphasis,
       );
       expect(find.byKey(DesignSystemTimerPill.defaultStopKey), findsOneWidget);
+      expect(
+        tester
+            .widget<Icon>(
+              find.descendant(
+                of: find.byKey(DesignSystemTimerPill.defaultStopKey),
+                matching: find.byType(Icon),
+              ),
+            )
+            .color,
+        tokens.colors.text.highEmphasis,
+      );
     });
   }
 

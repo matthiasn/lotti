@@ -9046,22 +9046,18 @@
   "@recordingReceiptOpen": {
     "description": "Takes the user to what the recording was saved to."
   },
-  "recordingReceiptSaved": "Saved to {subject}",
+  "recordingReceiptSaved": "Saved · {time}",
   "@recordingReceiptSaved": {
-    "description": "The receipt shown for a few seconds after a recording is stopped and saved.",
+    "description": "The receipt's caption over what the recording was saved to: that it was saved, and its length.",
     "placeholders": {
-      "subject": {
+      "time": {
         "type": "String"
       }
     }
   },
-  "recordingReceiptSavedVoiceNote": "Voice note saved",
-  "@recordingReceiptSavedVoiceNote": {
-    "description": "The receipt for a recording linked to nothing."
-  },
-  "recordingReceiptTranscribing": "{time} · transcribing",
+  "recordingReceiptTranscribing": "Saved · {time} · transcribing",
   "@recordingReceiptTranscribing": {
-    "description": "The receipt's second line: the recording's length, and that it is being transcribed.",
+    "description": "The receipt's caption when a transcript is on its way: saved, its length, and that it is being transcribed.",
     "placeholders": {
       "time": {
         "type": "String"
@@ -9089,9 +9085,9 @@
   "@recordingStripOpenRecorder": {
     "description": "Screen-reader label for opening the full recorder above the recording strip."
   },
-  "recordingStripPausedFor": "Paused · Recording for",
+  "recordingStripPausedFor": "Paused",
   "@recordingStripPausedFor": {
-    "description": "The same caption while the take is paused."
+    "description": "The recording strip's caption over the subject's title while the take is paused, away from where it started."
   },
   "recordingStripPausedHere": "Paused here",
   "@recordingStripPausedHere": {

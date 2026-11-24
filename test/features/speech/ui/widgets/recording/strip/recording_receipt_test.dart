@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recording_origin.dart';
 import 'package:lotti/features/speech/state/recording_receipt_controller.dart';
@@ -62,6 +63,8 @@ void main() {
           transcribing: transcribing,
         );
     await tester.pump();
+    // Past the moment the receipt ignores taps in.
+    await tester.pump(RecordingReceiptRow.armDelay);
     return container;
   }
 
@@ -72,8 +75,8 @@ void main() {
       'is being transcribed', (tester) async {
     final container = await pump(tester);
 
-    expect(find.text('Saved to Fix the airlock'), findsOneWidget);
-    expect(find.text('00:42 · transcribing'), findsOneWidget);
+    expect(find.text('Saved · 00:42 · transcribing'), findsOneWidget);
+    expect(find.text('Fix the airlock'), findsOneWidget);
     expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
     container.read(recordingReceiptControllerProvider.notifier).commit();
   });
@@ -82,14 +85,16 @@ void main() {
     tester,
   ) async {
     final container = await pump(tester, transcribing: false);
-    expect(find.text('00:42'), findsOneWidget);
+    expect(find.text('Saved · 00:42'), findsOneWidget);
     expect(find.textContaining('transcribing'), findsNothing);
     container.read(recordingReceiptControllerProvider.notifier).commit();
   });
 
-  testWidgets('a take with no title reads "Voice note saved"', (tester) async {
+  testWidgets('a take with no title is saved as a "Voice note"', (
+    tester,
+  ) async {
     final container = await pump(tester, subjectTitle: null);
-    expect(find.text('Voice note saved'), findsOneWidget);
+    expect(find.text('Voice note'), findsOneWidget);
     container.read(recordingReceiptControllerProvider.notifier).commit();
   });
 
@@ -128,7 +133,7 @@ void main() {
     testWidgets('is left out for a subject deleted mid-take: there is '
         'nowhere to go', (tester) async {
       final container = await pump(tester, subjectTitle: null);
-      expect(find.text('Voice note saved'), findsOneWidget);
+      expect(find.text('Voice note'), findsOneWidget);
       expect(open(), findsNothing);
       container.read(recordingReceiptControllerProvider.notifier).commit();
     });
@@ -169,6 +174,56 @@ void main() {
     });
   });
 
+  testWidgets('Undo and Open are both bounded buttons — Undo a neutral '
+      'outline, Open the primary at the trailing edge', (tester) async {
+    final container = await pump(tester);
+    expect(
+      tester.widget<DesignSystemButton>(undo()).variant,
+      DesignSystemButtonVariant.outlined,
+    );
+    expect(
+      tester.widget<DesignSystemButton>(open()).variant,
+      DesignSystemButtonVariant.primary,
+    );
+    expect(tester.getCenter(undo()).dx, lessThan(tester.getCenter(open()).dx));
+    container.read(recordingReceiptControllerProvider.notifier).commit();
+  });
+
+  testWidgets('takes no tap in its first moment, so a second tap meant for '
+      'Stop never lands on Undo', (tester) async {
+    await bench.pump(
+      tester,
+      Consumer(
+        builder: (context, ref, _) {
+          final receipt = ref.watch(recordingReceiptControllerProvider);
+          return SizedBox(
+            width: 390,
+            child: receipt == null
+                ? const SizedBox.shrink()
+                : RecordingReceiptRow(receipt: receipt),
+          );
+        },
+      ),
+      mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+    );
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(Consumer)),
+    );
+    container
+        .read(recordingReceiptControllerProvider.notifier)
+        .show(entryId: 'audio-1', duration: Duration.zero, origin: origin);
+    await tester.pump();
+
+    await tester.tap(undo(), warnIfMissed: false);
+    await tester.pump();
+    verifyNever(() => bench.repository.deleteJournalEntity(any()));
+
+    await tester.pump(RecordingReceiptRow.armDelay);
+    await tester.tap(undo());
+    await tester.pump();
+    verify(() => bench.repository.deleteJournalEntity('audio-1')).called(1);
+  });
+
   testWidgets('Undo deletes the take', (tester) async {
     final container = await pump(tester);
     await tester.tap(undo());
@@ -185,7 +240,7 @@ void main() {
     final container = await pump(tester);
     expect(
       find.ancestor(
-        of: find.text('Saved to Fix the airlock'),
+        of: find.text('Fix the airlock'),
         matching: find.byWidgetPredicate(
           (widget) =>
               widget is Semantics && (widget.properties.liveRegion ?? false),
@@ -196,12 +251,14 @@ void main() {
     container.read(recordingReceiptControllerProvider.notifier).commit();
   });
 
-  testWidgets('its tick is the success ink', (tester) async {
+  testWidgets('its tick is the quiet ink, so Open is the one accent', (
+    tester,
+  ) async {
     final container = await pump(tester);
     final tokens = tester.element(undo()).designTokens;
     expect(
       tester.widget<Icon>(find.byIcon(LottiIcons.confirm)).color,
-      tokens.colors.alert.success.defaultColor,
+      tokens.colors.text.mediumEmphasis,
     );
     container.read(recordingReceiptControllerProvider.notifier).commit();
   });

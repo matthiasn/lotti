@@ -14132,16 +14132,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get recordingReceiptOpen => 'Abrir';
 
   @override
-  String recordingReceiptSaved(String subject) {
-    return 'Guardado em $subject';
+  String recordingReceiptSaved(String time) {
+    return 'Guardado · $time';
   }
 
   @override
-  String get recordingReceiptSavedVoiceNote => 'Nota de voz guardada';
-
-  @override
   String recordingReceiptTranscribing(String time) {
-    return '$time · a transcrever';
+    return 'Guardado · $time · a transcrever';
   }
 
   @override
@@ -14159,7 +14156,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get recordingStripOpenRecorder => 'Abrir o gravador';
 
   @override
-  String get recordingStripPausedFor => 'Em pausa · A gravar para';
+  String get recordingStripPausedFor => 'Em pausa';
 
   @override
   String get recordingStripPausedHere => 'Em pausa aqui';

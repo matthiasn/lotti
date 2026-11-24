@@ -36,6 +36,24 @@ RecordingOrigin? captureRecordingOrigin(
   );
 }
 
+/// Whether a take is being stopped and saved — from the Stop tap until its
+/// receipt is up, or its failure card. The recording strip holds its place
+/// through it, so the page does not drop back and a second tap lands on
+/// nothing.
+final recordingSavingProvider = NotifierProvider<RecordingSaving, bool>(
+  RecordingSaving.new,
+  name: 'recordingSavingProvider',
+);
+
+class RecordingSaving extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  /// Whether a take is being saved now.
+  bool get saving => state;
+  set saving(bool saving) => state = saving;
+}
+
 final recordingSessionProvider = Provider<RecordingSession>(
   RecordingSession.new,
   name: 'recordingSessionProvider',
@@ -60,6 +78,10 @@ class RecordingSession {
 
   final Ref _ref;
   _Take? _take;
+
+  /// True while [stop] saves, so a second Stop — a double tap — cannot stop
+  /// again and report a saved take as not saved.
+  bool _stopping = false;
 
   /// Set by [openReceipt] for the commit it causes: a voice note opened
   /// from its receipt opens its entry whatever its caller asked for.
@@ -130,7 +152,18 @@ class RecordingSession {
   /// the tray on the *not saved* card.
   Future<void> stop() async {
     final running = _ref.read(audioRecorderControllerProvider);
-    if (!running.isTakeActive) return;
+    if (_stopping || !running.isTakeActive) return;
+    _stopping = true;
+    final saving = _ref.read(recordingSavingProvider.notifier)..saving = true;
+    try {
+      await _stopRunning(running);
+    } finally {
+      _stopping = false;
+      saving.saving = false;
+    }
+  }
+
+  Future<void> _stopRunning(AudioRecorderState running) async {
     final take = _take;
     _take = null;
     _tray.fold();

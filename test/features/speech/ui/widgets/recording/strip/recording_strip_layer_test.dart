@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/recording_receipt_controller.dart';
+import 'package:lotti/features/speech/state/recording_session.dart';
 import 'package:lotti/features/speech/state/recording_start_guard.dart';
 import 'package:lotti/features/speech/state/recording_tray_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_receipt.dart';
@@ -81,6 +82,15 @@ void main() {
     test('the tray opened for a failure: the tray, with no take', () {
       tray().openWithFailure(InlineRecordingFailure.microphoneDenied);
       expect(content(), RecordingStripContent.tray);
+    });
+
+    test("while a take saves, the strip's place is held", () async {
+      await recorder.record(linkedId: 'task-1');
+      await recorder.stop();
+      container.read(recordingSavingProvider.notifier).saving = true;
+      expect(content(), RecordingStripContent.saving);
+      container.read(recordingSavingProvider.notifier).saving = false;
+      expect(content(), RecordingStripContent.none);
     });
 
     test('a receipt wins over everything while it lasts', () async {
@@ -181,7 +191,8 @@ void main() {
         'receipt goes when its window does', (tester) async {
       await pump(tester);
       await bench.startTake(tester);
-      await tester.pump(RecordingStripLayer.motion);
+      // Taps land once the strip has fully risen.
+      await settleSwitch(tester);
       final stripBottom = tester.getBottomLeft(strip());
 
       await tester.tap(find.byKey(RecordingStrip.stopKey));
@@ -200,13 +211,28 @@ void main() {
       expect(find.byType(RecordingReceiptRow), findsNothing);
     });
 
+    testWidgets("while a take saves, an empty capsule holds the strip's "
+        'place and takes no tap', (tester) async {
+      await pump(tester);
+      container(tester).read(recordingSavingProvider.notifier).saving = true;
+      await tester.pump();
+      await settleSwitch(tester);
+
+      final held = find.byKey(const ValueKey('recording-strip-content-saving'));
+      expect(held, findsOneWidget);
+      expect(tester.widget<AbsorbPointer>(held).absorbing, isTrue);
+      final context = tester.element(held);
+      expect(tester.getSize(held).height, RecordingStrip.height(context));
+      container(tester).read(recordingSavingProvider.notifier).saving = false;
+    });
+
     testWidgets('tapping the strip opens the tray in its place', (
       tester,
     ) async {
       await pump(tester);
       await bench.startTake(tester);
-      await tester.pump(RecordingStripLayer.motion);
-      await tester.tap(find.byKey(RecordingStrip.barsKey));
+      await settleSwitch(tester);
+      await tester.fling(strip(), const Offset(0, -80), 800);
       await tester.pump();
       await settleSwitch(tester);
 

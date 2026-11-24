@@ -23329,22 +23329,16 @@ abstract class AppLocalizations {
   /// **'Open'**
   String get recordingReceiptOpen;
 
-  /// The receipt shown for a few seconds after a recording is stopped and saved.
+  /// The receipt's caption over what the recording was saved to: that it was saved, and its length.
   ///
   /// In en, this message translates to:
-  /// **'Saved to {subject}'**
-  String recordingReceiptSaved(String subject);
+  /// **'Saved · {time}'**
+  String recordingReceiptSaved(String time);
 
-  /// The receipt for a recording linked to nothing.
+  /// The receipt's caption when a transcript is on its way: saved, its length, and that it is being transcribed.
   ///
   /// In en, this message translates to:
-  /// **'Voice note saved'**
-  String get recordingReceiptSavedVoiceNote;
-
-  /// The receipt's second line: the recording's length, and that it is being transcribed.
-  ///
-  /// In en, this message translates to:
-  /// **'{time} · transcribing'**
+  /// **'Saved · {time} · transcribing'**
   String recordingReceiptTranscribing(String time);
 
   /// Deletes the recording just saved.
@@ -23371,10 +23365,10 @@ abstract class AppLocalizations {
   /// **'Open recorder'**
   String get recordingStripOpenRecorder;
 
-  /// The same caption while the take is paused.
+  /// The recording strip's caption over the subject's title while the take is paused, away from where it started.
   ///
   /// In en, this message translates to:
-  /// **'Paused · Recording for'**
+  /// **'Paused'**
   String get recordingStripPausedFor;
 
   /// The same label while the take is paused.

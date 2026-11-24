@@ -9,6 +9,7 @@ import 'package:lotti/features/speech/state/recording_tray_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_failure_callout.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_grabber.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_strip.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_strip_leading.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -108,7 +109,14 @@ class _RecordingStripTrayState extends ConsumerState<RecordingStripTray> {
                 onTap: tray.fold,
               ),
               if (live) ...[
-                const RecordingStripLeading(),
+                // On the level line's own edges, so the header and the
+                // recorder share one axis.
+                Center(
+                  child: SizedBox(
+                    width: RecordingTransportControls.rowWidth(context),
+                    child: const RecordingStripLeading(),
+                  ),
+                ),
                 SizedBox(height: tokens.spacing.step3),
               ],
               if (failure != null) ...[
@@ -159,7 +167,6 @@ class _Grabber extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     return Semantics(
       button: true,
       label: label,
@@ -169,16 +176,10 @@ class _Grabber extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: SizedBox(
-          height: tokens.spacing.step6,
-          child: Center(
-            child: Container(
-              width: tokens.spacing.step7,
-              height: tokens.spacing.step2,
-              decoration: BoxDecoration(
-                color: tokens.colors.decorative.level02,
-                borderRadius: BorderRadius.circular(tokens.radii.xs),
-              ),
-            ),
+          height: context.designTokens.spacing.step6,
+          child: const Align(
+            alignment: Alignment.topCenter,
+            child: RecordingGrabber(),
           ),
         ),
       ),

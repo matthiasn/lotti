@@ -14186,16 +14186,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get recordingReceiptOpen => 'Otevřít';
 
   @override
-  String recordingReceiptSaved(String subject) {
-    return 'Uloženo do $subject';
+  String recordingReceiptSaved(String time) {
+    return 'Uloženo · $time';
   }
 
   @override
-  String get recordingReceiptSavedVoiceNote => 'Hlasová poznámka uložena';
-
-  @override
   String recordingReceiptTranscribing(String time) {
-    return '$time · přepisuje se';
+    return 'Uloženo · $time · přepisuje se';
   }
 
   @override
@@ -14213,7 +14210,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get recordingStripOpenRecorder => 'Otevřít záznamník';
 
   @override
-  String get recordingStripPausedFor => 'Pozastaveno · Nahrávání pro';
+  String get recordingStripPausedFor => 'Pozastaveno';
 
   @override
   String get recordingStripPausedHere => 'Pozastaveno zde';

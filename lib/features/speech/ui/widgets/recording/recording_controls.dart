@@ -30,6 +30,13 @@ TextStyle recordingCaptionStyle(DsTokens tokens) =>
       color: tokens.colors.text.mediumEmphasis,
     );
 
+/// The main line on the recording strip, its tray and its receipt — what a
+/// take is for — one step above [recordingCaptionStyle].
+TextStyle recordingTitleStyle(DsTokens tokens) =>
+    tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.highEmphasis,
+    );
+
 /// The whole recorder, top to bottom: the level line, the [controls] —
 /// whose Stop carries the running time — and an optional [footer], in one
 /// column as wide as the transport row, every gap a design-system step, so
@@ -192,10 +199,10 @@ class RecordingOption extends StatelessWidget {
   }
 }
 
-/// The transport row: discard ✕ and pause ⏸ / resume ▶ as quiet rings on
-/// either side of the red Stop pill that carries the running time — the
-/// only colour in the row, the one way a take becomes an entry, grey while
-/// the take is paused. Every action is inert while [busy] — a
+/// The transport row: discard ✕, pause ⏸ / resume ▶, then the red Stop pill
+/// that carries the running time — the only colour in the row, the one way a
+/// take becomes an entry, grey while the take is paused. Stop comes last, as
+/// on the recording strip, so it is in the same place on every recorder. Every action is inert while [busy] — a
 /// stop or discard already on its way — and the host decides what each one
 /// means (whether discarding asks first, where a stopped take goes).
 class RecordingTransportControls extends StatelessWidget {
@@ -257,21 +264,22 @@ class RecordingTransportControls extends StatelessWidget {
           icon: LottiIcons.close,
           onTap: busy ? null : onDiscard,
         ),
-        RecordingStopPill(
-          key: stopKey,
-          paused: paused,
-          progress: progress,
-          progressSemanticsLabel: progressSemanticsLabel,
-          onTap: busy ? null : onStop,
-        ),
         RecordingRingButton(
           key: pauseKey,
+          emphasized: paused,
           label: paused
               ? messages.audioRecordingResume
               : messages.audioRecordingPause,
           icon: paused ? LottiIconsFilled.play : LottiIconsFilled.pause,
           solid: true,
           onTap: busy ? null : onTogglePause,
+        ),
+        RecordingStopPill(
+          key: stopKey,
+          paused: paused,
+          progress: progress,
+          progressSemanticsLabel: progressSemanticsLabel,
+          onTap: busy ? null : onStop,
         ),
       ],
     );
@@ -339,14 +347,20 @@ class _Control extends ConsumerWidget {
 
 /// A quiet 48px ring — a border, no fill — the whole of it tappable: the
 /// recorder's discard and pause, here and on the recording strip.
+/// [emphasized], it is the accent disc instead: resume, while a take is
+/// paused and Stop has stepped back, is the one thing to press.
 class RecordingRingButton extends StatelessWidget {
   const RecordingRingButton({
     required this.label,
     required this.icon,
     required this.onTap,
     this.solid = false,
+    this.emphasized = false,
     super.key,
   });
+
+  /// Whether the ring is the filled accent disc rather than a quiet ring.
+  final bool emphasized;
 
   final String label;
   final IconData icon;
@@ -366,7 +380,10 @@ class RecordingRingButton extends StatelessWidget {
         height: tokens.spacing.step9,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: tokens.colors.decorative.level02),
+          color: emphasized ? tokens.colors.interactive.enabled : null,
+          border: emphasized
+              ? null
+              : Border.all(color: tokens.colors.decorative.level02),
         ),
         child: AnimatedSwitcher(
           duration: MotionDurations.short4,
@@ -376,7 +393,9 @@ class RecordingRingButton extends StatelessWidget {
             // A solid glyph carries more ink than a stroked one at the same
             // size: a step smaller, the two rings weigh the same.
             size: solid ? IconSizes.m : IconSizes.l,
-            color: tokens.colors.text.highEmphasis,
+            color: emphasized
+                ? tokens.colors.text.onInteractiveAlert
+                : tokens.colors.text.highEmphasis,
           ),
         ),
       ),

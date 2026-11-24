@@ -91,8 +91,8 @@ and optional hand-off to profile-driven transcription automation.
 
 The recorder draws the level line from that dBFS feed, and nothing else: no
 orb, no VU meter. The whole recorder — the level line and the transport
-row (discard ✕, the red Stop pill carrying the running time, pause ⏸ /
-resume ▶) —
+row (discard ✕, pause ⏸ / resume ▶, then the red Stop pill carrying the
+running time — Stop last, as on the strip) —
 is `RecordingStage` in
 [`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart),
 laid out in [Recording UI](recording-ui.md). A microphone starts its take

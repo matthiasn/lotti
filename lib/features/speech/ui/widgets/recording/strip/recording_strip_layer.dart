@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/recording_receipt_controller.dart';
+import 'package:lotti/features/speech/state/recording_session.dart';
 import 'package:lotti/features/speech/state/recording_tray_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_receipt.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_strip.dart';
@@ -23,18 +24,24 @@ enum RecordingStripContent {
 
   /// The receipt of a take just saved.
   receipt,
+
+  /// A take being stopped and saved: the strip's place held, inert, until
+  /// its receipt is up.
+  saving,
 }
 
 /// What the strip's place shows now — the one rule the layer draws and the
 /// shell reserves room by.
 ///
-/// The receipt first, while it lasts; then the tray, when it is open over a
+/// The receipt first, while it lasts; then the strip's place held while a
+/// take is saved; then the tray, when it is open over a
 /// take or for a failure; then the strip, while a take runs that no
 /// check-in screen is drawing in place.
 final recordingStripContentProvider = Provider<RecordingStripContent>((ref) {
   if (ref.watch(recordingReceiptControllerProvider) != null) {
     return RecordingStripContent.receipt;
   }
+  if (ref.watch(recordingSavingProvider)) return RecordingStripContent.saving;
   bool take;
   try {
     take = ref.watch(
@@ -133,6 +140,14 @@ class _RecordingStripLayerState extends ConsumerState<RecordingStripLayer> {
       RecordingStripContent.tray => const RecordingStripTray(
         key: ValueKey('recording-strip-content-tray'),
       ),
+      // Held, inert and empty, so nothing moves under a second tap.
+      RecordingStripContent.saving => AbsorbPointer(
+        key: const ValueKey('recording-strip-content-saving'),
+        child: RecordingStrip.surface(
+          context,
+          child: SizedBox(height: RecordingStrip.height(context)),
+        ),
+      ),
       RecordingStripContent.receipt => RecordingReceiptRow(
         key: ValueKey('recording-strip-content-receipt-${receipt!.entryId}'),
         receipt: receipt,
@@ -156,14 +171,24 @@ class _RecordingStripLayerState extends ConsumerState<RecordingStripLayer> {
               alignment: Alignment.bottomCenter,
               children: [...previous, ?current],
             ),
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.4),
-                  end: Offset.zero,
-                ).animate(animation),
+            // Inert until it has fully risen: the receipt arrives where
+            // Stop just was, and a second tap meant for Stop must not land
+            // on Undo.
+            transitionBuilder: (child, animation) => AnimatedBuilder(
+              animation: animation,
+              builder: (context, child) => IgnorePointer(
+                ignoring: animation.status != AnimationStatus.completed,
                 child: child,
+              ),
+              child: FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.4),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
               ),
             ),
             child: child,

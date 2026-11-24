@@ -6,6 +6,7 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/recording_origin.dart';
 import 'package:lotti/features/speech/state/recording_session.dart';
 import 'package:lotti/features/speech/state/recording_subject.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
@@ -55,6 +56,11 @@ class RecordingStripLeading extends ConsumerWidget {
   const RecordingStripLeading({super.key});
 
   static const Key backKey = ValueKey('recording-strip-back');
+
+  /// The one square every leading glyph sits in — the dot, the pause mark,
+  /// the way back, the receipt's tick — so the words after it never shift
+  /// when the strip changes state.
+  static const double glyphSlot = IconSizes.m;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -111,18 +117,6 @@ class RecordingStripLeading extends ConsumerWidget {
   }
 }
 
-/// The ink of the strip's captions.
-TextStyle _captionStyle(DsTokens tokens) =>
-    tokens.typography.styles.others.caption.copyWith(
-      color: tokens.colors.text.mediumEmphasis,
-    );
-
-/// The ink of the strip's main line.
-TextStyle _titleStyle(DsTokens tokens) =>
-    tokens.typography.styles.body.bodySmall.copyWith(
-      color: tokens.colors.text.highEmphasis,
-    );
-
 /// The red dot of a running take, or the pause glyph of a held one.
 class _LiveGlyph extends StatelessWidget {
   const _LiveGlyph({required this.paused});
@@ -132,16 +126,21 @@ class _LiveGlyph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return paused
-        ? Icon(
-            LottiIcons.pause,
-            size: IconSizes.s,
-            color: tokens.colors.text.mediumEmphasis,
-          )
-        : const DesignSystemBadge.dot(
-            tone: DesignSystemBadgeTone.danger,
-            excludeFromSemantics: true,
-          );
+    return SizedBox.square(
+      dimension: RecordingStripLeading.glyphSlot,
+      child: Center(
+        child: paused
+            ? Icon(
+                LottiIcons.pause,
+                size: IconSizes.s,
+                color: tokens.colors.text.mediumEmphasis,
+              )
+            : const DesignSystemBadge.dot(
+                tone: DesignSystemBadgeTone.danger,
+                excludeFromSemantics: true,
+              ),
+      ),
+    );
   }
 }
 
@@ -168,7 +167,7 @@ class _Status extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: _titleStyle(tokens),
+                style: recordingTitleStyle(tokens),
               ),
             ),
           ),
@@ -206,11 +205,14 @@ class _BackToOrigin extends StatelessWidget {
     final content = Padding(
       padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
       child: Row(
+        // As wide as its words, so the way back is a bounded target and the
+        // rest of the strip still opens the tray.
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (tap != null) ...[
             Icon(
-              LottiIcons.undo,
-              size: IconSizes.m,
+              LottiIcons.back,
+              size: RecordingStripLeading.glyphSlot,
               color: tokens.colors.interactive.enabled,
             ),
             SizedBox(width: tokens.spacing.step3),
@@ -218,7 +220,7 @@ class _BackToOrigin extends StatelessWidget {
             _LiveGlyph(paused: paused),
             SizedBox(width: tokens.spacing.step3),
           ],
-          Expanded(
+          Flexible(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,14 +231,14 @@ class _BackToOrigin extends StatelessWidget {
                     caption,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: _captionStyle(tokens),
+                    style: recordingCaptionStyle(tokens),
                   ),
                 ),
                 Text(
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: _titleStyle(tokens),
+                  style: recordingTitleStyle(tokens),
                 ),
               ],
             ),
@@ -247,27 +249,30 @@ class _BackToOrigin extends StatelessWidget {
     if (tap == null) return content;
     // One button by the way back; its value is the status, live, so a
     // pause or a resume is heard once.
-    return Semantics(
-      button: true,
-      label: messages.recordingStripBackTo(name),
-      value: caption,
-      liveRegion: true,
-      excludeSemantics: true,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          key: RecordingStripLeading.backKey,
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          onTap: tap,
-          // At least a full tap target; taller with the text size, so the
-          // caption and the title never clip.
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: tokens.spacing.step9),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              widthFactor: 1,
-              heightFactor: 1,
-              child: content,
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Semantics(
+        button: true,
+        label: messages.recordingStripBackTo(name),
+        value: caption,
+        liveRegion: true,
+        excludeSemantics: true,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            key: RecordingStripLeading.backKey,
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            onTap: tap,
+            // At least a full tap target; taller with the text size, so the
+            // caption and the title never clip.
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: tokens.spacing.step9),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                widthFactor: 1,
+                heightFactor: 1,
+                child: content,
+              ),
             ),
           ),
         ),

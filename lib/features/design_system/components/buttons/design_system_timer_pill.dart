@@ -13,7 +13,8 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// Idle ([running] false): [idleIcon] and [label], the whole pill one tap
 /// target ([onTap]). Running: the stop circle and [label] — the elapsed
-/// time — on the red, or on a neutral grey while the clock is [paused]. The body and the circle are separate tap zones; where both stop
+/// time — on the red, or on a quiet neutral fill while the clock is
+/// [paused]. The body and the circle are separate tap zones; where both stop
 /// the clock, leave [stopSemanticLabel] null and the circle is part of the
 /// one button rather than a second one.
 class DesignSystemTimerPill extends StatelessWidget {
@@ -101,15 +102,19 @@ class DesignSystemTimerPill extends StatelessWidget {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
     final fillColor = running
-        ? (paused ? _pausedFill : tokens.colors.alert.error.defaultColor)
+        ? (paused
+              ? tokens.colors.decorative.level02
+              : tokens.colors.alert.error.defaultColor)
         : tokens.colors.interactive.enabled;
     // The error palette has no on-colour token of its own; the light
     // theme's ink for alert fills (white) marks the running clock in both
     // themes — the dark theme's is near-black, which on its lighter red
     // read as a hole, not a control. The interactive accent does have
     // one: `text.onInteractiveAlert`.
+    // Paused, the pill steps back to a neutral fill with the text's own
+    // ink, so it no longer outshines the control that resumes the take.
     final foreground = running
-        ? _onRunning
+        ? (paused ? tokens.colors.text.highEmphasis : _onRunning)
         : tokens.colors.text.onInteractiveAlert;
     final pillRadius = BorderRadius.circular(tokens.radii.badgesPills);
     final textStyle = _labelStyle(tokens, foreground);
@@ -166,6 +171,7 @@ class DesignSystemTimerPill extends StatelessWidget {
                     if (running)
                       _StopCircle(
                         key: stopKey,
+                        ink: foreground,
                         onStop: onStop,
                         semanticLabel: stopSemanticLabel,
                       )
@@ -196,11 +202,6 @@ class DesignSystemTimerPill extends StatelessWidget {
 /// The ink on the running pill's red, in either theme.
 final Color _onRunning = dsTokensLight.colors.text.onInteractiveAlert;
 
-/// A paused clock's fill, in either theme: the light theme's secondary ink,
-/// a grey the running pill's white ink still reads on — the dark theme's is
-/// too light for it.
-final Color _pausedFill = dsTokensLight.colors.text.mediumEmphasis;
-
 double _singleLineWidth(BuildContext context, String text, TextStyle style) {
   final painter = TextPainter(
     text: TextSpan(text: text, style: style),
@@ -217,11 +218,15 @@ double _singleLineWidth(BuildContext context, String text, TextStyle style) {
 /// [InkWell] takes the tap, so it never reaches the body's.
 class _StopCircle extends StatelessWidget {
   const _StopCircle({
+    required this.ink,
     required this.onStop,
     required this.semanticLabel,
     super.key,
   });
 
+  /// The square and its disc's ink: white on the red, the page's surface on
+  /// a paused grey.
+  final Color ink;
   final VoidCallback? onStop;
   final String? semanticLabel;
 
@@ -231,7 +236,7 @@ class _StopCircle extends StatelessWidget {
     final circle = Material(
       // The ink's own lift on the red: a translucent disc, not a second
       // colour.
-      color: _onRunning.withValues(alpha: 0.18),
+      color: ink.withValues(alpha: 0.18),
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -244,7 +249,7 @@ class _StopCircle extends StatelessWidget {
           child: Icon(
             LottiIconsFilled.square,
             size: IconSizes.m,
-            color: _onRunning,
+            color: ink,
           ),
         ),
       ),

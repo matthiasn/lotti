@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_timer_pill.dart';
@@ -8,6 +10,7 @@ import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.da
 import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_strip.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_strip_leading.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../../../widget_test_utils.dart';
 import 'strip_test_bench.dart';
@@ -63,19 +66,45 @@ void main() {
       final context = tester.element(strip());
       final tokens = context.designTokens;
       final lines = tokens.typography.lineHeight;
+      // Stacked: the subject's line over the controls' row.
+      expect(RecordingStrip.stacked(context), isTrue);
       expect(
         tester.getSize(strip()).height,
-        lines.caption * 2 + lines.bodySmall * 2 + tokens.spacing.step2 * 2,
+        // The caption and the subject, never shorter than a tap target,
+        // over the controls' row.
+        math.max(
+              tokens.spacing.step9,
+              lines.caption * 2 + lines.bodySmall * 2,
+            ) +
+            tokens.spacing.step2 +
+            tokens.spacing.step9 +
+            tokens.spacing.step2 * 2,
       );
+      expect(
+        tester.getCenter(find.byType(RecordingStripLeading)).dy,
+        lessThan(tester.getCenter(stop()).dy),
+      );
+      // Two rows are no capsule: the corners are the tray's.
+      final fill = tester
+          .widgetList<DecoratedBox>(
+            find.descendant(of: strip(), matching: find.byType(DecoratedBox)),
+          )
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .first;
+      expect(fill.borderRadius, BorderRadius.circular(tokens.radii.xl));
       expect(tester.takeException(), isNull);
     });
   });
 
   group('the bars', () {
-    testWidgets("draw the recorder's level line over a short stretch", (
-      tester,
-    ) async {
-      await pump(tester);
+    testWidgets("draw the recorder's level line over a short stretch, where "
+        "the subject's name keeps its room", (tester) async {
+      await pump(
+        tester,
+        width: 600,
+        mediaQueryData: desktopLayoutMediaQueryData,
+      );
       final context = tester.element(strip());
       expect(
         tester.getSize(bars()).width,
@@ -106,12 +135,19 @@ void main() {
             context,
             DesignSystemTimerPill.elapsedWidthTemplate,
           ) +
-          spacing.step3 * 3 +
-          spacing.step2 * 2;
+          spacing.step3 * 6;
+      final leading = RecordingStripLeading.glyphSlot + spacing.step3 * 3;
       final boundary =
-          controls + RecordingStrip.barsWidth(context) + spacing.step11;
+          controls +
+          leading +
+          RecordingStrip.barsWidth(context) +
+          MediaQuery.textScalerOf(context).scale(spacing.step11);
       expect(RecordingStrip.showsBars(context, boundary), isTrue);
       expect(RecordingStrip.showsBars(context, boundary - 1), isFalse);
+      expect(
+        RecordingStrip.showsBars(context, boundary * 2, paused: true),
+        isFalse,
+      );
     });
   });
 
@@ -148,6 +184,17 @@ void main() {
       await tester.pump();
       expect(bench.recorder.resumeCalls, 1);
       semantics.dispose();
+    });
+
+    testWidgets('while paused, resume is the filled accent disc', (
+      tester,
+    ) async {
+      await pump(tester);
+      RecordingRingButton ring() => tester.widget(pause());
+      expect(ring().emphasized, isFalse);
+      await tester.tap(pause());
+      await tester.pump();
+      expect(ring().emphasized, isTrue);
     });
 
     testWidgets('greys Stop while paused, the time held', (tester) async {
@@ -203,7 +250,11 @@ void main() {
     testWidgets('opens on a tap on the body, outside the buttons', (
       tester,
     ) async {
-      await pump(tester);
+      await pump(
+        tester,
+        width: 600,
+        mediaQueryData: desktopLayoutMediaQueryData,
+      );
       // The bars take no tap of their own: the body's.
       await tester.tap(bars());
       await tester.pump();
@@ -231,6 +282,33 @@ void main() {
         containerOf(tester).read(recordingTrayControllerProvider).open,
         isFalse,
       );
+    });
+
+    testWidgets('the way back is only as wide as its words: a tap beside '
+        'them opens the tray instead of going back', (tester) async {
+      when(() => bench.db.journalEntityById(stripSubjectId)).thenAnswer(
+        (_) async => stripSubject.copyWith(
+          data: stripSubject.data.copyWith(title: 'Feed'),
+        ),
+      );
+      // Room beside the words: the test font's glyphs are far wider than
+      // Inter's.
+      await pump(
+        tester,
+        width: 600,
+        mediaQueryData: desktopLayoutMediaQueryData,
+      );
+      final back = tester.getRect(find.byKey(RecordingStripLeading.backKey));
+      final leading = tester.getRect(find.byType(RecordingStripLeading));
+      expect(back.width, lessThan(leading.width));
+
+      await tester.tapAt(Offset(back.right + 4, back.center.dy));
+      await tester.pump();
+      expect(
+        containerOf(tester).read(recordingTrayControllerProvider).open,
+        isTrue,
+      );
+      verifyNever(() => bench.nav.beamToNamed(any()));
     });
 
     testWidgets('a tap on pause does not open it', (tester) async {
@@ -270,11 +348,10 @@ void main() {
   });
 
   group('surface', () {
-    testWidgets("wears the island's glass at the strip's radius", (
+    testWidgets("wears the island's glass as a full capsule", (
       tester,
     ) async {
       await pump(tester);
-      final tokens = tester.element(strip()).designTokens;
       final fill = tester
           .widgetList<DecoratedBox>(
             find.descendant(of: strip(), matching: find.byType(DecoratedBox)),
@@ -282,7 +359,10 @@ void main() {
           .map((box) => box.decoration)
           .whereType<BoxDecoration>()
           .first;
-      expect(fill.borderRadius, BorderRadius.circular(tokens.radii.l));
+      expect(
+        fill.borderRadius,
+        BorderRadius.circular(tester.getSize(strip()).height / 2),
+      );
     });
   });
 }

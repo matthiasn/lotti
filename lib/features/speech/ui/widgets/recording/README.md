@@ -1,7 +1,7 @@
 # Recording UI
 
 The visible part of recording: one recorder on every surface — a live level
-line over the discard, timed Stop and pause controls — and the recording
+line over the discard, pause and timed Stop controls — and the recording
 strip that carries a take across the app while it runs.
 
 A microphone starts the take at once on the strip at the bottom of the

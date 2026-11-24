@@ -50,13 +50,13 @@ void main() {
 
     Finder back() => find.byKey(RecordingStripLeading.backKey);
 
-    testWidgets('away from the origin it is the way back: ↩, "Recording '
+    testWidgets('away from the origin it is the way back: ←, "Recording '
         'for" and the subject, one button that goes there', (tester) async {
       final semantics = tester.ensureSemantics();
       await pump(tester);
       await bench.startTake(tester);
 
-      expect(find.byIcon(LottiIcons.undo), findsOneWidget);
+      expect(find.byIcon(LottiIcons.back), findsOneWidget);
       expect(find.text('Recording for'), findsOneWidget);
       expect(find.text(stripSubject.data.title), findsOneWidget);
       expect(
@@ -80,7 +80,7 @@ void main() {
       await bench.recorder.pause();
       await tester.pump();
 
-      expect(find.text('Paused · Recording for'), findsOneWidget);
+      expect(find.text('Paused'), findsOneWidget);
     });
 
     testWidgets('on the origin it says "Recording here" beside the red dot, '
@@ -92,7 +92,7 @@ void main() {
       expect(find.text('Recording here'), findsOneWidget);
       expect(find.byType(DesignSystemBadge), findsOneWidget);
       expect(back(), findsNothing);
-      expect(find.byIcon(LottiIcons.undo), findsNothing);
+      expect(find.byIcon(LottiIcons.back), findsNothing);
     });
 
     testWidgets('paused on the origin: "Paused here" beside the pause '
