@@ -6,6 +6,7 @@ void main() {
   group('RecordingOriginScroll', () {
     late RecordingOriginScroll scroll;
     setUp(() => scroll = RecordingOriginScroll());
+    tearDown(() => scroll.dispose());
 
     test('remembers the last offset each route reported', () {
       scroll
@@ -34,6 +35,24 @@ void main() {
       scroll.requestRestore('/tasks/t-1', 240);
       expect(scroll.takeRestore('/tasks/t-2'), isNull);
       expect(scroll.takeRestore('/tasks/t-1'), 240);
+    });
+
+    test('a request notifies, so a page already on screen can take it', () {
+      var notified = 0;
+      scroll
+        ..addListener(() => notified++)
+        ..report('/tasks/t-1', 10)
+        ..forget('/tasks/t-1');
+      expect(notified, 0);
+      scroll.requestRestore('/tasks/t-1', 240);
+      expect(notified, 1);
+    });
+
+    test('the provider disposes its registry with the container', () {
+      final container = ProviderContainer();
+      final registry = container.read(recordingOriginScrollProvider);
+      container.dispose();
+      expect(() => registry.addListener(() {}), throwsFlutterError);
     });
 
     test('a newer request replaces an older one', () {

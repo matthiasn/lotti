@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Scroll positions pages report while a take could start on them, and the
@@ -5,14 +6,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// A page opts in by reporting its primary scroll offset under its route
 /// (`RecordingOriginScrollAnchor`). A take started there captures that
-/// offset in its origin; going back asks the page to restore it once, on
-/// its first frame. A page that does not opt in lands at its top.
-final recordingOriginScrollProvider = Provider<RecordingOriginScroll>(
-  (ref) => RecordingOriginScroll(),
-  name: 'recordingOriginScrollProvider',
-);
+/// offset in its origin; going back asks the page to restore it once — on
+/// its first frame when it is built anew, or at once when it was still
+/// mounted in its tab, which hears the request through this notifier. A
+/// page that does not opt in lands at its top.
+final recordingOriginScrollProvider = Provider<RecordingOriginScroll>((ref) {
+  final scroll = RecordingOriginScroll();
+  ref.onDispose(scroll.dispose);
+  return scroll;
+}, name: 'recordingOriginScrollProvider');
 
-class RecordingOriginScroll {
+/// Notifies when a restore is requested, so a page already on screen can
+/// take it.
+class RecordingOriginScroll extends ChangeNotifier {
   final Map<String, double> _offsets = {};
   ({String route, double offset})? _pending;
 
@@ -26,8 +32,10 @@ class RecordingOriginScroll {
   double? offsetFor(String route) => _offsets[route];
 
   /// Asks the page at [route] to come back at [offset].
-  void requestRestore(String route, double offset) =>
-      _pending = (route: route, offset: offset);
+  void requestRestore(String route, double offset) {
+    _pending = (route: route, offset: offset);
+    notifyListeners();
+  }
 
   /// The offset owed to the page at [route], handed over once: a second
   /// call, or a call for another route, gets null.

@@ -23,6 +23,7 @@ import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_origin_scroll_anchor.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
@@ -638,109 +639,115 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       // trailing SliverPadding consumes that inset so the last entry
       // can scroll fully above the bar instead of being hidden behind.
       body: Builder(
-        builder: (context) => TaskScrollStabilityScope(
+        // The recording strip's way back lands where the page was scrolled
+        // when the take started here.
+        builder: (context) => RecordingOriginScrollAnchor(
+          route: '/tasks/${widget.taskId}',
           controller: _scrollController,
-          child: CustomScrollView(
+          child: TaskScrollStabilityScope(
             controller: _scrollController,
-            slivers: [
-              TaskSliverAppBar(taskId: widget.taskId),
-              // On a first-run task the page has one short card and nothing
-              // else, so the remainder is composed rather than left over:
-              // `SliverFillRemaining` claims the rest of the viewport and the
-              // group settles above optical centre. Four review rounds in a
-              // row, every reviewer read the top-anchored version the same way
-              // — "the page stopped loading" — because every authored gap on
-              // it was 8–28pt and then one silence ran a third of the window.
-              _FirstSliver(
-                fillRemaining: isFirstRun,
-                child: Center(
-                  child: AnimatedContainer(
-                    // The first content tap flips `isFirstRun`, and with it
-                    // this measure (520 → 960). Snapping it in a single frame
-                    // was the page punishing the exact tap it invites —
-                    // animated, the column eases out to the reading width
-                    // while `_FirstSliver` releases its anchoring on the same
-                    // clock.
-                    duration: MotionDurations.medium2,
-                    curve: MotionCurves.standard,
-                    // Cap the content measure on wide windows so the task reads
-                    // as a centered column rather than full-bleed text; this is
-                    // non-binding at phone / narrow-pane widths.
-                    constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                    child: Padding(
-                      // The page owns the content gutter, once. The header,
-                      // its breadcrumb and this sliver each used to add a
-                      // little of their own, which put five different left
-                      // edges (15 / 21 / 23 / 24.5 / 27 logical) in the top
-                      // hundred points of the page — the loudest single cue
-                      // that nothing here was laid out on purpose.
-                      padding: EdgeInsets.only(
-                        left: context.designTokens.spacing.step5,
-                        right: context.designTokens.spacing.step5,
-                        top: context.designTokens.spacing.step4,
-                      ),
-                      child: TaskForm(
-                        taskId: widget.taskId,
-                        suggestionsFocusKey: _suggestionsKey,
-                        pullRequestsFocusKey: _pullRequestsKey,
-                        cardRegionKey: _cardRegionKey,
-                        linkedTasksRegionKey: _linkedTasksRegionKey,
-                        onSuggestionResolveStart: _holdSuggestionsStable,
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                TaskSliverAppBar(taskId: widget.taskId),
+                // On a first-run task the page has one short card and nothing
+                // else, so the remainder is composed rather than left over:
+                // `SliverFillRemaining` claims the rest of the viewport and the
+                // group settles above optical centre. Four review rounds in a
+                // row, every reviewer read the top-anchored version the same way
+                // — "the page stopped loading" — because every authored gap on
+                // it was 8–28pt and then one silence ran a third of the window.
+                _FirstSliver(
+                  fillRemaining: isFirstRun,
+                  child: Center(
+                    child: AnimatedContainer(
+                      // The first content tap flips `isFirstRun`, and with it
+                      // this measure (520 → 960). Snapping it in a single frame
+                      // was the page punishing the exact tap it invites —
+                      // animated, the column eases out to the reading width
+                      // while `_FirstSliver` releases its anchoring on the same
+                      // clock.
+                      duration: MotionDurations.medium2,
+                      curve: MotionCurves.standard,
+                      // Cap the content measure on wide windows so the task reads
+                      // as a centered column rather than full-bleed text; this is
+                      // non-binding at phone / narrow-pane widths.
+                      constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                      child: Padding(
+                        // The page owns the content gutter, once. The header,
+                        // its breadcrumb and this sliver each used to add a
+                        // little of their own, which put five different left
+                        // edges (15 / 21 / 23 / 24.5 / 27 logical) in the top
+                        // hundred points of the page — the loudest single cue
+                        // that nothing here was laid out on purpose.
+                        padding: EdgeInsets.only(
+                          left: context.designTokens.spacing.step5,
+                          right: context.designTokens.spacing.step5,
+                          top: context.designTokens.spacing.step4,
+                        ),
+                        child: TaskForm(
+                          taskId: widget.taskId,
+                          suggestionsFocusKey: _suggestionsKey,
+                          pullRequestsFocusKey: _pullRequestsKey,
+                          cardRegionKey: _cardRegionKey,
+                          linkedTasksRegionKey: _linkedTasksRegionKey,
+                          onSuggestionResolveStart: _holdSuggestionsStable,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              SliverToBoxAdapter(
-                child: Center(
-                  key: _belowCardKey,
-                  child: AnimatedContainer(
-                    // Same clock as the first sliver's measure, so the two
-                    // bands widen as one column instead of shearing.
-                    duration: MotionDurations.medium2,
-                    curve: MotionCurves.standard,
-                    constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                    child: Padding(
-                      // Same gutter as the sliver above, so the linked
-                      // entries share the header's left rail instead of
-                      // sitting 5pt inside it.
-                      padding: EdgeInsets.only(
-                        top: context.designTokens.spacing.step3,
-                        left: context.designTokens.spacing.step5,
-                        right: context.designTokens.spacing.step5,
+                SliverToBoxAdapter(
+                  child: Center(
+                    key: _belowCardKey,
+                    child: AnimatedContainer(
+                      // Same clock as the first sliver's measure, so the two
+                      // bands widen as one column instead of shearing.
+                      duration: MotionDurations.medium2,
+                      curve: MotionCurves.standard,
+                      constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                      child: Padding(
+                        // Same gutter as the sliver above, so the linked
+                        // entries share the header's left rail instead of
+                        // sitting 5pt inside it.
+                        padding: EdgeInsets.only(
+                          top: context.designTokens.spacing.step3,
+                          left: context.designTokens.spacing.step5,
+                          right: context.designTokens.spacing.step5,
+                        ),
+                        // The dated log history lives behind a collapsed-by-
+                        // default section: it is the page's longest region, and
+                        // the summary / todos / linked tasks above it are what a
+                        // reader needs first. A first-run task drops the
+                        // History header — but NOT the entry widgets: the
+                        // first-run predicate examines only *outgoing* links,
+                        // so a blank task can still carry entries that link TO
+                        // it, and hiding the whole subtree would disappear
+                        // them with no way to expand. The bare column renders
+                        // nothing when there is truly nothing.
+                        child: isFirstRun
+                            ? _buildEntryStream(task, highlightedEntryId)
+                            : TaskHistorySection(
+                                expanded: _historyExpanded,
+                                onToggle: () => setState(
+                                  () => _historyExpanded = !_historyExpanded,
+                                ),
+                                child: _buildEntryStream(
+                                  task,
+                                  highlightedEntryId,
+                                ),
+                              ),
                       ),
-                      // The dated log history lives behind a collapsed-by-
-                      // default section: it is the page's longest region, and
-                      // the summary / todos / linked tasks above it are what a
-                      // reader needs first. A first-run task drops the
-                      // History header — but NOT the entry widgets: the
-                      // first-run predicate examines only *outgoing* links,
-                      // so a blank task can still carry entries that link TO
-                      // it, and hiding the whole subtree would disappear
-                      // them with no way to expand. The bare column renders
-                      // nothing when there is truly nothing.
-                      child: isFirstRun
-                          ? _buildEntryStream(task, highlightedEntryId)
-                          : TaskHistorySection(
-                              expanded: _historyExpanded,
-                              onToggle: () => setState(
-                                () => _historyExpanded = !_historyExpanded,
-                              ),
-                              child: _buildEntryStream(
-                                task,
-                                highlightedEntryId,
-                              ),
-                            ),
                     ),
                   ),
                 ),
-              ),
-              SliverPadding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.paddingOf(context).bottom,
+                SliverPadding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.paddingOf(context).bottom,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
