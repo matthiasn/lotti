@@ -7458,6 +7458,22 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deze chat verwijderen? Zijn berichten worden op al je apparaten verborgen, niet gewist. Wat je uit deze chat hebt opgeslagen, blijft waar het is.';
 
   @override
+  String get frontChatDraftNext => 'Volgend concept';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Concept $page van $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Vorig concept';
+
+  @override
   String get frontChatDrawerClose => 'Chats sluiten';
 
   @override

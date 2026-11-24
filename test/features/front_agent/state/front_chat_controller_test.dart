@@ -963,6 +963,146 @@ void main() {
     });
   });
 
+  group("the box's pages", () {
+    const typed = 'Also check the ridge nests';
+    const words = 'Count the chicks at the north colony';
+
+    void stubSend(String text) => when(
+      () => chatService.sendMessage(
+        text: text,
+        conversationId: any(named: 'conversationId'),
+        replaces: any(named: 'replaces'),
+        onAppended: any(named: 'onAppended'),
+      ),
+    ).thenAnswer((_) async {});
+
+    List<String> pages() => [
+      for (final page in state().draftPages.pages) page.text,
+    ];
+
+    test('Edit keeps what was typed as the page before it, and flipping back '
+        'shows it — no edit there', () {
+      controller()
+        ..updateDraft(typed)
+        ..edit('u1', words);
+
+      expect(pages(), [typed, words]);
+      expect(state().draft, words);
+      expect(state().editingMessageId, 'u1');
+      expect(state().draftPage, 1);
+
+      controller().showDraftPage(0);
+
+      expect(state().draft, typed);
+      expect(state().editingMessageId, isNull);
+      expect(state().asideDrafts.single.editingMessageId, 'u1');
+    });
+
+    test('sending the edit brings back what was typed before it', () async {
+      stubSend(words);
+      controller()
+        ..updateDraft(typed)
+        ..edit('u1', words);
+
+      await controller().send();
+
+      verify(
+        () => chatService.sendMessage(
+          text: words,
+          conversationId: 'c-1',
+          replaces: 'u1',
+          onAppended: any(named: 'onAppended'),
+        ),
+      ).called(1);
+      expect(state().draft, typed);
+      expect(state().editingMessageId, isNull);
+      expect(state().asideDrafts, isEmpty);
+    });
+
+    test('sending the page flipped back to is a new turn, and the edit '
+        'waits in the box', () async {
+      stubSend(typed);
+      controller()
+        ..updateDraft(typed)
+        ..edit('u1', words)
+        ..showDraftPage(0);
+
+      await controller().send();
+
+      verify(
+        () => chatService.sendMessage(
+          text: typed,
+          conversationId: 'c-1',
+          onAppended: any(named: 'onAppended'),
+        ),
+      ).called(1);
+      expect(state().draft, words);
+      expect(state().editingMessageId, 'u1');
+    });
+
+    test('an edit that failed goes back on its page, after the others; a '
+        'retry that sends it brings the others back', () async {
+      var attempts = 0;
+      when(
+        () => chatService.sendMessage(
+          text: words,
+          conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
+          onAppended: any(named: 'onAppended'),
+        ),
+      ).thenAnswer((_) async {
+        if (attempts++ == 0) throw StateError('db closed');
+      });
+      controller()
+        ..updateDraft(typed)
+        ..edit('u1', words);
+
+      await controller().send();
+      expect(pages(), [typed, words]);
+      expect(state().editingMessageId, 'u1');
+
+      await controller().retry();
+      expect(pages(), [typed]);
+      expect(state().failedMessage, isNull);
+    });
+
+    test("a retry's own failure keeps every page", () async {
+      when(
+        () => chatService.sendMessage(
+          text: words,
+          conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
+          onAppended: any(named: 'onAppended'),
+        ),
+      ).thenAnswer((_) async => throw StateError('db closed'));
+      controller()
+        ..updateDraft(typed)
+        ..edit('u1', words);
+      await controller().send();
+
+      await controller().retry();
+
+      expect(pages(), [typed, words]);
+      expect(state().failedMessage, words);
+    });
+
+    test('the pages, and the edit on one, stay with their conversation', () {
+      controller()
+        ..openConversation('c-1')
+        ..updateDraft(typed)
+        ..edit('u1', words)
+        ..openConversation('c-2');
+
+      expect(pages(), ['']);
+      expect(state().editingMessageId, isNull);
+
+      controller().openConversation('c-1');
+
+      expect(pages(), [typed, words]);
+      expect(state().editingMessageId, 'u1');
+    });
+  });
+
   group('retry', () {
     test("a failed turn keeps its cause; a retry's own failure replaces it "
         'and its success clears it', () async {

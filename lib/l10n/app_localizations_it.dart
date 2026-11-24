@@ -7529,6 +7529,22 @@ class AppLocalizationsIt extends AppLocalizations {
       'Eliminare questa chat? I suoi messaggi vengono nascosti su tutti i dispositivi, non cancellati. Quello che hai salvato da questa chat resta dov\'è.';
 
   @override
+  String get frontChatDraftNext => 'Bozza successiva';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Bozza $page di $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Bozza precedente';
+
+  @override
   String get frontChatDrawerClose => 'Chiudi le chat';
 
   @override

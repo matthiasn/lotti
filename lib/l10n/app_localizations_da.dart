@@ -7432,6 +7432,22 @@ class AppLocalizationsDa extends AppLocalizations {
       'Slet denne chat? Dens beskeder skjules på alle enheder, men slettes ikke. Det, du har gemt fra chatten, bliver, hvor det er.';
 
   @override
+  String get frontChatDraftNext => 'Næste udkast';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Udkast $page af $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Forrige udkast';
+
+  @override
   String get frontChatDrawerClose => 'Luk chats';
 
   @override

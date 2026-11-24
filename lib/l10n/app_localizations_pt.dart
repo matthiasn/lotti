@@ -7529,6 +7529,22 @@ class AppLocalizationsPt extends AppLocalizations {
       'Apagar este chat? As mensagens dele ficam ocultas em todos os dispositivos, não são eliminadas. O que guardaste a partir deste chat fica onde está.';
 
   @override
+  String get frontChatDraftNext => 'Próximo rascunho';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Rascunho $page de $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Rascunho anterior';
+
+  @override
   String get frontChatDrawerClose => 'Fechar chats';
 
   @override

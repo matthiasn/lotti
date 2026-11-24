@@ -7555,6 +7555,22 @@ class AppLocalizationsFr extends AppLocalizations {
       'Supprimer ce chat ? Ses messages sont masqués sur tous les appareils, pas effacés. Ce que tu as classé à partir de ce chat reste où il est.';
 
   @override
+  String get frontChatDraftNext => 'Brouillon suivant';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Brouillon $page sur $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Brouillon précédent';
+
+  @override
   String get frontChatDrawerClose => 'Fermer les chats';
 
   @override

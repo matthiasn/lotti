@@ -7565,6 +7565,22 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ștergeți această conversație? Mesajele ei sunt ascunse pe toate dispozitivele, nu șterse definitiv. Ce ați salvat din această conversație rămâne unde este.';
 
   @override
+  String get frontChatDraftNext => 'Ciorna următoare';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Ciorna $page din $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Ciorna anterioară';
+
+  @override
   String get frontChatDrawerClose => 'Închideți conversațiile';
 
   @override

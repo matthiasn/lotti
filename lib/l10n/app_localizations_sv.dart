@@ -7448,6 +7448,22 @@ class AppLocalizationsSv extends AppLocalizations {
       'Radera den här chatten? Dess meddelanden döljs på alla enheter men raderas inte. Det du har sparat från chatten stannar där det är.';
 
   @override
+  String get frontChatDraftNext => 'Nästa utkast';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Utkast $page av $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Föregående utkast';
+
+  @override
   String get frontChatDrawerClose => 'Stäng chattar';
 
   @override

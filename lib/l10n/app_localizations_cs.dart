@@ -7535,6 +7535,22 @@ class AppLocalizationsCs extends AppLocalizations {
       'Smazat tento chat? Jeho zprávy se skryjí na všech zařízeních, nevymažou se. Co sis z tohoto chatu uložil, zůstane, kde je.';
 
   @override
+  String get frontChatDraftNext => 'Další koncept';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Koncept $page z $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Předchozí koncept';
+
+  @override
   String get frontChatDrawerClose => 'Zavřít chaty';
 
   @override

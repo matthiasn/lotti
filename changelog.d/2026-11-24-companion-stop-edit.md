@@ -6,7 +6,8 @@
 - **Copy and edit your own messages.** On a phone, long-press one of your
   messages for **Copy**, plus **Edit** if you stopped it. Edit puts the
   words back in the chat box so you can change them and send them again,
-  and the edited message takes the stopped one's place.
+  and the edited message takes the stopped one's place. Anything you had
+  already typed is kept: arrows in the chat box flip back to it.
   Long-pressing a message she is still working on tells you to stop it
   first, with a **Stop** button right there. On a desktop, the same actions
   appear as small icons beside your message when you point at it.

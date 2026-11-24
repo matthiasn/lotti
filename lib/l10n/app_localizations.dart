@@ -12617,6 +12617,30 @@ abstract class AppLocalizations {
   /// **'Delete this chat? Its messages are hidden on every device, not erased. Whatever you filed from it stays where it is.'**
   String get frontChatDeleteExplanation;
 
+  /// Composer pager: shows the next draft page of the companion chat box.
+  ///
+  /// In en, this message translates to:
+  /// **'Next draft'**
+  String get frontChatDraftNext;
+
+  /// Composer pager: which draft page of the companion chat box is shown, e.g. 2/2.
+  ///
+  /// In en, this message translates to:
+  /// **'{page}/{count}'**
+  String frontChatDraftPage(int page, int count);
+
+  /// Composer pager: accessible name of the page count, e.g. "Draft 2 of 2".
+  ///
+  /// In en, this message translates to:
+  /// **'Draft {page} of {count}'**
+  String frontChatDraftPageLabel(int page, int count);
+
+  /// Composer pager: shows the previous draft page of the companion chat box — what was typed before Edit took back a stopped message.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous draft'**
+  String get frontChatDraftPrevious;
+
   /// No description provided for @frontChatDrawerClose.
   ///
   /// In en, this message translates to:

@@ -56,6 +56,10 @@ sources:
     resource: ../../lib/features/front_agent/service/front_chat_service.dart
     title: FrontChatService — persist, arm recovery, wake, await, consume, stop
     last_modified: 2026-11-24
+  - id: draft-pages
+    resource: ../../lib/features/front_agent/state/front_draft_pages.dart
+    title: FrontDraftPages — the chat box's pages, so Edit never loses what was typed
+    last_modified: 2026-11-24
   - id: user-message
     resource: ../../lib/features/front_agent/ui/front_chat_user_message.dart
     title: FrontChatUserMessage — copy and edit on the user's own turns
@@ -1218,6 +1222,19 @@ words go back in the box. Nothing is rewritten: the thread builder drops a
 turn some later turn replaces, provided it is stopped and she never answered
 it, so an edit can never hide words of hers. An older build, which does not
 read the key, shows both turns.
+
+Edit never throws away what the box held. The box is a set of pages
+(`FrontDraftPages`, in `front_draft_pages.dart`): the composer state keeps
+the page in the box as `draft` and `editingMessageId`, and the others as
+`asideDrafts`, with `draftPage` its place among them. Edit over words
+already typed adds the stopped turn's words as a new last page — or shows
+the page it is already on — and a pager (`FrontDraftPager`, ‹ 2/2 ›) at the
+start of the box flips between them (`showDraftPage`); a page left blank is
+dropped once another is shown. Only the page in the box is sent, so the
+edit replaces its turn only when sent from its own page. A send sets the
+other pages aside and puts them back once it settles, the last in the box —
+so sending the edit brings back what was typed before it. The pages, edit
+included, stay with their conversation when the user switches.
 
 # What a turn leaves behind
 

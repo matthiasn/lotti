@@ -62,6 +62,7 @@ import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_ways.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
+import 'package:lotti/features/front_agent/ui/front_draft_pager.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_logged_time_chart_card.dart';
 import 'package:lotti/features/front_agent/ui/front_pull_request_chart_card.dart';
@@ -899,6 +900,37 @@ void main() {
 
   group('stopping a turn', () {
     const words = 'Count the hatchlings';
+
+    testWidgets('Edit over words already typed keeps them a page back, and '
+        'the arrow flips to them', (tester) async {
+      const typed = 'Also check the ridge nests';
+      await pumpPane(
+        tester,
+        thread: () async => FrontChatThread(
+          messages: [message('u1', AgentChatRole.user, words, now)],
+          stoppedMessageIds: const {'u1'},
+        ),
+      );
+      String box() =>
+          tester.widget<TextField>(find.byType(TextField)).controller!.text;
+      await tester.enterText(find.byType(TextField), typed);
+      await tester.pump();
+      expect(find.byKey(FrontDraftPagerKeys.page), findsNothing);
+
+      await tester.longPress(find.text(words).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+
+      expect(box(), words);
+      expect(find.text('2/2'), findsOneWidget);
+
+      await tester.tap(find.byKey(FrontDraftPagerKeys.previous));
+      await tester.pumpAndSettle();
+
+      expect(box(), typed);
+      expect(find.text('1/2'), findsOneWidget);
+    });
 
     testWidgets('a turn on its way offers Stop, and a long press on it '
         'warns it cannot be edited yet; Stop stops it', (tester) async {

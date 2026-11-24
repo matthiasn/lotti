@@ -7402,6 +7402,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Delete this chat? Its messages are hidden on every device, not erased. Whatever you filed from it stays where it is.';
 
   @override
+  String get frontChatDraftNext => 'Next draft';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Draft $page of $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Previous draft';
+
+  @override
   String get frontChatDrawerClose => 'Close chats';
 
   @override

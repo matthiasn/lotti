@@ -4707,6 +4707,38 @@
     "description": "Tooltip and screen-reader label on the companion's face in the chat header: a tap shows the floating card over the conversation; the face is hidden while the card is shown."
   },
   "frontChatDeleteExplanation": "Delete this chat? Its messages are hidden on every device, not erased. Whatever you filed from it stays where it is.",
+  "frontChatDraftNext": "Next draft",
+  "@frontChatDraftNext": {
+    "description": "Composer pager: shows the next draft page of the companion chat box."
+  },
+  "frontChatDraftPage": "{page}/{count}",
+  "@frontChatDraftPage": {
+    "description": "Composer pager: which draft page of the companion chat box is shown, e.g. 2/2.",
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "frontChatDraftPageLabel": "Draft {page} of {count}",
+  "@frontChatDraftPageLabel": {
+    "description": "Composer pager: accessible name of the page count, e.g. \"Draft 2 of 2\".",
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "frontChatDraftPrevious": "Previous draft",
+  "@frontChatDraftPrevious": {
+    "description": "Composer pager: shows the previous draft page of the companion chat box — what was typed before Edit took back a stopped message."
+  },
   "frontChatDrawerClose": "Close chats",
   "frontChatEmpty": "Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.",
   "frontChatFailedAuthentication": "Your AI provider refused its API key. Check it in Settings.",

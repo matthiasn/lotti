@@ -37,7 +37,6 @@ import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_surfaces.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
-import 'package:lotti/features/front_agent/ui/front_category_chip.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_drawer.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_user_message.dart';
@@ -45,6 +44,7 @@ import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/front_agent/ui/front_companion_figure.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
+import 'package:lotti/features/front_agent/ui/front_draft_pager.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_starter_prompts.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
@@ -721,8 +721,13 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
         contentMaxWidth: kProseMeasureWidth,
         voiceFirst: true,
         // The conversation's category, picked where the words are typed; `@`
-        // still names one for a single question.
-        composerLeading: mentions.isEmpty ? null : const FrontCategoryChip(),
+        // still names one for a single question. Beside it, the box's pages
+        // once Edit has given it more than one.
+        composerLeading: frontComposerLeading(
+          category: mentions.isNotEmpty,
+          composer: composer,
+          onShowPage: controller.showDraftPage,
+        ),
         mentionOptions: [
           for (final category in mentions)
             DesignSystemChatInputMention(

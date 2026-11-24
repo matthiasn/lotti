@@ -11,6 +11,7 @@ import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_category.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
+import 'package:lotti/features/front_agent/state/front_draft_pages.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
 import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
@@ -23,6 +24,8 @@ class FrontChatComposerState {
     this.isSending = false,
     this.sendingMessageId,
     this.editingMessageId,
+    this.asideDrafts = const [],
+    this.draftPage = 0,
     this.failedMessage,
     this.failedMessageId,
     this.failedConversationId,
@@ -48,6 +51,20 @@ class FrontChatComposerState {
   /// The stopped turn whose words [draft] was taken from: the draft, sent,
   /// takes its place in the thread.
   final String? editingMessageId;
+
+  /// The box's other pages — what was typed there when the words of a
+  /// stopped turn were taken back into it — which the user can flip to.
+  final List<FrontDraftPage> asideDrafts;
+
+  /// Where among [asideDrafts] the page in the box sits.
+  final int draftPage;
+
+  /// Every page of the box, the one in it — [draft] — included.
+  FrontDraftPages get draftPages => FrontDraftPages.of(
+    current: FrontDraftPage(draft, editingMessageId: editingMessageId),
+    aside: asideDrafts,
+    index: draftPage,
+  );
 
   /// Doors whose action — filing, declining, a chip — is in flight.
   final Set<String> busyDoorIds;
@@ -93,6 +110,8 @@ class FrontChatComposerState {
     bool? isSending,
     String? sendingMessageId,
     String? editingMessageId,
+    List<FrontDraftPage>? asideDrafts,
+    int? draftPage,
     Set<String>? busyDoorIds,
     Set<String>? failedDoorIds,
   }) => FrontChatComposerState(
@@ -104,15 +123,36 @@ class FrontChatComposerState {
     editingMessageId: (draft ?? this.draft).isEmpty
         ? null
         : editingMessageId ?? this.editingMessageId,
+    asideDrafts: asideDrafts ?? this.asideDrafts,
+    draftPage: draftPage ?? this.draftPage,
     busyDoorIds: busyDoorIds ?? this.busyDoorIds,
     failedDoorIds: failedDoorIds ?? this.failedDoorIds,
   );
 
+  /// A copy with [pages] in the box — like [copyWith], no send failure
+  /// carried, and the words shown are typed, not spoken.
+  FrontChatComposerState withDraftPages(FrontDraftPages pages) =>
+      FrontChatComposerState(
+        draft: pages.current.text,
+        isSending: isSending,
+        sendingMessageId: sendingMessageId,
+        editingMessageId: pages.current.text.isEmpty
+            ? null
+            : pages.current.editingMessageId,
+        asideDrafts: pages.aside,
+        draftPage: pages.index,
+        busyDoorIds: busyDoorIds,
+        failedDoorIds: failedDoorIds,
+      );
+
   /// The state after a send settled, with the doors' state kept. A draft
-  /// put back after a failure stays the edit of [editingMessageId].
+  /// put back after a failure stays the edit of [editingMessageId]; the
+  /// pages set [aside] come before it, and with nothing in the box the last
+  /// of them is what it shows.
   FrontChatComposerState settled({
     String draft = '',
     String? editingMessageId,
+    List<FrontDraftPage> aside = const [],
     String? failedMessage,
     String? failedMessageId,
     String? failedConversationId,
@@ -120,19 +160,31 @@ class FrontChatComposerState {
     String? failedReplaces,
     FrontTurnFailure? failure,
     Object? failureCause,
-  }) => FrontChatComposerState(
-    draft: draft,
-    editingMessageId: draft.isEmpty ? null : editingMessageId,
-    failedMessage: failedMessage,
-    failedMessageId: failedMessageId,
-    failedConversationId: failedConversationId,
-    failedCategoryIds: failedCategoryIds,
-    failedReplaces: failedMessage == null ? null : failedReplaces,
-    failure: failedMessage == null ? null : failure ?? FrontTurnFailure.unknown,
-    failureCause: failedMessage == null ? null : failureCause,
-    busyDoorIds: busyDoorIds,
-    failedDoorIds: failedDoorIds,
-  );
+  }) {
+    final pages = FrontDraftPages.settle([
+      ...aside,
+      FrontDraftPage(draft, editingMessageId: editingMessageId),
+    ]);
+    return FrontChatComposerState(
+      draft: pages.current.text,
+      editingMessageId: pages.current.text.isEmpty
+          ? null
+          : pages.current.editingMessageId,
+      asideDrafts: pages.aside,
+      draftPage: pages.index,
+      failedMessage: failedMessage,
+      failedMessageId: failedMessageId,
+      failedConversationId: failedConversationId,
+      failedCategoryIds: failedCategoryIds,
+      failedReplaces: failedMessage == null ? null : failedReplaces,
+      failure: failedMessage == null
+          ? null
+          : failure ?? FrontTurnFailure.unknown,
+      failureCause: failedMessage == null ? null : failureCause,
+      busyDoorIds: busyDoorIds,
+      failedDoorIds: failedDoorIds,
+    );
+  }
 }
 
 /// Keep-alive: a draft survives closing and reopening the sheet (the goal
@@ -158,9 +210,19 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   }
 
   /// Takes the words of stopped turn [messageId] back into the box; sent,
-  /// they take its place in the thread.
+  /// they take its place in the thread. What the box already held is not
+  /// lost: it stays a page of its own, a flip away ([showDraftPage]).
   void edit(String messageId, String text) {
-    state = state.copyWith(draft: text, editingMessageId: messageId);
+    state = state.withDraftPages(
+      state.draftPages.adding(
+        FrontDraftPage(text, editingMessageId: messageId),
+      ),
+    );
+  }
+
+  /// Puts page [index] of the box in it; see [FrontDraftPages.showing].
+  void showDraftPage(int index) {
+    state = state.withDraftPages(state.draftPages.showing(index));
   }
 
   /// Sends the draft.
@@ -211,8 +273,15 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     // A send is a new turn, and its conversation is where it lands.
     ref.read(frontInboxFilterProvider.notifier).clear();
     // The words leave the box as they are sent — her thread shows them
-    // straight away — and come back only if the send fails.
-    state = state.copyWith(isSending: true, draft: '');
+    // straight away — and come back only if the send fails. Its other pages
+    // wait aside until the send settles.
+    final rest = state.asideDrafts;
+    state = state.copyWith(
+      isSending: true,
+      draft: '',
+      asideDrafts: const [],
+      draftPage: 0,
+    );
     String? conversationId;
     var categoryIds = const <String>{};
     try {
@@ -240,7 +309,11 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
       _expirePickOnceStored(landing, pick);
       _reproject();
       // What the user typed while it was on its way stays in the box.
-      state = state.settled(draft: state.draft);
+      state = state.settled(
+        draft: state.draft,
+        editingMessageId: state.editingMessageId,
+        aside: rest,
+      );
     } on FrontChatTurnException catch (error) {
       // No answer is coming for a turn that did not go through.
       ref.read(frontSpokenTurnProvider.notifier).settle();
@@ -248,6 +321,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
       state = state.settled(
         draft: _draftAfterFailure(message),
         editingMessageId: _editAfterFailure(replaces),
+        aside: rest,
         failedMessage: message,
         failedMessageId: error.messageId,
         failedConversationId: conversationId,
@@ -261,6 +335,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
       state = state.settled(
         draft: _draftAfterFailure(message),
         editingMessageId: _editAfterFailure(replaces),
+        aside: rest,
         failedMessage: message,
         failedConversationId: conversationId,
         failedCategoryIds: categoryIds,
@@ -359,6 +434,11 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     final scopedTo = state.failedCategoryIds;
     final replaces = state.failedReplaces;
     if (failed == null || state.isSending) return;
+    // The box's pages but the failed words, which this sends.
+    final rest = [
+      for (final page in state.draftPages.pages)
+        if (page.text.trim() != failed) page,
+    ];
     state = state.copyWith(isSending: true);
     try {
       final service = ref.read(frontChatServiceProvider);
@@ -377,12 +457,13 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         await service.retryMessage(messageId: messageId);
       }
       _reproject();
-      state = state.settled();
+      state = state.settled(aside: rest);
     } on FrontChatTurnException catch (error) {
       _reproject();
       state = state.settled(
         draft: failed,
         editingMessageId: replaces,
+        aside: rest,
         failedMessage: failed,
         failedMessageId: error.messageId ?? messageId,
         failedConversationId: typedIn,
@@ -395,6 +476,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
       state = state.settled(
         draft: failed,
         editingMessageId: replaces,
+        aside: rest,
         failedMessage: failed,
         failedMessageId: messageId,
         failedConversationId: typedIn,
@@ -437,9 +519,10 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         : ref.read(frontActiveConversationProvider).value;
   }
 
-  /// Drafts of the conversations the user switched away from, so a
-  /// half-typed message stays with the conversation it was written for.
-  final _drafts = <String, String>{};
+  /// The box's pages in the conversations the user switched away from, so
+  /// a half-typed message — or an edit — stays with the conversation it
+  /// was written for.
+  final _drafts = <String, FrontDraftPages>{};
 
   /// Opens [conversationId]; the inbox filter, which spans them all, is
   /// left.
@@ -471,11 +554,16 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   void _switch(void Function() pick) {
     ref.read(frontInboxFilterProvider.notifier).clear();
     final from = _open;
-    if (from != null && state.draft.isNotEmpty) _drafts[from] = state.draft;
+    final pages = state.draftPages;
+    if (from != null && pages.pages.any((page) => page.text.isNotEmpty)) {
+      _drafts[from] = pages;
+    }
     pick();
     final to = ref.read(frontPickedConversationProvider);
     if (to != from) {
-      state = state.copyWith(draft: _drafts.remove(to) ?? '');
+      state = state.withDraftPages(
+        _drafts.remove(to) ?? FrontDraftPages.settle(const []),
+      );
       ref.read(frontChatCategoryPickProvider.notifier).reset();
     }
   }

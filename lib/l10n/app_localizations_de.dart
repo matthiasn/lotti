@@ -7482,6 +7482,22 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diesen Chat löschen? Seine Nachrichten werden auf allen Geräten ausgeblendet, nicht gelöscht. Was du aus diesem Chat abgelegt hast, bleibt, wo es ist.';
 
   @override
+  String get frontChatDraftNext => 'Nächster Entwurf';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Entwurf $page von $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Vorheriger Entwurf';
+
+  @override
   String get frontChatDrawerClose => 'Chats schließen';
 
   @override
