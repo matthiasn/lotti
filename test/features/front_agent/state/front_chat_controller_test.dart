@@ -1262,6 +1262,44 @@ void main() {
       expect(state().failedMessage, words);
     });
 
+    test('a retry that goes through after another conversation was opened '
+        'takes its page from the one it was retried in, not the open one '
+        'with the same words', () async {
+      var attempts = 0;
+      final wake = Completer<void>();
+      when(
+        () => chatService.sendMessage(
+          text: words,
+          conversationId: 'c-1',
+          replaces: any(named: 'replaces'),
+          onAppended: any(named: 'onAppended'),
+        ),
+      ).thenAnswer((_) async {
+        if (attempts++ == 0) throw StateError('db closed');
+        await wake.future;
+      });
+      controller()
+        ..openConversation('c-1')
+        ..updateDraft(typed)
+        ..edit('u1', words);
+      await controller().send();
+
+      final retry = controller().retry();
+      await pumpEventQueue();
+      controller()
+        ..openConversation('c-2')
+        ..edit('u1', words);
+      wake.complete();
+      await retry;
+
+      expect(pages(), [words]);
+      expect(state().editingMessageId, 'u1');
+      expect(state().isSending, isFalse);
+
+      controller().openConversation('c-1');
+      expect(pages(), [typed]);
+    });
+
     test('the pages, and the edit on one, stay with their conversation', () {
       controller()
         ..openConversation('c-1')

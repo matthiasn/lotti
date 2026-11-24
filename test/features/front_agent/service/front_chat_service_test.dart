@@ -690,6 +690,43 @@ void main() {
       await expectLater(send, throwsA(isA<FrontChatTurnException>()));
     });
 
+    test('a second Stop whose write fails never undoes the first one that '
+        'went through: the send still returns as stopped', () async {
+      readBack();
+      stubLongWake();
+      stubCancel('run-1');
+      String? appended;
+      final send = service.sendMessage(
+        text: 'Count the hatchlings',
+        conversationId: 'c-1',
+        onAppended: (id) => appended = id,
+      );
+      await pumpEventQueue();
+      // Each Stop's write of the payload waits on its own gate.
+      final gates = [Completer<void>(), Completer<void>()];
+      var writes = 0;
+      when(() => syncService.upsertEntity(any())).thenAnswer((
+        invocation,
+      ) async {
+        final entity =
+            invocation.positionalArguments.first as AgentDomainEntity;
+        if (entity.id == frontChatStopPayloadId(appended!)) {
+          await gates[writes++].future;
+        }
+        upserts.add(entity);
+      });
+
+      final first = service.stopMessage(messageId: appended!);
+      final second = service.stopMessage(messageId: appended!);
+      await pumpEventQueue();
+      gates.first.complete();
+      await first;
+      gates.last.completeError(StateError('db closed'));
+      await expectLater(second, throwsStateError);
+
+      await expectLater(send, completes);
+    });
+
     test('a wake that ends while the stop is being written waits for it: '
         'recorded, the send went through', () async {
       readBack();

@@ -1167,8 +1167,13 @@ once it is durable — `sendingMessageId`, also set by a retry — and
    answer row (`isFrontAnswerRow`), and `pendingMessageIds` skips a stopped
    turn even when its dispatch has doors left to walk, so maintenance never
    re-arms it; `FrontDoorWalker.walk` asks for the stop record before each
-   door, so a stop that lands mid-walk ends it there. An older build, which
-   shows no empty reply, shows nothing for it;
+   door, so a stop that lands mid-walk ends it there. A question a door is
+   already answering is cancelled too: the walk listens to the front
+   agent's update notifications — the stop's own, or the synced record's —
+   and cancels that segment's `QueryCancellation` once the stop record is
+   there, recording the door `FrontDoorSkipped(stopped)`; an answer that
+   landed first stands. An older build, which shows no empty reply, shows
+   nothing for it;
 2. **consumes the turn's recovery record**, so no lease routes it;
 3. **cancels its wake** when this device is waiting on one, by run key
    (`WakeOrchestrator.cancelWake`): dropped from the queue, from the
@@ -1179,7 +1184,9 @@ once it is durable — `sendingMessageId`, also set by a retry — and
    `retryMessage` returns instead of throwing once the stop is recorded
    (`_stopping`): a wake that ends while the stop is still being written
    waits for the write, and one that ends after a failed write is a
-   failure as ever. The composer settles with nothing failed and no
+   failure as ever. Stops pressed while one is being written join it
+   (`_TurnStop`): recorded once any write went through, failed only once
+   every one failed. The composer settles with nothing failed and no
    *Try again*.
 
 The cancel and the thread's notification run even when consuming the

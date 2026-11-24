@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -19,6 +21,7 @@ import 'package:lotti/features/front_agent/model/front_task_draft.dart';
 import 'package:lotti/features/front_agent/service/front_door_walker.dart';
 import 'package:lotti/features/front_agent/service/front_owner_titles.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -134,6 +137,10 @@ void main() {
   }
 
   /// The door records written so far, by segment index.
+  late StreamController<Set<String>> updates;
+  late MockUpdateNotifications notifications;
+  tearDown(() => updates.close());
+
   Map<int, FrontDoorRecord> doors() {
     final result = <int, FrontDoorRecord>{};
     for (final p in upserts.whereType<AgentMessagePayloadEntity>()) {
@@ -145,6 +152,9 @@ void main() {
   }
 
   setUp(() {
+    updates = StreamController<Set<String>>.broadcast();
+    notifications = MockUpdateNotifications();
+    when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
     builder = MockQueryAnswerBuilder();
@@ -182,6 +192,7 @@ void main() {
       ownerTitles: titles,
       configFlag: (name) async => name == enableDailyOsPageFlag && dayPlanning,
       domainLogger: MockDomainLogger(),
+      notifications: notifications,
     );
   });
 
@@ -561,6 +572,88 @@ void main() {
       await walker.walk(messageId);
 
       expect(doors().keys, [0]);
+    });
+
+    group('while a question is being answered', () {
+      late Completer<QueryBuiltAnswer> answer;
+      var stopped = false;
+
+      setUp(() {
+        stopped = false;
+        answer = Completer<QueryBuiltAnswer>();
+        seedDispatch([
+          segment(
+            start: 0,
+            end: 18,
+            kind: FrontDestinationKind.task,
+            id: 'garden',
+          ),
+          ...twoProposals().skip(1),
+        ]);
+        when(
+          () => repository.getEntity(frontChatStopMessageId(messageId)),
+        ).thenAnswer((_) async => stopped ? stopRecord() : null);
+        when(
+          () => builder.build(
+            chat: any(named: 'chat'),
+            question: any(named: 'question'),
+            memories: any(named: 'memories'),
+            cancellation: any(named: 'cancellation'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((invocation) {
+          // As the query's model call does: a cancel aborts it.
+          (invocation.namedArguments[#cancellation] as QueryCancellation)
+              .onCancel(() {
+                if (!answer.isCompleted) {
+                  answer.completeError(const QueryCancelled());
+                }
+              });
+          return answer.future;
+        });
+      });
+
+      test('a stop — here or synced — cancels it: its door shows it '
+          'stopped, and no further door is walked', () async {
+        final walk = walker.walk(messageId);
+        await pumpEventQueue();
+
+        stopped = true;
+        updates.add({frontAgentId, agentNotification});
+        await walk;
+
+        expect(doors().keys, [0]);
+        expect(
+          (doors()[0]!.outcome! as FrontDoorSkipped).reason,
+          FrontDoorSkipReason.stopped,
+        );
+      });
+
+      test(
+        "a change that is not the turn's stop lets the answer land",
+        () async {
+          final walk = walker.walk(messageId);
+          await pumpEventQueue();
+
+          updates
+            ..add({'another-agent'})
+            ..add({frontAgentId});
+          await pumpEventQueue();
+          answer.complete(
+            const QueryBuiltAnswer(
+              answer: QueryChatAnswer(
+                questionId: 'q',
+                text: 'Weeded.',
+                coverage: QueryCoverage(),
+              ),
+            ),
+          );
+          await walk;
+
+          expect((doors()[0]!.outcome! as FrontDoorAnswer).text, 'Weeded.');
+          expect(doors().keys, [0, 1]);
+        },
+      );
     });
 
     test('a stop record since deleted stops nothing', () async {

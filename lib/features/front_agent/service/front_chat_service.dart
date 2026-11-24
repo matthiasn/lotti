@@ -70,8 +70,8 @@ class FrontChatService {
 
   /// The waited-on turns the user is stopping, each to whether its stop was
   /// recorded: a wake that ends unfinished is the stop, not a failure — but
-  /// only once the stop is durable, so it waits for the write to settle.
-  final _stopping = <String, Completer<bool>>{};
+  /// only once the stop is durable, so it waits for the writes to settle.
+  final _stopping = <String, _TurnStop>{};
 
   /// Appends [text] as a durable user turn and runs the routing wake for
   /// it — which routes the turn and walks its doors. Throws
@@ -263,7 +263,7 @@ class FrontChatService {
       _logTimings(result, enqueuedAt);
       if (result.status != WakeRunStatus.completed) {
         // Stopped: recorded and its recovery consumed by the stop.
-        if (await _stopping[messageId]?.future ?? false) return;
+        if (await _stopping[messageId]?.recorded ?? false) return;
         throw FrontChatTurnException(
           result.error?.toString(),
           messageId: messageId,
@@ -297,15 +297,23 @@ class FrontChatService {
         !(await _historyService.pendingMessageIds()).contains(messageId)) {
       return;
     }
-    final recorded = Completer<bool>();
-    if (runKey != null) _stopping[messageId] = recorded;
+    // One stop per turn, however often Stop is pressed: a write that fails
+    // never undoes one that went through.
+    final stop = runKey == null
+        ? null
+        : _stopping.update(
+            messageId,
+            (stop) => stop.failed ? _TurnStop() : stop,
+            ifAbsent: _TurnStop.new,
+          );
+    stop?.writing();
     try {
       await _recordStop(messageId);
     } on Object {
-      recorded.complete(false);
+      stop?.written(recorded: false);
       rethrow;
     }
-    recorded.complete(true);
+    stop?.written(recorded: true);
     try {
       await _consumeRecovery(messageId);
     } finally {
@@ -478,4 +486,33 @@ class FrontChatTurnException implements Exception {
 
   @override
   String toString() => detail ?? 'The front-agent turn failed.';
+}
+
+/// The stop of one waited-on turn, however many Stops were pressed for it:
+/// recorded once any of their writes went through, failed only once every
+/// one of them failed.
+class _TurnStop {
+  final _recorded = Completer<bool>();
+  var _writes = 0;
+
+  /// Whether the stop was recorded, once every write settled or one
+  /// went through.
+  Future<bool> get recorded => _recorded.future;
+
+  /// Whether every write of this stop failed: a Stop pressed after it
+  /// starts a new one.
+  bool failed = false;
+
+  void writing() => _writes++;
+
+  void written({required bool recorded}) {
+    _writes--;
+    if (_recorded.isCompleted) return;
+    if (recorded) {
+      _recorded.complete(true);
+    } else if (_writes == 0) {
+      failed = true;
+      _recorded.complete(false);
+    }
+  }
 }

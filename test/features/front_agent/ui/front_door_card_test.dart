@@ -727,9 +727,17 @@ void main() {
           outcome: const FrontDoorFailed('StateError'),
         ),
       ),
+      entry(
+        record(
+          index: 6,
+          text: 'Hedge?',
+          outcome: const FrontDoorSkipped(FrontDoorSkipReason.stopped),
+        ),
+      ),
     ]);
 
     expect(statusOf(tester, 0), 'Asking Garden…');
+    expect(statusOf(tester, 6), 'Stopped');
     expect(statusOf(tester, 2), 'Pip has no agent to ask yet.');
     expect(statusOf(tester, 3), 'Relocation has no working AI setup.');
     expect(statusOf(tester, 4), 'Nowhere to take this yet.');

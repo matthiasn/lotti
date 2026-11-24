@@ -459,6 +459,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     final scopedTo = state.failedCategoryIds;
     final replaces = state.failedReplaces;
     if (failed == null || state.isSending) return;
+    final retriedFrom = _open;
     state = state.copyWith(isSending: true);
     try {
       final service = ref.read(frontChatServiceProvider);
@@ -477,7 +478,20 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         await service.retryMessage(messageId: messageId);
       }
       _reproject();
-      state = _settledWithout(failed, replaces);
+      if (retriedFrom != null && retriedFrom != _open) {
+        // Opened another conversation meanwhile: the page leaves the one
+        // it was retried from, parked, and the box shown stays as it is.
+        if (_drafts[retriedFrom] case final parked?) {
+          final sent = _sentPage(parked.pages, failed, replaces);
+          _drafts[retriedFrom] = FrontDraftPages.settle([
+            for (var i = 0; i < parked.pages.length; i++)
+              if (i != sent) parked.pages[i],
+          ]);
+        }
+        state = state.copyWith(isSending: false);
+      } else {
+        state = _settledWithout(failed, replaces);
+      }
     } on FrontChatTurnException catch (error) {
       _reproject();
       // The box as it is now: the words are on the failure, and whatever
@@ -514,9 +528,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   /// it if it was in it. Anything typed while the retry ran stays.
   FrontChatComposerState _settledWithout(String failed, String? replaces) {
     final pages = state.draftPages;
-    final sent = pages.pages.lastIndexWhere(
-      (page) => page.text.trim() == failed && page.editingMessageId == replaces,
-    );
+    final sent = _sentPage(pages.pages, failed, replaces);
     final others = [
       for (var i = 0; i < pages.pages.length; i++)
         if (i != sent && i != pages.index) pages.pages[i],
@@ -529,6 +541,17 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
             aside: others,
           );
   }
+
+  /// Where in [pages] the retry of [failed] was put back: the last page
+  /// with its words and edit, never another that only shares its words;
+  /// -1 for none.
+  static int _sentPage(
+    List<FrontDraftPage> pages,
+    String failed,
+    String? replaces,
+  ) => pages.lastIndexWhere(
+    (page) => page.text.trim() == failed && page.editingMessageId == replaces,
+  );
 
   /// The conversation a send lands in: the active one, pinned, so a newer
   /// conversation arriving from another device does not take the surface
