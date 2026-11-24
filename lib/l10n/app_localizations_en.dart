@@ -14978,6 +14978,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipUpdateFromContact => 'Update from contact';
 
   @override
+  String get reportTodoAddFailed => 'Couldn\'t add it to the checklist';
+
+  @override
+  String get reportTodoAddToChecklist => 'Add to checklist';
+
+  @override
+  String get reportTodoOnChecklist => 'On the checklist';
+
+  @override
   String get saveButton => 'Save';
 
   @override

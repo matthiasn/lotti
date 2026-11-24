@@ -80,10 +80,15 @@ class AiSummaryCard extends ConsumerWidget {
     this.onSuggestionResolveStart,
     this.onOpenLinkedTask,
     this.showAssignCta = true,
+    this.reportTodoAction,
     super.key,
   });
 
   final String taskId;
+
+  /// What stands beside an open to-do of the report's sections, given its
+  /// text — the task page's *Add to checklist*; nothing when null.
+  final Widget Function(String text)? reportTodoAction;
   final GlobalKey? proposalsFocusKey;
 
   /// Whether to render [AssignAgentCta] when no agent is attached.
@@ -129,6 +134,7 @@ class AiSummaryCard extends ConsumerWidget {
           proposalsFocusKey: proposalsFocusKey,
           onSuggestionResolveStart: onSuggestionResolveStart,
           onOpenLinkedTask: onOpenLinkedTask,
+          reportTodoAction: reportTodoAction,
         );
       },
     );
@@ -142,10 +148,12 @@ class _AiSummaryShell extends ConsumerStatefulWidget {
     required this.proposalsFocusKey,
     required this.onSuggestionResolveStart,
     required this.onOpenLinkedTask,
+    required this.reportTodoAction,
   });
 
   final String taskId;
   final AgentIdentityEntity identity;
+  final Widget Function(String text)? reportTodoAction;
   final GlobalKey? proposalsFocusKey;
   final VoidCallback? onSuggestionResolveStart;
   final void Function(String taskId)? onOpenLinkedTask;
@@ -658,6 +666,9 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       expanded: _expanded,
       additionalReport: additionalReport,
       sections: report?.sections ?? const [],
+      openTodoAction: widget.reportTodoAction == null
+          ? null
+          : (item) => widget.reportTodoAction!(item.text),
       onToggle: () => setState(() => _expanded = !_expanded),
       onOpenInternals: () => _openInternals(agentName: subtitle),
     );

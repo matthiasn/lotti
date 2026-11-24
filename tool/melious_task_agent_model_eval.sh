@@ -52,8 +52,10 @@ cd "$repo_root"
 fvm flutter test test/features/ai/eval/local_task_agent_inference_eval_live_test.dart "$@"
 
 if [[ "${LOCAL_TASK_AGENT_EVAL_JUDGE:-1}" == "1" ]]; then
-  python3 tool/task_agent_model_eval_judge.py \
-    "$LOCAL_TASK_AGENT_EVAL_JSON" \
-    --json "$judgments_json" \
-    --markdown "$judgments_markdown"
+  # The judge reads the same credentials; the sourced ones are not exported.
+  MELIOUS_API_KEY="$api_key" MELIOUS_BASE_URL="$base_url" \
+    python3 tool/task_agent_model_eval_judge.py \
+      "$LOCAL_TASK_AGENT_EVAL_JSON" \
+      --json "$judgments_json" \
+      --markdown "$judgments_markdown"
 fi

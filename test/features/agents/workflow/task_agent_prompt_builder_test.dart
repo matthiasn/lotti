@@ -301,7 +301,7 @@ Use the task language and omit empty sections.
         );
 
         expect(prompt, contains('Write the report as sections'));
-        expect(prompt, contains('a lead paragraph may go untitled'));
+        expect(prompt, contains('Open with an untitled `text` section'));
         expect(prompt, isNot(contains('Include 1-2 relevant emojis')));
         expect(prompt, isNot(contains('### Required Sections')));
       },
@@ -356,7 +356,7 @@ Use the task language and omit empty sections.
         mistralPrompt,
         contains('Only an explicit request to transition status'),
       );
-      expect(mistralPrompt, contains('Include only sections'));
+      expect(mistralPrompt, contains('Open with one untitled'));
       expect(qwenPrompt, isNot(contains('Maybe revisit catering later')));
       expect(qwenPrompt, contains('Write the report as sections'));
       expect(qwenPrompt, contains('## Scope Erasure'));

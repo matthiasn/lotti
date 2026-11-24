@@ -195,8 +195,10 @@ Each answer keeps its numbered evidence inside the reply surface. Evidence
 starts with source metadata and a short summary; expanding replaces the
 synopsis with selectable exact text, with explicit omission markers outside the quotation. Surrounding
 text can be shown, while Copy quote always copies only the stored passage.
-The pill composer emphasizes Send when a draft is present. A running search
-keeps the next draft editable while Send remains disabled. Scope filters keep
+The shared card composer (`DesignSystemChatInput`) always offers the mic: it is
+the teal control while the field is empty, and Send takes over the teal
+emphasis once there is a draft. A running search keeps the next draft editable
+while Send remains disabled. Scope filters keep
 caption typography and a compact painted pill centered in the design-system
 touch-height target.
 Saved-text inspection shows the representation's edit/transcript date when
@@ -252,7 +254,8 @@ reads only those (ADR 0153). No query chat pane hosts it —
 headless by the [front agent](../front_agent.md): `FrontDoorWalker` answers a
 `journal` question by building `QueryScope.journalIn` over her
 `allowedCategoryIds` narrowed to the categories chosen for that message
-(`frontNarrowedCategories`) and calling `QueryAnswerBuilder.build` as
+(`frontNarrowedCategories`; an empty allow-list is unrestricted, so the
+chosen categories alone apply) and calling `QueryAnswerBuilder.build` as
 `front_agent`.
 
 - **Profile:** no category's profile applies. `queryProfileProvider` resolves

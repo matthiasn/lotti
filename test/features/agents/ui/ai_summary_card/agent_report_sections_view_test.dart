@@ -109,4 +109,27 @@ void main() {
     );
     semantics.dispose();
   });
+
+  testWidgets('the host action stands beside open to-dos only', (tester) async {
+    final offered = <String>[];
+    await tester.pumpWidget(
+      makeTestableWidget(
+        AgentReportSectionsView(
+          sections: sections,
+          bodyStyle: const TextStyle(fontSize: 14, height: 1.4),
+          openTodoAction: (item) {
+            offered.add(item.text);
+            return SizedBox.square(
+              key: ValueKey('action: ${item.text}'),
+              dimension: 8,
+            );
+          },
+        ),
+      ),
+    );
+
+    // Not the done to-do, and not a point.
+    expect(offered, ['Run the test']);
+    expect(find.byKey(const ValueKey('action: Run the test')), findsOneWidget);
+  });
 }

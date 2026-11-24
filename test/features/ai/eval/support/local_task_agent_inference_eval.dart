@@ -95,8 +95,8 @@ enum LocalTaskAgentEvalExecutionMode {
 
 const _missingInitialReportPrompt =
     'You did not call `update_report` before stopping. Call it now. You MUST '
-    'supply a concise `oneLiner`, a 1-3 sentence `tldr`, and the full markdown '
-    '`content`. This is the final step of the wake and is mandatory. Do not '
+    'supply a concise `oneLiner`, a 1-3 sentence `tldr`, and the full report '
+    'as `sections`. This is the final step of the wake and is mandatory. Do not '
     'respond with anything else.';
 
 ReasoningEffort? parseLocalTaskAgentEvalReasoningEffort(String? value) {
@@ -3020,7 +3020,12 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
     _toolCalls.add(
       LocalTaskAgentEvalToolCall(
         name: TaskAgentToolNames.updateReport,
-        argumentsJson: jsonEncode(report.toJson()),
+        // The editor's sections too, so a run shows whether it kept them.
+        argumentsJson: jsonEncode({
+          ...report.toJson(),
+          if (report.sections.isNotEmpty)
+            'sections': [for (final section in report.sections) section.toJson()],
+        }),
         phase: LocalTaskAgentEvalToolCallPhase.reportPass,
       ),
     );

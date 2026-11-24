@@ -15346,6 +15346,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipUpdateFromContact => 'Actualizați din contact';
 
   @override
+  String get reportTodoAddFailed =>
+      'Nu s-a putut adăuga în lista de verificare';
+
+  @override
+  String get reportTodoAddToChecklist => 'Adăugați în lista de verificare';
+
+  @override
+  String get reportTodoOnChecklist => 'Este deja în lista de verificare';
+
+  @override
   String get saveButton => 'Salvați';
 
   @override

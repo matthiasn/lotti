@@ -15089,6 +15089,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipUpdateFromContact => 'Bijwerken vanuit contact';
 
   @override
+  String get reportTodoAddFailed =>
+      'Kon niet aan de checklist worden toegevoegd';
+
+  @override
+  String get reportTodoAddToChecklist => 'Aan checklist toevoegen';
+
+  @override
+  String get reportTodoOnChecklist => 'Staat op de checklist';
+
+  @override
   String get saveButton => 'Opslaan';
 
   @override

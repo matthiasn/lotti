@@ -15050,6 +15050,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipUpdateFromContact => 'Opdater fra kontakt';
 
   @override
+  String get reportTodoAddFailed => 'Kunne ikke føjes til tjeklisten';
+
+  @override
+  String get reportTodoAddToChecklist => 'Føj til tjeklisten';
+
+  @override
+  String get reportTodoOnChecklist => 'Står på tjeklisten';
+
+  @override
   String get saveButton => 'Gem';
 
   @override

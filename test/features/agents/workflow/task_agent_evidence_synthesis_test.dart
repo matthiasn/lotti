@@ -33,7 +33,7 @@ void main() {
         directive,
         allOf(
           contains('Write the report as sections'),
-          contains('a lead paragraph may go untitled'),
+          contains('Open with an untitled `text` section'),
           contains('Never create a section merely'),
           contains('A checked item proves only'),
           contains('previous report'),
@@ -226,13 +226,13 @@ void main() {
         'qwen3.5-122b-a10b',
       );
 
-      expect(mistral, contains('Include only sections'));
+      expect(mistral, contains('Open with one untitled'));
       expect(mistral, contains('include it and state what it is for'));
       expect(qwen, contains('Write the report as sections'));
-      expect(qwen, contains('a lead paragraph may go untitled'));
+      expect(qwen, contains('Open with an untitled `text` section'));
       // The English heading names are meanings, not wording: a German task
       // gets German headings, and an empty Links section is never written.
-      expect(mistral, contains('the task language rather than in English'));
+      expect(mistral, contains('language rather than in English'));
       expect(mistral, contains('including `Links` when there is no URL'));
       expect(qwen, contains("task's `languageCode`, titles included"));
     });

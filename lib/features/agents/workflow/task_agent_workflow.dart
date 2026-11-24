@@ -344,7 +344,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
         message:
             'You did not call `update_report` before stopping. Call it '
             'now. You MUST supply a concise `oneLiner`, a 1-3 sentence '
-            '`tldr`, and the full markdown `content`. This is the final '
+            '`tldr`, and the full report as `sections`. This is the final '
             'step of the wake and is mandatory — do not respond with '
             'anything else.',
         model: modelId,

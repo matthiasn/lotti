@@ -107,7 +107,12 @@ Contents:
   full report under a quiet *Read more / Show less* text link. A report the
   agent wrote as sections (ADR 0166) expands into `AgentReportSectionsView`:
   each title over a bulleted list, a read-only checklist (checkbox glyphs,
-  announced as checked or not) or a paragraph. A report without sections
+  announced as checked or not) or a paragraph. Its `openTodoAction` slot puts
+  a host widget beside each open to-do: the task page and the companion's
+  quote pass the tasks feature's `ReportTodoChecklistAction` (*Add to
+  checklist*, or a mark when the checklist holds it), which reaches the card
+  through `AiSummaryCard.reportTodoAction`, since agents may not import tasks.
+  A report without sections
   expands as Markdown through `AgentMarkdownView`. *Chat* (`QueryAskButton(disc: true)`,
   a glyph-only `DsAiDiscButton` announced as *Ask about this task*) leads the
   header's trailing rail, left of the read-aloud `TtsPlayButton`, which wears

@@ -4,6 +4,7 @@ import 'package:lotti/classes/agents/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/agent_report_sections_view.dart';
 import 'package:lotti/features/front_agent/model/front_report_quote.dart';
 import 'package:lotti/features/front_agent/ui/front_report_sections_card.dart';
+import 'package:lotti/features/tasks/ui/widgets/report_todo_checklist_action.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -17,7 +18,10 @@ void main() {
       AgentReportSection(
         kind: AgentReportSectionKind.checklist,
         title: 'Next actions',
-        items: [AgentReportSectionItem(text: 'Run the feeder test')],
+        items: [
+          AgentReportSectionItem(text: 'Run the feeder test'),
+          AgentReportSectionItem(text: 'Load sardines', done: true),
+        ],
       ),
     ],
   );
@@ -42,5 +46,12 @@ void main() {
 
     await tester.tap(find.byKey(FrontReportSectionsCardKeys.task('habitat')));
     expect(opened, ['habitat']);
+
+    // The open to-do can go to the task's checklist; the done one cannot.
+    final action = tester.widget<ReportTodoChecklistAction>(
+      find.byType(ReportTodoChecklistAction),
+    );
+    expect(action.taskId, 'habitat');
+    expect(action.text, 'Run the feeder test');
   });
 }

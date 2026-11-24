@@ -74,7 +74,10 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
         toolName: TaskAgentStrategy.reportToolName,
       );
     } else {
-      const errorMsg = 'Error: "sections" must be a non-empty array.';
+      const errorMsg =
+          'Error: "sections" must be a non-empty array of sections, each '
+          '{"kind": "points" | "checklist" | "text", "title"?, then "items" '
+          '[{"text", "done"?}] or "text"}.';
       manager.addToolResponse(
         toolCallId: callId,
         response: errorMsg,

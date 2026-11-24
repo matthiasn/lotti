@@ -15246,6 +15246,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipUpdateFromContact => 'Actualizar desde el contacto';
 
   @override
+  String get reportTodoAddFailed =>
+      'No se pudo añadir a la lista de verificación';
+
+  @override
+  String get reportTodoAddToChecklist => 'Añadir a la lista de verificación';
+
+  @override
+  String get reportTodoOnChecklist => 'Ya está en la lista de verificación';
+
+  @override
   String get saveButton => 'Guardar';
 
   @override

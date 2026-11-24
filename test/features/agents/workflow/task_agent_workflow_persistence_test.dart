@@ -1541,7 +1541,13 @@ not describe task configuration or tool activity as progress.
           );
           expect(
             calls[1].message,
-            contains('You did not call `update_report`'),
+            allOf(
+              contains('You did not call `update_report`'),
+              // The tool takes sections; asking for Markdown would get a
+              // report without them.
+              contains('the full report as `sections`'),
+              isNot(contains('`content`')),
+            ),
           );
         },
       );

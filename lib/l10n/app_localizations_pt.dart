@@ -15205,6 +15205,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipUpdateFromContact => 'Atualizar a partir do contacto';
 
   @override
+  String get reportTodoAddFailed =>
+      'Não foi possível adicionar à lista de verificação';
+
+  @override
+  String get reportTodoAddToChecklist => 'Adicionar à lista de verificação';
+
+  @override
+  String get reportTodoOnChecklist => 'Já está na lista de verificação';
+
+  @override
   String get saveButton => 'Guardar';
 
   @override

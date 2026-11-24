@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card/agent_report_sections_v
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_report_quote.dart';
+import 'package:lotti/features/tasks/ui/widgets/report_todo_checklist_action.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/relative_age_label.dart';
 import 'package:material_ui/material_ui.dart';
@@ -79,6 +80,10 @@ class FrontReportSectionsCard extends StatelessWidget {
               ),
               child: AgentReportSectionsView(
                 sections: quote.sections,
+                openTodoAction: (item) => ReportTodoChecklistAction(
+                  taskId: quote.taskId,
+                  text: item.text,
+                ),
                 bodyStyle: tokens.typography.styles.body.bodySmall.copyWith(
                   color: ai.bodyText,
                 ),

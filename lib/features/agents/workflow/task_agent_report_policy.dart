@@ -30,9 +30,10 @@ abstract final class TaskAgentReportPolicy {
         'type': 'string',
         'enum': ['points', 'checklist', 'text'],
         'description':
-            '`points`: a bulleted list in `items`. `checklist`: to-dos in '
-            '`items`, each marked `done` or not. `text`: one paragraph in '
-            '`text`.',
+            '`points`: a bulleted list in `items`. `checklist`: the '
+            "report's pending actions in `items`, each marked `done` or not; "
+            "it is not the task's checklist. `text`: one paragraph in "
+            '`text`, such as the opening one on where the task stands.',
       },
       'title': {
         'type': 'string',

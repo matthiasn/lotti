@@ -51,12 +51,28 @@ void main() {
       ]);
     });
 
+    test('an array sent as its JSON text is read like the array', () {
+      expect(
+        parseAgentReportSections(
+          '[{"kind": "text", "text": "Calibration is next."}]',
+        ),
+        const [
+          AgentReportSection(
+            kind: AgentReportSectionKind.text,
+            text: 'Calibration is next.',
+          ),
+        ],
+      );
+      expect(parseAgentReportSections('[not json'), isEmpty);
+      expect(parseAgentReportSections('## Markdown'), isEmpty);
+    });
+
     test('drops malformed entries instead of failing the report', () {
       expect(
         parseAgentReportSections([
           'not a map',
-          {'kind': 'table', 'text': 'unknown kind'},
-          {'title': 'no kind', 'text': 'x'},
+          {'kind': 'table'},
+          {'title': 'no kind and no body'},
           {'kind': 'text', 'text': '   '},
           {'kind': 'points', 'items': 'not a list'},
           {
@@ -72,6 +88,44 @@ void main() {
       expect(parseAgentReportSections(null), isEmpty);
       expect(parseAgentReportSections('## Markdown'), isEmpty);
     });
+  });
+
+  test('a missing or unknown kind is read from the section shape', () {
+    // Mistral Small 4 left `kind` out of every section in a live run.
+    expect(
+      parseAgentReportSections([
+        {'text': 'Calibration is next.'},
+        {
+          'title': 'Progress',
+          'items': [
+            {'text': 'Mounted the feeders'},
+          ],
+        },
+        {
+          'kind': 'todo',
+          'title': 'Next actions',
+          'items': [
+            {'text': 'Calibrate the portions', 'done': false},
+          ],
+        },
+      ]),
+      const [
+        AgentReportSection(
+          kind: AgentReportSectionKind.text,
+          text: 'Calibration is next.',
+        ),
+        AgentReportSection(
+          kind: AgentReportSectionKind.points,
+          title: 'Progress',
+          items: [AgentReportSectionItem(text: 'Mounted the feeders')],
+        ),
+        AgentReportSection(
+          kind: AgentReportSectionKind.checklist,
+          title: 'Next actions',
+          items: [AgentReportSectionItem(text: 'Calibrate the portions')],
+        ),
+      ],
+    );
   });
 
   group('renderAgentReportSectionsMarkdown', () {

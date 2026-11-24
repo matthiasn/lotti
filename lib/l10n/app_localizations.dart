@@ -24875,6 +24875,24 @@ abstract class AppLocalizations {
   /// **'Update from contact'**
   String get relationshipUpdateFromContact;
 
+  /// Error toast when adding a report to-do to the task checklist failed; the button stays for a retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t add it to the checklist'**
+  String get reportTodoAddFailed;
+
+  /// Button beside an open to-do in a task agent report: adds it to the task's checklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to checklist'**
+  String get reportTodoAddToChecklist;
+
+  /// Mark beside a to-do in a task agent report that the task's checklist already holds.
+  ///
+  /// In en, this message translates to:
+  /// **'On the checklist'**
+  String get reportTodoOnChecklist;
+
   /// No description provided for @saveButton.
   ///
   /// In en, this message translates to:

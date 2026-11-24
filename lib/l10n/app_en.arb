@@ -10111,6 +10111,18 @@
   "@relationshipUpdateFromContact": {
     "description": "Menu action that re-reads the linked OS contact and copies anything new"
   },
+  "reportTodoAddFailed": "Couldn't add it to the checklist",
+  "@reportTodoAddFailed": {
+    "description": "Error toast when adding a report to-do to the task checklist failed; the button stays for a retry."
+  },
+  "reportTodoAddToChecklist": "Add to checklist",
+  "@reportTodoAddToChecklist": {
+    "description": "Button beside an open to-do in a task agent report: adds it to the task's checklist."
+  },
+  "reportTodoOnChecklist": "On the checklist",
+  "@reportTodoOnChecklist": {
+    "description": "Mark beside a to-do in a task agent report that the task's checklist already holds."
+  },
   "saveButton": "Save",
   "saveButtonLabel": "Save",
   "saveFailedRetry": "That didn't save — please try again.",

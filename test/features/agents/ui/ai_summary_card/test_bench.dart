@@ -97,6 +97,7 @@ class AgentTestBench {
     this.stateOverride,
     this.onSuggestionResolveStart,
     this.onOpenLinkedTask,
+    this.reportTodoAction,
     this._extraOverrides = const [],
     this.width,
   });
@@ -109,6 +110,9 @@ class AgentTestBench {
 
   /// Handed to the card as its `onOpenLinkedTask`.
   final void Function(String taskId)? onOpenLinkedTask;
+
+  /// Handed to the card as its `reportTodoAction`.
+  final Widget Function(String text)? reportTodoAction;
 
   static const String taskId = 'task-001';
 
@@ -181,6 +185,7 @@ class AgentTestBench {
               taskId: taskId,
               onSuggestionResolveStart: onSuggestionResolveStart,
               onOpenLinkedTask: onOpenLinkedTask,
+              reportTodoAction: reportTodoAction,
             ),
           )
         : Align(
@@ -192,6 +197,7 @@ class AgentTestBench {
                   taskId: taskId,
                   onSuggestionResolveStart: onSuggestionResolveStart,
                   onOpenLinkedTask: onOpenLinkedTask,
+                  reportTodoAction: reportTodoAction,
                 ),
               ),
             ),

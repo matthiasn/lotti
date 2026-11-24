@@ -10,10 +10,16 @@ class AgentReportSectionsView extends StatelessWidget {
   const AgentReportSectionsView({
     required this.sections,
     required this.bodyStyle,
+    this.openTodoAction,
     super.key,
   });
 
   final List<AgentReportSection> sections;
+
+  /// What stands at the end of an open to-do of a checklist section — the
+  /// host's way to act on it, such as adding it to the task's checklist;
+  /// nothing when null.
+  final Widget Function(AgentReportSectionItem item)? openTodoAction;
 
   /// The card's report prose style, shared with the summary above.
   final TextStyle bodyStyle;
@@ -50,6 +56,11 @@ class AgentReportSectionsView extends StatelessWidget {
                     item: item,
                     checklist: section.kind == AgentReportSectionKind.checklist,
                     bodyStyle: bodyStyle,
+                    trailing:
+                        section.kind == AgentReportSectionKind.checklist &&
+                            !item.done
+                        ? openTodoAction?.call(item)
+                        : null,
                   ),
             ],
           ),
@@ -63,11 +74,13 @@ class _ItemRow extends StatelessWidget {
     required this.item,
     required this.checklist,
     required this.bodyStyle,
+    this.trailing,
   });
 
   final AgentReportSectionItem item;
   final bool checklist;
   final TextStyle bodyStyle;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +104,7 @@ class _ItemRow extends StatelessWidget {
         : ExcludeSemantics(
             child: Text('•', style: bodyStyle.copyWith(color: ai.metaText)),
           );
-    final row = Row(
+    final content = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: tokens.spacing.step3,
       children: [
@@ -106,10 +119,21 @@ class _ItemRow extends StatelessWidget {
         ),
       ],
     );
-    return checklist
+    final labelled = checklist
         ? MergeSemantics(
-            child: Semantics(checked: item.done, child: row),
+            child: Semantics(checked: item.done, child: content),
           )
-        : row;
+        : content;
+    final action = trailing;
+    // The action is its own control beside the row, centred on the text.
+    return action == null
+        ? labelled
+        : Row(
+            spacing: tokens.spacing.step2,
+            children: [
+              Expanded(child: labelled),
+              action,
+            ],
+          );
   }
 }

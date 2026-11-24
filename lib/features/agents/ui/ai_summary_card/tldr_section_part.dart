@@ -389,8 +389,12 @@ class TldrBody extends StatelessWidget {
     this.onOpenInternals,
     this.trailing,
     this.sections = const [],
+    this.openTodoAction,
     super.key,
   });
+
+  /// Passed to [AgentReportSectionsView.openTodoAction].
+  final Widget Function(AgentReportSectionItem item)? openTodoAction;
 
   /// The report body as sections; when given, the expanded body draws them
   /// instead of rendering [additionalReport] as Markdown.
@@ -460,6 +464,7 @@ class TldrBody extends StatelessWidget {
                   : AgentReportSectionsView(
                       sections: sections,
                       bodyStyle: bodyStyle,
+                      openTodoAction: openTodoAction,
                     ),
             ),
           ),

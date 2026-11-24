@@ -139,7 +139,74 @@ def _valid_judgment(judgment: dict) -> bool:
     )
 
 
+def _sections_markdown(sections: object) -> str:
+    """The Markdown the app stores for `update_report(sections:)`.
+
+    Mirrors `renderAgentReportSectionsMarkdown` and the parser's leniency
+    (`parseAgentReportSections`): a missing kind is read from the shape, and
+    an empty paragraph or a list without usable rows is left out.
+    """
+    # Some models send the array as its JSON text, which the app also reads.
+    if isinstance(sections, str) and sections.lstrip().startswith("["):
+        try:
+            sections = json.loads(sections)
+        except json.JSONDecodeError:
+            return ""
+    if not isinstance(sections, list):
+        return ""
+    blocks = []
+    for section in sections:
+        if not isinstance(section, dict):
+            continue
+        kind = section.get("kind")
+        if kind not in ("text", "points", "checklist"):
+            # Read from the shape, as the app's parser does.
+            items = section.get("items")
+            if isinstance(section.get("text"), str) and section["text"].strip():
+                kind = "text"
+            elif isinstance(items, list) and items:
+                kind = (
+                    "checklist"
+                    if any(isinstance(i, dict) and isinstance(i.get("done"), bool)
+                           for i in items)
+                    else "points"
+                )
+        title = section.get("title")
+        title = title.strip() if isinstance(title, str) else ""
+        if kind == "text":
+            text = section.get("text")
+            body = text.strip() if isinstance(text, str) else ""
+        elif kind in ("points", "checklist"):
+            rows = []
+            items = section.get("items")
+            for item in items if isinstance(items, list) else []:
+                if isinstance(item, str):
+                    text, done = item.strip(), False
+                elif isinstance(item, dict) and isinstance(item.get("text"), str):
+                    text, done = item["text"].strip(), item.get("done") is True
+                else:
+                    continue
+                if not text:
+                    continue
+                if kind == "checklist":
+                    rows.append(f"- [{'x' if done else ' '}] {text}")
+                else:
+                    rows.append(f"- {text}")
+            body = "\n".join(rows)
+        else:
+            continue
+        if not body:
+            continue
+        blocks.append(f"## {title}\n\n{body}" if title else body)
+    return "\n\n".join(blocks)
+
+
 def _product_report(result: dict) -> dict | None:
+    """The last complete `update_report` call, as the app would store it.
+
+    A call with sections gets their Markdown as its `content`, which is what
+    the app publishes; a call with only a `content` string stands as written.
+    """
     for call in reversed(result.get("toolCalls", [])):
         if call.get("name") != "update_report":
             continue
@@ -147,7 +214,12 @@ def _product_report(result: dict) -> dict | None:
             arguments = json.loads(call.get("argumentsJson", ""))
         except (TypeError, json.JSONDecodeError):
             continue
-        if isinstance(arguments, dict) and all(
+        if not isinstance(arguments, dict):
+            continue
+        rendered = _sections_markdown(arguments.get("sections"))
+        if rendered:
+            arguments = {**arguments, "content": rendered}
+        if all(
             isinstance(arguments.get(field), str) and arguments[field].strip()
             for field in ("oneLiner", "tldr", "content")
         ):

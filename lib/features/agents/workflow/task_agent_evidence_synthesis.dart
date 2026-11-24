@@ -29,14 +29,18 @@ not use emojis.
 ### `sections`
 
 Write the report as sections in the task's `languageCode`, titles included:
-`points` for a list, `checklist` for to-dos, `text` for a paragraph. Choose the
-sections that best fit the facts; a lead paragraph may go untitled. Do not add
-a report title because the task title is already visible.
+`points` for a list, `checklist` for the report's pending actions, `text` for a
+paragraph. Choose the sections that best fit the facts. Do not add a report
+title because the task title is already visible.
 
-Lead with the current real-world situation, decision, deadline, or risk, then
-surface the few actions that matter next. Include an outcome only when the
-source records that outcome. Mention a blocker only when an active constraint
-exists. Include links only for real external URLs, with descriptive link text.
+Open with an untitled `text` section on the current real-world situation: the
+decision, outcome, deadline with its purpose, estimate, or risk the evidence
+records. Then surface the few actions that matter next. A report that is only
+an action list leaves out where the task stands. Listing an action in the
+report never asks you to add it to the task's checklist. Include an outcome
+only when the source records that outcome. Mention a blocker only when an
+active constraint exists. Include links only for real external URLs, with
+descriptive link text.
 
 Never create a section merely because a template named it. A pending-only task
 may be a short context sentence followed by an action list. Omit empty sections,
@@ -67,9 +71,11 @@ not use emojis.
 ### `sections`
 
 Write a compact current-state report in the task's `languageCode`. Do not add a
-report title because the task title is already visible. Include only sections
-that contain useful, evidence-backed information, and write each section title
-below in the task language rather than in English:
+report title because the task title is already visible. Open with one untitled
+`text` section stating where the task stands now, with its current due date and
+what it is for when it has one. Then include only the sections below that
+contain useful, evidence-backed information, writing each title in the task
+language rather than in English:
 
 - `Progress` (`points`): meaningful completed outcomes, not analysis,
   transcription, checklist creation, metadata changes, or other agent activity.
