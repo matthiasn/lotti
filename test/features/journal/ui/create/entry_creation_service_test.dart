@@ -522,6 +522,7 @@ void main() {
       mockJournalDb = MockJournalDb();
 
       when(() => mockNavService.beamToNamed(any())).thenReturn(null);
+      when(() => mockNavService.activeRoute).thenReturn('/tasks');
       when(
         () => mockAudioRecorderRepository.amplitudeStream,
       ).thenAnswer((_) => const Stream<Amplitude>.empty());
@@ -628,7 +629,7 @@ void main() {
         // .show() flips the controller's modalVisible flag and forwards the
         // categoryId — observable side effects of the delegated call.
         final state = container.read(audioRecorderControllerProvider);
-        expect(state.modalVisible, isTrue);
+        expect(state.inlineHostVisible, isTrue);
       },
     );
 

@@ -17,12 +17,12 @@ mixin _$AudioRecorderState {
 /// Current status of the recorder.
  AudioRecorderStatus get status;/// Duration of the current recording.
  Duration get progress;/// Current audio level in dBFS, as the level line draws it.
- double get dBFS;/// Whether to show the floating recording indicator.
-/// Only relevant when recording and modal is not visible.
- bool get showIndicator;/// Whether the recording modal is currently visible.
-/// Used to coordinate with indicator display.
- bool get modalVisible;/// Optional ID to link recording to existing journal entry.
- String? get linkedId;/// Whether to trigger speech recognition after recording.
+ double get dBFS;/// Whether a check-in screen is drawing this take in place. The
+/// recording strip stays hidden while it is: the take already has a
+/// recorder on screen.
+ bool get inlineHostVisible;/// Optional ID to link recording to existing journal entry.
+ String? get linkedId;/// Where the running take was started; null while nothing records.
+ RecordingOrigin? get origin;/// Whether to trigger speech recognition after recording.
 /// If null, uses category default settings.
  bool? get enableSpeechRecognition;
 /// Create a copy of AudioRecorderState
@@ -35,16 +35,16 @@ $AudioRecorderStateCopyWith<AudioRecorderState> get copyWith => _$AudioRecorderS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.showIndicator, showIndicator) || other.showIndicator == showIndicator)&&(identical(other.modalVisible, modalVisible) || other.modalVisible == modalVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.inlineHostVisible, inlineHostVisible) || other.inlineHostVisible == inlineHostVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,status,progress,dBFS,showIndicator,modalVisible,linkedId,enableSpeechRecognition);
+int get hashCode => Object.hash(runtimeType,status,progress,dBFS,inlineHostVisible,linkedId,origin,enableSpeechRecognition);
 
 @override
 String toString() {
-  return 'AudioRecorderState(status: $status, progress: $progress, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition)';
+  return 'AudioRecorderState(status: $status, progress: $progress, dBFS: $dBFS, inlineHostVisible: $inlineHostVisible, linkedId: $linkedId, origin: $origin, enableSpeechRecognition: $enableSpeechRecognition)';
 }
 
 
@@ -55,11 +55,11 @@ abstract mixin class $AudioRecorderStateCopyWith<$Res>  {
   factory $AudioRecorderStateCopyWith(AudioRecorderState value, $Res Function(AudioRecorderState) _then) = _$AudioRecorderStateCopyWithImpl;
 @useResult
 $Res call({
- AudioRecorderStatus status, Duration progress, double dBFS, bool showIndicator, bool modalVisible, String? linkedId, bool? enableSpeechRecognition
+ AudioRecorderStatus status, Duration progress, double dBFS, bool inlineHostVisible, String? linkedId, RecordingOrigin? origin, bool? enableSpeechRecognition
 });
 
 
-
+$RecordingOriginCopyWith<$Res>? get origin;
 
 }
 /// @nodoc
@@ -72,19 +72,31 @@ class _$AudioRecorderStateCopyWithImpl<$Res>
 
 /// Create a copy of AudioRecorderState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? progress = null,Object? dBFS = null,Object? showIndicator = null,Object? modalVisible = null,Object? linkedId = freezed,Object? enableSpeechRecognition = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? progress = null,Object? dBFS = null,Object? inlineHostVisible = null,Object? linkedId = freezed,Object? origin = freezed,Object? enableSpeechRecognition = freezed,}) {
   return _then(_self.copyWith(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as AudioRecorderStatus,progress: null == progress ? _self.progress : progress // ignore: cast_nullable_to_non_nullable
 as Duration,dBFS: null == dBFS ? _self.dBFS : dBFS // ignore: cast_nullable_to_non_nullable
-as double,showIndicator: null == showIndicator ? _self.showIndicator : showIndicator // ignore: cast_nullable_to_non_nullable
-as bool,modalVisible: null == modalVisible ? _self.modalVisible : modalVisible // ignore: cast_nullable_to_non_nullable
+as double,inlineHostVisible: null == inlineHostVisible ? _self.inlineHostVisible : inlineHostVisible // ignore: cast_nullable_to_non_nullable
 as bool,linkedId: freezed == linkedId ? _self.linkedId : linkedId // ignore: cast_nullable_to_non_nullable
-as String?,enableSpeechRecognition: freezed == enableSpeechRecognition ? _self.enableSpeechRecognition : enableSpeechRecognition // ignore: cast_nullable_to_non_nullable
+as String?,origin: freezed == origin ? _self.origin : origin // ignore: cast_nullable_to_non_nullable
+as RecordingOrigin?,enableSpeechRecognition: freezed == enableSpeechRecognition ? _self.enableSpeechRecognition : enableSpeechRecognition // ignore: cast_nullable_to_non_nullable
 as bool?,
   ));
 }
+/// Create a copy of AudioRecorderState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$RecordingOriginCopyWith<$Res>? get origin {
+    if (_self.origin == null) {
+    return null;
+  }
 
+  return $RecordingOriginCopyWith<$Res>(_self.origin!, (value) {
+    return _then(_self.copyWith(origin: value));
+  });
+}
 }
 
 
@@ -166,10 +178,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool inlineHostVisible,  String? linkedId,  RecordingOrigin? origin,  bool? enableSpeechRecognition)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AudioRecorderState() when $default != null:
-return $default(_that.status,_that.progress,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition);case _:
+return $default(_that.status,_that.progress,_that.dBFS,_that.inlineHostVisible,_that.linkedId,_that.origin,_that.enableSpeechRecognition);case _:
   return orElse();
 
 }
@@ -187,10 +199,10 @@ return $default(_that.status,_that.progress,_that.dBFS,_that.showIndicator,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool inlineHostVisible,  String? linkedId,  RecordingOrigin? origin,  bool? enableSpeechRecognition)  $default,) {final _that = this;
 switch (_that) {
 case _AudioRecorderState():
-return $default(_that.status,_that.progress,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition);case _:
+return $default(_that.status,_that.progress,_that.dBFS,_that.inlineHostVisible,_that.linkedId,_that.origin,_that.enableSpeechRecognition);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -207,10 +219,10 @@ return $default(_that.status,_that.progress,_that.dBFS,_that.showIndicator,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AudioRecorderStatus status,  Duration progress,  double dBFS,  bool inlineHostVisible,  String? linkedId,  RecordingOrigin? origin,  bool? enableSpeechRecognition)?  $default,) {final _that = this;
 switch (_that) {
 case _AudioRecorderState() when $default != null:
-return $default(_that.status,_that.progress,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition);case _:
+return $default(_that.status,_that.progress,_that.dBFS,_that.inlineHostVisible,_that.linkedId,_that.origin,_that.enableSpeechRecognition);case _:
   return null;
 
 }
@@ -222,7 +234,7 @@ return $default(_that.status,_that.progress,_that.dBFS,_that.showIndicator,_that
 
 
 class _AudioRecorderState implements AudioRecorderState {
-   _AudioRecorderState({required this.status, required this.progress, required this.dBFS, required this.showIndicator, required this.modalVisible, this.linkedId, this.enableSpeechRecognition});
+   _AudioRecorderState({required this.status, required this.progress, required this.dBFS, required this.inlineHostVisible, this.linkedId, this.origin, this.enableSpeechRecognition});
   
 
 /// Current status of the recorder.
@@ -231,14 +243,14 @@ class _AudioRecorderState implements AudioRecorderState {
 @override final  Duration progress;
 /// Current audio level in dBFS, as the level line draws it.
 @override final  double dBFS;
-/// Whether to show the floating recording indicator.
-/// Only relevant when recording and modal is not visible.
-@override final  bool showIndicator;
-/// Whether the recording modal is currently visible.
-/// Used to coordinate with indicator display.
-@override final  bool modalVisible;
+/// Whether a check-in screen is drawing this take in place. The
+/// recording strip stays hidden while it is: the take already has a
+/// recorder on screen.
+@override final  bool inlineHostVisible;
 /// Optional ID to link recording to existing journal entry.
 @override final  String? linkedId;
+/// Where the running take was started; null while nothing records.
+@override final  RecordingOrigin? origin;
 /// Whether to trigger speech recognition after recording.
 /// If null, uses category default settings.
 @override final  bool? enableSpeechRecognition;
@@ -253,16 +265,16 @@ _$AudioRecorderStateCopyWith<_AudioRecorderState> get copyWith => __$AudioRecord
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.showIndicator, showIndicator) || other.showIndicator == showIndicator)&&(identical(other.modalVisible, modalVisible) || other.modalVisible == modalVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.inlineHostVisible, inlineHostVisible) || other.inlineHostVisible == inlineHostVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,status,progress,dBFS,showIndicator,modalVisible,linkedId,enableSpeechRecognition);
+int get hashCode => Object.hash(runtimeType,status,progress,dBFS,inlineHostVisible,linkedId,origin,enableSpeechRecognition);
 
 @override
 String toString() {
-  return 'AudioRecorderState(status: $status, progress: $progress, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition)';
+  return 'AudioRecorderState(status: $status, progress: $progress, dBFS: $dBFS, inlineHostVisible: $inlineHostVisible, linkedId: $linkedId, origin: $origin, enableSpeechRecognition: $enableSpeechRecognition)';
 }
 
 
@@ -273,11 +285,11 @@ abstract mixin class _$AudioRecorderStateCopyWith<$Res> implements $AudioRecorde
   factory _$AudioRecorderStateCopyWith(_AudioRecorderState value, $Res Function(_AudioRecorderState) _then) = __$AudioRecorderStateCopyWithImpl;
 @override @useResult
 $Res call({
- AudioRecorderStatus status, Duration progress, double dBFS, bool showIndicator, bool modalVisible, String? linkedId, bool? enableSpeechRecognition
+ AudioRecorderStatus status, Duration progress, double dBFS, bool inlineHostVisible, String? linkedId, RecordingOrigin? origin, bool? enableSpeechRecognition
 });
 
 
-
+@override $RecordingOriginCopyWith<$Res>? get origin;
 
 }
 /// @nodoc
@@ -290,20 +302,32 @@ class __$AudioRecorderStateCopyWithImpl<$Res>
 
 /// Create a copy of AudioRecorderState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? progress = null,Object? dBFS = null,Object? showIndicator = null,Object? modalVisible = null,Object? linkedId = freezed,Object? enableSpeechRecognition = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? progress = null,Object? dBFS = null,Object? inlineHostVisible = null,Object? linkedId = freezed,Object? origin = freezed,Object? enableSpeechRecognition = freezed,}) {
   return _then(_AudioRecorderState(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as AudioRecorderStatus,progress: null == progress ? _self.progress : progress // ignore: cast_nullable_to_non_nullable
 as Duration,dBFS: null == dBFS ? _self.dBFS : dBFS // ignore: cast_nullable_to_non_nullable
-as double,showIndicator: null == showIndicator ? _self.showIndicator : showIndicator // ignore: cast_nullable_to_non_nullable
-as bool,modalVisible: null == modalVisible ? _self.modalVisible : modalVisible // ignore: cast_nullable_to_non_nullable
+as double,inlineHostVisible: null == inlineHostVisible ? _self.inlineHostVisible : inlineHostVisible // ignore: cast_nullable_to_non_nullable
 as bool,linkedId: freezed == linkedId ? _self.linkedId : linkedId // ignore: cast_nullable_to_non_nullable
-as String?,enableSpeechRecognition: freezed == enableSpeechRecognition ? _self.enableSpeechRecognition : enableSpeechRecognition // ignore: cast_nullable_to_non_nullable
+as String?,origin: freezed == origin ? _self.origin : origin // ignore: cast_nullable_to_non_nullable
+as RecordingOrigin?,enableSpeechRecognition: freezed == enableSpeechRecognition ? _self.enableSpeechRecognition : enableSpeechRecognition // ignore: cast_nullable_to_non_nullable
 as bool?,
   ));
 }
 
+/// Create a copy of AudioRecorderState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$RecordingOriginCopyWith<$Res>? get origin {
+    if (_self.origin == null) {
+    return null;
+  }
 
+  return $RecordingOriginCopyWith<$Res>(_self.origin!, (value) {
+    return _then(_self.copyWith(origin: value));
+  });
+}
 }
 
 // dart format on

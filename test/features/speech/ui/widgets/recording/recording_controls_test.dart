@@ -21,8 +21,7 @@ AudioRecorderState _state({
   status: status,
   progress: progress,
   dBFS: dbfs,
-  showIndicator: false,
-  modalVisible: true,
+  inlineHostVisible: true,
 );
 
 void main() {

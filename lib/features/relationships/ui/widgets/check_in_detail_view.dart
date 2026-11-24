@@ -182,7 +182,7 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
     // down mid-take — a route change, the desktop pane swapping people —
     // leaves the recording running, and the indicator is the only way left
     // to stop it; the composer's sheet restores it the same way.
-    if (_recording) _recorder?.setModalVisible(modalVisible: false);
+    if (_recording) _recorder?.setInlineHostVisible(visible: false);
     super.dispose();
   }
 

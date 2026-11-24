@@ -52,8 +52,7 @@ void main() {
       enableSpeechRecognition: enableSpeechRecognition,
       dBFS: -60,
       progress: Duration.zero,
-      showIndicator: false,
-      modalVisible: false,
+      inlineHostVisible: false,
     );
   }
 

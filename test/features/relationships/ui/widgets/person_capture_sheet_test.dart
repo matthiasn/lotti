@@ -356,7 +356,7 @@ void main() {
       CheckInInteractionType.call,
     );
     expect(find.text("Here's what I heard"), findsNothing);
-    expect(recorder.modalVisibleLog.last, isFalse);
+    expect(recorder.inlineHostVisibleLog.last, isFalse);
   });
 
   testWidgets('an item edited in review is filed as edited', (tester) async {

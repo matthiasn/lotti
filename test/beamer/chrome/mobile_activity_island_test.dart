@@ -163,14 +163,13 @@ void main() {
   AudioRecorderState recorder({
     AudioRecorderStatus status = AudioRecorderStatus.recording,
     Duration progress = const Duration(minutes: 3, seconds: 12),
-    bool modalVisible = false,
+    bool inlineHostVisible = false,
     String? linkedId,
   }) => AudioRecorderState(
     status: status,
     progress: progress,
     dBFS: -18,
-    showIndicator: status == AudioRecorderStatus.recording,
-    modalVisible: modalVisible,
+    inlineHostVisible: inlineHostVisible,
     linkedId: linkedId,
   );
 
@@ -250,7 +249,7 @@ void main() {
     test('a recording whose modal is open does not — the modal shows it', () {
       expect(
         MobileActivityIsland.showsRecording(
-          recorder(modalVisible: true),
+          recorder(inlineHostVisible: true),
           omitAudio: false,
         ),
         isFalse,
@@ -333,7 +332,7 @@ void main() {
     testWidgets('a recording with its modal open is not shown', (
       tester,
     ) async {
-      await pumpIsland(tester, state: recorder(modalVisible: true));
+      await pumpIsland(tester, state: recorder(inlineHostVisible: true));
 
       expect(island(), findsNothing);
     });
@@ -1209,7 +1208,7 @@ void main() {
       // The modal marks itself visible on the shared controller the moment
       // it opens — which is also what hides this half while it is up.
       expect(
-        container.read(audioRecorderControllerProvider).modalVisible,
+        container.read(audioRecorderControllerProvider).inlineHostVisible,
         isTrue,
       );
       final modal = tester.widget<AudioRecordingModalContent>(

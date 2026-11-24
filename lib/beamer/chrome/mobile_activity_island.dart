@@ -319,7 +319,7 @@ class MobileActivityIsland extends ConsumerWidget {
       !omitAudio &&
       (state.status == AudioRecorderStatus.recording ||
           state.status == AudioRecorderStatus.paused) &&
-      !state.modalVisible;
+      !state.inlineHostVisible;
 
   /// Air between a capsule's ends and its content.
   static double _outerInset(BuildContext context) =>

@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/app_settings_opener.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recording_start_guard.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_failure_callout.dart';
@@ -63,7 +64,7 @@ class AudioRecordingModal {
     // already claimed and does not open a second, and an uncategorized
     // subject never inherits an earlier category.
     final controller = container.read(audioRecorderControllerProvider.notifier)
-      ..setModalVisible(modalVisible: true)
+      ..setInlineHostVisible(visible: true)
       ..setCategoryId(categoryId);
 
     String? createdId;
@@ -94,7 +95,7 @@ class AudioRecordingModal {
     } finally {
       // The floating indicator is hidden while the sheet is up; a sheet
       // gone mid-take hands it back, for the take to be stopped there.
-      controller.setModalVisible(modalVisible: false);
+      controller.setInlineHostVisible(visible: false);
     }
 
     // Navigate only after Wolt has completed the modal route. Starting a page

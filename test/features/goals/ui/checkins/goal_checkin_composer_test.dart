@@ -733,7 +733,7 @@ void main() {
       // The sheet is titled with the goal, so the recorder is never
       // anonymous and no second line has to name it.
       expect(find.text('Fitness'), findsOneWidget);
-      expect(recorder.modalVisibleLog.last, isTrue);
+      expect(recorder.inlineHostVisibleLog.last, isTrue);
 
       Navigator.of(tester.element(find.byType(GoalCheckInComposer))).pop();
       await settle(tester);
@@ -741,7 +741,7 @@ void main() {
       expect(find.byType(GoalCheckInComposer), findsNothing);
       expect(recorder.stopCalls, 0);
       expect(recorder.cancelCalls, 0);
-      expect(recorder.modalVisibleLog.last, isFalse);
+      expect(recorder.inlineHostVisibleLog.last, isFalse);
     });
 
     testWidgets('a written check-in never stands the recorder up', (

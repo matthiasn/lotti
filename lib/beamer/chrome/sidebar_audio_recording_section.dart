@@ -30,7 +30,7 @@ bool sidebarAudioRecordingHasVisibleContent(WidgetRef ref) {
 bool _recordingIsVisible(AudioRecorderState state) {
   return (state.status == AudioRecorderStatus.recording ||
           state.status == AudioRecorderStatus.paused) &&
-      !state.modalVisible;
+      !state.inlineHostVisible;
 }
 
 /// Detailed audio recording panel rendered from the expanded desktop sidebar

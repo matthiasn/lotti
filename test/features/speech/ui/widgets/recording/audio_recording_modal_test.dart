@@ -42,6 +42,7 @@ void main() {
       (_) async => testTask,
     );
     when(() => navService.beamToNamed(any())).thenReturn(null);
+    when(() => navService.activeRoute).thenReturn('/tasks');
     await setUpTestGetIt(
       additionalSetup: () => getIt.registerSingleton<NavService>(navService),
     );
@@ -147,8 +148,8 @@ void main() {
     expect(find.byType(RecordingTransportControls), findsOneWidget);
     expect(key(recordKey), findsNothing);
     // The floating indicator is hidden while the sheet shows the take.
-    expect(recorder.modalVisibleLog, isNotEmpty);
-    expect(recorder.modalVisibleLog, everyElement(isTrue));
+    expect(recorder.inlineHostVisibleLog, isNotEmpty);
+    expect(recorder.inlineHostVisibleLog, everyElement(isTrue));
   });
 
   testWidgets('Stop saves the take, closes the sheet with its id, and hands '
@@ -161,7 +162,7 @@ void main() {
 
     expect(results, ['audio-42']);
     expect(find.byType(AudioRecordingModalContent), findsNothing);
-    expect(recorder.modalVisibleLog.last, isFalse);
+    expect(recorder.inlineHostVisibleLog.last, isFalse);
     // Linked to its subject: the user stays where they are.
     verifyNever(() => navService.beamToNamed(any()));
   });
@@ -288,7 +289,7 @@ void main() {
     expect(recorder.stopCalls, 0);
     expect(recorder.cancelCalls, 0);
     expect(recorder.state.status, AudioRecorderStatus.recording);
-    expect(recorder.modalVisibleLog.last, isFalse);
+    expect(recorder.inlineHostVisibleLog.last, isFalse);
   });
 
   testWidgets('reopened for the subject whose take is running — the '

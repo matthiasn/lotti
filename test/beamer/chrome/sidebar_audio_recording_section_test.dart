@@ -31,7 +31,7 @@ class _FakeAudioRecorderController extends AudioRecorderController {
   }
 
   @override
-  Future<String?> stop() async {
+  Future<String?> stop({bool deferAutomation = false}) async {
     stopCalls += 1;
     state = state.copyWith(status: AudioRecorderStatus.stopped);
     return 'audio-entry';
@@ -47,15 +47,14 @@ void main() {
     AudioRecorderStatus status = AudioRecorderStatus.recording,
     Duration progress = const Duration(minutes: 7, seconds: 40),
     double dBFS = -18,
-    bool modalVisible = false,
+    bool inlineHostVisible = false,
     String? linkedId,
   }) {
     return AudioRecorderState(
       status: status,
       progress: progress,
       dBFS: dBFS,
-      showIndicator: true,
-      modalVisible: modalVisible,
+      inlineHostVisible: inlineHostVisible,
       linkedId: linkedId,
     );
   }
@@ -215,7 +214,7 @@ void main() {
   ) async {
     await pumpSection(
       tester,
-      recorderState(status: AudioRecorderStatus.paused, modalVisible: true),
+      recorderState(status: AudioRecorderStatus.paused, inlineHostVisible: true),
     );
     await tester.pump(SidebarAudioRecordingSection.animationDuration);
 
@@ -320,7 +319,7 @@ void main() {
         await tester.pump();
         await tester.pump(SidebarAudioRecordingSection.animationDuration);
 
-        expect(controller.state.modalVisible, isFalse);
+        expect(controller.state.inlineHostVisible, isFalse);
 
         await tester.tap(
           find.byKey(const Key('sidebar_audio_recording_card')),
@@ -328,7 +327,7 @@ void main() {
         await tester.pump();
 
         // show() sets the modal visible and forwards the resolved categoryId.
-        expect(controller.state.modalVisible, isTrue);
+        expect(controller.state.inlineHostVisible, isTrue);
         expect(controller.setCategoryIdCalls, contains('cat-42'));
       },
     );

@@ -1444,7 +1444,7 @@ void main() {
       expect(find.text('Allow microphone access'), findsOneWidget);
       expect(saveReason(tester), 'Add a few words to save');
       expect(
-        recorder.modalVisibleLog,
+        recorder.inlineHostVisibleLog,
         [true, false],
         reason: 'the floating indicator is given back on a failed start',
       );
@@ -1496,7 +1496,7 @@ void main() {
 
       expect(inlineRecorder, findsOneWidget);
       expect(recorder.recordCalls, isEmpty);
-      expect(recorder.modalVisibleLog, [true]);
+      expect(recorder.inlineHostVisibleLog, [true]);
       await stopRecording(tester);
       expect(take('audio-1'), findsOneWidget);
       expect(find.text('Spoken.'), findsOneWidget);
@@ -1513,7 +1513,7 @@ void main() {
       expect(find.text('A recording is already running'), findsOneWidget);
       expect(recorder.recordCalls, isEmpty);
       expect(recorder.stopCalls, 0);
-      expect(recorder.modalVisibleLog, isEmpty);
+      expect(recorder.inlineHostVisibleLog, isEmpty);
     });
 
     // No profile, no model, or a run that never finished: the take says so
@@ -2131,7 +2131,7 @@ void main() {
         'gives the floating indicator back', (tester) async {
       await openSheet(tester);
       await startDictation(tester);
-      expect(recorder.modalVisibleLog, [true]);
+      expect(recorder.inlineHostVisibleLog, [true]);
 
       await tester.binding.handlePopRoute();
       await pumpRecording(tester);
@@ -2139,7 +2139,7 @@ void main() {
       await tester.tap(find.text('Discard').last);
       await tester.pumpAndSettle();
 
-      expect(recorder.modalVisibleLog, [true, false]);
+      expect(recorder.inlineHostVisibleLog, [true, false]);
       expect(recorder.stopCalls, 0);
       expect(recorder.cancelCalls, 1);
     });

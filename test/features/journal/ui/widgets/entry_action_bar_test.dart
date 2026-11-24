@@ -28,8 +28,7 @@ AudioRecorderState _recorderState({
   status: status,
   progress: Duration.zero,
   dBFS: -160,
-  showIndicator: false,
-  modalVisible: false,
+  inlineHostVisible: false,
   linkedId: linkedId,
 );
 

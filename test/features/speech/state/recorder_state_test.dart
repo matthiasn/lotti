@@ -8,8 +8,7 @@ AudioRecorderState _state({
   status: status,
   progress: Duration.zero,
   dBFS: -160,
-  showIndicator: false,
-  modalVisible: false,
+  inlineHostVisible: false,
   linkedId: linkedId,
 );
 
@@ -50,6 +49,28 @@ void main() {
     test("a recording linked to nothing is nobody's", () {
       final state = _state(status: AudioRecorderStatus.recording);
       expect(state.isActiveSessionFor('entry-1'), isFalse);
+    });
+  });
+
+  group('isTakeActive', () {
+    for (final (status, active) in [
+      (AudioRecorderStatus.recording, true),
+      (AudioRecorderStatus.paused, true),
+      (AudioRecorderStatus.stopped, false),
+    ]) {
+      test('${status.name} is ${active ? '' : 'not '}a take in flight', () {
+        expect(_state(status: status).isTakeActive, active);
+      });
+    }
+
+    test('does not care what the take is linked to', () {
+      expect(
+        _state(
+          status: AudioRecorderStatus.recording,
+          linkedId: 'entry-9',
+        ).isTakeActive,
+        isTrue,
+      );
     });
   });
 }

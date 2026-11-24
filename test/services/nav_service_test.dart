@@ -409,6 +409,66 @@ void main() {
       navService.tapIndex(0);
     });
 
+    group('the route on screen', () {
+      test('activeRoute is where the active tab stands, and each tab keeps '
+          'its own', () {
+        final navService = getIt<NavService>()..tapIndex(0);
+        expect(navService.activeRoute, '/tasks');
+
+        beamToNamed('/tasks/task-1');
+        expect(navService.activeRoute, '/tasks/task-1');
+
+        beamToNamed('/journal/entry-1');
+        expect(navService.activeRoute, '/journal/entry-1');
+
+        navService.tapIndex(0);
+        expect(navService.activeRoute, '/tasks/task-1');
+      });
+
+      test('activeRouteChanges notifies on a beam, and on a tab switch that '
+          'moves no delegate', () {
+        final navService = getIt<NavService>()..tapIndex(0);
+        var notified = 0;
+        void count() => notified++;
+        navService.activeRouteChanges.addListener(count);
+        addTearDown(() => navService.activeRouteChanges.removeListener(count));
+
+        beamToNamed('/tasks/task-1');
+        expect(notified, greaterThan(0));
+
+        notified = 0;
+        navService.setIndex(navService.settingsIndex);
+        expect(notified, greaterThan(0));
+        expect(navService.activeRoute, '/settings');
+        navService.tapIndex(0);
+      });
+
+      test('resetTabsToRoots puts the active route back on Tasks', () {
+        final navService = getIt<NavService>();
+        beamToNamed('/journal/entry-1');
+
+        navService.resetTabsToRoots();
+
+        expect(navService.index, 0);
+        expect(navService.activeRoute, '/tasks');
+      });
+
+      test('canBeamTo is true only where beamToNamed would land', () {
+        final navService = getIt<NavService>()..tapIndex(0);
+        addTearDown(() => navService.allowedTabDelegates = null);
+
+        expect(navService.canBeamTo('/journal/entry-1'), isTrue);
+        expect(navService.canBeamTo('/tasks'), isTrue);
+        // Goals are switched off in this world, and nothing owns /unknown.
+        expect(navService.canBeamTo('/goals/details/agent-1'), isFalse);
+        expect(navService.canBeamTo('/unknown/route'), isFalse);
+
+        navService.allowedTabDelegates = {navService.tasksDelegate};
+        expect(navService.canBeamTo('/journal/entry-1'), isFalse);
+        expect(navService.canBeamTo('/tasks/task-1'), isTrue);
+      });
+    });
+
     test('resetTabRootWithinTab returns a tab to its root without activating '
         'it', () async {
       final navService = getIt<NavService>()..tapIndex(0);

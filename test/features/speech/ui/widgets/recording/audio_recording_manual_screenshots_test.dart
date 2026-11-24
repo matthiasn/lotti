@@ -108,8 +108,7 @@ Future<void> _pumpActiveRecording(
     // The ticks below bring it to 0:00:42.
     progress: const Duration(milliseconds: 40400),
     dBFS: -12,
-    showIndicator: false,
-    modalVisible: true,
+    inlineHostVisible: true,
     linkedId: _linkedTaskId,
     enableSpeechRecognition: true,
   );

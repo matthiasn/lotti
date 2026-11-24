@@ -16,6 +16,7 @@ import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_duration.dart';
 import 'package:lotti/features/speech/state/app_settings_opener.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recording_start_guard.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_failure_callout.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -136,7 +137,7 @@ class GoalCheckInComposer extends ConsumerStatefulWidget {
       if (container.read(audioRecorderControllerProvider.exists)) {
         container
             .read(audioRecorderControllerProvider.notifier)
-            .setModalVisible(modalVisible: false);
+            .setInlineHostVisible(visible: false);
       }
     }
   }

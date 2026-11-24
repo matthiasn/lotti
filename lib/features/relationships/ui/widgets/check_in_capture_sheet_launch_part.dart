@@ -72,7 +72,7 @@ class CheckInFormHandle extends ChangeNotifier {
   /// Shows the floating indicator again for a recording the sheet left
   /// running; a no-op when nothing was recorded.
   void releaseRecorder() {
-    _recorder?.setModalVisible(modalVisible: false);
+    _recorder?.setInlineHostVisible(visible: false);
     _recorder = null;
   }
 

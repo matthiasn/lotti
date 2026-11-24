@@ -46,8 +46,7 @@ void main() {
       status: status,
       progress: progress,
       dBFS: -40,
-      showIndicator: status == AudioRecorderStatus.recording,
-      modalVisible: false,
+      inlineHostVisible: false,
     );
   }
 

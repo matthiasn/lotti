@@ -5,28 +5,13 @@ import 'package:lotti/features/design_system/components/badges/design_system_bad
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/state/recording_session.dart';
+import 'package:lotti/features/speech/state/recording_start_guard.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
-
-/// Why an [InlineRecorder] has no recording to hand back.
-enum InlineRecordingFailure {
-  /// The OS refused the microphone.
-  microphoneDenied,
-
-  /// The recorder could not start.
-  startFailed,
-
-  /// The app-wide recorder is running a take that is not this subject's —
-  /// started elsewhere, or for something else. It has to be stopped from the
-  /// recording indicator first.
-  recorderBusy,
-
-  /// The recorder ran but could not be stopped and saved. The take is lost.
-  notSaved,
-}
 
 /// A recording's length in words for a screen reader: "23 seconds", not
 /// "zero colon two three".
@@ -40,13 +25,13 @@ String spokenClockLabel(AppLocalizations messages, Duration length) {
   ].join(' ');
 }
 
-/// The recorder every sheet and page embeds — the recording sheet a task's
-/// or a project's microphone opens, a person's check-in, a goal's — wearing
-/// the app's one recorder anatomy (`recording_controls.dart`): the level
-/// line, and discard ✕ · the red Stop carrying the running clock · pause ⏸.
+/// The recorder a check-in draws in place — a person's check-in, a goal's —
+/// wearing the app's one recorder anatomy (`recording_controls.dart`): the
+/// level line, and discard ✕ · the red Stop carrying the running clock ·
+/// pause ⏸. Every other microphone starts its take on the recording strip.
 ///
 /// It starts recording the moment it is mounted — the user already pressed
-/// a microphone, *Speak* or *Dictate* — and reports one of three outcomes:
+/// *Speak* or *Dictate* — and reports one of three outcomes:
 ///
 /// - [onRecorded] with the audio entry the recording became and how long it
 ///   ran;
@@ -54,21 +39,22 @@ String spokenClockLabel(AppLocalizations messages, Duration length) {
 /// - [onFailed] with the reason, so the host can draw the right card rather
 ///   than a toast.
 ///
-/// **It never takes over another subject's take.** The app-wide recorder's
-/// `record()` is a toggle: called while a take is running it stops and saves
-/// that take — under whatever subject the caller just named. So before
-/// starting, the recorder looks: a take already running for [linkedId] is
-/// adopted (a sheet dismissed mid-take and reopened simply attaches to it),
-/// and a take running for anything else is left alone and reported as
+/// **It never takes over another subject's take.** Before starting it asks
+/// [decideRecordingStart], the rule the recording strip's session applies
+/// too: a take already running for [linkedId] is adopted (a screen closed
+/// mid-take and reopened simply attaches to it), and a take running for
+/// anything else is left alone and reported as
 /// [InlineRecordingFailure.recorderBusy]. The subject is compared on every
 /// start, whatever the host believed when it mounted this.
 ///
-/// It drives the app-wide [AudioRecorderController] the way the recording
-/// sheet does, and hides the floating recording indicator while it is on
-/// screen. Being unmounted does *not* stop the recording — the recording
-/// sheet's own rule — so each host decides what leaving means, and brings
-/// the indicator back if a take does escape, so the user can stop it from
-/// there; the audio then lands in the journal linked to the subject.
+/// It drives the app-wide [AudioRecorderController] and marks the take as
+/// drawn in place, which hides the recording strip while it is on screen.
+/// Being unmounted does *not* stop the recording, so each host decides what
+/// leaving means, and hands the take to the strip if one does escape
+/// (`setInlineHostVisible(visible: false)`), so the user can stop it from
+/// there; the audio then lands in the journal linked to the subject. The
+/// take's origin — the route on screen when it started — is captured here,
+/// so the strip knows its way back.
 class InlineRecorder extends ConsumerStatefulWidget {
   const InlineRecorder({
     required this.linkedId,
@@ -101,15 +87,14 @@ class InlineRecorder extends ConsumerStatefulWidget {
 
   /// True when the host transcribes the take itself; false leaves it to the
   /// recorder's own post-recording automation, which also covers a take
-  /// stopped from the floating indicator after the host is gone.
+  /// stopped from the recording strip after the host is gone.
   final bool transcriptionHandledByCaller;
 
   /// What the discard confirmation says is lost, where the host has words
   /// of its own for it; the recorder's otherwise.
   final String? discardMessage;
 
-  /// An option under the controls, such as the recording sheet's
-  /// *Transcribe*.
+  /// An option under the controls, such as *Transcribe*.
   final Widget? footer;
 
   @override
@@ -134,39 +119,34 @@ class _InlineRecorderState extends ConsumerState<InlineRecorder> {
   Future<void> _start() async {
     // A host dismissed while this is still starting is on its way out but
     // mounted until its exit animation ends. It must neither hide the
-    // floating indicator of a running take nor start a take behind a sheet
-    // that is already gone, with nothing left to stop it — the recording
-    // sheet's own rule.
+    // recording strip of a running take nor start a take behind a sheet
+    // that is already gone, with nothing left to stop it.
     final route = ModalRoute.of(context);
     bool leaving() => !mounted || (route != null && !route.isCurrent);
     if (leaving()) return;
-    final running = ref.read(audioRecorderControllerProvider);
-    final taking =
-        running.status == AudioRecorderStatus.recording ||
-        running.status == AudioRecorderStatus.paused;
-    if (taking && running.linkedId != widget.linkedId) {
+    final decision = decideRecordingStart(
+      ref.read(audioRecorderControllerProvider),
+      linkedId: widget.linkedId,
+    );
+    if (decision == RecordingStartDecision.busy) {
       // Someone else's take: calling `record()` would stop it and file it
       // under this subject.
       widget.onFailed(InlineRecordingFailure.recorderBusy);
       return;
     }
-    _controller.setModalVisible(modalVisible: true);
-    if (taking) return;
+    _controller.setInlineHostVisible(visible: true);
+    if (decision == RecordingStartDecision.attach) return;
     _controller.setCategoryId(widget.categoryId);
     final failure = await _controller.record(
       linkedId: widget.linkedId,
       transcriptionHandledByCaller: widget.transcriptionHandledByCaller,
       shouldCancel: leaving,
+      // Captured on start, so a take this screen hands over to the
+      // recording strip when it closes still knows its way back.
+      origin: captureRecordingOrigin(ref.read, subjectId: widget.linkedId),
     );
     if (!mounted || failure == null) return;
-    widget.onFailed(switch (failure) {
-      AudioRecordingFailure.permissionDenied =>
-        InlineRecordingFailure.microphoneDenied,
-      // `busy` here is a start or a stop still in flight — a start that did
-      // not happen, so it reads as a failed start.
-      AudioRecordingFailure.startFailed ||
-      AudioRecordingFailure.busy => InlineRecordingFailure.startFailed,
-    });
+    widget.onFailed(failureOfStart(failure));
   }
 
   Future<void> _stop() async {

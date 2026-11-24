@@ -85,8 +85,7 @@ AudioRecorderState _idleRecorderState() => AudioRecorderState(
   status: AudioRecorderStatus.stopped,
   progress: Duration.zero,
   dBFS: -160,
-  showIndicator: false,
-  modalVisible: false,
+  inlineHostVisible: false,
 );
 
 AudioRecorderState _recordingRecorderState({required String linkedId}) =>
@@ -94,8 +93,7 @@ AudioRecorderState _recordingRecorderState({required String linkedId}) =>
       status: AudioRecorderStatus.recording,
       progress: const Duration(seconds: 5),
       dBFS: -100,
-      showIndicator: true,
-      modalVisible: false,
+      inlineHostVisible: false,
       linkedId: linkedId,
     );
 

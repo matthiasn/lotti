@@ -179,8 +179,7 @@ void main() {
         status: AudioRecorderStatus.recording,
         progress: Duration.zero,
         dBFS: -160,
-        showIndicator: false,
-        modalVisible: false,
+        inlineHostVisible: false,
         linkedId: 'project-1',
       ),
     );

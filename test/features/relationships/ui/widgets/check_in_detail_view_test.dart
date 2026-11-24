@@ -861,11 +861,11 @@ void main() {
     testWidgets('a page torn down mid-take gives the floating indicator back, '
         'so the escaped recording can still be stopped', (tester) async {
       await startRecording(tester);
-      expect(recorder.modalVisibleLog, [true]);
+      expect(recorder.inlineHostVisibleLog, [true]);
 
       await tester.pumpWidget(const SizedBox.shrink());
 
-      expect(recorder.modalVisibleLog, [true, false]);
+      expect(recorder.inlineHostVisibleLog, [true, false]);
       expect(recorder.stopCalls, 0, reason: 'the take itself is left alone');
       expect(recorder.cancelCalls, 0);
     });
