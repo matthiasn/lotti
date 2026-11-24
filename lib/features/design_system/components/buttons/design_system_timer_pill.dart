@@ -13,7 +13,7 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// Idle ([running] false): [idleIcon] and [label], the whole pill one tap
 /// target ([onTap]). Running: the stop circle and [label] — the elapsed
-/// time. The body and the circle are separate tap zones; where both stop
+/// time — on the red, or on a neutral grey while the clock is [paused]. The body and the circle are separate tap zones; where both stop
 /// the clock, leave [stopSemanticLabel] null and the circle is part of the
 /// one button rather than a second one.
 class DesignSystemTimerPill extends StatelessWidget {
@@ -28,6 +28,7 @@ class DesignSystemTimerPill extends StatelessWidget {
     this.idleIcon = LottiIcons.timer,
     this.widthLabel,
     this.stopKey = defaultStopKey,
+    this.paused = false,
     super.key,
   });
 
@@ -70,6 +71,11 @@ class DesignSystemTimerPill extends StatelessWidget {
 
   final Key stopKey;
 
+  /// Whether a running clock is held still: the pill keeps its running
+  /// layout and its stop circle, on a neutral fill rather than the red, so
+  /// it no longer reads as live. Meaningless while idle.
+  final bool paused;
+
   /// The pill's width around [label] in its idle layout — the width it
   /// holds to — so a host can lay out beside it before it is built.
   static double heldWidth(BuildContext context, String label) {
@@ -95,7 +101,7 @@ class DesignSystemTimerPill extends StatelessWidget {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
     final fillColor = running
-        ? tokens.colors.alert.error.defaultColor
+        ? (paused ? _pausedFill : tokens.colors.alert.error.defaultColor)
         : tokens.colors.interactive.enabled;
     // The error palette has no on-colour token of its own; the light
     // theme's ink for alert fills (white) marks the running clock in both
@@ -189,6 +195,11 @@ class DesignSystemTimerPill extends StatelessWidget {
 
 /// The ink on the running pill's red, in either theme.
 final Color _onRunning = dsTokensLight.colors.text.onInteractiveAlert;
+
+/// A paused clock's fill, in either theme: the light theme's secondary ink,
+/// a grey the running pill's white ink still reads on — the dark theme's is
+/// too light for it.
+final Color _pausedFill = dsTokensLight.colors.text.mediumEmphasis;
 
 double _singleLineWidth(BuildContext context, String text, TextStyle style) {
   final painter = TextPainter(

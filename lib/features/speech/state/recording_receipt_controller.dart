@@ -20,6 +20,7 @@ class RecordingReceipt {
     this.subjectId,
     this.subjectTitle,
     this.origin,
+    this.transcribing = false,
   });
 
   /// The audio entry the take became.
@@ -42,6 +43,10 @@ class RecordingReceipt {
   /// Where the take started, for the receipt's *Open*.
   final RecordingOrigin? origin;
 
+  /// Whether a transcript is on its way once the take is committed, so the
+  /// receipt can say so — and say nothing where none will run.
+  final bool transcribing;
+
   @override
   bool operator ==(Object other) =>
       other is RecordingReceipt &&
@@ -50,7 +55,8 @@ class RecordingReceipt {
       other.deadline == deadline &&
       other.subjectId == subjectId &&
       other.subjectTitle == subjectTitle &&
-      other.origin == origin;
+      other.origin == origin &&
+      other.transcribing == transcribing;
 
   @override
   int get hashCode => Object.hash(
@@ -60,6 +66,7 @@ class RecordingReceipt {
     subjectId,
     subjectTitle,
     origin,
+    transcribing,
   );
 }
 
@@ -99,6 +106,7 @@ class RecordingReceiptController extends Notifier<RecordingReceipt?> {
     String? subjectId,
     String? subjectTitle,
     RecordingOrigin? origin,
+    bool transcribing = false,
     ValueChanged<String?>? onSettled,
   }) {
     commit();
@@ -110,6 +118,7 @@ class RecordingReceiptController extends Notifier<RecordingReceipt?> {
       subjectId: subjectId,
       subjectTitle: subjectTitle,
       origin: origin,
+      transcribing: transcribing,
     );
     _timer = Timer(recordingReceiptWindow, commit);
   }

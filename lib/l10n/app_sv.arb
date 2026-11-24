@@ -5965,6 +5965,19 @@
       }
     }
   },
+  "recordingReceiptOpen": "Öppna",
+  "recordingReceiptSaved": "Sparad i {subject}",
+  "recordingReceiptSavedVoiceNote": "Röstanteckning sparad",
+  "recordingReceiptTranscribing": "{time} · transkriberas",
+  "recordingReceiptUndo": "Ångra",
+  "recordingStripBackTo": "Tillbaka till {subject}",
+  "recordingStripFoldRecorder": "Fäll ihop inspelaren",
+  "recordingStripOpenRecorder": "Öppna inspelaren",
+  "recordingStripPausedFor": "Pausad · Spelar in för",
+  "recordingStripPausedHere": "Pausad här",
+  "recordingStripRecordingFor": "Spelar in för",
+  "recordingStripRecordingHere": "Spelar in här",
+  "recordingStripVoiceNote": "Röstanteckning",
   "referenceImageContinue": "Fortsätt",
   "referenceImageContinueWithCount": "Fortsätt ({count})",
   "@referenceImageContinueWithCount": {

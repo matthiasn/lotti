@@ -9043,6 +9043,73 @@
       }
     }
   },
+  "recordingReceiptOpen": "Open",
+  "@recordingReceiptOpen": {
+    "description": "Takes the user to what the recording was saved to."
+  },
+  "recordingReceiptSaved": "Saved to {subject}",
+  "@recordingReceiptSaved": {
+    "description": "The receipt shown for a few seconds after a recording is stopped and saved.",
+    "placeholders": {
+      "subject": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingReceiptSavedVoiceNote": "Voice note saved",
+  "@recordingReceiptSavedVoiceNote": {
+    "description": "The receipt for a recording linked to nothing."
+  },
+  "recordingReceiptTranscribing": "{time} · transcribing",
+  "@recordingReceiptTranscribing": {
+    "description": "The receipt's second line: the recording's length, and that it is being transcribed.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingReceiptUndo": "Undo",
+  "@recordingReceiptUndo": {
+    "description": "Deletes the recording just saved."
+  },
+  "recordingStripBackTo": "Back to {subject}",
+  "@recordingStripBackTo": {
+    "description": "Screen-reader label of the recording strip's way back to the page the take started on.",
+    "placeholders": {
+      "subject": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingStripFoldRecorder": "Fold recorder",
+  "@recordingStripFoldRecorder": {
+    "description": "Screen-reader label for folding the full recorder back into the recording strip."
+  },
+  "recordingStripOpenRecorder": "Open recorder",
+  "@recordingStripOpenRecorder": {
+    "description": "Screen-reader label for opening the full recorder above the recording strip."
+  },
+  "recordingStripPausedFor": "Paused · Recording for",
+  "@recordingStripPausedFor": {
+    "description": "The same caption while the take is paused."
+  },
+  "recordingStripPausedHere": "Paused here",
+  "@recordingStripPausedHere": {
+    "description": "The same label while the take is paused."
+  },
+  "recordingStripRecordingFor": "Recording for",
+  "@recordingStripRecordingFor": {
+    "description": "Caption above the subject's title on the recording strip, away from where the take started."
+  },
+  "recordingStripRecordingHere": "Recording here",
+  "@recordingStripRecordingHere": {
+    "description": "The recording strip's label on the page where the take started."
+  },
+  "recordingStripVoiceNote": "Voice note",
+  "@recordingStripVoiceNote": {
+    "description": "The recording strip's label for a take linked to nothing."
+  },
   "referenceImageContinue": "Continue",
   "referenceImageContinueWithCount": "Continue ({count})",
   "@referenceImageContinueWithCount": {

@@ -5965,6 +5965,19 @@
       }
     }
   },
+  "recordingReceiptOpen": "Åbn",
+  "recordingReceiptSaved": "Gemt i {subject}",
+  "recordingReceiptSavedVoiceNote": "Talenote gemt",
+  "recordingReceiptTranscribing": "{time} · transskriberes",
+  "recordingReceiptUndo": "Fortryd",
+  "recordingStripBackTo": "Tilbage til {subject}",
+  "recordingStripFoldRecorder": "Fold optageren sammen",
+  "recordingStripOpenRecorder": "Åbn optageren",
+  "recordingStripPausedFor": "På pause · Optager til",
+  "recordingStripPausedHere": "På pause her",
+  "recordingStripRecordingFor": "Optager til",
+  "recordingStripRecordingHere": "Optager her",
+  "recordingStripVoiceNote": "Talenote",
   "referenceImageContinue": "Fortsæt",
   "referenceImageContinueWithCount": "Fortsæt ({count})",
   "@referenceImageContinueWithCount": {

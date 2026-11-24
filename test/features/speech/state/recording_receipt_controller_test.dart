@@ -227,6 +227,20 @@ void main() {
       a,
       isNot(
         RecordingReceipt(
+          entryId: 'audio-1',
+          duration: const Duration(seconds: 3),
+          deadline: start,
+          subjectId: 'task-1',
+          subjectTitle: 'Fix the airlock',
+          origin: origin,
+          transcribing: true,
+        ),
+      ),
+    );
+    expect(
+      a,
+      isNot(
+        RecordingReceipt(
           entryId: 'audio-2',
           duration: const Duration(seconds: 3),
           deadline: start,

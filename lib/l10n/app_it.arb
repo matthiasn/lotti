@@ -5965,6 +5965,19 @@
       }
     }
   },
+  "recordingReceiptOpen": "Apri",
+  "recordingReceiptSaved": "Salvato in {subject}",
+  "recordingReceiptSavedVoiceNote": "Nota vocale salvata",
+  "recordingReceiptTranscribing": "{time} · trascrizione in corso",
+  "recordingReceiptUndo": "Annulla",
+  "recordingStripBackTo": "Torna a {subject}",
+  "recordingStripFoldRecorder": "Chiudi il registratore",
+  "recordingStripOpenRecorder": "Apri il registratore",
+  "recordingStripPausedFor": "In pausa · Registrazione per",
+  "recordingStripPausedHere": "In pausa qui",
+  "recordingStripRecordingFor": "Registrazione per",
+  "recordingStripRecordingHere": "Registrazione qui",
+  "recordingStripVoiceNote": "Nota vocale",
   "referenceImageContinue": "Continua",
   "referenceImageContinueWithCount": "Continua ({count})",
   "@referenceImageContinueWithCount": {

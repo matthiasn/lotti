@@ -5964,6 +5964,19 @@
       }
     }
   },
+  "recordingReceiptOpen": "Abrir",
+  "recordingReceiptSaved": "Guardado em {subject}",
+  "recordingReceiptSavedVoiceNote": "Nota de voz guardada",
+  "recordingReceiptTranscribing": "{time} · a transcrever",
+  "recordingReceiptUndo": "Desfazer",
+  "recordingStripBackTo": "Voltar a {subject}",
+  "recordingStripFoldRecorder": "Recolher o gravador",
+  "recordingStripOpenRecorder": "Abrir o gravador",
+  "recordingStripPausedFor": "Em pausa · A gravar para",
+  "recordingStripPausedHere": "Em pausa aqui",
+  "recordingStripRecordingFor": "A gravar para",
+  "recordingStripRecordingHere": "A gravar aqui",
+  "recordingStripVoiceNote": "Nota de voz",
   "referenceImageContinue": "Continuar",
   "referenceImageContinueWithCount": "Continuar ({count})",
   "@referenceImageContinueWithCount": {

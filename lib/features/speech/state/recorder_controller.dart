@@ -406,6 +406,13 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// undone.
   void dropAutomation(String entryId) => _deferredAutomation.remove(entryId);
 
+  /// The category the running take will be filed under, as last set.
+  String? get categoryId => _categoryId;
+
+  /// Whether the caller that started the running take transcribes it
+  /// itself, so the take offers no *Transcribe* of its own.
+  bool get transcriptionHandledByCaller => _transcriptionHandledByCaller;
+
   /// Sets the category ID for the recording.
   /// [categoryId] Optional category to assign to the audio entry.
   void setCategoryId(String? categoryId) {

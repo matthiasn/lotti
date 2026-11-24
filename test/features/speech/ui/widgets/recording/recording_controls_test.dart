@@ -84,6 +84,19 @@ void main() {
         pumpWith(tester, RecordingLevelLine(state: state));
     List<double> levels(WidgetTester tester) => waveform(tester).levels;
 
+    testWidgets('a host may draw it over a stretch of its own', (
+      tester,
+    ) async {
+      await pumpWith(
+        tester,
+        Center(child: RecordingLevelLine(state: _state(), width: 64)),
+      );
+      expect(
+        tester.getSize(find.byType(DesignSystemVoiceWaveform)).width,
+        64,
+      );
+    });
+
     testWidgets('keeps a bounded window of the live level, one per sample, '
         'and holds still while paused', (tester) async {
       await show(tester, sample(0, -60));
@@ -393,6 +406,22 @@ void main() {
       expect(tester.getSemantics(key('pause_resume_button')).label, 'Resume');
       expect(find.byIcon(LottiIconsFilled.play), findsOneWidget);
       semantics.dispose();
+    });
+
+    testWidgets('Stop is red while the take runs and grey while it is '
+        'paused, the time held on it', (tester) async {
+      DesignSystemTimerPill pill() => tester.widget(
+        find.descendant(
+          of: key('stop_recording'),
+          matching: find.byType(DesignSystemTimerPill),
+        ),
+      );
+      await pump(tester);
+      expect(pill().paused, isFalse);
+
+      await pump(tester, paused: true);
+      expect(pill().paused, isTrue);
+      expect(pill().label, '01:05');
     });
 
     testWidgets('on a 280px screen at 3x text the row wraps: nothing '

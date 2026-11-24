@@ -14186,6 +14186,51 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get recordingReceiptOpen => 'Otevřít';
+
+  @override
+  String recordingReceiptSaved(String subject) {
+    return 'Uloženo do $subject';
+  }
+
+  @override
+  String get recordingReceiptSavedVoiceNote => 'Hlasová poznámka uložena';
+
+  @override
+  String recordingReceiptTranscribing(String time) {
+    return '$time · přepisuje se';
+  }
+
+  @override
+  String get recordingReceiptUndo => 'Zpět';
+
+  @override
+  String recordingStripBackTo(String subject) {
+    return 'Zpět na $subject';
+  }
+
+  @override
+  String get recordingStripFoldRecorder => 'Sbalit záznamník';
+
+  @override
+  String get recordingStripOpenRecorder => 'Otevřít záznamník';
+
+  @override
+  String get recordingStripPausedFor => 'Pozastaveno · Nahrávání pro';
+
+  @override
+  String get recordingStripPausedHere => 'Pozastaveno zde';
+
+  @override
+  String get recordingStripRecordingFor => 'Nahrávání pro';
+
+  @override
+  String get recordingStripRecordingHere => 'Nahrávání zde';
+
+  @override
+  String get recordingStripVoiceNote => 'Hlasová poznámka';
+
+  @override
   String get referenceImageContinue => 'Pokračovat';
 
   @override

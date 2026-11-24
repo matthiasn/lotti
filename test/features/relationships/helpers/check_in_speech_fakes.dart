@@ -241,7 +241,10 @@ class FakeAudioRecorderController extends AudioRecorderController {
   }
 
   @override
-  void setCategoryId(String? categoryId) => categoryIds.add(categoryId);
+  void setCategoryId(String? categoryId) {
+    categoryIds.add(categoryId);
+    super.setCategoryId(categoryId);
+  }
 
   @override
   void commitAutomation(String entryId) => committedAutomation.add(entryId);

@@ -23329,6 +23329,84 @@ abstract class AppLocalizations {
   /// **'Retry failed: {reason}'**
   String queueSkippedRetryAllError(String reason);
 
+  /// Takes the user to what the recording was saved to.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get recordingReceiptOpen;
+
+  /// The receipt shown for a few seconds after a recording is stopped and saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {subject}'**
+  String recordingReceiptSaved(String subject);
+
+  /// The receipt for a recording linked to nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice note saved'**
+  String get recordingReceiptSavedVoiceNote;
+
+  /// The receipt's second line: the recording's length, and that it is being transcribed.
+  ///
+  /// In en, this message translates to:
+  /// **'{time} · transcribing'**
+  String recordingReceiptTranscribing(String time);
+
+  /// Deletes the recording just saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get recordingReceiptUndo;
+
+  /// Screen-reader label of the recording strip's way back to the page the take started on.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to {subject}'**
+  String recordingStripBackTo(String subject);
+
+  /// Screen-reader label for folding the full recorder back into the recording strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Fold recorder'**
+  String get recordingStripFoldRecorder;
+
+  /// Screen-reader label for opening the full recorder above the recording strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open recorder'**
+  String get recordingStripOpenRecorder;
+
+  /// The same caption while the take is paused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused · Recording for'**
+  String get recordingStripPausedFor;
+
+  /// The same label while the take is paused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused here'**
+  String get recordingStripPausedHere;
+
+  /// Caption above the subject's title on the recording strip, away from where the take started.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording for'**
+  String get recordingStripRecordingFor;
+
+  /// The recording strip's label on the page where the take started.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording here'**
+  String get recordingStripRecordingHere;
+
+  /// The recording strip's label for a take linked to nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice note'**
+  String get recordingStripVoiceNote;
+
   /// No description provided for @referenceImageContinue.
   ///
   /// In en, this message translates to:

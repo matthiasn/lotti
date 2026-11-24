@@ -67,6 +67,14 @@ class _Bench {
   }
 }
 
+/// A recorder whose take its caller transcribes itself.
+class _CallerTranscribes extends FakeAudioRecorderController {
+  _CallerTranscribes({super.runningFor});
+
+  @override
+  bool get transcriptionHandledByCaller => true;
+}
+
 void main() {
   late _Bench bench;
 
@@ -328,6 +336,102 @@ void main() {
     });
   });
 
+  group('the receipt says a transcript is coming', () {
+    Future<bool?> transcribingAfterStop() async {
+      await pumpEventQueue();
+      await bench.session.stop();
+      final transcribing = bench.receipt?.transcribing;
+      bench.receipts.commit();
+      return transcribing;
+    }
+
+    test('for a subject, with Transcribe left on', () async {
+      bench.startTaskTake().ignore();
+      expect(await transcribingAfterStop(), isTrue);
+    });
+
+    test('not with Transcribe switched off', () async {
+      bench.startTaskTake().ignore();
+      await pumpEventQueue();
+      bench.recorder.setEnableSpeechRecognition(enable: false);
+      expect(await transcribingAfterStop(), isFalse);
+    });
+
+    test('not for a take its caller transcribes', () async {
+      bench.container.dispose();
+      bench = _Bench(
+        recorder: _CallerTranscribes(runningFor: testTask.meta.id),
+      );
+      expect(await transcribingAfterStop(), isFalse);
+    });
+
+    test('not for a voice note', () async {
+      bench.session.start().ignore();
+      expect(await transcribingAfterStop(), isFalse);
+    });
+
+    test('not for a subject deleted mid-take', () async {
+      when(
+        () => bench.db.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => null);
+      bench.startTaskTake().ignore();
+      expect(await transcribingAfterStop(), isFalse);
+    });
+  });
+
+  group('openReceipt', () {
+    test('with no receipt on screen does nothing', () async {
+      await bench.session.openReceipt();
+      verifyNever(() => bench.nav.beamToNamed(any()));
+    });
+
+    test(
+      "commits a subject's take and goes back to where it started",
+      () async {
+        final done = bench.startTaskTake();
+        await pumpEventQueue();
+        await bench.session.stop();
+
+        await bench.session.openReceipt();
+
+        expect(await done, 'audio-1');
+        expect(bench.receipt, isNull);
+        verify(
+          () => bench.nav.beamToNamed('/tasks/${testTask.meta.id}'),
+        ).called(1);
+      },
+    );
+
+    test("opens a voice note's entry, even for a caller that keeps it "
+        'closed otherwise', () async {
+      bench.session.start(openCreatedEntry: false).ignore();
+      await pumpEventQueue();
+      await bench.session.stop();
+
+      await bench.session.openReceipt();
+
+      verify(() => bench.nav.beamToNamed('/journal/audio-1')).called(1);
+    });
+
+    test(
+      'a later voice note committed by its timer stays closed again',
+      () async {
+        bench.session.start(openCreatedEntry: false).ignore();
+        await pumpEventQueue();
+        await bench.session.stop();
+        await bench.session.openReceipt();
+        clearInteractions(bench.nav);
+
+        bench.session.start(openCreatedEntry: false).ignore();
+        await pumpEventQueue();
+        await bench.session.stop();
+        bench.receipts.commit();
+
+        verifyNever(() => bench.nav.beamToNamed(any()));
+      },
+    );
+  });
+
   group('discard', () {
     test('throws the take away, folds the tray and answers null', () async {
       final done = bench.startTaskTake();
@@ -364,7 +468,9 @@ void main() {
         'marks the arrival at the subject', () async {
       expect(await bench.session.returnToOrigin(origin), isTrue);
 
-      verify(() => bench.nav.beamToNamed('/tasks/${testTask.meta.id}')).called(1);
+      verify(
+        () => bench.nav.beamToNamed('/tasks/${testTask.meta.id}'),
+      ).called(1);
       expect(bench.scroll.takeRestore('/tasks/${testTask.meta.id}'), 320);
       expect(
         bench.container.read(recordingArrivalProvider)?.subjectId,
@@ -389,7 +495,9 @@ void main() {
         await bench.session.returnToOrigin(origin.copyWith(route: goneRoute)),
         isTrue,
       );
-      verify(() => bench.nav.beamToNamed('/tasks/${testTask.meta.id}')).called(1);
+      verify(
+        () => bench.nav.beamToNamed('/tasks/${testTask.meta.id}'),
+      ).called(1);
       expect(bench.scroll.takeRestore(goneRoute), isNull);
     });
 

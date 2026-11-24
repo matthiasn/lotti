@@ -14132,6 +14132,51 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get recordingReceiptOpen => 'Abrir';
+
+  @override
+  String recordingReceiptSaved(String subject) {
+    return 'Guardado em $subject';
+  }
+
+  @override
+  String get recordingReceiptSavedVoiceNote => 'Nota de voz guardada';
+
+  @override
+  String recordingReceiptTranscribing(String time) {
+    return '$time · a transcrever';
+  }
+
+  @override
+  String get recordingReceiptUndo => 'Desfazer';
+
+  @override
+  String recordingStripBackTo(String subject) {
+    return 'Voltar a $subject';
+  }
+
+  @override
+  String get recordingStripFoldRecorder => 'Recolher o gravador';
+
+  @override
+  String get recordingStripOpenRecorder => 'Abrir o gravador';
+
+  @override
+  String get recordingStripPausedFor => 'Em pausa · A gravar para';
+
+  @override
+  String get recordingStripPausedHere => 'Em pausa aqui';
+
+  @override
+  String get recordingStripRecordingFor => 'A gravar para';
+
+  @override
+  String get recordingStripRecordingHere => 'A gravar aqui';
+
+  @override
+  String get recordingStripVoiceNote => 'Nota de voz';
+
+  @override
   String get referenceImageContinue => 'Continuar';
 
   @override

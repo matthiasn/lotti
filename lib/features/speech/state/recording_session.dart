@@ -61,6 +61,10 @@ class RecordingSession {
   final Ref _ref;
   _Take? _take;
 
+  /// Set by [openReceipt] for the commit it causes: a voice note opened
+  /// from its receipt opens its entry whatever its caller asked for.
+  bool _openingReceipt = false;
+
   AudioRecorderController get _recorder =>
       _ref.read(audioRecorderControllerProvider.notifier);
   RecordingTrayController get _tray =>
@@ -130,6 +134,8 @@ class RecordingSession {
     final take = _take;
     _take = null;
     _tray.fold();
+    // Read before stopping: stop forgets it with the take.
+    final handledByCaller = _recorder.transcriptionHandledByCaller;
     final entryId = await _recorder.stop(deferAutomation: true);
     if (entryId == null) {
       if (take != null) _settle(take, null);
@@ -148,15 +154,40 @@ class RecordingSession {
           subjectId: subjectId,
           subjectTitle: recordingSubjectTitle(subject),
           origin: running.origin,
+          // The recorder's own automation transcribes only a take linked to
+          // a subject that is still there, with Transcribe left on; a
+          // caller that transcribes the take itself says so on its own.
+          transcribing:
+              subject != null &&
+              !handledByCaller &&
+              running.enableSpeechRecognition != false,
           onSettled: (committed) {
             if (take != null) _settle(take, committed);
             if (committed != null &&
                 subjectId == null &&
-                (take?.openCreatedEntry ?? false)) {
+                (_openingReceipt || (take?.openCreatedEntry ?? false))) {
               _ref.read(navServiceProvider).beamToNamed('/journal/$committed');
             }
           },
         );
+  }
+
+  /// The receipt's *Open*: commits the take on screen and goes to what it
+  /// was saved to — back to where a subject's take started, or into a voice
+  /// note's own entry.
+  Future<void> openReceipt() async {
+    final receipt = _ref.read(recordingReceiptControllerProvider);
+    if (receipt == null) return;
+    _openingReceipt = true;
+    try {
+      _ref.read(recordingReceiptControllerProvider.notifier).commit();
+    } finally {
+      _openingReceipt = false;
+    }
+    final origin = receipt.origin;
+    if (receipt.subjectId != null && origin != null) {
+      await returnToOrigin(origin);
+    }
   }
 
   /// Throws the running take away, after the tray's ✕ was confirmed.

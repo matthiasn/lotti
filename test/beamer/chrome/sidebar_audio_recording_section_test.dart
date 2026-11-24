@@ -214,7 +214,10 @@ void main() {
   ) async {
     await pumpSection(
       tester,
-      recorderState(status: AudioRecorderStatus.paused, inlineHostVisible: true),
+      recorderState(
+        status: AudioRecorderStatus.paused,
+        inlineHostVisible: true,
+      ),
     );
     await tester.pump(SidebarAudioRecordingSection.animationDuration);
 
