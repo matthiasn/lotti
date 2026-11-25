@@ -46,8 +46,7 @@ void main() {
       status: status,
       progress: progress,
       dBFS: -40,
-      showIndicator: status == AudioRecorderStatus.recording,
-      modalVisible: false,
+      inlineHostVisible: false,
     );
   }
 
@@ -66,7 +65,6 @@ void main() {
 
   Widget subject({
     required AudioRecorderState recorder,
-    bool showAudio = true,
     List<PendingWakeRecord> pending = const [],
     List<OngoingWakeRecord> ongoing = const [],
     Stream<DateTime>? wakeTicks,
@@ -76,9 +74,7 @@ void main() {
     return makeTestableWidgetWithScaffold(
       SizedBox(
         width: width,
-        child: SidebarActivitySummary(
-          showAudio: showAudio,
-        ),
+        child: const SidebarActivitySummary(),
       ),
       overrides: [
         audioRecorderControllerProvider.overrideWith(
@@ -138,7 +134,9 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('00:08'), findsOneWidget);
+    // The live recording is not one of the metrics: it has the recording
+    // strip, at the foot of the content column.
+    expect(find.text('00:08'), findsNothing);
     expect(find.text('00:13'), findsOneWidget);
     expect(
       find.descendant(
@@ -147,20 +145,9 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byIcon(LottiIcons.mic), findsOneWidget);
+    expect(find.byIcon(LottiIcons.mic), findsNothing);
     expect(find.byIcon(LottiIcons.timer), findsOneWidget);
     expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
-    expect(
-      tester
-          .widget<Tooltip>(
-            find.descendant(
-              of: find.byKey(SidebarActivitySummaryKeys.audio),
-              matching: find.byType(Tooltip),
-            ),
-          )
-          .message,
-      'Audio recording in progress',
-    );
     expect(
       tester
           .widget<Tooltip>(
@@ -175,7 +162,6 @@ void main() {
 
     final labelRect = tester.getRect(find.text('Activity'));
     for (final key in [
-      SidebarActivitySummaryKeys.audio,
       SidebarActivitySummaryKeys.timer,
       SidebarActivitySummaryKeys.agents,
     ]) {
@@ -192,19 +178,34 @@ void main() {
     expect(summaryHeight, greaterThanOrEqualTo(48));
   });
 
-  testWidgets('does not announce the recording duration on every tick', (
-    tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
-
-    await tester.pumpWidget(
-      subject(
-        recorder: recorderState(
-          status: AudioRecorderStatus.recording,
-          progress: const Duration(seconds: 8),
+  testWidgets('a live recording alone shows nothing: it has the recording '
+      'strip', (tester) async {
+    for (final status in [
+      AudioRecorderStatus.recording,
+      AudioRecorderStatus.paused,
+    ]) {
+      await tester.pumpWidget(
+        subject(
+          recorder: recorderState(
+            status: status,
+            progress: const Duration(seconds: 8),
+          ),
         ),
-      ),
-    );
+      );
+      await tester.pump();
+
+      expect(find.byKey(SidebarActivitySummaryKeys.root), findsNothing);
+      expect(find.byIcon(LottiIcons.mic), findsNothing);
+    }
+  });
+
+  testWidgets('does not announce the timer on every tick', (tester) async {
+    final semantics = tester.ensureSemantics();
+    when(
+      () => timeService.getCurrent(),
+    ).thenReturn(timerEntry(const Duration(seconds: 8)));
+
+    await tester.pumpWidget(subject(recorder: recorderState()));
     await tester.pump();
 
     expect(
@@ -217,7 +218,7 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('large text keeps three long-running metrics overflow-free', (
+  testWidgets('large text keeps long-running metrics overflow-free', (
     tester,
   ) async {
     when(
@@ -248,11 +249,10 @@ void main() {
 
     expect(tester.takeException(), isNull);
     final labelBottom = tester.getRect(find.text('Activity')).bottom;
-    expect(find.byKey(SidebarActivitySummaryKeys.audio), findsOneWidget);
     expect(find.byKey(SidebarActivitySummaryKeys.timer), findsOneWidget);
     expect(find.byKey(SidebarActivitySummaryKeys.agents), findsOneWidget);
     expect(
-      tester.getRect(find.byKey(SidebarActivitySummaryKeys.audio)).top,
+      tester.getRect(find.byKey(SidebarActivitySummaryKeys.timer)).top,
       greaterThan(labelBottom),
     );
   });
@@ -347,7 +347,7 @@ void main() {
     ).thenReturn(timerEntry(const Duration(minutes: 2, seconds: 5)));
 
     await tester.pumpWidget(
-      subject(recorder: recorderState(), showAudio: false),
+      subject(recorder: recorderState()),
     );
     await tester.pump();
 
@@ -397,14 +397,14 @@ void main() {
     await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
     await tester.pump(SidebarTimerSection.animationDuration);
 
-    // The detail cards carry the recording and timer readouts; the header's
-    // compact copies of the same values are gone, so each appears once.
-    expect(find.text('00:01:47'), findsOneWidget);
+    // The detail cards carry the timer readout; the header's compact copy
+    // of the same value is gone, so it appears once. The recording shows in
+    // neither: it has the recording strip.
     expect(find.text('00:14:40'), findsOneWidget);
-    expect(find.text('01:47'), findsNothing);
     expect(find.text('14:40'), findsNothing);
+    expect(find.text('00:01:47'), findsNothing);
+    expect(find.text('01:47'), findsNothing);
     for (final key in [
-      SidebarActivitySummaryKeys.audio,
       SidebarActivitySummaryKeys.timer,
       SidebarActivitySummaryKeys.agents,
     ]) {
@@ -420,7 +420,7 @@ void main() {
     ).thenReturn(timerEntry(const Duration(minutes: 2)));
 
     await tester.pumpWidget(
-      subject(recorder: recorderState(), showAudio: false),
+      subject(recorder: recorderState()),
     );
     await tester.pump();
 
@@ -465,7 +465,7 @@ void main() {
     ).thenReturn(timerEntry(const Duration(minutes: 2)));
 
     await tester.pumpWidget(
-      subject(recorder: recorderState(), showAudio: false),
+      subject(recorder: recorderState()),
     );
     await tester.pump();
 

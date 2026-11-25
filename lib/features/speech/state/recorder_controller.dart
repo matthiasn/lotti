@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/audio_note.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/classes/audio_player_state.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/state/recording_origin.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/providers/audio_player_controller.dart';
@@ -28,7 +30,7 @@ enum AudioRecordingFailure { permissionDenied, startFailed, busy }
 /// - Real-time audio level monitoring for the level line
 /// - Integration with audio player to pause playback during recording
 /// - Stopping the read-aloud voice, so the microphone never records it
-/// - UI state management (modal visibility, indicator visibility)
+/// - Whether a check-in screen is drawing the take in place
 ///
 /// The controller is kept alive to maintain recording state across navigation.
 final audioRecorderControllerProvider =
@@ -42,9 +44,9 @@ final audioRecorderControllerProvider =
 ///
 /// For a page that shows it — a goal's or a person's *Speak* pill turning to
 /// the recording red — without standing the recorder up just to ask: a
-/// recorder nobody has built is not recording. On a phone those pages slide
-/// the navigation bar and its recording indicator away, so the pill is the
-/// only sign on the screen that a take is still running.
+/// recorder nobody has built is not recording. The recording strip shows
+/// the take too, but the pill is the sign on the page itself, where the
+/// take belongs.
 final ProviderFamily<bool, String> subjectTakeLiveProvider = Provider
     .autoDispose
     .family<bool, String>(
@@ -68,6 +70,27 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   bool _transcriptionHandledByCaller = false;
   bool _terminalActionInProgress = false;
   bool _startInProgress = false;
+
+  /// The automatic prompts each stopped take is owed — by its entry id, the
+  /// subject it is linked to — held until the take is committed, so an
+  /// *Undo* inside the receipt's window never pays for inference on a
+  /// recording that is about to be deleted.
+  final Map<String, String> _deferredAutomation = {};
+  final StreamController<String?> _takeEnded =
+      StreamController<String?>.broadcast(sync: true);
+
+  /// Every take that ends, whoever ended it: the audio entry's id for one
+  /// saved, `null` for one discarded or that could not be saved. For a
+  /// surface that started a take and must hear how it ended even when
+  /// another host stopped it — the recording strip's session.
+  Stream<String?> get takeEnded => _takeEnded.stream;
+
+  /// Tells [takeEnded] a take ended as [entryId]. Called by [stop] and
+  /// [cancel]; a subclass that replaces them calls it the same way.
+  @protected
+  void reportTakeEnded(String? entryId) {
+    if (!_takeEnded.isClosed) _takeEnded.add(entryId);
+  }
 
   /// Whether a stop or cancel is in flight. Once either has claimed the
   /// take, the other returns at once without doing anything — so a host
@@ -111,19 +134,19 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
 
     ref.onDispose(() async {
       await _amplitudeSub?.cancel();
+      await _takeEnded.close();
     });
 
     // Deliberately no permission probe here. `hasPermission()` *requests* the
     // microphone permission on Android/iOS, and this controller is built by the
-    // app shell (the recording-indicator strip) on startup — probing here would
+    // app shell (the recording strip) on startup — probing here would
     // pop the OS mic dialog before the user has asked to record anything.
     // Permission is requested lazily, in `record()`.
     return AudioRecorderState(
       status: AudioRecorderStatus.stopped,
       dBFS: -160,
       progress: Duration.zero,
-      showIndicator: false,
-      modalVisible: false,
+      inlineHostVisible: false,
     );
   }
 
@@ -143,10 +166,13 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// [shouldCancel] lets a dismissed caller abort pending startup; any file
   /// returned by a late platform start is stopped and discarded.
   /// [linkedId] Optional ID to link this recording to an existing journal entry.
+  /// [origin] is where the take started, for the recording strip's way back;
+  /// it is held for as long as the take runs.
   Future<AudioRecordingFailure?> record({
     String? linkedId,
     bool transcriptionHandledByCaller = false,
     bool Function()? shouldCancel,
+    RecordingOrigin? origin,
   }) async {
     if (_startInProgress || _terminalActionInProgress) {
       return AudioRecordingFailure.busy;
@@ -181,6 +207,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
             state = state.copyWith(
               status: AudioRecorderStatus.recording,
               linkedId: linkedId,
+              origin: origin,
             );
           }
         }
@@ -212,10 +239,15 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// - Stops the audio recording
   /// - Updates the audio note with final duration
   /// - Creates a journal entry via SpeechRepository
-  /// - Resets the recording state
+  /// - Resets the recording state, origin included
+  ///
+  /// The take's automatic prompts run at once, unless [deferAutomation] is
+  /// true: then they wait for [commitAutomation] with the returned id, or are
+  /// forgotten by [dropAutomation] — the recording strip's receipt, whose
+  /// *Undo* deletes the entry before any inference has started.
   ///
   /// Returns the ID of the created journal entry, or null if no recording exists.
-  Future<String?> stop() async {
+  Future<String?> stop({bool deferAutomation = false}) async {
     if (_terminalActionInProgress) return null;
 
     _terminalActionInProgress = true;
@@ -231,17 +263,11 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     try {
       await _recorderRepository.stopRecording();
 
-      // Preserve the inference preferences before resetting state
-      final enableSpeechRecognition = state.enableSpeechRecognition;
-
       state = AudioRecorderState(
         status: AudioRecorderStatus.stopped,
         dBFS: -160,
         progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: false,
-        // Preserve the inference preferences
-        enableSpeechRecognition: enableSpeechRecognition,
+        inlineHostVisible: false,
       );
 
       if (note != null) {
@@ -258,15 +284,14 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         if (entryId != null &&
             linkedSubjectId != null &&
             !transcriptionHandledByCaller) {
-          // Don't await - let it run in the background so the modal can close immediately
-          unawaited(
-            _triggerAutomaticPrompts(
-              entryId,
-              linkedSubjectId: linkedSubjectId,
-            ),
-          );
+          if (deferAutomation) {
+            _deferredAutomation[entryId] = linkedSubjectId;
+          } else {
+            _startAutomaticPrompts(entryId, linkedSubjectId);
+          }
         }
 
+        reportTakeEnded(entryId);
         return entryId;
       }
     } catch (exception, stackTrace) {
@@ -285,6 +310,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     } finally {
       _terminalActionInProgress = false;
     }
+    if (note != null) reportTakeEnded(null);
     return null;
   }
 
@@ -296,8 +322,8 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// - Triggers **no** transcription, automatic prompts, or task-agent wake
   /// - Resets state to stopped (preserving inference preferences)
   ///
-  /// The recording is gone as if it never happened — used by the modal's
-  /// cancel (X) control so the user can back out of a recording without it
+  /// The recording is gone as if it never happened — used by the recorder's
+  /// discard (✕) control so the user can back out of a recording without it
   /// turning into a transcript and task summary.
   Future<void> cancel() async {
     if (_terminalActionInProgress) return;
@@ -310,21 +336,17 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
 
     _terminalActionInProgress = true;
     // Claim the recording and clear the UI synchronously, before any await, so
-    // concurrent calls can't re-run teardown and the recording indicator/modal
-    // clear immediately rather than lingering through the async file deletion.
+    // concurrent calls can't re-run teardown and the recording strip clears
+    // immediately rather than lingering through the async file deletion.
     _audioNote = null;
     _linkedId = null;
     _transcriptionHandledByCaller = false;
 
-    // Preserve the inference preferences before resetting state.
-    final enableSpeechRecognition = state.enableSpeechRecognition;
     state = AudioRecorderState(
       status: AudioRecorderStatus.stopped,
       dBFS: -160,
       progress: Duration.zero,
-      showIndicator: false,
-      modalVisible: false,
-      enableSpeechRecognition: enableSpeechRecognition,
+      inlineHostVisible: false,
     );
 
     try {
@@ -344,6 +366,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         subDomain: 'cancel',
       );
       _terminalActionInProgress = false;
+      reportTakeEnded(null);
     }
   }
 
@@ -369,12 +392,31 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     state = state.copyWith(status: AudioRecorderStatus.recording);
   }
 
-  /// Controls visibility of the recording modal.
-  /// Used to coordinate indicator display when modal is open/closed.
-  /// [modalVisible] Whether the recording modal is currently visible.
-  void setModalVisible({required bool modalVisible}) {
-    state = state.copyWith(modalVisible: modalVisible);
+  /// Marks whether a check-in screen is drawing the take in place
+  /// ([visible]); the recording strip hides while one is, and appears once
+  /// that screen closes mid-take.
+  void setInlineHostVisible({required bool visible}) {
+    state = state.copyWith(inlineHostVisible: visible);
   }
+
+  /// Starts the automatic prompts a take stopped with `deferAutomation` was
+  /// owed, in the background, now that it is committed. Nothing for an id
+  /// that owes none, or that was already committed or dropped.
+  void commitAutomation(String entryId) {
+    final subjectId = _deferredAutomation.remove(entryId);
+    if (subjectId != null) _startAutomaticPrompts(entryId, subjectId);
+  }
+
+  /// Forgets the automatic prompts a deferred take was owed — its entry was
+  /// undone.
+  void dropAutomation(String entryId) => _deferredAutomation.remove(entryId);
+
+  /// The category the running take will be filed under, as last set.
+  String? get categoryId => _categoryId;
+
+  /// Whether the caller that started the running take transcribes it
+  /// itself, so the take offers no *Transcribe* of its own.
+  bool get transcriptionHandledByCaller => _transcriptionHandledByCaller;
 
   /// Sets the category ID for the recording.
   /// [categoryId] Optional category to assign to the audio entry.
@@ -382,12 +424,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     if (categoryId != _categoryId) {
       _categoryId = categoryId;
     }
-  }
-
-  /// Sets whether to enable speech recognition for the recording.
-  /// If null, uses category default settings.
-  void setEnableSpeechRecognition({required bool? enable}) {
-    state = state.copyWith(enableSpeechRecognition: enable);
   }
 
   /// Pauses any currently playing audio before a recording starts.
@@ -415,16 +451,13 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     }
   }
 
-  /// Triggers automatic prompts based on category settings and user preferences
-  Future<void> _triggerAutomaticPrompts(
-    String entryId, {
-    String? linkedSubjectId,
-  }) async {
-    final trigger = ref.read(automaticPromptTriggerProvider);
-    await trigger.triggerAutomaticPrompts(
-      entryId,
-      state,
-      linkedSubjectId: linkedSubjectId,
-    );
-  }
+  /// Starts the automatic prompts a take linked to [subjectId] is owed —
+  /// the transcription its subject's profile automates — without waiting
+  /// for them, so the recorder moves on at once. The trigger catches and
+  /// logs its own failures, so nothing is lost by not awaiting it here.
+  void _startAutomaticPrompts(String entryId, String subjectId) => unawaited(
+    ref
+        .read(automaticPromptTriggerProvider)
+        .triggerAutomaticPrompts(entryId, linkedSubjectId: subjectId),
+  );
 }

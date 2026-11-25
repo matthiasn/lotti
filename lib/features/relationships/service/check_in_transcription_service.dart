@@ -70,9 +70,9 @@ class CheckInTranscriptWait {
 /// it: by sound and spelling, and — on a speech-to-text engine — by the
 /// post-processing that follows every such transcription, framed by the
 /// person and their briefing, which also summarizes the recording. The
-/// words are offered once that is done. The recording sheet disables its
-/// automatic trigger for
-/// this capture, so this explicit request owns the one transcription run.
+/// words are offered once that is done. The check-in's recorder disables
+/// its automatic trigger for this capture, so this explicit request owns the
+/// one transcription run.
 /// There is no model-discovery fallback: a person whose category and default
 /// profile cannot transcribe is offered typing instead.
 ///

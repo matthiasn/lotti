@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/fable-5.2, at: 2026-11-23T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-24T12:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: tla-lifecycle
@@ -374,8 +374,8 @@ width, and reads top to bottom:
   the bar's back both run `_confirmLeaveRecording` — the recorder's own
   Discard question, since only the audio is at stake — and Discard cancels
   the take before leaving. A page torn down another way (a route change,
-  the desktop pane swapping people) restores the floating recording
-  indicator in `dispose` — through the recorder held in `_recorder` since
+  the desktop pane swapping people) hands the take to the recording strip
+  in `dispose` (`setInlineHostVisible(visible: false)`) — through the recorder held in `_recorder` since
   Dictate was pressed, because `ref` may not be touched in `dispose` — so
   an escaped take can still be stopped; and the header's read-outs and its
   Edit are held while `_recording` — shown at the low ink, taking no tap —
@@ -2027,7 +2027,8 @@ The composer's parts, top to bottom:
   sheets — and its frame is the shared `designSystemFieldBorderColor`
   hairline, the accent (at 2 px) meaning keyboard focus and nothing else;
   while the recorder owns the box the frame and its inset step back
-  entirely, so the recorder sits on the sheet like the recording sheet's.
+  entirely, so the recorder sits on the sheet like the recording strip's
+  tray.
   The `TextField` inside silences every border the app's
   `InputDecorationTheme` would fill in (its 2.5 px focused outline used to
   ring the text inside the hairline): the red dot, the visualizer and the
@@ -2060,7 +2061,7 @@ The composer's parts, top to bottom:
   labelled field (`DesignSystemTextInput(label:, filled: false)`), one
   `step5` apart under a `sectionGap`.
 * **While a take runs the recorder is the sheet**: the lane and the
-  details wait under it until it stops, as the recording sheet shows
+  details wait under it until it stops, as the recording strip's tray shows
   nothing but its take, rather than standing greyed out beneath it.
 * [`CheckInStickyActions`](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart)
   in the modal's sticky bar: *Save check-in* visible whenever saving is the
@@ -2083,7 +2084,7 @@ The composer's parts, top to bottom:
   leads and Cancel sits centred beneath it, the design system's rule for
   every stacked bar; on the phone Cancel's label sits on the content column
   (`alignsLabelToLeadingEdge`), like the card's quiet actions. The
-  recorder's transport row is the recording sheet's own
+  recorder's transport row is the recording strip tray's own
   (`RecordingTransportControls`): a grey ✕ that discards, an accent-tinted
   pause, and the red Stop pill. The clock
   reads to assistive technology in words (`checkInSpokenClockLabel`: "23
@@ -2136,8 +2137,8 @@ The form has no actions of its own: after each frame it publishes the save
 and delete intents, the dismiss intent, the save block, the header status,
 the summary and the field's focus through a `CheckInFormHandle` (a
 `ChangeNotifier`), and the header and the bar render from it. The handle also carries the recorder a
-recording was started on, so the sheet can put the floating indicator back
-once it has closed — and only then, and only if a recording was ever
+recording was started on, so the sheet can hand a running take to the
+recording strip once it has closed — and only then, and only if a recording was ever
 started.
 
 ```mermaid
@@ -2376,26 +2377,26 @@ The recorder is [`CheckInInlineRecorder`](../../lib/features/relationships/ui/wi
 which a goal's check-in sheet uses too, with its failures mapped onto the
 composer's `CheckInSpeechFailureKind` —
 embedded in the field (and in the check-in page's action bar) rather than
-pushed as a sheet, and it wears the recording sheet's anatomy — the one a
-task's microphone opens — from
+pushed as a sheet, and it wears the anatomy of the recording strip's tray
+— the recorder a task's microphone opens — from
 [`recording_controls.dart`](../../lib/features/speech/ui/widgets/recording/recording_controls.dart):
 the level line, the transport row (`RecordingTransportControls`: discard ✕
 asking in this surface's words, pause ⏸ / resume ▶, and the red Stop pill
 carrying the running time, read to assistive technology in words) — and no
-footer, where the sheet keeps its one option. Every control is inert — no
+footer, where the tray keeps its one option. Every control is inert — no
 tap — before `record` has landed, after a refused start, and while a stop
 or a discard is in flight. A Capture-shaped recorder — the Daily OS orb
 doubling as Stop over Discard · Pause in words — read as a second app's
-recorder beside the sheet. The stage runs no ticker of its own — its level
+recorder beside the tray. The stage runs no ticker of its own — its level
 line repaints only when the recorder reports a sample — so a test with a
 mounted recorder settles. It drives the app-wide
-`AudioRecorderController` the way the recording sheet does — `record` on
+`AudioRecorderController` the way the recording strip does — `record` on
 mount with the person as `linkedId` and `transcriptionHandledByCaller`,
 `stop` handing back the entry id and the length the clock stood at — and
-hides the floating recording indicator while it is up. Being dismissed with
-the sheet does not stop the recording (the recording sheet's own rule): the
-composer's sheet brings the indicator back once it has closed, and the user
-can stop it from there, the audio landing in the journal linked to the
+hides the recording strip while it is up
+(`setInlineHostVisible(visible: true)`). Being dismissed with the sheet does
+not stop the recording: the composer's sheet hands the take to the strip
+once it has closed, and the user can stop it from there, the audio landing in the journal linked to the
 person without a transcript. Reopening the composer while that take is
 still running **adopts** it — the recorder attaches without calling
 `record()`, which on a running recorder toggles it *off* — and a take

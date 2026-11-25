@@ -5052,12 +5052,6 @@ abstract class AppLocalizations {
   /// **'Pause'**
   String get audioRecordingPause;
 
-  /// No description provided for @audioRecordingRecord.
-  ///
-  /// In en, this message translates to:
-  /// **'Record'**
-  String get audioRecordingRecord;
-
   /// No description provided for @audioRecordingResume.
   ///
   /// In en, this message translates to:
@@ -5075,12 +5069,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop'**
   String get audioRecordingStop;
-
-  /// Toggle under the recorder: transcribe this recording once it stops.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcribe'**
-  String get audioRecordingTranscribeOption;
 
   /// No description provided for @avatarCropHint.
   ///
@@ -23329,6 +23317,78 @@ abstract class AppLocalizations {
   /// **'Retry failed: {reason}'**
   String queueSkippedRetryAllError(String reason);
 
+  /// Takes the user to what the recording was saved to.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get recordingReceiptOpen;
+
+  /// The receipt's caption over what the recording was saved to: that it was saved, and its length.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved · {time}'**
+  String recordingReceiptSaved(String time);
+
+  /// The receipt's caption when a transcript is on its way: saved, its length, and that it is being transcribed.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved · {time} · transcribing'**
+  String recordingReceiptTranscribing(String time);
+
+  /// Deletes the recording just saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get recordingReceiptUndo;
+
+  /// Screen-reader label of the recording strip's way back to the page the take started on.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to {subject}'**
+  String recordingStripBackTo(String subject);
+
+  /// Screen-reader label for folding the full recorder back into the recording strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Fold recorder'**
+  String get recordingStripFoldRecorder;
+
+  /// Screen-reader label for opening the full recorder above the recording strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open recorder'**
+  String get recordingStripOpenRecorder;
+
+  /// The recording strip's caption over the subject's title while the take is paused, away from where it started.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get recordingStripPausedFor;
+
+  /// The same label while the take is paused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused here'**
+  String get recordingStripPausedHere;
+
+  /// Caption above the subject's title on the recording strip, away from where the take started.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording for'**
+  String get recordingStripRecordingFor;
+
+  /// The recording strip's label on the page where the take started.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording here'**
+  String get recordingStripRecordingHere;
+
+  /// The recording strip's label for a take linked to nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice note'**
+  String get recordingStripVoiceNote;
+
   /// No description provided for @referenceImageContinue.
   ///
   /// In en, this message translates to:
@@ -27640,12 +27700,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Expand activity'**
   String get sidebarActivityExpandTooltip;
-
-  /// No description provided for @sidebarAudioRecordingStatusLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Recording'**
-  String get sidebarAudioRecordingStatusLabel;
 
   /// No description provided for @sidebarRunningTimerLabel.
   ///

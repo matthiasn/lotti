@@ -5,7 +5,7 @@ description: Ten independent Beamer stacks behind one IndexedStack, how the acti
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-10-05T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-24T12:00:00Z }
 stale_after: 2027-04-03
 sources:
   - id: route-mirror
@@ -18,8 +18,12 @@ sources:
     last_modified: 2026-10-02
   - id: activity-island
     resource: ../../lib/beamer/chrome/mobile_activity_island.dart
-    title: The activity island in the mobile navigation row
-    last_modified: 2026-10-28
+    title: The running-timer island in the mobile navigation row
+    last_modified: 2026-11-24
+  - id: recording-strip-shell
+    resource: ../../lib/beamer/chrome/recording_strip_shell.dart
+    title: RecordingStripShell — the recording strip at the bottom edge, and the inset that lifts everything above it
+    last_modified: 2026-11-24
   - id: contact-support-row
     resource: ../../lib/widgets/misc/contact_support_row.dart
     title: ContactSupportRow — the Contact Us footer, wired to its destinations
@@ -55,7 +59,7 @@ sources:
   - id: nav-service
     resource: ../../lib/services/nav_service.dart
     title: NavService — tab index, delegate registry and persisted nav state
-    last_modified: 2026-09-16
+    last_modified: 2026-11-24
   - id: journal-root-page
     resource: ../../lib/features/journal/ui/pages/journal_root_page.dart
     title: JournalRootPage — the logbook split and its background auto-selection
@@ -229,6 +233,17 @@ exposes:
   on Tasks.
 - `setPath(path)`, which resolves a path to its owning delegate and switches the
   index to match.
+- `activeRoute` — the route on screen, read off the active tab's delegate
+  (`routeForTab`) rather than from `currentPath`, which navigation that
+  bypasses the service (a page's own `beamBack`) leaves behind — and
+  `activeRouteChanges`, a `Listenable` merging every tab delegate with the
+  active index, for a surface that must know whether it stands on a given
+  page. The recording strip captures a take's origin from the first and
+  follows the second to say *Recording here*.
+- `canBeamTo(path)` — whether `beamToNamed` would land on that path itself:
+  an enabled tab owns it and may become active. False behind a disabled flag
+  or outside lockdown; the strip's way back falls back to the subject's own
+  page then.
 
 Because the flag-gated destinations can appear and disappear,
 **indices are positional, not stable**. Nothing may hard-code "projects is tab
@@ -625,7 +640,7 @@ widget as on desktop, and the activity summary sits above it through the same
 | Collapse toggle | shown | `showToggle: false` — the panel is dismissed, never collapsed to icons |
 | Gap between destination rows | `spacing.step4` | `destinationGap: spacing.step1` — each row is a full touch target already, and Recents should show without a scroll on a phone with every section on |
 | Under-row subtrees | saved filters, month calendar, impact entry, for the active row | the Tasks row's saved filters only, as `SidebarSavedTaskFilters(onApplied: close)` passed through `toDesktopSidebarDestination(expandedChild:)`; the month calendar and the impact entry are desktop surfaces that do not size for touch |
-| `aboveSettings` | `SidebarActivitySummary` — recording, timer, agent wakes | the same |
+| `aboveSettings` | `SidebarActivitySummary` — running timer, agent wakes (a voice recording has the [recording strip](#the-recording-strip-shell) instead) | the same |
 | `belowDestinations` | empty | the app-wide [Recents](../features/recent_searches.md) list, scrolling with the destinations |
 | Scroll region | plain | its last `spacing.step7` fades out, and Settings stands a step clear — an open-ended section makes scrolling the normal case, so the region says where it ends instead of butting against the pinned row as if they were one list |
 
@@ -679,8 +694,8 @@ These contracts hold it together:
   `Scaffold` sits under the same `Transform.translate`, so tab state survives a
   visit to the drawer. Crossing the desktop breakpoint does change the tree
   above the content stack, and `_contentStackKey` re-parents the stack then.
-- **The whole mobile shell is pushed aside** — page, launcher and activity
-  island together — so nothing of it floats over the panel.
+- **The whole mobile shell is pushed aside** — page, launcher, timer island
+  and recording strip together — so nothing of it floats over the panel.
 - **The page leaves as a card.** Its leading corners round off (`radii.xl`) in
   step with the slide, over a backdrop in the panel's own `background.level02`,
   and the scrim is clipped with the page — so the rounded corner reveals more
@@ -713,21 +728,52 @@ tap-to-close lands — clamped to the sidebar's own `minSidebarWidth` /
 `maxSidebarWidth`. The scrim is the shared modal barrier colour, faded in step
 with the slide. With animations disabled the panel jumps instead of sliding.
 
+## The recording strip shell
+
+[`RecordingStripShell`](../../lib/beamer/chrome/recording_strip_shell.dart)
+puts the [recording strip](../features/speech/recording-ui.md#the-recording-strip)
+at the bottom edge of what it wraps: on a phone the whole shell — it wraps
+the `Scaffold`, inside `MobileNavigationDrawerHost` — and on a wide window
+the content column beside the rail, so the strip sits under the page being
+read rather than across the rail. It is the **one thing on the bottom edge**:
+the strip sits at `bottomOffset` (the bottom safe area, never less than
+`spacing.step3`) on every page, so Stop is always in the same place, and
+everything above it moves up instead.
+
+**The lift is an inset, not a per-page rule.** While the strip's place shows
+something, the shell grows `MediaQueryData.padding.bottom` and
+`viewPadding.bottom` for its child to `bottomOffset` plus
+`RecordingStripLayer.reservedHeight` (the strip's height and a
+`spacing.step3` gap). The launcher's `rowBottom`, a page's sticky action
+bar, a scroll view's last row and the timer island all read that inset, so
+they rise above the strip with no change of their own; a tray opens over
+the page without asking for more. The child stays under that `MediaQuery`
+whether the strip shows or not — a child moving in and out of it would be
+torn down and rebuilt, routes and scroll positions with it, at every take.
+
+- **The strip ignores the keyboard.** It wraps the `Scaffold` rather than
+  sitting in it, so an open keyboard covers it instead of lifting it; the
+  tray folds when a text field takes focus.
+- **It stays where the launcher slides away.** The strip is not part of the
+  slide-away subtree: on a goal, person, project or settings detail it is
+  still there, and the page's own bar rises above it.
+- **Not on Flatpak.** `omitAudio` (`_isRunningInFlatpak()`) leaves the strip
+  out and the insets untouched.
+- **A broken recorder shows nothing.** `recordingStripContentProvider`
+  treats a recorder that fails to build as nothing recording.
+
 ## The activity island
 
-While a time recording and/or an audio recording runs somewhere other than
-the page on screen, the mobile shell shows a glass capsule —
+While a time recording runs somewhere other than the page on screen, the
+mobile shell shows a glass capsule —
 [`MobileActivityIsland`](../../lib/beamer/chrome/mobile_activity_island.dart)
 — in the launcher's own row, centred between the leading chips (menu button,
-and the chat button when it docks) and the page action. A running timer is a
-red dot (`alert.error`) and its elapsed time; a live recording is the level
-orb and its elapsed time; both at once share the capsule with a hairline
-between them. Each half is its own button: the timer opens the running entry
-through `navigateToTimerTarget` (the same routing the desktop sidebar's timer
-card uses), the recording reopens its modal. The halves carry the capsule's
-insets and the air around the hairline themselves, so every point of the
-pill is one of the two targets. With nothing running the island renders
-nothing and reserves nothing.
+and the chat button when it docks) and the page action: a red dot
+(`alert.error`) and the elapsed time, one button that opens the running
+entry through `navigateToTimerTarget` (the same routing the desktop
+sidebar's timer card uses). **It is timer-only**: a voice recording has the
+[recording strip](#the-recording-strip-shell), so the island never shows
+one. With no timer running the island renders nothing and reserves nothing.
 
 The island belongs to the launcher row, so it shows **only while that row is
 docked** — where the menu button and, on list tabs, the page's add action are
@@ -747,69 +793,58 @@ subordinate rather than a third peer, growing with the system text scale the
 way the launcher's chips do (`capsuleHeight`: the scaled subtitle2 line inside
 `spacing.step2` of air, never below `step8`).
 
-### Where it goes: the layout ladder
+### Where it goes
 
-`MobileIslandLayout.resolve` picks the first rung that fits, measuring the
-island (`MobileActivityIsland.width`) against the launcher's `centerBand`
+`MobileIslandLayout.resolve` measures the capsule
+(`MobileActivityIsland.width`) against the launcher's `centerBand`
 (`MobileNavigationLauncher.centerFits`):
 
 ```mermaid
 flowchart TD
-  Shared{"Shared capsule fits the band?<br/>(worded action first, else its glyph)"}
-  Shared -->|yes| InRowShared["In the row, side by side"]
-  Shared -->|no| Two{"Two items running?"}
-  Two -->|no| Float
-  Two -->|yes| Stack{"Stack fits the band?"}
-  Stack -->|yes| InRowStack["In the row, timer stacked above recording,<br/>growing upward"]
-  Stack -->|no| Float["Floats floatGap above the bar,<br/>full width, launcher reserves nothing;<br/>stacked only if the window cannot hold the shared capsule"]
+  Timer{"A timer runs?"}
+  Timer -->|no| None["Nothing shown, launcher reserves nothing"]
+  Timer -->|yes| Fits{"Capsule fits the band?<br/>(worded action first, else its glyph)"}
+  Fits -->|yes| InRow["In the row, level with the chips"]
+  Fits -->|no| Float["Floats floatGap above the bar,<br/>launcher reserves nothing"]
 ```
 
-The ladder is always resolved for the docked row, even while the bar slides
+The layout is always resolved for the docked row, even while the bar slides
 away, so neither the launcher nor the island reflows mid-slide.
 
-The launcher budgets the reserved width in `labelsFit`, so on the shared rung
-a worded page action keeps its word when it can and drops to its glyph before
-the island stacks: prose degrades before layout does. Stacking happens only
-when the shared capsule cannot fit even beside the glyph — a narrow phone with
-the chat button docked, or large text. A stack is two capsules at one shared
-width, `stackGap` apart; the lowest keeps the row's centre line
-(`dockedBottom`: the launcher's `rowBottom` plus half the difference between
-chip and capsule height) and only a bottom offset is set, so the second rises
-out of the row rather than pushing it down.
+The launcher budgets the reserved width in `labelsFit`, so a worded page
+action keeps its word when it can and drops to its glyph before the island
+floats: prose degrades before layout does. In the row the capsule keeps the
+row's centre line (`dockedBottom`: the launcher's `rowBottom` plus half the
+difference between chip and capsule height).
 
 Digits are measured on a fixed `00:00:00` (tabular, so every reading below a
 hundred hours paints at that width and the layout does not jitter as the
-clock ticks). As a last resort a capsule scales its content down rather than
-clipping a digit.
+clock ticks). As a last resort the capsule scales its content down rather
+than clipping a digit.
 
 ### Contracts
 
-- **One watcher, one rule for what counts.** `MobileActivityIsland.showsRecording`
-  decides which recorder states show (a session in flight — recording or
-  paused, which the modal treats as active too — with its modal closed, and
-  not on a Flatpak build, which omits the recording half). The shell reads
-  that predicate and the `TimeService` stream once, through
-  `MobileActivityBuilder`, and resolves the ladder from the resulting
-  `MobileActivity`: the launcher (with its `reservedCenterWidth`), whether
-  the island sits in the row and whether it stacks, and the estate pages pad
-  by (`MobileActivityIsland.heightAboveBar` — nothing for a capsule in the
-  row, the overhang for a stack, the whole island plus `floatGap` when it
-  floats). The island renders from the same predicate and stream, so the
-  space reserved and the island it is reserved for can never disagree. Both
-  seed from `TimeService.getCurrent()`, so a timer already running shows, and
-  is reserved for, on the first frame. `MobileActivityBuilder` maps the
-  stream to whether a timer runs and drops repeats, so the ladder is resolved
-  when a timer starts or stops, not on each one-second tick; the island's own
+- **One watcher, one rule for what counts.** The shell reads the
+  `TimeService` stream once, through `MobileActivityBuilder`, which hands its
+  builder whether a timer runs (`timerRuns`), and resolves from it the
+  launcher (with its `reservedCenterWidth`), whether the island sits in the
+  row, and the estate pages pad by (`MobileActivityIsland.heightAboveBar` —
+  nothing for a capsule in the row, the capsule plus `floatGap` when it
+  floats). The island renders from the same stream, so the space reserved
+  and the island it is reserved for can never disagree. Both seed from
+  `TimeService.getCurrent()`, so a timer already running shows, and is
+  reserved for, on the first frame. `MobileActivityBuilder` maps the stream
+  to whether a timer runs and drops repeats, so the layout is resolved when
+  a timer starts or stops, not on each one-second tick; the island's own
   `StreamBuilder` ticks the digits.
 - **Outside the slide-away subtree, leaving with it.** The island is
-  positioned by the shell, not inside the launcher, since a stack rises above
-  the bar's own height. On routes that slide the launcher away it animates
-  down past the bottom edge (`-stackHeight`) in the bar's own duration and
-  curve, inert to pointers, screen readers and focus, and the shell publishes
-  no island estate there; it comes back with the bar. On task, entry and
-  event details the whole bottom stack, island included, is unmounted.
-- **A broken recorder never takes it down.** If the recorder controller fails
-  to build (MediaKit on some hosts), the island degrades to its timer half.
+  positioned by the shell, not inside the launcher, since floating it rises
+  above the bar's own height. On routes that slide the launcher away it
+  animates down past the bottom edge (`-capsuleHeight`) in the bar's own
+  duration and curve, inert to pointers, screen readers and focus, and the
+  shell publishes no island estate there; it comes back with the bar. On
+  task, entry and event details the whole bottom stack, island included, is
+  unmounted.
 
 ### The launcher's row, and the page action docked on it
 
@@ -1005,6 +1040,8 @@ Two rules hold it together:
 | The sidebar both form factors host | [`lib/features/design_system/components/navigation/desktop_navigation_sidebar.dart`](../../lib/features/design_system/components/navigation/desktop_navigation_sidebar.dart) |
 | Saved task filters under the Tasks row (desktop rail and drawer) | [`lib/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart`](../../lib/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart) |
 | Activity summary above Settings (desktop rail and drawer) | [`lib/beamer/chrome/sidebar_activity_summary.dart`](../../lib/beamer/chrome/sidebar_activity_summary.dart) |
+| Running-timer island in the mobile launcher row | [`lib/beamer/chrome/mobile_activity_island.dart`](../../lib/beamer/chrome/mobile_activity_island.dart) |
+| Recording strip at the bottom edge, and the inset that lifts the rest | [`lib/beamer/chrome/recording_strip_shell.dart`](../../lib/beamer/chrome/recording_strip_shell.dart) |
 | Recents list in the drawer | [`lib/features/recent_searches/`](../../lib/features/recent_searches) |
 | History of opened entities, and the recorder watching this service | [`lib/features/history/`](../../lib/features/history) |
 | Bottom clearance contract, activity island scope | [`lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart`](../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart) |

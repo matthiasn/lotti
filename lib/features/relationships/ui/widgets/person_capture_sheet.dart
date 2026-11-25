@@ -48,9 +48,9 @@ Future<void> showPersonCaptureSheet({
           PersonCaptureFlowView(person: person, sortAgain: sortAgain),
     );
   } finally {
-    // The recorder hides the floating indicator while it is up; a sheet
-    // gone mid-take must hand it back, for the take to be stopped there.
-    if (sortAgain == null) recorder.setModalVisible(modalVisible: false);
+    // The recorder hides the recording strip while it is up; a sheet gone
+    // mid-take hands the take to the strip, for it to be stopped there.
+    if (sortAgain == null) recorder.setInlineHostVisible(visible: false);
   }
 }
 

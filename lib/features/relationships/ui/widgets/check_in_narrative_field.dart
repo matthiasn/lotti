@@ -104,7 +104,7 @@ class CheckInNarrativeField extends StatelessWidget {
         // sheets — and the shared hairline, the accent meaning keyboard
         // focus alone. While the recorder owns the box the frame steps
         // back entirely, so the recorder sits on the sheet the way the
-        // app's recording sheet does rather than in a box inside it.
+        // recording strip's tray does rather than in a box inside it.
         final focused = focusNode.hasFocus;
         final border = phase is CheckInSpeechRecording
             ? Colors.transparent

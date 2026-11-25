@@ -1,7 +1,7 @@
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
+import 'package:lotti/features/speech/state/recording_start_guard.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -11,8 +11,9 @@ import 'package:material_ui/material_ui.dart';
 /// reason, and *Stop that recording* where another take holds the recorder.
 /// Trying again is the host's own record button beneath it.
 ///
-/// One card for every sheet that records — the recording sheet and a goal's
-/// check-in — so a refused microphone reads the same wherever it happens.
+/// One card for every surface that records — the recording strip's tray and
+/// a goal's check-in — so a refused microphone reads the same wherever it
+/// happens.
 class RecordingFailureCallout extends StatelessWidget {
   const RecordingFailureCallout({
     required this.failure,

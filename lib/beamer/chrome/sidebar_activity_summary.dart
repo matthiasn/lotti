@@ -1,13 +1,11 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/beamer/chrome/sidebar_audio_recording_section.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/wake_countdown_ticker.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
@@ -20,7 +18,6 @@ import 'package:material_ui/material_ui.dart';
 abstract final class SidebarActivitySummaryKeys {
   static const Key root = Key('sidebar-activity-summary');
   static const Key header = Key('sidebar-activity-header');
-  static const Key audio = Key('sidebar-activity-audio');
   static const Key timer = Key('sidebar-activity-timer');
   static const Key agents = Key('sidebar-activity-agents');
   static const Key details = Key('sidebar-activity-details');
@@ -30,14 +27,13 @@ abstract final class SidebarActivitySummaryKeys {
 ///
 /// The collapsed row preserves the low idle footprint: a heading over one
 /// compact metric per activity. Expanding it in place restores the full
-/// recording, timer, and agent context plus direct controls without moving the
-/// user into a modal surface. The summary paints no fill or frame of its own;
-/// expanded, its heading drops the compact metrics, because each detail card
-/// already shows its own elapsed time or count.
+/// timer and agent context plus direct controls without moving the user into
+/// a modal surface. A voice recording is not one of them: it has the
+/// recording strip, at the foot of the content column. The summary paints no
+/// fill or frame of its own; expanded, its heading drops the compact metrics,
+/// because each detail card already shows its own elapsed time or count.
 class SidebarActivitySummary extends ConsumerStatefulWidget {
-  const SidebarActivitySummary({required this.showAudio, super.key});
-
-  final bool showAudio;
+  const SidebarActivitySummary({super.key});
 
   @override
   ConsumerState<SidebarActivitySummary> createState() =>
@@ -50,9 +46,6 @@ class _SidebarActivitySummaryState
 
   @override
   Widget build(BuildContext context) {
-    final recorder = ref.watch(audioRecorderControllerProvider);
-    final audioVisible =
-        widget.showAudio && sidebarAudioRecordingHasVisibleContent(ref);
     final agentCounts = _agentCounts();
     final timeService = ref.read(timeServiceProvider);
 
@@ -62,19 +55,11 @@ class _SidebarActivitySummaryState
       builder: (context, snapshot) {
         final timer = snapshot.data;
         final agentsVisible = agentCounts.total > 0;
-        if (!audioVisible && timer == null && !agentsVisible) {
+        if (timer == null && !agentsVisible) {
           return const SizedBox.shrink();
         }
 
         final metrics = <_ActivityMetric>[
-          if (audioVisible)
-            _ActivityMetric(
-              key: SidebarActivitySummaryKeys.audio,
-              icon: LottiIcons.mic,
-              value: compactSidebarActivityDuration(recorder.progress),
-              tooltip: context.messages.taskActionBarAudioRecordingActive,
-              color: context.designTokens.colors.alert.error.defaultColor,
-            ),
           if (timer != null)
             _ActivityMetric(
               key: SidebarActivitySummaryKeys.timer,
@@ -101,14 +86,12 @@ class _SidebarActivitySummaryState
               ? context.messages.sidebarActiveSectionTitle
               : _semanticsLabel(
                   context,
-                  audioDuration: audioVisible ? recorder.progress : null,
                   timerDuration: timer == null ? null : entryDuration(timer),
                   agentCounts: agentsVisible ? agentCounts : null,
                 ),
           expanded: _expanded,
           onTap: () => setState(() => _expanded = !_expanded),
           details: _ActivityDetails(
-            showAudio: audioVisible,
             showTimer: timer != null,
             showWakeQueue: agentsVisible,
           ),
@@ -136,15 +119,12 @@ class _SidebarActivitySummaryState
 
   String _semanticsLabel(
     BuildContext context, {
-    required Duration? audioDuration,
     required Duration? timerDuration,
     required _AgentCounts? agentCounts,
   }) {
     final messages = context.messages;
     return [
       messages.sidebarActiveSectionTitle,
-      if (audioDuration != null)
-        '${messages.taskActionBarAudioRecordingActive} ${formatDuration(audioDuration)}',
       if (timerDuration != null)
         '${messages.sidebarRunningTimerLabel} ${formatDuration(timerDuration)}',
       if (agentCounts != null && agentCounts.active > 0)
@@ -296,12 +276,10 @@ class _ActivitySurface extends StatelessWidget {
 
 class _ActivityDetails extends StatelessWidget {
   const _ActivityDetails({
-    required this.showAudio,
     required this.showTimer,
     required this.showWakeQueue,
   });
 
-  final bool showAudio;
   final bool showTimer;
   final bool showWakeQueue;
 
@@ -309,7 +287,6 @@ class _ActivityDetails extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final sections = <Widget>[
-      if (showAudio) const SidebarAudioRecordingSection(),
       if (showTimer) const SidebarTimerSection(),
       if (showWakeQueue) const SidebarWakeQueue(),
     ];

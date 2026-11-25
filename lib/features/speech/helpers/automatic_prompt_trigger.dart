@@ -8,7 +8,6 @@ import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
-import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/providers/service_providers.dart'
     show domainLoggerProvider, journalDbProvider;
@@ -42,8 +41,7 @@ class AutomaticPromptTrigger {
   /// transcription skill assigned. If no profile handles it, logs and returns
   /// silently.
   Future<void> triggerAutomaticPrompts(
-    String entryId,
-    AudioRecorderState state, {
+    String entryId, {
     String? linkedSubjectId,
   }) async {
     try {
@@ -60,7 +58,6 @@ class AutomaticPromptTrigger {
       final automationService = ref.read(profileAutomationServiceProvider);
       final result = await automationService.tryTranscribe(
         subjectId: linkedSubjectId,
-        enableSpeechRecognition: state.enableSpeechRecognition,
       );
 
       if (!result.handled) {
@@ -127,10 +124,10 @@ class AutomaticPromptTrigger {
   ///
   /// This runs here, on the controller's stop path, rather than in the goal
   /// composer that opened the recorder, because the composer only learns of a
-  /// recording it awaited. A recording stopped from the sidebar's Stop button
-  /// or the floating indicator after the sheet was dismissed reaches
-  /// `AudioRecorderController.stop` — and therefore this method — without the
-  /// composer ever hearing back. Handling it once, here, covers every way a
+  /// recording it awaited. A recording stopped from the recording strip after
+  /// the sheet was dismissed reaches `AudioRecorderController.stop` — and,
+  /// once its receipt commits it, this method — without the composer ever
+  /// hearing back. Handling it once, here, covers every way a
   /// recording ends.
   ///
   /// The consent signal is the goal agent's own automatic-updates switch, the

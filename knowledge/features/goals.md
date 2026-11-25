@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/fable-5.2, at: 2026-11-23T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-24T12:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -2138,7 +2138,7 @@ Invariants worth not breaking:
   text the compactor distils arrives corrected and written once. The fallback lives on the stop path because that is the only
   place every recording passes: the goal composer once asked for the
   transcript itself after awaiting the recorder, and missed every recording
-  stopped from the sidebar's Stop button or the floating indicator after the
+  stopped from the recording strip after the
   sheet was dismissed — those reach `AudioRecorderController.stop` without the
   composer ever hearing back.
 - **A check-in transcribes through a profile the user chose.** The recording
@@ -2206,8 +2206,8 @@ rail; the list reads the bar's reserved height back as its bottom inset
 the glass. A dormant goal takes nothing new and has no bar. While a take
 linked to the goal row is recording or paused the *Speak* pill reads
 *Recording* in the recorder's red (`subjectTakeLiveProvider`): a sheet
-dismissed mid-take leaves the take running, a phone's goal page has no
-recording indicator, and the same tap goes back to that take. There is no mic
+dismissed mid-take leaves the take running on the recording strip below,
+and the same tap goes back to that take. There is no mic
 in the app bar, no plus in the check-ins heading and no button in the empty
 rail: three doors to one sheet were one too many twice over. The timeline
 route (`GoalTimelinePage`) keeps a single app-bar mic, which is the same
@@ -2235,8 +2235,9 @@ both before it starts, and never records with no row to link to. The take is
 handed to the recorder's own automation (`transcriptionHandledByCaller:
 false`), so it is transcribed under the goal's automatic-updates switch
 whether it is stopped in the sheet or, after the sheet was dismissed
-mid-take, from the floating indicator — `show` hands the indicator back
-(`setModalVisible(false)`) when the sheet goes.
+mid-take, from the [recording strip](speech/recording-ui.md#the-recording-strip)
+— `show` hands the take to the strip
+(`setInlineHostVisible(visible: false)`) when the sheet goes.
 
 ```mermaid
 stateDiagram-v2
@@ -2257,15 +2258,14 @@ stateDiagram-v2
 **A recorder that cannot record says why.** `InlineRecorder` reports one of
 four `InlineRecordingFailure`s and the sheet returns to rest under a
 [`RecordingFailureCallout`](../../lib/features/speech/ui/widgets/recording/recording_failure_callout.dart)
-(the recording sheet's card, with this sheet's own words and *Write
-instead*): a refused microphone offers *Open settings*
+(the card the recording strip's tray opens on, with this sheet's own words
+and *Write instead*): a refused microphone offers *Open settings*
 (`appSettingsOpenerProvider`); a take that did not start or was not saved
 names itself; and a recording already running elsewhere offers *Stop that
 recording*, which calls the recorder's `stop` — saving that take under the
 subject it was started for — after which *Speak* records. The sheet has to
-offer it: on a phone a goal's page slides the navigation bar away and the
-app's recording indicator leaves with it, so there is nowhere else on that
-screen to stop a take from. *Write instead* is in every callout, and the
+offer it: while the sheet is up its recorder hides the recording strip, so
+there is nowhere else on that screen to stop a take from. *Write instead* is in every callout, and the
 sheet's own *Speak* is the retry. A goal row that could not be read
 (`goalCaptureTargetProvider` in error) rests the sheet under *This goal's
 page didn't load.* with *Try again*, never an endless spinner, and a retry
@@ -2528,7 +2528,7 @@ flowchart LR
     G -- "BasicLink\n(goal → entry)" --> K
   end
   SHEET["About this goal sheet\ntext or dictation"] --> C
-  REC["recording sheet, no parent\nthen attachCharterRecording\nthen transcription"] --> C
+  REC["recording strip, no parent\ncommitted after its receipt\nthen attachCharterRecording\nthen transcription"] --> C
   G -. "outgoing links only" .-> READERS["check-in readers:\ntimeline, checkInSources,\ncheck-in minutes"]
   C --> CL["JournalDb.charterLinksToGoal\n(to_id, type)"]
   CL --> SEL["goalCharterSelection\nwritten order, 1,200 tokens"]
@@ -2555,9 +2555,11 @@ flowchart LR
 - **Dictation, or a recording kept.** The sheet drives the shared
   `ChatRecorderController` and adds the transcript to the field, answering
   only to a take it started — the goal chat shares that recorder. A
-  recording made from the card (`recordGoalCharterEntry`) is saved by the
-  shared recording sheet with **no parent** and `openCreatedEntry: false`,
-  linked by `GoalRepository.attachCharterRecording`, then transcribed by
+  recording made from the card (`recordGoalCharterEntry`) is a take on the
+  recording strip (`RecordingSession.start`) with **no parent**, and the
+  user stays on the goal; its id arrives only once the take is committed
+  — its receipt gone without an Undo, so an undone take is never linked —
+  then it is linked by `GoalRepository.attachCharterRecording` and transcribed by
   the caller, since the recorder's own automation keys on a parent. A
   recording whose link is refused or throws **stays in the journal**,
   unlinked, and the toast says so: a written note that fails to link is

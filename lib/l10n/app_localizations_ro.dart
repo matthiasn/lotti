@@ -3030,9 +3030,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordingPause => 'Pauză';
 
   @override
-  String get audioRecordingRecord => 'Înregistrați';
-
-  @override
   String get audioRecordingResume => 'Reluare';
 
   @override
@@ -3040,9 +3037,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get audioRecordingStop => 'Opriți';
-
-  @override
-  String get audioRecordingTranscribeOption => 'Transcriere';
 
   @override
   String get avatarCropHint =>
@@ -14256,6 +14250,48 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get recordingReceiptOpen => 'Deschideți';
+
+  @override
+  String recordingReceiptSaved(String time) {
+    return 'Salvat · $time';
+  }
+
+  @override
+  String recordingReceiptTranscribing(String time) {
+    return 'Salvat · $time · se transcrie';
+  }
+
+  @override
+  String get recordingReceiptUndo => 'Anulați';
+
+  @override
+  String recordingStripBackTo(String subject) {
+    return 'Înapoi la $subject';
+  }
+
+  @override
+  String get recordingStripFoldRecorder => 'Restrângeți reportofonul';
+
+  @override
+  String get recordingStripOpenRecorder => 'Deschideți reportofonul';
+
+  @override
+  String get recordingStripPausedFor => 'În pauză';
+
+  @override
+  String get recordingStripPausedHere => 'În pauză aici';
+
+  @override
+  String get recordingStripRecordingFor => 'Înregistrare pentru';
+
+  @override
+  String get recordingStripRecordingHere => 'Înregistrare aici';
+
+  @override
+  String get recordingStripVoiceNote => 'Notă vocală';
+
+  @override
   String get referenceImageContinue => 'Continuați';
 
   @override
@@ -16959,9 +16995,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get sidebarActivityExpandTooltip => 'Extindeți activitatea';
-
-  @override
-  String get sidebarAudioRecordingStatusLabel => 'Înregistrare';
 
   @override
   String get sidebarRunningTimerLabel => 'Cronometru în execuție';

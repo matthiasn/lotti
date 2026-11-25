@@ -619,7 +619,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
 
   /// Maps the raw dBFS [ChatRecorderState.amplitudeHistory] to the `0..1`
   /// levels the waveform draws — the recorder's own scale ([normaliseDbfs]),
-  /// so a voice is as tall in a chat field as on the recording sheet.
+  /// so a voice is as tall in a chat field as on the recording strip.
   List<double> getNormalizedAmplitudeHistory() =>
       state.amplitudeHistory.map(normaliseDbfs).toList();
 

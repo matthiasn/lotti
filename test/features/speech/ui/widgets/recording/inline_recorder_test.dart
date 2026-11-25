@@ -1,18 +1,25 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/state/recording_origin.dart';
+import 'package:lotti/features/speech/state/recording_return.dart';
+import 'package:lotti/features/speech/state/recording_start_guard.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/recording_levels.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 import '../../../../relationships/helpers/check_in_speech_fakes.dart';
 
@@ -30,6 +37,7 @@ void main() {
 
   Future<void> pump(
     WidgetTester tester, {
+    List<Override> extraOverrides = const [],
     AudioRecordingFailure? recordFailure,
     String? stopResult = 'audio-1',
     bool stopThrows = false,
@@ -59,6 +67,7 @@ void main() {
         ),
         overrides: [
           audioRecorderControllerProvider.overrideWith(() => recorder),
+          ...extraOverrides,
         ],
       ),
     );
@@ -90,7 +99,7 @@ void main() {
       .toBoolOrNull()!;
 
   testWidgets('starts recording on mount, linked to the person, with '
-      'transcription left to the caller, and hides the floating indicator', (
+      'transcription left to the caller, and hides the recording strip', (
     tester,
   ) async {
     await pump(tester);
@@ -99,14 +108,14 @@ void main() {
       (linkedId: 'person-1', handledByCaller: true),
     ]);
     expect(recorder.categoryIds, ['category-7']);
-    expect(recorder.modalVisibleLog, [true]);
+    expect(recorder.inlineHostVisibleLog, [true]);
     expect(failed, isEmpty);
   });
 
-  group("the recording sheet's anatomy", () {
-    testWidgets('the level line over the transport row, with the timed Stop '
-        'between discard and pause, and a footer under them when the host '
-        'has one', (tester) async {
+  group("the recorder's anatomy", () {
+    testWidgets('the level line over the transport row — discard, pause, '
+        'then the timed Stop — and a footer under them when the host has '
+        'one', (tester) async {
       final semantics = tester.ensureSemantics();
       await pump(tester, footer: const Text('an option'));
 
@@ -118,12 +127,13 @@ void main() {
         controls.bottom,
         lessThan(tester.getRect(find.text('an option')).top),
       );
-      // Discard, Stop, Pause: the sheet's order, left to right.
+      // Discard, pause, Stop: the recorder's order on every surface, Stop
+      // last as on the recording strip.
       final discard = tester.getRect(key('cancel_recording'));
       final pause = tester.getRect(key('pause_resume_button'));
       final stop = tester.getRect(key('stop_recording'));
-      expect(discard.right, lessThan(stop.left));
-      expect(stop.right, lessThan(pause.left));
+      expect(discard.right, lessThan(pause.left));
+      expect(pause.right, lessThan(stop.left));
       // Each is named for a reader, the same on every surface.
       expect(labelOf(tester, 'stop_recording'), 'Stop');
       expect(labelOf(tester, 'cancel_recording'), 'Discard');
@@ -190,6 +200,26 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('a refused start gives the in-place flag back, so the '
+      'recording strip is not left hidden for the next take', (tester) async {
+    await pump(tester, recordFailure: AudioRecordingFailure.permissionDenied);
+
+    expect(recorder.inlineHostVisibleLog, [true, false]);
+    expect(
+      ProviderScope.containerOf(
+        tester.element(find.byType(InlineRecorder)),
+      ).read(audioRecorderControllerProvider).inlineHostVisible,
+      isFalse,
+    );
+  });
+
+  testWidgets('a start that succeeds keeps the take drawn in place', (
+    tester,
+  ) async {
+    await pump(tester);
+    expect(recorder.inlineHostVisibleLog, [true]);
+  });
+
   testWidgets('a start the recorder refuses as busy or failed is a failed '
       'start', (tester) async {
     await pump(tester, recordFailure: AudioRecordingFailure.busy);
@@ -205,7 +235,7 @@ void main() {
     await pump(tester, runningFor: 'person-1');
     expect(recorder.recordCalls, isEmpty);
     expect(recorder.categoryIds, isEmpty);
-    expect(recorder.modalVisibleLog, [true]);
+    expect(recorder.inlineHostVisibleLog, [true]);
 
     await tester.tap(key('stop_recording'));
     await tester.pump();
@@ -261,7 +291,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     // Hiding the indicator here would leave the take with no Stop anywhere.
-    expect(recorder.modalVisibleLog, isEmpty);
+    expect(recorder.inlineHostVisibleLog, isEmpty);
     expect(recorder.recordCalls, isEmpty);
     expect(failed, isEmpty);
   });
@@ -277,7 +307,7 @@ void main() {
     expect(failed, [InlineRecordingFailure.recorderBusy]);
     expect(recorder.recordCalls, isEmpty);
     expect(recorder.stopCalls, 0);
-    expect(recorder.modalVisibleLog, isEmpty);
+    expect(recorder.inlineHostVisibleLog, isEmpty);
     expect(recorded, isEmpty);
   });
 
@@ -329,6 +359,8 @@ void main() {
       AudioRecorderStatus.stopped,
     );
     expect(failed, isEmpty);
+    // Nothing is drawn in place any more: the flag is given back.
+    expect(recorder.inlineHostVisibleLog, [true, false]);
   });
 
   testWidgets('a take already running for this subject is attached to, '
@@ -337,7 +369,7 @@ void main() {
 
     expect(failed, isEmpty);
     expect(recorder.recordCalls, isEmpty);
-    expect(recorder.modalVisibleLog, [true]);
+    expect(recorder.inlineHostVisibleLog, [true]);
     await tester.tap(key('stop_recording'));
     await tester.pump();
     expect(recorded, [('audio-1', Duration.zero)]);
@@ -483,6 +515,40 @@ void main() {
     await pumpUnlinked(FakeAudioRecorderController(runningFor: 'a-task'));
     expect(failed, [InlineRecordingFailure.recorderBusy]);
     expect(recorder.recordCalls, isEmpty);
+  });
+
+  group('the origin a take starts from', () {
+    testWidgets('is the route on screen, with the offset the page reported, '
+        'so a take handed to the strip knows its way back', (tester) async {
+      final nav = MockNavService();
+      when(() => nav.activeRoute).thenReturn('/people/person-1');
+      final scroll = RecordingOriginScroll()
+        ..report('/people/person-1', 240)
+        ..report('/tasks', 12);
+      await pump(
+        tester,
+        extraOverrides: [
+          navServiceProvider.overrideWithValue(nav),
+          recordingOriginScrollProvider.overrideWithValue(scroll),
+        ],
+      );
+
+      expect(recorder.recordOrigins, [
+        const RecordingOrigin(
+          route: '/people/person-1',
+          subjectId: 'person-1',
+          scrollOffset: 240,
+        ),
+      ]);
+    });
+
+    testWidgets('is none where navigation is not wired up — the take still '
+        'starts, with no way back', (tester) async {
+      await pump(tester);
+
+      expect(recorder.recordCalls, hasLength(1));
+      expect(recorder.recordOrigins, [null]);
+    });
   });
 
   testWidgets('Pause and Resume toggle the recorder and the control', (

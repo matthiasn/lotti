@@ -88,15 +88,12 @@ class EntryActionBar extends ConsumerWidget {
         );
   }
 
-  void _onAudioPressed(BuildContext context, WidgetRef ref) {
-    ref
-        .read(entryCreationServiceProvider)
-        .showAudioRecordingModal(
-          context,
-          linkedId: entry.meta.id,
-          categoryId: entry.meta.categoryId,
-        );
-  }
+  Future<void> _onAudioPressed(WidgetRef ref) => ref
+      .read(entryCreationServiceProvider)
+      .startRecording(
+        linkedId: entry.meta.id,
+        categoryId: entry.meta.categoryId,
+      );
 
   Future<void> _onAddPressed(BuildContext context, WidgetRef ref) {
     return ref
@@ -157,7 +154,7 @@ class EntryActionBar extends ConsumerWidget {
                 GlassRecordButton(
                   key: EntryActionBar.audioKey,
                   linkedId: entry.meta.id,
-                  onPressed: () => _onAudioPressed(context, ref),
+                  onPressed: () => _onAudioPressed(ref),
                 ),
                 DsGlassRoundButton(
                   key: EntryActionBar.addKey,

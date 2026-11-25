@@ -566,8 +566,19 @@
       }
     },
     {
+      "id": "recordings/strip",
+      "title": "Recording strip",
+      "sourceTest": "test/features/speech/ui/widgets/recording/audio_recording_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "recording_strip_mobile_light.png",
+        "mobile-dark": "recording_strip_mobile_dark.png",
+        "desktop-light": "recording_strip_desktop_light.png",
+        "desktop-dark": "recording_strip_desktop_dark.png"
+      }
+    },
+    {
       "id": "recordings/active",
-      "title": "Active audio recording",
+      "title": "Recorder opened from the recording strip",
       "sourceTest": "test/features/speech/ui/widgets/recording/audio_recording_manual_screenshots_test.dart",
       "variants": {
         "mobile-light": "recording_active_mobile_light.png",

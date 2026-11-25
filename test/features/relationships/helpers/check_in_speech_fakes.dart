@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/state/recording_origin.dart';
 
 /// Stands in for the transcription service: answers the preflight probe
 /// and hands back a wait the test drives directly.
@@ -108,7 +109,6 @@ class FakeAudioRecorderController extends AudioRecorderController {
     this.recordFailure,
     this.stopResult = 'audio-1',
     this.stopThrows = false,
-    this.enableSpeechRecognition,
     this.runningFor,
   });
 
@@ -118,7 +118,6 @@ class FakeAudioRecorderController extends AudioRecorderController {
   /// What `stop` answers; null is a recording that could not be saved.
   String? stopResult;
   bool stopThrows;
-  final bool? enableSpeechRecognition;
 
   /// When set, the recorder starts out already recording for this entry —
   /// a take left running when an earlier sheet was dismissed.
@@ -132,7 +131,17 @@ class FakeAudioRecorderController extends AudioRecorderController {
   Completer<void>? recordGate;
 
   final recordCalls = <({String? linkedId, bool handledByCaller})>[];
-  final modalVisibleLog = <bool>[];
+
+  /// The `origin` of every `record`, in order.
+  final recordOrigins = <RecordingOrigin?>[];
+
+  /// The `deferAutomation` of every `stop`, in order.
+  final stopDeferrals = <bool>[];
+
+  /// The ids handed to `commitAutomation` and `dropAutomation`, in order.
+  final committedAutomation = <String>[];
+  final droppedAutomation = <String>[];
+  final inlineHostVisibleLog = <bool>[];
   final categoryIds = <String?>[];
   int stopCalls = 0;
   int cancelCalls = 0;
@@ -146,10 +155,8 @@ class FakeAudioRecorderController extends AudioRecorderController {
         : AudioRecorderStatus.recording,
     progress: Duration.zero,
     dBFS: -160,
-    showIndicator: false,
-    modalVisible: false,
+    inlineHostVisible: false,
     linkedId: runningFor,
-    enableSpeechRecognition: enableSpeechRecognition,
   );
 
   @override
@@ -157,11 +164,13 @@ class FakeAudioRecorderController extends AudioRecorderController {
     String? linkedId,
     bool transcriptionHandledByCaller = false,
     bool Function()? shouldCancel,
+    RecordingOrigin? origin,
   }) async {
     recordCalls.add((
       linkedId: linkedId,
       handledByCaller: transcriptionHandledByCaller,
     ));
+    recordOrigins.add(origin);
     if (recordFailure != null) return recordFailure;
     // The microphone starting up: the real controller asks [shouldCancel]
     // only once it has.
@@ -170,13 +179,15 @@ class FakeAudioRecorderController extends AudioRecorderController {
     state = state.copyWith(
       status: AudioRecorderStatus.recording,
       linkedId: linkedId,
+      origin: origin,
     );
     return null;
   }
 
   @override
-  Future<String?> stop() async {
+  Future<String?> stop({bool deferAutomation = false}) async {
     stopCalls++;
+    stopDeferrals.add(deferAutomation);
     _finishing = true;
     try {
       await stopGate?.future;
@@ -184,7 +195,9 @@ class FakeAudioRecorderController extends AudioRecorderController {
       state = state.copyWith(
         status: AudioRecorderStatus.stopped,
         progress: Duration.zero,
+        origin: null,
       );
+      reportTakeEnded(stopResult);
       return stopResult;
     } finally {
       _finishing = false;
@@ -205,6 +218,7 @@ class FakeAudioRecorderController extends AudioRecorderController {
       status: AudioRecorderStatus.stopped,
       progress: Duration.zero,
     );
+    reportTakeEnded(null);
   }
 
   @override
@@ -220,13 +234,22 @@ class FakeAudioRecorderController extends AudioRecorderController {
   }
 
   @override
-  void setModalVisible({required bool modalVisible}) {
-    modalVisibleLog.add(modalVisible);
-    state = state.copyWith(modalVisible: modalVisible);
+  void setInlineHostVisible({required bool visible}) {
+    inlineHostVisibleLog.add(visible);
+    state = state.copyWith(inlineHostVisible: visible);
   }
 
   @override
-  void setCategoryId(String? categoryId) => categoryIds.add(categoryId);
+  void setCategoryId(String? categoryId) {
+    categoryIds.add(categoryId);
+    super.setCategoryId(categoryId);
+  }
+
+  @override
+  void commitAutomation(String entryId) => committedAutomation.add(entryId);
+
+  @override
+  void dropAutomation(String entryId) => droppedAutomation.add(entryId);
 
   /// Moves the running time and the level, the way the amplitude stream
   /// would.

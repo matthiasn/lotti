@@ -17,12 +17,14 @@ void main() {
     String? widthLabel,
     String? stopSemanticLabel = 'Stop timer',
     bool enabled = true,
+    bool paused = false,
     ThemeData? theme,
   }) => tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       Center(
         child: DesignSystemTimerPill(
           running: running,
+          paused: paused,
           label: label,
           widthLabel: widthLabel,
           semanticLabel: running ? 'Open timer' : 'Track time',
@@ -75,6 +77,45 @@ void main() {
       );
     });
   }
+
+  for (final theme in [DesignSystemTheme.light, DesignSystemTheme.dark]) {
+    testWidgets('paused, a running clock keeps its stop circle and time on '
+        "a quiet neutral fill in the text's own ink, so it steps back "
+        '(${theme().brightness})', (tester) async {
+      await pump(tester, running: true, paused: true, theme: theme());
+      final tokens = tester
+          .element(find.byType(DesignSystemTimerPill))
+          .designTokens;
+
+      expect(fillOf(tester).color, tokens.colors.decorative.level02);
+      expect(
+        tester.widget<Text>(find.text('00:09')).style?.color,
+        tokens.colors.text.highEmphasis,
+      );
+      expect(find.byKey(DesignSystemTimerPill.defaultStopKey), findsOneWidget);
+      expect(
+        tester
+            .widget<Icon>(
+              find.descendant(
+                of: find.byKey(DesignSystemTimerPill.defaultStopKey),
+                matching: find.byType(Icon),
+              ),
+            )
+            .color,
+        tokens.colors.text.highEmphasis,
+      );
+    });
+  }
+
+  testWidgets('paused means nothing while idle: the accent stays', (
+    tester,
+  ) async {
+    await pump(tester, running: false, paused: true, label: 'Track time');
+    final tokens = tester
+        .element(find.byType(DesignSystemTimerPill))
+        .designTokens;
+    expect(fillOf(tester).color, tokens.colors.interactive.enabled);
+  });
 
   testWidgets('running, the stop circle sits concentric in the round end', (
     tester,

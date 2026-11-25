@@ -178,11 +178,11 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
     for (final id in _startedComments) {
       unawaited(_repository.discardCommentIfBlank(id));
     }
-    // The recorder hid the floating indicator while it was up. A page torn
+    // The recorder hid the recording strip while it was up. A page torn
     // down mid-take — a route change, the desktop pane swapping people —
-    // leaves the recording running, and the indicator is the only way left
-    // to stop it; the composer's sheet restores it the same way.
-    if (_recording) _recorder?.setModalVisible(modalVisible: false);
+    // leaves the recording running, and the strip is the only way left to
+    // stop it; the composer's sheet hands it over the same way.
+    if (_recording) _recorder?.setInlineHostVisible(visible: false);
     super.dispose();
   }
 
@@ -520,7 +520,7 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
                     ),
                     // Held — shown, not hidden — while a take is live: an
                     // edit sheet or a picker over a running recorder, with
-                    // the floating indicator hidden, was a door to a
+                    // the recording strip hidden, was a door to a
                     // recording nothing on screen could stop.
                     chipsEnabled: !_recording,
                   ),

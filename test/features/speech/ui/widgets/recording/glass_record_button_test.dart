@@ -1,8 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/state/recording_return.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/glass_record_button.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -17,8 +19,7 @@ AudioRecorderState _state({
   status: status,
   progress: Duration.zero,
   dBFS: -160,
-  showIndicator: false,
-  modalVisible: false,
+  inlineHostVisible: false,
   linkedId: linkedId,
 );
 
@@ -43,6 +44,7 @@ void main() {
   Future<void> pumpButton(
     WidgetTester tester, {
     AudioRecorderState? initial,
+    MediaQueryData? mediaQueryData,
   }) async {
     controller = _DrivenRecorderController(
       initial ?? _state(status: AudioRecorderStatus.stopped),
@@ -56,6 +58,7 @@ void main() {
             onPressed: () => pressed++,
           ),
         ),
+        mediaQueryData: mediaQueryData,
         overrides: [
           audioRecorderControllerProvider.overrideWith(() => controller),
         ],
@@ -63,6 +66,21 @@ void main() {
     );
     await tester.pump();
   }
+
+  double scale(WidgetTester tester) => tester
+      .widget<ScaleTransition>(
+        find.ancestor(
+          of: find.byType(DsGlassRoundButton),
+          matching: find.byType(ScaleTransition),
+        ),
+      )
+      .scale
+      .value;
+
+  void arriveAt(WidgetTester tester, String subjectId) =>
+      ProviderScope.containerOf(
+        tester.element(find.byType(GlassRecordButton)),
+      ).read(recordingArrivalProvider.notifier).arrive(subjectId);
 
   DsGlassRoundButton button(WidgetTester tester) =>
       tester.widget<DsGlassRoundButton>(find.byType(DsGlassRoundButton));
@@ -217,5 +235,52 @@ void main() {
     await tester.pump();
 
     expect(pressed, 1);
+  });
+
+  group('arriving back from the recording strip', () {
+    testWidgets('swells once and settles for its own subject', (tester) async {
+      await pumpButton(tester);
+      expect(scale(tester), 1);
+
+      arriveAt(tester, _linkedId);
+      await tester.pump();
+      await tester.pump(GlassRecordButton.arrivalDuration ~/ 2);
+      expect(scale(tester), greaterThan(1));
+
+      await tester.pump(GlassRecordButton.arrivalDuration);
+      expect(scale(tester), 1);
+    });
+
+    testWidgets('swells again on a second arrival', (tester) async {
+      await pumpButton(tester);
+      arriveAt(tester, _linkedId);
+      await tester.pump();
+      await tester.pump(GlassRecordButton.arrivalDuration);
+
+      arriveAt(tester, _linkedId);
+      await tester.pump();
+      await tester.pump(GlassRecordButton.arrivalDuration ~/ 2);
+      expect(scale(tester), greaterThan(1));
+      await tester.pump(GlassRecordButton.arrivalDuration);
+    });
+
+    testWidgets("stays still for another subject's arrival", (tester) async {
+      await pumpButton(tester);
+      arriveAt(tester, 'another-entry');
+      await tester.pump();
+      await tester.pump(GlassRecordButton.arrivalDuration ~/ 2);
+      expect(scale(tester), 1);
+    });
+
+    testWidgets('stays still under reduced motion', (tester) async {
+      await pumpButton(
+        tester,
+        mediaQueryData: const MediaQueryData(disableAnimations: true),
+      );
+      arriveAt(tester, _linkedId);
+      await tester.pump();
+      await tester.pump(GlassRecordButton.arrivalDuration ~/ 2);
+      expect(scale(tester), 1);
+    });
   });
 }

@@ -538,10 +538,10 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 
   void _onRecordingFailed(CheckInSpeechFailureKind failure) {
     if (!mounted) return;
-    // The recorder hid the floating indicator on the way in; a start that
-    // never happened has nothing for it to point at, but a stop that could
-    // not save may leave the app-wide recorder as it was — either way the
-    // indicator is the user's again, now rather than when the sheet closes.
+    // The recorder hid the recording strip on the way in; a start that
+    // never happened has nothing for it to show, but a stop that could not
+    // save may leave the app-wide recorder as it was — either way the strip
+    // is the user's again, now rather than when the sheet closes.
     widget.handle.releaseRecorder();
     setState(() => _phase = CheckInSpeechFailed(CheckInSpeechFailure(failure)));
   }

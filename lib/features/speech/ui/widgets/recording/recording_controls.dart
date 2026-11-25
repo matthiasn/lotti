@@ -2,7 +2,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_timer_pill.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
-import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -13,8 +12,8 @@ import 'package:lotti/widgets/celebration/celebration_preferences_controller.dar
 import 'package:material_ui/material_ui.dart';
 
 /// The app's one recorder, shared by every surface that records — the
-/// recording sheet a task's microphone opens, and the check-in composer and
-/// page that record in place. A recorder that drew its own parts read as
+/// recording strip's tray, and the check-in composer and page that record
+/// in place. A recorder that drew its own parts read as
 /// another app's recorder however carefully it was spaced.
 ///
 /// Composed ([RecordingStage]) on one centred axis: the level line, the
@@ -28,6 +27,13 @@ import 'package:material_ui/material_ui.dart';
 TextStyle recordingCaptionStyle(DsTokens tokens) =>
     tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
+    );
+
+/// The main line on the recording strip, its tray and its receipt — what a
+/// take is for — one step above [recordingCaptionStyle].
+TextStyle recordingTitleStyle(DsTokens tokens) =>
+    tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.highEmphasis,
     );
 
 /// The whole recorder, top to bottom: the level line, the [controls] —
@@ -100,13 +106,17 @@ class RecordingStage extends StatelessWidget {
 /// too, so silence ages the loud bars out — holds still while paused, and
 /// starts empty for each new take.
 class RecordingLevelLine extends StatefulWidget {
-  const RecordingLevelLine({required this.state, super.key});
+  const RecordingLevelLine({required this.state, this.width, super.key});
 
   /// How many samples the line keeps: more than the transport row is ever
   /// wide.
   static const int levelWindow = 240;
 
   final AudioRecorderState state;
+
+  /// How wide the line is drawn; the transport row's width when null. The
+  /// recording strip gives it a short stretch of its own.
+  final double? width;
 
   @override
   State<RecordingLevelLine> createState() => _RecordingLevelLineState();
@@ -139,7 +149,7 @@ class _RecordingLevelLineState extends State<RecordingLevelLine> {
   @override
   Widget build(BuildContext context) => SizedBox(
     key: const ValueKey('recording-visualizer-bars'),
-    width: RecordingTransportControls.rowWidth(context),
+    width: widget.width ?? RecordingTransportControls.rowWidth(context),
     child: DesignSystemVoiceWaveform(
       levels: _levels,
       sampleInterval: const Duration(milliseconds: intervalMs),
@@ -147,52 +157,18 @@ class _RecordingLevelLineState extends State<RecordingLevelLine> {
   );
 }
 
-/// An option under the recorder — its name in the recorder's caption
-/// voice, then a small toggle, the whole row one tap — quiet enough that it
-/// never competes with the take.
-class RecordingOption extends StatelessWidget {
-  const RecordingOption({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-    super.key,
-  });
-
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => onChanged(!value),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: ExcludeSemantics(
-              child: Text(label, style: recordingCaptionStyle(tokens)),
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          DesignSystemToggle(
-            value: value,
-            onChanged: onChanged,
-            semanticsLabel: label,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The transport row: discard ✕ and pause ⏸ / resume ▶ as quiet rings on
-/// either side of the red Stop pill that carries the running time — the
-/// only colour in the row, the one way a take becomes an entry. Every action is inert while [busy] — a
-/// stop or discard already on its way — and the host decides what each one
-/// means (whether discarding asks first, where a stopped take goes).
+/// The transport row: discard ✕, pause ⏸ / resume ▶, then the red Stop pill
+/// that carries the running time — the only colour in the row, the one way a
+/// take becomes an entry, grey while the take is paused. Stop comes last, as
+/// on the recording strip, so it is in the same place on every recorder.
+/// Every action is inert while [busy] — a stop or discard already on its
+/// way — and the host decides what each one means (whether discarding asks
+/// first, where a stopped take goes).
+///
+/// Centred at [rowWidth] by default; [spread] across the host's width —
+/// discard at the start, pause and Stop at the end, where the recording
+/// strip keeps them — so the tray opened from the strip has its controls
+/// where the strip had them.
 class RecordingTransportControls extends StatelessWidget {
   const RecordingTransportControls({
     required this.paused,
@@ -202,10 +178,14 @@ class RecordingTransportControls extends StatelessWidget {
     required this.onStop,
     this.progressSemanticsLabel,
     this.busy = false,
+    this.spread = false,
     super.key,
   });
 
   final bool paused;
+
+  /// Across the host's whole width rather than centred.
+  final bool spread;
 
   /// How long the take has run, shown in the Stop pill.
   final Duration progress;
@@ -238,6 +218,40 @@ class RecordingTransportControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final discard = RecordingRingButton(
+      key: discardKey,
+      label: messages.checkInDiscardRecording,
+      icon: LottiIcons.close,
+      onTap: busy ? null : onDiscard,
+    );
+    final pause = RecordingRingButton(
+      key: pauseKey,
+      emphasized: paused,
+      label: paused
+          ? messages.audioRecordingResume
+          : messages.audioRecordingPause,
+      icon: paused ? LottiIconsFilled.play : LottiIconsFilled.pause,
+      solid: true,
+      onTap: busy ? null : onTogglePause,
+    );
+    final stop = RecordingStopPill(
+      key: stopKey,
+      paused: paused,
+      progress: progress,
+      progressSemanticsLabel: progressSemanticsLabel,
+      onTap: busy ? null : onStop,
+    );
+    if (spread) {
+      return Row(
+        children: [
+          discard,
+          const Spacer(),
+          pause,
+          SizedBox(width: tokens.spacing.step3),
+          stop,
+        ],
+      );
+    }
     // Wraps rather than overflows on a very narrow screen at a large text
     // size; at any ordinary width it is one centred row.
     return Wrap(
@@ -245,29 +259,7 @@ class RecordingTransportControls extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       spacing: tokens.spacing.step6,
       runSpacing: tokens.spacing.step3,
-      children: [
-        _RoundControl(
-          key: discardKey,
-          label: messages.checkInDiscardRecording,
-          icon: LottiIcons.close,
-          onTap: busy ? null : onDiscard,
-        ),
-        _StopPill(
-          key: stopKey,
-          progress: progress,
-          progressSemanticsLabel: progressSemanticsLabel,
-          onTap: busy ? null : onStop,
-        ),
-        _RoundControl(
-          key: pauseKey,
-          label: paused
-              ? messages.audioRecordingResume
-              : messages.audioRecordingPause,
-          icon: paused ? LottiIconsFilled.play : LottiIconsFilled.pause,
-          solid: true,
-          onTap: busy ? null : onTogglePause,
-        ),
-      ],
+      children: [discard, pause, stop],
     );
   }
 }
@@ -331,15 +323,22 @@ class _Control extends ConsumerWidget {
   }
 }
 
-/// A quiet 48px ring — a border, no fill — the whole of it tappable.
-class _RoundControl extends StatelessWidget {
-  const _RoundControl({
+/// A quiet 48px ring — a border, no fill — the whole of it tappable: the
+/// recorder's discard and pause, here and on the recording strip.
+/// [emphasized], it is the accent disc instead: resume, while a take is
+/// paused and Stop has stepped back, is the one thing to press.
+class RecordingRingButton extends StatelessWidget {
+  const RecordingRingButton({
     required this.label,
     required this.icon,
     required this.onTap,
     this.solid = false,
+    this.emphasized = false,
     super.key,
   });
+
+  /// Whether the ring is the filled accent disc rather than a quiet ring.
+  final bool emphasized;
 
   final String label;
   final IconData icon;
@@ -359,7 +358,10 @@ class _RoundControl extends StatelessWidget {
         height: tokens.spacing.step9,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: tokens.colors.decorative.level02),
+          color: emphasized ? tokens.colors.interactive.enabled : null,
+          border: emphasized
+              ? null
+              : Border.all(color: tokens.colors.decorative.level02),
         ),
         child: AnimatedSwitcher(
           duration: MotionDurations.short4,
@@ -369,7 +371,9 @@ class _RoundControl extends StatelessWidget {
             // A solid glyph carries more ink than a stroked one at the same
             // size: a step smaller, the two rings weigh the same.
             size: solid ? IconSizes.m : IconSizes.l,
-            color: tokens.colors.text.highEmphasis,
+            color: emphasized
+                ? tokens.colors.text.onInteractiveAlert
+                : tokens.colors.text.highEmphasis,
           ),
         ),
       ),
@@ -378,17 +382,19 @@ class _RoundControl extends StatelessWidget {
 }
 
 /// Stop: the app's running-clock pill, red with the elapsed time beside its
-/// stop square — the element a task's Track time wears while it runs. Here
-/// the whole pill stops the take, so it is one button, named *Stop*, whose
-/// value is the time.
-class _StopPill extends ConsumerWidget {
-  const _StopPill({
+/// stop square — the element a task's Track time wears while it runs, grey
+/// while the take is paused. Here the whole pill stops the take, so it is
+/// one button, named *Stop*, whose value is the time.
+class RecordingStopPill extends ConsumerWidget {
+  const RecordingStopPill({
+    required this.paused,
     required this.progress,
     required this.progressSemanticsLabel,
     required this.onTap,
     super.key,
   });
 
+  final bool paused;
   final Duration progress;
   final String? progressSemanticsLabel;
   final VoidCallback? onTap;
@@ -412,6 +418,7 @@ class _StopPill extends ConsumerWidget {
         duration: MotionDurations.short4,
         child: DesignSystemTimerPill(
           running: true,
+          paused: paused,
           label: time,
           // Room for the widest time under the hour, so the pill — and the
           // rings beside it — hold still as the minutes grow.

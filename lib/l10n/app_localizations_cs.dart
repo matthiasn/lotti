@@ -3017,9 +3017,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordingPause => 'Pozastavit';
 
   @override
-  String get audioRecordingRecord => 'Nahrát';
-
-  @override
   String get audioRecordingResume => 'Pokračovat';
 
   @override
@@ -3027,9 +3024,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get audioRecordingStop => 'Stop';
-
-  @override
-  String get audioRecordingTranscribeOption => 'Přepsat';
 
   @override
   String get avatarCropHint => 'Tažením posuneš · stažením přiblížíš';
@@ -14186,6 +14180,48 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get recordingReceiptOpen => 'Otevřít';
+
+  @override
+  String recordingReceiptSaved(String time) {
+    return 'Uloženo · $time';
+  }
+
+  @override
+  String recordingReceiptTranscribing(String time) {
+    return 'Uloženo · $time · přepisuje se';
+  }
+
+  @override
+  String get recordingReceiptUndo => 'Zpět';
+
+  @override
+  String recordingStripBackTo(String subject) {
+    return 'Zpět na $subject';
+  }
+
+  @override
+  String get recordingStripFoldRecorder => 'Sbalit záznamník';
+
+  @override
+  String get recordingStripOpenRecorder => 'Otevřít záznamník';
+
+  @override
+  String get recordingStripPausedFor => 'Pozastaveno';
+
+  @override
+  String get recordingStripPausedHere => 'Pozastaveno zde';
+
+  @override
+  String get recordingStripRecordingFor => 'Nahrávání pro';
+
+  @override
+  String get recordingStripRecordingHere => 'Nahrávání zde';
+
+  @override
+  String get recordingStripVoiceNote => 'Hlasová poznámka';
+
+  @override
   String get referenceImageContinue => 'Pokračovat';
 
   @override
@@ -16858,9 +16894,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get sidebarActivityExpandTooltip => 'Rozbalit aktivitu';
-
-  @override
-  String get sidebarAudioRecordingStatusLabel => 'Nahrávání';
 
   @override
   String get sidebarRunningTimerLabel => 'Běžící časovač';

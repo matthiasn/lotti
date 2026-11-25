@@ -7,7 +7,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/journal/create/create_entry.dart'
     as create_entry;
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
+import 'package:lotti/features/speech/state/recording_session.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_analysis_trigger.dart';
 import 'package:lotti/logic/image_import.dart' as image_import;
@@ -102,17 +102,22 @@ class EntryCreationService {
     return task;
   }
 
-  /// Shows the audio recording modal.
-  void showAudioRecordingModal(
-    BuildContext context, {
+  /// Starts a take on the recording strip, linked to [linkedId] and filed
+  /// under [categoryId] — at once, with no sheet in between. A take already
+  /// running for [linkedId] opens the strip's tray instead.
+  ///
+  /// Completes with the audio entry's id once the take is committed, or
+  /// null when it is discarded, undone or never started — or when the
+  /// service has no [Ref] to reach the recorder through.
+  Future<String?> startRecording({
     String? linkedId,
     String? categoryId,
-  }) {
-    AudioRecordingModal.show(
-      context,
-      linkedId: linkedId,
-      categoryId: categoryId,
-    );
+  }) async {
+    final ref = _ref;
+    if (ref == null) return null;
+    return ref
+        .read(recordingSessionProvider)
+        .start(linkedId: linkedId, categoryId: categoryId);
   }
 
   /// Creates a checklist linked to [task]. Reads

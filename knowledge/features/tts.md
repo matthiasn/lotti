@@ -5,7 +5,7 @@ description: Speech for task summaries, generated coding prompts, goal reports a
 resource: ../../lib/features/tts
 tags: [tts, onnx, on-device, cloud, voxtral, elevenlabs, ios, macos]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-04T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-24T12:00:00Z }
 stale_after: 2027-04-26
 sources:
   - id: src
@@ -621,8 +621,9 @@ stateDiagram-v2
 A recording must never capture Lotti speaking. `stopReadAloudForRecording`
 (in `state/tts_playback_controller.dart`) stops the voice when it is
 downloading, synthesizing or playing, and is awaited before a microphone
-opens: by `AudioRecorderController.record()` — every record button that opens
-the recording sheet, so a task's summary read aloud stops at the press — and
+opens: by `AudioRecorderController.record()` — every microphone that starts
+a take on the recording strip, and every check-in that records in place, so a
+task's summary read aloud stops at the press — and
 by Daily OS Capture's `CaptureController`, so the Day briefing does too.
 
 The voice is stopped, not paused: it has no pause, and its control only plays

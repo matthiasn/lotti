@@ -15,7 +15,6 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
-import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
@@ -46,17 +45,6 @@ void main() {
     registerFallbackValue(AutomationResult.notHandled);
   });
 
-  AudioRecorderState stoppedState({bool? enableSpeechRecognition}) {
-    return AudioRecorderState(
-      status: AudioRecorderStatus.stopped,
-      enableSpeechRecognition: enableSpeechRecognition,
-      dBFS: -60,
-      progress: Duration.zero,
-      showIndicator: false,
-      modalVisible: false,
-    );
-  }
-
   AiConfigSkill testSkill() {
     return AiConfig.skill(
           id: 'skill-1',
@@ -81,7 +69,6 @@ void main() {
     when(
       () => mockProfileAutomationService.tryTranscribe(
         subjectId: subjectId,
-        enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
       ),
     ).thenAnswer((_) async => result);
     when(
@@ -141,7 +128,6 @@ void main() {
     when(
       () => mockProfileAutomationService.tryTranscribe(
         subjectId: any(named: 'subjectId'),
-        enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
       ),
     ).thenAnswer((_) async => AutomationResult.notHandled);
 
@@ -185,7 +171,7 @@ void main() {
 
   group('no linked subject', () {
     test('logs and never asks automation to transcribe', () async {
-      await trigger().triggerAutomaticPrompts(entryId, stoppedState());
+      await trigger().triggerAutomaticPrompts(entryId);
 
       verify(
         () => mockDomainLogger.log(
@@ -197,7 +183,6 @@ void main() {
       verifyNever(
         () => mockProfileAutomationService.tryTranscribe(
           subjectId: any(named: 'subjectId'),
-          enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
         ),
       );
     });
@@ -213,7 +198,6 @@ void main() {
 
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: subjectId,
       );
 
@@ -239,13 +223,11 @@ void main() {
       when(
         () => mockProfileAutomationService.tryTranscribe(
           subjectId: subjectId,
-          enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
         ),
       ).thenAnswer((_) async => AutomationResult.notHandled);
 
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: subjectId,
       );
 
@@ -266,34 +248,15 @@ void main() {
       );
     });
 
-    test('forwards the per-recording speech opt-out verbatim', () async {
-      const subjectId = 'task-optout';
-
-      await trigger().triggerAutomaticPrompts(
-        entryId,
-        stoppedState(enableSpeechRecognition: false),
-        linkedSubjectId: subjectId,
-      );
-
-      verify(
-        () => mockProfileAutomationService.tryTranscribe(
-          subjectId: subjectId,
-          enableSpeechRecognition: false,
-        ),
-      ).called(1);
-    });
-
     test('logs and swallows a throwing automation service', () async {
       when(
         () => mockProfileAutomationService.tryTranscribe(
           subjectId: any(named: 'subjectId'),
-          enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
         ),
       ).thenThrow(Exception('Service error'));
 
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: 'task-1',
       );
 
@@ -320,7 +283,6 @@ void main() {
 
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: subjectId,
       );
 
@@ -343,7 +305,6 @@ void main() {
 
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: subjectId,
       );
 
@@ -364,7 +325,6 @@ void main() {
 
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: subjectId,
       );
 
@@ -392,7 +352,6 @@ void main() {
 
         await trigger().triggerAutomaticPrompts(
           entryId,
-          stoppedState(),
           linkedSubjectId: subjectId,
         );
 
@@ -419,7 +378,6 @@ void main() {
 
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: subjectId,
       );
 
@@ -450,7 +408,6 @@ void main() {
 
         await trigger().triggerAutomaticPrompts(
           entryId,
-          stoppedState(),
           linkedSubjectId: subjectId,
         );
 
@@ -470,7 +427,6 @@ void main() {
 
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: subjectId,
       );
 
@@ -506,7 +462,6 @@ void main() {
 
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: subjectId,
       );
 
@@ -528,7 +483,6 @@ void main() {
 
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: subjectId,
       );
 
@@ -552,7 +506,6 @@ void main() {
 
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: subjectId,
       );
 
@@ -579,7 +532,7 @@ void main() {
   // which belongs to no task and no category — so the category gate above
   // always declines it. The goal agent's own automatic-updates switch decides
   // instead, and it decides HERE, on the stop path, because a recording
-  // stopped from the sidebar or the floating indicator never reports back to
+  // stopped from the recording strip never reports back to
   // the composer that opened the recorder.
   group('goal check-in fallback', () {
     const goalEntryId = 'goal-entry-1';
@@ -603,7 +556,6 @@ void main() {
 
         await trigger().triggerAutomaticPrompts(
           entryId,
-          stoppedState(),
           linkedSubjectId: goalEntryId,
         );
 
@@ -636,7 +588,6 @@ void main() {
 
         await trigger().triggerAutomaticPrompts(
           entryId,
-          stoppedState(),
           linkedSubjectId: goalEntryId,
         );
 
@@ -651,7 +602,6 @@ void main() {
 
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: goalEntryId,
       );
 
@@ -692,7 +642,6 @@ void main() {
 
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: 'task-1',
       );
 
@@ -711,7 +660,6 @@ void main() {
     test('a subject with no agent is left to the category gate', () async {
       await trigger().triggerAutomaticPrompts(
         entryId,
-        stoppedState(),
         linkedSubjectId: 'orphan-subject',
       );
 

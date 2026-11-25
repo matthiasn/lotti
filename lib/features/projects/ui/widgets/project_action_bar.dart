@@ -110,8 +110,7 @@ class ProjectActionBar extends ConsumerWidget {
                     : tokens.colors.interactive.enabled,
                 // The ink for both fills: the accent and the alert.
                 foregroundColor: tokens.colors.text.onInteractiveAlert,
-                onTap: () => creation.showAudioRecordingModal(
-                  context,
+                onTap: () => creation.startRecording(
                   linkedId: _id,
                   categoryId: _categoryId,
                 ),

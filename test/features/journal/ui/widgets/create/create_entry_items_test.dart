@@ -521,23 +521,22 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
-  // CreateAudioItem onTap – calls showAudioRecordingModal via service
+  // CreateAudioItem onTap – starts a recording via service
   // -------------------------------------------------------------------------
   group('CreateAudioItem onTap', () {
     testWidgets(
-      'tapping calls showAudioRecordingModal on EntryCreationService',
+      'tapping starts a recording on EntryCreationService',
       (tester) async {
         const linkedId = 'audio-linked-id';
         const categoryId = 'audio-cat-id';
 
         final mockService = MockEntryCreationService();
         when(
-          () => mockService.showAudioRecordingModal(
-            any(),
+          () => mockService.startRecording(
             linkedId: linkedId,
             categoryId: categoryId,
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async => null);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -555,8 +554,7 @@ void main() {
         await tester.pump();
 
         verify(
-          () => mockService.showAudioRecordingModal(
-            any(),
+          () => mockService.startRecording(
             linkedId: linkedId,
             categoryId: categoryId,
           ),
@@ -2328,18 +2326,17 @@ void main() {
       setUpAll(bench.setUpAll);
       tearDownAll(bench.tearDownAll);
 
-      testWidgets('onTap calls showAudioRecordingModal', (tester) async {
+      testWidgets('onTap starts a recording', (tester) async {
         const linkedId = 'linked-id';
         const categoryId = 'category-id';
 
         final mockEntryCreationService = MockEntryCreationService();
         when(
-          () => mockEntryCreationService.showAudioRecordingModal(
-            any(),
+          () => mockEntryCreationService.startRecording(
             linkedId: linkedId,
             categoryId: categoryId,
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async => null);
 
         await tester.pumpWidget(
           ProviderScope(
@@ -2376,8 +2373,7 @@ void main() {
         await tester.pump();
 
         verify(
-          () => mockEntryCreationService.showAudioRecordingModal(
-            any(),
+          () => mockEntryCreationService.startRecording(
             linkedId: linkedId,
             categoryId: categoryId,
           ),

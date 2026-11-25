@@ -14,6 +14,7 @@ import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/state/recording_origin.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
@@ -85,8 +86,7 @@ void main() {
         status: AudioRecorderStatus.stopped,
         progress: Duration.zero,
         dBFS: -160,
-        showIndicator: false,
-        modalVisible: false,
+        inlineHostVisible: false,
       ),
     );
     registerFallbackValue(
@@ -209,63 +209,63 @@ void main() {
   });
 
   group('AudioRecorderController - State Management Methods', () {
-    group('setModalVisible', () {
-      test('should update modalVisible to true', () {
+    group('setInlineHostVisible', () {
+      test('should update inlineHostVisible to true', () {
         // Arrange
         final controller = container.read(
           audioRecorderControllerProvider.notifier,
         );
         expect(
-          container.read(audioRecorderControllerProvider).modalVisible,
+          container.read(audioRecorderControllerProvider).inlineHostVisible,
           isFalse,
         );
 
         // Act
-        controller.setModalVisible(modalVisible: true);
+        controller.setInlineHostVisible(visible: true);
 
         // Assert
         expect(
-          container.read(audioRecorderControllerProvider).modalVisible,
+          container.read(audioRecorderControllerProvider).inlineHostVisible,
           isTrue,
         );
       });
 
-      test('should update modalVisible to false', () {
+      test('should update inlineHostVisible to false', () {
         // Arrange
         final controller = container.read(
           audioRecorderControllerProvider.notifier,
-        )..setModalVisible(modalVisible: true);
+        )..setInlineHostVisible(visible: true);
         expect(
-          container.read(audioRecorderControllerProvider).modalVisible,
+          container.read(audioRecorderControllerProvider).inlineHostVisible,
           isTrue,
         );
 
         // Act
-        controller.setModalVisible(modalVisible: false);
+        controller.setInlineHostVisible(visible: false);
 
         // Assert
         expect(
-          container.read(audioRecorderControllerProvider).modalVisible,
+          container.read(audioRecorderControllerProvider).inlineHostVisible,
           isFalse,
         );
       });
 
-      test('should emit new state with updated modalVisible', () {
+      test('should emit new state with updated inlineHostVisible', () {
         // Arrange
         final controller = container.read(
           audioRecorderControllerProvider.notifier,
         );
         expect(
-          container.read(audioRecorderControllerProvider).modalVisible,
+          container.read(audioRecorderControllerProvider).inlineHostVisible,
           isFalse,
         );
 
         // Act
-        controller.setModalVisible(modalVisible: true);
+        controller.setInlineHostVisible(visible: true);
 
         // Assert
         expect(
-          container.read(audioRecorderControllerProvider).modalVisible,
+          container.read(audioRecorderControllerProvider).inlineHostVisible,
           isTrue,
         );
       });
@@ -324,7 +324,6 @@ void main() {
         mockTrigger = MockAutomaticPromptTrigger();
         when(
           () => mockTrigger.triggerAutomaticPrompts(
-            any(),
             any(),
             linkedSubjectId: any(named: 'linkedSubjectId'),
           ),
@@ -415,6 +414,219 @@ void main() {
             linkedId: 'linked-task-id',
           ),
         ).called(1);
+      });
+
+      group('origin', () {
+        const origin = RecordingOrigin(
+          route: '/tasks/linked-task-id',
+          subjectId: 'linked-task-id',
+          scrollOffset: 320,
+        );
+
+        test('record(origin:) holds the origin while the take runs', () async {
+          await container
+              .read(audioRecorderControllerProvider.notifier)
+              .record(linkedId: 'linked-task-id', origin: origin);
+
+          expect(
+            container.read(audioRecorderControllerProvider).origin,
+            origin,
+          );
+        });
+
+        test('stop clears the origin with the take', () async {
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          await controller.record(linkedId: 'linked-task-id', origin: origin);
+          await controller.stop();
+
+          expect(
+            container.read(audioRecorderControllerProvider).origin,
+            isNull,
+          );
+        });
+
+        test('cancel clears the origin with the take', () async {
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          await controller.record(linkedId: 'linked-task-id', origin: origin);
+          await controller.cancel();
+
+          expect(
+            container.read(audioRecorderControllerProvider).origin,
+            isNull,
+          );
+        });
+      });
+
+      group('takeEnded', () {
+        test(
+          'reports a saved take with its id, a discarded one with null',
+          () async {
+            final controller = container.read(
+              audioRecorderControllerProvider.notifier,
+            );
+            final ended = <String?>[];
+            final sub = controller.takeEnded.listen(ended.add);
+            addTearDown(sub.cancel);
+
+            await controller.record(linkedId: 'linked-task-id');
+            await controller.stop();
+            await controller.record(linkedId: 'linked-task-id');
+            await controller.cancel();
+
+            expect(ended, ['round-trip-entry-id', null]);
+          },
+        );
+
+        test('reports a take that could not be saved with null', () async {
+          when(
+            () => mockAudioRecorderRepository.stopRecording(),
+          ).thenThrow(StateError('recorder gone'));
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          final ended = <String?>[];
+          final sub = controller.takeEnded.listen(ended.add);
+          addTearDown(sub.cancel);
+
+          await controller.record(linkedId: 'linked-task-id');
+          await controller.stop();
+
+          expect(ended, [null]);
+        });
+
+        test('a stop with no take reports nothing', () async {
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          final ended = <String?>[];
+          final sub = controller.takeEnded.listen(ended.add);
+          addTearDown(sub.cancel);
+
+          await controller.stop();
+
+          expect(ended, isEmpty);
+        });
+      });
+
+      group('deferred automation (the commit moment)', () {
+        List<String> triggeredIds() => verify(
+          () => mockTrigger.triggerAutomaticPrompts(
+            captureAny(),
+            linkedSubjectId: any(named: 'linkedSubjectId'),
+          ),
+        ).captured.cast<String>();
+
+        test('stop(deferAutomation: true) fires no prompt on stop', () async {
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          await controller.record(linkedId: 'linked-task-id');
+          final id = await controller.stop(deferAutomation: true);
+
+          expect(id, 'round-trip-entry-id');
+          verifyNever(
+            () => mockTrigger.triggerAutomaticPrompts(
+              any(),
+              linkedSubjectId: any(named: 'linkedSubjectId'),
+            ),
+          );
+        });
+
+        test('commitAutomation fires the deferred prompt once, for the '
+            "take's subject", () async {
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          await controller.record(linkedId: 'linked-task-id');
+          final id = (await controller.stop(deferAutomation: true))!;
+
+          controller.commitAutomation(id);
+          await pumpEventQueue();
+          controller.commitAutomation(id);
+          await pumpEventQueue();
+
+          verify(
+            () => mockTrigger.triggerAutomaticPrompts(
+              id,
+              linkedSubjectId: 'linked-task-id',
+            ),
+          ).called(1);
+        });
+
+        test('dropAutomation forgets the prompt: a later commit fires '
+            'nothing', () async {
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          await controller.record(linkedId: 'linked-task-id');
+          final id = (await controller.stop(deferAutomation: true))!;
+
+          controller
+            ..dropAutomation(id)
+            ..commitAutomation(id);
+          await pumpEventQueue();
+
+          verifyNever(
+            () => mockTrigger.triggerAutomaticPrompts(
+              any(),
+              linkedSubjectId: any(named: 'linkedSubjectId'),
+            ),
+          );
+        });
+
+        test('a take the caller transcribes owes nothing to commit', () async {
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          await controller.record(
+            linkedId: 'linked-task-id',
+            transcriptionHandledByCaller: true,
+          );
+          final id = (await controller.stop(deferAutomation: true))!;
+
+          controller.commitAutomation(id);
+          await pumpEventQueue();
+
+          verifyNever(
+            () => mockTrigger.triggerAutomaticPrompts(
+              any(),
+              linkedSubjectId: any(named: 'linkedSubjectId'),
+            ),
+          );
+        });
+
+        test('a voice note with no subject owes nothing to commit', () async {
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          await controller.record();
+          final id = (await controller.stop(deferAutomation: true))!;
+
+          controller.commitAutomation(id);
+          await pumpEventQueue();
+
+          verifyNever(
+            () => mockTrigger.triggerAutomaticPrompts(
+              any(),
+              linkedSubjectId: any(named: 'linkedSubjectId'),
+            ),
+          );
+        });
+
+        test('a stop that does not defer still fires at once', () async {
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          await controller.record(linkedId: 'linked-task-id');
+          final id = await controller.stop();
+          await pumpEventQueue();
+
+          expect(triggeredIds(), [id]);
+        });
       });
     });
   });
@@ -617,7 +829,6 @@ void main() {
         // Assert
         final state = container.read(audioRecorderControllerProvider);
         expect(state.status, equals(AudioRecorderStatus.paused));
-        expect(state.showIndicator, isFalse); // showIndicator remains false
         expect(state.progress, equals(initialProgress));
         expect(state.dBFS, equals(initialDbfs));
       });
@@ -689,21 +900,6 @@ void main() {
         expect(result, isNull);
       });
 
-      test('should preserve inference preferences when stopping', () async {
-        // Arrange
-        container
-            .read(audioRecorderControllerProvider.notifier)
-            .setEnableSpeechRecognition(enable: true);
-
-        // Act
-        await container.read(audioRecorderControllerProvider.notifier).stop();
-
-        // Assert - Preferences should be preserved
-        final state = container.read(audioRecorderControllerProvider);
-        expect(state.enableSpeechRecognition, equals(true));
-        expect(state.status, equals(AudioRecorderStatus.stopped));
-      });
-
       test('should update status to stopped and reset state', () async {
         // Arrange
         final controller = container.read(
@@ -718,8 +914,7 @@ void main() {
         expect(state.status, equals(AudioRecorderStatus.stopped));
         expect(state.progress, equals(Duration.zero));
         expect(state.dBFS, equals(-160.0));
-        expect(state.showIndicator, isFalse);
-        expect(state.modalVisible, isFalse);
+        expect(state.inlineHostVisible, isFalse);
       });
 
       test(
@@ -793,8 +988,7 @@ void main() {
           expect(state.status, AudioRecorderStatus.stopped);
           expect(state.progress, Duration.zero);
           expect(state.dBFS, -160.0);
-          expect(state.showIndicator, isFalse);
-          expect(state.modalVisible, isFalse);
+          expect(state.inlineHostVisible, isFalse);
           verify(() => mockAudioRecorderRepository.stopRecording()).called(1);
           verify(
             () => mockAudioRecorderRepository.deleteRecording(any()),
@@ -899,27 +1093,12 @@ void main() {
         ).called(1);
       });
 
-      test('preserves inference preferences', () async {
-        final controller = await startRecording(container);
-        controller.setEnableSpeechRecognition(enable: true);
-
-        await controller.cancel();
-
-        expect(
-          container
-              .read(audioRecorderControllerProvider)
-              .enableSpeechRecognition,
-          isTrue,
-        );
-      });
-
       test(
         'does not trigger automatic prompts for a linked recording',
         () async {
           final mockTrigger = MockAutomaticPromptTrigger();
           when(
             () => mockTrigger.triggerAutomaticPrompts(
-              any(),
               any(),
               linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
@@ -941,7 +1120,6 @@ void main() {
 
           verifyNever(
             () => mockTrigger.triggerAutomaticPrompts(
-              any(),
               any(),
               linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
@@ -997,8 +1175,7 @@ void main() {
       expect(state.status, equals(AudioRecorderStatus.stopped));
       expect(state.dBFS, equals(-160.0));
       expect(state.progress, equals(Duration.zero));
-      expect(state.showIndicator, isFalse);
-      expect(state.modalVisible, isFalse);
+      expect(state.inlineHostVisible, isFalse);
       expect(state.linkedId, isNull);
     });
 
@@ -1135,11 +1312,6 @@ void main() {
             () => mockAudioRecorderRepository.startRecording(),
           ).thenAnswer((_) async => mockAudioNote);
 
-          container
-              .read(audioRecorderControllerProvider.notifier)
-              // Set some preferences before recording
-              .setEnableSpeechRecognition(enable: true);
-
           // Act
           await container
               .read(audioRecorderControllerProvider.notifier)
@@ -1150,8 +1322,6 @@ void main() {
           final state = container.read(audioRecorderControllerProvider);
           expect(state.status, equals(AudioRecorderStatus.recording));
           expect(state.linkedId, equals('test-linked-id'));
-          // Preferences should be preserved when starting recording
-          expect(state.enableSpeechRecognition, isTrue);
         },
       );
 
@@ -1249,8 +1419,7 @@ void main() {
         expect(state.status, equals(AudioRecorderStatus.stopped));
         expect(state.progress, equals(Duration.zero));
         expect(state.dBFS, equals(-160.0));
-        expect(state.showIndicator, isFalse);
-        expect(state.modalVisible, isFalse);
+        expect(state.inlineHostVisible, isFalse);
       });
 
       test('should capture exceptions during stop()', () async {
@@ -1527,12 +1696,12 @@ void main() {
       );
 
       // Act
-      controller.setModalVisible(modalVisible: true);
+      controller.setInlineHostVisible(visible: true);
 
       // Assert
       expect(states.length, equals(2)); // Initial + 1 change
 
-      expect(states[1].modalVisible, isTrue);
+      expect(states[1].inlineHostVisible, isTrue);
     });
 
     test('should maintain state consistency across multiple operations', () {
@@ -1540,91 +1709,15 @@ void main() {
       container.read(audioRecorderControllerProvider.notifier)
         // Act - Perform multiple state changes
         ..setCategoryId('category-123')
-        ..setModalVisible(modalVisible: true);
+        ..setInlineHostVisible(visible: true);
 
       // Assert - All state properties should be as expected
       final state = container.read(audioRecorderControllerProvider);
-      expect(
-        state.showIndicator,
-        isFalse,
-      ); // showIndicator stays false unless recording
-      expect(state.modalVisible, isTrue);
+      expect(state.inlineHostVisible, isTrue);
       expect(state.status, equals(AudioRecorderStatus.stopped));
       expect(state.progress, equals(Duration.zero));
       expect(state.dBFS, equals(-160.0));
     });
-  });
-
-  group('AudioRecorderController - Automatic Prompt Triggering', () {
-    group('setEnableSpeechRecognition', () {
-      test('should update enableSpeechRecognition in state', () {
-        // Arrange
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier)
-              // Act
-              ..setEnableSpeechRecognition(enable: true);
-
-        // Assert
-        expect(
-          container
-              .read(audioRecorderControllerProvider)
-              .enableSpeechRecognition,
-          isTrue,
-        );
-
-        // Act again
-        controller.setEnableSpeechRecognition(enable: false);
-
-        // Assert
-        expect(
-          container
-              .read(audioRecorderControllerProvider)
-              .enableSpeechRecognition,
-          isFalse,
-        );
-
-        // Act with null
-        controller.setEnableSpeechRecognition(enable: null);
-
-        // Assert
-        expect(
-          container
-              .read(audioRecorderControllerProvider)
-              .enableSpeechRecognition,
-          isNull,
-        );
-      });
-    });
-
-    // NOTE: Tests for _triggerAutomaticPrompts functionality
-    //
-    // The automatic prompt triggering logic is private and tested indirectly
-    // through integration tests that verify the complete recording flow.
-    // These integration tests ensure:
-    //
-    // 1. When category has automatic prompts configured:
-    //    - Speech recognition is triggered based on user preference
-    //    - Task summary is triggered for linked tasks when enabled
-    //
-    // 2. When category has no automatic prompts:
-    //    - No AI inference is triggered after recording
-    //
-    // 3. User preferences (checkboxes) override defaults:
-    //    - Disabling speech recognition prevents transcription
-    //    - Disabling task summary prevents summary generation
-    //    - Disabling checklist updates prevents checklist processing
-    //
-    // 4. Error handling:
-    //    - Exceptions during prompt triggering are caught and logged
-    //    - Recording entry is still created even if AI fails
-    //
-    // Unit testing this would require extensive mocking of:
-    // - SpeechRepository
-    // - AutomaticPromptTrigger
-    // - CategoryDetailsController
-    // - UnifiedAiController (via triggerNewInferenceProvider)
-    //
-    // The integration tests provide better coverage with less brittleness.
   });
 
   group('AudioRecorderController - Additional Coverage', () {
@@ -1668,7 +1761,6 @@ void main() {
           final mockTrigger = MockAutomaticPromptTrigger();
           when(
             () => mockTrigger.triggerAutomaticPrompts(
-              any(),
               any(),
               linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
@@ -1714,26 +1806,17 @@ void main() {
             audioRecorderControllerProvider.notifier,
           );
 
-          // ignore: cascade_invocations
-          controller.setEnableSpeechRecognition(enable: true);
           await controller.record(
             linkedId: 'relationship-id',
             transcriptionHandledByCaller: true,
           );
-          controller.setModalVisible(modalVisible: false);
+          controller.setInlineHostVisible(visible: false);
           expect(await controller.stop(), 'stop-entry-id');
           verifyNever(
             () => mockTrigger.triggerAutomaticPrompts(
               any(),
-              any(),
               linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
-          );
-          expect(
-            localContainer
-                .read(audioRecorderControllerProvider)
-                .enableSpeechRecognition,
-            isTrue,
           );
 
           // Start recording with a linkedId so _linkedId is set
@@ -1758,7 +1841,6 @@ void main() {
           verify(
             () => mockTrigger.triggerAutomaticPrompts(
               'stop-entry-id',
-              any(),
               linkedSubjectId: 'linked-task-id',
             ),
           ).called(1);
@@ -1845,7 +1927,6 @@ void main() {
         expect(entryId, 'no-link-entry-id');
         verifyNever(
           () => mockTrigger.triggerAutomaticPrompts(
-            any(),
             any(),
             linkedSubjectId: any(named: 'linkedSubjectId'),
           ),

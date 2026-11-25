@@ -2,7 +2,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_timer_pill.dart';
 import 'package:lotti/features/design_system/components/chat_input/design_system_voice_waveform.dart';
-import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -21,8 +20,7 @@ AudioRecorderState _state({
   status: status,
   progress: progress,
   dBFS: dbfs,
-  showIndicator: false,
-  modalVisible: true,
+  inlineHostVisible: true,
 );
 
 void main() {
@@ -84,6 +82,19 @@ void main() {
     Future<void> show(WidgetTester tester, AudioRecorderState state) =>
         pumpWith(tester, RecordingLevelLine(state: state));
     List<double> levels(WidgetTester tester) => waveform(tester).levels;
+
+    testWidgets('a host may draw it over a stretch of its own', (
+      tester,
+    ) async {
+      await pumpWith(
+        tester,
+        Center(child: RecordingLevelLine(state: _state(), width: 64)),
+      );
+      expect(
+        tester.getSize(find.byType(DesignSystemVoiceWaveform)).width,
+        64,
+      );
+    });
 
     testWidgets('keeps a bounded window of the live level, one per sample, '
         'and holds still while paused', (tester) async {
@@ -211,11 +222,11 @@ void main() {
       final discard = tester.getRect(
         find.byKey(RecordingTransportControls.discardKey),
       );
-      final pause = tester.getRect(
-        find.byKey(RecordingTransportControls.pauseKey),
+      final stop = tester.getRect(
+        find.byKey(RecordingTransportControls.stopKey),
       );
       expect(line.left, closeTo(discard.left, 0.5));
-      expect(line.right, closeTo(pause.right, 0.5));
+      expect(line.right, closeTo(stop.right, 0.5));
       expect(line.center.dx, closeTo(row.center.dx, 0.5));
     });
 
@@ -247,46 +258,6 @@ void main() {
     }
   });
 
-  group('RecordingOption', () {
-    testWidgets('its name in the caption voice, then a small toggle; the '
-        'whole row flips it, and a reader hears one switch by its name', (
-      tester,
-    ) async {
-      final semantics = tester.ensureSemantics();
-      final changes = <bool>[];
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          RecordingOption(
-            label: 'Transcribe',
-            value: true,
-            onChanged: changes.add,
-          ),
-        ),
-      );
-      final toggle = tester.widget<DesignSystemToggle>(
-        find.byType(DesignSystemToggle),
-      );
-      expect(toggle.size, DesignSystemToggleSize.small);
-      expect(toggle.value, isTrue);
-      expect(
-        tester.getRect(find.text('Transcribe')).right,
-        lessThan(tester.getRect(find.byType(DesignSystemToggle)).left),
-      );
-      final tokens = tester.element(find.byType(RecordingOption)).designTokens;
-      expect(
-        tester.widget<Text>(find.text('Transcribe')).style,
-        recordingCaptionStyle(tokens),
-      );
-
-      await tester.tap(find.text('Transcribe'));
-      await tester.tap(find.byType(DesignSystemToggle));
-      expect(changes, [false, false]);
-
-      expect(find.bySemanticsLabel('Transcribe'), findsOneWidget);
-      semantics.dispose();
-    });
-  });
-
   group('RecordingTransportControls', () {
     final calls = <String>[];
     setUp(calls.clear);
@@ -295,10 +266,12 @@ void main() {
       WidgetTester tester, {
       bool paused = false,
       bool busy = false,
+      bool spread = false,
     }) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           RecordingTransportControls(
+            spread: spread,
             paused: paused,
             progress: const Duration(seconds: 65),
             busy: busy,
@@ -313,14 +286,15 @@ void main() {
 
     Finder key(String name) => find.byKey(ValueKey(name));
 
-    testWidgets('discard, the red Stop and pause, left to right, each its '
+    testWidgets('discard, pause and the red Stop, left to right — Stop last, '
+        'as on the strip — each its '
         'own act', (tester) async {
       await pump(tester);
       final discard = tester.getRect(key('cancel_recording'));
       final pause = tester.getRect(key('pause_resume_button'));
       final stop = tester.getRect(key('stop_recording'));
-      expect(discard.right, lessThan(stop.left));
-      expect(stop.right, lessThan(pause.left));
+      expect(discard.right, lessThan(pause.left));
+      expect(pause.right, lessThan(stop.left));
       // The quiet rings and the Stop pill are one height, full 48px
       // targets, on one centre line; the solid pause glyph a size below the
       // stroked ✕, so the two rings weigh the same.
@@ -354,6 +328,29 @@ void main() {
       expect(pill.running, isTrue);
       expect(pill.label, '01:05');
       expect(find.text('01:05'), findsOneWidget);
+    });
+
+    testWidgets('spread, discard holds the start and pause and Stop the '
+        'end, a step apart, as the strip keeps them', (tester) async {
+      await pump(tester, spread: true);
+      final row = tester.getRect(find.byType(RecordingTransportControls));
+      final discard = tester.getRect(key('cancel_recording'));
+      final pause = tester.getRect(key('pause_resume_button'));
+      final stop = tester.getRect(key('stop_recording'));
+      final tokens = tester
+          .element(find.byType(RecordingTransportControls))
+          .designTokens;
+
+      expect(discard.left, row.left);
+      expect(stop.right, row.right);
+      expect(stop.left - pause.right, tokens.spacing.step3);
+      expect(pause.left - discard.right, greaterThan(tokens.spacing.step6));
+      expect(discard.center.dy, closeTo(stop.center.dy, 0.5));
+
+      await tester.tap(key('cancel_recording'));
+      await tester.tap(key('pause_resume_button'));
+      await tester.tap(key('stop_recording'));
+      expect(calls, ['discard', 'pause', 'stop']);
     });
 
     testWidgets('Stop is one button named Stop whose value is the time, in '
@@ -396,6 +393,52 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('while paused, resume is the filled accent disc; running, '
+        'pause is a quiet ring', (tester) async {
+      BoxDecoration ringOf() =>
+          tester
+                  .widget<Container>(
+                    find
+                        .descendant(
+                          of: key('pause_resume_button'),
+                          matching: find.byType(Container),
+                        )
+                        .first,
+                  )
+                  .decoration!
+              as BoxDecoration;
+      await pump(tester);
+      final tokens = tester
+          .element(find.byType(RecordingTransportControls))
+          .designTokens;
+      expect(ringOf().color, isNull);
+      expect(ringOf().border, isNotNull);
+
+      await pump(tester, paused: true);
+      expect(ringOf().color, tokens.colors.interactive.enabled);
+      expect(ringOf().border, isNull);
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIconsFilled.play)).color,
+        tokens.colors.text.onInteractiveAlert,
+      );
+    });
+
+    testWidgets('Stop is red while the take runs and grey while it is '
+        'paused, the time held on it', (tester) async {
+      DesignSystemTimerPill pill() => tester.widget(
+        find.descendant(
+          of: key('stop_recording'),
+          matching: find.byType(DesignSystemTimerPill),
+        ),
+      );
+      await pump(tester);
+      expect(pill().paused, isFalse);
+
+      await pump(tester, paused: true);
+      expect(pill().paused, isTrue);
+      expect(pill().label, '01:05');
+    });
+
     testWidgets('on a 280px screen at 3x text the row wraps: nothing '
         'overflows and every control stays on screen and tappable', (
       tester,
@@ -430,8 +473,8 @@ void main() {
         expect(control.left, greaterThanOrEqualTo(row.left - 0.5));
         expect(control.right, lessThanOrEqualTo(row.right + 0.5));
       }
-      // Pause took a line of its own beneath discard and Stop.
-      expect(pause.top, greaterThan(stop.bottom - 0.5));
+      // Stop, last, took a line of its own beneath discard and pause.
+      expect(stop.top, greaterThan(pause.bottom - 0.5));
       await tester.tap(key('stop_recording'));
       await tester.tap(key('pause_resume_button'));
       expect(calls, ['stop', 'pause']);

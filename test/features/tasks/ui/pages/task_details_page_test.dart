@@ -33,6 +33,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_origin_scroll_anchor.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
@@ -308,6 +309,42 @@ void main() {
       expect(find.byType(QueryChatPane), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     });
+
+    testWidgets(
+      "anchors its scroll for the recording strip's way back, under its own "
+      "route and on the page's own scroll controller",
+      (tester) async {
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => testTask);
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              linkedEntriesControllerProvider(
+                testTask.meta.id,
+              ).overrideWith(FakeLinkedEntriesController.new),
+              taskAgentProvider.overrideWith((ref, id) async => null),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final anchor = tester.widget<RecordingOriginScrollAnchor>(
+          find.byType(RecordingOriginScrollAnchor),
+        );
+        expect(anchor.route, '/tasks/${testTask.meta.id}');
+        final scrollView = tester.widget<CustomScrollView>(
+          find.descendant(
+            of: find.byType(RecordingOriginScrollAnchor),
+            matching: find.byType(CustomScrollView),
+          ),
+        );
+        expect(scrollView.controller, same(anchor.controller));
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
 
     testWidgets(
       'a first-run task fills the remaining viewport and narrows the column, '

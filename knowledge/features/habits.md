@@ -5,7 +5,7 @@ description: Two record streams reconciled into "what should the user see now" �
 resource: ../../lib/features/habits
 tags: [habits, derivation, streaks, heatmap]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-24T12:00:00Z }
 stale_after: 2027-04-03
 sources:
   - id: src
@@ -394,7 +394,9 @@ share the same centred width and horizontal padding as the reading content.
 The chart's final sliver adds
 `DesignSystemBottomNavigationBar.occupiedHeight(context)` beneath its ordinary
 spacing token on mobile, so at the end of the scroll the chart clears the
-floating navigation bar and any recording indicators above it. Desktop gets
+floating navigation bar, the running-timer island above it and — through
+the bottom inset the bar already counts — the recording strip below it.
+Desktop gets
 zero from that helper because its sidebar replaces the bottom bar. The page's
 outer `SafeArea` leaves its bottom disabled because `occupiedHeight` already
 includes the system inset; consuming both would create a second home-indicator

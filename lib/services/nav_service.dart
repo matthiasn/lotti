@@ -220,6 +220,34 @@ class NavService {
 
   String currentPath = '/tasks';
 
+  /// The route on screen: where the active tab's delegate stands.
+  ///
+  /// Read off the delegate, like [routeForTab], rather than from
+  /// [currentPath], which navigation that bypasses this service (a page's own
+  /// `beamBack`, a delegate beamed directly) leaves behind.
+  String get activeRoute => routeForTab(_activeRootPath);
+
+  /// Notifies whenever [activeRoute] may have changed: a tab's delegate
+  /// moved, or another tab became the active one. For a surface that has to
+  /// know whether it is on a given page — the recording strip, which drops
+  /// its way back while the user stands where the take started.
+  late final Listenable activeRouteChanges = Listenable.merge([
+    for (final spec in _tabSpecs) spec.delegate,
+    _activeIndex,
+  ]);
+
+  /// The active tab's index as a listenable, for [activeRouteChanges]:
+  /// switching tabs does not move any delegate.
+  final ValueNotifier<int> _activeIndex = ValueNotifier<int>(0);
+
+  /// Whether [beamToNamed] would land on [path] itself: an enabled tab owns
+  /// it and that tab may become active. False for a route behind a disabled
+  /// flag or outside lockdown, which [beamToNamed] would refuse or reroute.
+  bool canBeamTo(String path) {
+    final spec = _specForPath(path);
+    return spec != null && isDelegateAllowed(spec.delegate);
+  }
+
   /// Replays the current index to new subscribers.
   ///
   /// Restore runs before `runApp`, so the emission that selects the restored
@@ -267,6 +295,7 @@ class NavService {
     _pendingActiveRootPath = null;
     currentPath = _enabledTabSpecs.first.rootPath;
     index = 0;
+    _activeIndex.value = 0;
   }
 
   /// Restores the tab routes and the active tab persisted by the previous
@@ -541,6 +570,7 @@ class NavService {
   }) {
     if (!isTabAllowed(newIndex)) return;
     index = newIndex;
+    _activeIndex.value = newIndex;
     if (syncPath) {
       currentPath = routeForTab(_activeRootPath);
     }
@@ -939,6 +969,7 @@ class NavService {
     desktopShowTimeAnalysis.dispose();
     desktopShowAiImpact.dispose();
     desktopSelectedSettingsRoute.dispose();
+    _activeIndex.dispose();
     await _navigationFlagsSub.cancel();
     await indexStreamController.close();
   }

@@ -2125,14 +2125,9 @@
   "audioRecordingDiscardDialogTitle": "Discard recording?",
   "audioRecordingLive": "Recording started",
   "audioRecordingPause": "Pause",
-  "audioRecordingRecord": "Record",
   "audioRecordingResume": "Resume",
   "audioRecordings": "Audio Recordings",
   "audioRecordingStop": "Stop",
-  "audioRecordingTranscribeOption": "Transcribe",
-  "@audioRecordingTranscribeOption": {
-    "description": "Toggle under the recorder: transcribe this recording once it stops."
-  },
   "avatarCropHint": "Drag to move · pinch to zoom",
   "avatarCropPreviewLabel": "How it will look on the list",
   "avatarCropTitle": "Choose the face",
@@ -9043,6 +9038,69 @@
       }
     }
   },
+  "recordingReceiptOpen": "Open",
+  "@recordingReceiptOpen": {
+    "description": "Takes the user to what the recording was saved to."
+  },
+  "recordingReceiptSaved": "Saved · {time}",
+  "@recordingReceiptSaved": {
+    "description": "The receipt's caption over what the recording was saved to: that it was saved, and its length.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingReceiptTranscribing": "Saved · {time} · transcribing",
+  "@recordingReceiptTranscribing": {
+    "description": "The receipt's caption when a transcript is on its way: saved, its length, and that it is being transcribed.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingReceiptUndo": "Undo",
+  "@recordingReceiptUndo": {
+    "description": "Deletes the recording just saved."
+  },
+  "recordingStripBackTo": "Back to {subject}",
+  "@recordingStripBackTo": {
+    "description": "Screen-reader label of the recording strip's way back to the page the take started on.",
+    "placeholders": {
+      "subject": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingStripFoldRecorder": "Fold recorder",
+  "@recordingStripFoldRecorder": {
+    "description": "Screen-reader label for folding the full recorder back into the recording strip."
+  },
+  "recordingStripOpenRecorder": "Open recorder",
+  "@recordingStripOpenRecorder": {
+    "description": "Screen-reader label for opening the full recorder above the recording strip."
+  },
+  "recordingStripPausedFor": "Paused",
+  "@recordingStripPausedFor": {
+    "description": "The recording strip's caption over the subject's title while the take is paused, away from where it started."
+  },
+  "recordingStripPausedHere": "Paused here",
+  "@recordingStripPausedHere": {
+    "description": "The same label while the take is paused."
+  },
+  "recordingStripRecordingFor": "Recording for",
+  "@recordingStripRecordingFor": {
+    "description": "Caption above the subject's title on the recording strip, away from where the take started."
+  },
+  "recordingStripRecordingHere": "Recording here",
+  "@recordingStripRecordingHere": {
+    "description": "The recording strip's label on the page where the take started."
+  },
+  "recordingStripVoiceNote": "Voice note",
+  "@recordingStripVoiceNote": {
+    "description": "The recording strip's label for a take linked to nothing."
+  },
   "referenceImageContinue": "Continue",
   "referenceImageContinueWithCount": "Continue ({count})",
   "@referenceImageContinueWithCount": {
@@ -10767,7 +10825,6 @@
   "sidebarActiveSectionTitle": "Activity",
   "sidebarActivityCollapseTooltip": "Collapse activity",
   "sidebarActivityExpandTooltip": "Expand activity",
-  "sidebarAudioRecordingStatusLabel": "Recording",
   "sidebarRunningTimerLabel": "Running timer",
   "sidebarRunningTimerStopTooltip": "Stop timer",
   "sidebarTimerStatusLabel": "Timer",

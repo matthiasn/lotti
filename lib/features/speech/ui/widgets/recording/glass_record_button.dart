@@ -3,6 +3,7 @@ import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/state/recording_return.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -21,7 +22,11 @@ import 'package:material_ui/material_ui.dart';
 /// It watches that one boolean of the recorder's state and nothing else, so
 /// the level and progress updates streaming through `AudioRecorderState`
 /// during a recording rebuild neither this button nor the bar around it.
-class GlassRecordButton extends ConsumerWidget {
+///
+/// When the recording strip takes the user back to [linkedId], the button
+/// swells once and settles, so the eye finds the take it came back to. Not
+/// under reduced motion.
+class GlassRecordButton extends ConsumerStatefulWidget {
   const GlassRecordButton({
     required this.linkedId,
     required this.onPressed,
@@ -33,8 +38,41 @@ class GlassRecordButton extends ConsumerWidget {
 
   final VoidCallback onPressed;
 
+  /// How long the arrival highlight runs.
+  static const Duration arrivalDuration = MotionDurations.long2;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GlassRecordButton> createState() => _GlassRecordButtonState();
+}
+
+class _GlassRecordButtonState extends ConsumerState<GlassRecordButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _arrival = AnimationController(
+    vsync: this,
+    duration: GlassRecordButton.arrivalDuration,
+  );
+
+  /// Up a fifth and back, with the motion tokens' easing.
+  late final Animation<double> _scale = TweenSequence<double>([
+    TweenSequenceItem(tween: Tween(begin: 1, end: 1.2), weight: 1),
+    TweenSequenceItem(tween: Tween(begin: 1.2, end: 1), weight: 1),
+  ]).animate(CurvedAnimation(parent: _arrival, curve: MotionCurves.standard));
+
+  @override
+  void dispose() {
+    _arrival.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final linkedId = widget.linkedId;
+    ref.listen(recordingArrivalProvider, (_, arrival) {
+      if (arrival?.subjectId == linkedId &&
+          !MediaQuery.disableAnimationsOf(context)) {
+        _arrival.forward(from: 0);
+      }
+    });
     final tokens = context.designTokens;
     final messages = context.messages;
     final isRecording = ref.watch(
@@ -43,17 +81,22 @@ class GlassRecordButton extends ConsumerWidget {
       ),
     );
 
-    return DsGlassRoundButton(
-      icon: LottiIcons.mic,
-      semanticLabel: isRecording
-          ? messages.taskActionBarAudioRecordingActive
-          : messages.taskFirstRunRecordAudio,
-      onPressed: onPressed,
-      backgroundColor: isRecording
-          ? tokens.colors.alert.error.defaultColor
-          : null,
-      outlineColor: isRecording ? null : tokens.colors.interactive.enabled,
-      iconColor: isRecording ? Colors.white : tokens.colors.interactive.enabled,
+    return ScaleTransition(
+      scale: _scale,
+      child: DsGlassRoundButton(
+        icon: LottiIcons.mic,
+        semanticLabel: isRecording
+            ? messages.taskActionBarAudioRecordingActive
+            : messages.taskFirstRunRecordAudio,
+        onPressed: widget.onPressed,
+        backgroundColor: isRecording
+            ? tokens.colors.alert.error.defaultColor
+            : null,
+        outlineColor: isRecording ? null : tokens.colors.interactive.enabled,
+        iconColor: isRecording
+            ? Colors.white
+            : tokens.colors.interactive.enabled,
+      ),
     );
   }
 }

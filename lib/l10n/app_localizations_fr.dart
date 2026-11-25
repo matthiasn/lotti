@@ -3030,9 +3030,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get audioRecordingPause => 'Mettre en pause';
 
   @override
-  String get audioRecordingRecord => 'Enregistrer';
-
-  @override
   String get audioRecordingResume => 'Reprendre';
 
   @override
@@ -3040,9 +3037,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get audioRecordingStop => 'Arrêter';
-
-  @override
-  String get audioRecordingTranscribeOption => 'Transcrire';
 
   @override
   String get avatarCropHint => 'Glisser pour déplacer · pincer pour zoomer';
@@ -14228,6 +14222,48 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get recordingReceiptOpen => 'Ouvrir';
+
+  @override
+  String recordingReceiptSaved(String time) {
+    return 'Enregistré · $time';
+  }
+
+  @override
+  String recordingReceiptTranscribing(String time) {
+    return 'Enregistré · $time · transcription en cours';
+  }
+
+  @override
+  String get recordingReceiptUndo => 'Annuler';
+
+  @override
+  String recordingStripBackTo(String subject) {
+    return 'Retour à $subject';
+  }
+
+  @override
+  String get recordingStripFoldRecorder => 'Replier l\'enregistreur';
+
+  @override
+  String get recordingStripOpenRecorder => 'Ouvrir l\'enregistreur';
+
+  @override
+  String get recordingStripPausedFor => 'En pause';
+
+  @override
+  String get recordingStripPausedHere => 'En pause ici';
+
+  @override
+  String get recordingStripRecordingFor => 'Enregistrement pour';
+
+  @override
+  String get recordingStripRecordingHere => 'Enregistrement ici';
+
+  @override
+  String get recordingStripVoiceNote => 'Note vocale';
+
+  @override
   String get referenceImageContinue => 'Continuer';
 
   @override
@@ -16923,9 +16959,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get sidebarActivityExpandTooltip => 'Développer l’activité';
-
-  @override
-  String get sidebarAudioRecordingStatusLabel => 'Enregistrement';
 
   @override
   String get sidebarRunningTimerLabel => 'Minuteur en cours';

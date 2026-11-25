@@ -161,8 +161,8 @@ class CreateChecklistItem extends ConsumerWidget {
   }
 }
 
-/// Create-menu item that opens the audio recording modal for a new audio
-/// entry linked to `linkedFromId`.
+/// Create-menu item that starts a take on the recording strip for a new
+/// audio entry linked to `linkedFromId`.
 class CreateAudioItem extends ConsumerWidget {
   const CreateAudioItem(
     this.linkedFromId, {
@@ -188,11 +188,9 @@ class CreateAudioItem extends ConsumerWidget {
       trailing: DsActionRowTrailing.chevron,
       onTap: () {
         Navigator.of(context).pop();
-        entryCreationService.showAudioRecordingModal(
-          context,
-          linkedId: linkedFromId,
-          categoryId: categoryId,
-        );
+        entryCreationService
+            .startRecording(linkedId: linkedFromId, categoryId: categoryId)
+            .ignore();
       },
     );
   }

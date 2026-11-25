@@ -2995,9 +2995,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get audioRecordingPause => 'Pausa';
 
   @override
-  String get audioRecordingRecord => 'Spela in';
-
-  @override
   String get audioRecordingResume => 'Återuppta';
 
   @override
@@ -3005,9 +3002,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get audioRecordingStop => 'Stoppa';
-
-  @override
-  String get audioRecordingTranscribeOption => 'Transkribera';
 
   @override
   String get avatarCropHint => 'Dra för att flytta · nyp för att zooma';
@@ -14004,6 +13998,48 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get recordingReceiptOpen => 'Öppna';
+
+  @override
+  String recordingReceiptSaved(String time) {
+    return 'Sparad · $time';
+  }
+
+  @override
+  String recordingReceiptTranscribing(String time) {
+    return 'Sparad · $time · transkriberas';
+  }
+
+  @override
+  String get recordingReceiptUndo => 'Ångra';
+
+  @override
+  String recordingStripBackTo(String subject) {
+    return 'Tillbaka till $subject';
+  }
+
+  @override
+  String get recordingStripFoldRecorder => 'Fäll ihop inspelaren';
+
+  @override
+  String get recordingStripOpenRecorder => 'Öppna inspelaren';
+
+  @override
+  String get recordingStripPausedFor => 'Pausad';
+
+  @override
+  String get recordingStripPausedHere => 'Pausad här';
+
+  @override
+  String get recordingStripRecordingFor => 'Spelar in för';
+
+  @override
+  String get recordingStripRecordingHere => 'Spelar in här';
+
+  @override
+  String get recordingStripVoiceNote => 'Röstanteckning';
+
+  @override
   String get referenceImageContinue => 'Fortsätt';
 
   @override
@@ -16664,9 +16700,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get sidebarActivityExpandTooltip => 'Fäll ut aktivitet';
-
-  @override
-  String get sidebarAudioRecordingStatusLabel => 'Inspelning';
 
   @override
   String get sidebarRunningTimerLabel => 'Pågående timer';

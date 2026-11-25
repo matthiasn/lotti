@@ -12,8 +12,7 @@ class StubAudioRecorderController extends AudioRecorderController {
             status: AudioRecorderStatus.stopped,
             progress: Duration.zero,
             dBFS: -160,
-            showIndicator: false,
-            modalVisible: false,
+            inlineHostVisible: false,
           );
 
   final AudioRecorderState _state;

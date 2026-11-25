@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recording_origin.dart';
 
 part 'recorder_state.freezed.dart';
 
@@ -31,33 +32,32 @@ abstract class AudioRecorderState with _$AudioRecorderState {
     /// Current audio level in dBFS, as the level line draws it.
     required double dBFS,
 
-    /// Whether to show the floating recording indicator.
-    /// Only relevant when recording and modal is not visible.
-    required bool showIndicator,
-
-    /// Whether the recording modal is currently visible.
-    /// Used to coordinate with indicator display.
-    required bool modalVisible,
+    /// Whether a check-in screen is drawing this take in place. The
+    /// recording strip stays hidden while it is: the take already has a
+    /// recorder on screen.
+    required bool inlineHostVisible,
 
     /// Optional ID to link recording to existing journal entry.
     String? linkedId,
 
-    /// Whether to trigger speech recognition after recording.
-    /// If null, uses category default settings.
-    bool? enableSpeechRecognition,
+    /// Where the running take was started; null while nothing records.
+    RecordingOrigin? origin,
   }) = _AudioRecorderState;
 }
 
 /// Session-scoped reads on [AudioRecorderState] that more than one surface
 /// asks, kept here so "an active session linked to X" has one definition.
 extension AudioRecorderSession on AudioRecorderState {
+  /// True while a take is in flight — recording or paused — whatever it is
+  /// linked to.
+  bool get isTakeActive =>
+      status == AudioRecorderStatus.recording ||
+      status == AudioRecorderStatus.paused;
+
   /// True while a recording session is in flight — recording or paused — for
   /// the task or entry [linkedId]. A stopped session, or one linked to
   /// another entry or to nothing, is not this one's.
   bool isActiveSessionFor(String linkedId) {
-    final isActive =
-        status == AudioRecorderStatus.recording ||
-        status == AudioRecorderStatus.paused;
-    return isActive && this.linkedId == linkedId;
+    return isTakeActive && this.linkedId == linkedId;
   }
 }

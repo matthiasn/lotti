@@ -266,6 +266,7 @@
       "page": "plan-and-capture/recordings",
       "status": "verified",
       "screenshotCases": [
+        "recordings/strip",
         "recordings/active",
         "recordings/transcripts",
         "recordings/transcript-expanded"

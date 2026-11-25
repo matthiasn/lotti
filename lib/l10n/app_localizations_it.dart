@@ -3029,9 +3029,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get audioRecordingPause => 'Pausa';
 
   @override
-  String get audioRecordingRecord => 'Registra';
-
-  @override
   String get audioRecordingResume => 'Riprendi';
 
   @override
@@ -3039,9 +3036,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get audioRecordingStop => 'Arresta';
-
-  @override
-  String get audioRecordingTranscribeOption => 'Trascrivi';
 
   @override
   String get avatarCropHint => 'Trascina per spostare · pizzica per zoomare';
@@ -14160,6 +14154,48 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get recordingReceiptOpen => 'Apri';
+
+  @override
+  String recordingReceiptSaved(String time) {
+    return 'Salvato · $time';
+  }
+
+  @override
+  String recordingReceiptTranscribing(String time) {
+    return 'Salvato · $time · trascrizione in corso';
+  }
+
+  @override
+  String get recordingReceiptUndo => 'Annulla';
+
+  @override
+  String recordingStripBackTo(String subject) {
+    return 'Torna a $subject';
+  }
+
+  @override
+  String get recordingStripFoldRecorder => 'Chiudi il registratore';
+
+  @override
+  String get recordingStripOpenRecorder => 'Apri il registratore';
+
+  @override
+  String get recordingStripPausedFor => 'In pausa';
+
+  @override
+  String get recordingStripPausedHere => 'In pausa qui';
+
+  @override
+  String get recordingStripRecordingFor => 'Registrazione per';
+
+  @override
+  String get recordingStripRecordingHere => 'Registrazione qui';
+
+  @override
+  String get recordingStripVoiceNote => 'Nota vocale';
+
+  @override
   String get referenceImageContinue => 'Continua';
 
   @override
@@ -16854,9 +16890,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get sidebarActivityExpandTooltip => 'Espandi attività';
-
-  @override
-  String get sidebarAudioRecordingStatusLabel => 'Registrazione';
 
   @override
   String get sidebarRunningTimerLabel => 'Timer in corso';

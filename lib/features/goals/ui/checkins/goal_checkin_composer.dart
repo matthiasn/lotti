@@ -16,6 +16,7 @@ import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_duration.dart';
 import 'package:lotti/features/speech/state/app_settings_opener.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recording_start_guard.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/inline_recorder.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_failure_callout.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -130,13 +131,13 @@ class GoalCheckInComposer extends ConsumerStatefulWidget {
         ),
       );
     } finally {
-      // The recorder hides the floating indicator while it is up; a sheet
-      // gone mid-take must hand it back, for the take to be stopped there.
+      // The recorder hides the recording strip while it is up; a sheet gone
+      // mid-take hands the take to the strip, for it to be stopped there.
       // Only where a recorder exists: a written check-in never made one.
       if (container.read(audioRecorderControllerProvider.exists)) {
         container
             .read(audioRecorderControllerProvider.notifier)
-            .setModalVisible(modalVisible: false);
+            .setInlineHostVisible(visible: false);
       }
     }
   }
@@ -243,7 +244,7 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
 
   /// The take is saved and linked the moment the recorder stops, and its
   /// words follow from the recorder's own automation — which also covers a
-  /// take stopped from the floating indicator after this sheet is gone. So
+  /// take stopped from the recording strip after this sheet is gone. So
   /// the sheet's job is done: it says so and closes.
   void _onRecorded(String _, Duration _) {
     final messenger = ScaffoldMessenger.maybeOf(context);
