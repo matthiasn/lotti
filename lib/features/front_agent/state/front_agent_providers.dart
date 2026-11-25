@@ -189,6 +189,7 @@ final frontDoorWalkerProvider = Provider<FrontDoorWalker>(
     ownerTitles: ref.watch(frontOwnerTitlesProvider),
     configFlag: ref.watch(journalDbProvider).getConfigFlag,
     domainLogger: ref.watch(domainLoggerProvider),
+    notifications: ref.watch(updateNotificationsProvider),
   ),
   name: 'frontDoorWalkerProvider',
 );

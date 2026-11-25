@@ -5910,6 +5910,12 @@ abstract class AppLocalizations {
   /// **'Stop live transcription'**
   String get chatInputStopRealtime;
 
+  /// Tooltip of the chat input button that stops the answer to a message already sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get chatInputStopTooltip;
+
   /// No description provided for @chatInputStopTranscribe.
   ///
   /// In en, this message translates to:
@@ -12599,6 +12605,30 @@ abstract class AppLocalizations {
   /// **'Delete this chat? Its messages are hidden on every device, not erased. Whatever you filed from it stays where it is.'**
   String get frontChatDeleteExplanation;
 
+  /// Composer pager: shows the next draft page of the companion chat box.
+  ///
+  /// In en, this message translates to:
+  /// **'Next draft'**
+  String get frontChatDraftNext;
+
+  /// Composer pager: which draft page of the companion chat box is shown, e.g. 2/2.
+  ///
+  /// In en, this message translates to:
+  /// **'{page}/{count}'**
+  String frontChatDraftPage(int page, int count);
+
+  /// Composer pager: accessible name of the page count, e.g. "Draft 2 of 2".
+  ///
+  /// In en, this message translates to:
+  /// **'Draft {page} of {count}'**
+  String frontChatDraftPageLabel(int page, int count);
+
+  /// Composer pager: shows the previous draft page of the companion chat box — what was typed before Edit took back a stopped message.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous draft'**
+  String get frontChatDraftPrevious;
+
   /// No description provided for @frontChatDrawerClose.
   ///
   /// In en, this message translates to:
@@ -12670,6 +12700,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Inbox'**
   String get frontChatInboxTitle;
+
+  /// Accessibility hint for long-pressing a companion chat message to open its actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Message actions'**
+  String get frontChatMessageActions;
+
+  /// Toast title when the user long-presses their message while the companion is still working on it
+  ///
+  /// In en, this message translates to:
+  /// **'Still working on this'**
+  String get frontChatMessageBusy;
+
+  /// Toast line and tooltip saying the user must stop the companion before editing the message
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the companion first to edit this message.'**
+  String get frontChatMessageBusyHint;
+
+  /// Toast after a companion chat message was copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Message copied'**
+  String get frontChatMessageCopied;
+
+  /// Action that copies a companion chat message the user sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get frontChatMessageCopy;
+
+  /// Action that puts a stopped companion chat message back into the input to change and send again.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get frontChatMessageEdit;
+
+  /// Heading of the actions window on a companion chat message: when it was sent, e.g. "Today, 14:04".
+  ///
+  /// In en, this message translates to:
+  /// **'{day}, {time}'**
+  String frontChatMessageSentAt(String day, String time);
+
+  /// Caption under a companion chat message the user stopped before it was answered.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get frontChatMessageStopped;
 
   /// No description provided for @frontChatNoChats.
   ///

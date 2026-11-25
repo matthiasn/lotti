@@ -34,6 +34,7 @@ void main() {
     String text, {
     String? conversation,
     List<String>? categories,
+    String? replaces,
     int minute = 0,
   }) async {
     final at = start.add(Duration(minutes: minute));
@@ -47,6 +48,7 @@ void main() {
           'text': text,
           'conversationId': ?conversation,
           frontCategoriesKey: ?categories,
+          frontTurnReplacesKey: ?replaces,
         },
       ),
     );
@@ -309,6 +311,77 @@ void main() {
     expect(index.byId('c-1')!.preview, 'Pip or Juno?');
     expect(index.byId('c-2')!.preview, 'Forty-two.');
     expect(index.byId('c-3')!.preview, isNull, reason: 'not answered yet');
+  });
+
+  group('a turn the user stopped', () {
+    Future<void> stop(String turnId, {required int minute}) async {
+      final at = start.add(Duration(minutes: minute));
+      await device.sync.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: 'stop-$turnId-payload',
+          agentId: frontAgentId,
+          createdAt: at,
+          vectorClock: null,
+          content: const {frontTurnStoppedKey: true},
+        ),
+      );
+      await device.sync.upsertEntity(
+        AgentDomainEntity.agentMessage(
+          id: 'stop-$turnId',
+          agentId: frontAgentId,
+          threadId: turnId,
+          kind: AgentMessageKind.action,
+          createdAt: at,
+          vectorClock: null,
+          contentEntryId: 'stop-$turnId-payload',
+          metadata: AgentMessageMetadata(
+            toolName: 'reply_to_user',
+            operationId: turnId,
+          ),
+        ),
+      );
+    }
+
+    test('leaves the preview to her latest words before it', () async {
+      await turn('u1', 'Plan the census', conversation: 'c-1');
+      await answer('r1', 'u1', 'Saturday works.', minute: 1);
+      await turn('u2', 'Who counts?', conversation: 'c-1', minute: 2);
+      await stop('u2', minute: 3);
+
+      final index = await service.load();
+
+      expect(index.byId('c-1')!.preview, 'Saturday works.');
+    });
+
+    test('is no preview when she never said anything', () async {
+      await turn('u1', 'Count the hatchlings', conversation: 'c-1');
+      await stop('u1', minute: 1);
+
+      final index = await service.load();
+
+      expect(index.byId('c-1')!.preview, isNull);
+    });
+  });
+
+  test('an answer to a turn an edit replaced is no preview: the one before '
+      'it speaks until the edit is answered', () async {
+    await turn('u1', 'Plan the census', conversation: 'c-1');
+    await answer('r1', 'u1', 'Saturday works.', minute: 1);
+    await turn('u2', 'Who counts?', conversation: 'c-1', minute: 2);
+    await answer('r2', 'u2', 'The volunteers.', minute: 3);
+    await turn(
+      'u3',
+      'Who counts the chicks?',
+      conversation: 'c-1',
+      replaces: 'u2',
+      minute: 4,
+    );
+
+    expect((await service.load()).byId('c-1')!.preview, 'Saturday works.');
+
+    await answer('r3', 'u3', 'The rangers.', minute: 5);
+
+    expect((await service.load()).byId('c-1')!.preview, 'The rangers.');
   });
 
   test('nothing said yet is no conversation', () async {

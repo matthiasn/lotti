@@ -3523,6 +3523,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get chatInputStopRealtime => 'Stoppa livetranskriptionen';
 
   @override
+  String get chatInputStopTooltip => 'Stoppa';
+
+  @override
   String get chatInputStopTranscribe => 'Stoppa och transkribera';
 
   @override
@@ -7439,6 +7442,22 @@ class AppLocalizationsSv extends AppLocalizations {
       'Radera den här chatten? Dess meddelanden döljs på alla enheter men raderas inte. Det du har sparat från chatten stannar där det är.';
 
   @override
+  String get frontChatDraftNext => 'Nästa utkast';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Utkast $page av $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Föregående utkast';
+
+  @override
   String get frontChatDrawerClose => 'Stäng chattar';
 
   @override
@@ -7483,6 +7502,33 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Inkorg';
+
+  @override
+  String get frontChatMessageActions => 'Meddelandeåtgärder';
+
+  @override
+  String get frontChatMessageBusy => 'Arbetar fortfarande med det';
+
+  @override
+  String get frontChatMessageBusyHint =>
+      'Stoppa följeslagaren först för att redigera det.';
+
+  @override
+  String get frontChatMessageCopied => 'Meddelandet kopierat';
+
+  @override
+  String get frontChatMessageCopy => 'Kopiera';
+
+  @override
+  String get frontChatMessageEdit => 'Redigera';
+
+  @override
+  String frontChatMessageSentAt(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
+  String get frontChatMessageStopped => 'Stoppad';
 
   @override
   String get frontChatNoChats =>

@@ -3516,6 +3516,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get chatInputStopRealtime => 'Stop live-transskriptionen';
 
   @override
+  String get chatInputStopTooltip => 'Stop';
+
+  @override
   String get chatInputStopTranscribe => 'Stop og transskribér';
 
   @override
@@ -7423,6 +7426,22 @@ class AppLocalizationsDa extends AppLocalizations {
       'Slet denne chat? Dens beskeder skjules på alle enheder, men slettes ikke. Det, du har gemt fra chatten, bliver, hvor det er.';
 
   @override
+  String get frontChatDraftNext => 'Næste udkast';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Udkast $page af $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Forrige udkast';
+
+  @override
   String get frontChatDrawerClose => 'Luk chats';
 
   @override
@@ -7467,6 +7486,33 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Indbakke';
+
+  @override
+  String get frontChatMessageActions => 'Beskedhandlinger';
+
+  @override
+  String get frontChatMessageBusy => 'Arbejder stadig på det';
+
+  @override
+  String get frontChatMessageBusyHint =>
+      'Stop ledsageren først, så kan du redigere det.';
+
+  @override
+  String get frontChatMessageCopied => 'Besked kopieret';
+
+  @override
+  String get frontChatMessageCopy => 'Kopiér';
+
+  @override
+  String get frontChatMessageEdit => 'Rediger';
+
+  @override
+  String frontChatMessageSentAt(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
+  String get frontChatMessageStopped => 'Stoppet';
 
   @override
   String get frontChatNoChats =>

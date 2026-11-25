@@ -50,12 +50,15 @@ void main() {
     });
 
     testWidgets(
-      'groups, toggles and a fitted width reach the menu it opens',
+      'groups, toggles, a fitted width and a surface reach the menu it opens',
       (tester) async {
+        const raised = Color(0xFF222222);
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             DesignSystemContextMenuAnchor(
               fitContent: true,
+              surfaceColor: raised,
+              outlined: true,
               items: [
                 DesignSystemContextMenuItem(
                   label: 'Show done',
@@ -81,6 +84,8 @@ void main() {
           find.byType(DesignSystemContextMenu),
         );
         expect(menu.fitContent, isTrue);
+        expect(menu.surfaceColor, raised);
+        expect(menu.outlined, isTrue);
         expect(menu.items.first.checked, isTrue);
         expect(menu.items.last.startsGroup, isTrue);
         expect(menu.items.last.isDestructive, isTrue);

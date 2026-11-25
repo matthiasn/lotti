@@ -3534,6 +3534,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get chatInputStopRealtime => 'Stop live transcriptie';
 
   @override
+  String get chatInputStopTooltip => 'Stoppen';
+
+  @override
   String get chatInputStopTranscribe => 'Stoppen en transcriberen';
 
   @override
@@ -7449,6 +7452,22 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deze chat verwijderen? Zijn berichten worden op al je apparaten verborgen, niet gewist. Wat je uit deze chat hebt opgeslagen, blijft waar het is.';
 
   @override
+  String get frontChatDraftNext => 'Volgend concept';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Concept $page van $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Vorig concept';
+
+  @override
   String get frontChatDrawerClose => 'Chats sluiten';
 
   @override
@@ -7493,6 +7512,33 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Inbox';
+
+  @override
+  String get frontChatMessageActions => 'Berichtacties';
+
+  @override
+  String get frontChatMessageBusy => 'Wordt nog aan gewerkt';
+
+  @override
+  String get frontChatMessageBusyHint =>
+      'Stop eerst de metgezel om het te bewerken.';
+
+  @override
+  String get frontChatMessageCopied => 'Bericht gekopieerd';
+
+  @override
+  String get frontChatMessageCopy => 'Kopiëren';
+
+  @override
+  String get frontChatMessageEdit => 'Bewerken';
+
+  @override
+  String frontChatMessageSentAt(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
+  String get frontChatMessageStopped => 'Gestopt';
 
   @override
   String get frontChatNoChats =>

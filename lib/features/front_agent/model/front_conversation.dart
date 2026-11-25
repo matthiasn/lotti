@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:uuid/uuid.dart';
 
 /// The conversation every turn written before conversations existed belongs
 /// to. It is fixed rather than minted, so every device derives the same one
@@ -15,6 +17,45 @@ String frontConversationOf(Map<String, Object?> content) {
   final id = content[frontConversationKey];
   return id is String && id.trim().isNotEmpty ? id : earlierConversationId;
 }
+
+/// The key that marks a `reply_to_user` record as the user's stop of the
+/// turn it answers, not her words.
+///
+/// A stopped turn is recorded as a reply with no text and this key set, so
+/// it counts as answered everywhere — it is never routed again, on any
+/// device, by any build — and an older build, which shows no empty reply,
+/// shows nothing for it.
+const frontTurnStoppedKey = 'stopped';
+
+/// Whether a reply payload's [content] records the user stopping the turn.
+bool frontTurnStopped(Map<String, Object?> content) =>
+    content[frontTurnStoppedKey] == true;
+
+/// The id of the record of the user stopping turn [messageId] — derived
+/// from the turn, so a stop pressed twice, or on two devices, is one record,
+/// and anything can ask whether a turn was stopped without reading a
+/// payload.
+String frontChatStopMessageId(String messageId) => const Uuid().v5(
+  Namespace.url.value,
+  'lotti://front-agent/$frontAgentId/$messageId/stop',
+);
+
+/// The id of that record's payload.
+String frontChatStopPayloadId(String messageId) => const Uuid().v5(
+  Namespace.url.value,
+  'lotti://front-agent/$frontAgentId/$messageId/stop-payload',
+);
+
+/// The key under which a user turn's payload names the stopped turn it was
+/// edited from: the thread shows the edit in that turn's place.
+const frontTurnReplacesKey = 'replaces';
+
+/// The stopped turn a user turn's payload [content] was edited from, if any.
+String? frontTurnReplaces(Map<String, Object?> content) =>
+    switch (content[frontTurnReplacesKey]) {
+      final String id when id.isNotEmpty => id,
+      _ => null,
+    };
 
 /// The key under which a user turn's payload names the categories its
 /// question is narrowed to — the conversation's chips when it was sent.

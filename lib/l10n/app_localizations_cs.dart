@@ -3560,6 +3560,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get chatInputStopRealtime => 'Zastavit živý přepis';
 
   @override
+  String get chatInputStopTooltip => 'Zastavit';
+
+  @override
   String get chatInputStopTranscribe => 'Zastavit a přepsat';
 
   @override
@@ -7526,6 +7529,22 @@ class AppLocalizationsCs extends AppLocalizations {
       'Smazat tento chat? Jeho zprávy se skryjí na všech zařízeních, nevymažou se. Co sis z tohoto chatu uložil, zůstane, kde je.';
 
   @override
+  String get frontChatDraftNext => 'Další koncept';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Koncept $page z $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Předchozí koncept';
+
+  @override
   String get frontChatDrawerClose => 'Zavřít chaty';
 
   @override
@@ -7570,6 +7589,33 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Příchozí';
+
+  @override
+  String get frontChatMessageActions => 'Akce se zprávou';
+
+  @override
+  String get frontChatMessageBusy => 'Ještě se na tom pracuje';
+
+  @override
+  String get frontChatMessageBusyHint =>
+      'Nejdřív zastav společníka, pak to můžeš upravit.';
+
+  @override
+  String get frontChatMessageCopied => 'Zpráva zkopírována';
+
+  @override
+  String get frontChatMessageCopy => 'Kopírovat';
+
+  @override
+  String get frontChatMessageEdit => 'Upravit';
+
+  @override
+  String frontChatMessageSentAt(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
+  String get frontChatMessageStopped => 'Zastaveno';
 
   @override
   String get frontChatNoChats =>

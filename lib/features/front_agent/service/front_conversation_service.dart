@@ -57,11 +57,16 @@ class FrontConversationService {
     // Oldest first, so the newest turn's scope is the one left.
     final categories = <String, Set<String>>{};
     final conversationOfTurn = <String, String>{};
+    // Turns an edit replaced: her answers to them are gone from the thread.
+    final replaced = <String>{};
     for (final turn in turns) {
       final payload = payloads[turn.contentEntryId];
       if (payload is! AgentMessagePayloadEntity) continue;
       final id = frontConversationOf(payload.content);
       conversationOfTurn[turn.id] = id;
+      if (frontTurnReplaces(payload.content) case final turnId?) {
+        replaced.add(turnId);
+      }
       final text = payload.content['text'];
       if (text is String && text.trim().isNotEmpty) {
         firstText.putIfAbsent(id, () => titleOf(text));
@@ -71,7 +76,7 @@ class FrontConversationService {
       lastActivity[id] = turn.createdAt.toLocal();
       categories[id] = frontCategoriesOf(payload.content);
     }
-    final previews = await _previews(rows, conversationOfTurn);
+    final previews = await _previews(rows, conversationOfTurn, replaced);
 
     final events =
         (await _repository.getEntitiesByAgentId(
@@ -121,13 +126,17 @@ class FrontConversationService {
   }
 
   /// Where each conversation got to: the first line of her latest turn in
-  /// it — her reply, or the question she asked back — read in one batch.
-  /// A turn's conversation is the one of the user turn it answers.
+  /// it — her reply, or the question she asked back — read in batches. A
+  /// turn's conversation is the one of the user turn it answers. A turn the
+  /// user stopped has no words of hers, and an answer to a turn an edit
+  /// [replaced] is gone from the thread, so the one before it speaks.
   Future<Map<String, String>> _previews(
     List<AgentMessageEntity> rows,
     Map<String, String> conversationOfTurn,
+    Set<String> replaced,
   ) async {
-    final latest = <String, AgentMessageEntity>{};
+    // Each conversation's replies and questions, oldest first.
+    final candidates = <String, List<AgentMessageEntity>>{};
     for (final row in rows) {
       if (!isFrontAnswerRow(row)) continue;
       final tool = row.metadata.toolName;
@@ -135,22 +144,35 @@ class FrontConversationService {
           tool != FrontAgentToolNames.askUser) {
         continue;
       }
+      if (replaced.contains(row.metadata.operationId)) continue;
       final conversation = conversationOfTurn[row.metadata.operationId];
       if (conversation != null && row.contentEntryId != null) {
-        latest[conversation] = row;
+        candidates.putIfAbsent(conversation, () => []).add(row);
       }
     }
-    final payloads = await _repository.getEntitiesByIds({
-      for (final row in latest.values) row.contentEntryId!,
-    });
-    return {
-      for (final MapEntry(key: id, value: row) in latest.entries)
+    final previews = <String, String>{};
+    var round = 0;
+    while (true) {
+      final asked = {
+        for (final MapEntry(key: id, value: oldestFirst) in candidates.entries)
+          if (!previews.containsKey(id) && round < oldestFirst.length)
+            id: oldestFirst[oldestFirst.length - 1 - round],
+      };
+      if (asked.isEmpty) return previews;
+      final payloads = await _repository.getEntitiesByIds({
+        for (final row in asked.values) row.contentEntryId!,
+      });
+      for (final MapEntry(key: id, value: row) in asked.entries) {
         if (payloads[row.contentEntryId]
-            case final AgentMessagePayloadEntity payload)
+            case final AgentMessagePayloadEntity payload) {
           if (payload.content['text'] ?? payload.content['question']
-              case final String text when text.trim().isNotEmpty)
-            id: titleOf(text),
-    };
+              case final String text when text.trim().isNotEmpty) {
+            previews[id] = titleOf(text);
+          }
+        }
+      }
+      round++;
+    }
   }
 
   Future<void> rename(String conversationId, String title) {

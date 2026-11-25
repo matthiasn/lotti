@@ -13,6 +13,7 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_turn_failure.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
+import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
@@ -63,22 +64,39 @@ class FrontChatService {
 
   static const _uuid = Uuid();
 
+  /// The run of each turn whose wake this device is waiting on, by the
+  /// turn's message id.
+  final _waiting = <String, String>{};
+
+  /// The waited-on turns the user is stopping, each to whether its stop was
+  /// recorded: a wake that ends unfinished is the stop, not a failure — but
+  /// only once the stop is durable, so it waits for the writes to settle.
+  final _stopping = <String, _TurnStop>{};
+
   /// Appends [text] as a durable user turn and runs the routing wake for
   /// it — which routes the turn and walks its doors. Throws
   /// [FrontChatTurnException] when the agent cannot take a turn or the
   /// wake fails; the message is durable either way and [retryMessage]
   /// re-runs it.
+  ///
+  /// [onAppended] is told the turn's id once it is durable, before its wake
+  /// is enqueued — what [stopMessage] takes. A turn edited from a stopped
+  /// one names it in [replaces], and the thread shows it in that one's place.
   Future<void> sendMessage({
     required String text,
     required String conversationId,
     Set<String> categoryIds = const {},
+    String? replaces,
+    void Function(String messageId)? onAppended,
   }) async {
     final messageId = await appendMessage(
       text: text,
       conversationId: conversationId,
       categoryIds: categoryIds,
+      replaces: replaces,
     );
     if (messageId == null) return;
+    onAppended?.call(messageId);
     await retryMessage(messageId: messageId);
   }
 
@@ -90,7 +108,10 @@ class FrontChatService {
   /// rewrites — an older build ignores the key and shows the turn in its
   /// one thread. So are the [categoryIds] the conversation is scoped to,
   /// which narrow her answer to them (`frontNarrowedCategories`); none
-  /// writes no key.
+  /// writes no key. So is the turn it [replaces], if it was edited from one
+  /// — an older build shows both — but only a turn of the same
+  /// conversation: an edit never reaches into another one, whatever the
+  /// caller asked.
   ///
   /// The turn is durable before the wake, so a process that dies while
   /// routing still leaves it a way to be routed — by the lease, after the
@@ -101,6 +122,7 @@ class FrontChatService {
     required String text,
     required String conversationId,
     Set<String> categoryIds = const {},
+    String? replaces,
   }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return null;
@@ -112,6 +134,11 @@ class FrontChatService {
       throw const FrontChatTurnException('front agent is not active');
     }
 
+    final replacing =
+        replaces != null &&
+            await _conversationOfTurn(replaces) == conversationId
+        ? replaces
+        : null;
     final now = clock.now();
     final payloadId = _uuid.v4();
     final messageId = _uuid.v4();
@@ -127,6 +154,7 @@ class FrontChatService {
           frontConversationKey: conversationId,
           if (categoryIds.isNotEmpty)
             frontCategoriesKey: [...categoryIds]..sort(),
+          frontTurnReplacesKey: ?replacing,
         },
       ),
     );
@@ -176,6 +204,17 @@ class FrontChatService {
     return messageId;
   }
 
+  /// The conversation user turn [messageId] was written in, or null when it
+  /// is no such turn.
+  Future<String?> _conversationOfTurn(String messageId) async {
+    final turn = await _repository.getEntity(messageId);
+    if (turn is! AgentMessageEntity || !isFrontUserTurn(turn)) return null;
+    final payload = await _repository.getEntity(turn.contentEntryId!);
+    return payload is AgentMessagePayloadEntity
+        ? frontConversationOf(payload.content)
+        : null;
+  }
+
   /// Enqueues the routing wake for an already durable turn and returns its
   /// run key, without waiting for it.
   String enqueueMessage({required String messageId}) =>
@@ -194,7 +233,8 @@ class FrontChatService {
   ///
   /// Throws [FrontChatTurnException] when the wake fails — including when
   /// the orchestrator shuts down first, which ends the completion stream
-  /// without an event for this run, so the future always completes.
+  /// without an event for this run, so the future always completes. A wake
+  /// the user stopped ([stopMessage]) returns normally: nothing failed.
   Future<void> retryMessage({required String messageId}) async {
     String? runKey;
     final completion = Completer<WakeRunCompletion>();
@@ -217,10 +257,13 @@ class FrontChatService {
     );
     try {
       final enqueuedAt = clock.now();
-      runKey = enqueueMessage(messageId: messageId);
+      final enqueued = runKey = enqueueMessage(messageId: messageId);
+      _waiting[messageId] = enqueued;
       final result = await completion.future;
       _logTimings(result, enqueuedAt);
       if (result.status != WakeRunStatus.completed) {
+        // Stopped: recorded and its recovery consumed by the stop.
+        if (await _stopping[messageId]?.recorded ?? false) return;
         throw FrontChatTurnException(
           result.error?.toString(),
           messageId: messageId,
@@ -229,10 +272,88 @@ class FrontChatService {
         );
       }
     } finally {
+      _waiting.remove(messageId);
+      _stopping.remove(messageId);
       await subscription.cancel();
     }
     await _consumeRecovery(messageId);
   }
+
+  /// Stops turn [messageId] before she answers it: records the stop, so no
+  /// device routes the turn again and the thread shows it stopped, consumes
+  /// its recovery record, and cancels its wake when this device is waiting
+  /// on one — the waiting [retryMessage] then returns as if it had gone
+  /// through. A wake that answers before the cancel lands keeps its answer,
+  /// which the thread shows in place of the stop.
+  ///
+  /// A turn this device is not waiting on is stopped only while it still
+  /// needs her ([FrontChatHistoryService.pendingMessageIds]) — a Stop
+  /// pressed after she finished stops nothing. Once the stop is recorded,
+  /// the wake is cancelled and the thread told even if consuming the
+  /// recovery record fails.
+  Future<void> stopMessage({required String messageId}) async {
+    final runKey = _waiting[messageId];
+    if (runKey == null &&
+        !(await _historyService.pendingMessageIds()).contains(messageId)) {
+      return;
+    }
+    // One stop per turn, however often Stop is pressed: a write that fails
+    // never undoes one that went through.
+    final stop = runKey == null
+        ? null
+        : _stopping.update(
+            messageId,
+            (stop) => stop.failed ? _TurnStop() : stop,
+            ifAbsent: _TurnStop.new,
+          );
+    stop?.writing();
+    try {
+      await _recordStop(messageId);
+    } on Object {
+      stop?.written(recorded: false);
+      rethrow;
+    }
+    stop?.written(recorded: true);
+    try {
+      await _consumeRecovery(messageId);
+    } finally {
+      if (runKey != null) _orchestrator.cancelWake(frontAgentId, runKey);
+      _notifications.notifyUiOnly({frontAgentId, agentNotification});
+    }
+  }
+
+  /// Writes the stop of [messageId] as an empty reply to it, marked
+  /// [frontTurnStoppedKey], under ids derived from the turn — a stop
+  /// pressed twice, or on two devices, is one record.
+  Future<void> _recordStop(String messageId) =>
+      _syncService.runInTransaction(() async {
+        final now = clock.now();
+        final payloadId = frontChatStopPayloadId(messageId);
+        await _syncService.upsertEntity(
+          AgentDomainEntity.agentMessagePayload(
+            id: payloadId,
+            agentId: frontAgentId,
+            createdAt: now,
+            vectorClock: null,
+            content: const <String, Object?>{frontTurnStoppedKey: true},
+          ),
+        );
+        await _syncService.upsertEntity(
+          AgentDomainEntity.agentMessage(
+            id: frontChatStopMessageId(messageId),
+            agentId: frontAgentId,
+            threadId: messageId,
+            kind: AgentMessageKind.action,
+            createdAt: now,
+            vectorClock: null,
+            contentEntryId: payloadId,
+            metadata: AgentMessageMetadata(
+              toolName: FrontAgentToolNames.replyToUser,
+              operationId: messageId,
+            ),
+          ),
+        );
+      });
 
   /// How long the turn waited for a wake slot and how long its wake ran —
   /// her own phases are in the workflow's `front turn timings` line.
@@ -365,4 +486,33 @@ class FrontChatTurnException implements Exception {
 
   @override
   String toString() => detail ?? 'The front-agent turn failed.';
+}
+
+/// The stop of one waited-on turn, however many Stops were pressed for it:
+/// recorded once any of their writes went through, failed only once every
+/// one of them failed.
+class _TurnStop {
+  final _recorded = Completer<bool>();
+  var _writes = 0;
+
+  /// Whether the stop was recorded, once every write settled or one
+  /// went through.
+  Future<bool> get recorded => _recorded.future;
+
+  /// Whether every write of this stop failed: a Stop pressed after it
+  /// starts a new one.
+  bool failed = false;
+
+  void writing() => _writes++;
+
+  void written({required bool recorded}) {
+    _writes--;
+    if (_recorded.isCompleted) return;
+    if (recorded) {
+      _recorded.complete(true);
+    } else if (_writes == 0) {
+      failed = true;
+      _recorded.complete(false);
+    }
+  }
 }

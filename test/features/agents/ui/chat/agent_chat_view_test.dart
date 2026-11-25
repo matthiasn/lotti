@@ -68,6 +68,89 @@ void main() {
     });
   }
 
+  group('stopping and decorating', () {
+    final history = AsyncData([
+      AgentChatMessage(
+        id: 'a',
+        role: AgentChatRole.user,
+        text: 'Monday?',
+        createdAt: DateTime(2026, 9, 14),
+      ),
+      AgentChatMessage(
+        id: 'b',
+        role: AgentChatRole.agent,
+        text: 'Monday.',
+        createdAt: DateTime(2026, 9, 14, 1),
+      ),
+    ]);
+
+    Future<void> pumpView(
+      WidgetTester tester, {
+      required bool isSending,
+      VoidCallback? onStop,
+      AgentUserMessageDecorator? decorator,
+    }) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'agent',
+              agentName: 'Habitat Watcher',
+              draft: '',
+              isSending: isSending,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+              onStop: onStop,
+              userMessageDecorator: decorator,
+              history: history,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('while sending, the composer offers Stop, which the host '
+        'is told of', (tester) async {
+      var stops = 0;
+      await pumpView(tester, isSending: true, onStop: () => stops++);
+
+      await tester.tap(find.byKey(DesignSystemChatInputKeys.stop));
+      await tester.pump();
+
+      expect(stops, 1);
+    });
+
+    testWidgets('with nothing on its way there is no Stop', (tester) async {
+      await pumpView(tester, isSending: false, onStop: () {});
+
+      expect(find.byKey(DesignSystemChatInputKeys.stop), findsNothing);
+      expect(find.byKey(DesignSystemChatInputKeys.mic), findsOneWidget);
+    });
+
+    testWidgets("the host's decorator wraps the user's bubbles, never "
+        "the agent's", (tester) async {
+      final decorated = <String>[];
+      await pumpView(
+        tester,
+        isSending: false,
+        decorator: (context, message, bubble) {
+          decorated.add(message.id);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [bubble, Text('under ${message.id}')],
+          );
+        },
+      );
+
+      expect(decorated, ['a']);
+      expect(find.text('under a'), findsOneWidget);
+      expect(find.text('Monday?'), findsOneWidget);
+      expect(find.text('Monday.'), findsOneWidget);
+    });
+  });
+
   testWidgets('a divider builder places its widget above a message, keyed '
       'to it, and is handed the message before', (tester) async {
     final seen = <(String, String?)>[];

@@ -3,6 +3,7 @@ import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
@@ -196,6 +197,28 @@ void main() {
 
       stub([door(0, FrontDoorStatus.done), door(1, FrontDoorStatus.claimed)]);
       expect(await service.pendingMessageIds(), [turn]);
+    });
+
+    test('is finished once the user stopped it, its doors walked or not: '
+        'no recovery walks them after the stop', () async {
+      final payload = dispatchPayload();
+      when(
+        () => repository.getEntity(payload.id),
+      ).thenAnswer((_) async => payload);
+      when(() => repository.getAgentMessages(frontAgentId)).thenAnswer(
+        (_) async => [
+          user(turn, 9),
+          answer(dispatchId, FrontAgentToolNames.dispatch, operationId: turn),
+          door(0, FrontDoorStatus.done),
+          answer(
+            frontChatStopMessageId(turn),
+            FrontAgentToolNames.replyToUser,
+            operationId: turn,
+          ),
+        ],
+      );
+
+      expect(await service.pendingMessageIds(), isEmpty);
     });
 
     test('is finished once every segment has a done door', () async {

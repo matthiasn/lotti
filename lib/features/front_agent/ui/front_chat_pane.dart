@@ -1,9 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:a2ui_flutter/a2ui_flutter.dart';
-import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
@@ -37,13 +35,15 @@ import 'package:lotti/features/front_agent/state/front_mention_categories.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_catalog.dart';
 import 'package:lotti/features/front_agent/ui/a2ui/front_reply_surfaces.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
-import 'package:lotti/features/front_agent/ui/front_category_chip.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_day_label.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_drawer.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_user_message.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
 import 'package:lotti/features/front_agent/ui/front_companion_figure.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_door_wizards.dart';
+import 'package:lotti/features/front_agent/ui/front_draft_pager.dart';
 import 'package:lotti/features/front_agent/ui/front_entity_preview_card.dart';
 import 'package:lotti/features/front_agent/ui/front_starter_prompts.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
@@ -720,8 +720,13 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
         contentMaxWidth: kProseMeasureWidth,
         voiceFirst: true,
         // The conversation's category, picked where the words are typed; `@`
-        // still names one for a single question.
-        composerLeading: mentions.isEmpty ? null : const FrontCategoryChip(),
+        // still names one for a single question. Beside it, the box's pages
+        // once Edit has given it more than one.
+        composerLeading: frontComposerLeading(
+          category: mentions.isNotEmpty,
+          composer: composer,
+          onShowPage: controller.showDraftPage,
+        ),
         mentionOptions: [
           for (final category in mentions)
             DesignSystemChatInputMention(
@@ -805,6 +810,30 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
         },
         onDraftChanged: controller.updateDraft,
         onSend: controller.send,
+        // While she works on a turn it can be stopped; a stopped turn's
+        // words can be taken back into the box from the thread.
+        onStop: controller.stop,
+        userMessageDecorator: (context, message, bubble) =>
+            FrontChatUserMessage(
+              messageId: message.id,
+              text: message.text,
+              sentAt: message.createdAt,
+              status: thread?.stoppedMessageIds.contains(message.id) ?? false
+                  ? FrontUserMessageStatus.stopped
+                  // Waiting on her, on this device or another.
+                  : message.id == composer.sendingMessageId ||
+                        (thread?.pendingMessageIds.contains(message.id) ??
+                            false)
+                  ? FrontUserMessageStatus.working
+                  : FrontUserMessageStatus.settled,
+              // The inbox lists turns of every conversation: an edit is made
+              // in the turn's own.
+              onEdit: inboxOnly
+                  ? null
+                  : (text) => controller.edit(message.id, text),
+              onStop: () => controller.stop(message.id),
+              bubble: bubble,
+            ),
         // A spoken question gets a spoken answer, whichever of her views —
         // chat or stage — it was said in and is sent from.
         onSendSpoken: controller.sendSpoken,
@@ -941,31 +970,14 @@ class _FrontChatThreadViewState extends ConsumerState<FrontChatThreadView> {
         },
         dividerBuilder: (context, message, previous) {
           if (previous != null &&
-              _sameDay(previous.createdAt, message.createdAt)) {
+              frontChatSameDay(previous.createdAt, message.createdAt)) {
             return null;
           }
           return DesignSystemDivider(
-            label: _dayLabel(context, message.createdAt, locale),
+            label: frontChatDayLabel(context, message.createdAt, locale),
           );
         },
       ),
     );
-  }
-
-  static bool _sameDay(DateTime a, DateTime b) {
-    final la = a.toLocal();
-    final lb = b.toLocal();
-    return la.year == lb.year && la.month == lb.month && la.day == lb.day;
-  }
-
-  /// Today and yesterday by name, every other day by date.
-  static String _dayLabel(BuildContext context, DateTime at, String locale) {
-    final day = at.toLocal();
-    final today = clock.now();
-    if (_sameDay(day, today)) return context.messages.calendarTodayLabel;
-    if (_sameDay(day, today.subtract(const Duration(days: 1)))) {
-      return context.messages.frontChatYesterday;
-    }
-    return DateFormat.yMMMMEEEEd(locale).format(day);
   }
 }

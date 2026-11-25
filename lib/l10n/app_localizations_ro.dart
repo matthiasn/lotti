@@ -3573,6 +3573,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get chatInputStopRealtime => 'Opriți transcrierea în timp real';
 
   @override
+  String get chatInputStopTooltip => 'Opriți';
+
+  @override
   String get chatInputStopTranscribe => 'Opriți și transcrieți';
 
   @override
@@ -7556,6 +7559,22 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ștergeți această conversație? Mesajele ei sunt ascunse pe toate dispozitivele, nu șterse definitiv. Ce ați salvat din această conversație rămâne unde este.';
 
   @override
+  String get frontChatDraftNext => 'Ciorna următoare';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Ciorna $page din $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Ciorna anterioară';
+
+  @override
   String get frontChatDrawerClose => 'Închideți conversațiile';
 
   @override
@@ -7600,6 +7619,33 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Primite';
+
+  @override
+  String get frontChatMessageActions => 'Acțiuni pentru mesaj';
+
+  @override
+  String get frontChatMessageBusy => 'Încă se lucrează la el';
+
+  @override
+  String get frontChatMessageBusyHint =>
+      'Opriți mai întâi însoțitorul pentru a edita mesajul.';
+
+  @override
+  String get frontChatMessageCopied => 'Mesaj copiat';
+
+  @override
+  String get frontChatMessageCopy => 'Copiați';
+
+  @override
+  String get frontChatMessageEdit => 'Editați';
+
+  @override
+  String frontChatMessageSentAt(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
+  String get frontChatMessageStopped => 'Oprit';
 
   @override
   String get frontChatNoChats =>

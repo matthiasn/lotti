@@ -76,6 +76,8 @@ class FrontChatThread {
     this.entityPreviewsByMessageId = const {},
     this.surfacesByMessageId = const {},
     this.runKeys = const {},
+    this.stoppedMessageIds = const {},
+    this.pendingMessageIds = const {},
   });
 
   static const empty = FrontChatThread(messages: []);
@@ -108,6 +110,15 @@ class FrontChatThread {
   /// order. Only which they are; each card reads its entity as
   /// it is now.
   final Map<String, List<FrontEntityReference>> entityPreviewsByMessageId;
+
+  /// The user turns the user stopped before she answered: each shows as
+  /// stopped, and its words can be taken back into the composer.
+  final Set<String> stoppedMessageIds;
+
+  /// The user turns still waiting on her — neither answered nor stopped —
+  /// whichever device is working on them: none can be edited until it is
+  /// stopped, or an edit and the turn it replaces would both run.
+  final Set<String> pendingMessageIds;
 
   /// The run of every reply and question of hers in the conversation, the
   /// ones older than [messages] keeps too: what the conversation has cost

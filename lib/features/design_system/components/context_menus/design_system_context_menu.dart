@@ -65,6 +65,7 @@ class DesignSystemContextMenu extends StatelessWidget {
     this.headerKey,
     this.fitContent = false,
     this.surfaceColor,
+    this.outlined = false,
     super.key,
   });
 
@@ -93,6 +94,10 @@ class DesignSystemContextMenu extends StatelessWidget {
   /// The menu's surface, for a host that opens it over a dimmed page and
   /// needs it raised off that page; the base level otherwise.
   final Color? surfaceColor;
+
+  /// Draws the surface's edge — for a menu opened over surfaces of its own
+  /// tone, such as chat bubbles, where a shadow alone does not part them.
+  final bool outlined;
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +150,12 @@ class DesignSystemContextMenu extends StatelessWidget {
           decoration: BoxDecoration(
             color: surfaceColor ?? tokens.colors.background.level01,
             borderRadius: BorderRadius.circular(spec.borderRadius),
+            border: outlined
+                ? Border.all(
+                    color: tokens.colors.decorative.level01,
+                    width: spec.dividerWidth,
+                  )
+                : null,
             boxShadow: DsShadows.floatingSurface,
           ),
           child: ClipRRect(

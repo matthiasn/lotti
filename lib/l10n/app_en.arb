@@ -2352,6 +2352,10 @@
   "chatInputRecordVoice": "Record voice message",
   "chatInputSendTooltip": "Send message",
   "chatInputStopRealtime": "Stop live transcription",
+  "chatInputStopTooltip": "Stop",
+  "@chatInputStopTooltip": {
+    "description": "Tooltip of the chat input button that stops the answer to a message already sent."
+  },
   "chatInputStopTranscribe": "Stop and transcribe",
   "chatInputTranscriptionFailed": "Transcribing the recording failed. Please try again.",
   "chatInputTranscriptionFailedKept": "Transcribing failed. Your recording is saved in the logbook, so nothing is lost.",
@@ -4698,6 +4702,38 @@
     "description": "Tooltip and screen-reader label on the companion's face in the chat header: a tap shows the floating card over the conversation; the face is hidden while the card is shown."
   },
   "frontChatDeleteExplanation": "Delete this chat? Its messages are hidden on every device, not erased. Whatever you filed from it stays where it is.",
+  "frontChatDraftNext": "Next draft",
+  "@frontChatDraftNext": {
+    "description": "Composer pager: shows the next draft page of the companion chat box."
+  },
+  "frontChatDraftPage": "{page}/{count}",
+  "@frontChatDraftPage": {
+    "description": "Composer pager: which draft page of the companion chat box is shown, e.g. 2/2.",
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "frontChatDraftPageLabel": "Draft {page} of {count}",
+  "@frontChatDraftPageLabel": {
+    "description": "Composer pager: accessible name of the page count, e.g. \"Draft 2 of 2\".",
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "frontChatDraftPrevious": "Previous draft",
+  "@frontChatDraftPrevious": {
+    "description": "Composer pager: shows the previous draft page of the companion chat box — what was typed before Edit took back a stopped message."
+  },
   "frontChatDrawerClose": "Close chats",
   "frontChatEmpty": "Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.",
   "frontChatFailedAuthentication": "Your AI provider refused its API key. Check it in Settings.",
@@ -4738,6 +4774,46 @@
   },
   "frontChatInboxEmpty": "Nothing is waiting for you.",
   "frontChatInboxTitle": "Inbox",
+  "frontChatMessageActions": "Message actions",
+  "@frontChatMessageActions": {
+    "description": "Accessibility hint for long-pressing a companion chat message to open its actions."
+  },
+  "frontChatMessageBusy": "Still working on this",
+  "@frontChatMessageBusy": {
+    "description": "Toast title when the user long-presses their message while the companion is still working on it"
+  },
+  "frontChatMessageBusyHint": "Stop the companion first to edit this message.",
+  "@frontChatMessageBusyHint": {
+    "description": "Toast line and tooltip saying the user must stop the companion before editing the message"
+  },
+  "frontChatMessageCopied": "Message copied",
+  "@frontChatMessageCopied": {
+    "description": "Toast after a companion chat message was copied."
+  },
+  "frontChatMessageCopy": "Copy",
+  "@frontChatMessageCopy": {
+    "description": "Action that copies a companion chat message the user sent."
+  },
+  "frontChatMessageEdit": "Edit",
+  "@frontChatMessageEdit": {
+    "description": "Action that puts a stopped companion chat message back into the input to change and send again."
+  },
+  "frontChatMessageSentAt": "{day}, {time}",
+  "@frontChatMessageSentAt": {
+    "description": "Heading of the actions window on a companion chat message: when it was sent, e.g. \"Today, 14:04\".",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "frontChatMessageStopped": "Stopped",
+  "@frontChatMessageStopped": {
+    "description": "Caption under a companion chat message the user stopped before it was answered."
+  },
   "frontChatNoChats": "No chats yet. Ask something to start one.",
   "frontChatNoMatchingChats": "No chat title matches.",
   "frontChatOlder": "Older",

@@ -43,7 +43,10 @@ enum FrontDoorSkipReason {
 
   /// Nothing takes this kind of segment: a question about today's plan,
   /// or anything about it while the Daily OS is off.
-  noDoor;
+  noDoor,
+
+  /// The user stopped the turn while the door was answering it.
+  stopped;
 
   static FrontDoorSkipReason? fromName(Object? name) =>
       values.where((v) => v.name == name).firstOrNull;

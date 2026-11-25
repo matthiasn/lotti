@@ -59,6 +59,8 @@ class FrontChatThreadBuilder {
         if (isFrontUserTurn(row)) ?row.contentEntryId,
     });
     final turnTexts = <String, String>{};
+    // Turns the user edited and sent again, by the edit's naming.
+    final replaced = <String>{};
     for (final row in rows) {
       if (!isFrontUserTurn(row)) continue;
       final payload = turnPayloads[row.contentEntryId];
@@ -70,6 +72,8 @@ class FrontChatThreadBuilder {
       final text = payload.content['text'];
       if (inScope && text is String && text.trim().isNotEmpty) {
         turnTexts[row.id] = text;
+        final replaces = frontTurnReplaces(payload.content);
+        if (replaces != null) replaced.add(replaces);
       }
     }
 
@@ -77,6 +81,12 @@ class FrontChatThreadBuilder {
     final options = <String, List<FrontAskOption>>{};
     final surfaces = <String, FrontReplySurface>{};
     final doorRecords = <String, List<(String, FrontDoorRecord)>>{};
+    final stopped = <String>{};
+    // Turns she answered with words — a reply or a question — whenever
+    // the answer landed.
+    final answered = <String>{};
+    // The turn each of her replies and questions answers.
+    final turnOf = <String, String>{};
 
     for (final row in rows) {
       if (isFrontUserTurn(row)) {
@@ -90,9 +100,16 @@ class FrontChatThreadBuilder {
         switch (row.metadata.toolName) {
           case FrontAgentToolNames.replyToUser:
             final payload = await _payload(row.contentEntryId);
+            // The user stopped the turn: no words of hers to show.
+            if (payload != null && frontTurnStopped(payload.content)) {
+              stopped.add(row.metadata.operationId!);
+              continue;
+            }
             final text = payload?.content['text'];
             if (text is! String || text.trim().isEmpty) continue;
             messages.add(_message(row, AgentChatRole.agent, text));
+            answered.add(row.metadata.operationId!);
+            turnOf[row.id] = row.metadata.operationId!;
             // A reply stored before replies had surfaces draws her words,
             // then what it carried.
             surfaces[row.id] =
@@ -122,6 +139,8 @@ class FrontChatThreadBuilder {
             final question = payload?.content['question'];
             if (question is! String || question.trim().isEmpty) continue;
             messages.add(_message(row, AgentChatRole.agent, question));
+            answered.add(row.metadata.operationId!);
+            turnOf[row.id] = row.metadata.operationId!;
             final raw = payload!.content['options'];
             options[row.id] = [
               if (raw is List)
@@ -140,6 +159,20 @@ class FrontChatThreadBuilder {
         ));
       }
     }
+
+    // What the whole conversation cost — replaced answers included, whose
+    // runs were spent all the same — before the window and the edits.
+    final runKeys = {
+      for (final m in messages)
+        if (m.role == AgentChatRole.agent) ?m.runKey,
+    };
+
+    // An edit takes the place of the turn it was made from, and of her
+    // answer to it: the edit gets an answer of its own. What the old answer
+    // did — a task filed, a question asked — is done all the same.
+    messages.removeWhere(
+      (m) => replaced.contains(m.id) || replaced.contains(turnOf[m.id]),
+    );
 
     // The newest fifty — and every turn with a door still waiting on the
     // user, however old: the inbox is this thread filtered, so what the
@@ -188,17 +221,25 @@ class FrontChatThreadBuilder {
 
     return FrontChatThread(
       messages: visible,
-      // Before the window: what the whole conversation cost.
-      runKeys: {
-        for (final m in messages)
-          if (m.role == AgentChatRole.agent) ?m.runKey,
-      },
+      runKeys: runKeys,
       optionsByMessageId: {
         for (final entry in options.entries)
           if (visibleIds.contains(entry.key)) entry.key: entry.value,
       },
       doorsByMessageId: doors,
       specialistAgentIds: specialists,
+      // Only turns she never answered: a reply that landed after all wins.
+      stoppedMessageIds: {
+        for (final id in stopped)
+          if (visibleIds.contains(id) && !answered.contains(id)) id,
+      },
+      pendingMessageIds: {
+        for (final m in visible)
+          if (m.role == AgentChatRole.user &&
+              !answered.contains(m.id) &&
+              !stopped.contains(m.id))
+            m.id,
+      },
       entityPreviewsByMessageId: _entityPreviews(visible, doors),
       surfacesByMessageId: {
         for (final entry in surfaces.entries)

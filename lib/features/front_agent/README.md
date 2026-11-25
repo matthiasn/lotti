@@ -98,6 +98,16 @@ tap wrote can be
 opened or undone,
 and a proposal she got wrong goes to the inbox rather than being retyped.
 
+While she works on a turn, the composer's send is **Stop**: the turn stays
+in the thread marked *Stopped*, unanswered, and no device routes it later.
+A long press on one of the user's own messages opens a small window, headed
+by when it was sent (on a desktop, icons beside it while the pointer is over
+it), with *Copy* and *Edit*. Edit puts its words back in the box to change
+and send again; sent, the edit takes the place of the message and of her
+answer to it, and gets an answer of its own — what the box already held
+stays a page back, behind a ‹ › pager; a long press on the turn she is working on says to stop it first, and
+offers *Stop*.
+
 ## What it owns
 
 - `model/` — the fixed identity (`front_agent`), the dispatch shape and its
@@ -149,7 +159,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
   aside while the card is out, her name, a new chat, close), her drawer
   (`front_chat_drawer.dart`: search, new chat, the conversations, her
   settings), the composer's category chip and its sheet
-  (`front_category_chip.dart`), the invitation that greets a conversation not
+  (`front_category_chip.dart`), the user's own messages with their copy
+  and edit actions (`front_chat_user_message.dart`), the invitation that greets a conversation not
   begun and the starter questions under it (`front_starter_prompts.dart`), the drawer's rows that mute her and set how fast she reads (`front_voice_switch.dart`), the card of
   rows a closed-task answer is drawn as (`front_task_list.dart`), the preview
   cards her lists of tasks and what her turn made are drawn as

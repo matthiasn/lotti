@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -20,6 +22,7 @@ import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
 import 'package:lotti/features/relationships/service/relationship_chat_service.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -56,6 +59,7 @@ class FrontDoorWalker {
     required FrontOwnerTitles ownerTitles,
     required Future<bool> Function(String flagName) configFlag,
     required DomainLogger domainLogger,
+    required UpdateNotifications notifications,
   }) : this._(
          repository,
          syncService,
@@ -67,6 +71,7 @@ class FrontDoorWalker {
          ownerTitles,
          configFlag,
          domainLogger,
+         notifications,
        );
 
   const FrontDoorWalker._(
@@ -80,6 +85,7 @@ class FrontDoorWalker {
     this._ownerTitles,
     this._configFlag,
     this._domainLogger,
+    this._notifications,
   );
 
   final AgentRepository _repository;
@@ -96,9 +102,23 @@ class FrontDoorWalker {
   final Future<bool> Function(String flagName) _configFlag;
   final DomainLogger _domainLogger;
 
+  /// What tells a running query that its turn was stopped: the front
+  /// agent's rows changing, here or by sync.
+  final UpdateNotifications _notifications;
+
+  /// Whether the user stopped turn [messageId]: its stop record exists.
+  Future<bool> _stopped(String messageId) async {
+    final stop = await _repository.getEntity(frontChatStopMessageId(messageId));
+    return stop is AgentMessageEntity && stop.deletedAt == null;
+  }
+
   /// Walks every unwalked segment of the dispatch that answered
   /// [messageId]. A turn that ended in a question or a reply has no
-  /// dispatch and nothing to walk.
+  /// dispatch and nothing to walk; one the user stopped walks no further
+  /// door — asked before each, so a stop that lands mid-walk ends it there.
+  /// A question already being answered when the stop lands — on this
+  /// device or synced from another — is cancelled, and its door shows it
+  /// stopped; an answer that landed first stands.
   Future<void> walk(String messageId) async {
     final dispatchRecord = await _dispatchRecordFor(messageId);
     if (dispatchRecord == null || dispatchRecord.contentEntryId == null) {
@@ -110,31 +130,86 @@ class FrontDoorWalker {
     if (dispatch == null) return;
 
     for (var index = 0; index < dispatch.segments.length; index++) {
-      final segment = dispatch.segments[index];
-      final claim = await _claim(
-        dispatchRecord: dispatchRecord,
-        sourceMessageId: messageId,
-        index: index,
-        segment: segment,
-      );
-      if (claim == null) continue;
-      FrontDoorOutcome outcome;
+      // Listening before the stop is asked for: a stop that lands while
+      // the segment is claimed still reaches its query.
+      final cancellation = QueryCancellation();
+      final onStop = _cancelOnStop(messageId, cancellation);
       try {
-        outcome = await _walkSegment(segment, sourceMessageId: messageId);
-      } catch (error, stackTrace) {
-        // A door's failure is its own: recorded by type, never by text, and
-        // never a reason to stop the other segments.
-        _domainLogger.error(
+        if (await _stopped(messageId)) return;
+        await _walkClaimed(
+          dispatchRecord: dispatchRecord,
+          messageId: messageId,
+          index: index,
+          segment: dispatch.segments[index],
+          cancellation: cancellation,
+        );
+      } finally {
+        await onStop.cancel();
+      }
+    }
+  }
+
+  /// Cancels [cancellation] once turn [messageId] is stopped: each change
+  /// to the front agent's rows — the stop's own notification here, or the
+  /// synced record's — asks for the stop record. A lookup that fails is
+  /// logged and stops nothing; the next change asks again.
+  StreamSubscription<bool> _cancelOnStop(
+    String messageId,
+    QueryCancellation cancellation,
+  ) => _notifications.updateStream
+      .where((ids) => ids.contains(frontAgentId))
+      .asyncMap((_) => _stopped(messageId))
+      .listen(
+        (stopped) {
+          if (stopped) cancellation.cancel();
+        },
+        onError: (Object error, StackTrace stackTrace) => _domainLogger.error(
           LogDomain.agentWorkflow,
           error,
           stackTrace: stackTrace,
           subDomain: 'FrontDoorWalker',
-          message: 'door ${segment.kind.wireName} failed',
-        );
-        outcome = FrontDoorFailed(error.runtimeType.toString());
-      }
-      await _record(claim.id, claim.record.done(outcome), dispatchRecord);
+          message: 'stop lookup failed',
+        ),
+      );
+
+  /// Claims segment [index] and, unless another walker owns it, walks its
+  /// door and records the outcome.
+  Future<void> _walkClaimed({
+    required AgentMessageEntity dispatchRecord,
+    required String messageId,
+    required int index,
+    required FrontDispatchSegment segment,
+    required QueryCancellation cancellation,
+  }) async {
+    final claim = await _claim(
+      dispatchRecord: dispatchRecord,
+      sourceMessageId: messageId,
+      index: index,
+      segment: segment,
+    );
+    if (claim == null) return;
+    FrontDoorOutcome outcome;
+    try {
+      outcome = await _walkSegment(
+        segment,
+        sourceMessageId: messageId,
+        cancellation: cancellation,
+      );
+    } on QueryCancelled {
+      outcome = const FrontDoorSkipped(FrontDoorSkipReason.stopped);
+    } catch (error, stackTrace) {
+      // A door's failure is its own: recorded by type, never by text, and
+      // never a reason to stop the other segments.
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'FrontDoorWalker',
+        message: 'door ${segment.kind.wireName} failed',
+      );
+      outcome = FrontDoorFailed(error.runtimeType.toString());
     }
+    await _record(claim.id, claim.record.done(outcome), dispatchRecord);
   }
 
   /// The newest dispatch record keyed to [messageId], or null.
@@ -243,7 +318,10 @@ class FrontDoorWalker {
   Future<FrontDoorOutcome> _walkSegment(
     FrontDispatchSegment segment, {
     required String sourceMessageId,
+    required QueryCancellation cancellation,
   }) async {
+    // A stop that landed while the segment was claimed walks no door.
+    cancellation.check();
     final id = segment.destinationId;
     final question = segment.intent == FrontSegmentIntent.question;
     switch (segment.kind) {
@@ -255,7 +333,13 @@ class FrontDoorWalker {
           // the door proposes and waits.
           return FrontDoorProposal(ownerId: id!);
         }
-        return _askOwner(segment.kind, id!, segment.text, sourceMessageId);
+        return _askOwner(
+          segment.kind,
+          id!,
+          segment.text,
+          sourceMessageId,
+          cancellation,
+        );
       case FrontDestinationKind.goal:
         // A goal takes questions and statements alike as a chat turn; its
         // own proposals stay gated in its own thread.
@@ -265,6 +349,8 @@ class FrontDoorWalker {
             identity.lifecycle != AgentLifecycle.active) {
           return const FrontDoorSkipped(FrontDoorSkipReason.noAgent);
         }
+        // Nor does one that landed while the goal was looked up.
+        cancellation.check();
         final messageId = await _goalChat.appendMessage(
           agentId: id,
           text: segment.text,
@@ -280,6 +366,7 @@ class FrontDoorWalker {
             null) {
           return const FrontDoorSkipped(FrontDoorSkipReason.noAgent);
         }
+        cancellation.check();
         final messageId = await _personChat.appendMessage(
           agentId: agentId,
           text: segment.text,
@@ -295,7 +382,11 @@ class FrontDoorWalker {
         // A question about the record that no single owner holds is hers
         // to answer, from the journal; anything else is kept as a note.
         if (question) {
-          return _answerFromJournal(segment.text, sourceMessageId);
+          return _answerFromJournal(
+            segment.text,
+            sourceMessageId,
+            cancellation,
+          );
         }
         return const FrontDoorInbox();
       case FrontDestinationKind.unrouted:
@@ -322,6 +413,7 @@ class FrontDoorWalker {
     String ownerId,
     String question,
     String sourceMessageId,
+    QueryCancellation cancellation,
   ) async {
     final lookup = kind == FrontDestinationKind.task
         ? _taskAgentFor
@@ -341,6 +433,7 @@ class FrontDoorWalker {
       agentId: agent.agentId,
       question: question,
       sourceMessageId: sourceMessageId,
+      cancellation: cancellation,
     );
     if (built == null) {
       return const FrontDoorSkipped(FrontDoorSkipReason.inferenceUnavailable);
@@ -375,6 +468,7 @@ class FrontDoorWalker {
   Future<FrontDoorOutcome> _answerFromJournal(
     String question,
     String sourceMessageId,
+    QueryCancellation cancellation,
   ) async {
     final identity = await _repository.getEntity(frontAgentId);
     final allowed = identity is AgentIdentityEntity
@@ -390,6 +484,7 @@ class FrontDoorWalker {
       agentId: frontAgentId,
       question: question,
       sourceMessageId: sourceMessageId,
+      cancellation: cancellation,
     );
     if (built == null) {
       return const FrontDoorSkipped(FrontDoorSkipReason.inferenceUnavailable);
@@ -413,6 +508,7 @@ class FrontDoorWalker {
     required String agentId,
     required String question,
     required String sourceMessageId,
+    required QueryCancellation cancellation,
   }) async {
     final QueryAnswerBuilder builder;
     try {
@@ -446,7 +542,7 @@ class FrontDoorWalker {
       ),
       question: event,
       memories: const [],
-      cancellation: QueryCancellation(),
+      cancellation: cancellation,
       onProgress: (_, {required expanded}) {},
     );
   }

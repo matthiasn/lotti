@@ -410,6 +410,7 @@ class _DoorRow extends StatelessWidget {
           FrontDoorSkipReason.inferenceUnavailable =>
             messages.frontDoorInferenceUnavailable(owner),
           FrontDoorSkipReason.noDoor => messages.frontDoorNoDoor,
+          FrontDoorSkipReason.stopped => messages.frontChatMessageStopped,
         };
       case FrontDoorFailed():
         title = words;

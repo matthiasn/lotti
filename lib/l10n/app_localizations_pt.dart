@@ -3556,6 +3556,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chatInputStopRealtime => 'Interromper a transcrição ao vivo';
 
   @override
+  String get chatInputStopTooltip => 'Parar';
+
+  @override
   String get chatInputStopTranscribe => 'Pare e transcreva';
 
   @override
@@ -7520,6 +7523,22 @@ class AppLocalizationsPt extends AppLocalizations {
       'Apagar este chat? As mensagens dele ficam ocultas em todos os dispositivos, não são eliminadas. O que guardaste a partir deste chat fica onde está.';
 
   @override
+  String get frontChatDraftNext => 'Próximo rascunho';
+
+  @override
+  String frontChatDraftPage(int page, int count) {
+    return '$page/$count';
+  }
+
+  @override
+  String frontChatDraftPageLabel(int page, int count) {
+    return 'Rascunho $page de $count';
+  }
+
+  @override
+  String get frontChatDraftPrevious => 'Rascunho anterior';
+
+  @override
   String get frontChatDrawerClose => 'Fechar chats';
 
   @override
@@ -7564,6 +7583,33 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get frontChatInboxTitle => 'Caixa de entrada';
+
+  @override
+  String get frontChatMessageActions => 'Ações da mensagem';
+
+  @override
+  String get frontChatMessageBusy => 'Ainda em andamento';
+
+  @override
+  String get frontChatMessageBusyHint =>
+      'Pare o acompanhante primeiro para editar.';
+
+  @override
+  String get frontChatMessageCopied => 'Mensagem copiada';
+
+  @override
+  String get frontChatMessageCopy => 'Copiar';
+
+  @override
+  String get frontChatMessageEdit => 'Editar';
+
+  @override
+  String frontChatMessageSentAt(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
+  String get frontChatMessageStopped => 'Parado';
 
   @override
   String get frontChatNoChats =>

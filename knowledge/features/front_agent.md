@@ -54,8 +54,20 @@ sources:
     last_modified: 2026-10-23
   - id: chat-service
     resource: ../../lib/features/front_agent/service/front_chat_service.dart
-    title: FrontChatService — persist, arm recovery, wake, await, consume
-    last_modified: 2026-11-11
+    title: FrontChatService — persist, arm recovery, wake, await, consume, stop
+    last_modified: 2026-11-24
+  - id: draft-pages
+    resource: ../../lib/features/front_agent/state/front_draft_pages.dart
+    title: FrontDraftPages — the chat box's pages, so Edit never loses what was typed
+    last_modified: 2026-11-24
+  - id: user-message
+    resource: ../../lib/features/front_agent/ui/front_chat_user_message.dart
+    title: FrontChatUserMessage — copy and edit on the user's own turns
+    last_modified: 2026-11-24
+  - id: cancel-wake
+    resource: ../../lib/features/agents/wake/wake_orchestrator.dart
+    title: WakeOrchestrator.cancelWake — stop one run by its key
+    last_modified: 2026-11-24
   - id: history-service
     resource: ../../lib/features/front_agent/service/front_chat_history_service.dart
     title: FrontChatHistoryService — which turns are still unanswered
@@ -1137,6 +1149,142 @@ logs, under `frontChat`, `front turn <status>: queued=… run=… total=…` —
 global concurrency cap (`defaultAgentWakeConcurrency`, 3), with no
 preference for a user waiting on her: a large `queued` means her turn sat
 behind other agents' wakes.
+
+# Stopping a turn
+
+While a turn of the user's is on its way, the composer offers **Stop** in
+Send's place (`AgentChatView.onStop`, drawn by `DesignSystemChatInput.onStop`).
+`FrontChatController` learns the turn's id from `sendMessage(onAppended:)`
+once it is durable — `sendingMessageId`, also set by a retry — and
+`stop()` calls `FrontChatService.stopMessage`, which:
+
+1. **records the stop** — an `action` row with `toolName: reply_to_user`,
+   `operationId` the turn, and a payload of only `{stopped: true}`
+   (`frontTurnStoppedKey`), under ids derived from the turn
+   (`frontChatStopMessageId`, `frontChatStopPayloadId`, in
+   `front_conversation.dart`), so a stop pressed twice or on two devices is
+   one record, and its presence alone says the turn was stopped. It is an
+   answer row (`isFrontAnswerRow`), and `pendingMessageIds` skips a stopped
+   turn even when its dispatch has doors left to walk, so maintenance never
+   re-arms it; `FrontDoorWalker.walk` asks for the stop record before each
+   door, so a stop that lands mid-walk ends it there. A question a door is
+   already answering is cancelled too: the walk listens to the front
+   agent's update notifications — the stop's own, or the synced record's —
+   from before the segment is claimed, and cancels that segment's
+   `QueryCancellation` once the stop record is there (a lookup that fails
+   is logged and cancels nothing), recording the door `FrontDoorSkipped(stopped)`; an answer that
+   landed first stands. The same token is checked before any door is
+   walked and before a goal or person is handed the turn, so a stop that
+   lands during the claim or the specialist lookup hands nothing on. An
+   older build, which shows no empty reply, shows nothing for it;
+2. **consumes the turn's recovery record**, so no lease routes it;
+3. **cancels its wake** when this device is waiting on one, by run key
+   (`WakeOrchestrator.cancelWake`): dropped from the queue, from the
+   drain, or from a drain pass that holds it back behind another of her
+   runs (`_cancelledHeldBackRunKeys`, so the pass does not requeue it) —
+   each with an aborted completion — or aborted if it is the run in
+   flight; any other wake of hers is left alone. The waiting
+   `retryMessage` returns instead of throwing once the stop is recorded
+   (`_stopping`): a wake that ends while the stop is still being written
+   waits for the write, and one that ends after a failed write is a
+   failure as ever. Stops pressed while one is being written join it
+   (`_TurnStop`): recorded once any write went through, failed only once
+   every one failed. The composer settles with nothing failed and no
+   *Try again*.
+
+The cancel and the thread's notification run even when consuming the
+recovery record fails. A stop of a turn this device is not waiting on —
+the warning's *Stop* on a turn another device works on — is written only
+while the turn still needs her (`FrontChatHistoryService.pendingMessageIds`),
+so a Stop pressed after she finished stops nothing.
+
+A wake that answers before the cancel lands keeps its answer: the thread
+builder lists a turn in `FrontChatThread.stoppedMessageIds` only when no
+reply or question of hers answers it — matched by `operationId`, so an
+answer synced in after later turns still counts. A stopped turn she never
+answered, and every stop record, stay out of her recent turns
+(`_recentTurns`); one she answered stays there with its answer, as the
+thread shows it. A conversation's preview reads past a stop to her latest
+words, and past her answer to a turn an edit replaced.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Durable: appendMessage
+  Durable --> Working: wake enqueued (sendingMessageId)
+  Working --> Answered: wake completed
+  Working --> Failed: wake failed
+  Failed --> Working: Try again
+  Working --> Stopped: Stop (stop record, recovery consumed, wake cancelled)
+  Stopped --> Answered: her reply landed before the cancel
+  Answered --> [*]
+  Stopped --> [*]
+```
+
+On the surface each of the user's bubbles is wrapped by
+`FrontChatUserMessage` (`AgentChatView.userMessageDecorator`): a *Stopped*
+caption, led by Stop's filled square, under a stopped turn; on a phone or
+tablet (`isMobile`, whatever the width) a long press opens a small window
+under the bubble and its caption — a secondary click opens it where the
+pointer is — headed by when the turn was sent (*Today, 14:04*,
+`frontChatDayLabel` and `deviceClockLabel`), with *Copy* (to the clipboard,
+with a toast) and *Edit*, which puts the words in the box
+(`FrontChatController.edit`), on a stopped turn and an answered one alike.
+The window sits on the card surface (`dsCardSurface`, through
+`DesignSystemContextMenuAnchor.surfaceColor`) with its edge drawn
+(`outlined`), off the thread's base level and apart from her bubbles. A
+long press on a turn still waiting on her opens no window but warns it
+cannot be edited until stopped, with a *Stop* action on the warning that
+stops that turn (`FrontChatController.stop(turnId)`). Waiting is read from
+the thread, not from this device's memory: `FrontChatThread.pendingMessageIds`
+lists every visible turn neither answered nor stopped, so a turn another
+device is working on — or this one was, before a restart — cannot be edited
+into running twice. On a
+desktop the same actions are icons beside the bubble, shown while the
+pointer is over it or focus is in them and taking no taps while hidden,
+their room kept so nothing shifts; while she works on the turn *Edit* is
+dimmed and a click on it gives the same warning.
+
+The edit, sent, takes the place of the turn it was made from — and of her
+answer to it, which the edit gets anew. The controller holds the
+turn as `editingMessageId` while the box has words in it — emptying the box
+gives the edit up, and a chip tapped under her question is never an edit —
+and the new turn's payload names it under `replaces`
+(`frontTurnReplacesKey`). A send of the edit that fails keeps it an edit —
+as `failedReplaces` for *Try again*, and as `editingMessageId` when its
+words go back in the box. Nothing is rewritten: the thread builder drops a
+turn some later turn replaces, with her replies and questions to it —
+however late they land — and its doors' cards; what those doors did (a task
+filed, a person asked) is done all the same. Her recent turns
+(`_recentTurns`) drop the replaced turn and her answer too, so she answers
+the edit without the words it corrected; the tasks they made stay among her
+conversation's tasks, and their runs stay in the conversation's cost
+(`FrontChatThread.runKeys` is collected before the removal). An edit only
+replaces a turn of its own conversation — `appendMessage` drops a
+`replaces` that names any other — and the inbox, which lists turns of
+every conversation, offers no *Edit*. An older build, which does not read
+the key, shows both turns.
+
+Edit never throws away what the box held. The box is a set of pages
+(`FrontDraftPages`, in `front_draft_pages.dart`): the composer state keeps
+the page in the box as `draft` and `editingMessageId`, and the others as
+`asideDrafts`, with `draftPage` its place among them. Edit over words
+already typed adds the edited turn's words as a new last page — or shows
+the page it is already on — and a pager (`FrontDraftPager`, ‹ 2/2 ›) at the
+start of the box flips between them (`showDraftPage`); a page left blank is
+dropped once another is shown. A *Try again* sends the failed words and
+takes back only the page they were put back on — matched by words and edit
+together, the last such page — never another that only shares its words.
+Only the page in the box is sent, so the
+edit replaces its turn only when sent from its own page. A send sets the
+other pages aside and puts them back once it settles, the last in the box —
+so sending the edit brings back what was typed before it — followed by any
+page made while it was on its way; a failure puts its words back a page
+behind whatever was typed since, still the edit. If the user has switched
+conversations meanwhile, those pages go to the parked pages of the one the
+send came from and the box shown is left alone. A retry reconciles with
+the box as it is when it settles: it removes only its own page on
+success, and leaves the box untouched on failure. The pages, edit
+included, stay with their conversation when the user switches.
 
 # What a turn leaves behind
 

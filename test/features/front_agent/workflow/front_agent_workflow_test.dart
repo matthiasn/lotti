@@ -777,6 +777,163 @@ Filed under Garden.'''),
     });
   });
 
+  group('a turn the user stopped', () {
+    /// Runs a turn after a stopped one — answered after all when
+    /// [answered], and an edit of the earlier answered turn when
+    /// [editsOld] — and returns what the model was sent.
+    Future<String?> sentAfterStop({
+      required bool answered,
+      bool editsOld = false,
+    }) async {
+      seedMessage();
+      when(() => repository.getAgentMessages(frontAgentId)).thenAnswer(
+        (_) async => [
+          makeTestMessage(
+            id: 'msg-1',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.user,
+            contentEntryId: 'payload-1',
+          ),
+          makeTestMessage(
+            id: 'old-user',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.user,
+            contentEntryId: 'old-user-payload',
+            createdAt: DateTime(2026, 10, 22, 8),
+          ),
+          makeTestMessage(
+            id: 'old-reply',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.action,
+            metadata: const AgentMessageMetadata(
+              toolName: 'reply_to_user',
+              runKey: 'run-0',
+              operationId: 'old-user',
+            ),
+            contentEntryId: 'old-reply-payload',
+            createdAt: DateTime(2026, 10, 22, 9),
+          ),
+          makeTestMessage(
+            id: 'stopped-user',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.user,
+            contentEntryId: 'stopped-user-payload',
+            createdAt: DateTime(2026, 10, 22, 10),
+          ),
+          makeTestMessage(
+            id: 'stop',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.action,
+            metadata: const AgentMessageMetadata(
+              toolName: 'reply_to_user',
+              operationId: 'stopped-user',
+            ),
+            contentEntryId: 'stop-payload',
+            createdAt: DateTime(2026, 10, 22, 10, 1),
+          ),
+          if (answered)
+            makeTestMessage(
+              id: 'late-reply',
+              agentId: frontAgentId,
+              kind: AgentMessageKind.action,
+              metadata: const AgentMessageMetadata(
+                toolName: 'reply_to_user',
+                runKey: 'run-1',
+                operationId: 'stopped-user',
+              ),
+              contentEntryId: 'late-reply-payload',
+              createdAt: DateTime(2026, 10, 22, 10, 2),
+            ),
+        ],
+      );
+      final payloads = {
+        'payload-1': makeTestMessagePayload(
+          id: 'payload-1',
+          agentId: frontAgentId,
+          content: {
+            'text': input,
+            if (editsOld) frontTurnReplacesKey: 'old-user',
+          },
+        ),
+        'old-user-payload': makeTestMessagePayload(
+          id: 'old-user-payload',
+          agentId: frontAgentId,
+          content: const {'text': 'What about the garden?'},
+        ),
+        'old-reply-payload': makeTestMessagePayload(
+          id: 'old-reply-payload',
+          agentId: frontAgentId,
+          content: const {'text': 'Filed under Garden.'},
+        ),
+        'stopped-user-payload': makeTestMessagePayload(
+          id: 'stopped-user-payload',
+          agentId: frontAgentId,
+          content: const {'text': 'Count the hatchlings twice'},
+        ),
+        'stop-payload': makeTestMessagePayload(
+          id: 'stop-payload',
+          agentId: frontAgentId,
+          content: const {frontTurnStoppedKey: true},
+        ),
+        'late-reply-payload': makeTestMessagePayload(
+          id: 'late-reply-payload',
+          agentId: frontAgentId,
+          content: const {'text': 'Twice is forty-two.'},
+        ),
+      };
+      when(() => repository.getEntitiesByIds(any())).thenAnswer(
+        (invocation) async => {
+          for (final id in invocation.positionalArguments.first as Set<String>)
+            id: ?payloads[id],
+        },
+      );
+      String? sent;
+      stubModel(
+        onMessage: (message) => sent = message,
+        (_) => [call('dispatch', dispatchArgs())],
+      );
+
+      final result = await run();
+      expect(result.success, isTrue);
+      return sent;
+    }
+
+    test('neither it nor its stop reaches her recent turns', () async {
+      final sent = await sentAfterStop(answered: false);
+
+      expect(
+        sent,
+        contains(
+          '- user: What about the garden?\n- reply: Filed under Garden.\n</',
+        ),
+      );
+      expect(sent, isNot(contains('Count the hatchlings twice')));
+    });
+
+    test('an edit of an answered turn takes it, and her answer, out of her '
+        'recent turns: what was said is the edit', () async {
+      final sent = await sentAfterStop(answered: true, editsOld: true);
+
+      expect(sent, isNot(contains('What about the garden?')));
+      expect(sent, isNot(contains('Filed under Garden.')));
+      // Turns it did not replace are untouched.
+      expect(sent, contains('- user: Count the hatchlings twice\n'));
+    });
+
+    test('one she answered before the stop landed stays, with her answer, '
+        'as the thread shows it', () async {
+      final sent = await sentAfterStop(answered: true);
+
+      expect(
+        sent,
+        contains(
+          '- user: Count the hatchlings twice\n'
+          '- reply: Twice is forty-two.\n</',
+        ),
+      );
+    });
+  });
+
   group('the repair round', () {
     test('a turn that ends without a terminal call gets the repair '
         'instruction once, within the remaining budget', () async {

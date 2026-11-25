@@ -409,8 +409,13 @@ class WakeOrchestrator with AgentErrorLogging {
 
   /// Jobs a drain pass took out of [queue] and holds back — their agent's
   /// runner was taken, or their agent is throttled — until the pass requeues
-  /// them. Tracked only so pending-work probes can see them.
+  /// them. Tracked so pending-work probes can see them, and so a cancel can
+  /// reach them ([_cancelledHeldBackRunKeys]).
   final _heldBackJobs = <String, WakeJob>{};
+
+  /// Held-back jobs cancelled while their pass held them: the pass drops
+  /// them instead of requeueing them.
+  final _cancelledHeldBackRunKeys = <String>{};
 
   /// Cancellation reason for drain-owned jobs removed by a newer request or
   /// explicit cancellation while an asynchronous pre-dispatch step was active.
@@ -931,6 +936,41 @@ class WakeOrchestrator with AgentErrorLogging {
     if (queue.hasQueuedJobForAgent(agentId)) _peerCoverageChecks.add(agentId);
     unawaited(settleHandOver(agentId));
     unawaited(processNext());
+  }
+
+  /// Stops the one wake [runKey] of [agentId], wherever it is: dropped from
+  /// the queue — its waiters told it was aborted — or aborted when it is the
+  /// run in flight. Any other wake of the agent is left alone. Returns
+  /// whether there was a wake to stop.
+  bool cancelWake(String agentId, String runKey) {
+    const reason = 'wake stopped by the user';
+    final removed = queue.removeByAgentWhere(
+      agentId,
+      (job) => job.runKey == runKey,
+    );
+    final owned = _cancelDrainOwnedJobsWhere(
+      (job) => job.agentId == agentId && job.runKey == runKey,
+      reason: reason,
+    );
+    // Held back behind another of its agent's runs: dropped when the pass
+    // would requeue it.
+    final held = _heldBackJobs[runKey];
+    final heldBack = [if (held != null && held.agentId == agentId) held];
+    for (final job in heldBack) {
+      _heldBackJobs.remove(job.runKey);
+      _cancelledHeldBackRunKeys.add(job.runKey);
+    }
+    _emitRemovedRunCompletions([
+      ...removed,
+      ...owned,
+      ...heldBack,
+    ], reason: reason);
+    final running =
+        runner.runKeyFor(agentId) == runKey && runner.abort(agentId);
+    return running ||
+        removed.isNotEmpty ||
+        owned.isNotEmpty ||
+        heldBack.isNotEmpty;
   }
 
   /// Abort the in-flight wake for [agentId], if any.
