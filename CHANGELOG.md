@@ -4,6 +4,129 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.109]
+
+### Added
+
+- **You can stop the companion while she works on a message.** While she
+  is answering, the send button in the chat becomes *Stop*. A stopped
+  message stays in the conversation marked *Stopped*. She doesn't answer
+  it, and no other device picks it up later.
+- **Copy and edit your own messages.** On a phone, long-press one of your
+  messages for a small window with *Copy* and *Edit*, headed by when you
+  sent it. Edit puts the words back in the chat box so you can fix them and
+  send them again: the edited message and her new answer take the place of
+  the old message and her old answer. Anything you had already typed is
+  kept: arrows in the chat box flip back to it. Long-pressing a message she
+  is still working on tells you to stop it first, with a *Stop* button right
+  there. On a desktop, the same actions appear as small icons beside your
+  message when you point at it.
+
+### Changed
+
+- **Recording no longer opens a sheet.** A microphone press starts recording
+  at once in a slim strip at the bottom of the screen, and everything else
+  moves up a little to make room. The strip stays on every page while the
+  recording runs, so you can look something up in the calendar or another
+  task while you talk. The strip is just the live level, Pause and Stop,
+  always in the same place. Tap it to open the full recorder, which names
+  the task, project or entry you are recording for and has Discard.
+- **The strip takes you back to where you started.** Away from that page, an
+  arrow at its start goes back to the task, scrolled to where you were.
+- **Stop always saves, and Undo takes it back.** For five seconds after Stop,
+  the strip says where the recording was saved, with Undo to delete it and
+  Open to go there. Transcription starts once those seconds are up, so an
+  undone recording is never transcribed.
+- **The running timer is the only thing in the phone's bottom row and the
+  desktop sidebar's activity panel.** A recording shows in the strip instead.
+- **Recording looks and works the same everywhere.** A task, a project, a
+  goal check-in, a person and a chat field each drew a voice their own way.
+  They now share one recorder: the same travelling level bars over the same
+  controls — discard, a red Stop that carries the running time, and pause.
+  The bars in a chat or dictation field are the same bars, at the same pace.
+- **A recorder says nothing it does not have to.** The person recorder's hint
+  line and its "Sorted by" model name are gone, a check-in recording no
+  longer names the model transcribing it, and a goal check-in is titled with
+  the goal instead of repeating it under "Check in".
+- **"Listening back…" shows the AI-running bars.** After you stop speaking
+  about a person, the recorder shows the animation a task shows while its
+  recording is transcribed, instead of a spinner.
+- **What the AI is doing is written under the buttons, not over the bars.**
+  On a task or an entry, "Transcribing audio" and the like sat in a capsule
+  across the running animation. It is now one line beneath the action bar's
+  buttons, and still opens the progress view.
+- **The Speak button shows a recording that is still running.** On a goal's
+  or a person's page, *Speak* reads *Recording* in red while a recording for
+  that goal or person is in progress. Tapping it goes back to that
+  recording.
+- **"Record about this goal" is now "Speak about this goal"**, the same verb
+  as everywhere else.
+- **A next step in the AI summary can go straight onto the checklist.** Each
+  open to-do in a task's summary, on the task page or quoted by the companion,
+  has *Add to checklist* beside it; one the checklist already holds is marked
+  instead.
+- **Asking the companion where a task stands answers from its AI summary.**
+  She shows the parts of the summary that answer, with how old it is, instead
+  of waiting for the task's agent to reply. Questions about a project are
+  still handed to the project's agent.
+- **A task's linked entries are easier to read, and the audio player is
+  half the height.** The player is now one row everywhere it appears: play,
+  the waveform, one time label (the length at rest, the position while it
+  plays) and the speed. A recording's transcript starts about 30 pixels
+  higher, and a faster or slower speed is no longer shown in red.
+- **What the AI made of a recording or a photo says what it is.** The
+  "2 AI responses" header, its connector line and the indent are gone. Each
+  result is named instead (*Summary*, *Image analysis*, a prompt's own
+  title) and uses the card's full width, so there is more room for its text
+  on a phone.
+- **A collapsed recording shows whose words you are reading.** An AI
+  summary line is violet with the AI mark; the opening of your own
+  transcript stays in plain ink.
+- **The Timer, Audio, Images and Code filters are plain chips.** They no
+  longer each have a colour of their own, and they match the sort control
+  beside them.
+- **Photos in the timeline have rounded corners and no black bars**, and
+  are at most 400 pixels tall; tap one to see it in full. Long text keeps a
+  comfortable line length on wide windows.
+- **An event's status picker looks like the task and project ones.** It now
+  has a *Status* title, and every status is shown with its own icon in a
+  full-width row instead of a small colored dot. The choices are unchanged.
+- **Event status colors are easier to read.** The picker, the status pill and
+  the event cards use the same colors as task statuses, with deeper shades in
+  light mode, so *Postponed* no longer fades into a light background.
+  *Postponed* now shows in orange and *Rescheduled* in blue.
+
+### Removed
+
+- **The energy orb and the VU meter are gone from the recorder, and with
+  them the Recording Style setting.** Both showed the one level the bars
+  already show. The orb remains where it is the microphone button itself:
+  Daily OS capture and the first task in onboarding.
+
+### Fixed
+
+- **A dictated recording is no longer lost when transcription fails.** Speaking
+  into a chat or into a goal's "About this goal" threw the audio away if it
+  could not be transcribed, while the message said the recording "was
+  captured". The recording is now saved to the logbook, and the message says
+  so.
+- **A recording made for "About this goal" is no longer deleted when it cannot
+  be attached to the goal.** It stays in the logbook, and the message says so.
+- **A task's AI summary says where the task stands again.** Since 1.1.108 some
+  summaries came back as a bare list of next steps, leaving out dates,
+  progress and who confirmed what. They open with the task's situation again.
+- **Switching off every filter no longer leaves an empty list.** It now
+  says *No entries match* and offers *Clear filters*.
+- **AI results that fail to load say so**, instead of the entry looking as
+  if nothing had been made of it.
+- **The waveform no longer flickers back to a plain bar** while it reloads.
+- **Goals and Habits line up with Tasks and People.** Their cards sat further
+  in from the screen edge than on the other tabs. All four now share the same
+  side margin, and a goal's own page and its check-in history follow.
+- **Habits no longer leaves a wide empty margin beside the sidebar.** On a
+  mid-sized desktop window the page measured the whole window instead of its
+  own area and padded itself far in from both sides.
+
 ## [1.1.108]
 
 ### Changed
