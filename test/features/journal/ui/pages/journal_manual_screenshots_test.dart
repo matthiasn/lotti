@@ -69,6 +69,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/widgets/modal/index.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
@@ -737,7 +738,8 @@ void main() {
             ResizeImage(
               FileImage(file),
               width: device.size.width.round(),
-              height: (device.isPhone ? 400 : device.size.width).round(),
+              // The exact decode the widget asks for: the cache is keyed by it.
+              height: EntryImageWidget.maxHeight.round(),
               policy: ResizeImagePolicy.fit,
             ),
             context,
@@ -1021,7 +1023,7 @@ void main() {
           matching: find.byType(Scrollable),
         );
         final filterTrigger = find.byKey(
-          const ValueKey('linked-entries-sort-trigger-visual'),
+          const ValueKey('linked-entries-sort-trigger'),
         );
         await tester.scrollUntilVisible(
           filterTrigger,
@@ -1069,7 +1071,11 @@ void main() {
           brightness: brightness,
           home: EntryDetailsPage(itemId: audioMemo.id),
         );
-        expect(find.text('00:00 / 07:42'), findsOneWidget);
+        // At rest the one-row player shows the recording's length.
+        expect(
+          find.text(formatElapsed(audioMemo.data.duration)),
+          findsOneWidget,
+        );
 
         final pageContext = tester.element(find.byType(EntryDetailsPage));
         final providerContainer = ProviderScope.containerOf(pageContext);
