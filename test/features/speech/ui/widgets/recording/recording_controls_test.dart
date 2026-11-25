@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_timer_pill.dart';
@@ -540,6 +542,126 @@ void main() {
         await tester.tap(key(name), warnIfMissed: false);
       }
       expect(calls, isEmpty);
+    });
+  });
+
+  group('RecordingStopButton', () {
+    Future<void> pump(
+      WidgetTester tester, {
+      bool paused = false,
+      VoidCallback? onTap,
+      bool haptics = false,
+    }) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          RecordingStopButton(
+            paused: paused,
+            progressSemanticsLabel: '42 seconds',
+            onTap: onTap,
+          ),
+          overrides: [
+            celebrationPreferencesProvider.overrideWithValue(
+              const CelebrationPreferences.allEnabled().copyWith(
+                haptics: haptics,
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump(MotionDurations.short4);
+    }
+
+    BoxDecoration disc(WidgetTester tester) =>
+        tester
+                .widget<AnimatedContainer>(find.byType(AnimatedContainer))
+                .decoration!
+            as BoxDecoration;
+    DsTokens tokens(WidgetTester tester) =>
+        tester.element(find.byType(RecordingStopButton)).designTokens;
+
+    testWidgets('a round alert disc with the filled stop square and no time '
+        'in it', (tester) async {
+      await pump(tester, onTap: () {});
+      expect(disc(tester).shape, BoxShape.circle);
+      expect(
+        disc(tester).color,
+        tokens(tester).colors.alert.error.defaultColor,
+      );
+      final square = tester.widget<Icon>(find.byType(Icon));
+      expect(square.icon, LottiIconsFilled.square);
+      expect(
+        square.color,
+        RecordingStopButton.ink(tokens(tester), paused: false),
+      );
+      expect(find.byType(Text), findsNothing);
+      expect(
+        tester.getSize(find.byType(AnimatedContainer)),
+        Size.square(tokens(tester).spacing.step9),
+      );
+    });
+
+    testWidgets('paused, it steps back to the neutral fill and the ink of '
+        'text', (tester) async {
+      await pump(tester, paused: true, onTap: () {});
+      expect(disc(tester).color, tokens(tester).colors.decorative.level02);
+      expect(
+        tester.widget<Icon>(find.byType(Icon)).color,
+        tokens(tester).colors.text.highEmphasis,
+      );
+    });
+
+    testWidgets('one button named Stop, its value the time in words', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester, onTap: () {});
+      final node = tester.getSemantics(find.byType(RecordingStopButton));
+      expect(node.label, 'Stop');
+      expect(node.value, '42 seconds');
+      semantics.dispose();
+    });
+
+    for (final (haptics, expected) in [
+      (true, ['HapticFeedbackType.mediumImpact']),
+      (false, <String>[]),
+    ]) {
+      testWidgets('a tap stops, felt firmly only with haptics on '
+          '(haptics: $haptics)', (tester) async {
+        final felt = <String>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'HapticFeedback.vibrate') {
+              felt.add(call.arguments as String);
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        var stops = 0;
+        await pump(tester, haptics: haptics, onTap: () => stops++);
+        await tester.tap(find.byType(RecordingStopButton));
+        expect(stops, 1);
+        expect(felt, expected);
+      });
+    }
+
+    testWidgets('with no tap it is inert', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester);
+      expect(
+        tester
+            .getSemantics(find.byType(RecordingStopButton))
+            .flagsCollection
+            .isEnabled,
+        Tristate.isFalse,
+      );
+      semantics.dispose();
     });
   });
 }

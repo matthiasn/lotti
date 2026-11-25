@@ -10901,6 +10901,7 @@
   "sidebarActiveSectionTitle": "Activity",
   "sidebarActivityCollapseTooltip": "Collapse activity",
   "sidebarActivityExpandTooltip": "Expand activity",
+  "sidebarAudioRecordingStatusLabel": "Recording",
   "sidebarRunningTimerLabel": "Running timer",
   "sidebarRunningTimerStopTooltip": "Stop timer",
   "sidebarTimerStatusLabel": "Timer",

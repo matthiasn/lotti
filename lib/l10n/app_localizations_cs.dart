@@ -16942,6 +16942,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get sidebarActivityExpandTooltip => 'Rozbalit aktivitu';
 
   @override
+  String get sidebarAudioRecordingStatusLabel => 'Nahrávání';
+
+  @override
   String get sidebarRunningTimerLabel => 'Běžící časovač';
 
   @override

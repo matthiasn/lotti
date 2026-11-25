@@ -3,6 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_timer_pill.dart';
+import 'package:lotti/features/design_system/components/glass_chip_surface.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recording_receipt_controller.dart';
 import 'package:lotti/features/speech/state/recording_tray_controller.dart';
@@ -48,15 +51,19 @@ void main() {
   ProviderContainer containerOf(WidgetTester tester) =>
       ProviderScope.containerOf(tester.element(strip()));
 
+  /// The row inside the glass: the strip's height without its hairline
+  /// and the bottom safe area.
+  Finder row() => find.byKey(RecordingStrip.rowKey);
+
   group('height', () {
-    testWidgets('is 56 at the default text size: the controls with a step '
-        'of air above and below', (tester) async {
+    testWidgets('the row is 56 at the default text size: the controls with '
+        'a step of air above and below', (tester) async {
       await pump(tester);
-      expect(tester.getSize(strip()).height, 56);
+      expect(tester.getSize(row()).height, 56);
     });
 
-    testWidgets('grows with the text size, as the receipt it turns into '
-        'does, and stays one capsule row', (tester) async {
+    testWidgets('the row grows with the text size, as the receipt it turns '
+        'into does, and stays one row', (tester) async {
       await pump(
         tester,
         mediaQueryData: phoneMediaQueryData.copyWith(
@@ -72,20 +79,37 @@ void main() {
             lines.caption * 2 + lines.bodySmall * 2,
           ) +
           tokens.spacing.step2 * 2;
-      expect(tester.getSize(strip()).height, height);
+      expect(tester.getSize(row()).height, height);
       expect(
         tester.getCenter(find.byType(RecordingStripLeading)).dy,
         closeTo(tester.getCenter(stop()).dy, 0.5),
       );
-      final fill = tester
-          .widgetList<DecoratedBox>(
-            find.descendant(of: strip(), matching: find.byType(DecoratedBox)),
-          )
-          .map((box) => box.decoration)
-          .whereType<BoxDecoration>()
-          .first;
-      expect(fill.borderRadius, BorderRadius.circular(height / 2));
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('extent is the hairline, the row and the bottom safe area '
+        'the glass reaches into', (tester) async {
+      const inset = 34.0;
+      await pump(
+        tester,
+        mediaQueryData: phoneMediaQueryData.copyWith(
+          padding: const EdgeInsets.only(bottom: inset),
+        ),
+      );
+      final context = tester.element(strip());
+      final extent = RecordingStrip.extent(context);
+      expect(
+        extent,
+        DesignSystemGlassStrip.hairlineHeight +
+            RecordingStrip.height(context) +
+            inset,
+      );
+      expect(tester.getSize(strip()).height, extent);
+      // The row sits above the inset, the glass runs into it.
+      expect(
+        tester.getRect(strip()).bottom - tester.getRect(row()).bottom,
+        inset,
+      );
     });
   });
 
@@ -179,7 +203,12 @@ void main() {
       tester,
     ) async {
       await pump(tester);
-      RecordingRingButton ring() => tester.widget(pause());
+      RecordingRingButton ring() => tester.widget(
+        find.descendant(
+          of: pause(),
+          matching: find.byType(RecordingRingButton),
+        ),
+      );
       expect(ring().emphasized, isFalse);
       await tester.tap(pause());
       await tester.pump();
@@ -235,10 +264,9 @@ void main() {
     semantics.dispose();
   });
 
-  group('the tray', () {
-    testWidgets('opens on a tap on the body, outside the buttons', (
-      tester,
-    ) async {
+  group('a tap on the body', () {
+    testWidgets('away from where the take started, takes the user back '
+        'there, and leaves the tray folded', (tester) async {
       await pump(
         tester,
         width: 600,
@@ -247,13 +275,74 @@ void main() {
       // The bars take no tap of their own: the body's.
       await tester.tap(bars());
       await tester.pump();
+      verify(() => bench.nav.beamToNamed(stripSubjectRoute)).called(1);
+      expect(
+        containerOf(tester).read(recordingTrayControllerProvider).open,
+        isFalse,
+      );
+    });
+
+    testWidgets('on the page where the take started, opens the tray', (
+      tester,
+    ) async {
+      bench.route = stripSubjectRoute;
+      await pump(tester);
+      await tester.tap(bars());
+      await tester.pump();
+      expect(
+        containerOf(tester).read(recordingTrayControllerProvider).open,
+        isTrue,
+      );
+      verifyNever(() => bench.nav.beamToNamed(any()));
+    });
+
+    testWidgets('of a take with no way back, opens the tray', (tester) async {
+      await bench.pump(
+        tester,
+        SizedBox(width: 390, child: RecordingStrip(key: UniqueKey())),
+      );
+      await bench.recorder.record(linkedId: stripSubjectId);
+      await tester.pump();
+      await tester.pump();
+      await tester.tap(bars());
+      await tester.pump();
+      expect(
+        containerOf(tester).read(recordingTrayControllerProvider).open,
+        isTrue,
+      );
+      verifyNever(() => bench.nav.beamToNamed(any()));
+    });
+
+    testWidgets('where the way back finds nowhere to go, opens the tray '
+        'rather than doing nothing', (tester) async {
+      when(() => bench.nav.canBeamTo(any())).thenReturn(false);
+      await pump(tester);
+      await tester.tap(bars());
+      await tester.pump();
+      await tester.pump();
+      verifyNever(() => bench.nav.beamToNamed(any()));
       expect(
         containerOf(tester).read(recordingTrayControllerProvider).open,
         isTrue,
       );
     });
 
-    testWidgets('opens on a swipe up', (tester) async {
+    testWidgets('on pause does neither', (tester) async {
+      await pump(tester);
+      await tester.tap(pause());
+      await tester.pump();
+      expect(
+        containerOf(tester).read(recordingTrayControllerProvider).open,
+        isFalse,
+      );
+      verifyNever(() => bench.nav.beamToNamed(any()));
+    });
+  });
+
+  group('the tray', () {
+    testWidgets('opens on a swipe up, away from the origin too', (
+      tester,
+    ) async {
       await pump(tester);
       await tester.fling(strip(), const Offset(0, -80), 800);
       await tester.pump();
@@ -261,6 +350,7 @@ void main() {
         containerOf(tester).read(recordingTrayControllerProvider).open,
         isTrue,
       );
+      verifyNever(() => bench.nav.beamToNamed(any()));
     });
 
     testWidgets('stays folded on a swipe down', (tester) async {
@@ -272,49 +362,15 @@ void main() {
         isFalse,
       );
     });
+  });
 
-    testWidgets('the way back is the arrow alone, a full tap target; a tap '
-        'on the level opens the tray instead of going back', (tester) async {
-      await pump(tester);
-      final back = tester.getSize(find.byKey(RecordingStripLeading.backKey));
-      final step9 = tester.element(strip()).designTokens.spacing.step9;
-      expect(back, Size.square(step9));
-
-      await tester.tap(bars());
-      await tester.pump();
-      expect(
-        containerOf(tester).read(recordingTrayControllerProvider).open,
-        isTrue,
-      );
-      verifyNever(() => bench.nav.beamToNamed(any()));
-    });
-
-    testWidgets('a tap on pause does not open it', (tester) async {
-      await pump(tester);
-      await tester.tap(pause());
-      await tester.pump();
-      expect(
-        containerOf(tester).read(recordingTrayControllerProvider).open,
-        isFalse,
-      );
-    });
-
-    testWidgets('the body tells a screen reader it opens the recorder', (
-      tester,
-    ) async {
-      await pump(tester);
-      expect(
-        find.descendant(
-          of: strip(),
-          matching: find.byWidgetPredicate(
-            (widget) =>
-                widget is Semantics &&
-                widget.properties.hintOverrides?.onTapHint == 'Open recorder',
-          ),
-        ),
-        findsOneWidget,
-      );
-    });
+  testWidgets('the way back is the arrow alone, a full tap target', (
+    tester,
+  ) async {
+    await pump(tester);
+    final back = tester.getSize(find.byKey(RecordingStripLeading.backKey));
+    final step9 = tester.element(strip()).designTokens.spacing.step9;
+    expect(back, Size.square(step9));
   });
 
   testWidgets('a screen reader meets the leading part, then pause, then '
@@ -325,22 +381,86 @@ void main() {
     expect(tester.getCenter(pause()).dx, lessThan(tester.getCenter(stop()).dx));
   });
 
-  group('surface', () {
-    testWidgets("wears the island's glass as a full capsule", (
+  testWidgets('on a wide window the glass runs edge to edge while the row '
+      'stays at the prose measure, centred', (tester) async {
+    await pump(
       tester,
-    ) async {
+      width: desktopLayoutMediaQueryData.size.width,
+      mediaQueryData: desktopLayoutMediaQueryData,
+    );
+    final width = desktopLayoutMediaQueryData.size.width;
+    expect(tester.getSize(strip()).width, width);
+    expect(tester.getSize(row()).width, kProseMeasureWidth);
+    expect(tester.getCenter(row()).dx, tester.getCenter(strip()).dx);
+  });
+
+  testWidgets('keeps the row clear of a landscape notch, the glass running '
+      'into it', (tester) async {
+    const notch = 44.0;
+    await pump(
+      tester,
+      width: 667,
+      mediaQueryData: phoneMediaQueryData.copyWith(
+        size: const Size(667, 375),
+        padding: const EdgeInsets.only(left: notch, right: notch),
+      ),
+    );
+    final gutter = tester.element(strip()).designTokens.spacing.step5;
+    expect(tester.getRect(strip()).left, 0);
+    expect(tester.getRect(row()).left, greaterThanOrEqualTo(notch + gutter));
+    expect(
+      tester.getRect(row()).right,
+      lessThanOrEqualTo(667 - notch - gutter),
+    );
+  });
+
+  group('surface', () {
+    testWidgets("wears the sticky action bar's glass, edge to edge, with no "
+        'capsule around it', (tester) async {
       await pump(tester);
-      final fill = tester
-          .widgetList<DecoratedBox>(
-            find.descendant(of: strip(), matching: find.byType(DecoratedBox)),
-          )
-          .map((box) => box.decoration)
-          .whereType<BoxDecoration>()
-          .first;
       expect(
-        fill.borderRadius,
-        BorderRadius.circular(tester.getSize(strip()).height / 2),
+        find.descendant(
+          of: strip(),
+          matching: find.byType(DesignSystemGlassStrip),
+          matchRoot: true,
+        ),
+        findsOneWidget,
       );
+      expect(
+        find.descendant(of: strip(), matching: find.byType(DsGlassChipSurface)),
+        findsNothing,
+      );
+      expect(tester.getSize(strip()).width, 390);
+    });
+
+    testWidgets('surface() draws a card as a full capsule; a radius rounds '
+        'it less', (tester) async {
+      late BuildContext context;
+      await bench.pump(
+        tester,
+        Builder(
+          builder: (c) {
+            context = c;
+            return const SizedBox.shrink();
+          },
+        ),
+      );
+      BorderRadius? radiusOf(Widget surface) =>
+          (surface as DsGlassChipSurface).radius;
+      final capsule = RecordingStrip.surface(
+        context,
+        child: const SizedBox.shrink(),
+      );
+      expect(
+        radiusOf(capsule),
+        BorderRadius.circular(RecordingStrip.height(context) / 2),
+      );
+      final rounded = RecordingStrip.surface(
+        context,
+        radius: 12,
+        child: const SizedBox.shrink(),
+      );
+      expect(radiusOf(rounded), BorderRadius.circular(12));
     });
   });
 }

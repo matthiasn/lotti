@@ -1,51 +1,53 @@
 import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_strip_layer.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Puts the recording strip ([RecordingStripLayer]) at the bottom edge of
+/// Puts the recording strip ([RecordingStripLayer]) on the bottom edge of
 /// [child] — the whole phone shell, or the desktop content column — and
 /// moves everything else up to make room for it.
 ///
-/// The strip sits at the very bottom, just above the safe area, on every
-/// page, so Stop is always in the same place. Everything above it — the
-/// launcher row, a page's sticky action bar, a scroll view's last row —
-/// moves up by the strip's height through the bottom inset [child] reads:
-/// [MediaQueryData.padding] and [MediaQueryData.viewPadding] grow by
-/// [RecordingStripLayer.reservedHeight]. A page that already respects the
+/// The strip runs along the very bottom, its glass reaching into the safe
+/// area, on every page the take does not live on, so Stop is always in the
+/// same place. Everything above it — the launcher row, a page's sticky
+/// action bar, a scroll view's last row — moves up through the bottom inset
+/// [child] reads: [MediaQueryData.padding] and [MediaQueryData.viewPadding]
+/// become [RecordingStripLayer.lift]. A page that already respects the
 /// bottom safe area needs no change of its own.
 ///
-/// The strip ignores the keyboard: it stays at the bottom edge under an
-/// open keyboard rather than riding on top of it. [omitAudio] leaves it out
-/// altogether, on a build with no recorder (Flatpak).
+/// [showsTake] false leaves the running take to the desktop sidebar's
+/// activity, which carries it while the sidebar is open; the receipt and
+/// the tray still show here. The strip ignores the keyboard: it stays at the
+/// bottom edge under an open keyboard rather than riding on top of it.
+/// [omitAudio] leaves it out altogether, on a build with no recorder
+/// (Flatpak).
 class RecordingStripShell extends ConsumerWidget {
   const RecordingStripShell({
     required this.omitAudio,
     required this.child,
+    this.showsTake = true,
     super.key,
   });
 
   final bool omitAudio;
-  final Widget child;
 
-  /// Distance from the bottom edge to the strip: the safe area, and never
-  /// less than `spacing.step3`, so it does not sit on the window's edge.
-  static double bottomOffset(BuildContext context) => math.max(
-    MediaQuery.paddingOf(context).bottom,
-    context.designTokens.spacing.step3,
-  );
+  /// Whether the strip of a running take is drawn here.
+  final bool showsTake;
+
+  final Widget child;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (omitAudio) return child;
-    final content = ref.watch(recordingStripContentProvider);
-    final reserved = RecordingStripLayer.reservedHeight(context, content);
+    final content = RecordingStripLayer.visible(
+      ref.watch(recordingStripContentProvider),
+      showsTake: showsTake,
+    );
     final media = MediaQuery.of(context);
-    final bottom = bottomOffset(context);
-    final lifted = reserved == 0 ? media.padding.bottom : bottom + reserved;
-    final gutter = context.designTokens.spacing.step5;
+    final lifted = content == RecordingStripContent.none
+        ? media.padding.bottom
+        : RecordingStripLayer.lift(context, content);
     return Stack(
       children: [
         // Always under this MediaQuery, whether the strip shows or not: a
@@ -61,10 +63,10 @@ class RecordingStripShell extends ConsumerWidget {
           child: child,
         ),
         Positioned(
-          left: media.padding.left + gutter,
-          right: media.padding.right + gutter,
-          bottom: bottom,
-          child: const RecordingStripLayer(),
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: RecordingStripLayer(showsTake: showsTake),
         ),
       ],
     );

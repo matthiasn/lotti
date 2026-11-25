@@ -834,6 +834,148 @@ void main() {
       });
     });
 
+    group('a pause or resume waiting on the recorder when Stop or discard '
+        'begins', () {
+      for (final action in ['pause', 'resume']) {
+        for (final terminal in ['stop', 'cancel']) {
+          test('$action then $terminal: the $terminal wins and the take '
+              'stays stopped', () async {
+            // A take is running, so a discard has something to claim.
+            when(
+              () => mockAudioRecorderRepository.hasPermission(),
+            ).thenAnswer((_) async => true);
+            when(
+              () => mockAudioRecorderRepository.startRecording(),
+            ).thenAnswer(
+              (_) async => AudioNote(
+                createdAt: DateTime(2026, 11, 26),
+                audioFile: 'take.m4a',
+                audioDirectory: '/audio/2026-11-26/',
+                duration: Duration.zero,
+              ),
+            );
+            when(
+              () => mockAudioRecorderRepository.stopRecording(),
+            ).thenAnswer((_) async {});
+            final gate = Completer<void>();
+            // A resume needs a paused take: the pause before it goes
+            // through at once, and only the resume waits.
+            when(
+              () => mockAudioRecorderRepository.pauseRecording(),
+            ).thenAnswer(
+              (_) => action == 'pause' ? gate.future : Future<void>.value(),
+            );
+            when(
+              () => mockAudioRecorderRepository.resumeRecording(),
+            ).thenAnswer((_) => gate.future);
+            final controller = container.read(
+              audioRecorderControllerProvider.notifier,
+            );
+            await controller.record();
+            if (action == 'resume') await controller.pause();
+
+            final waiting = action == 'pause'
+                ? controller.pause()
+                : controller.resume();
+            if (terminal == 'stop') {
+              await controller.stop();
+            } else {
+              await controller.cancel();
+            }
+            gate.complete();
+            await waiting;
+
+            expect(
+              container.read(audioRecorderControllerProvider).status,
+              AudioRecorderStatus.stopped,
+            );
+          });
+        }
+      }
+    });
+
+    group('a pause or resume asked for once a stop or discard holds the '
+        'take, or after it, does nothing until the next take', () {
+      late AudioRecorderController controller;
+
+      setUp(() async {
+        when(
+          () => mockAudioRecorderRepository.hasPermission(),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockAudioRecorderRepository.startRecording(),
+        ).thenAnswer(
+          (_) async => AudioNote(
+            createdAt: DateTime(2026, 11, 26),
+            audioFile: 'take.m4a',
+            audioDirectory: '/audio/2026-11-26/',
+            duration: Duration.zero,
+          ),
+        );
+        when(
+          () => mockAudioRecorderRepository.pauseRecording(),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockAudioRecorderRepository.resumeRecording(),
+        ).thenAnswer((_) async {});
+        controller = container.read(audioRecorderControllerProvider.notifier);
+        await controller.record();
+      });
+
+      AudioRecorderStatus status() =>
+          container.read(audioRecorderControllerProvider).status;
+
+      test('a pause while Stop is saving', () async {
+        final saving = Completer<void>();
+        when(
+          () => mockAudioRecorderRepository.stopRecording(),
+        ).thenAnswer((_) => saving.future);
+        final stopping = controller.stop();
+        await controller.pause();
+        verifyNever(() => mockAudioRecorderRepository.pauseRecording());
+        saving.complete();
+        await stopping;
+        expect(status(), AudioRecorderStatus.stopped);
+      });
+
+      test('a resume while a paused take is being discarded', () async {
+        await controller.pause();
+        final discarding = Completer<void>();
+        when(
+          () => mockAudioRecorderRepository.stopRecording(),
+        ).thenAnswer((_) => discarding.future);
+        final cancelling = controller.cancel();
+        await controller.resume();
+        verifyNever(() => mockAudioRecorderRepository.resumeRecording());
+        discarding.complete();
+        await cancelling;
+        expect(status(), AudioRecorderStatus.stopped);
+      });
+
+      test('a pause or a resume after the take was stopped', () async {
+        when(
+          () => mockAudioRecorderRepository.stopRecording(),
+        ).thenAnswer((_) async {});
+        await controller.stop();
+        await controller.pause();
+        await controller.resume();
+        verifyNever(() => mockAudioRecorderRepository.pauseRecording());
+        verifyNever(() => mockAudioRecorderRepository.resumeRecording());
+        expect(status(), AudioRecorderStatus.stopped);
+      });
+
+      test('the next take pauses again', () async {
+        when(
+          () => mockAudioRecorderRepository.stopRecording(),
+        ).thenAnswer((_) async {});
+        await controller.stop();
+        await controller.record();
+        await controller.pause();
+        verify(() => mockAudioRecorderRepository.pauseRecording()).called(1);
+        expect(status(), AudioRecorderStatus.paused);
+      });
+    });
+
     group('resume', () {
       test('should execute without throwing exception', () async {
         // Arrange

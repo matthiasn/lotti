@@ -16724,6 +16724,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get sidebarActivityExpandTooltip => 'Udvid aktiviteten';
 
   @override
+  String get sidebarAudioRecordingStatusLabel => 'Indspilning';
+
+  @override
   String get sidebarRunningTimerLabel => 'Kørende timer';
 
   @override

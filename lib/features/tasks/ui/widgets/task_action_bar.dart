@@ -9,6 +9,7 @@ import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/action_bar_recording.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/glass_record_button.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar_buttons.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -32,6 +33,9 @@ import 'package:material_ui/material_ui.dart';
 ///   labeled "Add" trigger, which opens the create-entry sheet for the long
 ///   tail (linked task / event / paste image / capture screenshot — the
 ///   latter desktop-only inside that sheet)
+/// * while a take for this task runs, its recording row at the bar's foot
+///   ([ActionBarRecording]): the live dot, the level, the running time,
+///   pause, and a round Stop — the mic, moved down from the row above
 ///
 /// The capture actions use a [Wrap] with width-based priority drop: on
 /// narrow viewports the lower-priority trailing icons (image, then
@@ -286,110 +290,118 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                 key: TaskActionBar.topSlotKey,
                 child: widget.topSlot!,
               ),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                // Affordances are dropped in priority order so the row
-                // always fits on a single line. Image goes first, then
-                // checklist, then the Add trigger's label; everything
-                // dropped stays reachable via the Add sheet.
-                //
-                // Thresholds include the widest translated idle pill
-                // (Portuguese "Monitorar o tempo"), 48 px round buttons,
-                // step4 (12 px) gaps, and the Add trigger's labeled pill
-                // with its opens-caret. Each round button costs ≈60 px, the
-                // labeled trigger ≈64 px over the bare circle — hence 528
-                // for the five-control row and 468 for the four-control row.
-                final showImage =
-                    constraints.maxWidth >=
-                    TaskActionBar.minWidthForImageButton;
-                final showChecklist =
-                    constraints.maxWidth >=
-                    TaskActionBar.minWidthForChecklistButton;
-                final rowChildren = <Widget>[
-                  // Idle it starts a timer; running, its body opens the
-                  // running entry (as the sidebar timer card does) and its
-                  // inset circle stops it.
-                  DesignSystemTimerPill(
-                    key: TaskActionBar.trackTimeKey,
-                    running: isTracking,
-                    label: elapsedLabel,
-                    widthLabel: messages.taskActionBarTrackTime,
-                    semanticLabel: isTracking
-                        ? messages.taskActionBarOpenRunningTimer
-                        : messages.taskActionBarTrackTime,
-                    stopSemanticLabel: messages.taskActionBarStopTracking,
-                    stopKey: TaskActionBar.trackTimeStopKey,
-                    onTap: isTracking
-                        ? _onNavigateToRunningEntry
-                        : _onStartTimer,
-                    onStop: _onStopTimer,
-                  ),
-                  // The shared lead-action mic: accent ring and glyph idle
-                  // — a peer of Track time rather than one of the quiet
-                  // utilities beside it, since tracked time and captured
-                  // thoughts are equally load-bearing for a task — and the
-                  // alert fill while a recording linked to this task runs.
-                  GlassRecordButton(
-                    key: TaskActionBar.audioKey,
-                    linkedId: widget.task.meta.id,
-                    onPressed: _onAudioPressed,
-                  ),
-                  if (showChecklist) ...[
-                    DsGlassRoundButton(
-                      key: TaskActionBar.checklistKey,
-                      icon: LottiIcons.checkAll,
-                      semanticLabel: messages.taskFirstRunAddChecklist,
-                      onPressed: _onChecklistPressed,
+            // The mic is the bar's while nothing records for this task;
+            // while a take does, it has moved down and become the Stop of
+            // the recording row under the actions.
+            ActionBarRecording(
+              linkedId: widget.task.meta.id,
+              route: '/tasks/${widget.task.meta.id}',
+              mic: GlassRecordButton(
+                key: TaskActionBar.audioKey,
+                linkedId: widget.task.meta.id,
+                onPressed: _onAudioPressed,
+              ),
+              between: widget.bottomSlot,
+              actions: (context, mic) => LayoutBuilder(
+                builder: (context, constraints) {
+                  // Affordances are dropped in priority order so the row
+                  // always fits on a single line. Image goes first, then
+                  // checklist, then the Add trigger's label; everything
+                  // dropped stays reachable via the Add sheet.
+                  //
+                  // Thresholds include the widest translated idle pill
+                  // (Portuguese "Monitorar o tempo"), 48 px round buttons,
+                  // step4 (12 px) gaps, and the Add trigger's labeled pill
+                  // with its opens-caret. Each round button costs ≈60 px, the
+                  // labeled trigger ≈64 px over the bare circle — hence 528
+                  // for the five-control row and 468 for the four-control row.
+                  final showImage =
+                      constraints.maxWidth >=
+                      TaskActionBar.minWidthForImageButton;
+                  final showChecklist =
+                      constraints.maxWidth >=
+                      TaskActionBar.minWidthForChecklistButton;
+                  final rowChildren = <Widget>[
+                    // Idle it starts a timer; running, its body opens the
+                    // running entry (as the sidebar timer card does) and its
+                    // inset circle stops it.
+                    DesignSystemTimerPill(
+                      key: TaskActionBar.trackTimeKey,
+                      running: isTracking,
+                      label: elapsedLabel,
+                      widthLabel: messages.taskActionBarTrackTime,
+                      semanticLabel: isTracking
+                          ? messages.taskActionBarOpenRunningTimer
+                          : messages.taskActionBarTrackTime,
+                      stopSemanticLabel: messages.taskActionBarStopTracking,
+                      stopKey: TaskActionBar.trackTimeStopKey,
+                      onTap: isTracking
+                          ? _onNavigateToRunningEntry
+                          : _onStartTimer,
+                      onStop: _onStopTimer,
                     ),
-                  ],
-                  if (showImage) ...[
-                    DsGlassRoundButton(
-                      key: TaskActionBar.imageKey,
-                      icon: LottiIcons.image,
-                      semanticLabel: messages.addActionImportImage,
-                      onPressed: _onImagePressed,
-                    ),
-                  ],
-                  // The sheet this opens titles itself "Add" and holds
-                  // creation verbs — including the page's only route to a
-                  // linked sub-task. An overflow glyph promised leftovers
-                  // and delivered the page's creation hub; a bare "+"
-                  // half-fixed that but still broke the page's own rule
-                  // that "+" creates in place. Wherever the row has width,
-                  // the trigger says the same word as its destination; only
-                  // the narrowest rows — where the mic, the bar's other
-                  // lead action, needs the space — fall back to the circle,
-                  // whose semantics still carry the sheet's contents.
-                  if (constraints.maxWidth >=
-                      TaskActionBar.minWidthForLabeledAdd)
-                    AddMenuPill(
-                      key: TaskActionBar.moreKey,
-                      // One word on every width and in every state: the
-                      // sheet titles itself "Add", so the trigger does too.
-                      // (An earlier mode-aware "Attach" variant read as
-                      // file-attachment and confused more than it scented.)
-                      label: messages.createEntryTitle,
-                      tooltip: messages.createEntryTriggerHintFull,
-                      onPressed: _onMorePressed,
-                    )
-                  else
-                    DsGlassRoundButton(
-                      key: TaskActionBar.moreKey,
-                      icon: LottiIcons.add,
-                      semanticLabel: messages.createEntryTriggerHintFull,
-                      onPressed: _onMorePressed,
-                    ),
-                ];
-                return Wrap(
-                  alignment: WrapAlignment.center,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: spacing.step4,
-                  runSpacing: spacing.step4,
-                  children: rowChildren,
-                );
-              },
+                    // The shared lead-action mic: accent ring and glyph — a
+                    // peer of Track time rather than one of the quiet
+                    // utilities beside it, since tracked time and captured
+                    // thoughts are equally load-bearing for a task. Gone while
+                    // this task's take runs: it is the recording row's Stop.
+                    ?mic,
+                    if (showChecklist) ...[
+                      DsGlassRoundButton(
+                        key: TaskActionBar.checklistKey,
+                        icon: LottiIcons.checkAll,
+                        semanticLabel: messages.taskFirstRunAddChecklist,
+                        onPressed: _onChecklistPressed,
+                      ),
+                    ],
+                    if (showImage) ...[
+                      DsGlassRoundButton(
+                        key: TaskActionBar.imageKey,
+                        icon: LottiIcons.image,
+                        semanticLabel: messages.addActionImportImage,
+                        onPressed: _onImagePressed,
+                      ),
+                    ],
+                    // The sheet this opens titles itself "Add" and holds
+                    // creation verbs — including the page's only route to a
+                    // linked sub-task. An overflow glyph promised leftovers
+                    // and delivered the page's creation hub; a bare "+"
+                    // half-fixed that but still broke the page's own rule
+                    // that "+" creates in place. Wherever the row has width,
+                    // the trigger says the same word as its destination; only
+                    // the narrowest rows — where the mic, the bar's other
+                    // lead action, needs the space — fall back to the circle,
+                    // whose semantics still carry the sheet's contents.
+                    if (constraints.maxWidth >=
+                        TaskActionBar.minWidthForLabeledAdd)
+                      AddMenuPill(
+                        key: TaskActionBar.moreKey,
+                        // One word on every width and in every state: the
+                        // sheet titles itself "Add", so the trigger does too.
+                        // (An earlier mode-aware "Attach" variant read as
+                        // file-attachment and confused more than it scented.)
+                        label: messages.createEntryTitle,
+                        tooltip: messages.createEntryTriggerHintFull,
+                        onPressed: _onMorePressed,
+                      )
+                    else
+                      DsGlassRoundButton(
+                        key: TaskActionBar.moreKey,
+                        icon: LottiIcons.add,
+                        semanticLabel: messages.createEntryTriggerHintFull,
+                        onPressed: _onMorePressed,
+                      ),
+                  ];
+                  return Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: spacing.step4,
+                    runSpacing: spacing.step4,
+                    children: rowChildren,
+                  );
+                },
+              ),
             ),
-            ?widget.bottomSlot,
           ],
         ),
       ),

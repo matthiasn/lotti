@@ -7000,6 +7000,7 @@
   "sidebarActiveSectionTitle": "Attività",
   "sidebarActivityCollapseTooltip": "Comprimi attività",
   "sidebarActivityExpandTooltip": "Espandi attività",
+  "sidebarAudioRecordingStatusLabel": "Registrazione",
   "sidebarRunningTimerLabel": "Timer in corso",
   "sidebarRunningTimerStopTooltip": "Ferma il timer",
   "sidebarTimerStatusLabel": "Cronometro",

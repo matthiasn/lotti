@@ -16748,6 +16748,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get sidebarActivityExpandTooltip => 'Fäll ut aktivitet';
 
   @override
+  String get sidebarAudioRecordingStatusLabel => 'Inspelning';
+
+  @override
   String get sidebarRunningTimerLabel => 'Pågående timer';
 
   @override

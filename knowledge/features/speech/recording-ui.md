@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Recording UI
-description: "The one recorder every surface wears — a level line over a timed Stop — the recording strip that carries a take across the app, the receipt that commits it, and the one way every check-in surface shows a recording's words."
+description: "The one recorder every surface wears — a level line over a timed Stop — the strip, the task bar and the sidebar that carry a take across the app, the receipt that commits it, and the one way every check-in surface shows a recording's words."
 resource: ../../../lib/features/speech/ui/widgets/recording
 tags: [speech, ui, recorder, recording-strip, receipt, visualization]
 status: stable
@@ -11,11 +11,19 @@ sources:
   - id: src
     resource: ../../../lib/features/speech/ui/widgets/recording
     title: Recording UI source
-    last_modified: 2026-11-24
+    last_modified: 2026-11-26
   - id: strip
     resource: ../../../lib/features/speech/ui/widgets/recording/strip
     title: The recording strip, its tray, its receipt and the layer that picks one
-    last_modified: 2026-11-24
+    last_modified: 2026-11-26
+  - id: homes
+    resource: ../../../lib/features/speech/state/recording_homes.dart
+    title: recordingHomesProvider and takeAwayFromHome — which takes the strip and the sidebar carry
+    last_modified: 2026-11-26
+  - id: sidebar-recording
+    resource: ../../../lib/beamer/chrome/sidebar_audio_recording_section.dart
+    title: SidebarAudioRecordingSection — the running take in the desktop sidebar's activity
+    last_modified: 2026-11-26
   - id: session
     resource: ../../../lib/features/speech/state/recording_session.dart
     title: RecordingSession — start, stop, discard, the receipt's Open and the way back
@@ -53,14 +61,16 @@ same thing, and a field that takes dictation draws the voice with the same
 bars. There is no orb and no VU meter: both drew the one number the level
 line already shows, as the largest thing on the screen.
 
-**A microphone starts the take at once, on the recording strip** — a slim row
-at the bottom of the app that stays on every page while the take runs, opens
-into the full recorder (its *tray*), takes the user back to where the take
-started, and turns into a five-second *receipt* with Undo once the take is
-stopped. There is no recording sheet any more. Only the check-ins — a goal's
-and a person's — still record in place, with
-[`InlineRecorder`](#the-inline-recorder), and hand a running take to the
-strip when their screen closes.
+**A microphone starts the take at once, and the take lives where it was
+started.** On a task's page the recorder sits at the foot of the task's
+sticky action bar ([`ActionBarRecording`](#on-its-own-task)). Away from
+it, the take shows in one place with the way back: on a phone, the
+*recording strip*, a slim glass band along the bottom edge whose body takes
+the user back; on a wide window, the sidebar's activity, whose card does
+the same. Stop turns the take into a five-second *receipt* with Undo. There
+is no recording sheet any more. The check-ins — a goal's and a person's —
+record in place too, with [`InlineRecorder`](#the-inline-recorder), and
+hand a running take to the strip when their screen closes.
 
 Every recorder is made of the same parts in
 [`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart).
@@ -155,12 +165,21 @@ The shell mounts one
 `recordingStripContentProvider` decides what it shows, and the shell
 reserves room by the same rule: **the receipt** while one lasts; else **the
 tray** while it is open over a take or for a failure; else **the strip**
-while a take is recording or paused that no check-in screen draws in place
-(`inlineHostVisible`); else nothing. A recorder that fails to build counts
+while a take is recording or paused that nothing draws in place — no
+check-in screen (`inlineHostVisible`), and no home of its subject on screen
+(`recordingHomesProvider`; both read through `takeAwayFromHome`); else
+nothing. A recorder that fails to build counts
 as nothing recording, so it never takes the shell down. The layer cross-fades
 and slides its content in `RecordingStripLayer.motion`, at once under
-reduced motion, caps itself at the prose measure (`kProseMeasureWidth`) and
-centres there. Where the shell puts it is in
+reduced motion. The strip, and the place it holds while a take saves, run
+edge to edge on the bottom edge with the safe area inside their glass; the
+tray and the receipt are cards, inset by the gutter above the safe area
+(`RecordingStripLayer.bottomOffset`), capped at the prose measure
+(`kProseMeasureWidth`) and centred. The pages keep `RecordingStripLayer.lift`
+clear. With `showsTake: false` — a wide window whose sidebar carries the
+take — the layer draws neither the strip nor its held place
+(`RecordingStripLayer.visible`), only the tray and the receipt. Where the
+shell puts it is in
 [navigation](../../architecture/navigation.md#the-recording-strip-shell).
 
 ```mermaid
@@ -168,7 +187,7 @@ stateDiagram-v2
     [*] --> none
     none --> strip: microphone — RecordingSession.start, the take starts at once
     none --> tray: start refused — tray on the failure card
-    strip --> tray: tap the row, swipe up, or the subject's own microphone (attach)
+    strip --> tray: swipe up, a tap on the row with no way back to go, or the subject's own microphone (attach)
     strip --> tray: another subject's microphone — the Stop that recording card
     tray --> strip: grabber, swipe down, or a text field takes focus
     strip --> receipt: Stop — saved
@@ -187,14 +206,25 @@ stateDiagram-v2
       inlineHostVisible — the strip stays
       hidden; the check-in draws the take
     end note
+    none --> taskBar: the task's microphone, its page on screen
+    taskBar --> strip: the task's page leaves the screen mid-take
+    strip --> taskBar: back on the take's task
+    taskBar --> receipt: Stop — saved
+    note right of taskBar
+      the task is a recording home — the
+      strip never shows its take there
+    end note
 ```
 
 ## The row
 
 [`RecordingStrip`](../../../lib/features/speech/ui/widgets/recording/strip/recording_strip.dart)
-is one glass capsule (the island's chip glass), 56 px at the default text
-size and growing with the text scale (`RecordingStrip.height`, which the
-receipt's two lines share). It carries no words: a title cut to a few
+wears the sticky action bar's glass (`DesignSystemGlassStrip`: hairline,
+blur, scrim) edge to edge — a shrunk action bar, with no capsule or card
+around it. Its row is 56 px at the default text size and grows with the
+text scale (`RecordingStrip.height`, which the receipt's two lines share);
+the glass reaches into the bottom safe area under it
+(`RecordingStrip.extent`). It carries no words: a title cut to a few
 letters said little, so the level takes that room. Left to right:
 
 - **The leading glyph**
@@ -223,16 +253,25 @@ letters said little, so the level takes that room. Left to right:
   neutral fill while paused. **Stop always saves**; the ✕ that discards
   lives only in the tray.
 
+**A tap on the row's body** — anywhere outside its buttons — takes the user
+back to where the take started (`RecordingSession.returnToOrigin`), as the
+glyph does. On the origin already, for a take with no origin, or where the
+way back finds nowhere to go (a deleted subject), it opens the tray instead;
+a swipe up always opens the tray. The row keeps clear of the side safe
+areas too, the glass running into them.
+
 From the Stop tap until the receipt is up, `recordingSavingProvider` holds
-the strip's place with an inert empty capsule (`RecordingStripContent.saving`),
-so the page never drops back under a second tap.
+the strip's place with inert empty glass of the strip's extent
+(`RecordingStripContent.saving`), so the page never drops back under a
+second tap.
 
 The row watches the recorder through selectors — status, whole seconds,
 origin, subject — so a level sample never rebuilds it.
 
 ## The tray
 
-Tapping the row anywhere outside its buttons, or swiping it up, opens
+A swipe up on the row — or a tap on it where there is no way back to go —
+opens
 [`RecordingStripTray`](../../../lib/features/speech/ui/widgets/recording/strip/recording_strip_tray.dart)
 in the strip's place (`RecordingTrayController`): a grabber, the leading part
 with its words — ↩ and the subject's title on one line, or *Recording here* /
@@ -245,6 +284,56 @@ swipe down, or when a text field takes focus. A failed start opens it on
 `RecordingFailureCallout` instead, over the live stage when a take still
 runs. It is presentational: it never mounts `InlineRecorder` and never
 starts a take of its own.
+
+## On its own task
+
+[`ActionBarRecording`](../../../lib/features/speech/ui/widgets/recording/action_bar_recording.dart)
+hosts `TaskActionBar`'s actions. While a take linked to the task runs
+(`isActiveSessionFor`) and the task's page is the one on screen
+(`NavService.activeRoute` is its `route`), the bar's microphone leaves the
+row of actions and becomes the round Stop at the end of a recording row
+under them: the live dot, the level over all the room left, the running
+time as words (`formatElapsed`, whole seconds), pause
+(`RecordingPauseRing`, shared with the strip) and Stop
+(`RecordingStopButton`: the alert disc with the stop square, neutral while
+paused; it carries the time for a screen reader as its value). There is no
+border around the row, the bar's glass is around it, and on a wide window
+it is capped at the prose measure, centred.
+
+**The mic flies.** When the take arrives, a disc leaves from where the mic
+was and lands where Stop now is, turning from the accent ring and glyph
+into the red disc with the square (`ActionBarRecording.flight`, the motion
+tokens' standard curve), while the row fades in. When the take ends, Stop
+flies back up into the mic, the curve mirrored, while the row fades out.
+Where it leaves from is still laid out from the last frame; where it lands
+is measured after the next one, so the real mic and Stop stay hidden until
+the disc lands. Under reduced motion, or where the bar has no mic to leave
+from or land on, it does not fly.
+
+**The page is its subject's recording home.** While the task's page is on
+screen — whether or not anything records — the bar enters the subject in
+`recordingHomesProvider` (counted, as two bars for one subject can overlap
+for a frame), so a take started there never shows on the strip, not even
+for a frame. Leaving the page, including one kept mounted behind another
+tab, leaves the home, and the strip or the sidebar carries the take with
+the way back. Both changes run after the frame, since a provider may not
+change while the tree builds or is torn down.
+
+## On a wide window: the sidebar
+
+With the desktop sidebar open, the content column's shell is told
+`showsTake: false`, and a running take lives in the sidebar's activity
+disclosure (`SidebarActivitySummary`) — unless something draws it in place
+(`takeAwayFromHome`), the strip's own rule: a red mic metric with the
+running time while it is folded, and, unfolded,
+[`SidebarAudioRecordingSection`](../../../lib/beamer/chrome/sidebar_audio_recording_section.dart)
+— the `SidebarLiveCard` in the alert red with the subject's title, the time
+(its record dot still and its status *Paused* while the take is paused) and
+Stop (`RecordingSession.stop`, so the receipt follows). Its body takes
+the user back to the origin; a take with no origin has no way back, and the
+card is no button. A collapsed sidebar, or lockdown (which drops the
+disclosure), gives the take back to the strip at the foot of the content
+column.
 
 ## The receipt and the commit moment
 
@@ -350,8 +439,10 @@ settings* goes through, on every surface.
 
 | Surface | Shows |
 |---------|-------|
-| Recording strip | The leading glyph (↩ back / the live dot), the bars filling the row, pause, and the Stop pill carrying the running time — no words — on every page, phone and desktop, while a take runs that no check-in draws in place. Not on Flatpak |
+| Recording strip | Edge-to-edge glass along the bottom: the leading glyph (↩ back / the live dot), the bars filling the row, pause, and the Stop pill carrying the running time — no words — on every page where no check-in or the take's own task draws it; on a wide window only while the sidebar is collapsed. Its body takes the user back. Not on Flatpak |
 | Strip tray | The subject's title by the way back, the level line, and discard ✕ · pause · Stop across its width — or a failure card |
+| Task action bar | The mic becomes the round Stop at the end of a recording row under the actions — the live dot, the level, the time as words, pause, Stop — flying down when the take starts and back when it ends. Stop then Undo is the way to drop it |
+| Desktop sidebar activity | A red mic metric with the time, folded; unfolded, the recording card — subject, time, Stop — whose body takes the user back. Not on Flatpak |
 | Receipt | ✓ *Saved · 0:42* (*· transcribing* where it will be) over the subject, *Undo*, and *Open* where it leads somewhere — for 5 s after Stop |
 | Goal check-in sheet | `InlineRecorder` under the sheet's title — the goal's name — and the agent's question — no status line: the red Stop pill carrying the running time says it is recording |
 | Check-in page dock | The stage embedded in place by `CheckInInlineRecorder` (the person's wrapper over `InlineRecorder`), with its own status line in the stage's notice slot (`showStatus`: `● Recording` / `Paused` in the composer header's grammar, a live region), since no header above it says so |
@@ -360,9 +451,9 @@ settings* goes through, on every surface.
 | Goal and person page bar | The *Speak* pill reads *Recording* on the alert fill while a take linked to that goal or person is recording or paused (`subjectTakeLiveProvider`, which never builds the recorder just to ask) — **no level, no time**; the strip below carries those |
 | Task, entry and event action bars | `GlassRecordButton`: the accent-ringed mic takes the alert fill while a session linked to *that* task, entry or event is recording or paused, and swells once when the strip brings the user back to it — **no level, no time** |
 
-The phone island and the desktop sidebar show no recording any more: the
-island is timer-only, and the sidebar's activity summary lists the timer and
-agent wakes.
+The phone island shows no recording any more: it is timer-only. The
+desktop sidebar's activity summary carries a take no page draws in place,
+beside the timer and agent wakes ([the sidebar](#on-a-wide-window-the-sidebar)).
 
 The action bars' mic
 ([`glass_record_button.dart`](../../../lib/features/speech/ui/widgets/recording/glass_record_button.dart))

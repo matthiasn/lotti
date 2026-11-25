@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/chrome/recording_strip_shell.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recording_receipt_controller.dart';
+import 'package:lotti/features/speech/state/recording_session.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_strip.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/strip/recording_strip_layer.dart';
 import 'package:material_ui/material_ui.dart';
@@ -52,11 +53,16 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     bool omitAudio = false,
+    bool showsTake = true,
     MediaQueryData mediaQueryData = phoneMediaQueryData,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        RecordingStripShell(omitAudio: omitAudio, child: const _Page()),
+        RecordingStripShell(
+          omitAudio: omitAudio,
+          showsTake: showsTake,
+          child: const _Page(),
+        ),
         mediaQueryData: mediaQueryData,
         overrides: bench.overrides,
       ),
@@ -77,26 +83,50 @@ void main() {
     expect(_Page.padding!.bottom, phoneMediaQueryData.padding.bottom);
   });
 
-  testWidgets('a take puts the strip at the bottom edge, inside the gutters, '
-      'and lifts the page by its height', (tester) async {
+  testWidgets('a take puts the strip flush on the bottom edge, edge to '
+      'edge, and lifts the page by its whole extent', (tester) async {
     await pump(tester);
     await bench.startTake(tester);
     await tester.pump(RecordingStripLayer.motion);
 
     final context = shellContext(tester);
-    final offset = RecordingStripShell.bottomOffset(context);
-    final reserved = RecordingStripLayer.reservedHeight(
+    final extent = RecordingStripLayer.lift(
       context,
       RecordingStripContent.strip,
     );
-    final gutter = context.designTokens.spacing.step5;
     final strip = tester.getRect(find.byType(RecordingStrip));
 
-    expect(strip.bottom, phoneMediaQueryData.size.height - offset);
-    expect(strip.left, gutter);
-    expect(strip.right, phoneMediaQueryData.size.width - gutter);
-    expect(_Page.padding!.bottom, offset + reserved);
-    expect(_Page.viewPadding!.bottom, offset + reserved);
+    expect(strip.bottom, phoneMediaQueryData.size.height);
+    expect(strip.left, 0);
+    expect(strip.right, phoneMediaQueryData.size.width);
+    expect(strip.height, extent);
+    expect(_Page.padding!.bottom, extent);
+    expect(_Page.viewPadding!.bottom, extent);
+  });
+
+  testWidgets("a receipt lifts the page by its card's lift", (tester) async {
+    await pump(tester);
+    await bench.startTake(tester);
+    final container = ProviderScope.containerOf(shellContext(tester));
+    await container.read(recordingSessionProvider).stop();
+    await tester.pump();
+
+    final lift = RecordingStripLayer.lift(
+      shellContext(tester),
+      RecordingStripContent.receipt,
+    );
+    expect(_Page.padding!.bottom, lift);
+    container.read(recordingReceiptControllerProvider.notifier).commit();
+  });
+
+  testWidgets('a take shown elsewhere (showsTake false) draws no strip and '
+      'leaves the page its own inset', (tester) async {
+    await pump(tester, showsTake: false);
+    await bench.startTake(tester);
+    await tester.pump(RecordingStripLayer.motion);
+
+    expect(find.byType(RecordingStrip), findsNothing);
+    expect(_Page.padding!.bottom, phoneMediaQueryData.padding.bottom);
   });
 
   testWidgets('the page is never torn down when a take starts or ends', (
@@ -121,25 +151,5 @@ void main() {
 
     expect(find.byType(RecordingStripLayer), findsNothing);
     expect(_Page.padding!.bottom, phoneMediaQueryData.padding.bottom);
-  });
-
-  testWidgets('bottomOffset is the safe area, never less than step3', (
-    tester,
-  ) async {
-    await pump(tester);
-    expect(
-      RecordingStripShell.bottomOffset(shellContext(tester)),
-      phoneMediaQueryData.padding.bottom,
-    );
-
-    await pump(
-      tester,
-      mediaQueryData: const MediaQueryData(size: Size(390, 844)),
-    );
-    final context = shellContext(tester);
-    expect(
-      RecordingStripShell.bottomOffset(context),
-      context.designTokens.spacing.step3,
-    );
   });
 }

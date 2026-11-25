@@ -738,6 +738,6 @@ class _SidebarAboveSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SidebarActivitySummary();
+    return SidebarActivitySummary(showAudio: !_isRunningInFlatpak());
   }
 }

@@ -7000,6 +7000,7 @@
   "sidebarActiveSectionTitle": "Aktivitet",
   "sidebarActivityCollapseTooltip": "Skjul aktivitet",
   "sidebarActivityExpandTooltip": "Udvid aktiviteten",
+  "sidebarAudioRecordingStatusLabel": "Indspilning",
   "sidebarRunningTimerLabel": "Kørende timer",
   "sidebarRunningTimerStopTooltip": "Stop timer",
   "sidebarTimerStatusLabel": "Timer",

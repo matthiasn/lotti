@@ -17043,6 +17043,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get sidebarActivityExpandTooltip => 'Extindeți activitatea';
 
   @override
+  String get sidebarAudioRecordingStatusLabel => 'Înregistrare';
+
+  @override
   String get sidebarRunningTimerLabel => 'Cronometru în execuție';
 
   @override
