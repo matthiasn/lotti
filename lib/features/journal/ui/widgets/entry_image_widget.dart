@@ -30,7 +30,8 @@ class EntryImageWidget extends ConsumerWidget {
   final JournalImage journalImage;
 
   /// Tallest an inline photo is drawn; the full picture is one tap away.
-  static const double _maxHeight = 400;
+  /// Its decode is sized to it, so a caller warming the cache asks for it.
+  static const double maxHeight = 400;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,7 +48,7 @@ class EntryImageWidget extends ConsumerWidget {
     final imageProvider = ResizeImage(
       FileImage(file),
       width: (screenWidth * devicePixelRatio).round().clamp(1, 10000),
-      height: (_maxHeight * devicePixelRatio).round().clamp(1, 10000),
+      height: (maxHeight * devicePixelRatio).round().clamp(1, 10000),
       policy: ResizeImagePolicy.fit,
     );
 
@@ -67,7 +68,7 @@ class EntryImageWidget extends ConsumerWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(context.designTokens.radii.s),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: _maxHeight),
+            constraints: const BoxConstraints(maxHeight: maxHeight),
             child: Image(
               image: imageProvider,
               fit: BoxFit.contain,
