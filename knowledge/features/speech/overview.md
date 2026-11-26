@@ -82,6 +82,16 @@ flowchart LR
 file-backed recording at 48 kHz, pause/resume, stop/dispose, and **amplitude
 sampling every 20 ms**.
 
+It records with `autoGain` everywhere except iOS. `record_darwin` turns
+`autoGain` (or `echoCancel`) into the platform's voice-processing unit —
+AVAudioEngine voice processing on iOS, the voice-processing I/O unit on
+macOS — and on iOS 26 a take with voice processing on can bring the Dart VM
+down a few seconds in, in an exiting worker thread
+([flutter/flutter#193852](https://github.com/flutter/flutter/issues/193852)).
+So iOS records without it, as `record_ios` did before `record_darwin`
+replaced it. The chat recorder (`ChatRecorderController`) follows the same
+rule.
+
 `AudioRecorderController` adds Riverpod state, live dBFS for the recorder's
 level line and the recording strip's bars, linked-entry and category
 context, the take's `RecordingOrigin` (where it started, held while it

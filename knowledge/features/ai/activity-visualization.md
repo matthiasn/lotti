@@ -172,5 +172,6 @@ The default metered path writes only to a temporary file and deletes it when
 recording stops. A PCM stream mode remains available as a diagnostic and fallback
 dBFS source, with input-device selection and raw peak/RMS diagnostics to catch
 silent default devices. The readout uses tabular numeric features so dBFS and
-counter changes do not move the surrounding UI, and voice processing defaults off
-to match the production recorder path.
+counter changes do not move the surrounding UI, and voice processing defaults off,
+as the production recorder has it on iOS (see the
+[speech overview](../speech/overview.md#recording)).
