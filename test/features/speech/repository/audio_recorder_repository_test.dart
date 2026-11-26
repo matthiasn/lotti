@@ -10,6 +10,7 @@ import 'package:lotti/classes/audio_recorder_constants.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 
@@ -233,7 +234,7 @@ void main() {
       expect(result, isNull);
       verify(
         () => mockAudioRecorder.start(
-          const RecordConfig(sampleRate: 48000, autoGain: true),
+          any<RecordConfig>(),
           path:
               '${directory.path}/audio/2024-03-15/2024-03-15_10-30-00-000.m4a',
         ),
@@ -511,31 +512,38 @@ void main() {
       },
     );
 
-    test(
-      'startRecording records with correct config (sampleRate=48000, autoGain=true)',
-      () async {
-        await prepareRecordingDirectory();
+    for (final ios in [false, true]) {
+      test(
+        'startRecording records at 48 kHz, autoGain off only on iOS '
+        '(iOS: $ios)',
+        () async {
+          final originalIsIOS = platform.isIOS;
+          platform.isIOS = ios;
+          addTearDown(() => platform.isIOS = originalIsIOS);
+          await prepareRecordingDirectory();
 
-        when(
-          () => mockAudioRecorder.start(
-            any<RecordConfig>(),
-            path: any(named: 'path'),
-          ),
-        ).thenAnswer((_) async {});
+          when(
+            () => mockAudioRecorder.start(
+              any<RecordConfig>(),
+              path: any(named: 'path'),
+            ),
+          ).thenAnswer((_) async {});
 
-        await repository.startRecording();
+          await repository.startRecording();
 
-        final captured = verify(
-          () => mockAudioRecorder.start(
-            captureAny<RecordConfig>(),
-            path: any(named: 'path'),
-          ),
-        ).captured;
-        final config = captured.single as RecordConfig;
-        expect(config.sampleRate, 48000);
-        expect(config.autoGain, isTrue);
-      },
-    );
+          final captured = verify(
+            () => mockAudioRecorder.start(
+              captureAny<RecordConfig>(),
+              path: any(named: 'path'),
+            ),
+          ).captured;
+          final config = captured.single as RecordConfig;
+          expect(config.sampleRate, 48000);
+          // Voice processing (autoGain on record_darwin) crashes iOS 26.
+          expect(config.autoGain, !ios);
+        },
+      );
+    }
 
     test(
       'audioRecorderRepositoryProvider returns an AudioRecorderRepository',

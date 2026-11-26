@@ -21,6 +21,7 @@ import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/utils/recording_levels.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -974,86 +975,94 @@ void main() {
     });
   });
 
-  test(
-    'non-default ChatRecorderConfig values flow into the recorder',
-    () async {
-      final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-      addTearDown(() async {
-        if (baseTemp.existsSync()) {
-          await baseTemp.delete(recursive: true);
-        }
-      });
+  for (final ios in [false, true]) {
+    test(
+      'non-default ChatRecorderConfig values flow into the recorder '
+      '(iOS: $ios, autoGain: ${!ios})',
+      () async {
+        final originalIsIOS = platform.isIOS;
+        platform.isIOS = ios;
+        addTearDown(() => platform.isIOS = originalIsIOS);
+        final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
+        addTearDown(() async {
+          if (baseTemp.existsSync()) {
+            await baseTemp.delete(recursive: true);
+          }
+        });
 
-      final mockRecorder = MockAudioRecorder();
-      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
-      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
-      when(
-        () => mockRecorder.start(
-          any<record.RecordConfig>(),
-          path: any(named: 'path'),
-        ),
-      ).thenAnswer((_) async {});
-      when(() => mockRecorder.stop()).thenAnswer((_) async => null);
-      when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
-        (_) => const Stream<record.Amplitude>.empty(),
-      );
+        final mockRecorder = MockAudioRecorder();
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+        when(
+          () => mockRecorder.start(
+            any<record.RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        ).thenAnswer((_) async {});
+        when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+        when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
+          (_) => const Stream<record.Amplitude>.empty(),
+        );
 
-      const config = ChatRecorderConfig(
-        sampleRate: 16000,
-        amplitudeIntervalMs: 250,
-      );
+        const config = ChatRecorderConfig(
+          sampleRate: 16000,
+          amplitudeIntervalMs: 250,
+        );
 
-      final container = ProviderContainer(
-        overrides: [
-          chatRecorderControllerProvider.overrideWith(
-            () => ChatRecorderController(
-              recorderFactory: () => mockRecorder,
-              tempDirectoryProvider: () async => baseTemp,
-              config: config,
+        final container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                tempDirectoryProvider: () async => baseTemp,
+                config: config,
+              ),
             ),
-          ),
-          audioTranscriptionServiceProvider.overrideWithValue(
-            MockAudioTranscriptionService(),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
-      addTearDown(sub.close);
-      final controller = container.read(
-        chatRecorderControllerProvider.notifier,
-      );
+            audioTranscriptionServiceProvider.overrideWithValue(
+              MockAudioTranscriptionService(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        addTearDown(sub.close);
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
 
-      await controller.start();
+        await controller.start();
 
-      // sampleRate flows into the RecordConfig passed to recorder.start().
-      final recordConfig =
-          verify(
-                () => mockRecorder.start(
-                  captureAny<record.RecordConfig>(),
-                  path: any(named: 'path'),
-                ),
-              ).captured.single
-              as record.RecordConfig;
-      expect(recordConfig.sampleRate, config.sampleRate);
+        // sampleRate flows into the RecordConfig passed to recorder.start().
+        final recordConfig =
+            verify(
+                  () => mockRecorder.start(
+                    captureAny<record.RecordConfig>(),
+                    path: any(named: 'path'),
+                  ),
+                ).captured.single
+                as record.RecordConfig;
+        expect(recordConfig.sampleRate, config.sampleRate);
+        // Voice processing (autoGain on record_darwin) crashes iOS 26.
+        expect(recordConfig.autoGain, !ios);
 
-      // amplitudeIntervalMs flows into recorder.onAmplitudeChanged().
-      final interval =
-          verify(
-                () => mockRecorder.onAmplitudeChanged(captureAny()),
-              ).captured.single
-              as Duration;
-      expect(interval, Duration(milliseconds: config.amplitudeIntervalMs));
+        // amplitudeIntervalMs flows into recorder.onAmplitudeChanged().
+        final interval =
+            verify(
+                  () => mockRecorder.onAmplitudeChanged(captureAny()),
+                ).captured.single
+                as Duration;
+        expect(interval, Duration(milliseconds: config.amplitudeIntervalMs));
 
-      // Nothing stops a take but the user: no stop() of the recorder's own.
-      await pumpEventQueue();
-      verifyNever(() => mockRecorder.stop());
-      expect(
-        container.read(chatRecorderControllerProvider).status,
-        ChatRecorderStatus.recording,
-      );
-    },
-  );
+        // Nothing stops a take but the user: no stop() of the recorder's own.
+        await pumpEventQueue();
+        verifyNever(() => mockRecorder.stop());
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.recording,
+        );
+      },
+    );
+  }
 
   test('transcription failures surface friendly error', () async {
     // Prepare minimal AI configs

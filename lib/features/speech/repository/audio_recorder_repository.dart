@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:record/record.dart';
 
 /// Provider for the audio recorder repository.
@@ -138,7 +139,10 @@ class AudioRecorderRepository {
       );
 
       const sampleRate = 48000;
-      const autoGain = true;
+      // On iOS, record_darwin turns autoGain into AVAudioEngine voice
+      // processing, which crashes the Dart VM on iOS 26 (flutter/flutter
+      // #193852); record_ios recorded files without it before 1.1.104.
+      final autoGain = !isIOS;
 
       _loggingService.log(
         LogDomain.speech,
@@ -147,7 +151,7 @@ class AudioRecorderRepository {
       );
 
       await _audioRecorder.start(
-        const RecordConfig(sampleRate: sampleRate, autoGain: autoGain),
+        RecordConfig(sampleRate: sampleRate, autoGain: autoGain),
         path: filePath,
       );
 

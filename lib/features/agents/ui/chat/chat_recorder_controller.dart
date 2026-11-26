@@ -16,6 +16,7 @@ import 'package:lotti/logic/audio_import.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/utils/recording_levels.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart' as record;
@@ -256,7 +257,8 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       await recorder.start(
         record.RecordConfig(
           sampleRate: _config.sampleRate,
-          autoGain: true,
+          // Not on iOS: see AudioRecorderRepository.startRecording.
+          autoGain: !isIOS,
         ),
         path: filePath,
       );
