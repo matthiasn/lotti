@@ -258,10 +258,8 @@ class CollapsingTaskListHeader extends StatelessWidget {
     }
     // The seat hairline lives on the wrapper, not the compact bar, so BOTH
     // header states sit against the content scrolling beneath them and the
-    // line cannot pop in or out mid cross-fade. It must paint in the
-    // FOREGROUND: the compact bar fills its own level02 plane, which would
-    // otherwise cover a background-painted border and leave chrome and the
-    // first task card meeting at the same value with no edge between them.
+    // line cannot pop in or out mid cross-fade. It paints in the FOREGROUND
+    // so no child fill can ever cover it.
     return DecoratedBox(
       position: DecorationPosition.foreground,
       decoration: BoxDecoration(
@@ -284,8 +282,10 @@ class CollapsingTaskListHeader extends StatelessWidget {
 /// and never brightness. The magnitude of the narrowing is spelled out in
 /// [contextLabel] ("4 filters") rather than repeated as a numeral on the
 /// funnel: one channel, in words, that localizes and cannot collide with the
-/// glyph it sits on. A token hairline seats the bar against the content
-/// scrolling beneath it. Every control keeps a ≥48dp tap target
+/// glyph it sits on. The bar paints no fill of its own: it sits on the page's
+/// surface like the expanded header and the status-bar inset above it, so the
+/// collapsed chrome reads as one plain plane down to the token hairline that
+/// seats it against the content. Every control keeps a ≥48dp tap target
 /// via the standard [IconButton] constraints and the min-height title InkWell.
 class TaskListCompactHeaderBar extends StatelessWidget {
   const TaskListCompactHeaderBar({
@@ -338,128 +338,122 @@ class TaskListCompactHeaderBar extends StatelessWidget {
         ? title
         : '$title, $contextLabel';
 
-    // One surface step above the page (level02 over level01): the bar reads
-    // as chrome by *plane*, not just by the seat hairline the wrapper draws.
-    return ColoredBox(
-      color: tokens.colors.background.level02,
-      child: DetailContentWidth(
-        key: CollapsingTaskListHeaderKeys.compactBar,
-        // The expanded header's bleed, so the glyphs hold their edge as the
-        // header collapses.
-        endBleed: tabHeaderTrailingBleed(tokens),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
-          child: Row(
-            children: [
-              Expanded(
-                child: Semantics(
-                  button: true,
-                  label: semanticsLabel,
-                  hint: expandSemanticHint,
-                  // The inner tap targets are excluded from the tree below,
-                  // so this node must carry the action itself — a button
-                  // that announces a hint but has no tap action cannot be
-                  // activated by a screen reader at all.
-                  onTap: onExpandRequested,
-                  child: ExcludeSemantics(
-                    // The whole leading region stays tappable (opaque
-                    // GestureDetector) while the ink ripple is bounded to
-                    // the label itself (inner InkWell) — a full-row ripple
-                    // reads as a list row, not a title.
-                    child: GestureDetector(
-                      key: CollapsingTaskListHeaderKeys.compactTitleTapArea,
-                      behavior: HitTestBehavior.opaque,
-                      onTap: onExpandRequested,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight:
-                              tokens.spacing.step8 + tokens.spacing.step3,
-                        ),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: InkWell(
-                            key: CollapsingTaskListHeaderKeys.compactTitle,
-                            borderRadius: BorderRadius.circular(
-                              tokens.radii.badgesPills,
+    // No fill of its own: a raised plane covered only the row, leaving the
+    // inset above it at the page's darker value — a lighter floating strip.
+    return DetailContentWidth(
+      key: CollapsingTaskListHeaderKeys.compactBar,
+      // The expanded header's bleed, so the glyphs hold their edge as the
+      // header collapses.
+      endBleed: tabHeaderTrailingBleed(tokens),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
+        child: Row(
+          children: [
+            Expanded(
+              child: Semantics(
+                button: true,
+                label: semanticsLabel,
+                hint: expandSemanticHint,
+                // The inner tap targets are excluded from the tree below,
+                // so this node must carry the action itself — a button
+                // that announces a hint but has no tap action cannot be
+                // activated by a screen reader at all.
+                onTap: onExpandRequested,
+                child: ExcludeSemantics(
+                  // The whole leading region stays tappable (opaque
+                  // GestureDetector) while the ink ripple is bounded to
+                  // the label itself (inner InkWell) — a full-row ripple
+                  // reads as a list row, not a title.
+                  child: GestureDetector(
+                    key: CollapsingTaskListHeaderKeys.compactTitleTapArea,
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onExpandRequested,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: tokens.spacing.step8 + tokens.spacing.step3,
+                      ),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: InkWell(
+                          key: CollapsingTaskListHeaderKeys.compactTitle,
+                          borderRadius: BorderRadius.circular(
+                            tokens.radii.badgesPills,
+                          ),
+                          onTap: onExpandRequested,
+                          child: Padding(
+                            // No leading pad: the title sits on the shared
+                            // DetailContentWidth gutter, so the cross-fade
+                            // compresses vertically without jogging the
+                            // anchor element sideways between states.
+                            padding: EdgeInsets.only(
+                              right: tokens.spacing.step2,
+                              top: tokens.spacing.step2,
+                              bottom: tokens.spacing.step2,
                             ),
-                            onTap: onExpandRequested,
-                            child: Padding(
-                              // No leading pad: the title sits on the shared
-                              // DetailContentWidth gutter, so the cross-fade
-                              // compresses vertically without jogging the
-                              // anchor element sideways between states.
-                              padding: EdgeInsets.only(
-                                right: tokens.spacing.step2,
-                                top: tokens.spacing.step2,
-                                bottom: tokens.spacing.step2,
-                              ),
-                              // One rich text run: the mixed type sizes
-                              // share a real baseline, the chevron anchors
-                              // to the title (one expand affordance meaning
-                              // across every variant), and end-ellipsis
-                              // truncates the context label before the page
-                              // title can ever be cut.
-                              child: Text.rich(
-                                TextSpan(
-                                  children: [
+                            // One rich text run: the mixed type sizes
+                            // share a real baseline, the chevron anchors
+                            // to the title (one expand affordance meaning
+                            // across every variant), and end-ellipsis
+                            // truncates the context label before the page
+                            // title can ever be cut.
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: title,
+                                    // One ramp step above the card-title
+                                    // style (subtitle2) so the collapsed
+                                    // page title outranks the list items —
+                                    // the token style as-is, no phantom
+                                    // weight override.
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .subtitle
+                                        .subtitle1
+                                        .copyWith(
+                                          color:
+                                              tokens.colors.text.highEmphasis,
+                                        ),
+                                  ),
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.middle,
+                                    child: Padding(
+                                      padding: EdgeInsets.only(
+                                        left: tokens.spacing.step1,
+                                      ),
+                                      // Visible restore affordance: the
+                                      // title is a button, and this says
+                                      // so.
+                                      child: Icon(
+                                        LottiIcons.expand,
+                                        size: IconSizes.s,
+                                        color:
+                                            tokens.colors.text.mediumEmphasis,
+                                      ),
+                                    ),
+                                  ),
+                                  if (contextLabel != null)
                                     TextSpan(
-                                      text: title,
-                                      // One ramp step above the card-title
-                                      // style (subtitle2) so the collapsed
-                                      // page title outranks the list items —
-                                      // the token style as-is, no phantom
-                                      // weight override.
+                                      text: ' · $contextLabel',
+                                      // Demoted by SIZE only: the context
+                                      // names what narrows the list, a
+                                      // fact that must not read at
+                                      // placeholder emphasis.
                                       style: tokens
                                           .typography
                                           .styles
-                                          .subtitle
-                                          .subtitle1
+                                          .body
+                                          .bodySmall
                                           .copyWith(
                                             color:
                                                 tokens.colors.text.highEmphasis,
                                           ),
                                     ),
-                                    WidgetSpan(
-                                      alignment: PlaceholderAlignment.middle,
-                                      child: Padding(
-                                        padding: EdgeInsets.only(
-                                          left: tokens.spacing.step1,
-                                        ),
-                                        // Visible restore affordance: the
-                                        // title is a button, and this says
-                                        // so.
-                                        child: Icon(
-                                          LottiIcons.expand,
-                                          size: IconSizes.s,
-                                          color:
-                                              tokens.colors.text.mediumEmphasis,
-                                        ),
-                                      ),
-                                    ),
-                                    if (contextLabel != null)
-                                      TextSpan(
-                                        text: ' · $contextLabel',
-                                        // Demoted by SIZE only: the context
-                                        // names what narrows the list, a
-                                        // fact that must not read at
-                                        // placeholder emphasis.
-                                        style: tokens
-                                            .typography
-                                            .styles
-                                            .body
-                                            .bodySmall
-                                            .copyWith(
-                                              color: tokens
-                                                  .colors
-                                                  .text
-                                                  .highEmphasis,
-                                            ),
-                                      ),
-                                  ],
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                ],
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ),
@@ -468,22 +462,22 @@ class TaskListCompactHeaderBar extends StatelessWidget {
                   ),
                 ),
               ),
-              TabHeaderIconButton(
-                key: CollapsingTaskListHeaderKeys.compactSearchButton,
-                icon: LottiIcons.search,
-                tooltip: searchTooltip,
-                onPressed: onSearchRequested,
-                active: searchActive,
-              ),
-              TabHeaderIconButton(
-                key: CollapsingTaskListHeaderKeys.compactFilterButton,
-                icon: LottiIcons.filter,
-                tooltip: filterTooltip,
-                onPressed: onFilterPressed,
-                active: filtersActive,
-              ),
-            ],
-          ),
+            ),
+            TabHeaderIconButton(
+              key: CollapsingTaskListHeaderKeys.compactSearchButton,
+              icon: LottiIcons.search,
+              tooltip: searchTooltip,
+              onPressed: onSearchRequested,
+              active: searchActive,
+            ),
+            TabHeaderIconButton(
+              key: CollapsingTaskListHeaderKeys.compactFilterButton,
+              icon: LottiIcons.filter,
+              tooltip: filterTooltip,
+              onPressed: onFilterPressed,
+              active: filtersActive,
+            ),
+          ],
         ),
       ),
     );

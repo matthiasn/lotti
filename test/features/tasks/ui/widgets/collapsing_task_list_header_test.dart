@@ -495,21 +495,24 @@ void main() {
       },
     );
 
-    testWidgets('the compact bar sits on a one-step raised surface', (
-      tester,
-    ) async {
-      await tester.pumpWidget(subject());
+    testWidgets(
+      'the compact bar paints no plane of its own, so it sits on the page '
+      'surface like the inset above it instead of floating as a lighter strip',
+      (tester) async {
+        await tester.pumpWidget(subject());
 
-      final colored = tester.widget<ColoredBox>(
-        find
-            .ancestor(
-              of: find.byKey(CollapsingTaskListHeaderKeys.compactBar),
-              matching: find.byType(ColoredBox),
-            )
-            .first,
-      );
-      expect(colored.color, isNot(Colors.transparent));
-    });
+        final bar = find.byType(TaskListCompactHeaderBar);
+        expect(bar, findsOneWidget);
+        expect(
+          find.descendant(of: bar, matching: find.byType(ColoredBox)),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: bar, matching: find.byType(DecoratedBox)),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets('the trailing buttons reach into the gutter by the expanded '
         "header's bleed, so the glyphs hold their edge across the collapse", (
