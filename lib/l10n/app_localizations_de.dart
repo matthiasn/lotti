@@ -16846,6 +16846,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sidebarActivityExpandTooltip => 'Aktivität ausklappen';
 
   @override
+  String get sidebarAudioRecordingStatusLabel => 'Aufnahme';
+
+  @override
   String get sidebarRunningTimerLabel => 'Laufender Timer';
 
   @override

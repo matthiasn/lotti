@@ -11,8 +11,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/beamer/chrome/mobile_activity_island.dart';
-import 'package:lotti/beamer/chrome/recording_strip_shell.dart';
 import 'package:lotti/beamer/chrome/sidebar_activity_summary.dart';
+import 'package:lotti/beamer/chrome/sidebar_audio_recording_section.dart';
 import 'package:lotti/beamer/desktop_menu.dart';
 import 'package:lotti/beamer/locations/events_location.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
@@ -1871,29 +1871,18 @@ void main() {
           find.byKey(MobileNavigationLauncherKeys.menuButton),
         );
         // The strip is the lowest thing on screen; the launcher row sits
-        // above it.
-        expect(menu.bottom, lessThan(strip.top));
-        expect(
-          strip.bottom,
-          moreOrLessEquals(
-            _phoneViewportSize.height -
-                RecordingStripShell.bottomOffset(
-                  tester.element(find.byType(RecordingStripShell)),
-                ),
-          ),
-        );
+        // on top of it, as it sits on the safe area without one.
+        expect(menu.bottom, lessThanOrEqualTo(strip.top));
+        // Flush on the bottom edge, the safe area inside its glass.
+        expect(strip.bottom, moreOrLessEquals(_phoneViewportSize.height));
         // The island no longer carries a recording: with no timer, none.
         expect(find.byKey(MobileActivityIsland.islandKey), findsNothing);
-        // What the pages see as the bottom inset now includes the strip
-        // and the gap above it.
+        // What the pages see as the bottom inset is now the strip's whole
+        // extent.
         final pageContext = tester.element(find.byType(IndexedStack));
         expect(
           MediaQuery.paddingOf(pageContext).bottom,
-          moreOrLessEquals(
-            _phoneViewportSize.height -
-                strip.top +
-                RecordingStripLayer.gap(pageContext),
-          ),
+          moreOrLessEquals(_phoneViewportSize.height - strip.top),
         );
 
         await tester.pumpWidget(const SizedBox.shrink());
@@ -6369,20 +6358,70 @@ void main() {
           find.byKey(SidebarActivitySummaryKeys.agents),
           findsOneWidget,
         );
-        // The take is not one of the summary's activities: it has the
-        // recording strip, at the foot of the content column.
+        // With the sidebar open the take is one of the summary's
+        // activities, and no strip draws it at the foot of the content
+        // column.
         expect(
-          find.byType(RecordingStrip),
+          find.byKey(SidebarActivitySummaryKeys.audio),
           _isFlatpakTestHost() ? findsNothing : findsOneWidget,
         );
+        expect(find.byType(RecordingStrip), findsNothing);
         expect(find.byType(SidebarTimerSection), findsNothing);
         expect(find.byType(SidebarWakeQueue), findsNothing);
 
         await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
         await tester.pump(SidebarTimerSection.animationDuration);
         expect(find.byKey(SidebarActivitySummaryKeys.details), findsOneWidget);
+        expect(
+          find.byType(SidebarAudioRecordingSection),
+          _isFlatpakTestHost() ? findsNothing : findsOneWidget,
+        );
         expect(find.byType(SidebarTimerSection), findsOneWidget);
         expect(find.byType(SidebarWakeQueue), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'with the sidebar collapsed, the take falls back to the strip at the '
+      'foot of the content column',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: _desktopViewportSize,
+          audioRecorderState: AudioRecorderState(
+            status: AudioRecorderStatus.recording,
+            progress: const Duration(seconds: 8),
+            dBFS: -40,
+            inlineHostVisible: false,
+          ),
+        );
+        await tester.pump(RecordingStripLayer.motion);
+        expect(find.byType(RecordingStrip), findsNothing);
+
+        await tester.tap(find.byKey(desktopSidebarToggleKey));
+        await tester.pump();
+        await tester.pump(RecordingStripLayer.motion);
+
+        expect(
+          find.byType(RecordingStrip),
+          _isFlatpakTestHost() ? findsNothing : findsOneWidget,
+        );
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();

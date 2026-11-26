@@ -16771,6 +16771,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get sidebarActivityExpandTooltip => 'Activiteit uitklappen';
 
   @override
+  String get sidebarAudioRecordingStatusLabel => 'Opname';
+
+  @override
   String get sidebarRunningTimerLabel => 'Lopende timer';
 
   @override

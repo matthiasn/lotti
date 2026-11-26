@@ -16631,6 +16631,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sidebarActivityExpandTooltip => 'Expand activity';
 
   @override
+  String get sidebarAudioRecordingStatusLabel => 'Recording';
+
+  @override
   String get sidebarRunningTimerLabel => 'Running timer';
 
   @override

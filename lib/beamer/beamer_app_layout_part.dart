@@ -186,10 +186,13 @@ extension _AppScreenLayout on _AppScreenState {
           Expanded(
             child: KeyboardFocusRegion(
               debugLabel: 'app-content',
-              // The recording strip sits at the foot of the content column,
-              // where the page being read is, not in the rail.
+              // A running take lives in the rail's activity disclosure; the
+              // strip, at the foot of the content column, carries it only
+              // where that disclosure is not drawn — a collapsed rail, or
+              // lockdown. The receipt and the tray always show here.
               child: RecordingStripShell(
                 omitAudio: _isRunningInFlatpak(),
+                showsTake: isCollapsed || lockdown.isActive,
                 child: Stack(
                   children: [
                     const IncomingVerificationWrapper(),

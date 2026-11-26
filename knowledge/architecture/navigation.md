@@ -23,7 +23,7 @@ sources:
   - id: recording-strip-shell
     resource: ../../lib/beamer/chrome/recording_strip_shell.dart
     title: RecordingStripShell — the recording strip at the bottom edge, and the inset that lifts everything above it
-    last_modified: 2026-11-24
+    last_modified: 2026-11-26
   - id: contact-support-row
     resource: ../../lib/widgets/misc/contact_support_row.dart
     title: ContactSupportRow — the Contact Us footer, wired to its destinations
@@ -640,7 +640,7 @@ widget as on desktop, and the activity summary sits above it through the same
 | Collapse toggle | shown | `showToggle: false` — the panel is dismissed, never collapsed to icons |
 | Gap between destination rows | `spacing.step4` | `destinationGap: spacing.step1` — each row is a full touch target already, and Recents should show without a scroll on a phone with every section on |
 | Under-row subtrees | saved filters, month calendar, impact entry, for the active row | the Tasks row's saved filters only, as `SidebarSavedTaskFilters(onApplied: close)` passed through `toDesktopSidebarDestination(expandedChild:)`; the month calendar and the impact entry are desktop surfaces that do not size for touch |
-| `aboveSettings` | `SidebarActivitySummary` — running timer, agent wakes (a voice recording has the [recording strip](#the-recording-strip-shell) instead) | the same |
+| `aboveSettings` | `SidebarActivitySummary` — a running voice recording, running timer, agent wakes | the same |
 | `belowDestinations` | empty | the app-wide [Recents](../features/recent_searches.md) list, scrolling with the destinations |
 | Scroll region | plain | its last `spacing.step7` fades out, and Settings stands a step clear — an open-ended section makes scrolling the normal case, so the region says where it ends instead of butting against the pinned row as if they were one list |
 
@@ -736,15 +736,24 @@ at the bottom edge of what it wraps: on a phone the whole shell — it wraps
 the `Scaffold`, inside `MobileNavigationDrawerHost` — and on a wide window
 the content column beside the rail, so the strip sits under the page being
 read rather than across the rail. It is the **one thing on the bottom edge**:
-the strip sits at `bottomOffset` (the bottom safe area, never less than
-`spacing.step3`) on every page, so Stop is always in the same place, and
-everything above it moves up instead.
+the strip runs flush along it, edge to edge, its glass reaching into the
+bottom safe area, on every page, so Stop is always in the same place, and
+everything above it moves up instead. The tray and the receipt are cards
+above the safe area (`RecordingStripLayer.bottomOffset`: the safe area,
+never less than `spacing.step3`).
+
+**On a wide window the sidebar carries the take.** The content column's
+shell gets `showsTake: isCollapsed || lockdown.isActive`: while the rail is
+open, a running take lives in its activity disclosure (the
+[recording card](../features/speech/recording-ui.md#on-a-wide-window-the-sidebar)),
+and the shell draws only the tray and the receipt. A collapsed rail, or
+lockdown, which drops the disclosure, gives the take back to the strip.
 
 **The lift is an inset, not a per-page rule.** While the strip's place shows
 something, the shell grows `MediaQueryData.padding.bottom` and
-`viewPadding.bottom` for its child to `bottomOffset` plus
-`RecordingStripLayer.reservedHeight` (the strip's height and a
-`spacing.step3` gap). The launcher's `rowBottom`, a page's sticky action
+`viewPadding.bottom` for its child to `RecordingStripLayer.lift`: the
+strip's whole extent, safe area included, or a card's height, its
+`spacing.step3` gap and its `bottomOffset`. The launcher's `rowBottom`, a page's sticky action
 bar, a scroll view's last row and the timer island all read that inset, so
 they rise above the strip with no change of their own; a tray opens over
 the page without asking for more. The child stays under that `MediaQuery`

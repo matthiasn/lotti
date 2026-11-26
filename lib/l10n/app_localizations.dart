@@ -27779,6 +27779,12 @@ abstract class AppLocalizations {
   /// **'Expand activity'**
   String get sidebarActivityExpandTooltip;
 
+  /// No description provided for @sidebarAudioRecordingStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording'**
+  String get sidebarAudioRecordingStatusLabel;
+
   /// No description provided for @sidebarRunningTimerLabel.
   ///
   /// In en, this message translates to:

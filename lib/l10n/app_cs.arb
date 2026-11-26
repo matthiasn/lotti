@@ -6384,6 +6384,7 @@
   "sidebarActiveSectionTitle": "Aktivita",
   "sidebarActivityCollapseTooltip": "Sbalit aktivitu",
   "sidebarActivityExpandTooltip": "Rozbalit aktivitu",
+  "sidebarAudioRecordingStatusLabel": "Nahrávání",
   "sidebarRunningTimerLabel": "Běžící časovač",
   "sidebarRunningTimerStopTooltip": "Zastavit časovač",
   "sidebarTimerStatusLabel": "Časovač",

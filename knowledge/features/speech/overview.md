@@ -5,7 +5,7 @@ description: Audio capture, app-wide playback, waveform extraction, and the tran
 resource: ../../../lib/features/speech
 tags: [speech, audio, recording, playback, transcripts]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-24T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-26T12:00:00Z }
 stale_after: 2027-02-15
 sources:
   - id: src
@@ -133,6 +133,13 @@ stateDiagram-v2
 
 If paused it resumes; if already recording it stops and saves; otherwise it
 starts a new recording.
+
+**A stop or discard wins over a pause or resume.** A pause asked for while
+`stop()` or `cancel()` holds the take, after it ended, or of a take not
+recording (a resume, of one not paused) does nothing at all. Each that does
+go ahead waits on the platform recorder before it sets the status; one that
+was waiting when a stop or discard claimed the take applies nothing, so a
+stopped take never reads as paused (or recording) again.
 
 Before any of that, `record()` silences what the app is playing, so the
 microphone never captures the app's own sound: it pauses the recordings player

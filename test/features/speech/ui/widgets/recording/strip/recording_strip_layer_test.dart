@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/state/recording_homes.dart';
 import 'package:lotti/features/speech/state/recording_receipt_controller.dart';
 import 'package:lotti/features/speech/state/recording_session.dart';
 import 'package:lotti/features/speech/state/recording_start_guard.dart';
@@ -65,6 +68,15 @@ void main() {
       recorder.setInlineHostVisible(visible: true);
       expect(content(), RecordingStripContent.none);
       recorder.setInlineHostVisible(visible: false);
+      expect(content(), RecordingStripContent.strip);
+    });
+
+    test("a take whose subject's home is on screen — its task's action "
+        'bar — shows nothing, from its first frame', () async {
+      container.read(recordingHomesProvider.notifier).enter('task-1');
+      await recorder.record(linkedId: 'task-1');
+      expect(content(), RecordingStripContent.none);
+      container.read(recordingHomesProvider.notifier).leave('task-1');
       expect(content(), RecordingStripContent.strip);
     });
 
@@ -134,14 +146,20 @@ void main() {
       WidgetTester tester, {
       MediaQueryData mediaQueryData = phoneMediaQueryData,
       Widget? above,
+      bool showsTake = true,
     }) => bench.pump(
       tester,
       Column(
         mainAxisSize: MainAxisSize.min,
-        children: [?above, const RecordingStripLayer()],
+        children: [
+          ?above,
+          RecordingStripLayer(showsTake: showsTake),
+        ],
       ),
       mediaQueryData: mediaQueryData,
     );
+
+    Finder layer() => find.byType(RecordingStripLayer);
 
     Finder strip() => find.byType(RecordingStrip);
 
@@ -187,13 +205,16 @@ void main() {
       expect(opacity.opacity.value, 1);
     });
 
-    testWidgets('Stop replaces the strip with the receipt in place; the '
-        'receipt goes when its window does', (tester) async {
+    testWidgets('Stop replaces the strip with the receipt, a card above the '
+        'bottom edge; the receipt goes when its window does', (tester) async {
       await pump(tester);
       await bench.startTake(tester);
       // Taps land once the strip has fully risen.
       await settleSwitch(tester);
-      final stripBottom = tester.getBottomLeft(strip());
+      expect(
+        tester.getBottomLeft(strip()).dy,
+        tester.getBottomLeft(layer()).dy,
+      );
 
       await tester.tap(find.byKey(RecordingStrip.stopKey));
       await tester.pump();
@@ -201,9 +222,16 @@ void main() {
       await settleSwitch(tester);
       expect(find.byType(RecordingReceiptRow), findsOneWidget);
       expect(strip(), findsNothing);
+      final context = tester.element(layer());
+      final receipt = tester.getRect(find.byType(RecordingReceiptRow));
       expect(
-        tester.getBottomLeft(find.byType(RecordingReceiptRow)),
-        stripBottom,
+        receipt.bottom,
+        tester.getRect(layer()).bottom -
+            RecordingStripLayer.bottomOffset(context),
+      );
+      expect(
+        receipt.left,
+        tester.getRect(layer()).left + context.designTokens.spacing.step5,
       );
 
       await tester.pump(recordingReceiptWindow);
@@ -211,7 +239,7 @@ void main() {
       expect(find.byType(RecordingReceiptRow), findsNothing);
     });
 
-    testWidgets("while a take saves, an empty capsule holds the strip's "
+    testWidgets("while a take saves, empty glass holds the strip's whole "
         'place and takes no tap', (tester) async {
       await pump(tester);
       container(tester).read(recordingSavingProvider.notifier).saving = true;
@@ -222,11 +250,18 @@ void main() {
       expect(held, findsOneWidget);
       expect(tester.widget<AbsorbPointer>(held).absorbing, isTrue);
       final context = tester.element(held);
-      expect(tester.getSize(held).height, RecordingStrip.height(context));
+      expect(tester.getSize(held).height, RecordingStrip.extent(context));
+      expect(
+        find.descendant(
+          of: held,
+          matching: find.byType(DesignSystemGlassStrip),
+        ),
+        findsOneWidget,
+      );
       container(tester).read(recordingSavingProvider.notifier).saving = false;
     });
 
-    testWidgets('tapping the strip opens the tray in its place', (
+    testWidgets('a swipe up on the strip opens the tray in its place', (
       tester,
     ) async {
       await pump(tester);
@@ -310,38 +345,153 @@ void main() {
       );
     });
 
-    testWidgets('caps itself at the prose measure on a wide window, centred', (
-      tester,
-    ) async {
+    testWidgets('the strip runs edge to edge on a wide window; the tray is '
+        'a card at the prose measure, centred', (tester) async {
       await pump(tester, mediaQueryData: desktopLayoutMediaQueryData);
       await bench.startTake(tester);
-      expect(tester.getSize(strip()).width, kProseMeasureWidth);
-      expect(
-        tester.getCenter(strip()).dx,
-        desktopLayoutMediaQueryData.size.width / 2,
-      );
+      await settleSwitch(tester);
+      final width = desktopLayoutMediaQueryData.size.width;
+      expect(tester.getSize(strip()).width, width);
+
+      container(tester).read(recordingTrayControllerProvider.notifier).open();
+      await tester.pump();
+      await settleSwitch(tester);
+      final tray = find.byType(RecordingStripTray);
+      expect(tester.getSize(tray).width, kProseMeasureWidth);
+      expect(tester.getCenter(tray).dx, width / 2);
     });
 
-    testWidgets('reservedHeight is the strip and its gap while it shows '
-        'anything, and nothing otherwise', (tester) async {
-      await pump(tester);
-      final context = tester.element(find.byType(RecordingStripLayer));
-      final strip =
-          RecordingStrip.height(context) + RecordingStripLayer.gap(context);
+    group('handing the take to someone else (showsTake false)', () {
+      testWidgets('draws no strip while a take runs', (tester) async {
+        await pump(tester, showsTake: false);
+        await bench.startTake(tester);
+        await settleSwitch(tester);
+        expect(strip(), findsNothing);
+        expect(tester.getSize(layer()).height, 0);
+      });
+
+      testWidgets('nor the held place while a take saves', (tester) async {
+        await pump(tester, showsTake: false);
+        container(tester).read(recordingSavingProvider.notifier).saving = true;
+        await tester.pump();
+        await settleSwitch(tester);
+        expect(
+          find.byKey(const ValueKey('recording-strip-content-saving')),
+          findsNothing,
+        );
+        container(tester).read(recordingSavingProvider.notifier).saving = false;
+      });
+
+      testWidgets('still opens the tray over the take', (tester) async {
+        await pump(tester, showsTake: false);
+        await bench.startTake(tester);
+        container(tester).read(recordingTrayControllerProvider.notifier).open();
+        await tester.pump();
+        await settleSwitch(tester);
+        expect(find.byType(RecordingStripTray), findsOneWidget);
+      });
+
+      testWidgets("still puts up a stopped take's receipt", (tester) async {
+        await pump(tester, showsTake: false);
+        await bench.startTake(tester);
+        await container(tester).read(recordingSessionProvider).stop();
+        await tester.pump();
+        await settleSwitch(tester);
+        expect(find.byType(RecordingReceiptRow), findsOneWidget);
+        container(
+          tester,
+        ).read(recordingReceiptControllerProvider.notifier).commit();
+      });
+    });
+
+    test('visible() drops only the strip and its held place, and only when '
+        'the take is shown elsewhere', () {
+      for (final content in RecordingStripContent.values) {
+        expect(
+          RecordingStripLayer.visible(content, showsTake: true),
+          content,
+        );
+      }
       expect(
-        RecordingStripLayer.reservedHeight(
-          context,
-          RecordingStripContent.none,
+        RecordingStripLayer.visible(
+          RecordingStripContent.strip,
+          showsTake: false,
         ),
+        RecordingStripContent.none,
+      );
+      expect(
+        RecordingStripLayer.visible(
+          RecordingStripContent.saving,
+          showsTake: false,
+        ),
+        RecordingStripContent.none,
+      );
+      for (final content in [
+        RecordingStripContent.none,
+        RecordingStripContent.tray,
+        RecordingStripContent.receipt,
+      ]) {
+        expect(
+          RecordingStripLayer.visible(content, showsTake: false),
+          content,
+        );
+      }
+    });
+
+    testWidgets("lift is nothing for nothing; the strip's whole extent for "
+        'the strip and its held place; a card, its gap and its offset from '
+        'the edge for the tray and the receipt', (tester) async {
+      await pump(
+        tester,
+        mediaQueryData: phoneMediaQueryData.copyWith(
+          padding: const EdgeInsets.only(bottom: 34),
+        ),
+      );
+      final context = tester.element(layer());
+      expect(
+        RecordingStripLayer.lift(context, RecordingStripContent.none),
         0,
       );
       for (final content in [
         RecordingStripContent.strip,
+        RecordingStripContent.saving,
+      ]) {
+        expect(
+          RecordingStripLayer.lift(context, content),
+          RecordingStrip.extent(context),
+        );
+      }
+      final card =
+          RecordingStripLayer.bottomOffset(context) +
+          RecordingStrip.height(context) +
+          RecordingStripLayer.gap(context);
+      for (final content in [
         RecordingStripContent.tray,
         RecordingStripContent.receipt,
       ]) {
-        expect(RecordingStripLayer.reservedHeight(context, content), strip);
+        expect(RecordingStripLayer.lift(context, content), card);
       }
+    });
+
+    testWidgets('bottomOffset is the safe area, never less than a step3 '
+        'off the edge', (tester) async {
+      await pump(
+        tester,
+        mediaQueryData: phoneMediaQueryData.copyWith(padding: EdgeInsets.zero),
+      );
+      var context = tester.element(layer());
+      expect(
+        RecordingStripLayer.bottomOffset(context),
+        context.designTokens.spacing.step3,
+      );
+      await pump(
+        tester,
+        mediaQueryData: phoneMediaQueryData.copyWith(
+          padding: const EdgeInsets.only(bottom: 34),
+        ),
+      );
+      context = tester.element(layer());
+      expect(RecordingStripLayer.bottomOffset(context), 34);
     });
   });
 }

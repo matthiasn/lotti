@@ -6377,6 +6377,7 @@
   "sidebarActiveSectionTitle": "Activitate",
   "sidebarActivityCollapseTooltip": "Restrângeți activitatea",
   "sidebarActivityExpandTooltip": "Extindeți activitatea",
+  "sidebarAudioRecordingStatusLabel": "Înregistrare",
   "sidebarRunningTimerLabel": "Cronometru în execuție",
   "sidebarRunningTimerStopTooltip": "Opriți cronometrul",
   "sidebarTimerStatusLabel": "Cronometru",

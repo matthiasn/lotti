@@ -40,6 +40,9 @@ class DesignSystemGlassStrip extends StatelessWidget {
   /// from the content than card-sized blurs.
   static const double blurSigma = 20;
 
+  /// The hairline's thickness, which the strip adds to its child's height.
+  static const double hairlineHeight = 1;
+
   /// Resolves the established theme-aware scrim stops for tests and other
   /// design-system components that need to inspect the glass treatment.
   static List<Color> overlayColors(DsTokens tokens) {
@@ -67,7 +70,7 @@ class DesignSystemGlassStrip extends StatelessWidget {
     final scrimColors = overlayColors(tokens);
 
     final hairline = Container(
-      height: 1,
+      height: hairlineHeight,
       color: tokens.colors.decorative.level01.withValues(alpha: 0.12),
     );
 

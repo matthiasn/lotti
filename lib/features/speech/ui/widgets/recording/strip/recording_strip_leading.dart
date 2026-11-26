@@ -24,8 +24,11 @@ String _normalisedRoute(String route) {
 /// says *Recording here* instead of offering a trip to where the user
 /// already is. No origin is never here.
 bool isOnRecordingOrigin(String activeRoute, RecordingOrigin? origin) =>
-    origin != null &&
-    _normalisedRoute(activeRoute) == _normalisedRoute(origin.route);
+    origin != null && isSameRecordingRoute(activeRoute, origin.route);
+
+/// Whether [a] and [b] name the same page, without query or trailing slash.
+bool isSameRecordingRoute(String a, String b) =>
+    _normalisedRoute(a) == _normalisedRoute(b);
 
 /// What the leading part of the strip says, decided once for the strip and
 /// the tray's header.

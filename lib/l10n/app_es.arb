@@ -6377,6 +6377,7 @@
   "sidebarActiveSectionTitle": "Actividad",
   "sidebarActivityCollapseTooltip": "Contraer actividad",
   "sidebarActivityExpandTooltip": "Expandir actividad",
+  "sidebarAudioRecordingStatusLabel": "Grabación",
   "sidebarRunningTimerLabel": "Temporizador en curso",
   "sidebarRunningTimerStopTooltip": "Detener temporizador",
   "sidebarTimerStatusLabel": "Temporizador",

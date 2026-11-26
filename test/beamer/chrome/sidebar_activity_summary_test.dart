@@ -65,6 +65,7 @@ void main() {
 
   Widget subject({
     required AudioRecorderState recorder,
+    bool showAudio = true,
     List<PendingWakeRecord> pending = const [],
     List<OngoingWakeRecord> ongoing = const [],
     Stream<DateTime>? wakeTicks,
@@ -74,7 +75,7 @@ void main() {
     return makeTestableWidgetWithScaffold(
       SizedBox(
         width: width,
-        child: const SidebarActivitySummary(),
+        child: SidebarActivitySummary(showAudio: showAudio),
       ),
       overrides: [
         audioRecorderControllerProvider.overrideWith(
@@ -134,9 +135,7 @@ void main() {
     );
     await tester.pump();
 
-    // The live recording is not one of the metrics: it has the recording
-    // strip, at the foot of the content column.
-    expect(find.text('00:08'), findsNothing);
+    expect(find.text('00:08'), findsOneWidget);
     expect(find.text('00:13'), findsOneWidget);
     expect(
       find.descendant(
@@ -145,9 +144,20 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byIcon(LottiIcons.mic), findsNothing);
+    expect(find.byIcon(LottiIcons.mic), findsOneWidget);
     expect(find.byIcon(LottiIcons.timer), findsOneWidget);
     expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
+    expect(
+      tester
+          .widget<Tooltip>(
+            find.descendant(
+              of: find.byKey(SidebarActivitySummaryKeys.audio),
+              matching: find.byType(Tooltip),
+            ),
+          )
+          .message,
+      'Audio recording in progress',
+    );
     expect(
       tester
           .widget<Tooltip>(
@@ -162,6 +172,7 @@ void main() {
 
     final labelRect = tester.getRect(find.text('Activity'));
     for (final key in [
+      SidebarActivitySummaryKeys.audio,
       SidebarActivitySummaryKeys.timer,
       SidebarActivitySummaryKeys.agents,
     ]) {
@@ -178,8 +189,8 @@ void main() {
     expect(summaryHeight, greaterThanOrEqualTo(48));
   });
 
-  testWidgets('a live recording alone shows nothing: it has the recording '
-      'strip', (tester) async {
+  testWidgets('a live recording alone shows the summary, recording or '
+      'paused, its metric in the alert red', (tester) async {
     for (final status in [
       AudioRecorderStatus.recording,
       AudioRecorderStatus.paused,
@@ -194,9 +205,79 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byKey(SidebarActivitySummaryKeys.root), findsNothing);
-      expect(find.byIcon(LottiIcons.mic), findsNothing);
+      expect(find.byKey(SidebarActivitySummaryKeys.root), findsOneWidget);
+      final mic = tester.widget<Icon>(find.byIcon(LottiIcons.mic));
+      expect(
+        mic.color,
+        tester
+            .element(find.byIcon(LottiIcons.mic))
+            .designTokens
+            .colors
+            .alert
+            .error
+            .defaultColor,
+      );
+      expect(find.text('00:08'), findsOneWidget);
     }
+  });
+
+  testWidgets('a build with no recorder (showAudio false) leaves a live '
+      'recording out', (tester) async {
+    await tester.pumpWidget(
+      subject(
+        showAudio: false,
+        recorder: recorderState(
+          status: AudioRecorderStatus.recording,
+          progress: const Duration(seconds: 8),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(SidebarActivitySummaryKeys.root), findsNothing);
+  });
+
+  testWidgets('a take a page draws in place is no activity of the '
+      "sidebar's", (tester) async {
+    await tester.pumpWidget(
+      subject(
+        recorder: AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          progress: const Duration(seconds: 8),
+          dBFS: -40,
+          inlineHostVisible: true,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(SidebarActivitySummaryKeys.root), findsNothing);
+  });
+
+  testWidgets('a stopped recorder is no activity', (tester) async {
+    await tester.pumpWidget(subject(recorder: recorderState()));
+    await tester.pump();
+    expect(find.byKey(SidebarActivitySummaryKeys.audio), findsNothing);
+  });
+
+  testWidgets('collapsed, a screen reader hears the recording and its '
+      'length with the section', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      subject(
+        recorder: recorderState(
+          status: AudioRecorderStatus.recording,
+          progress: const Duration(seconds: 8),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(
+      find.bySemanticsLabel(
+        RegExp('^Activity, Audio recording in progress 00:00:08, '),
+      ),
+      findsOneWidget,
+    );
+    semantics.dispose();
   });
 
   testWidgets('does not announce the timer on every tick', (tester) async {
@@ -249,10 +330,11 @@ void main() {
 
     expect(tester.takeException(), isNull);
     final labelBottom = tester.getRect(find.text('Activity')).bottom;
+    expect(find.byKey(SidebarActivitySummaryKeys.audio), findsOneWidget);
     expect(find.byKey(SidebarActivitySummaryKeys.timer), findsOneWidget);
     expect(find.byKey(SidebarActivitySummaryKeys.agents), findsOneWidget);
     expect(
-      tester.getRect(find.byKey(SidebarActivitySummaryKeys.timer)).top,
+      tester.getRect(find.byKey(SidebarActivitySummaryKeys.audio)).top,
       greaterThan(labelBottom),
     );
   });
@@ -397,14 +479,14 @@ void main() {
     await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
     await tester.pump(SidebarTimerSection.animationDuration);
 
-    // The detail cards carry the timer readout; the header's compact copy
-    // of the same value is gone, so it appears once. The recording shows in
-    // neither: it has the recording strip.
+    // The detail cards carry the recording and timer readouts; the header's
+    // compact copies of the same values are gone, so each appears once.
+    expect(find.text('00:01:47'), findsOneWidget);
     expect(find.text('00:14:40'), findsOneWidget);
-    expect(find.text('14:40'), findsNothing);
-    expect(find.text('00:01:47'), findsNothing);
     expect(find.text('01:47'), findsNothing);
+    expect(find.text('14:40'), findsNothing);
     for (final key in [
+      SidebarActivitySummaryKeys.audio,
       SidebarActivitySummaryKeys.timer,
       SidebarActivitySummaryKeys.agents,
     ]) {

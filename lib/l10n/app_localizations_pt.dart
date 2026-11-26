@@ -16900,6 +16900,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get sidebarActivityExpandTooltip => 'Expandir atividade';
 
   @override
+  String get sidebarAudioRecordingStatusLabel => 'Gravação';
+
+  @override
   String get sidebarRunningTimerLabel => 'Temporizador em execução';
 
   @override

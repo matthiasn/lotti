@@ -69,6 +69,15 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   AudioNote? _audioNote;
   bool _transcriptionHandledByCaller = false;
   bool _terminalActionInProgress = false;
+
+  /// How many stops and discards have claimed a take. A pause or a resume
+  /// that was waiting on the recorder when one of them began applies
+  /// nothing: the stop or discard wins.
+  int _terminalActions = 0;
+
+  /// True from the moment a stop or discard claims a take until the next
+  /// take starts: a pause or a resume asked for in between does nothing.
+  bool _takeClosed = false;
   bool _startInProgress = false;
 
   /// The automatic prompts each stopped take is owed — by its entry id, the
@@ -202,6 +211,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
             return null;
           }
           _transcriptionHandledByCaller = transcriptionHandledByCaller;
+          _takeClosed = false;
           if (ref.mounted) {
             // Update state to recording while keeping existing inference preferences
             state = state.copyWith(
@@ -251,6 +261,8 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     if (_terminalActionInProgress) return null;
 
     _terminalActionInProgress = true;
+    _terminalActions++;
+    _takeClosed = true;
     final note = _audioNote;
     final linkedSubjectId = _linkedId;
     final transcriptionHandledByCaller = _transcriptionHandledByCaller;
@@ -335,6 +347,8 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     if (note == null) return;
 
     _terminalActionInProgress = true;
+    _terminalActions++;
+    _takeClosed = true;
     // Claim the recording and clear the UI synchronously, before any await, so
     // concurrent calls can't re-run teardown and the recording strip clears
     // immediately rather than lingering through the async file deletion.
@@ -378,17 +392,29 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// hung. The elapsed [AudioRecorderState.progress] is intentionally left
   /// untouched so the timer holds; the amplitude listener in [build] then drops
   /// incoming samples until [resume] restarts metering.
+  ///
+  /// A stop or discard wins: a pause asked for once one has claimed the take
+  /// — while it saves, or after it, until the next take starts — does
+  /// nothing, and one that begins while the recorder is pausing then
+  /// changes nothing, so a stopped take never reads as paused.
   Future<void> pause() async {
+    if (_takeClosed) return;
+    final terminalActions = _terminalActions;
     await _recorderRepository.pauseRecording();
+    if (terminalActions != _terminalActions) return;
     state = state.copyWith(
       status: AudioRecorderStatus.paused,
       dBFS: -160,
     );
   }
 
-  /// Resumes a paused recording.
+  /// Resumes a paused recording. A stop or discard that begins while the
+  /// recorder is resuming wins, as for [pause].
   Future<void> resume() async {
+    if (_takeClosed) return;
+    final terminalActions = _terminalActions;
     await _recorderRepository.resumeRecording();
+    if (terminalActions != _terminalActions) return;
     state = state.copyWith(status: AudioRecorderStatus.recording);
   }
 

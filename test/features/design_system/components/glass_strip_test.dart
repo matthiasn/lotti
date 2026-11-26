@@ -59,14 +59,17 @@ void main() {
 
       final strip = tester.getRect(find.byType(DesignSystemGlassStrip));
       final content = tester.getRect(find.byKey(contentKey));
-      // A bottom bar's content starts below its 1px hairline; a top bar's
-      // content ends above it.
+      // A bottom bar's content starts below its hairline; a top bar's
+      // content ends above it. The hairline is all the strip adds.
+      const hairline = DesignSystemGlassStrip.hairlineHeight;
+      expect(hairline, 1);
+      expect(strip.height, 40 + hairline);
       if (dock == DesignSystemGlassStripDock.bottom) {
-        expect(content.top - strip.top, 1);
+        expect(content.top - strip.top, hairline);
         expect(content.bottom, strip.bottom);
       } else {
         expect(content.top, strip.top);
-        expect(strip.bottom - content.bottom, 1);
+        expect(strip.bottom - content.bottom, hairline);
       }
     });
   }

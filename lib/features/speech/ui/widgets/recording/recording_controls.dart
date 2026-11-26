@@ -432,3 +432,69 @@ class RecordingStopPill extends ConsumerWidget {
     );
   }
 }
+
+/// Stop as a round button with no time in it: the alert disc with the
+/// filled stop square, for a host that shows the running time beside it (a
+/// task's action bar). Neutral while the take is paused, as the pill is.
+/// One button, named *Stop*, whose value is the time.
+class RecordingStopButton extends ConsumerWidget {
+  const RecordingStopButton({
+    required this.paused,
+    required this.progressSemanticsLabel,
+    required this.onTap,
+    super.key,
+  });
+
+  final bool paused;
+
+  /// The running time as a screen reader hears it, the button's value.
+  final String progressSemanticsLabel;
+  final VoidCallback? onTap;
+
+  /// The disc's fill: the alert red, or the neutral fill while paused.
+  static Color fill(DsTokens tokens, {required bool paused}) => paused
+      ? tokens.colors.decorative.level02
+      : tokens.colors.alert.error.defaultColor;
+
+  /// The square's ink: the light theme's ink for alert fills in both
+  /// themes, as on the running pill; the text's own while paused.
+  static Color ink(DsTokens tokens, {required bool paused}) => paused
+      ? tokens.colors.text.highEmphasis
+      : dsTokensLight.colors.text.onInteractiveAlert;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final stop = _felt(ref, onTap, HapticFeedback.mediumImpact);
+    final label = context.messages.audioRecordingStop;
+    return Semantics(
+      button: true,
+      enabled: stop != null,
+      label: label,
+      value: progressSemanticsLabel,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: label,
+        excludeFromSemantics: true,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: stop,
+          child: AnimatedContainer(
+            duration: MotionDurations.short4,
+            width: tokens.spacing.step9,
+            height: tokens.spacing.step9,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: fill(tokens, paused: paused),
+            ),
+            child: Icon(
+              LottiIconsFilled.square,
+              size: IconSizes.m,
+              color: ink(tokens, paused: paused),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

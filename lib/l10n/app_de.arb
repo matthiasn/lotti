@@ -6377,6 +6377,7 @@
   "sidebarActiveSectionTitle": "Aktivität",
   "sidebarActivityCollapseTooltip": "Aktivität einklappen",
   "sidebarActivityExpandTooltip": "Aktivität ausklappen",
+  "sidebarAudioRecordingStatusLabel": "Aufnahme",
   "sidebarRunningTimerLabel": "Laufender Timer",
   "sidebarRunningTimerStopTooltip": "Timer stoppen",
   "sidebarTimerStatusLabel": "Timer",

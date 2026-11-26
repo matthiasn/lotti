@@ -6999,6 +6999,7 @@
   "sidebarActiveSectionTitle": "Activiteit",
   "sidebarActivityCollapseTooltip": "Activiteit inklappen",
   "sidebarActivityExpandTooltip": "Activiteit uitklappen",
+  "sidebarAudioRecordingStatusLabel": "Opname",
   "sidebarRunningTimerLabel": "Lopende timer",
   "sidebarRunningTimerStopTooltip": "Timer stoppen",
   "sidebarTimerStatusLabel": "Timer",

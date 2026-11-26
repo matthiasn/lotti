@@ -10,9 +10,11 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/action_bar_recording.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar_buttons.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -131,6 +133,7 @@ Future<void> _settleStream(WidgetTester tester) async {
 void main() {
   late _FakeTimeService fakeTimeService;
   late MockEntryCreationService mockCreationService;
+  late MockNavService navService;
 
   setUpAll(() {
     registerFallbackValue(testTask);
@@ -140,6 +143,11 @@ void main() {
   setUp(() async {
     fakeTimeService = _FakeTimeService();
     mockCreationService = MockEntryCreationService();
+    navService = MockNavService();
+    final route = ValueNotifier<String>('/tasks/${testTask.meta.id}');
+    addTearDown(route.dispose);
+    when(() => navService.activeRoute).thenAnswer((_) => route.value);
+    when(() => navService.activeRouteChanges).thenReturn(route);
 
     await setUpTestGetIt(
       additionalSetup: () {
@@ -210,6 +218,8 @@ void main() {
         overrides: [
           ...extraOverrides,
           entryCreationServiceProvider.overrideWithValue(mockCreationService),
+          // The take's row asks which page is on screen: the task's own.
+          navServiceProvider.overrideWithValue(navService),
           audioRecorderControllerProvider.overrideWith(
             () => StubAudioRecorderController(
               recorderState ?? _idleRecorderState(),
@@ -689,24 +699,69 @@ void main() {
     },
   );
 
-  testWidgets(
-    'a live recording still overrides the accent with the alert fill',
-    (tester) async {
+  group('a take for this task', () {
+    testWidgets(
+      'the mic leaves the actions: it is the round Stop at the end of the '
+      'recording row under them, the time beside it',
+      (tester) async {
+        await pumpBar(
+          tester,
+          recorderState: _recordingRecorderState(linkedId: testTask.meta.id),
+        );
+
+        expect(find.byKey(TaskActionBar.audioKey), findsNothing);
+        final band = find.byKey(ActionBarRecording.bandKey);
+        expect(band, findsOneWidget);
+        expect(
+          find.descendant(
+            of: band,
+            matching: find.byKey(ActionBarRecording.stopKey),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester.widget<Text>(find.byKey(ActionBarRecording.timeKey)).data,
+          '00:05',
+        );
+        expect(
+          tester.getRect(band).top,
+          greaterThanOrEqualTo(
+            tester.getRect(find.byKey(TaskActionBar.trackTimeKey)).bottom,
+          ),
+        );
+      },
+    );
+
+    testWidgets("another subject's take leaves the mic in place and shows "
+        'no row', (tester) async {
       await pumpBar(
         tester,
+        recorderState: _recordingRecorderState(linkedId: 'another-task'),
+      );
+      expect(find.byKey(TaskActionBar.audioKey), findsOneWidget);
+      expect(find.byKey(ActionBarRecording.bandKey), findsNothing);
+    });
+
+    testWidgets('the bottom slot sits between the actions and the row', (
+      tester,
+    ) async {
+      const slot = Key('bottom-slot');
+      await pumpBar(
+        tester,
+        bottomSlot: const SizedBox(key: slot, height: 10),
         recorderState: _recordingRecorderState(linkedId: testTask.meta.id),
       );
-
-      final button = tester.widget<DsGlassRoundButton>(
-        find.descendant(
-          of: find.byKey(TaskActionBar.audioKey),
-          matching: find.byType(DsGlassRoundButton),
+      final row = tester.getRect(find.byKey(ActionBarRecording.bandKey));
+      final under = tester.getRect(find.byKey(slot));
+      expect(
+        under.top,
+        greaterThanOrEqualTo(
+          tester.getRect(find.byKey(TaskActionBar.trackTimeKey)).bottom,
         ),
       );
-      expect(button.outlineColor, isNull);
-      expect(button.iconColor, Colors.white);
-    },
-  );
+      expect(row.top, greaterThanOrEqualTo(under.bottom));
+    });
+  });
 
   testWidgets(
     'the bar has exactly one primary: Track time carries the solid '
@@ -769,21 +824,6 @@ void main() {
         dsGlassChipFill(tokens),
         isNot(tokens.colors.surface.focusPressed.withValues(alpha: 0.55)),
       );
-    },
-  );
-
-  testWidgets(
-    'audio button turns red while recording is active for THIS task',
-    (tester) async {
-      await pumpBar(
-        tester,
-        recorderState: _recordingRecorderState(linkedId: testTask.meta.id),
-      );
-
-      final tokens = tester
-          .element(find.byKey(TaskActionBar.audioKey))
-          .designTokens;
-      expect(audioButtonFill(tester), tokens.colors.alert.error.defaultColor);
     },
   );
 
