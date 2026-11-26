@@ -4,6 +4,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.110]
+
+### Changed
+
+- **A recording stays with the task it is for.** On the task's page, the
+  microphone moves down and becomes the Stop button of a recording row
+  under the task's actions, with the live level, the running time and
+  pause beside it, and moves back when you stop. Leave the page and it
+  follows you: on a phone, as a slim glass band along the bottom edge; on
+  a computer, as a card in the sidebar's Activity section (the band comes
+  back while the sidebar is collapsed). Tapping either takes you straight
+  back to the task.
+
+### Fixed
+
+- **Recording audio on iPhone should no longer crash the app.** Since 1.1.104 a
+  take on iOS 26 could close the app a few seconds after you started
+  speaking, without an error. The recorder had switched on the phone's
+  call-style voice processing for every take, which is what set off the
+  crash. Recordings on iPhone are made the way they were before 1.1.104
+  again, both in the app and in the chat.
+- **A recording stopped while it was pausing could come back as paused.**
+  Pressing Stop (or discarding) right after Pause could leave a stopped
+  recording looking paused, with its controls still on screen. Stop and
+  discard now always win.
+- **Importing photos did nothing when the app had access to selected photos
+  only.** With "Selected Photos" on iPhone, or partial photo access on
+  Android, tapping the photo import asked for permission and then stopped,
+  because only full library access counted as permission. The gallery now
+  opens with the photos you allowed.
+- **The Tasks header no longer floats as a lighter strip once you scroll.**
+  When the header collapsed to its single row, that row was painted a shade
+  lighter than the page while the space above it stayed dark, so it looked
+  like a band hovering over the list. The collapsed header now sits on the
+  same plain dark background as the rest of the page, from the top of the
+  screen down to the thin line that separates it from your tasks.
+
 ## [1.1.109]
 
 ### Added
