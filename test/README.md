@@ -856,7 +856,16 @@ multi-device benches rather than building its own:
   entity receive is the sync processor's own, `resolveReceivedAgentEntity`,
   so reverting a receive fix fails a trace built on it. Pass
   `background: false` under `fakeAsync`; `reboot()` is a process restart over
-  the same database.
+  the same database. `attachProcessor` wires a real `SyncEventProcessor` to
+  the device and `receiveEnvelope` applies a sync message through its
+  `process`, so a test of the receive path asserts on the rows the device
+  stores, not on which repository method was called
+  (`features/sync/matrix/sync_event_processor_agent_handlers_test.dart`).
+  Three hooks place a local write inside a receive: `holdNextStoredReadOf`
+  parks the read a receive resolves against, `afterNextReadOf` and
+  `afterNextEntityWrite` run a write between two of its steps.
+  `storedRows()` is everything the device stores, and
+  `entitiesWrittenSince(before)` what a receive changed.
 - `features/agents/sync/agent_replica_bench.dart` — a network of
   `AgentTestDevice`s that delivers every committed write as its own message,
   in whatever order the trace chooses. A lost delivery is an index marked
