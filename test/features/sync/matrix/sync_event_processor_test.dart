@@ -572,27 +572,37 @@ void main() {
     expect(diag!.applied, isTrue);
   });
 
-  test('EntryLink observer exceptions are swallowed', () async {
-    final link = EntryLink.basic(
-      id: 'diag-link-throw',
-      fromId: 'from',
-      toId: 'to',
-      createdAt: DateTime(2024, 3, 15),
-      updatedAt: DateTime(2024, 3, 15),
-      vectorClock: null,
-    );
-    final message = SyncMessage.entryLink(
-      entryLink: link,
-      status: SyncEntryStatus.initial,
-    );
-    when(() => event.text).thenReturn(encodeMessage(message));
+  test(
+    'a throwing EntryLink observer does not stop the link being applied',
+    () async {
+      final link = EntryLink.basic(
+        id: 'diag-link-throw',
+        fromId: 'from',
+        toId: 'to',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+      final message = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.initial,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
 
-    processor.applyObserver = (_) {
-      throw StateError('observer failure');
-    };
+      processor.applyObserver = (_) {
+        throw StateError('observer failure');
+      };
 
-    await processor.process(envelope: event, journalDb: journalDb);
-  });
+      await processor.process(envelope: event, journalDb: journalDb);
+
+      final applied =
+          verify(
+                () => journalDb.upsertEntryLink(captureAny<EntryLink>()),
+              ).captured.single
+              as EntryLink;
+      expect(applied.id, link.id);
+    },
+  );
 
   test('EntryLink syncs collapsed state from remote', () async {
     final incomingLink = EntryLink.basic(

@@ -202,26 +202,6 @@ void main() {
       verify(() => mockTimeService.start(timer!, parent)).called(1);
     });
 
-    test(
-      'createTimerEntry with linked but null timer does not start',
-      () async {
-        // This test covers the edge case where createTextEntry returns null
-        // when linked to a parent
-        final parent = await service.createTextEntry();
-        expect(parent, isNotNull);
-
-        // Mock a scenario where timer creation fails (returns null)
-        // In practice this is very rare, but we test the defensive null check
-        // The real-world scenario is already covered by the previous test
-        // This just ensures line 42-43 are covered for the null case
-
-        final timer = await service.createTimerEntry(linked: parent);
-
-        // Timer should still be created in this test
-        expect(timer, isNotNull);
-      },
-    );
-
     group('createTaskAndOpen', () {
       setUp(() {
         reset(mockNavService);

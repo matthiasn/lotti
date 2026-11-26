@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Glados generator for task-status-like strings.
@@ -229,17 +230,17 @@ void main() {
       expect(darkColor, isNot(equals(lightColor)));
     });
 
-    test('DONE light mode returns a Color value', () {
+    test('DONE is dark green on a light background', () {
       final c = taskColorFromStatusString('DONE', brightness: Brightness.light);
-      expect(c, isNotNull);
+      expect(c, taskIconColorDarkGreen);
     });
 
-    test('BLOCKED dark mode returns a Color value', () {
+    test('BLOCKED is red on a dark background', () {
       final c = taskColorFromStatusString(
         'BLOCKED',
         brightness: Brightness.dark,
       );
-      expect(c, isNotNull);
+      expect(c, taskIconColorRed);
     });
 
     test('unknown status returns fallback grey-ish color (not null)', () {

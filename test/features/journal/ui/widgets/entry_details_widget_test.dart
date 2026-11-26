@@ -2500,7 +2500,7 @@ void main() {
 
         // The animation has started: the widget is still in the tree and the
         // AnimationController is running (transient callbacks registered).
-        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+        expect(tester.binding.transientCallbackCount, greaterThan(0));
 
         // Settle the animation so tickers are cleaned up before the next test.
         await tester.pump(const Duration(milliseconds: 5000));

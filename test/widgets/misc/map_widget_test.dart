@@ -166,7 +166,11 @@ void main() {
         ),
       );
 
-      // Find the specific Listener that handles scroll events (direct child of SizedBox)
+      final controller = tester
+          .widget<FlutterMap>(find.byType(FlutterMap))
+          .mapController!;
+      final initialZoom = controller.camera.zoom;
+
       final listener = find
           .descendant(
             of: find.byType(SizedBox),
@@ -183,10 +187,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Note: In a real test, we'd need to verify the zoom changed,
-      // but due to the way MapController works, we can't easily verify
-      // the zoom level changed in the test environment.
-      // The actual zoom behavior would need to be tested in integration tests.
+      // The widget adds one level; the map's own wheel handling adds to that.
+      expect(controller.camera.zoom, greaterThanOrEqualTo(initialZoom + 1));
+      final zoomedIn = controller.camera.zoom;
 
       // Simulate scroll down (zoom out)
       await tester.sendEventToBinding(
@@ -196,24 +199,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-    });
-
-    testWidgets('initializes MapController in initState', (tester) async {
-      final geolocation = Geolocation(
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        latitude: 37.7749,
-        longitude: -122.4194,
-        geohashString: '9q8yy',
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          geolocation: geolocation,
-        ),
-      );
-
-      final flutterMap = tester.widget<FlutterMap>(find.byType(FlutterMap));
-      expect(flutterMap.mapController, isNotNull);
+      expect(controller.camera.zoom, lessThanOrEqualTo(zoomedIn - 1));
     });
 
     testWidgets('map is centered on provided location', (tester) async {

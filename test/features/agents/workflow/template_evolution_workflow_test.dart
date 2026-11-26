@@ -2413,7 +2413,11 @@ void main() {
 
       // Should succeed for a different template.
       final result = await workflow.startSession(templateId: kTestTemplateId);
-      expect(result, isNotNull);
+      expect(result, 'Hello');
+      expect(
+        workflow.activeSessions.values.map((session) => session.templateId),
+        unorderedEquals(['other-template', kTestTemplateId]),
+      );
     });
   });
 
@@ -2573,7 +2577,7 @@ void main() {
 
       // Should not throw or crash without updateNotifications.
       final result = await workflow.startSession(templateId: kTestTemplateId);
-      expect(result, isNotNull);
+      expect(result, 'Hello');
     });
   });
 

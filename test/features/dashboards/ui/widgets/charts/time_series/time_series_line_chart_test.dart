@@ -27,17 +27,6 @@ void main() {
 
       expect(find.byType(LineChart), findsOneWidget);
     });
-
-    testWidgets('wraps chart in a Padding widget', (tester) async {
-      await hPumpChart(
-        tester,
-        data: [],
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      );
-
-      expect(find.byType(Padding), findsWidgets);
-    });
   });
 
   group('TimeSeriesLineChart — spots and min/max', () {

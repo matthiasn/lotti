@@ -5,6 +5,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_response_card.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
+import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
@@ -255,8 +256,7 @@ The image shows a beautiful landscape with mountains.''';
       await tester.tap(gestureDetector);
       await tester.pumpAndSettle();
 
-      // Modal should be opened (we can't directly test the modal content
-      // as it's shown in a different route)
+      expect(find.byType(AiResponseSummaryModalContent), findsOneWidget);
     });
 
     testWidgets('uses GeneratedPromptCard for prompt generation responses', (

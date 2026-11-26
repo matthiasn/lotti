@@ -191,9 +191,26 @@ void main() {
       );
 
       final boxDecoration = decoratedBox.decoration as BoxDecoration;
-      expect(boxDecoration.color, isNotNull);
-      expect(boxDecoration.borderRadius, isNotNull);
-      expect(boxDecoration.border, isNotNull);
+      final tokens = tester.element(find.byType(DashboardsList)).designTokens;
+      expect(boxDecoration.color, tokens.colors.background.level02);
+      expect(
+        boxDecoration.border,
+        Border.all(color: tokens.colors.decorative.level01),
+      );
+      // The same radius clips the rows, so the last divider cannot poke out.
+      expect(
+        tester
+            .widget<ClipRRect>(
+              find
+                  .ancestor(
+                    of: find.byType(DashboardCard),
+                    matching: find.byType(ClipRRect),
+                  )
+                  .first,
+            )
+            .borderRadius,
+        boxDecoration.borderRadius,
+      );
     });
 
     testWidgets('shows chevron trailing icon on each item', (tester) async {
