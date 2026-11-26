@@ -38,10 +38,12 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_w
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summary.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details_borders.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_labels_display.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
@@ -58,6 +60,7 @@ import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/layout/viewport_stable_animated_size.dart';
 import 'package:material_ui/material_ui.dart';
@@ -606,16 +609,17 @@ void main() {
         await tester.pumpWidget(subject(errorColor: Colors.red));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
-        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+        int borderColor() => tester
+            .widget<TimerBorder>(find.byType(TimerBorder))
+            .color
+            .toARGB32();
+        expect(borderColor(), Colors.red.toARGB32());
 
-        // Re-pumping with a different error color forces a new
-        // _TimerBorderPainter to be supplied to the CustomPaint, which
-        // exercises shouldRepaint with a non-equal oldDelegate.color.
+        // Re-pumping with a different error color hands the border the new
+        // color once the MaterialApp theme animation has settled.
         await tester.pumpWidget(subject(errorColor: Colors.deepOrange));
-        // Settle the MaterialApp theme animation so we land on the new
-        // color and exercise shouldRepaint with a non-equal oldDelegate.
         await tester.pumpAndSettle();
-        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+        expect(borderColor(), Colors.deepOrange.toARGB32());
       },
     );
 
@@ -717,7 +721,54 @@ void main() {
 
     tearDown(tearDownTestGetIt);
 
-    testWidgets('shows EntryLabelsDisplay for text entries', (tester) async {
+    testWidgets('a labelled text entry shows its label as a chip', (
+      tester,
+    ) async {
+      final labelled = testTextEntry.copyWith(
+        meta: testTextEntry.meta.copyWith(labelIds: const ['label-1']),
+      );
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => labelled);
+      final cache = getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+      when(() => cache.getLabelById('label-1')).thenReturn(
+        LabelDefinition(
+          id: 'label-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          name: 'Important',
+          color: '#FF0000',
+          vectorClock: null,
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProviderScope(
+            overrides: getItServiceOverrides(),
+            child: EntryDetailsWidget(
+              itemId: testTextEntry.meta.id,
+              showAiEntry: false,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(
+        find.descendant(
+          of: find.byType(EntryLabelsDisplay),
+          matching: find.text('Important'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a text entry without labels has no labels row', (
+      tester,
+    ) async {
       when(
         () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
       ).thenAnswer((_) async => testTextEntry);
@@ -737,8 +788,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // EntryLabelsDisplay should be present for text entries
-      expect(find.byType(EntryDetailsWidget), findsOneWidget);
+      expect(find.byType(EntryDetailsContent), findsOneWidget);
+      expect(find.byType(EntryLabelsDisplay), findsNothing);
     });
 
     testWidgets('does not show header or edit button for labels in detail view', (
@@ -868,12 +919,31 @@ void main() {
 
         await tester.pump();
 
-        // The Padding wrapper with XSmall spacing should be present (lines 85-90).
-        // ModernJournalCard renders inside it — we can verify the Padding values
-        // match what EntryDetailsWidget hardcodes for this branch.
-        final paddingFinder = find.byType(Padding).first;
-        expect(paddingFinder, findsOneWidget);
-        // EntryDetailsContent is NOT rendered in this branch.
+        // The task collapses to the compact list card, with its logged
+        // duration, in place of the per-type detail body.
+        final card = tester.widget<ModernJournalCard>(
+          find.byType(ModernJournalCard),
+        );
+        expect(card.item, testTask);
+        expect(card.showLinkedDuration, isTrue);
+        expect(card.removeHorizontalMargin, isTrue);
+        final step2 = tester
+            .element(find.byType(EntryDetailsWidget))
+            .designTokens
+            .spacing
+            .step2;
+        final padding = tester.widget<Padding>(
+          find
+              .ancestor(
+                of: find.byType(ModernJournalCard),
+                matching: find.byType(Padding),
+              )
+              .first,
+        );
+        expect(
+          padding.padding,
+          EdgeInsets.only(left: step2, right: step2, bottom: step2),
+        );
         expect(find.byType(EntryDetailsContent), findsNothing);
       },
     );
@@ -1408,14 +1478,16 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
-        // The Stack + _PulsingBorder CustomPaint should be present.
-        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+        expect(
+          tester.widget<PulsingBorder>(find.byType(PulsingBorder)).color,
+          colorFromCssHex(categoryMindfulness.color),
+        );
       },
     );
 
-    // Line 158 fallback: isHighlighted=true AND category == null → Colors.pink
     testWidgets(
-      'falls back to pink when no category found for highlighted entry',
+      'falls back to the interactive color when the highlighted entry has '
+      'no category',
       (tester) async {
         when(
           () => mockEntitiesCacheService.getCategoryById(any()),
@@ -1441,14 +1513,20 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+        expect(
+          tester.widget<PulsingBorder>(find.byType(PulsingBorder)).color,
+          tester
+              .element(find.byType(EntryDetailsWidget))
+              .designTokens
+              .colors
+              .interactive
+              .enabled,
+        );
       },
     );
 
-    // Lines 232-237: _GlowBorderPainter.shouldRepaint – triggered by pumping
-    // the same widget with a different category color, forcing a repaint.
     testWidgets(
-      '_GlowBorderPainter.shouldRepaint is exercised when category color changes',
+      'the pulsing border takes the new color when the category color changes',
       (tester) async {
         // First render with blue category
         when(
@@ -1474,11 +1552,14 @@ void main() {
           );
         }
 
+        Color borderColor() =>
+            tester.widget<PulsingBorder>(find.byType(PulsingBorder)).color;
+
         await buildWidget();
         await tester.pump();
-        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+        expect(borderColor(), colorFromCssHex(categoryMindfulness.color));
 
-        // Change to a different category color to trigger shouldRepaint
+        // Change to a different category color
         when(
           () => mockEntitiesCacheService.getCategoryById(any()),
         ).thenReturn(
@@ -1495,10 +1576,10 @@ void main() {
         );
 
         await buildWidget();
-        // pumpAndSettle to let the animation controller tick through at least
-        // one frame so the _PulsingBorder repaint path is exercised.
+        // pumpAndSettle lets the highlight animation run out, so no ticker
+        // outlives the test.
         await tester.pumpAndSettle();
-        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+        expect(borderColor(), colorFromCssHex('#FF0000FF'));
       },
     );
   });
@@ -1554,94 +1635,12 @@ void main() {
 
         await tester.pump();
 
-        // EntryDetailsContent must be present (not SizedBox.shrink)
-        expect(find.byType(EntryDetailsContent), findsOneWidget);
-      },
-    );
-
-    // Lines 487-488: Checklist entry → ChecklistCardWrapper rendered
-    // (requires linkedTasks to have at least one entry for the card wrapper)
-    testWidgets(
-      'EntryDetailsContent renders for Checklist entry',
-      (tester) async {
-        final checklist = JournalEntity.checklist(
-          meta: Metadata(
-            id: 'checklist-id',
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            dateFrom: DateTime(2024, 3, 15),
-            dateTo: DateTime(2024, 3, 15),
-          ),
-          data: const ChecklistData(
-            title: 'Test Checklist',
-            linkedChecklistItems: <String>[],
-            linkedTasks: ['task-id-1'],
-          ),
+        // The response renders through its summary, not the free-text editor.
+        final summary = tester.widget<AiResponseSummary>(
+          find.byType(AiResponseSummary),
         );
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ProviderScope(
-              overrides: withServiceOverrides([
-                entryControllerProvider('checklist-id').overrideWith(
-                  () => _FakeEntryController(checklist),
-                ),
-              ]),
-              child: const EntryDetailsWidget(
-                itemId: 'checklist-id',
-                showAiEntry: false,
-              ),
-            ),
-          ),
-        );
-
-        await tester.pump();
-
-        // EntryDetailsContent must be present (not hidden)
-        expect(find.byType(EntryDetailsContent), findsOneWidget);
-      },
-    );
-
-    // Lines 494-498: ChecklistItem entry → ChecklistItemRow rendered
-    testWidgets(
-      'EntryDetailsContent renders for ChecklistItem entry',
-      (tester) async {
-        final checklistItem = JournalEntity.checklistItem(
-          meta: Metadata(
-            id: 'checklist-item-id',
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            dateFrom: DateTime(2024, 3, 15),
-            dateTo: DateTime(2024, 3, 15),
-          ),
-          data: const ChecklistItemData(
-            title: 'Test item',
-            isChecked: false,
-            linkedChecklists: ['checklist-parent-id'],
-          ),
-        );
-
-        // Use makeTestableWidget (SingleChildScrollView) to avoid overflow
-        // errors from ChecklistItemRow in a constrained Scaffold body.
-        await tester.pumpWidget(
-          makeTestableWidget(
-            ProviderScope(
-              overrides: withServiceOverrides([
-                entryControllerProvider('checklist-item-id').overrideWith(
-                  () => _FakeEntryController(checklistItem),
-                ),
-              ]),
-              child: const EntryDetailsWidget(
-                itemId: 'checklist-item-id',
-                showAiEntry: false,
-              ),
-            ),
-          ),
-        );
-
-        await tester.pump();
-
-        expect(find.byType(EntryDetailsContent), findsOneWidget);
+        expect(summary.aiResponse, aiEntry);
+        expect(find.byType(EditorWidget), findsNothing);
       },
     );
 
@@ -5011,6 +5010,44 @@ void main() {
           checklistId: 'checklist-1',
           taskId: testTask.meta.id,
         ));
+      },
+    );
+
+    testWidgets(
+      'a checklist item opened on its own gets its first checklist and no task',
+      (tester) async {
+        final calls = <({String itemId, String checklistId, String taskId})>[];
+        await pump(
+          tester,
+          ChecklistItem(
+            meta: meta('item-2'),
+            data: const ChecklistItemData(
+              title: 'Tickets',
+              isChecked: false,
+              linkedChecklists: ['checklist-1', 'checklist-9'],
+            ),
+          ),
+          slots: JournalDetailSlots(
+            checklistItemBody:
+                ({required itemId, required checklistId, required taskId}) {
+                  calls.add((
+                    itemId: itemId,
+                    checklistId: checklistId,
+                    taskId: taskId,
+                  ));
+                  return const Text('item slot');
+                },
+          ),
+        );
+
+        expect(find.text('item slot'), findsOneWidget);
+        expect(calls.last, (
+          itemId: 'item-2',
+          checklistId: 'checklist-1',
+          taskId: '',
+        ));
+        // The slot is the whole body: no free-text editor beside it.
+        expect(find.byType(EditorWidget), findsNothing);
       },
     );
 
