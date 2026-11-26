@@ -33,6 +33,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
 import '../../../mocks/mocks.dart';
+import '../../agents/agent_test_device.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../../agents/test_data/evolution_factories.dart';
 import '../../ai_consumption/test_utils.dart';
@@ -46,13 +47,35 @@ void main() {
   group('SyncEventProcessor - Agent Entities and Links', () {
     late MockAgentRepository mockAgentRepo;
 
+    /// This device: a real in-memory agent database behind the real
+    /// repository. The groups that receive onto it attach the processor.
+    late AgentTestDevice device;
+
     /// Project agents sync asked to arm their next update slot.
     late List<String> armedAgentIds;
+
+    Future<void> receiveEntity(AgentDomainEntity entity) =>
+        device.receiveEnvelope(
+          SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          ),
+          envelope: event,
+          journalDb: journalDb,
+        );
+
+    Future<void> receiveLink(AgentLink link) => device.receiveEnvelope(
+      SyncMessage.agentLink(agentLink: link, status: SyncEntryStatus.update),
+      envelope: event,
+      journalDb: journalDb,
+    );
 
     setUp(() {
       armedAgentIds = [];
       processor.armProjectUpdate = (agentId) async =>
           armedAgentIds.add(agentId);
+      device = AgentTestDevice('local', background: false);
+      addTearDown(device.close);
       mockAgentRepo = MockAgentRepository();
       when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((_) async {});
       when(() => mockAgentRepo.upsertLink(any())).thenAnswer((_) async {});
@@ -79,93 +102,86 @@ void main() {
     });
 
     group('an agent this device deleted (ADR 0108)', () {
-      test('a link to or from it is refused', () async {
-        when(
-          () => mockAgentRepo.deletedAgentIdsAmong(any()),
-        ).thenAnswer((_) async => {'agent-gone'});
-        final link = AgentLink.agentTask(
-          id: 'link-gone',
-          fromId: 'agent-gone',
-          toId: 'task-1',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
+      setUp(() async {
+        device.attachProcessor(processor);
+        await device.repository.upsertEntity(
+          makeTestIdentity(id: 'agent-gone', agentId: 'agent-gone'),
         );
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentLink(
-              agentLink: link,
-              status: SyncEntryStatus.update,
-            ),
-          ),
+        await device.repository.hardDeleteAgent('agent-gone');
+      });
+
+      AgentLink taskLink({required String id, required String fromId}) =>
+          AgentLink.agentTask(
+            id: id,
+            fromId: fromId,
+            toId: 'task-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+
+      test('a link from it is refused', () async {
+        await receiveLink(taskLink(id: 'link-gone', fromId: 'agent-gone'));
+
+        expect(
+          await device.repository.getLinkByIdIncludingDeleted('link-gone'),
+          isNull,
         );
-
-        await processor.process(envelope: event, journalDb: journalDb);
-
-        verifyNever(() => mockAgentRepo.upsertLink(any()));
         verifyNever(
           () => updateNotifications.notify(any(), fromSync: true),
         );
-        final asked =
-            verify(
-                  () => mockAgentRepo.deletedAgentIdsAmong(captureAny()),
-                ).captured.single
-                as Iterable<String>;
-        expect(asked.toSet(), {'agent-gone', 'task-1'});
       });
 
-      test('an entity of it, sent inline, is refused', () async {
-        when(
-          () => mockAgentRepo.deletedAgentIdsAmong(any()),
-        ).thenAnswer((_) async => {'agent-gone'});
-        final entity = AgentDomainEntity.agentMessage(
-          id: 'msg-late',
-          agentId: 'agent-gone',
-          threadId: 'thread-1',
-          kind: AgentMessageKind.thought,
-          createdAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-          metadata: const AgentMessageMetadata(),
-          tokensApprox: 1,
-        );
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: entity,
-              status: SyncEntryStatus.update,
-            ),
+      test('a link to it is refused: both ends are checked', () async {
+        await receiveLink(
+          AgentLink.basic(
+            id: 'link-to-gone',
+            fromId: 'agent-1',
+            toId: 'agent-gone',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
           ),
         );
 
-        await processor.process(envelope: event, journalDb: journalDb);
+        expect(
+          await device.repository.getLinkByIdIncludingDeleted('link-to-gone'),
+          isNull,
+        );
+      });
 
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+      test('an entity of it, sent inline, is refused', () async {
+        await receiveEntity(
+          AgentDomainEntity.agentMessage(
+            id: 'msg-late',
+            agentId: 'agent-gone',
+            threadId: 'thread-1',
+            kind: AgentMessageKind.thought,
+            createdAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            metadata: const AgentMessageMetadata(),
+            tokensApprox: 1,
+          ),
+        );
+
+        expect(
+          await device.repository.getEntityIncludingDeleted('msg-late'),
+          isNull,
+        );
         verifyNever(
           () => updateNotifications.notify(any(), fromSync: true),
         );
       });
 
       test('a link between two agents it did not delete is applied', () async {
-        final link = AgentLink.basic(
-          id: 'link-live',
-          fromId: 'agent-1',
-          toId: 'state-1',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-        );
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentLink(
-              agentLink: link,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
+        final link = taskLink(id: 'link-live', fromId: 'agent-1');
 
-        await processor.process(envelope: event, journalDb: journalDb);
+        await receiveLink(link);
 
-        verify(() => mockAgentRepo.upsertLink(link)).called(1);
+        expect(
+          await device.repository.getLinkByIdIncludingDeleted('link-live'),
+          link,
+        );
       });
     });
 
@@ -198,53 +214,15 @@ void main() {
               )
               as ChangeSetEntity;
 
-      late ChangeSetEntity? stored;
+      Future<ChangeSetEntity?> stored() async =>
+          await device.repository.getEntity('cs-sync') as ChangeSetEntity?;
 
-      /// The repository as storage for one change set, with Drift-like
-      /// serialized transactions.
-      void storeChangeSet(ChangeSetEntity? initial, {Completer<void>? gate}) {
-        stored = initial;
-        var gated = gate != null;
-        var tail = Future<void>.value();
-        mockAgentRepo.transactionDelegate = <T>(action) {
-          if (Zone.current[#agentTx] == true) return action();
-          final run = tail.then(
-            (_) => runZoned(action, zoneValues: {#agentTx: true}),
-          );
-          tail = run.then<void>((_) {}, onError: (_) {});
-          return run;
-        };
-        when(() => mockAgentRepo.getEntity('cs-sync')).thenAnswer((_) async {
-          final snapshot = stored;
-          if (gated) {
-            gated = false;
-            await gate!.future;
-          }
-          return snapshot;
-        });
-        when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
-          invocation,
-        ) async {
-          final entity = invocation.positionalArguments.first;
-          if (entity is ChangeSetEntity) stored = entity;
-        });
-      }
-
-      void receive(ChangeSetEntity incoming) {
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-      }
+      setUp(() => device.attachProcessor(processor));
 
       test(
         'concurrent versions merge item by item: both decisions survive',
         () async {
-          storeChangeSet(
+          await device.repository.upsertEntity(
             changeSet(
               [
                 estimate.withStatus(ChangeItemStatus.confirmed),
@@ -253,7 +231,8 @@ void main() {
               {'local': 2},
             ),
           );
-          receive(
+
+          await receiveEntity(
             changeSet(
               [
                 estimate,
@@ -263,15 +242,14 @@ void main() {
             ),
           );
 
-          await processor.process(envelope: event, journalDb: journalDb);
-
-          expect(stored!.items.map((i) => i.status), [
+          final merged = (await stored())!;
+          expect(merged.items.map((i) => i.status), [
             ChangeItemStatus.confirmed,
             ChangeItemStatus.rejected,
           ]);
-          expect(stored!.status, ChangeSetStatus.resolved);
+          expect(merged.status, ChangeSetStatus.resolved);
           expect(
-            stored!.vectorClock,
+            merged.vectorClock,
             const VectorClock({'local': 2, 'peer': 1}),
           );
           verify(
@@ -290,13 +268,11 @@ void main() {
           ],
           {'local': 2},
         );
-        storeChangeSet(local);
-        receive(changeSet([estimate], {'local': 1}));
+        await device.repository.upsertEntity(local);
 
-        await processor.process(envelope: event, journalDb: journalDb);
+        await receiveEntity(changeSet([estimate], {'local': 1}));
 
-        expect(stored, same(local));
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        expect(await stored(), local);
         verify(
           () => loggingService.log(
             LogDomain.sync,
@@ -307,30 +283,29 @@ void main() {
       });
 
       test('a set not stored yet is written as received', () async {
-        storeChangeSet(null);
         final incoming = changeSet([estimate], {'peer': 1});
-        receive(incoming);
 
-        await processor.process(envelope: event, journalDb: journalDb);
+        await receiveEntity(incoming);
 
-        expect(stored, incoming);
+        expect(await stored(), incoming);
       });
 
       test(
         'a malformed local clock is logged and the peer version applied',
         () async {
-          storeChangeSet(changeSet([estimate], {'local': -1}));
+          await device.repository.upsertEntity(
+            changeSet([estimate], {'local': -1}),
+          );
           final incoming = changeSet(
             [
               estimate.withStatus(ChangeItemStatus.confirmed),
             ],
             {'peer': 1},
           );
-          receive(incoming);
 
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveEntity(incoming);
 
-          expect(stored, incoming);
+          expect(await stored(), incoming);
           verify(
             () => loggingService.error(
               LogDomain.sync,
@@ -349,12 +324,12 @@ void main() {
           // estimate, and the receive then wrote the peer's version over it:
           // the claim, and the only record that the change was applied, was
           // gone.
-          final gate = Completer<void>();
-          storeChangeSet(
+          await device.repository.upsertEntity(
             changeSet([estimate, title], {'local': 1}),
-            gate: gate,
           );
-          receive(
+          final read = device.holdNextStoredReadOf('cs-sync');
+
+          final received = receiveEntity(
             changeSet(
               [
                 estimate,
@@ -363,16 +338,10 @@ void main() {
               {'local': 1, 'peer': 1},
             ),
           );
-
-          final received = processor.process(
-            envelope: event,
-            journalDb: journalDb,
-          );
           await pumpEventQueue();
-          final claim = mockAgentRepo.runInTransaction(() async {
-            final current =
-                (await mockAgentRepo.getEntity('cs-sync'))! as ChangeSetEntity;
-            await mockAgentRepo.upsertEntity(
+          final claim = device.repository.runInTransaction(() async {
+            final current = (await stored())!;
+            await device.repository.upsertEntity(
               current.copyWith(
                 items: [
                   current.items[0].withStatus(ChangeItemStatus.confirmed),
@@ -386,10 +355,10 @@ void main() {
             );
           });
           await pumpEventQueue();
-          gate.complete();
+          read.complete();
           await Future.wait([received, claim]);
 
-          expect(stored!.items.map((i) => i.status), [
+          expect((await stored())!.items.map((i) => i.status), [
             ChangeItemStatus.confirmed,
             ChangeItemStatus.rejected,
           ]);
@@ -398,8 +367,6 @@ void main() {
     });
 
     group('removals and the one-transaction receive (ADR 0081 addendum)', () {
-      late Map<String, AgentDomainEntity> rows;
-
       AgentDomainEntity reportHead(
         Map<String, int> clock, {
         required DateTime at,
@@ -415,56 +382,11 @@ void main() {
         deletedAt: deletedAt,
       );
 
-      /// The repository as storage with Drift-like serialized transactions.
-      /// `getEntity` hides a tombstone, as the real query does; the read
-      /// with the tombstone can be held at [gate].
-      void store(AgentDomainEntity initial, {Completer<void>? gate}) {
-        rows = {initial.id: initial};
-        var gated = gate != null;
-        var tail = Future<void>.value();
-        mockAgentRepo.transactionDelegate = <T>(action) {
-          if (Zone.current[#agentTx] == true) return action();
-          final run = tail.then(
-            (_) => runZoned(action, zoneValues: {#agentTx: true}),
-          );
-          tail = run.then<void>((_) {}, onError: (_) {});
-          return run;
-        };
-        when(() => mockAgentRepo.getEntity(any())).thenAnswer((
-          invocation,
-        ) async {
-          final row = rows[invocation.positionalArguments.single as String];
-          return row?.deletedAt == null ? row : null;
-        });
-        when(() => mockAgentRepo.getEntityIncludingDeleted(any())).thenAnswer((
-          invocation,
-        ) async {
-          final snapshot = rows[invocation.positionalArguments.single];
-          if (gated) {
-            gated = false;
-            await gate!.future;
-          }
-          return snapshot;
-        });
-        when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
-          invocation,
-        ) async {
-          final entity =
-              invocation.positionalArguments.single as AgentDomainEntity;
-          rows[entity.id] = entity;
-        });
-      }
+      /// The stored version, a tombstone included.
+      Future<AgentDomainEntity?> stored() =>
+          device.repository.getEntityIncludingDeleted('head-removed');
 
-      void receive(AgentDomainEntity incoming) {
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-      }
+      setUp(() => device.attachProcessor(processor));
 
       test(
         'a late copy of the live version does not bring a removed entity '
@@ -478,13 +400,14 @@ void main() {
             at: DateTime(2026, 9, 25, 9),
             deletedAt: DateTime(2026, 9, 25, 10),
           );
-          store(removal);
-          receive(reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)));
+          await device.repository.upsertEntity(removal);
 
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveEntity(
+            reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)),
+          );
 
-          expect(rows['head-removed'], same(removal));
-          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          expect(await stored(), removal);
+          expect(await device.repository.getEntity('head-removed'), isNull);
           verify(
             () => loggingService.log(
               LogDomain.sync,
@@ -496,17 +419,18 @@ void main() {
       );
 
       test('a removal replaces the live version it succeeds', () async {
-        store(reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)));
+        await device.repository.upsertEntity(
+          reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)),
+        );
         final removal = reportHead(
           {'host-A': 1, 'host-B': 1},
           at: DateTime(2026, 9, 25, 9),
           deletedAt: DateTime(2026, 9, 25, 10),
         );
-        receive(removal);
 
-        await processor.process(envelope: event, journalDb: journalDb);
+        await receiveEntity(removal);
 
-        expect(rows['head-removed'], removal);
+        expect(await stored(), removal);
       });
 
       test(
@@ -517,22 +441,17 @@ void main() {
           // and written in one transaction. For every other type a local
           // write could commit between the read and the write, and the
           // receive then wrote the peer's version over it.
-          final gate = Completer<void>();
-          store(
+          await device.repository.upsertEntity(
             reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)),
-            gate: gate,
           );
-          receive(
+          final read = device.holdNextStoredReadOf('head-removed');
+
+          final received = receiveEntity(
             reportHead(
               {'host-B': 1},
               at: DateTime(2026, 9, 25, 10),
               reportId: 'report-peer',
             ),
-          );
-
-          final received = processor.process(
-            envelope: event,
-            journalDb: journalDb,
           );
           await pumpEventQueue();
           final local = reportHead(
@@ -540,14 +459,14 @@ void main() {
             at: DateTime(2026, 9, 25, 11),
             reportId: 'report-local',
           );
-          final write = mockAgentRepo.runInTransaction(
-            () => mockAgentRepo.upsertEntity(local),
+          final write = device.repository.runInTransaction(
+            () => device.repository.upsertEntity(local),
           );
           await pumpEventQueue();
-          gate.complete();
+          read.complete();
           await Future.wait([received, write]);
 
-          expect(rows['head-removed'], local);
+          expect(await stored(), local);
         },
       );
     });
@@ -555,9 +474,6 @@ void main() {
     group('agent-state head (AgentMessageLog.tla, ADR 0076)', () {
       // `b1` came from the device whose clock runs ahead; this device
       // received it, chained `a1` off it and moved its head to `a1`.
-      late Map<String, AgentDomainEntity> entities;
-      late List<AgentLink> links;
-
       AgentStateEntity state({
         required String? head,
         required Map<String, int> clock,
@@ -578,94 +494,31 @@ void main() {
         vectorClock: null,
       );
 
-      AgentStateEntity stored() => entities['state-head']! as AgentStateEntity;
+      Future<AgentStateEntity> stored() async =>
+          (await device.repository.getEntity('state-head'))!
+              as AgentStateEntity;
 
-      /// The repository as storage for one agent's log and state row, with
-      /// Drift-like serialized transactions; [gate] holds the first read of
-      /// the state row until it completes.
-      void storeLog(AgentStateEntity local, {Completer<void>? gate}) {
-        entities = {
-          for (final message in [
-            makeTestMessage(
-              id: 'b1',
-              agentId: 'agent-1',
-              createdAt: DateTime(2026, 9, 1, 12),
-            ),
-            makeTestMessage(
-              id: 'a1',
-              agentId: 'agent-1',
-              createdAt: DateTime(2026, 9, 1, 9),
-              prevMessageId: 'b1',
-            ),
-          ])
-            message.id: message,
-          local.id: local,
-        };
-        links = [edge('a1', 'b1')];
-        var gated = gate != null;
-        var tail = Future<void>.value();
-        mockAgentRepo.transactionDelegate = <T>(action) {
-          if (Zone.current[#agentTx] == true) return action();
-          final run = tail.then(
-            (_) => runZoned(action, zoneValues: {#agentTx: true}),
-          );
-          tail = run.then<void>((_) {}, onError: (_) {});
-          return run;
-        };
-        when(() => mockAgentRepo.getEntity(any())).thenAnswer((
-          invocation,
-        ) async {
-          final id = invocation.positionalArguments.first as String;
-          final snapshot = entities[id];
-          if (gated && id == local.id) {
-            gated = false;
-            await gate!.future;
-          }
-          return snapshot;
-        });
-        when(() => mockAgentRepo.getEntitiesByIds(any())).thenAnswer((
-          invocation,
-        ) async {
-          final ids = invocation.positionalArguments.first as Iterable<String>;
-          return {
-            for (final id in ids)
-              if (entities[id] != null) id: entities[id]!,
-          };
-        });
-        when(
-          () => mockAgentRepo.getLinksToMultiple(
-            any(),
-            type: any(named: 'type'),
-          ),
-        ).thenAnswer((invocation) async {
-          final toIds = (invocation.positionalArguments.first as List<String>)
-              .toSet();
-          final result = <String, List<AgentLink>>{};
-          for (final link in links) {
-            if (toIds.contains(link.toId)) {
-              (result[link.toId] ??= []).add(link);
-            }
-          }
-          return result;
-        });
-        when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
-          invocation,
-        ) async {
-          final entity =
-              invocation.positionalArguments.first as AgentDomainEntity;
-          entities[entity.id] = entity;
-        });
-      }
-
-      void receive(AgentStateEntity incoming) {
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
+      /// Stores the agent's log — `a1` chained off `b1` — and [local], its
+      /// state row.
+      Future<void> storeLog(AgentStateEntity local) async {
+        device.attachProcessor(processor);
+        await device.repository.upsertEntity(
+          makeTestMessage(
+            id: 'b1',
+            agentId: 'agent-1',
+            createdAt: DateTime(2026, 9, 1, 12),
           ),
         );
+        await device.repository.upsertEntity(
+          makeTestMessage(
+            id: 'a1',
+            agentId: 'agent-1',
+            createdAt: DateTime(2026, 9, 1, 9),
+            prevMessageId: 'b1',
+          ),
+        );
+        await device.repository.upsertLink(edge('a1', 'b1'));
+        await device.repository.upsertEntity(local);
       }
 
       test(
@@ -674,7 +527,7 @@ void main() {
         () async {
           // The trace: the fast device's state row still points at `b1` and
           // wins last-writer-wins on its skewed `updatedAt`.
-          storeLog(
+          await storeLog(
             state(head: 'a1', clock: {'local': 1}, at: DateTime(2026, 9, 1, 9)),
           );
           final incoming = state(
@@ -682,14 +535,14 @@ void main() {
             clock: {'peer': 1},
             at: DateTime(2026, 9, 1, 12),
           );
-          receive(incoming);
 
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveEntity(incoming);
 
-          expect(stored().recentHeadMessageId, 'a1');
+          final row = await stored();
+          expect(row.recentHeadMessageId, 'a1');
           // Every other field is still the last writer's.
-          expect(stored().updatedAt, incoming.updatedAt);
-          expect(stored().vectorClock, incoming.vectorClock);
+          expect(row.updatedAt, incoming.updatedAt);
+          expect(row.vectorClock, incoming.vectorClock);
         },
       );
 
@@ -697,21 +550,21 @@ void main() {
         'a concurrent version whose head descends from the local one moves it '
         'forward',
         () async {
-          storeLog(
+          await storeLog(
             state(
               head: 'b1',
               clock: {'local': 1},
               at: DateTime(2026, 9, 1, 12),
             ),
           );
-          receive(
+
+          await receiveEntity(
             state(head: 'a1', clock: {'peer': 1}, at: DateTime(2026, 9, 1, 9)),
           );
 
-          await processor.process(envelope: event, journalDb: journalDb);
-
-          expect(stored().recentHeadMessageId, 'a1');
-          expect(stored().vectorClock, const VectorClock({'local': 1}));
+          final row = await stored();
+          expect(row.recentHeadMessageId, 'a1');
+          expect(row.vectorClock, const VectorClock({'local': 1}));
         },
       );
 
@@ -719,7 +572,7 @@ void main() {
         'an unclocked version from an older build does not move the head '
         'back',
         () async {
-          storeLog(
+          await storeLog(
             state(head: 'a1', clock: {'local': 1}, at: DateTime(2026, 9, 1, 9)),
           );
           final legacy = state(
@@ -727,14 +580,14 @@ void main() {
             clock: const {},
             at: DateTime(2026, 9, 1, 12),
           ).copyWith(vectorClock: null);
-          receive(legacy);
 
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveEntity(legacy);
 
-          expect(stored().recentHeadMessageId, 'a1');
+          final row = await stored();
+          expect(row.recentHeadMessageId, 'a1');
           // The unclocked version still applies otherwise.
-          expect(stored().vectorClock, isNull);
-          expect(stored().updatedAt, legacy.updatedAt);
+          expect(row.vectorClock, isNull);
+          expect(row.updatedAt, legacy.updatedAt);
         },
       );
 
@@ -743,7 +596,7 @@ void main() {
         () async {
           // A concurrent merge kept the winner's clock and took `a1` from the
           // other side; the winner's successor still names `b1`.
-          storeLog(
+          await storeLog(
             state(head: 'a1', clock: {'peer': 1}, at: DateTime(2026, 9, 1, 12)),
           );
           final incoming = state(
@@ -751,12 +604,12 @@ void main() {
             clock: {'peer': 2},
             at: DateTime(2026, 9, 1, 13),
           );
-          receive(incoming);
 
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveEntity(incoming);
 
-          expect(stored().recentHeadMessageId, 'a1');
-          expect(stored().vectorClock, incoming.vectorClock);
+          final row = await stored();
+          expect(row.recentHeadMessageId, 'a1');
+          expect(row.vectorClock, incoming.vectorClock);
         },
       );
 
@@ -767,32 +620,29 @@ void main() {
           // The receive read the row (head `a1`), the executor appended `a2`
           // and moved the head, and the receive then wrote the row it had
           // resolved from its stale read: the head went back to `a1`.
-          final gate = Completer<void>();
-          storeLog(
+          await storeLog(
             state(head: 'a1', clock: {'local': 1}, at: DateTime(2026, 9, 1, 9)),
-            gate: gate,
           );
-          receive(
+          final read = device.holdNextStoredReadOf('state-head');
+
+          final received = receiveEntity(
             state(head: 'b1', clock: {'peer': 1}, at: DateTime(2026, 9, 1, 12)),
           );
-
-          final received = processor.process(
-            envelope: event,
-            journalDb: journalDb,
-          );
           await pumpEventQueue();
-          final append = mockAgentRepo.runInTransaction(() async {
-            final current =
-                (await mockAgentRepo.getEntity('state-head'))!
-                    as AgentStateEntity;
-            entities['a2'] = makeTestMessage(
-              id: 'a2',
-              agentId: 'agent-1',
-              createdAt: DateTime(2026, 9, 1, 10),
-              prevMessageId: current.recentHeadMessageId,
+          final append = device.repository.runInTransaction(() async {
+            final current = await stored();
+            await device.repository.upsertEntity(
+              makeTestMessage(
+                id: 'a2',
+                agentId: 'agent-1',
+                createdAt: DateTime(2026, 9, 1, 10),
+                prevMessageId: current.recentHeadMessageId,
+              ),
             );
-            links.add(edge('a2', current.recentHeadMessageId!));
-            await mockAgentRepo.upsertEntity(
+            await device.repository.upsertLink(
+              edge('a2', current.recentHeadMessageId!),
+            );
+            await device.repository.upsertEntity(
               current.copyWith(
                 recentHeadMessageId: 'a2',
                 vectorClock: VectorClock({
@@ -803,30 +653,16 @@ void main() {
             );
           });
           await pumpEventQueue();
-          gate.complete();
+          read.complete();
           await Future.wait([received, append]);
 
-          expect(stored().recentHeadMessageId, 'a2');
+          expect((await stored()).recentHeadMessageId, 'a2');
         },
       );
     });
 
     group('links and evolution sessions (AgentLinks.tla, '
         'EvolutionSession.tla, ADR 0081)', () {
-      /// Drift-like serialized transactions: a transaction started while
-      /// another runs waits for it.
-      void serializeTransactions() {
-        var tail = Future<void>.value();
-        mockAgentRepo.transactionDelegate = <T>(action) {
-          if (Zone.current[#agentTx] == true) return action();
-          final run = tail.then(
-            (_) => runZoned(action, zoneValues: {#agentTx: true}),
-          );
-          tail = run.then<void>((_) {}, onError: (_) {});
-          return run;
-        };
-      }
-
       AgentLink link({required Map<String, int> clock, bool removed = false}) =>
           AgentLink.parsedItemToTask(
             id: 'l',
@@ -847,8 +683,11 @@ void main() {
         vectorClock: VectorClock(clock),
       );
 
-      void receive(SyncMessage message) =>
-          when(() => event.text).thenReturn(encodeMessage(message));
+      /// The stored link, a tombstone included.
+      Future<AgentLink?> storedLink() =>
+          device.repository.getLinkByIdIncludingDeleted('l');
+
+      setUp(() => device.attachProcessor(processor));
 
       test(
         'a late copy of a removed link does not bring it back '
@@ -856,22 +695,12 @@ void main() {
         () async {
           // The trace: the removal arrives first, then the link it removed.
           // The tombstone read as no row, so the late copy replaced it.
-          when(
-            () => mockAgentRepo.getLinkById('l'),
-          ).thenAnswer((_) async => null);
-          when(() => mockAgentRepo.getLinkByIdIncludingDeleted('l')).thenAnswer(
-            (_) async => link(clock: {'peer': 2}, removed: true),
-          );
-          receive(
-            SyncMessage.agentLink(
-              agentLink: link(clock: {'peer': 1}),
-              status: SyncEntryStatus.update,
-            ),
-          );
+          final removal = link(clock: {'peer': 2}, removed: true);
+          await device.repository.upsertLink(removal);
 
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveLink(link(clock: {'peer': 1}));
 
-          verifyNever(() => mockAgentRepo.upsertLink(any()));
+          expect(await storedLink(), removal);
         },
       );
 
@@ -879,53 +708,28 @@ void main() {
         'a local link write that commits during the receive is not '
         'overwritten (TLC: AtomicReceive)',
         () async {
-          var stored = link(clock: {'local': 1});
-          final gate = Completer<void>();
-          var gated = true;
-          serializeTransactions();
-          when(() => mockAgentRepo.getLinkByIdIncludingDeleted('l')).thenAnswer(
-            (_) async {
-              final snapshot = stored;
-              if (gated) {
-                gated = false;
-                await gate.future;
-              }
-              return snapshot;
-            },
-          );
-          when(() => mockAgentRepo.upsertLink(any())).thenAnswer((
-            invocation,
-          ) async {
-            stored = invocation.positionalArguments.single as AgentLink;
-          });
-          // A peer's removal of the row this device holds.
-          receive(
-            SyncMessage.agentLink(
-              agentLink: link(clock: {'local': 1, 'peer': 1}, removed: true),
-              status: SyncEntryStatus.update,
-            ),
-          );
+          await device.repository.upsertLink(link(clock: {'local': 1}));
+          final read = device.holdNextStoredReadOf('l');
 
-          final received = processor.process(
-            envelope: event,
-            journalDb: journalDb,
+          // A peer's removal of the row this device holds.
+          final received = receiveLink(
+            link(clock: {'local': 1, 'peer': 1}, removed: true),
           );
           await pumpEventQueue();
           // Meanwhile this device links the item again, over what it holds.
-          final relink = mockAgentRepo.runInTransaction(() async {
-            final current = (await mockAgentRepo.getLinkByIdIncludingDeleted(
-              'l',
-            ))!;
-            await mockAgentRepo.upsertLink(
+          final relink = device.repository.runInTransaction(() async {
+            final current = (await storedLink())!;
+            await device.repository.upsertLink(
               link(clock: {...current.vectorClock!.vclock, 'local': 2}),
             );
           });
           await pumpEventQueue();
-          gate.complete();
+          read.complete();
           await Future.wait([received, relink]);
 
-          expect(stored.deletedAt, isNull);
-          expect(stored.vectorClock!.vclock['local'], 2);
+          final row = (await storedLink())!;
+          expect(row.deletedAt, isNull);
+          expect(row.vectorClock!.vclock['local'], 2);
         },
       );
 
@@ -936,43 +740,21 @@ void main() {
           // The trace: this device reads its active row to apply a peer's
           // sweep, the approval completes the session, and the receive then
           // writes the sweep over the completion.
-          AgentDomainEntity stored = session(EvolutionSessionStatus.active, {
-            'local': 1,
-          });
-          final gate = Completer<void>();
-          var gated = true;
-          serializeTransactions();
-          when(() => mockAgentRepo.getEntity('s')).thenAnswer((_) async {
-            final snapshot = stored;
-            if (gated) {
-              gated = false;
-              await gate.future;
-            }
-            return snapshot;
-          });
-          when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
-            invocation,
-          ) async {
-            stored = invocation.positionalArguments.single as AgentDomainEntity;
-          });
-          receive(
-            SyncMessage.agentEntity(
-              agentEntity: session(EvolutionSessionStatus.abandoned, {
-                'local': 1,
-                'peer': 1,
-              }),
-              status: SyncEntryStatus.update,
-            ),
+          await device.repository.upsertEntity(
+            session(EvolutionSessionStatus.active, {'local': 1}),
           );
+          final read = device.holdNextStoredReadOf('s');
 
-          final received = processor.process(
-            envelope: event,
-            journalDb: journalDb,
+          final received = receiveEntity(
+            session(EvolutionSessionStatus.abandoned, {
+              'local': 1,
+              'peer': 1,
+            }),
           );
           await pumpEventQueue();
-          final approval = mockAgentRepo.runInTransaction(() async {
-            final current = (await mockAgentRepo.getEntity('s'))!;
-            await mockAgentRepo.upsertEntity(
+          final approval = device.repository.runInTransaction(() async {
+            final current = (await device.repository.getEntity('s'))!;
+            await device.repository.upsertEntity(
               session(EvolutionSessionStatus.completed, {
                 ...current.vectorClock!.vclock,
                 'local': 2,
@@ -980,11 +762,13 @@ void main() {
             );
           });
           await pumpEventQueue();
-          gate.complete();
+          read.complete();
           await Future.wait([received, approval]);
 
           expect(
-            (stored as EvolutionSessionEntity).status,
+            ((await device.repository.getEntity('s'))!
+                    as EvolutionSessionEntity)
+                .status,
             EvolutionSessionStatus.completed,
           );
         },
