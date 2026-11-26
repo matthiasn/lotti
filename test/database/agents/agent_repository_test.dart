@@ -1990,6 +1990,40 @@ void main() {
         expect(result, isEmpty);
       });
     });
+    group('getLatestTaskReportForTaskId', () {
+      test(
+        "resolves each task to its agent's current report, null when unassigned",
+        () async {
+          final timestamp = DateTime(2026, 2, 20, 8);
+          await seedTaskAgentLink(
+            repo,
+            linkId: 'single-link',
+            agentId: 'single-agent',
+            taskId: 'task-single',
+            createdAt: timestamp,
+          );
+          await setupReportWithHead(
+            repo,
+            reportId: 'single-report',
+            headId: 'single-head',
+            agentId: 'single-agent',
+            createdAt: timestamp,
+            oneLiner: 'Waiting on the relay',
+            tldr: 'Single TLDR',
+            content: 'Single report',
+          );
+
+          final results = await Future.wait([
+            repo.getLatestTaskReportForTaskId('task-single'),
+            repo.getLatestTaskReportForTaskId('task-unassigned'),
+          ]);
+
+          expect(results.first?.id, 'single-report');
+          expect(results.first?.oneLiner, 'Waiting on the relay');
+          expect(results.last, isNull);
+        },
+      );
+    });
 
     group('getUsableTaskReportsForTaskIds', () {
       test(
