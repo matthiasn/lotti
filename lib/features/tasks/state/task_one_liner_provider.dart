@@ -43,8 +43,10 @@ final FutureProviderFamily<String?, String> taskOneLinerProvider =
 Future<String?> taskOneLiner(Ref ref, String taskId) async {
   ref.watch(agentUpdateStreamProvider(taskId));
   final repository = ref.watch(agentRepositoryProvider);
-  final reports = await repository.getLatestTaskReportsForTaskIds([taskId]);
-  final oneLiner = reports[taskId]?.oneLiner?.trim();
+  // Coalesced in the repository: every visible row asks in the same turn, and
+  // they share one batched read instead of two queries each.
+  final report = await repository.getLatestTaskReportForTaskId(taskId);
+  final oneLiner = report?.oneLiner?.trim();
   if (oneLiner != null && oneLiner.isNotEmpty) {
     return oneLiner;
   }

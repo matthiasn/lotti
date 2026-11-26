@@ -3,6 +3,7 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/agent_link.dart';
+import 'package:lotti/database/agents/agent_by_id_coalescer.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_db_conversions.dart';
 import 'package:lotti/database/agents/agent_repo_core.dart';
@@ -23,6 +24,15 @@ class AgentRepoQueries {
   final AgentDatabase _db;
   final AgentRepoCore _core;
   final AgentRepoLinks _links;
+
+  /// Folds concurrent [getLatestTaskReportForTaskId] calls into one
+  /// [getLatestTaskReportsForTaskIds] read per event-loop turn (and zone).
+  late final AgentByIdCoalescer<AgentReportEntity> _taskReportCoalescer =
+      AgentByIdCoalescer(
+        (taskIds) => getLatestTaskReportsForTaskIds(
+          taskIds.toList(growable: false),
+        ),
+      );
 
   /// Day-status events raised after [since], oldest first, across ALL
   /// day-owner agents (ADR 0032 phase 3): the coordinator's digest wake
@@ -264,6 +274,18 @@ class AgentRepoQueries {
 
     return result;
   }
+
+  /// The latest current-scope report for the single task [taskId], or `null`
+  /// when the task has no assigned agent or no current report.
+  ///
+  /// For per-row readers — a task list renders one provider per row, each
+  /// asking for its own task. Calls issued in the same event-loop turn are
+  /// coalesced by [AgentByIdCoalescer] into one
+  /// [getLatestTaskReportsForTaskIds] call, so a screenful of rows costs two
+  /// batched queries instead of two per row. Callers that already hold the
+  /// whole id list should call [getLatestTaskReportsForTaskIds] directly.
+  Future<AgentReportEntity?> getLatestTaskReportForTaskId(String taskId) =>
+      _taskReportCoalescer.load(taskId);
 
   /// The report each task in [taskIds] is summarised by, for a reader that
   /// wants the newest *usable* one: the task's `agent_task` links newest

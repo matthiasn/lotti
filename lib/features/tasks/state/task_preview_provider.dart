@@ -55,10 +55,9 @@ Future<TaskPreview?> taskPreview(Ref ref, String taskId) async {
   ref.watch(agentUpdateStreamProvider(taskId));
   final task = await ref.watch(journalDbProvider).journalEntityById(taskId);
   if (task is! Task || task.meta.deletedAt != null) return null;
-  final reports = await ref
+  final report = await ref
       .watch(agentRepositoryProvider)
-      .getLatestTaskReportsForTaskIds([taskId]);
-  final report = reports[taskId];
+      .getLatestTaskReportForTaskId(taskId);
   return TaskPreview(
     task: task,
     oneLiner: _nonEmpty(report?.oneLiner),

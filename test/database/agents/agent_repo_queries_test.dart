@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_link.dart' as model;
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_repo_core.dart';
 import 'package:lotti/database/agents/agent_repo_links.dart';
@@ -301,6 +302,60 @@ void main() {
     });
   });
 
+  group('getLatestTaskReportForTaskId', () {
+    late _RecordingLinks recordingLinks;
+
+    setUp(() async {
+      recordingLinks = _RecordingLinks(db);
+      queries = AgentRepoQueries(db, core, recordingLinks);
+      for (final n in [1, 2, 3]) {
+        await seedReportWithHead(agentId: 'agent-$n', reportId: 'rpt-$n');
+        await links.upsertLink(
+          makeTestAgentTaskLink(
+            id: 'link-$n',
+            fromId: 'agent-$n',
+            toId: 'task-$n',
+            createdAt: testDate,
+            updatedAt: testDate,
+          ),
+        );
+      }
+    });
+
+    test('folds the rows of one turn into a single batched lookup', () async {
+      // A task list mounts one provider per row, all in the same turn. Before
+      // coalescing each paid its own links read (and report read) — the
+      // 2026-11-26 logs show 16 such reads queued behind one another.
+      final reports = await Future.wait([
+        queries.getLatestTaskReportForTaskId('task-1'),
+        queries.getLatestTaskReportForTaskId('task-2'),
+        queries.getLatestTaskReportForTaskId('task-3'),
+        queries.getLatestTaskReportForTaskId('task-unassigned'),
+      ]);
+
+      expect(reports.map((r) => r?.id), ['rpt-1', 'rpt-2', 'rpt-3', null]);
+      expect(recordingLinks.toIdBatches, [
+        ['task-1', 'task-2', 'task-3', 'task-unassigned'],
+      ]);
+    });
+
+    test('calls in separate turns are not merged', () async {
+      expect(
+        (await queries.getLatestTaskReportForTaskId('task-1'))?.id,
+        'rpt-1',
+      );
+      expect(
+        (await queries.getLatestTaskReportForTaskId('task-2'))?.id,
+        'rpt-2',
+      );
+
+      expect(recordingLinks.toIdBatches, [
+        ['task-1'],
+        ['task-2'],
+      ]);
+    });
+  });
+
   group('getUsableTaskReportsForTaskIds', () {
     Future<void> link(String agentId, String taskId, DateTime createdAt) =>
         links.upsertLink(
@@ -444,4 +499,21 @@ void main() {
       );
     });
   });
+}
+
+/// Records the `to_id` list of every [getLinksToMultiple] call, so a test can
+/// count the round trips a pattern of single-task reads turned into.
+class _RecordingLinks extends AgentRepoLinks {
+  _RecordingLinks(AgentDatabase db) : super(db, null);
+
+  final List<List<String>> toIdBatches = [];
+
+  @override
+  Future<Map<String, List<model.AgentLink>>> getLinksToMultiple(
+    List<String> toIds, {
+    required String type,
+  }) {
+    toIdBatches.add(List.of(toIds));
+    return super.getLinksToMultiple(toIds, type: type);
+  }
 }

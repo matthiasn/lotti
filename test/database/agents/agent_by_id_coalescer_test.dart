@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
-import 'package:lotti/database/agents/agent_entity_by_id_coalescer.dart';
+import 'package:lotti/database/agents/agent_by_id_coalescer.dart';
 
 import '../../features/agents/test_data/entity_factories.dart';
 
-/// Tests for [AgentEntityByIdCoalescer].
+/// Tests for [AgentByIdCoalescer].
 ///
 /// The coalescer's whole purpose is to change *how many* batched reads happen
 /// for a given pattern of `load` calls, so every test here asserts on the
@@ -19,11 +19,11 @@ void main() {
   late List<List<String>> batches;
   late Map<String, AgentDomainEntity> table;
 
-  AgentEntityByIdCoalescer build({
+  AgentByIdCoalescer<AgentDomainEntity> build({
     Future<void> Function()? gate,
     Object? throwError,
   }) {
-    return AgentEntityByIdCoalescer((ids) async {
+    return AgentByIdCoalescer<AgentDomainEntity>((ids) async {
       batches.add(ids.toList());
       if (gate != null) await gate();
       if (throwError != null) {
@@ -132,7 +132,7 @@ void main() {
     // Signalled by the loader itself the moment the first batch is dispatched,
     // so the test waits on an actual event rather than on event-loop timing.
     final dispatched = Completer<void>();
-    final coalescer = AgentEntityByIdCoalescer((ids) async {
+    final coalescer = AgentByIdCoalescer<AgentDomainEntity>((ids) async {
       batches.add(ids.toList());
       if (!dispatched.isCompleted) dispatched.complete();
       await gate.future;
@@ -198,7 +198,7 @@ void main() {
     // only its own getEntity call. The batched read maps the whole result set
     // at once, so without isolation one bad row would fail every waiter that
     // happened to share its microtask.
-    final coalescer = AgentEntityByIdCoalescer((ids) async {
+    final coalescer = AgentByIdCoalescer<AgentDomainEntity>((ids) async {
       batches.add(ids.toList());
       if (ids.contains('poison') && ids.length > 1) {
         throw const FormatException('undecodable row in batch');
@@ -247,7 +247,7 @@ void main() {
 
   test('a transient batch failure is rescued by the per-id retry', () async {
     var shouldFail = true;
-    final coalescer = AgentEntityByIdCoalescer((ids) async {
+    final coalescer = AgentByIdCoalescer<AgentDomainEntity>((ids) async {
       batches.add(ids.toList());
       if (shouldFail) {
         shouldFail = false;
@@ -295,7 +295,7 @@ void main() {
 
     test('the flush runs in the zone that requested it', () async {
       final flushZones = <Object?>[];
-      final coalescer = AgentEntityByIdCoalescer((ids) async {
+      final coalescer = AgentByIdCoalescer<AgentDomainEntity>((ids) async {
         flushZones.add(Zone.current[#testZoneMarker]);
         return const <String, AgentDomainEntity>{};
       });

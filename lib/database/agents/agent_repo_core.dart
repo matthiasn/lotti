@@ -4,9 +4,9 @@ import 'package:drift/drift.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/database/agents/agent_attention_projection.dart';
+import 'package:lotti/database/agents/agent_by_id_coalescer.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_db_conversions.dart';
-import 'package:lotti/database/agents/agent_entity_by_id_coalescer.dart';
 import 'package:lotti/database/agents/agent_repo_internals.dart';
 import 'package:lotti/database/agents/agent_repo_queries.dart'
     show AgentRepoQueries;
@@ -27,10 +27,11 @@ class AgentRepoCore {
 
   /// Folds concurrent [getEntity] calls into batched `id IN (…)` reads. Keyed
   /// by zone internally so batching never crosses a drift transaction
-  /// boundary — see [AgentEntityByIdCoalescer].
-  late final AgentEntityByIdCoalescer _byIdCoalescer = AgentEntityByIdCoalescer(
-    getEntitiesByIds,
-  );
+  /// boundary — see [AgentByIdCoalescer].
+  late final AgentByIdCoalescer<AgentDomainEntity> _byIdCoalescer =
+      AgentByIdCoalescer(
+        getEntitiesByIds,
+      );
 
   /// Cached result of `AgentRepoEvolution.getAllAgentIdentities`.
   ///
@@ -230,7 +231,7 @@ class AgentRepoCore {
   /// Fetch a single entity by its [id], or `null` if not found.
   ///
   /// Calls issued within the same event-loop turn are **coalesced** into one
-  /// `WHERE id IN (…)` round trip by [AgentEntityByIdCoalescer] rather than one round
+  /// `WHERE id IN (…)` round trip by [AgentByIdCoalescer] rather than one round
   /// trip each. Callers see no behavioural difference — the returned future
   /// still completes with that id's entity or `null`.
   ///
