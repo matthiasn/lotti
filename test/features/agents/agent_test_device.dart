@@ -141,6 +141,49 @@ class AgentTestDevice {
     );
   }
 
+  /// Every stored entity and link row, tombstones included, as column maps
+  /// in id order. Two snapshots are equal when nothing was written between
+  /// them.
+  Future<List<Map<String, Object?>>> storedRows() async => [
+    for (final table in const ['agent_entities', 'agent_links'])
+      for (final row
+          in await db.customSelect('SELECT * FROM $table ORDER BY id').get())
+        {'table': table, ...row.data},
+  ];
+
+  /// The entities stored now whose row differs from [before], a
+  /// [storedRows] snapshot: what was written since, in id order.
+  Future<List<AgentDomainEntity>> entitiesWrittenSince(
+    List<Map<String, Object?>> before,
+  ) async {
+    final changed = [
+      for (final row in await storedRows())
+        if (row['table'] == 'agent_entities' &&
+            !before.any((old) => _sameRow(old, row)))
+          row['id']! as String,
+    ];
+    final entities = await repository.getEntitiesByIdsIncludingDeleted(changed);
+    return [for (final id in changed) entities[id]!];
+  }
+
+  static bool _sameRow(Map<String, Object?> a, Map<String, Object?> b) =>
+      a.length == b.length &&
+      a.entries.every((entry) => b[entry.key] == entry.value);
+
+  /// Runs [then] once, right after the next entity write and inside its
+  /// transaction: a local write landing between a receive's write and what
+  /// it reads next.
+  // ignore: use_setters_to_change_properties
+  void afterNextEntityWrite(
+    Future<void> Function(AgentDomainEntity written) then,
+  ) => _holdable.afterWrite = then;
+
+  /// Runs [then] once, right after the next live read of entity [id]
+  /// returns its row: a local write landing between two reads of a receive.
+  void afterNextReadOf(String id, Future<void> Function() then) => _holdable
+    ..afterReadId = id
+    ..afterRead = then;
+
   /// Parks the next stored-version read of entity or link [id] — the read a
   /// receive resolves against — until the returned completer completes. The
   /// row is read first and handed over afterwards, so a receive that reads
@@ -229,6 +272,31 @@ class _HoldableAgentRepository extends AgentRepository {
       await _release.future;
     }
     return row;
+  }
+
+  Future<void> Function(AgentDomainEntity written)? afterWrite;
+
+  String? afterReadId;
+  Future<void> Function()? afterRead;
+
+  @override
+  Future<AgentDomainEntity?> getEntity(String id) async {
+    final row = await super.getEntity(id);
+    if (id == afterReadId) {
+      afterReadId = null;
+      await afterRead!();
+    }
+    return row;
+  }
+
+  @override
+  Future<void> upsertEntity(AgentDomainEntity entity) async {
+    await super.upsertEntity(entity);
+    final then = afterWrite;
+    if (then != null) {
+      afterWrite = null;
+      await then(entity);
+    }
   }
 
   @override
