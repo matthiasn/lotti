@@ -945,7 +945,7 @@ void main() {
       expect(find.byType(DsActionRow), findsNothing);
     });
 
-    testWidgets('shows map_outlined icon when map not shown', (tester) async {
+    testWidgets('offers to show the map while it is hidden', (tester) async {
       final entry = buildTextEntryWithGeolocation();
       final (override, _) = createEntryControllerOverrideWithTracker(entry);
 
@@ -958,11 +958,12 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(DsActionRow), findsOneWidget);
       expect(find.byIcon(LottiIcons.map), findsOneWidget);
+      expect(find.text('Show map'), findsOneWidget);
+      expect(find.text('Hide map'), findsNothing);
     });
 
-    testWidgets('shows map_rounded icon when map shown', (tester) async {
+    testWidgets('offers to hide the map while it is shown', (tester) async {
       final entry = buildTextEntryWithGeolocation();
       final (override, _) = createEntryControllerOverrideWithTracker(
         entry,
@@ -978,8 +979,9 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(DsActionRow), findsOneWidget);
       expect(find.byIcon(LottiIcons.map), findsOneWidget);
+      expect(find.text('Hide map'), findsOneWidget);
+      expect(find.text('Show map'), findsNothing);
     });
 
     testWidgets('calls toggleMapVisible on tap', (tester) async {
@@ -1831,7 +1833,6 @@ void main() {
       await tester.pump();
 
       expect(find.byType(DsActionRow), findsNothing);
-      expect(find.byType(SizedBox), findsWidgets);
     });
 
     testWidgets('shows SizedBox.shrink when linkedFromId is null', (
@@ -2184,7 +2185,13 @@ void main() {
         await tester.pumpWidget(buildSimpleWrapper(entry));
         await tester.pump();
 
-        expect(find.byType(Icon), findsWidgets);
+        expect(
+          find.descendant(
+            of: find.byType(DsActionRow),
+            matching: find.byIcon(LottiIcons.label),
+          ),
+          findsOneWidget,
+        );
       });
     });
 
