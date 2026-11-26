@@ -107,26 +107,37 @@ void main() {
       expect(semantics.properties.label, 'Loading content');
     });
 
-    testWidgets('uses the track painter for track style', (tester) async {
-      const spinnerKey = Key('track-painter-spinner');
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const DesignSystemSpinner(
-            key: spinnerKey,
-            semanticsLabel: 'Loading',
-          ),
-          theme: DesignSystemTheme.light(),
-        ),
+    testWidgets('the track style paints a backdrop circle under the arc, the '
+        'plain style the arc alone', (tester) async {
+      const spinnerKey = Key('painted-spinner');
+      final ring = find.descendant(
+        of: find.byKey(spinnerKey),
+        matching: find.byType(CustomPaint),
       );
 
-      final customPaint = tester.widget<CustomPaint>(
-        find.descendant(
-          of: find.byKey(spinnerKey),
-          matching: find.byType(CustomPaint),
-        ),
+      Future<void> pumpSpinner(DesignSystemSpinnerStyle style) =>
+          tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              DesignSystemSpinner(
+                key: spinnerKey,
+                style: style,
+                semanticsLabel: 'Loading',
+              ),
+              theme: DesignSystemTheme.light(),
+            ),
+          );
+
+      await pumpSpinner(DesignSystemSpinnerStyle.track);
+      expect(
+        ring,
+        paints
+          ..circle()
+          ..arc(),
       );
-      expect(customPaint.painter.runtimeType.toString(), '_SpinnerPainter');
+
+      await pumpSpinner(DesignSystemSpinnerStyle.plain);
+      expect(ring, paints..arc());
+      expect(ring, isNot(paints..circle()));
     });
 
     testWidgets('animation controller drives rotation', (tester) async {
