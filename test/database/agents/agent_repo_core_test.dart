@@ -42,7 +42,7 @@ void main() {
 
   group('getEntity coalescing', () {
     // getEntity folds concurrent single-id reads into one batched
-    // `id IN (…)` query (AgentEntityByIdCoalescer). These tests run against a
+    // `id IN (…)` query (AgentByIdCoalescer). These tests run against a
     // real database to pin the two properties that batching could break:
     // identical results, and read-your-writes inside a transaction — drift
     // resolves the executor from Zone.current, so a batch that escaped the

@@ -35,19 +35,17 @@ void main() {
       const expectedOneLiner = 'Implementing auth flow with OAuth2';
 
       when(
-        () => mockRepository.getLatestTaskReportsForTaskIds([taskId]),
+        () => mockRepository.getLatestTaskReportForTaskId(taskId),
       ).thenAnswer(
-        (_) async => {
-          taskId: AgentReportEntity(
-            id: 'report-1',
-            agentId: 'agent-1',
-            scope: 'current',
-            createdAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-            content: 'Full report content',
-            oneLiner: expectedOneLiner,
-          ),
-        },
+        (_) async => AgentReportEntity(
+          id: 'report-1',
+          agentId: 'agent-1',
+          scope: 'current',
+          createdAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          content: 'Full report content',
+          oneLiner: expectedOneLiner,
+        ),
       );
 
       final container = createContainer();
@@ -62,18 +60,16 @@ void main() {
       const taskId = 'task-456';
 
       when(
-        () => mockRepository.getLatestTaskReportsForTaskIds([taskId]),
+        () => mockRepository.getLatestTaskReportForTaskId(taskId),
       ).thenAnswer(
-        (_) async => {
-          taskId: AgentReportEntity(
-            id: 'report-2',
-            agentId: 'agent-2',
-            scope: 'current',
-            createdAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-            content: 'Full report content',
-          ),
-        },
+        (_) async => AgentReportEntity(
+          id: 'report-2',
+          agentId: 'agent-2',
+          scope: 'current',
+          createdAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          content: 'Full report content',
+        ),
       );
 
       final container = createContainer();
@@ -88,8 +84,8 @@ void main() {
       const taskId = 'task-789';
 
       when(
-        () => mockRepository.getLatestTaskReportsForTaskIds([taskId]),
-      ).thenAnswer((_) async => const {});
+        () => mockRepository.getLatestTaskReportForTaskId(taskId),
+      ).thenAnswer((_) async => null);
 
       final container = createContainer();
       final result = await container.read(
@@ -103,19 +99,17 @@ void main() {
       const taskId = 'task-empty';
 
       when(
-        () => mockRepository.getLatestTaskReportsForTaskIds([taskId]),
+        () => mockRepository.getLatestTaskReportForTaskId(taskId),
       ).thenAnswer(
-        (_) async => {
-          taskId: AgentReportEntity(
-            id: 'report-3',
-            agentId: 'agent-3',
-            scope: 'current',
-            createdAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-            content: 'Full report content',
-            oneLiner: '',
-          ),
-        },
+        (_) async => AgentReportEntity(
+          id: 'report-3',
+          agentId: 'agent-3',
+          scope: 'current',
+          createdAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          content: 'Full report content',
+          oneLiner: '',
+        ),
       );
 
       final container = createContainer();
@@ -130,19 +124,17 @@ void main() {
       const taskId = 'task-whitespace';
 
       when(
-        () => mockRepository.getLatestTaskReportsForTaskIds([taskId]),
+        () => mockRepository.getLatestTaskReportForTaskId(taskId),
       ).thenAnswer(
-        (_) async => {
-          taskId: AgentReportEntity(
-            id: 'report-4',
-            agentId: 'agent-4',
-            scope: 'current',
-            createdAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-            content: 'Full report content',
-            oneLiner: '   ',
-          ),
-        },
+        (_) async => AgentReportEntity(
+          id: 'report-4',
+          agentId: 'agent-4',
+          scope: 'current',
+          createdAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          content: 'Full report content',
+          oneLiner: '   ',
+        ),
       );
 
       final container = createContainer();
@@ -157,19 +149,17 @@ void main() {
       const taskId = 'task-trim';
 
       when(
-        () => mockRepository.getLatestTaskReportsForTaskIds([taskId]),
+        () => mockRepository.getLatestTaskReportForTaskId(taskId),
       ).thenAnswer(
-        (_) async => {
-          taskId: AgentReportEntity(
-            id: 'report-5',
-            agentId: 'agent-5',
-            scope: 'current',
-            createdAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-            content: 'Full report content',
-            oneLiner: '  Building REST API endpoints  ',
-          ),
-        },
+        (_) async => AgentReportEntity(
+          id: 'report-5',
+          agentId: 'agent-5',
+          scope: 'current',
+          createdAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          content: 'Full report content',
+          oneLiner: '  Building REST API endpoints  ',
+        ),
       );
 
       final container = createContainer();

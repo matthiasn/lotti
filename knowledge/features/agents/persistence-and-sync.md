@@ -45,8 +45,8 @@ sources:
     title: AgentRepoLinks
     last_modified: 2026-08-04
   - id: coalescer
-    resource: ../../../lib/database/agents/agent_entity_by_id_coalescer.dart
-    title: AgentEntityByIdCoalescer
+    resource: ../../../lib/database/agents/agent_by_id_coalescer.dart
+    title: AgentByIdCoalescer
     last_modified: 2026-08-01
   - id: ledger
     resource: ../../../lib/database/agents/agent_proposal_ledger.dart
@@ -357,12 +357,18 @@ when sync or wake preparation considers thousands of ids.
 
 Single-id reads are folded into those batches automatically.
 `AgentRepoCore.getEntity` does not issue `WHERE id = ?` per call; it hands the
-id to `AgentEntityByIdCoalescer`, which collects every load made in the same
+id to `AgentByIdCoalescer`, which collects every load made in the same
 event-loop turn and satisfies them with one `getEntitiesByIds` round trip. The
 fan-out this addresses is structural rather than local — independent callers
 (Riverpod provider families resolving one row each) firing in the same turn,
 with no single loop to batch. The 2026-06/07 logs recorded 92,787 such reads,
 peaking at 606 in one second at a median inter-arrival gap of 0.0 ms.
+
+The same coalescer, generic over its value, backs
+`AgentRepoQueries.getLatestTaskReportForTaskId`: each task-list row's
+one-liner and preview provider asks for its own task's report, and the turn's
+requests share one `getLatestTaskReportsForTaskIds` call — two batched queries
+for the screen rather than two per row.
 
 Batches are keyed by `Zone` identity, and the flush is scheduled from the
 requesting zone so it runs there. This is load-bearing: drift resolves a

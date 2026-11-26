@@ -55,8 +55,8 @@ void main() {
       when(() => db.journalEntityById(_taskId)).thenAnswer((_) async => entity);
 
   void stubReport(AgentReportEntity? report) => when(
-    () => agents.getLatestTaskReportsForTaskIds([_taskId]),
-  ).thenAnswer((_) async => {_taskId: ?report});
+    () => agents.getLatestTaskReportForTaskId(_taskId),
+  ).thenAnswer((_) async => report);
 
   Future<TaskPreview?> read() {
     final sub = container.listen(taskPreviewProvider(_taskId), (_, _) {});
@@ -115,7 +115,7 @@ void main() {
 
         expect(await read(), isNull, reason: '$entity');
       }
-      verifyNever(() => agents.getLatestTaskReportsForTaskIds(any()));
+      verifyNever(() => agents.getLatestTaskReportForTaskId(any()));
     },
   );
 
