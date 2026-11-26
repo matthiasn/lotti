@@ -40,6 +40,15 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.110" date="2026-11-27">
+      <description>
+        <p>Changed: a recording stays with the task it is for. On the task's page, the microphone moves down and becomes the Stop button of a recording row under the task's actions, with the live level, the running time and pause beside it, and moves back when you stop. Leave the page and it follows you: on a phone, as a slim glass band along the bottom edge; on a computer, as a card in the sidebar's Activity section (the band comes back while the sidebar is collapsed). Tapping either takes you straight back to the task.</p>
+        <p>Fixed: recording audio on iPhone should no longer crash the app. Since 1.1.104 a take on iOS 26 could close the app a few seconds after you started speaking, without an error. The recorder had switched on the phone's call-style voice processing for every take, which is what set off the crash. Recordings on iPhone are made the way they were before 1.1.104 again, both in the app and in the chat.</p>
+        <p>Fixed: a recording stopped while it was pausing could come back as paused. Pressing Stop (or discarding) right after Pause could leave a stopped recording looking paused, with its controls still on screen. Stop and discard now always win.</p>
+        <p>Fixed: importing photos did nothing when the app had access to selected photos only. With "Selected Photos" on iPhone, or partial photo access on Android, tapping the photo import asked for permission and then stopped, because only full library access counted as permission. The gallery now opens with the photos you allowed.</p>
+        <p>Fixed: the Tasks header no longer floats as a lighter strip once you scroll. When the header collapsed to its single row, that row was painted a shade lighter than the page while the space above it stayed dark, so it looked like a band hovering over the list. The collapsed header now sits on the same plain dark background as the rest of the page, from the top of the screen down to the thin line that separates it from your tasks.</p>
+      </description>
+    </release>
     <release version="1.1.109" date="2026-11-25">
       <description>
         <p>Added: you can stop the companion while she works on a message. While she is answering, the send button in the chat becomes "Stop". A stopped message stays in the conversation marked "Stopped". She doesn't answer it, and no other device picks it up later.</p>
