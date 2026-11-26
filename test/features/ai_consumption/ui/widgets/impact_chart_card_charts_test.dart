@@ -271,7 +271,7 @@ void main() {
       final rect = tester.getRect(find.byType(BarChart));
       await tester.tapAt(Offset(rect.left + rect.width * 0.28, rect.center.dy));
       await tester.pump();
-      expect(tapped, isNotNull);
+      expect(tapped, 0);
     });
   });
 

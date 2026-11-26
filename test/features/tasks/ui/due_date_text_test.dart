@@ -214,10 +214,16 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        // Verify the icon exists and uses non-urgent color (from colorScheme)
         final icon = tester.widget<Icon>(find.byIcon(LottiIcons.calendar));
-        // Non-urgent future dates should NOT have red or orange colors
-        expect(icon.color, isNotNull);
+        expect(
+          icon.color,
+          tester
+              .element(find.byType(DueDateText))
+              .designTokens
+              .colors
+              .text
+              .mediumEmphasis,
+        );
       });
     });
 

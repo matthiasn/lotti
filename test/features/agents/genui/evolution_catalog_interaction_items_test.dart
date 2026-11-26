@@ -1,5 +1,6 @@
 import 'package:a2ui_core/a2ui_core.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/genui/ab_comparison_card.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -480,14 +481,14 @@ void main() {
       expect(find.text('Option A text'), findsNothing);
     });
 
-    testWidgets('returns SizedBox for non-map data', (tester) async {
+    testWidgets('renders no comparison card for empty data', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
           buildCatalogWidget(abComparisonCardItem, {}),
         ),
       );
 
-      expect(find.byType(SizedBox), findsWidgets);
+      expect(find.byType(ABComparisonCard), findsNothing);
     });
 
     testWidgets('works without labels', (tester) async {

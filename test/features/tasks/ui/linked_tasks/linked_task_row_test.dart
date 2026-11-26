@@ -4,6 +4,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
+import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -580,7 +581,17 @@ void main() {
         WidgetTestBench(child: StatusGlyph(status: status)),
       );
 
-      expect(find.byType(Icon), findsOneWidget);
+      final icon = tester.widget<Icon>(find.byType(Icon));
+      expect(icon.icon, taskIconFromStatusString('DONE'));
+      expect(
+        icon.color,
+        taskColorFromStatusString(
+          'DONE',
+          brightness: Theme.of(
+            tester.element(find.byType(StatusGlyph)),
+          ).brightness,
+        ),
+      );
     });
   });
 }

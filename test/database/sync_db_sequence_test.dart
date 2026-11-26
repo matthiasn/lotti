@@ -1079,9 +1079,16 @@ void main() {
       final host1Entry2 = await database.getEntryByHostAndCounter('host-1', 2);
       final host2Entry1 = await database.getEntryByHostAndCounter('host-2', 1);
 
-      expect(host1Entry1, isNotNull);
-      expect(host1Entry2, isNotNull);
-      expect(host2Entry1, isNotNull);
+      expect(
+        [host1Entry1, host1Entry2, host2Entry1].map(
+          (entry) => (entry?.hostId, entry?.counter, entry?.status),
+        ),
+        [
+          ('host-1', 1, SyncSequenceStatus.received.index),
+          ('host-1', 2, SyncSequenceStatus.received.index),
+          ('host-2', 1, SyncSequenceStatus.received.index),
+        ],
+      );
     });
 
     test('batchInsertSequenceEntries ignores duplicates', () async {

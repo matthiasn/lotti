@@ -993,10 +993,6 @@ void main() {
       },
     );
 
-    test('constructor initializes repository with ref', () {
-      expect(repository.ref, isNotNull);
-    });
-
     test('_filterAnthropicPings handles stream close correctly', () async {
       // Arrange - Create a stream that closes normally
       final normalStream =

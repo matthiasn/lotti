@@ -22,12 +22,6 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('centers the loading indicator', (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget());
-
-      expect(find.byType(Center), findsOneWidget);
-    });
-
     testWidgets('loading indicator is contained properly', (
       WidgetTester tester,
     ) async {

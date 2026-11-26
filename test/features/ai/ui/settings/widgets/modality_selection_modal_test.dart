@@ -377,20 +377,6 @@ void main() {
     });
 
     group('Visual Design', () {
-      testWidgets('uses proper spacing and layout', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(createTestWidget(onSave: (_) {}));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Should have proper spacing with SizedBox widgets
-        expect(find.byType(SizedBox), findsAtLeastNWidgets(1));
-
-        // Should have proper padding
-        expect(find.byType(Padding), findsAtLeastNWidgets(1));
-      });
-
       testWidgets('has consistent visual hierarchy', (
         WidgetTester tester,
       ) async {

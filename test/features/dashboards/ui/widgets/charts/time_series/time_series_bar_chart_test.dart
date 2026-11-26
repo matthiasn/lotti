@@ -49,17 +49,6 @@ void main() {
       final barChart = tester.widget<BarChart>(find.byType(BarChart));
       expect(barChart.duration, Duration.zero);
     });
-
-    testWidgets('wraps chart in a Padding widget', (tester) async {
-      await hPumpChart(
-        tester,
-        data: [],
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      );
-
-      expect(find.byType(Padding), findsWidgets);
-    });
   });
 
   group('TimeSeriesBarChart — bar group mapping', () {

@@ -126,7 +126,7 @@ void main() {
           matching: find.byType(CustomPaint),
         ),
       );
-      expect(customPaint.painter, isNotNull);
+      expect(customPaint.painter.runtimeType.toString(), '_SpinnerPainter');
     });
 
     testWidgets('animation controller drives rotation', (tester) async {

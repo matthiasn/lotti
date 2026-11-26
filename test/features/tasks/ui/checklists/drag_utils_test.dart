@@ -84,17 +84,6 @@ void main() {
       expect(localData['checklistId'], 'checklist-456');
     });
 
-    test('adds plain text format with title', () {
-      final dragItem = createChecklistItemDragItem(
-        itemId: 'item-123',
-        checklistId: 'checklist-456',
-        title: 'My Checklist Item',
-      );
-
-      // DragItem should have plain text format added
-      expect(dragItem.localData, isNotNull);
-    });
-
     test('handles special characters in title', () {
       final dragItem = createChecklistItemDragItem(
         itemId: 'item-1',
@@ -114,7 +103,10 @@ void main() {
         title: '',
       );
 
-      expect(dragItem.localData, isNotNull);
+      expect(dragItem.localData, {
+        'checklistItemId': 'item-1',
+        'checklistId': 'checklist-1',
+      });
     });
   });
 

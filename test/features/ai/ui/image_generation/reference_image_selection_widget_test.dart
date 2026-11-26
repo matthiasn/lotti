@@ -642,9 +642,8 @@ void main() {
         ),
       );
 
-      // GridView should be present with correct number of items
       final gridView = tester.widget<GridView>(find.byType(GridView));
-      expect(gridView, isNotNull);
+      expect(gridView.childrenDelegate.estimatedChildCount, 4);
     });
 
     testWidgets('shows error state for missing image files', (tester) async {

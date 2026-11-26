@@ -184,19 +184,16 @@ void main() {
       );
 
       // Get the controller and wait for it to load
-      final controller = container.read(
-        linkedFromEntriesControllerProvider(testId).notifier,
-      );
+
       await container.read(
         linkedFromEntriesControllerProvider(testId).future,
       );
 
-      // We can't directly access the private _updateSubscription field
-      // but we can verify the controller was created successfully
-      expect(controller, isNotNull);
+      expect(updateStreamController.hasListener, isTrue);
 
-      // Dispose the container
       container.dispose();
+
+      expect(updateStreamController.hasListener, isFalse);
 
       // We can't directly test if the subscription is canceled, but we've verified
       // the onDispose callback is registered correctly in the controller

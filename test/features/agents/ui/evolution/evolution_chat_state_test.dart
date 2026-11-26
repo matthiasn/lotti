@@ -1842,7 +1842,7 @@ void main() {
       );
     });
 
-    test('handles exception without crashing', () async {
+    test('a failed soul approval leaves the conversation as it was', () async {
       stubSuccessfulStart(response: 'Review the soul proposal.');
       when(
         () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
@@ -1856,7 +1856,11 @@ void main() {
         ),
       );
 
-      // Should not throw.
+      final before = container
+          .read(evolutionChatStateProvider(kTestTemplateId))
+          .value;
+      expect(before, isNotNull);
+
       await withClock(
         testClock,
         () => container
@@ -1864,11 +1868,11 @@ void main() {
             .approveSoulProposal(),
       );
 
-      // State should still be valid — no crash.
-      final data = container
-          .read(evolutionChatStateProvider(kTestTemplateId))
-          .value;
-      expect(data, isNotNull);
+      // No "version created" or "failed" system line is appended.
+      expect(
+        container.read(evolutionChatStateProvider(kTestTemplateId)).value,
+        before,
+      );
     });
 
     test('no-op when session data is null', () async {

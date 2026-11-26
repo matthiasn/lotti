@@ -1182,7 +1182,9 @@ void main() {
 
       // Builds successfully even though the notification side road threw.
       final entity = await builder.build(mockSyncService);
-      expect(entity, isNotNull);
+      expect(entity!.items.map((item) => item.toolName), [
+        'update_task_estimate',
+      ]);
     });
 
     test('logs notification failures with sanitized task id', () async {

@@ -370,7 +370,14 @@ void main() {
         fakeTimeService.emit(null);
         await tester.pump();
 
-        // No crash, no false positive session-ended
+        await tester.pump();
+
+        // The first entry's recording must not count as the new entry's
+        // session ending.
+        final ended = ProviderScope.containerOf(
+          tester.element(find.byType(DurationWidget)),
+        ).read(sessionEndedControllerProvider);
+        expect(ended, isEmpty);
       },
     );
   });

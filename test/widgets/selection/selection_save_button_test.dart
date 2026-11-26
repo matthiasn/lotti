@@ -195,26 +195,6 @@ void main() {
         expect(pressed, false);
       });
 
-      testWidgets('shows ink effect on tap when enabled', (tester) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            onPressed: () {},
-          ),
-        );
-        await tester.pump();
-
-        // Tap and hold to see ink effect
-        final gesture = await tester.startGesture(
-          tester.getCenter(find.byType(SelectionSaveButton)),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        // Should show ink effect (Material widget handles this)
-        expect(find.byType(Material), findsAtLeastNWidgets(1));
-
-        await gesture.up();
-      });
-
       testWidgets('handles rapid taps correctly', (tester) async {
         var tapCount = 0;
 

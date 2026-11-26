@@ -508,7 +508,10 @@ void main() {
       await tester.pumpAndSettle();
 
       final textWidget = tester.widget<Text>(find.text('No labels assigned'));
-      expect(textWidget.style?.color, isNotNull);
+      final body = Theme.of(
+        tester.element(find.text('No labels assigned')),
+      ).textTheme.bodySmall!.color!;
+      expect(textWidget.style?.color, body.withValues(alpha: 0.6));
     });
   });
 }

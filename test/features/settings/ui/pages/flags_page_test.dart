@@ -386,19 +386,6 @@ void main() {
         findsAtLeastNWidgets(1),
       );
     });
-
-    testWidgets('wraps items in decorated box with border', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const FlagsPage(),
-          overrides: getItServiceOverrides(),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(DecoratedBox), findsAtLeastNWidgets(1));
-      expect(find.byType(ClipRRect), findsAtLeastNWidgets(1));
-    });
   });
 
   // One parameterized block per feature flag row: render (localized title,

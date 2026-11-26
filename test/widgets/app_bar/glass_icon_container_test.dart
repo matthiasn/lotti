@@ -83,7 +83,7 @@ void main() {
       expect(backdropFilter.filter, isA<ImageFilter>());
     });
 
-    testWidgets('contains ClipRRect for rounded corners', (tester) async {
+    testWidgets('clips to a pill by default', (tester) async {
       await _pump(
         tester,
         const GlassIconContainer(
@@ -91,7 +91,10 @@ void main() {
         ),
       );
 
-      expect(find.byType(ClipRRect), findsOneWidget);
+      expect(
+        tester.widget<ClipRRect>(find.byType(ClipRRect)).borderRadius,
+        BorderRadius.circular(999),
+      );
     });
 
     testWidgets('uses custom borderRadius when provided', (tester) async {
