@@ -179,7 +179,7 @@ Future<List<AssetEntity>?> _pickAssets(
   required int maxAssets,
 }) async {
   final ps = await PhotoManager.requestPermissionExtend();
-  if (!ps.isAuth) {
+  if (!ps.hasAccess) {
     return null;
   }
 
