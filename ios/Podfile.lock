@@ -33,7 +33,7 @@ PODS:
     - FlutterMacOS
   - flutter_vodozemac (0.0.1):
     - Flutter
-  - gal (1.0.0):
+  - gal (3.0.1):
     - Flutter
     - FlutterMacOS
   - geolocator_apple (1.2.0):
@@ -90,8 +90,9 @@ PODS:
     - FlutterMacOS
   - quill_native_bridge_ios (0.0.1):
     - Flutter
-  - record_ios (2.0.0):
+  - record_darwin (2.0.0):
     - Flutter
+    - FlutterMacOS
   - SDWebImage (5.21.7):
     - SDWebImage/Core (= 5.21.7)
   - SDWebImage/Core (5.21.7)
@@ -150,7 +151,7 @@ DEPENDENCIES:
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - photo_manager (from `.symlinks/plugins/photo_manager/darwin`)
   - quill_native_bridge_ios (from `.symlinks/plugins/quill_native_bridge_ios/ios`)
-  - record_ios (from `.symlinks/plugins/record_ios/ios`)
+  - record_darwin (from `.symlinks/plugins/record_darwin/darwin`)
   - share_plus (from `.symlinks/plugins/share_plus/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sherpa_onnx_ios (from `.symlinks/plugins/sherpa_onnx_ios/ios`)
@@ -233,8 +234,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/photo_manager/darwin"
   quill_native_bridge_ios:
     :path: ".symlinks/plugins/quill_native_bridge_ios/ios"
-  record_ios:
-    :path: ".symlinks/plugins/record_ios/ios"
+  record_darwin:
+    :path: ".symlinks/plugins/record_darwin/darwin"
   share_plus:
     :path: ".symlinks/plugins/share_plus/ios"
   shared_preferences_foundation:
@@ -266,10 +267,10 @@ SPEC CHECKSUMS:
   flutter_onnxruntime: 7ae80bec9e18920ee2ff9855bcf2f8741166c1be
   flutter_secure_storage_darwin: 46e401699982ee74142909676535e0f6a7321e58
   flutter_vodozemac: 46015daf07988356d46784d05ab0c7afca00ff36
-  gal: baecd024ebfd13c441269ca7404792a7152fde89
+  gal: 49b4e48d0ffca13a414561eff9716a990c6260b6
   geolocator_apple: ab36aa0e8b7d7a2d7639b3b4e48308394e8cef5e
   health: 4decf5d74e8f54c58a8c07a385fc72f629a831d9
-  image_picker_ios: 9285ee31b06d6e15629dd5713b890f0c457a0a8b
+  image_picker_ios: 872ad7b7cb44bf470e7324191b51ee0e26f45cb9
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   irondash_engine_context: 8e58ca8e0212ee9d1c7dc6a42121849986c88486
   is_ios_simulator: 1125d89fceb232f353d3ec3602c9a67da6e6aada
@@ -286,7 +287,7 @@ SPEC CHECKSUMS:
   permission_handler_apple: 92d754bbaa7361d436db2d6c3c1c2a0fdcec462e
   photo_manager: c303e4476f6c220274119f0212a7753e45edd4a2
   quill_native_bridge_ios: f47af4b14e7757968486641656c5d23250cee521
-  record_ios: 390a30c7caaf8b5d0fb1cb1d2fd5064b48b4520c
+  record_darwin: 4af4f79edec94b4b8356a7a43b0def39d807d3ea
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
   SDWebImageWebPCoder: 0e06e365080397465cc73a7a9b472d8a3bd0f377
   share_plus: eccd7beb7cea61271aeed1800e8ccb2b952c0c7f
@@ -295,7 +296,7 @@ SPEC CHECKSUMS:
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   super_native_extensions: b763c02dc3a8fd078389f410bf15149179020cb4
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
-  video_player_avfoundation: bc5f800d1e1c4f389bc5d51778a4f89dd1bf4a77
+  video_player_avfoundation: a0f7b0f7f7d91c3d33f7a746bc3fbb57a6fae803
 
 PODFILE CHECKSUM: d51e7e64ad05142fe876979b7689db52f90c257b
 
