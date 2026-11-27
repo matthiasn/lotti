@@ -8,8 +8,8 @@ import '../../../classes/task_document_fixtures.dart';
 void main() {
   final messages = AppLocalizationsEn();
 
-  test('a version says who wrote it: the user, the agent with the user, or a '
-      'restore by the user', () {
+  test('a version says who wrote it: the user, the agent, or a restore by '
+      'the user', () {
     expect(
       taskDocumentAuthorship(messages, taskDocumentVersionEntry()),
       'Written by you',
@@ -19,7 +19,7 @@ void main() {
         messages,
         taskDocumentVersionEntry(author: TaskDocumentAuthor.agent),
       ),
-      'Drafted by the agent, confirmed by you',
+      'Written by the agent',
     );
     final restored = taskDocumentVersionEntry(number: 3);
     expect(

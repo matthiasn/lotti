@@ -486,7 +486,8 @@ pull request listing, so an id there could only be invented.
 **Documents** ([Task documents](../documents.md), ADR 0167). With the
 documents feature wired (`taskDocumentSourceProvider`), the loader reads the
 task's documents through that port, text included, and the planner offers
-`propose_document_version`. The planner lists each document by id, title and
+`write_document_version` — the one tool it offers that is not deferred. The
+planner lists each document by id, title and
 version, with its text while the texts fit what the input budget leaves
 (oldest first, keeping 1 KiB for a repair attempt). A text that does not fit
 is marked `textOmitted`, and a revision of that document is dropped as an
@@ -494,18 +495,26 @@ unavailable target: without the text the model could only have rewritten it
 from nothing. Listing stops at the first document whose entry does not fit
 even without its text, and `documentsOmitted` counts the rest, so many
 documents or one long title never push the request over the budget and
-fail every action in the task's chat. A recorded proposal carries the document's `title` and
-`baseVersionId` from the context, never from the model, which is the same
-shape a task wake records, so one dispatcher handler applies both. Confirmation
-re-validates it on fresh context with those two keys set aside. The chat
-history shows earlier document proposals without their text. Transcripts are
+fail every action in the task's chat. A recorded item carries the document's `title` and
+`baseVersionId` from the context, never from the model — the shape a task
+wake dispatches, so one dispatcher handler applies both. The chat
+history shows earlier document writes without their text. Transcripts are
 still not loaded: a revision works from the document's text, the conversation
-and the user's message. In both the chat review and the AI card, a document
-proposal carries **Read draft**, a sheet with the proposed text and Dismiss
-beside a primary naming the outcome ("Create document" or "Use this
-version"). A draft is accepted only there: its row has no confirm, and a
-lone draft has no Accept beside it, only "Discard draft"
-([`document_proposal_preview.dart`](../../../lib/features/agents/ui/document_proposal_preview.dart)).
+and the user's message.
+
+**A document version is written, not reviewed.** Once the answer is saved,
+`QueryChatController.send` calls `QueryChatActionService.writeDocuments`,
+which opens the answer's change set and applies its document items — and
+only those — through the same confirmation service, scope checks and
+fresh-context validation as an approval, with those two keys set aside. No
+verdict on the set is recorded, so the answer's other changes still wait for
+Accept or Dismiss. The turn stays running while it writes, and
+`QueryActionReview` holds its buttons meanwhile (`applying`). A written
+version reads as an applied row with the agent's line on what it changes; an
+answer holding nothing but document versions is headed "Documents" instead
+of "Proposed changes". A version that could not be written stays pending and
+is applied from its row like any other change, and a failure is logged by
+type only and never fails the saved answer.
 Checklist targets use the journal metadata ID; nullable or stale legacy IDs
 inside checklist data cannot overwrite it. Chat-specific guidance allows
 migration to a supplied existing task as well as a newly proposed follow-up.

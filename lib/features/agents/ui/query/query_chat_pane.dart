@@ -360,7 +360,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
             // Existing Markdown links retain their original destination.
             // A model cannot announce execution before human approval.
             text: proposedActions.isNotEmpty
-                ? messages.queryActionsReview
+                ? QueryActionReview.heading(messages, proposedActions)
                 : summaryBased
                 ? '**${messages.querySummaryBased}**\n\n$text'
                 : _linkEvidenceCitations(text, evidence.length),
@@ -563,6 +563,10 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                               approved: decision?.approved,
                               access: access,
                               canApply: !chat.archived,
+                              // Running while its documents are written.
+                              applying:
+                                  running &&
+                                  answer.questionId == lastQuestion?.id,
                             );
                           }
                           return Column(

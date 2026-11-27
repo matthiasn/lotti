@@ -321,32 +321,4 @@ void main() {
       },
     );
   });
-
-  group('AiSummaryCard – RowActions without confirm', () {
-    testWidgets('only reject shows, in its own column of the same '
-        'footprint', (tester) async {
-      var rejected = 0;
-      await tester.pumpWidget(
-        makeTestableWidget2(
-          Center(
-            child: RowActions(
-              busy: false,
-              onReject: () async => rejected++,
-            ),
-          ),
-        ),
-      );
-
-      expect(findMaterialTooltip('Confirm'), findsNothing);
-      await tester.tap(findMaterialTooltip('Reject'));
-      expect(rejected, 1);
-      final rail = tester.getRect(find.byType(RowActions));
-      expect(rail.width, RowActions.buttonSize * 2 + 4);
-      // Where every other row's ✕ is: the rightmost disc always confirms.
-      expect(
-        tester.getRect(findMaterialTooltip('Reject')).left,
-        moreOrLessEquals(rail.left),
-      );
-    });
-  });
 }

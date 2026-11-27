@@ -459,11 +459,11 @@ void main() {
     test("names a new document by its title, in the reader's language", () {
       const args = {'newTitle': ' Meeting summary ', 'markdown': '# x'};
       expect(
-        summary(TaskAgentToolNames.proposeDocumentVersion, args),
+        summary(TaskAgentToolNames.writeDocumentVersion, args),
         'Create document "Meeting summary"',
       );
       expect(
-        summary(TaskAgentToolNames.proposeDocumentVersion, args, messages: de),
+        summary(TaskAgentToolNames.writeDocumentVersion, args, messages: de),
         'Dokument „Meeting summary“ anlegen',
       );
     });
@@ -471,18 +471,18 @@ void main() {
     test('names a revised document by the title the proposal recorded', () {
       const args = {'documentId': 'doc-1', 'title': 'Launch brief'};
       expect(
-        summary(TaskAgentToolNames.proposeDocumentVersion, args),
+        summary(TaskAgentToolNames.writeDocumentVersion, args),
         'New version of "Launch brief"',
       );
       expect(
-        summary(TaskAgentToolNames.proposeDocumentVersion, args, messages: ro),
+        summary(TaskAgentToolNames.writeDocumentVersion, args, messages: ro),
         'Versiune nouă a „Launch brief”',
       );
     });
 
     test('one naming no document keeps the persisted wording', () {
       expect(
-        summary(TaskAgentToolNames.proposeDocumentVersion, {'title': ' '}),
+        summary(TaskAgentToolNames.writeDocumentVersion, {'title': ' '}),
         isNull,
       );
     });

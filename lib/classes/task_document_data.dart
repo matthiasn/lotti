@@ -53,7 +53,7 @@ enum TaskDocumentAuthor {
   /// Written by the user: a hand edit, or a restore of an older version.
   user,
 
-  /// Drafted by the task's agent and confirmed by the user.
+  /// Written by the task's agent, when the user asked for it.
   agent,
 }
 
@@ -81,14 +81,14 @@ abstract class TaskDocumentVersionData with _$TaskDocumentVersionData {
     /// The version this one was written over; null for a first version.
     String? baseVersionId,
 
-    /// What changed, in a sentence: the agent's summary of its proposal, or
+    /// What changed, in a sentence: the agent's summary of its version, or
     /// empty for a hand edit.
     String? changeSummary,
 
-    /// For an agent version, the effect key of the change item it was
-    /// confirmed from (`ChangeItem.effectKeyIn`, `<changeSetId>:<index>`
-    /// unless reopened): its provenance, the same on every device that
-    /// applied the confirmation.
+    /// For an agent version written from task chat, the effect key of the
+    /// change item it was applied from (`ChangeItem.effectKeyIn`,
+    /// `<changeSetId>:<index>` unless reopened): its provenance, the same on
+    /// every device that applied it. Null for one a task agent wake wrote.
     String? changeEffectKey,
 
     /// For a restore, the older version whose text this repeats.

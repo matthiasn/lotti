@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
-import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -90,11 +89,7 @@ class ProposalsSection extends StatelessWidget {
     ];
     final individual = [
       for (final s in open)
-        if (s.confirmsIndividually && !_isDocument(s)) s,
-    ];
-    final documents = [
-      for (final s in open)
-        if (s.confirmsIndividually && _isDocument(s)) s,
+        if (s.confirmsIndividually) s,
     ];
 
     // A newly arrived proposal eases its own height open; the initial batch
@@ -215,31 +210,11 @@ class ProposalsSection extends StatelessWidget {
                 key: const ValueKey('proposalStatusChanges'),
                 collapsed: individual.isEmpty,
                 duration: ProposalMotion.collapse,
-                child: _IndividualBand.status(
+                child: _StatusChangesBand(
                   afterRail: onConfirmAll != null,
                   rows: [
                     for (var i = 0; i < individual.length; i++)
                       row(individual[i], bulk.length + i, inBulk: false),
-                  ],
-                ),
-              ),
-              // Document drafts are confirmed one by one too — each is a
-              // whole text to read first — but they cost nothing a status
-              // change costs, so they get their own neutral band, never the
-              // warning one.
-              SizeFadeCollapse(
-                key: const ValueKey('proposalDocuments'),
-                collapsed: documents.isEmpty,
-                duration: ProposalMotion.collapse,
-                child: _IndividualBand.documents(
-                  afterRail: onConfirmAll != null || individual.isNotEmpty,
-                  rows: [
-                    for (var i = 0; i < documents.length; i++)
-                      row(
-                        documents[i],
-                        bulk.length + individual.length + i,
-                        inBulk: false,
-                      ),
                   ],
                 ),
               ),
@@ -337,42 +312,24 @@ class ProposalHistorySection extends StatelessWidget {
   }
 }
 
-/// Whether [s] proposes a task document's text (ADR 0167).
-bool _isDocument(PendingSuggestion s) =>
-    s.item.toolName == TaskAgentToolNames.proposeDocumentVersion;
-
-/// A band of proposals confirmed one at a time, under the Confirm all rail:
-/// a hairline, a title and the one line that says how to decide them, then
-/// the rows. [_IndividualBand.status] is the warning band — a DONE takes the
-/// task off every open list; [_IndividualBand.documents] is the neutral one
-/// for document drafts, each read before it is confirmed. Kept mounted while
-/// empty so its [SizeFadeCollapse] can ease it away.
-class _IndividualBand extends StatelessWidget {
-  const _IndividualBand.status({required this.rows, required this.afterRail})
-    : documents = false;
-
-  const _IndividualBand.documents({
-    required this.rows,
-    required this.afterRail,
-  }) : documents = true;
+/// The status-change band under the Confirm all rail: a warning hairline,
+/// a title and the one line that says what accepting costs, then the rows.
+/// Kept mounted while empty so its [SizeFadeCollapse] can ease it away.
+class _StatusChangesBand extends StatelessWidget {
+  const _StatusChangesBand({required this.rows, required this.afterRail});
 
   final List<Widget> rows;
 
-  /// Whether something stands above the band: the Confirm all rail, or
-  /// another band. Either ends flush while a row ends with its own step4
-  /// gap, so the band tops up the difference to sit step5 below either one.
+  /// Whether the Confirm all rail stands above the band. The rail ends flush
+  /// while a row ends with its own step4 gap, so the band tops up the
+  /// difference to sit step5 below either one.
   final bool afterRail;
-
-  final bool documents;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final messages = context.messages;
-    final ai = tokens.colors.aiCard;
     final warning = tokens.colors.alert.warning;
-    final border = documents ? ai.borderSoft : warning.defaultColor;
-    final ink = documents ? ai.titleText : warning.ink;
+    final messages = context.messages;
     final inset = tokens.spacing.step4;
     // A group break, one step past the row rhythm. Eases on the rail's own
     // clock, so the band holds its place while the rail collapses away.
@@ -384,68 +341,40 @@ class _IndividualBand extends StatelessWidget {
       padding: EdgeInsets.only(
         top: afterRail ? tokens.spacing.step5 : tokens.spacing.step2,
       ),
-      // The warning band is outlined, as a caution; the documents band is a
-      // plain heading over rows that keep the card's own edges, so their
-      // verdicts line up with every other row's.
       child: DecoratedBox(
-        decoration: documents
-            ? const BoxDecoration()
-            : BoxDecoration(
-                border: Border.all(color: border),
-                borderRadius: BorderRadius.circular(tokens.radii.m),
-              ),
+        decoration: BoxDecoration(
+          border: Border.all(color: warning.defaultColor),
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+        ),
         child: Padding(
           // Even on all four sides: the last row's own step4 trailing gap is
           // the bottom inset.
-          padding: documents
-              ? EdgeInsets.zero
-              : EdgeInsets.only(left: inset, top: inset, right: inset),
+          padding: EdgeInsets.only(left: inset, top: inset, right: inset),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Icon(
-                    documents ? LottiIcons.description : LottiIcons.warning,
-                    size: documents ? IconSizes.s : tokens.spacing.step5,
-                    color: documents ? ai.metaText : ink,
+                    LottiIcons.warning,
+                    size: tokens.spacing.step5,
+                    color: warning.ink,
                   ),
                   SizedBox(width: tokens.spacing.step3),
                   Flexible(
                     child: Text(
-                      documents
-                          ? messages.taskDocumentsTitle
-                          : messages.aiCardStatusChangesTitle,
-                      // The documents heading is a sub-group of Proposed
-                      // changes, whose count includes its rows: a tier down.
-                      style:
-                          (documents
-                                  ? tokens.typography.styles.body.bodySmall
-                                  : tokens.typography.styles.subtitle.subtitle2)
-                              .copyWith(
-                                color: documents ? ai.metaText : ink,
-                                fontWeight: documents
-                                    ? tokens.typography.weight.semiBold
-                                    : null,
-                              ),
+                      messages.aiCardStatusChangesTitle,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(color: warning.ink),
                     ),
                   ),
                 ],
               ),
               SizedBox(height: tokens.spacing.step1),
-              Padding(
-                // The documents hint hangs under its heading's text, past
-                // the icon; the status band's spans its outline.
-                padding: EdgeInsetsDirectional.only(
-                  start: documents ? IconSizes.s + tokens.spacing.step3 : 0,
-                ),
-                child: Text(
-                  documents
-                      ? messages.aiCardDocumentProposalsHint
-                      : messages.aiCardStatusChangesHint,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: ai.metaText,
-                  ),
+              Text(
+                messages.aiCardStatusChangesHint,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.aiCard.metaText,
                 ),
               ),
               SizedBox(height: tokens.spacing.step3),

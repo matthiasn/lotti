@@ -58,7 +58,7 @@ mixin _JournalDbEntityOps
   /// keeps the newer observation. Nor are two versions of a task document:
   /// its text lives in immutable version rows, so [updateJournalEntity] only
   /// has to pick which version the document shows. Nor are two copies of one
-  /// such version row, written by applying one confirmed proposal on two
+  /// such version row, written by applying one chat write on two
   /// devices: their text is the same by construction.
   Future<VclockStatus> detectConflict(
     JournalEntity existing,

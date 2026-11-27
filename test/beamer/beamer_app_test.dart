@@ -395,9 +395,9 @@ Future<void> _stubNavService(
   addTearDown(taskStack.dispose);
   final document = ValueNotifier<({String taskId, String documentId})?>(null);
   final reviewRequest =
-      ValueNotifier<
-        ({String taskId, String documentId, String changeSetId, int itemIndex})?
-      >(null);
+      ValueNotifier<({String taskId, String documentId, String versionId})?>(
+        null,
+      );
   when(() => navService.desktopTaskDocument).thenReturn(document);
   when(() => navService.taskDocumentReviewRequest).thenReturn(reviewRequest);
   addTearDown(document.dispose);
@@ -5505,8 +5505,7 @@ void main() {
             )..open((
               taskId: 'task-42',
               documentId: 'doc-1',
-              changeSetId: 'cs-draft',
-              itemIndex: 0,
+              versionId: 'version-2',
             ));
         await tester.pump();
         expect(find.byType(DayViewSidePanel), findsNothing);

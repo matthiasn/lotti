@@ -8,7 +8,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task_document_data.dart';
 import 'package:lotti/classes/task_document_merge.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
-import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/documents/state/document_review_providers.dart';
@@ -26,7 +25,6 @@ import '../../../classes/task_document_fixtures.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
-import '../document_draft_fixtures.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -34,12 +32,23 @@ void main() {
   const key = (taskId: 'task-1', documentId: 'doc-brief');
   late MockTaskDocumentRepository repository;
 
+  final first = taskDocumentVersionEntry(
+    id: 'version-1',
+    documentId: 'doc-brief',
+    markdown: '# Launch brief\n\nAll 36 penguins present.',
+  );
+  // The agent's version, written over the first.
   final version = taskDocumentVersionEntry(
     number: 2,
     id: 'version-2',
     documentId: 'doc-brief',
     markdown: '# Launch brief\n\nAll 37 penguins present.',
     author: TaskDocumentAuthor.agent,
+    baseVersionId: 'version-1',
+  );
+  // The same text as the user's own, for a page with nothing to announce.
+  final byHand = version.copyWith(
+    data: version.data.copyWith(author: TaskDocumentAuthor.user),
   );
   final document = taskDocumentEntry(
     clock: {'a': 1},
@@ -60,6 +69,10 @@ void main() {
     when(
       () => repository.currentVersion(document),
     ).thenAnswer((_) async => version);
+    when(() => repository.version(any())).thenAnswer((_) async => null);
+    when(
+      () => repository.version('version-1'),
+    ).thenAnswer((_) async => first);
     when(
       () => repository.version('version-2'),
     ).thenAnswer((_) async => version);
@@ -73,7 +86,7 @@ void main() {
     bool chat = false,
     DocumentReviewKey? initialReview,
     VoidCallback? onInitialReviewOpened,
-    List<PendingSuggestion> drafts = const [],
+    TaskDocumentVersionEntry? current,
     bool pushed = false,
   }) async {
     final doc = gone ? null : (shown ?? document);
@@ -104,16 +117,13 @@ void main() {
               taskDocumentRepositoryProvider.overrideWithValue(repository),
               taskDocumentProvider(key).overrideWith((ref) => doc),
               taskDocumentCurrentVersionProvider(key).overrideWith(
-                (ref) async => doc?.data.current == null ? null : version,
+                (ref) async =>
+                    doc?.data.current == null ? null : (current ?? version),
               ),
               taskDocumentVersionsProvider(key).overrideWith(
                 (ref) async => [version],
               ),
               queryChatEnabledProvider.overrideWithValue(chat),
-              unifiedSuggestionListProvider(key.taskId).overrideWith(
-                (ref) async =>
-                    UnifiedSuggestionList(open: drafts, activity: const []),
-              ),
             ],
           ),
         );
@@ -133,7 +143,7 @@ void main() {
       expect(find.text('Launch brief for Mission Control'), findsOneWidget);
       expect(
         tester.widget<Text>(find.byKey(TaskDocumentPageKeys.provenance)).data,
-        'v2 · Drafted by the agent, confirmed by you · 2 h ago',
+        'v2 · Written by the agent · 2 h ago',
       );
       expect(find.text('All 37 penguins present.'), findsOneWidget);
       expect(enabled(tester, TaskDocumentPageKeys.copy), isTrue);
@@ -332,23 +342,33 @@ void main() {
     );
   });
 
-  group('a draft waiting for review', () {
-    final draft = documentDraft(
-      base: 'version-2',
-      markdown: '# Launch brief\n\nAll 38 penguins present.',
+  group("reviewing the agent's version", () {
+    const reviewKey = (
+      taskId: 'task-1',
+      documentId: 'doc-brief',
+      versionId: 'version-2',
     );
 
-    testWidgets('no notice while no draft waits', (tester) async {
-      await pump(tester);
+    testWidgets('a version the user wrote is not announced', (tester) async {
+      await pump(tester, current: byHand);
+
+      expect(find.byKey(TaskDocumentPageKeys.review), findsNothing);
+      expect(find.text('The agent wrote this version'), findsNothing);
+    });
+
+    testWidgets('a document with no text has nothing to announce', (
+      tester,
+    ) async {
+      await pump(tester, shown: empty);
 
       expect(find.byKey(TaskDocumentPageKeys.review), findsNothing);
     });
 
-    testWidgets('the notice opens the draft beside the current text, and '
-        'closing the review returns to reading', (tester) async {
-      await pump(tester, drafts: [draft]);
+    testWidgets("the notice lays the agent's version beside the one before "
+        'it, and closing the review returns to reading', (tester) async {
+      await pump(tester);
 
-      expect(find.text('The agent drafted a new version'), findsOneWidget);
+      expect(find.text('The agent wrote this version'), findsOneWidget);
       await tester.tap(find.byKey(TaskDocumentPageKeys.review));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -356,12 +376,7 @@ void main() {
       final review = tester.widget<DocumentReviewView>(
         find.byType(DocumentReviewView),
       );
-      expect(review.reviewKey, (
-        taskId: 'task-1',
-        documentId: 'doc-brief',
-        changeSetId: 'cs-draft',
-        itemIndex: 0,
-      ));
+      expect(review.reviewKey, reviewKey);
       expect(review.title, 'Launch brief for Mission Control');
       expect(find.byKey(TaskDocumentPageKeys.edit), findsNothing);
 
@@ -373,60 +388,48 @@ void main() {
       expect(find.byKey(TaskDocumentPageKeys.edit), findsOneWidget);
     });
 
-    testWidgets('of several drafts, the notice opens the newest', (
-      tester,
-    ) async {
-      await pump(
-        tester,
-        drafts: [
-          draft,
-          documentDraft(
-            setId: 'cs-newest',
-            base: 'version-2',
-            createdAt: draft.changeSet.createdAt.add(const Duration(hours: 1)),
-          ),
-        ],
-      );
-
-      await tester.tap(find.byKey(TaskDocumentPageKeys.review));
-      await tester.pump();
+    testWidgets('nothing waits for a decision: Edit stays the filled button '
+        'and Review changes sits quiet beside it', (tester) async {
+      await pump(tester);
 
       expect(
         tester
-            .widget<DocumentReviewView>(find.byType(DocumentReviewView))
-            .reviewKey
-            .changeSetId,
-        'cs-newest',
+            .widget<DesignSystemButton>(find.byKey(TaskDocumentPageKeys.edit))
+            .variant,
+        DesignSystemButtonVariant.primary,
+      );
+      expect(
+        tester
+            .widget<DesignSystemButton>(find.byKey(TaskDocumentPageKeys.review))
+            .variant,
+        DesignSystemButtonVariant.secondary,
       );
     });
 
-    testWidgets('a review left open while its draft was decided elsewhere '
-        'is over: the page reads, and the review is cleared', (tester) async {
-      await pump(tester);
+    testWidgets('a review left open on a document deleted meanwhile is '
+        'over: the page says the document is gone, and the review is '
+        'cleared', (tester) async {
+      await pump(tester, gone: true);
       final container = ProviderScope.containerOf(
         tester.element(find.byType(TaskDocumentPage)),
       );
-      container.read(documentReviewOpenProvider('task-1').notifier).open((
-        taskId: 'task-1',
-        documentId: 'doc-brief',
-        changeSetId: 'cs-gone',
-        itemIndex: 0,
-      ));
+      container
+          .read(documentReviewOpenProvider('task-1').notifier)
+          .open(reviewKey);
       await tester.pump();
       await tester.pump();
 
       expect(find.byType(DocumentReviewView), findsNothing);
-      expect(find.byKey(TaskDocumentPageKeys.edit), findsOneWidget);
+      expect(find.text('This document was deleted.'), findsOneWidget);
       expect(container.read(documentReviewOpenProvider('task-1')), isNull);
     });
 
-    testWidgets('a draft handed in by the review route opens as the page '
+    testWidgets('a version handed in by the review route opens as the page '
         'appears, and the route hears so', (tester) async {
       var heard = 0;
       await pump(
         tester,
-        drafts: [draft],
-        initialReview: reviewOf(draft),
+        initialReview: reviewKey,
         onInitialReviewOpened: () => heard++,
       );
       await tester.pump();
@@ -436,18 +439,16 @@ void main() {
       expect(heard, 1);
     });
 
-    testWidgets("a draft of another document is not this page's to open", (
+    testWidgets("a version of another document is not this page's to open", (
       tester,
     ) async {
       var heard = 0;
       await pump(
         tester,
-        drafts: [draft],
         initialReview: (
           taskId: 'task-1',
           documentId: 'doc-other',
-          changeSetId: 'cs-draft',
-          itemIndex: 0,
+          versionId: 'version-2',
         ),
         onInitialReviewOpened: () => heard++,
       );
@@ -462,8 +463,7 @@ void main() {
       var left = 0;
       await pump(
         tester,
-        drafts: [draft],
-        initialReview: reviewOf(draft),
+        initialReview: reviewKey,
         onClose: () => left++,
       );
       await tester.pump();
@@ -491,8 +491,7 @@ void main() {
       var left = 0;
       await pump(
         tester,
-        drafts: [draft],
-        initialReview: reviewOf(draft),
+        initialReview: reviewKey,
         onClose: () => left++,
       );
       await tester.pump();
@@ -507,41 +506,5 @@ void main() {
       expect(find.byType(TaskDocumentPage), findsOneWidget);
       expect(left, 0);
     });
-
-    testWidgets('while a draft waits, Review changes is the filled button '
-        'and Edit steps down', (tester) async {
-      await pump(tester, drafts: [draft]);
-
-      expect(
-        tester
-            .widget<DesignSystemButton>(find.byKey(TaskDocumentPageKeys.review))
-            .variant,
-        DesignSystemButtonVariant.primary,
-      );
-      expect(
-        tester
-            .widget<DesignSystemButton>(find.byKey(TaskDocumentPageKeys.edit))
-            .variant,
-        DesignSystemButtonVariant.tertiary,
-      );
-    });
-
-    testWidgets('a draft written over an older version says so before it is '
-        'opened', (tester) async {
-      await pump(tester, drafts: [documentDraft()]);
-
-      expect(
-        find.text('The agent drafted a new version, but over an older one'),
-        findsOneWidget,
-      );
-      expect(find.text('The agent drafted a new version'), findsNothing);
-    });
   });
 }
-
-DocumentReviewKey reviewOf(PendingSuggestion draft) => (
-  taskId: draft.changeSet.taskId,
-  documentId: draft.item.args['documentId'] as String,
-  changeSetId: draft.changeSet.id,
-  itemIndex: draft.itemIndex,
-);

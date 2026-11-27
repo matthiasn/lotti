@@ -1062,7 +1062,7 @@ void main() {
       expect(context.documents, isNull);
       await expectLater(
         QueryTaskActionPlanner.validate(
-          'propose_document_version',
+          'write_document_version',
           {'documentId': 'doc-1', 'markdown': '# Brief', 'changeSummary': ''},
           context,
         ),
@@ -1150,7 +1150,7 @@ void main() {
       final tools = (result.input['tools'] as List).map(
         (tool) => (tool as Map)['name'],
       );
-      expect(tools, contains('propose_document_version'));
+      expect(tools, contains('write_document_version'));
       expect(result.input['documents'], [
         {
           'id': 'brief',
@@ -1217,7 +1217,7 @@ void main() {
         'context, never the model', () async {
       final result = await planWith([
         {
-          'name': 'propose_document_version',
+          'name': 'write_document_version',
           'arguments': {
             'documentId': ' brief ',
             'markdown': '# Brief',
@@ -1226,7 +1226,7 @@ void main() {
           'summary': 'Shorter brief',
         },
       ]);
-      expect(result.items.single.toolName, 'propose_document_version');
+      expect(result.items.single.toolName, 'write_document_version');
       expect(result.items.single.args, {
         'documentId': 'brief',
         'title': 'Habitat brief',
@@ -1244,7 +1244,7 @@ void main() {
     test('records a new document by its trimmed title', () async {
       final result = await planWith([
         {
-          'name': 'propose_document_version',
+          'name': 'write_document_version',
           'arguments': {
             'newTitle': ' Follow-up email ',
             'markdown': 'Hi team,',
@@ -1264,7 +1264,7 @@ void main() {
         'was not supplied', () async {
       final result = await planWith([
         {
-          'name': 'propose_document_version',
+          'name': 'write_document_version',
           'arguments': {
             'documentId': 'log',
             'markdown': 'Shorter log',
@@ -1280,7 +1280,7 @@ void main() {
     test('refuses a document the task does not hold', () async {
       await expectLater(
         QueryTaskActionPlanner.validate(
-          'propose_document_version',
+          'write_document_version',
           {'documentId': 'elsewhere', 'markdown': 'x', 'changeSummary': ''},
           withDocuments,
         ),
@@ -1317,7 +1317,7 @@ void main() {
       test('rejects a proposal with $name as malformed', () async {
         await expectLater(
           QueryTaskActionPlanner.validate(
-            'propose_document_version',
+            'write_document_version',
             args,
             withDocuments,
           ),
@@ -1334,7 +1334,7 @@ void main() {
 
     test('history shows a document proposal without its text', () {
       const item = ChangeItem(
-        toolName: 'propose_document_version',
+        toolName: 'write_document_version',
         args: {'documentId': 'brief', 'markdown': '# Brief'},
         humanSummary: '',
       );

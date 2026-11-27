@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task_document_data.dart';
 import 'package:lotti/classes/task_document_merge.dart';
-import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/documents/logic/markdown_block_diff.dart';
 import 'package:lotti/features/documents/state/document_review_providers.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
@@ -13,7 +13,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../classes/task_document_fixtures.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import '../document_draft_fixtures.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -24,8 +23,7 @@ void main() {
   const reviewKey = (
     taskId: taskId,
     documentId: documentId,
-    changeSetId: 'cs-draft',
-    itemIndex: 0,
+    versionId: 'version-2',
   );
 
   final v1 = taskDocumentVersionEntry(
@@ -33,10 +31,23 @@ void main() {
     documentId: documentId,
     markdown: '# Brief\n\nFeed the penguins at noon.\n\nCount them at dusk.',
   );
+  // The agent's version, written over v1.
   final v2 = taskDocumentVersionEntry(
     number: 2,
     id: 'version-2',
     documentId: documentId,
+    author: TaskDocumentAuthor.agent,
+    baseVersionId: 'version-1',
+    changeSummary: ' Feeds later, reports to the council. ',
+    markdown:
+        '# Brief\n\nFeed the penguins at one.\n\nCount them at '
+        'dusk.\n\nReport to the council.',
+  );
+  final v3 = taskDocumentVersionEntry(
+    number: 3,
+    id: 'version-3',
+    documentId: documentId,
+    baseVersionId: 'version-2',
     markdown: 'Edited by hand.',
   );
 
@@ -44,32 +55,30 @@ void main() {
       taskDocumentEntry(clock: {'a': 1}, id: documentId, current: version.ref);
 
   late MockTaskDocumentRepository repository;
-  late List<PendingSuggestion> open;
   late TaskDocumentEntry? document;
   late ProviderContainer container;
 
   setUp(() {
     repository = MockTaskDocumentRepository();
+    when(() => repository.version(any())).thenAnswer((_) async => null);
     when(() => repository.version('version-1')).thenAnswer((_) async => v1);
-    open = [documentDraft()];
-    document = documentShowing(v1);
+    when(() => repository.version('version-2')).thenAnswer((_) async => v2);
+    document = documentShowing(v2);
     container = ProviderContainer(
       overrides: [
         taskDocumentRepositoryProvider.overrideWithValue(repository),
-        unifiedSuggestionListProvider(taskId).overrideWith(
-          (ref) async => UnifiedSuggestionList(open: open, activity: const []),
-        ),
         taskDocumentProvider(docKey).overrideWith((ref) => document),
       ],
     );
     addTearDown(container.dispose);
   });
 
-  /// Listens to [documentReviewProvider] and waits until it has a review.
-  Future<DocumentReview> openReview() async {
-    container.listen(documentReviewProvider(reviewKey), (_, _) {});
+  /// Listens to [documentReviewProvider] for [key] and waits until it has a
+  /// review.
+  Future<DocumentReview> openReview([DocumentReviewKey key = reviewKey]) async {
+    container.listen(documentReviewProvider(key), (_, _) {});
     for (var i = 0; i < 20; i++) {
-      final review = container.read(documentReviewProvider(reviewKey));
+      final review = container.read(documentReviewProvider(key));
       if (review != null) return review;
       await Future<void>.value();
     }
@@ -84,41 +93,12 @@ void main() {
     }
   }
 
-  /// Reloads the task's proposals and lets the providers settle.
-  Future<void> reloadProposals(List<PendingSuggestion> next) async {
-    open = next;
-    container.invalidate(unifiedSuggestionListProvider(taskId));
-    await container.read(unifiedSuggestionListProvider(taskId).future);
-    await settle();
-  }
-
-  group('pendingDocumentProposalsProvider', () {
-    test('is null until the proposals load, then lists only this '
-        "document's drafts", () async {
-      open = [
-        documentDraft(),
-        documentDraft(setId: 'cs-other-doc', document: 'doc-other'),
-        documentDraft(setId: 'cs-title', tool: 'set_task_title'),
-      ];
-      container.listen(pendingDocumentProposalsProvider(docKey), (_, _) {});
-      expect(container.read(pendingDocumentProposalsProvider(docKey)), isNull);
-
-      await container.read(unifiedSuggestionListProvider(taskId).future);
-
-      expect(
-        container
-            .read(pendingDocumentProposalsProvider(docKey))!
-            .map((s) => s.changeSet.id),
-        ['cs-draft'],
-      );
-    });
-  });
-
   group('documentReviewProvider', () {
-    test('aligns the draft against the version it was drafted over', () async {
+    test('aligns the version against the one it was written over', () async {
       final review = await openReview();
 
       final snapshot = review.snapshot;
+      expect(snapshot.version, v2);
       expect(snapshot.baseVersion, v1);
       expect(snapshot.changeSummary, 'Feeds later, reports to the council.');
       expect(snapshot.pairs.map((pair) => pair.kind), [
@@ -131,81 +111,73 @@ void main() {
         snapshot.stats,
         const MarkdownBlockDiffStats(added: 1, removed: 0, rewritten: 1),
       );
-      expect(review.isStale, isFalse);
-      expect(review.newerProposalAvailable, isFalse);
+      expect(review.isCurrent, isTrue);
     });
 
-    test('a draft over a document with no text is all additions', () async {
-      open = [documentDraft(base: null, markdown: 'One.\n\nTwo.')];
-      document = taskDocumentEntry(clock: {'a': 1}, id: documentId);
+    test('a first version is all additions, with no line on what it changes '
+        'when it carries none', () async {
+      final first = taskDocumentVersionEntry(
+        id: 'version-first',
+        documentId: documentId,
+        markdown: 'One.\n\nTwo.',
+        changeSummary: '  ',
+      );
+      when(
+        () => repository.version('version-first'),
+      ).thenAnswer((_) async => first);
 
-      final review = await openReview();
+      final review = await openReview((
+        taskId: taskId,
+        documentId: documentId,
+        versionId: 'version-first',
+      ));
 
       expect(review.snapshot.baseVersion, isNull);
       expect(review.snapshot.stats.added, 2);
-      expect(review.isStale, isFalse);
-      verifyNever(() => repository.version(any()));
+      expect(review.snapshot.changeSummary, isNull);
+      // Only the version itself was read: it names no base.
+      verify(() => repository.version('version-first')).called(1);
+      verifyNever(() => repository.version('version-1'));
     });
 
-    test('a reload of the proposals keeps the pinned rows and reads '
-        'nothing again', () async {
-      final before = (await openReview()).snapshot;
+    test('a version landing meanwhile takes "current" away and keeps the '
+        'rows: neither version is read again', () async {
+      final before = await openReview();
+      clearInteractions(repository);
 
-      await reloadProposals([
-        documentDraft(),
-        documentDraft(setId: 'cs-title', tool: 'set_task_title'),
-      ]);
-
-      expect(
-        identical(
-          container.read(documentReviewProvider(reviewKey))!.snapshot,
-          before,
-        ),
-        isTrue,
-      );
-      verify(() => repository.version('version-1')).called(1);
-    });
-
-    test('a version landing meanwhile marks the review stale and keeps its '
-        'rows', () async {
-      final before = (await openReview()).snapshot;
-
-      document = documentShowing(v2);
+      document = documentShowing(v3);
       container.invalidate(taskDocumentProvider(docKey));
       await settle();
 
-      final review = container.read(documentReviewProvider(reviewKey))!;
-      expect(review.isStale, isTrue);
-      expect(identical(review.snapshot, before), isTrue);
+      final after = container.read(documentReviewProvider(reviewKey))!;
+      expect(after.isCurrent, isFalse);
+      expect(identical(after.snapshot, before.snapshot), isTrue);
+      verifyNever(() => repository.version(any()));
     });
 
-    test('a newer draft of the same document is announced, not swapped '
-        'in', () async {
-      final before = (await openReview()).snapshot;
+    test('is null for a version that does not exist, and for one of another '
+        'document', () async {
+      final other = taskDocumentVersionEntry(
+        id: 'version-other',
+        documentId: 'doc-other',
+      );
+      when(
+        () => repository.version('version-other'),
+      ).thenAnswer((_) async => other);
 
-      await reloadProposals([
-        documentDraft(),
-        documentDraft(
-          setId: 'cs-newer',
-          markdown: 'Something else entirely.',
-          createdAt: before.proposal.changeSet.createdAt.add(
-            const Duration(minutes: 5),
-          ),
-        ),
-      ]);
-
-      final review = container.read(documentReviewProvider(reviewKey))!;
-      expect(review.newerProposalAvailable, isTrue);
-      expect(identical(review.snapshot, before), isTrue);
-    });
-
-    test('closes once the draft is no longer waiting — decided elsewhere or '
-        'withdrawn', () async {
-      await openReview();
-
-      await reloadProposals(const []);
-
-      expect(container.read(documentReviewProvider(reviewKey)), isNull);
+      for (final versionId in ['version-missing', 'version-other']) {
+        final key = (
+          taskId: taskId,
+          documentId: documentId,
+          versionId: versionId,
+        );
+        container.listen(documentReviewProvider(key), (_, _) {});
+        final snapshot = await container.read(
+          documentReviewSnapshotProvider(key).future,
+        );
+        expect(snapshot, isNull, reason: versionId);
+        expect(container.read(documentReviewProvider(key)), isNull);
+      }
     });
   });
 
@@ -254,8 +226,7 @@ void main() {
       container.read(documentReviewOpenProvider('task-other').notifier).open((
         taskId: 'task-other',
         documentId: documentId,
-        changeSetId: 'cs-draft',
-        itemIndex: 0,
+        versionId: 'version-2',
       ));
       shown.value = docKey;
 

@@ -13,9 +13,9 @@ void main() {
     WidgetTester tester,
     MarkdownBlockPair pair, {
     int? baseVersion = 3,
-    int? proposedVersion = 4,
+    int version = 4,
     bool stacked = false,
-    bool stale = false,
+    bool byAgent = false,
   }) => tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       SizedBox(
@@ -23,10 +23,10 @@ void main() {
         child: ReviewBlockRow(
           pair: pair,
           baseVersion: baseVersion,
-          proposedVersion: proposedVersion,
+          version: version,
           noTextLabel: 'No text yet',
           stacked: stacked,
-          stale: stale,
+          byAgent: byAgent,
         ),
       ),
     ),
@@ -49,7 +49,7 @@ void main() {
 
     expect(find.byKey(ReviewBlockRowKeys.gutter), findsNothing);
     expect(find.textContaining(feed), findsNWidgets(2));
-    expect(find.bySemanticsLabel(RegExp('proposed version')), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('this version')), findsNothing);
     semantics.dispose();
   });
 
@@ -57,13 +57,13 @@ void main() {
     (
       const MarkdownBlockPair(kind: MarkdownBlockChange.added, proposed: feed),
       LottiIcons.add,
-      'Added in the proposed version',
+      'Added in this version',
       'Not in v3',
     ),
     (
       const MarkdownBlockPair(kind: MarkdownBlockChange.removed, base: feed),
       LottiIcons.remove,
-      'Removed in the proposed version',
+      'Removed in this version',
       'Not in v4',
     ),
     (
@@ -73,7 +73,7 @@ void main() {
         proposed: 'Feed the penguins at one.',
       ),
       LottiIcons.compare,
-      'Rewritten in the proposed version',
+      'Rewritten in this version',
       null,
     ),
   ]) {
@@ -112,18 +112,6 @@ void main() {
     );
 
     expect(find.text('No text yet'), findsOneWidget);
-  });
-
-  testWidgets('a draft that would not become the next version says its '
-      'slot is not in the draft', (tester) async {
-    await pumpRow(
-      tester,
-      const MarkdownBlockPair(kind: MarkdownBlockChange.removed, base: feed),
-      proposedVersion: null,
-    );
-
-    expect(find.text('Not in the draft'), findsOneWidget);
-    expect(find.textContaining('Not in v'), findsNothing);
   });
 
   testWidgets('a rewritten row is one band: a short side stands as tall as '
@@ -185,7 +173,7 @@ void main() {
     });
 
     testWidgets('a rewritten block shows its old text, quiet, under '
-        '"Current" above its new text under "Proposed" — both on the rewrite '
+        '"Before" above its new text under "After" — both on the rewrite '
         'surface, under one mark', (tester) async {
       const one = 'Feed the penguins at one.';
       await pumpRow(
@@ -208,11 +196,11 @@ void main() {
         ],
       );
       expect(
-        tester.getTopLeft(find.text('Current')).dy,
+        tester.getTopLeft(find.text('Before')).dy,
         lessThan(tester.getTopLeft(find.byType(ReviewBlockCell).at(0)).dy),
       );
       expect(
-        tester.getTopLeft(find.text('Proposed')).dy,
+        tester.getTopLeft(find.text('After')).dy,
         lessThan(tester.getTopLeft(find.byType(ReviewBlockCell).at(1)).dy),
       );
       final found = find.byType(ReviewBlockCell);
@@ -258,21 +246,20 @@ void main() {
     );
   });
 
-  testWidgets("stacked, a stale draft's old half is headed by the version "
-      'it was drafted over, not "Current"', (tester) async {
-    await pumpRow(
-      tester,
-      const MarkdownBlockPair(
-        kind: MarkdownBlockChange.rewritten,
-        base: feed,
-        proposed: 'Feed the penguins at one.',
-      ),
-      stacked: true,
-      stale: true,
+  testWidgets("stacked, the new half of the agent's version wears its "
+      'spark; one the user wrote does not', (tester) async {
+    const pair = MarkdownBlockPair(
+      kind: MarkdownBlockChange.rewritten,
+      base: feed,
+      proposed: 'Feed the penguins at one.',
     );
 
-    expect(find.text('Drafted over'), findsOneWidget);
-    expect(find.text('Current'), findsNothing);
+    await pumpRow(tester, pair, stacked: true, byAgent: true);
+    expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
+
+    await pumpRow(tester, pair, stacked: true);
+    expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
+    expect(find.text('After'), findsOneWidget);
   });
 
   for (final stacked in [false, true]) {

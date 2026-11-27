@@ -1711,10 +1711,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Följeslagaren i helskärm';
 
   @override
-  String get aiCardDocumentProposalsHint =>
-      'Läs varje utkast och bekräfta det sedan för sig.';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'Historik · $count';
   }
@@ -7098,60 +7094,28 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get documentProposalConfirmNew => 'Skapa dokument';
+  String get documentReviewAdded => 'Tillagt i den här versionen';
 
   @override
-  String get documentProposalConfirmVersion => 'Använd den här versionen';
+  String get documentReviewAfter => 'Efter';
 
   @override
-  String get documentProposalDiscard => 'Släng utkastet';
-
-  @override
-  String get documentProposalKindNew => 'Föreslaget nytt dokument';
-
-  @override
-  String get documentProposalKindVersion => 'Föreslagen ny version';
-
-  @override
-  String get documentProposalRead => 'Läs utkast';
-
-  @override
-  String get documentReviewAdded => 'Tillagt i den föreslagna versionen';
+  String get documentReviewAgentWrote =>
+      'Agenten har skrivit den här versionen';
 
   @override
   String get documentReviewAskForChanges => 'Be om ändringar';
 
   @override
-  String get documentReviewBase => 'Skrivet utifrån';
+  String get documentReviewBefore => 'Före';
 
   @override
   String get documentReviewClose => 'Stäng granskning';
 
   @override
-  String documentReviewConfirm(int number) {
-    return 'Bekräfta v$number';
-  }
-
-  @override
   String documentReviewCounts(int added, int removed, int rewritten) {
     return '$added tillagda, $removed borttagna, $rewritten omskrivna';
   }
-
-  @override
-  String get documentReviewCurrent => 'Nuvarande';
-
-  @override
-  String get documentReviewDiscardMessage =>
-      'Agentens utkast kastas. Du kan be om ett nytt i uppgiftens chatt.';
-
-  @override
-  String get documentReviewDiscardTitle => 'Kasta det här utkastet?';
-
-  @override
-  String get documentReviewNewer => 'Öppna det nyare utkastet';
-
-  @override
-  String get documentReviewNotInDraft => 'Inte i utkastet';
 
   @override
   String documentReviewNotInVersion(int number) {
@@ -7162,34 +7126,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get documentReviewOpen => 'Granska ändringar';
 
   @override
-  String get documentReviewProposed => 'Föreslagen';
+  String get documentReviewRemoved => 'Borttaget i den här versionen';
 
   @override
-  String get documentReviewRedo => 'Be om en ny version i chatten';
+  String get documentReviewRewritten => 'Omskrivet i den här versionen';
 
   @override
-  String get documentReviewRemoved => 'Borttaget i den föreslagna versionen';
-
-  @override
-  String get documentReviewRewritten => 'Omskrivet i den föreslagna versionen';
-
-  @override
-  String documentReviewStale(int base, int current) {
-    return 'Skriven mot v$base, men dokumentet är nu v$current: att bekräfta skulle skriva över den nyare texten.';
+  String documentReviewUndo(int number) {
+    return 'Gå tillbaka till v$number';
   }
-
-  @override
-  String documentReviewStaleNoText(int current) {
-    return 'Skriven innan dokumentet hade text; det är nu v$current, och att bekräfta skulle skriva över det.';
-  }
-
-  @override
-  String get documentReviewWaiting =>
-      'Agenten har skrivit ett utkast till en ny version';
-
-  @override
-  String get documentReviewWaitingStale =>
-      'Agenten har skrivit ett utkast till en ny version, men utifrån en äldre';
 
   @override
   String get doneButton => 'Klart';
@@ -18214,10 +18159,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskDocumentsDeleteTitle => 'Ta bort det här dokumentet?';
 
   @override
-  String get taskDocumentsDraftedByAgent =>
-      'Utkast av agenten, bekräftat av dig';
-
-  @override
   String get taskDocumentsEdit => 'Redigera dokument';
 
   @override
@@ -18268,6 +18209,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByAgent => 'Skrivet av agenten';
 
   @override
   String get taskDocumentsWrittenByYou => 'Skrivet av dig';

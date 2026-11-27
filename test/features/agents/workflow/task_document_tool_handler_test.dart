@@ -14,7 +14,7 @@ void main() {
 
   Future<({bool success, bool nonRetryable, String output, String? mutated})>
   apply(Map<String, dynamic> args, {ChangeEffect? withEffect = effect}) async {
-    final result = await applyDocumentProposal(
+    final result = await applyDocumentVersion(
       source: source,
       taskId: taskId,
       args: args,
@@ -126,7 +126,7 @@ void main() {
   );
 
   test('says so when the documents feature is not wired', () async {
-    final result = await applyDocumentProposal(
+    final result = await applyDocumentVersion(
       source: null,
       taskId: taskId,
       args: const {'documentId': 'doc-1', 'markdown': 'x'},
@@ -134,6 +134,6 @@ void main() {
     );
 
     expect(result.success, isFalse);
-    expect(result.errorMessage, 'propose_document_version is not configured');
+    expect(result.errorMessage, 'write_document_version is not configured');
   });
 }

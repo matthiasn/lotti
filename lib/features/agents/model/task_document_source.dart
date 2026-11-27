@@ -30,13 +30,13 @@ class TaskDocumentText {
   final String markdown;
 }
 
-/// What applying a confirmed document proposal came to.
+/// What writing an agent's version of a document came to.
 sealed class TaskDocumentApplyOutcome {
   const TaskDocumentApplyOutcome();
 }
 
-/// The proposed text is the document's current version: written now, or
-/// already, by an earlier application of the same confirmation.
+/// The text is the document's current version: written now, or already, by
+/// an earlier application of the same write.
 class TaskDocumentApplied extends TaskDocumentApplyOutcome {
   const TaskDocumentApplied({
     required this.documentId,
@@ -48,9 +48,8 @@ class TaskDocumentApplied extends TaskDocumentApplyOutcome {
 }
 
 /// Nothing was written. [permanent] when applying again could only fail the
-/// same way — the document moved on past the version the proposal was
-/// drafted against, or was deleted — so the proposal is withdrawn rather
-/// than left for another try.
+/// same way — the document moved on past the version the text was written
+/// against, or was deleted.
 class TaskDocumentApplyRefused extends TaskDocumentApplyOutcome {
   const TaskDocumentApplyRefused({
     required this.reason,
@@ -63,7 +62,7 @@ class TaskDocumentApplyRefused extends TaskDocumentApplyOutcome {
 }
 
 /// A task's documents, for the task agent: what it may read during a wake,
-/// and where a document proposal the user confirmed is written.
+/// and where a version it writes goes.
 ///
 /// The port the task agent depends on; the documents feature, which ranks
 /// above agents, implements it, and the composition root wires it. Unwired,
@@ -81,12 +80,12 @@ abstract interface class TaskDocumentSource {
 
   /// Writes [markdown] as the next version of document [documentId] of
   /// [taskId] — or, with [newTitle] instead, creates a document with it as
-  /// the first version — as the agent's, confirmed by the user.
+  /// the first version — as the agent's.
   ///
-  /// The version is written over [baseVersionId], the one the proposal was
-  /// drafted against, and only while the document still shows it. The two
-  /// inputs derive the ids of what this creates, so applying the same
-  /// confirmation twice writes once ([TaskDocumentApplied] either way).
+  /// The version is written over [baseVersionId], the one the agent read,
+  /// and only while the document still shows it. The two inputs derive the
+  /// ids of what this creates, so applying the same write twice writes once
+  /// ([TaskDocumentApplied] either way).
   Future<TaskDocumentApplyOutcome> apply({
     required String taskId,
     required String markdown,

@@ -67,7 +67,7 @@ TaskDocumentEntry mergeConcurrentTaskDocumentVersions(
 }
 
 /// The row every device writes for two concurrent copies of one task
-/// document version (ADR 0167): the same confirmed proposal applied on two
+/// document version (ADR 0167): the same chat write applied on two
 /// devices before either synced, both deriving the version's id from it.
 ///
 /// A version's text never changes, so the copies differ only in when each

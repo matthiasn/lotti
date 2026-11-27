@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task_document_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/task_document_copy.dart';
 import 'package:lotti/features/documents/ui/task_document_editor.dart';
+import 'package:lotti/features/documents/ui/task_document_labels.dart';
 import 'package:lotti/features/documents/ui/task_document_navigation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/relative_age_label.dart';
@@ -120,9 +122,11 @@ class TaskDocumentsSection extends ConsumerWidget {
 }
 
 /// One document of a task: its title, then its version and how long ago it
-/// was written — or that it has no text yet. Tapping it opens the document
-/// page; the Copy action copies the current version's markdown, and is
-/// offered only once there is one.
+/// was written — or that it has no text yet. A version the agent wrote says
+/// so ("v3 · Written by the agent · 2 h ago"): the agent writes without
+/// asking (ADR 0167), and this line is where the task shows that it did.
+/// Tapping the row opens the document page; the Copy action copies the
+/// current version's markdown, and is offered only once there is one.
 class TaskDocumentRow extends ConsumerWidget {
   const TaskDocumentRow({
     required this.taskId,
@@ -138,6 +142,20 @@ class TaskDocumentRow extends ConsumerWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final current = document.data.current;
+    // Read with `.value`: the line a row shows stays while the next version
+    // loads.
+    final version = ref
+        .watch(
+          taskDocumentCurrentVersionProvider((
+            taskId: taskId,
+            documentId: document.id,
+          )),
+        )
+        .value;
+    final byAgent =
+        version != null &&
+        version.id == current?.id &&
+        version.data.author == TaskDocumentAuthor.agent;
 
     Future<void> copy() async {
       final version = await ref
@@ -159,6 +177,8 @@ class TaskDocumentRow extends ConsumerWidget {
       titleMaxLines: 2,
       subtitle: current == null
           ? messages.taskDocumentsNoText
+          : byAgent
+          ? taskDocumentVersionLine(messages, version, now: clock.now())
           : '${messages.taskDocumentsVersion(current.number)} · '
                 '${relativeAgeOrDateLabel(messages, at: current.createdAt, now: clock.now())}',
       subtitleEmphasis: tokens.colors.text.mediumEmphasis,

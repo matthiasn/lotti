@@ -1,21 +1,21 @@
 ---
 type: Feature Module
 title: Task documents
-description: Markdown documents a task holds, drafted and revised by its agent through proposals and edited by hand — partly built.
+description: Markdown documents a task holds, written and revised by its agent when asked and edited by hand, every version kept — partly built.
 resource: ../../lib/features/documents
-tags: [documents, tasks, agents, proposals, markdown, versions, review]
+tags: [documents, tasks, agents, markdown, versions, review]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-11-23T20:00:00Z }
+generated: { by: claude-code/fable-5.2, at: 2026-11-27T18:00:00Z }
 stale_after: 2027-04-03
 sources:
   - id: tool-definitions
     resource: ../../lib/features/agents/tools/task_document_tool_definitions.dart
-    title: read_document and propose_document_version
-    last_modified: 2026-11-23
+    title: read_document and write_document_version
+    last_modified: 2026-11-27
   - id: strategy-handlers
     resource: ../../lib/features/agents/workflow/task_agent_document_handlers.dart
     title: The strategy's document handlers
-    last_modified: 2026-11-23
+    last_modified: 2026-11-27
   - id: document-context
     resource: ../../lib/features/agents/workflow/task_document_context.dart
     title: The wake's Documents section and the read answer
@@ -30,20 +30,20 @@ sources:
     last_modified: 2026-11-23
   - id: apply-handler
     resource: ../../lib/features/agents/workflow/task_document_tool_handler.dart
-    title: applyDocumentProposal
-    last_modified: 2026-11-23
+    title: applyDocumentVersion
+    last_modified: 2026-11-27
   - id: page
     resource: ../../lib/features/documents/ui/task_document_page.dart
     title: TaskDocumentPage
-    last_modified: 2026-11-23
+    last_modified: 2026-11-27
   - id: review-view
     resource: ../../lib/features/documents/ui/widgets/document_review_view.dart
     title: DocumentReviewView — the side-by-side review and its gate
-    last_modified: 2026-11-23
+    last_modified: 2026-11-27
   - id: history
     resource: ../../lib/features/documents/ui/task_document_history.dart
     title: TaskDocumentHistory and TaskDocumentVersionView
-    last_modified: 2026-11-23
+    last_modified: 2026-11-27
   - id: navigation
     resource: ../../lib/features/documents/ui/task_document_navigation.dart
     title: openTaskDocument
@@ -51,11 +51,11 @@ sources:
   - id: tasks-location
     resource: ../../lib/beamer/locations/tasks_location.dart
     title: The document route and the review route
-    last_modified: 2026-11-23
+    last_modified: 2026-11-27
   - id: section
     resource: ../../lib/features/documents/ui/task_documents_section.dart
     title: TaskDocumentsSection and TaskDocumentRow
-    last_modified: 2026-11-22
+    last_modified: 2026-11-27
   - id: editor
     resource: ../../lib/features/documents/ui/task_document_editor.dart
     title: TaskDocumentEditor
@@ -89,16 +89,16 @@ sources:
     title: Journal row type and subtype for both variants
     last_modified: 2026-11-22
   - id: adr-0167
-    resource: ../../docs/adr/0167-task-documents-are-journal-entries-revised-by-proposal.md
-    title: "ADR 0167: Task Documents Are Journal Entries, Revised by Proposal"
-    last_modified: 2026-11-22
+    resource: ../../docs/adr/0167-task-documents-are-journal-entries-the-agent-writes-directly.md
+    title: "ADR 0167: Task Documents Are Journal Entries the Agent Writes Directly, With Version History"
+    last_modified: 2026-11-27
   - id: agent-entities
     resource: ../../lib/classes/agents/agent_domain_entity.dart
     title: Soul document, version and head — the versioning model reused here
     last_modified: 2026-10-31
   - id: change-set
     resource: ../../lib/classes/agents/change_set.dart
-    title: ChangeItem — the proposal a version travels in
+    title: ChangeItem — what a version written from task chat is applied from
     last_modified: 2026-11-05
   - id: journal-entities
     resource: ../../lib/classes/journal_entities.dart
@@ -112,6 +112,14 @@ sources:
     resource: ../../lib/features/agents/service/change_set_confirmation_service.dart
     title: ChangeSetConfirmationService
     last_modified: 2026-11-14
+  - id: chat-actions
+    resource: ../../lib/features/agents/query/query_chat_action_service.dart
+    title: QueryChatActionService.writeDocuments
+    last_modified: 2026-11-27
+  - id: review-state
+    resource: ../../lib/features/documents/state/document_review_providers.dart
+    title: The review's snapshot and what is live around it
+    last_modified: 2026-11-27
   - id: dispatcher
     resource: ../../lib/features/agents/workflow/task_tool_dispatcher.dart
     title: TaskToolDispatcher
@@ -137,27 +145,26 @@ sources:
 # Task documents
 
 > **Partly built.** This concept describes the design agreed in
-> [ADR 0167](../../docs/adr/0167-task-documents-are-journal-entries-revised-by-proposal.md).
+> [ADR 0167](../../docs/adr/0167-task-documents-are-journal-entries-the-agent-writes-directly.md).
 > What runs today: the two journal variants, their merge, the repository,
 > the user's side of the UI — the Documents section, the Add sheet row, the
 > editor, and the document page with history, restore and delete — and the
-> task agent's side: it lists the task's documents, reads one on request,
-> proposes versions when asked, and a confirmed proposal is written
+> agent's side: the task agent lists the task's documents, reads one on
+> request and writes versions when asked, from a wake and from task chat
 > ([How a version is made](#how-a-version-is-made),
-> [Applying a confirmed proposal](#applying-a-confirmed-proposal)). Task
-> chat proposes versions too, a proposal's text can be read before it is
-> confirmed, and the document page hosts the task's chat
-> ([Reading a proposal](#reading-a-proposal)). The side-by-side review
-> runs inside the document page and marks the words a rewrite changed,
-> the task list and day column step aside for it, and a route opens it directly. Each implementation
-> step rewrites the part it lands, and the page moves to `stable` when the
-> last part does.
+> [Writing an agent version](#writing-an-agent-version)). The document page
+> hosts the task's chat, says when the version it shows is the agent's, and
+> lays a version beside the one before it
+> ([Side-by-side review](#side-by-side-review)). Still to build: a
+> notification that the agent wrote a version. The page moves to `stable`
+> when that lands.
 
 A task can hold several markdown documents, such as a client one-pager, a
-meeting summary or a follow-up email. The task agent drafts and revises them
-from what the task already holds, and only when asked. Each agent version is
-a proposal the user confirms or dismisses. The user can also edit by hand,
-and copies the markdown out.
+meeting summary or a follow-up email. The task agent writes and revises them
+from what the task already holds, and only when asked. Its version becomes
+the document's text at once, with no confirmation: every earlier version is
+kept, and going back is one action. The user can also edit by hand, and
+copies the markdown out.
 
 ## Entities
 
@@ -184,8 +191,9 @@ flowchart LR
 - **`TaskDocumentVersionEntry`** is written once and never changed:
   `documentId`, `number`, `markdown`, `author` (`user` or `agent`; an author
   a newer build added reads as `user`), and provenance: `baseVersionId`,
-  `changeSummary`, `changeEffectKey` (the change item's effect key) for a confirmed agent
-  version, `restoredFromVersionId` for a restore.
+  `changeSummary`, `changeEffectKey` (the change item's effect key) for an
+  agent version written from task chat, `restoredFromVersionId` for a
+  restore.
 - **A document's versions are an indexed lookup.**
   [`toDbEntity`](../../lib/database/conversions.dart) writes a version's
   `documentId` into the `subtype` column (the goal snapshot precedent), and
@@ -205,8 +213,8 @@ flowchart LR
 ## The repository
 
 [`TaskDocumentRepository`](../../lib/features/documents/repository/task_document_repository.dart)
-is the only writer. Every write in it is the user's own or one the user
-confirmed.
+is the only writer. A write in it is the user's own or the agent's, each
+recorded as such.
 
 - **`create`** stores a document with no version yet, linked from its task
   (`createDbEntity` with `linkedId`), in the task's category and with its
@@ -222,7 +230,7 @@ confirmed.
   back `stale`. If it was deleted, the result is `missing`.
 - **`restore`** writes an older version's text as the next version, by the
   user, with `restoredFromVersionId`.
-- **`rename`** is built on the stored row, so a version confirmed meanwhile
+- **`rename`** is built on the stored row, so a version written meanwhile
   is kept.
 - **`delete`** deletes the document and every version of it, like the pull
   request feature deletes an entry's summaries: nothing reaches a version
@@ -247,45 +255,54 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  VN[Voice note or transcript asks for a document] --> W[Task agent wake]
+  VN[Voice note or note asks for a document] --> W[Task agent wake]
   CH[Change request in task chat] --> P[QueryTaskActionPlanner]
-  W --> TOOL["propose_document_version"]
-  P --> TOOL
-  TOOL --> CI[ChangeItem in a change set]
-  CI -->|confirm, base still current| S[ChangeSetConfirmationService]
-  S --> X[TaskToolDispatcher]
+  W --> RD["read_document, for a document that has text"]
+  RD --> TOOL["write_document_version"]
+  P --> ITEM[ChangeItem of the answer, applied when the answer is saved]
+  TOOL --> X[TaskToolDispatcher]
+  ITEM --> X
   X --> PORT[Interface defined by agents, implemented by documents]
-  PORT --> WRITE[Write version and move the pointer in one transaction]
+  PORT --> WRITE[Store the version, then point the document at it]
   HAND[Hand edit or restore by the user] --> WRITE
 ```
 
-- **The agent proposes only when asked.** A voice note, text entry or chat
+- **The agent writes only when asked.** A voice note, text entry or chat
   message has to ask for a document or name one. In chat, the router's
   `actionRequest` counts writing or revising a task document as a change
   request, and the planner works from the documents' text, not the task's
   transcripts ([Scoped query conversations](agents/query-chat.md#task-actions-and-inline-approval)). New material on the task
   does not revise documents by itself. The system prompt's `## Documents`
   rules and the tool description carry this; nothing in code can tell a
-  request from other text, so the proposal step is the backstop: nothing
-  reaches the document unconfirmed.
+  request from other text, and no confirmation stands behind it any more
+  (ADR 0167, decision 6). What bounds a misjudged wake is below.
 - **What the agent reads.** Every wake gets a directory of the task's
   documents (id, quoted title, version). Full text comes only
   through the local read tool `read_document(id)`. This is a deliberate
   exception to the task agent omitting its prior report's prose (see
   [Task agents](agents/task-agents.md)), and the ADR gives the reason.
-- **The proposal** carries `documentId` (or `newTitle` for a first draft),
-  the full `markdown`, a `changeSummary`, and `baseVersionId`, the version
-  it was drafted against — filled in from the wake's listing, never taken
-  from the model — plus the document's `title` for the review row. One
-  version per document waits for the user at a time; the agent is told to
-  retract a pending one before proposing its replacement. The tools, their
-  gating and the validation are in
-  [Task agents](agents/task-agents.md#task-documents).
-- **The write** is [Applying a confirmed proposal](#applying-a-confirmed-proposal),
-  below.
-- **Hand edits** are the user's own writes and skip the proposal.
+- **The write** carries `documentId` (or `newTitle` for a first document),
+  the full `markdown` and a `changeSummary`, and is written over
+  `baseVersionId`, which is never taken from the model. It becomes the
+  document's current version at once.
+- **What stands in for the confirmation**, checked before anything is
+  written ([`task_agent_document_handlers.dart`](../../lib/features/agents/workflow/task_agent_document_handlers.dart)):
+  - **Read before revising.** In a wake, a document that has text must have
+    been read with `read_document` in that wake; the version is written over
+    the version that read returned. In chat, a document may be revised only
+    when its text was supplied to the model, over the version supplied.
+  - **Never over newer text.** The repository's compare-and-set refuses a
+    version whose base the document no longer shows — the user edited
+    meanwhile. Nothing is written; a wake's agent is told to read again, and
+    must, before another try.
+  - **One version per document in a wake**, and one new document per title.
+    A repeat is refused.
+- **Where it shows that the agent wrote.** The version is the agent's
+  (`author: agent`), and the task's document row, the document page and the
+  history say so ([Where it shows](#where-it-shows)).
+- **Hand edits** are the user's own writes, through the same repository.
 
-## Applying a confirmed proposal
+## Writing an agent version
 
 `agents` ranks below `documents`, so the task agent depends on a port,
 [`TaskDocumentSource`](../../lib/features/agents/model/task_document_source.dart),
@@ -294,65 +311,51 @@ the pattern
 set. The documents feature implements it in
 [`TaskDocumentAgentSource`](../../lib/features/documents/service/task_document_agent_source.dart),
 over the repository, and `app_bootstrap.dart` wires it into
-`taskDocumentSourceProvider`. Unwired, the provider is null and the
-dispatcher answers that the tool is not configured.
+`taskDocumentSourceProvider`. Unwired, the provider is null, the tools are
+not offered, and the dispatcher answers that the tool is not configured.
 
-On confirmation, `ChangeSetConfirmationService` dispatches the item with its
-`ChangeEffect`, and `TaskToolDispatcher` hands the arguments to
-[`applyDocumentProposal`](../../lib/features/agents/workflow/task_document_tool_handler.dart):
+Both ways in end at `TaskToolDispatcher`, which hands the arguments to
+[`applyDocumentVersion`](../../lib/features/agents/workflow/task_document_tool_handler.dart):
 
-- **Once, however often it applies** (ADR 0075). The document and the
-  version take ids derived from the effect (`entityInput('task-document')`,
+- **From a wake**, the strategy validates the call and runs it through the
+  tool executor, which enforces the category policy and records the call
+  and its result. The wake's dispatcher is given the port for this. There is
+  no change item and no effect: the ids of what it writes are derived from
+  a key unique to the call.
+- **From task chat**, the planner records the version as a `ChangeItem` of
+  the answer, like every change it plans. Once the answer is saved,
+  `QueryChatController` calls
+  [`QueryChatActionService.writeDocuments`](../../lib/features/agents/query/query_chat_action_service.dart),
+  which applies the document items — and only those — through
+  `ChangeSetConfirmationService`, re-checking the chat's scope and the
+  item against fresh context as any chat approval is. The other items of
+  the answer still wait for the user. A version that could not be written
+  stays pending on its row in the chat, where it is applied like any other
+  change; a failure never fails the answer.
+- **Once, however often it applies** (ADR 0075). A chat item may be applied
+  on two devices before they sync, so the document and the version take ids
+  derived from its effect (`entityInput('task-document')`,
   `entityInput('task-document-version')`). `create` and `writeVersion`
   given a `uuidV5Input` first look for the entity that id names: a version
-  already there is the effect having happened — on this device, or synced
-  from one that confirmed too — and comes back `written` with nothing
-  written. A version there deleted is an earlier attempt that found the
-  document moved on and took its row back, and comes back `stale`, as that
-  attempt did. A new document deleted since is not brought back.
+  already there is the effect having happened and comes back `written` with
+  nothing written. A version there deleted is an earlier attempt that found
+  the document moved on and took its row back, and comes back `stale`, as
+  that attempt did. A new document deleted since is not brought back.
 - **Over its base.** The version is written with the repository's
-  compare-and-set, as the agent's (`author: agent`), with the proposal's
-  `changeSummary` and the effect key as `changeEffectKey`. A new document
-  (`newTitle`) is created first and written over what it shows.
+  compare-and-set, as the agent's (`author: agent`), with its
+  `changeSummary` and, from chat, the effect key as `changeEffectKey`. A new
+  document (`newTitle`) is created first and written over what it shows.
 - **Refused for good, or for now.** A stale base, a deleted document or one
   not on the task is `TaskDocumentApplyRefused(permanent: true)`, which the
-  dispatcher returns `nonRetryable`, so the item is withdrawn. A failed write
-  is not permanent: the item goes back to pending, to confirm again.
-
-## Proposal lifecycle
-
-A document proposal uses the `ChangeItemStatus` states every proposal
-already has
-([`agent_enums.dart`](../../lib/classes/agents/agent_enums.dart)). Being
-stale is not a status. It is derived each time the proposal is shown, by
-comparing `baseVersionId` with the document's current version.
-
-```mermaid
-stateDiagram-v2
-  [*] --> pending: agent calls propose_document_version
-  pending --> confirmed: user confirms, base still current
-  pending --> rejected: user dismisses, with an optional reason
-  pending --> deferred: user decides later
-  deferred --> pending: user reopens it
-  pending --> retracted: the agent retracts it, or confirming finds it stale
-  confirmed --> [*]
-  rejected --> [*]
-  retracted --> [*]
-```
-
-- **A stale proposal cannot be confirmed.** Today the apply refuses it for
-  good: the dispatch fails `nonRetryable`, and the confirmation service
-  records that as a retraction, so it leaves the open list instead of
-  failing again on every tap. The side-by-side review catches it before
-  that: it offers "Ask for a redo in chat" instead of Confirm.
-- **A dismiss reason is feedback.** It reaches the next draft the way
-  rejection reasons already reach the task agent.
+  dispatcher returns `nonRetryable`: a wake's agent is told why, and a chat
+  item is withdrawn. A failed write is not permanent: a chat item stays
+  pending, to apply again.
 
 ## Merging across devices
 
 Versions never conflict because they are never edited. Two concurrent
-versions of a `TaskDocumentEntry` (say a rename on the phone and a confirm
-on the desktop) are merged in
+versions of a `TaskDocumentEntry` (say a rename on the phone and an agent's
+version on the desktop) are merged in
 [`database_entity_ops.dart`](../../lib/database/database_entity_ops.dart)
 without a user-facing conflict, like the pull request pair already is, by
 [`mergeConcurrentTaskDocumentVersions`](../../lib/classes/task_document_merge.dart):
@@ -368,8 +371,8 @@ without a user-facing conflict, like the pull request pair already is, by
 - **The clock** is the join of both. Either argument order gives the same
   row, which a property test checks.
 
-One confirmed proposal applied on two devices before either synced writes
-the same version row twice: both derive its id from the effect. Those two
+One chat write applied on two devices before either synced writes the same
+version row twice: both derive its id from the effect. Those two
 copies merge without a conflict too, by
 [`mergeConcurrentTaskDocumentVersionRows`](../../lib/classes/task_document_merge.dart):
 their text is the same by construction, so the later write is kept, under
@@ -388,7 +391,11 @@ A device on an older build skips both variants as undeserializable.
   linked tasks and pull requests. It shows only while the task holds a
   document (`taskDocumentsProvider`, the task's live linked entries, oldest
   first), so it never stands empty and needs no opt-in flag. Each row shows
-  the title, then `v3 · 2 h ago` or "No text yet"; Copy puts the current
+  the title, then `v3 · 2 h ago` or "No text yet". A version the agent wrote
+  says so — `v3 · Written by the agent · 2 h ago` — which is where the task
+  itself shows that the agent wrote without asking; the row reads the
+  version's author with `.value`, so the line stays while the next version
+  loads. Copy puts the current
   version's markdown on the clipboard and is offered only once there is
   one, as a quiet icon beside the row; a trailing chevron, last on every row,
   says tapping the row opens the document page. The header's + opens the
@@ -409,23 +416,22 @@ A device on an older build skips both variants as undeserializable.
 - **Document page.**
   [`TaskDocumentPage`](../../lib/features/documents/ui/task_document_page.dart):
   the title with Delete beside it (a neutral icon; its confirmation carries
-  the warning), a provenance line ("v2 · Drafted by the
-  agent, confirmed by you · 2 h ago"), Edit (the one filled button, unless a
-  draft waits), Copy,
+  the warning), a provenance line ("v2 · Written by the agent · 2 h ago"),
+  Edit (the one filled button), Copy,
   History and the chat disc, then the text rendered by `AgentMarkdownView`.
   Header and text share `kProseMeasureWidth`. A leading `# heading` that only
   repeats the title is not shown a second time (`withoutRepeatedTitle` in
   [`markdown_title.dart`](../../lib/widgets/markdown/markdown_title.dart));
-  the page, the version view and the proposal preview all do this, and Copy
+  the page and the version view both do this, and Copy
   still copies the markdown whole. It reads
   `taskDocumentCurrentVersionProvider`, which re-reads only when the
   document moves to another version (a rename reads nothing) and keeps the
   version on show while the next loads, so the text is replaced in place.
-  While the task agent has a draft of this document waiting, a card on the
-  agent's surface above the actions says so ("The agent drafted a new
-  version") with "Review changes" — the page's one filled button then, Edit
-  stepping down to tertiary — which opens the newest one in the
-  [side-by-side review](#side-by-side-review-desktop-partly-built).
+  While the version on show is the agent's, a card on the agent's surface
+  above the actions says so ("The agent wrote this version") with a quiet
+  "Review changes", which opens that version in the
+  [side-by-side review](#side-by-side-review). Nothing there waits for a
+  decision, so Edit stays the filled button.
   A document deleted while open says so. Delete asks first, then deletes
   the document with its versions and leaves the page.
 - **History.**
@@ -437,43 +443,15 @@ A device on an older build skips both variants as undeserializable.
   version over the one on show (`restore` with that `baseVersionId`). A
   refused restore says a newer version arrived; a written one closes the
   version view and the History sheet under it, back onto the page, which
-  shows the restored text.
+  shows the restored text. A version written over another also offers
+  "Review changes", which closes both sheets and opens that version's
+  [side-by-side review](#side-by-side-review) on the page.
 - **Ask.** The page sits inside the task's own `QueryCompanion`, and its
   actions are followed, on a line of their own, by `QueryAskButton` as a
   labelled inline action in the agent's violet ("Ask about this task"),
   which opens the task's chat beside
   the document (a docked column on desktop, a sheet on a phone) to ask for
   a revision while reading. It is the same discussion the task page opens.
-
-### Reading a proposal
-
-A proposal row names only the document it writes, so the text is one tap
-away: [`DocumentProposalReadButton`](../../lib/features/agents/ui/document_proposal_preview.dart)
-("Read draft") sits under a document proposal in the AI summary card's
-`ProposalRow` and in chat's `QueryActionReview`. On the card, document
-proposals sit under their own plain **Documents** heading ("Read each draft,
-then confirm it on its own"), apart from the warning band for status
-changes; both are confirmed one by one (`individualConfirmTools`) and stay
-out of Confirm all. **A draft is confirmed only after reading it**: a
-document row offers no confirm and takes no swipe either way. Its title
-takes the row's full width; under it, the agent's change summary, then
-Read draft with the ✕ across from it, in the reject column the other rows
-use (`DocumentDraftRowActions`). In chat a lone draft has no Accept beside
-it, only Read draft and then "Discard draft", with the draft's change
-summary under its description. Read draft opens a
-sheet with whether the proposal
-starts a document or replaces one's text, in the agent's violet, the change
-summary, and, after a gap rather than a rule, the markdown as it would read.
-On desktop the card's Read draft on a *revision* goes to the
-[side-by-side review](#side-by-side-review-desktop-partly-built) instead,
-through the review route (the card's `onRead`); a new document, any draft on
-a phone, and every chat draft (the chat's own, which the review cannot load)
-open the sheet. While the row can still be
-decided there, the sheet's glass footer carries "Discard draft" (closing
-the sheet keeps the draft) and the one confirm, which names the outcome — "Create document" or "Use this version" — on both hosts,
-deciding the item alone, or the whole answer when it is the only change. A
-verdict closes the sheet first, so the row shows the outcome. A decided
-proposal is read-only.
 
 ### How the page opens
 
@@ -497,13 +475,14 @@ follows the rule `openLinkedTaskDetail` follows for a linked task:
   replacing it: the location reopens whatever document its route names on
   every rebuild, and the route is what the next launch restores.
 - **Review link**
-  `/tasks/:taskId/documents/:documentId/review/:changeSetId/:itemIndex`
-  opens the document with that draft under review. On a phone the pushed
+  `/tasks/:taskId/documents/:documentId/review/:versionId`
+  opens the document with that version under review. On a phone the pushed
   page gets it as `initialReview`; on desktop the location sets
   `NavService.taskDocumentReviewRequest` before `desktopTaskDocument`, the
   pane hands it to the page, and the page clears it once the review is open
-  — one-shot, so opening the document later reads it. A malformed index
-  reviews nothing.
+  — one-shot, so opening the document later reads it. A version id that is
+  no id reviews nothing. Nothing in the app follows the route yet; it is
+  what a notification will open.
 
 ```mermaid
 stateDiagram-v2
@@ -516,6 +495,10 @@ stateDiagram-v2
 ```
 
 ### Side-by-side review
+
+The review shows what one version changed: the version it was written over
+on the left, its own text on the right. It decides nothing — the version is
+already the document's, or was.
 
 The rows come from
 [`markdown_block_diff.dart`](../../lib/features/documents/logic/markdown_block_diff.dart).
@@ -532,40 +515,35 @@ quadratic table on the UI isolate. Every block of each side lands in
 exactly one row, in its order, which a property test holds; a moved block
 reads as removed in one place and added in another.
 
-The review's state is built too, in
+Its state is in
 [`document_review_providers.dart`](../../lib/features/documents/state/document_review_providers.dart).
-`pendingDocumentProposalsProvider` lists the task agent's drafts of one
-document still waiting (drafts proposed in task chat stay the chat's). A
-review is keyed by the draft's change set and item index.
-`documentReviewSnapshotProvider` reads the version the draft names as its
-base once (`TaskDocumentRepository.version`) and aligns the blocks once; it
-watches only whether that draft is still waiting, by its fingerprint, so a
-reload of the proposals, a sync, a landed version or a newer draft never
-rebuilds the rows. `documentReviewProvider` adds what can move around them,
-live: `isStale` when the document no longer shows that base version, and
-`newerProposalAvailable` when a later draft of the same document waits. It
-is null once the draft stops waiting — decided here or on another device, or
-withdrawn — and the review closes onto the document.
+A review is keyed by the task, the document and the version.
+`documentReviewSnapshotProvider` reads that version and the one it names as
+its base (`TaskDocumentRepository.version`) once and aligns the blocks once;
+versions never change, so a sync, a landed version or an agent wake never
+rebuilds the rows. It is null for a key that names no version of the
+document. `documentReviewProvider` adds the one thing that can move around
+the rows, live: `isCurrent`, whether the document still shows the version
+under review.
 
 ```mermaid
 stateDiagram-v2
   [*] --> Loading
-  Loading --> Open: the draft waits, its base read and its blocks aligned
-  Loading --> Closed: the draft no longer waits
-  Open --> Open: a version lands (stale) or a newer draft waits, rows kept
-  Open --> Closed: the draft is confirmed, dismissed or withdrawn
+  Loading --> Open: the version and its base read, their blocks aligned
+  Loading --> Closed: the key names no version of the document
+  Open --> Open: another version lands (no longer current), rows kept
+  Open --> Closed: Close review, Escape, back, or a restore from here lands
   Closed --> [*]
 ```
 
 [`ReviewBlockRow`](../../lib/features/documents/ui/widgets/review_block_row.dart)
-lays a pair out current on the left, proposed on the right, with a gutter
+lays a pair out earlier on the left, later on the right, with a gutter
 mark for a changed row (＋ added, − removed, ⇄ rewritten, in the diff
 colour) and that change as the row's screen-reader label. A changed row is
 one band — its two cells, or a block and the empty slot beside it, share a
 top and a bottom edge — while an unchanged row keeps each side's own
 height. Stacked, for a pane too narrow for two columns, a rewrite shows its
-old half quiet under "Current" ("Drafted over" for a stale draft) above its
-new half under "Proposed".
+old half quiet under "Before" above its new half under "After".
 [`ReviewBlockCell`](../../lib/features/documents/ui/widgets/review_block_cell.dart)
 renders a block with `AgentMarkdownView`: an unchanged one on no surface in
 medium ink, a changed one on its `colors.diff.*` surface, and a missing one
@@ -576,8 +554,8 @@ Inside a rewritten row the words that changed are marked as well:
 [`markRewrittenWords`](../../lib/features/documents/logic/rewrite_word_marks.dart)
 runs the word diff sync's title diff also uses
 ([`diffTokens`](../../lib/utils/text_diff.dart)) over the two blocks and
-wraps each run of dropped words on the current side, and of new words on
-the proposed side, in Private Use Area delimiters. `AgentMarkdownView`
+wraps each run of dropped words on the earlier side, and of new words on
+the later side, in Private Use Area delimiters. `AgentMarkdownView`
 passes them to `gpt_markdown` as an `InlineDirective`, lifted out before
 the Markdown is parsed, and the cell draws the run on `diff.removed.surface`
 or `diff.added.surface` — so a heading, a list or the bold around a word
@@ -589,63 +567,58 @@ words a side keeps its rewrite surface without word marks. The marks are a
 visual aid on top of the row's own label, so colour is still not the only
 signal.
 
-The view is built:
 [`DocumentReviewView`](../../lib/features/documents/ui/widgets/document_review_view.dart)
-is a mode of the document page. Which draft is under review is
+is a mode of the document page. Which version is under review is
 `documentReviewOpenProvider` (per task, in memory): the page swaps its
-reading body for the review while it names one of its document's drafts
-(a 200 ms cross-fade, none under reduced motion) and back.
+reading body for the review while it names a version of its document
+(a 200 ms cross-fade, none under reduced motion) and back. It is opened by
+the page's "Review changes" (the version on show, when the agent wrote it),
+by "Review changes" on a version in the history, and by the review route.
 
 - **Header.** The title at `heading2` (the page's own), "Close review" (an
-  icon on a narrow pane), then lines whose icon sits in the rows' gutter
-  column and whose text starts on their text edge, held to
-  `kProseMeasureWidth`: for a stale draft the warning (glyph in the warning
-  hue, sentence in plain ink) saying confirming would overwrite the newer
-  text; the agent's change summary with its spark; tinted count tags with
-  the gutter's own marks (read out as one sentence); and, while a later draft
-  waits, "Open the newer draft".
+  icon on a narrow pane), the version's provenance ("v2 · Written by the
+  agent · 2 h ago"), then lines whose icon sits in the rows' gutter column
+  and whose text starts on their text edge, held to `kProseMeasureWidth`:
+  the version's change summary — under the agent's spark when the agent
+  wrote it — and tinted count tags with the gutter's own marks (read out as
+  one sentence).
 - **Rows.** A leading row that only repeats the title is dropped
-  (`withoutRepeatedTitle`), kept when the draft rewrites it. The column heads
-  ("Current v1", "Proposed v2" — violet on the proposed head only; "Drafted
-  over v1" in the warning hue for a stale draft) are pinned
+  (`withoutRepeatedTitle`), kept when the version rewrites it. The column
+  heads ("Before v1", "After v2" — violet, with the spark, on the right head
+  only, and only for the agent's version) are pinned
   (`PinnedHeaderSliver`). Cells render headings at the body's size
   (`subordinateHeadings`), so a document's own heading never outranks the
   review. An unchanged block has no surface and no vertical padding; a
   changed row is one band (`IntrinsicHeight`), its two sides sharing top and
   bottom edges, the empty slot a centred statement ("Not in v2"). The
   rewritten mark is ⇄ (`LottiIcons.compare`), not the Edit pencil. One
-  `SliverList.builder` keyed by row index (the rows are pinned, so an index
-  never moves), clear of the bar.
+  `SliverList.builder` keyed by row index (the rows never change, so an
+  index never moves), clear of the bar.
 - **The gate is measured.** The content column, capped at
   `kDetailContentMaxWidth`, shows the versions side by side when it holds
   `documentReviewSideBySideMinWidth`: the gutter mark, two
   `kReviewColumnMinWidth` (440) columns and a `step6` gap. Narrower, the same
   rows stack in reading order with no empty slots; a rewrite keeps the
   rewrite surface on both halves (red and green mean removed and added at
-  every width), its old half quiet under "Current" (or "Drafted over") above
-  its new half under "Proposed". A docked chat or a dragged divider switches
-  it live.
+  every width), its old half quiet under "Before" above its new half under
+  "After". A docked chat or a dragged divider switches it live.
 - **The bar** is the modal glass bar spanning the pane, its buttons kept to
-  the column: "Discard draft", "Ask for changes" (opens the task's chat) and
-  "Confirm v2", the one primary. On a narrow pane Discard is the trash icon
-  and Ask keeps its words. Discard asks first (`showConfirmationModal`) —
-  there is no undo yet. Confirm and Discard call
-  `ChangeSetConfirmationService.confirmItem` / `rejectItem`, as the card
-  does, then notify the agent's id; a verdict that lands closes the review,
-  and one that fails says so in a toast and keeps it open.
-- **A stale draft** shows no Confirm. Its primary is "Ask for a redo in
-  chat", which opens the task's chat (the request is not prefilled yet) —
-  or, when a newer draft waits, "Open the newer draft". The proposed head
-  drops its number and its empty slots say "Not in the draft", since the
-  next number already belongs to the version it is stale against. The
-  page's notice says so before the review opens ("…but over an older one",
-  with the warning glyph).
+  the column. "Ask for changes" opens the task's chat and is the one filled
+  button, where the task's chat is enabled. "Go back to v1" is quiet beside
+  it: it restores the version before the reviewed one as the next version
+  (`TaskDocumentRepository.restore`, over the reviewed version), says so in
+  a toast, and closes the review onto the restored text. It asks nothing
+  first — a restore loses nothing — and is offered only while the document
+  still shows the reviewed version and that version has one before it. A
+  restore refused because a newer version arrived says so and keeps the
+  review open. Without chat, Go back is the bar's one, filled, button; with
+  neither there is no bar.
 - **It closes** on "Close review", on Escape (the `cancel` app command), on
   back — the arrow, system back and the iOS swipe close the review onto the
-  text (`PopScope`) rather than leave the page — after its own verdict, and
-  when the draft stops waiting elsewhere. Leaving the page mid-review keeps
-  it open, so coming back returns to it — unless the draft stopped waiting
-  or the document was deleted meanwhile, which the page finds and clears.
+  text (`PopScope`) rather than leave the page — and after its own restore.
+  Leaving the page mid-review keeps it open, so coming back returns to it —
+  unless the document was deleted meanwhile, which the page finds and
+  clears.
 - **The panes step aside.** `documentReviewShowingProvider` is true while a
   review is open *and* the desktop pane shows its document
   (`NavService.desktopTaskDocument`), so a review left behind the task page
@@ -666,24 +639,25 @@ reading body for the review while it names one of its document's drafts
 ```mermaid
 stateDiagram-v2
   [*] --> Reading
-  Reading --> Reviewing: Review changes (newest waiting draft)
-  Reviewing --> Reviewing: Open the newer draft
+  Reading --> Reviewing: Review changes, on the page or on a version in History
+  Reading --> Reviewing: the review route
   Reviewing --> Reading: Close review, Escape or back
-  Reviewing --> Reading: Confirm or Discard draft lands
-  Reviewing --> Reading: the draft is decided or withdrawn elsewhere
+  Reviewing --> Reading: Go back to the version before lands
   Reviewing --> Reading: Show list while the review holds the list's width
 ```
 
-Still to build: a notification that lands in review through the same
-route.
+Still to build: a notification that the agent wrote a version, landing in
+the review through the same route.
 
 ## Invariants
 
 - A document belongs to exactly one task.
-- Agent text reaches a document only through a confirmed proposal.
 - A version is never edited after it is written.
-- A stale proposal is never confirmed.
-- Every place a proposal can be decided calls the same confirmation service.
+- A version records who wrote it, and an agent version is never recorded as
+  the user's.
+- An agent version is written only over the version the agent read, and
+  never over one that landed since.
+- A wake writes at most one version of a document.
 - Review never writes the user's pane settings.
 - `agents` never imports `documents`. It reaches it only through the
   interface it defines, and the layer order lives in
@@ -691,5 +665,8 @@ route.
 
 ## Open
 
+- Whether the agent's authorship on the row and the page is enough notice of
+  a version written by a background wake, or a notification has to come
+  first.
 - Copy as plain markdown only, or also as rich text for email.
 - Whether a document follows the task's language or the request's.

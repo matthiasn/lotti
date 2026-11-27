@@ -3,23 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task_document_data.dart';
 import 'package:lotti/classes/task_document_merge.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
-import 'package:lotti/features/agents/state/change_set_providers.dart';
-import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
-import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/documents/logic/markdown_block_diff.dart';
-import 'package:lotti/features/documents/state/document_review_providers.dart';
+import 'package:lotti/features/documents/repository/task_document_repository.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/widgets/document_review_view.dart';
 import 'package:lotti/features/documents/ui/widgets/review_block_row.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
-import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -27,7 +24,6 @@ import '../../../../classes/task_document_fixtures.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
-import '../../document_draft_fixtures.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -35,12 +31,6 @@ void main() {
   const taskId = 'task-1';
   const documentId = 'doc-brief';
   const docKey = (taskId: taskId, documentId: documentId);
-  const reviewKey = (
-    taskId: taskId,
-    documentId: documentId,
-    changeSetId: 'cs-draft',
-    itemIndex: 0,
-  );
   const chatScope = QueryScope(kind: QueryScopeKind.task, id: taskId);
 
   final v1 = taskDocumentVersionEntry(
@@ -48,40 +38,56 @@ void main() {
     documentId: documentId,
     markdown: '# Brief\n\nFeed the penguins at noon.\n\nCount them at dusk.',
   );
+  // The agent's version, written over v1.
   final v2 = taskDocumentVersionEntry(
     number: 2,
     id: 'version-2',
     documentId: documentId,
-    markdown: 'Edited by hand.',
+    author: TaskDocumentAuthor.agent,
+    baseVersionId: 'version-1',
+    changeSummary: 'Feeds later, reports to the council.',
+    markdown:
+        '# Brief\n\nFeed the penguins at one.\n\nCount them at '
+        'dusk.\n\nReport to the council.',
+  );
+  final v3 = taskDocumentVersionEntry(
+    number: 3,
+    id: 'version-3',
+    documentId: documentId,
+    baseVersionId: 'version-2',
+    changeSummary: 'Shortened by hand.',
+    markdown: '# Brief\n\nFeed the penguins at one.',
   );
 
   TaskDocumentEntry documentShowing(TaskDocumentVersionEntry version) =>
       taskDocumentEntry(clock: {'a': 1}, id: documentId, current: version.ref);
 
   late MockTaskDocumentRepository repository;
-  late MockChangeSetConfirmationService service;
-  late MockUpdateNotifications notifications;
-  late List<PendingSuggestion> open;
   late TaskDocumentEntry? document;
+  late bool chatEnabled;
   late int closed;
-  late List<DocumentReviewKey> opened;
   late ProviderContainer container;
 
   setUp(() {
     repository = MockTaskDocumentRepository();
-    service = MockChangeSetConfirmationService();
-    notifications = MockUpdateNotifications();
-    when(() => repository.version('version-1')).thenAnswer((_) async => v1);
-    when(() => notifications.notify(any())).thenReturn(null);
-    open = [documentDraft()];
-    document = documentShowing(v1);
+    when(() => repository.version(any())).thenAnswer((_) async => null);
+    for (final version in [v1, v2, v3]) {
+      when(
+        () => repository.version(version.id),
+      ).thenAnswer((_) async => version);
+    }
+    document = documentShowing(v2);
+    chatEnabled = true;
     closed = 0;
-    opened = [];
   });
 
-  /// Pumps the review of [reviewKey] in a pane [width] wide, and waits for
-  /// its rows.
-  Future<void> pump(WidgetTester tester, {double width = 1100}) async {
+  /// Pumps the review of version [versionId] in a pane [width] wide, and
+  /// waits for its rows.
+  Future<void> pump(
+    WidgetTester tester, {
+    double width = 1100,
+    String versionId = 'version-2',
+  }) async {
     tester.view
       ..physicalSize = Size(width, 900)
       ..devicePixelRatio = 1;
@@ -94,23 +100,20 @@ void main() {
             handlers: const <AppCommandId, AppCommandHandler>{},
             platform: TargetPlatform.macOS,
             child: DocumentReviewView(
-              reviewKey: reviewKey,
+              reviewKey: (
+                taskId: taskId,
+                documentId: documentId,
+                versionId: versionId,
+              ),
               title: 'Brief',
               onClose: () => closed++,
-              onOpenDraft: opened.add,
             ),
           ),
         ),
         mediaQueryData: MediaQueryData(size: Size(width, 900)),
         overrides: [
           taskDocumentRepositoryProvider.overrideWithValue(repository),
-          changeSetConfirmationServiceProvider.overrideWithValue(service),
-          updateNotificationsProvider.overrideWithValue(notifications),
-          queryChatEnabledProvider.overrideWithValue(true),
-          unifiedSuggestionListProvider(taskId).overrideWith(
-            (ref) async =>
-                UnifiedSuggestionList(open: open, activity: const []),
-          ),
+          queryChatEnabledProvider.overrideWithValue(chatEnabled),
           taskDocumentProvider(docKey).overrideWith((ref) => document),
         ],
       ),
@@ -123,28 +126,53 @@ void main() {
     );
   }
 
-  Future<void> reloadProposals(
+  /// Makes the document show [version], as a write landing meanwhile would.
+  Future<void> moveTo(
     WidgetTester tester,
-    List<PendingSuggestion> next,
+    TaskDocumentVersionEntry version,
   ) async {
-    open = next;
-    container.invalidate(unifiedSuggestionListProvider(taskId));
+    document = documentShowing(version);
+    container.invalidate(taskDocumentProvider(docKey));
     for (var i = 0; i < 5; i++) {
       await tester.pump();
     }
   }
 
-  String label(WidgetTester tester, Key key) =>
-      tester.widget<DesignSystemButton>(find.byKey(key)).label;
+  void stubRestore(TaskDocumentWriteStatus status) {
+    when(
+      () => repository.restore(
+        versionId: any(named: 'versionId'),
+        baseVersionId: any(named: 'baseVersionId'),
+      ),
+    ).thenAnswer((_) async => (status: status, version: null));
+  }
+
+  DesignSystemButton button(WidgetTester tester, Key key) =>
+      tester.widget<DesignSystemButton>(find.byKey(key));
 
   group('the gate', () {
     testWidgets('a pane wide enough for two columns shows the versions side '
-        'by side under their heads', (tester) async {
+        'by side under their heads, each naming its version', (tester) async {
       await pump(tester);
 
-      expect(find.byKey(DocumentReviewViewKeys.columnHeads), findsOneWidget);
-      expect(find.text('Current'), findsOneWidget);
-      expect(find.text('Proposed'), findsOneWidget);
+      final heads = find.byKey(DocumentReviewViewKeys.columnHeads);
+      expect(heads, findsOneWidget);
+      expect(
+        find.descendant(of: heads, matching: find.text('Before')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: heads, matching: find.text('After')),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widgetList<DsPill>(
+              find.descendant(of: heads, matching: find.byType(DsPill)),
+            )
+            .map((pill) => pill.label),
+        ['v1', 'v2'],
+      );
       final rows = tester.widgetList<ReviewBlockRow>(
         find.byType(ReviewBlockRow),
       );
@@ -152,6 +180,10 @@ void main() {
       expect(rows, hasLength(3));
       expect(rows.first.pair.kind, MarkdownBlockChange.rewritten);
       expect(rows.every((row) => !row.stacked), isTrue);
+      expect(
+        rows.every((row) => row.baseVersion == 1 && row.version == 2),
+        isTrue,
+      );
     });
 
     testWidgets('flips to one column at the measured width, not a window '
@@ -178,10 +210,17 @@ void main() {
     });
   });
 
-  testWidgets("the header counts the changes and gives the agent's line on "
-      'them', (tester) async {
+  testWidgets('the header says which version this is and who wrote it, '
+      "gives the agent's line on it under its spark, and counts the changes", (
+    tester,
+  ) async {
     await pump(tester);
 
+    expect(
+      tester.widget<Text>(find.byKey(DocumentReviewViewKeys.provenance)).data,
+      startsWith('v2 · Written by the agent · '),
+    );
+    expect(find.text('Feeds later, reports to the council.'), findsOneWidget);
     // Tags for the kinds there are, each with the gutter's own mark.
     expect(
       tester
@@ -198,201 +237,143 @@ void main() {
       find.bySemanticsLabel('1 added, 0 removed, 1 rewritten'),
       findsOneWidget,
     );
-    expect(find.text('Feeds later, reports to the council.'), findsOneWidget);
+    // The agent's version wears its spark: on its summary and its head.
+    expect(find.byIcon(LottiIcons.aiSpark), findsNWidgets(2));
+  });
+
+  testWidgets('a version the user wrote carries no spark: its line is plain '
+      'and its head neutral', (tester) async {
+    document = documentShowing(v3);
+    await pump(tester, versionId: 'version-3');
+
+    expect(
+      tester.widget<Text>(find.byKey(DocumentReviewViewKeys.provenance)).data,
+      startsWith('v3 · Written by you · '),
+    );
+    expect(find.text('Shortened by hand.'), findsOneWidget);
+    expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
+    expect(
+      tester
+          .widgetList<ReviewBlockRow>(find.byType(ReviewBlockRow))
+          .every((row) => !row.byAgent),
+      isTrue,
+    );
   });
 
   group('the bar', () {
-    testWidgets('Confirm names the version it makes, confirms the item '
-        'through the shared service, and closes', (tester) async {
-      when(() => service.confirmItem(any(), any())).thenAnswer(
-        (_) async => const ToolExecutionResult(success: true, output: 'ok'),
-      );
+    testWidgets('Go back names the version it lands on, restores it over '
+        'the reviewed one, says so and closes', (tester) async {
+      stubRestore(TaskDocumentWriteStatus.written);
       await pump(tester);
 
-      expect(label(tester, DocumentReviewViewKeys.confirm), 'Confirm v2');
-      await tester.tap(find.byKey(DocumentReviewViewKeys.confirm));
+      final undo = button(tester, DocumentReviewViewKeys.undo);
+      expect(undo.label, 'Go back to v1');
+      // Beside Ask for changes it is the quiet one.
+      expect(undo.variant, DesignSystemButtonVariant.quiet);
+
+      await tester.tap(find.byKey(DocumentReviewViewKeys.undo));
+      await tester.pump();
       await tester.pump();
 
-      final captured = verify(
-        () => service.confirmItem(captureAny(), captureAny()),
-      ).captured;
-      expect((captured[0] as dynamic).id, 'cs-draft');
-      expect(captured[1], 0);
-      verify(() => notifications.notify(any())).called(1);
-      expect(closed, 1);
-    });
-
-    testWidgets('a confirm that fails says so and keeps the review open', (
-      tester,
-    ) async {
-      when(() => service.confirmItem(any(), any())).thenAnswer(
-        (_) async => const ToolExecutionResult(success: false, output: 'no'),
-      );
-      await pump(tester);
-
-      await tester.tap(find.byKey(DocumentReviewViewKeys.confirm));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.text('Failed to apply change'), findsWidgets);
-      expect(closed, 0);
-      expect(
-        tester
-            .widget<DesignSystemButton>(
-              find.byKey(DocumentReviewViewKeys.confirm),
-            )
-            .onPressed,
-        isNotNull,
-      );
-    });
-
-    testWidgets('Discard draft asks first; confirmed, it rejects the item '
-        'and closes', (tester) async {
-      when(
-        () => service.rejectItem(any(), any()),
-      ).thenAnswer((_) async => true);
-      await pump(tester);
-
-      await tester.tap(find.byKey(DocumentReviewViewKeys.discard));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text('Discard this draft?'), findsOneWidget);
-      verifyNever(() => service.rejectItem(any(), any()));
-
-      await tester.tap(find.text('Discard draft').last);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-
-      verify(() => service.rejectItem(any(), 0)).called(1);
-      verifyNever(() => service.confirmItem(any(), any()));
-      expect(closed, 1);
-    });
-
-    testWidgets('a confirm that applies with a warning says so, and closes', (
-      tester,
-    ) async {
-      when(() => service.confirmItem(any(), any())).thenAnswer(
-        (_) async => const ToolExecutionResult(
-          success: true,
-          output: 'ok',
-          errorMessage: 'the title was kept',
+      verify(
+        () => repository.restore(
+          versionId: 'version-1',
+          baseVersionId: 'version-2',
         ),
-      );
-      await pump(tester);
-
-      await tester.tap(find.byKey(DocumentReviewViewKeys.confirm));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(
-        find.text('Applied with warning: the title was kept'),
-        findsWidgets,
-      );
+      ).called(1);
+      expect(find.text('Version restored'), findsOneWidget);
       expect(closed, 1);
     });
 
-    testWidgets('a decision the service throws on is logged, says it failed, '
-        'and keeps the review open', (tester) async {
-      when(
-        () => service.confirmItem(any(), any()),
-      ).thenThrow(StateError('store unavailable'));
+    for (final (status, message) in [
+      (
+        TaskDocumentWriteStatus.stale,
+        'A newer version arrived meanwhile. Look at it, then restore again.',
+      ),
+      (TaskDocumentWriteStatus.failed, "That didn't save — please try again."),
+      (TaskDocumentWriteStatus.missing, "That didn't save — please try again."),
+    ]) {
+      testWidgets('a restore that comes back ${status.name} says so and '
+          'keeps the review open', (tester) async {
+        stubRestore(status);
+        await pump(tester);
+
+        await tester.tap(find.byKey(DocumentReviewViewKeys.undo));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text(message), findsOneWidget);
+        expect(closed, 0);
+        // The button is live again for another try.
+        expect(
+          button(tester, DocumentReviewViewKeys.undo).onPressed,
+          isNotNull,
+        );
+      });
+    }
+
+    testWidgets('once another version landed there is nothing to go back '
+        'from: the rows stay and Go back leaves', (tester) async {
       await pump(tester);
+      expect(find.byKey(DocumentReviewViewKeys.undo), findsOneWidget);
 
-      await tester.tap(find.byKey(DocumentReviewViewKeys.confirm));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await moveTo(tester, v3);
 
-      expect(find.text('Failed to apply change'), findsWidgets);
+      expect(find.byKey(DocumentReviewViewKeys.undo), findsNothing);
+      expect(find.byType(ReviewBlockRow), findsNWidgets(3));
+      expect(find.byKey(DocumentReviewViewKeys.ask), findsOneWidget);
       expect(closed, 0);
     });
 
-    testWidgets('Ask for changes opens the task chat', (tester) async {
+    testWidgets('a first version has no version to go back to', (
+      tester,
+    ) async {
+      document = documentShowing(v1);
+      await pump(tester, versionId: 'version-1');
+
+      expect(find.byKey(DocumentReviewViewKeys.undo), findsNothing);
+      // The left column has nothing: the document had no text.
+      expect(find.text('No text yet'), findsWidgets);
+    });
+
+    testWidgets('Ask for changes is the filled button and opens the task '
+        'chat', (tester) async {
       await pump(tester);
 
+      expect(
+        button(tester, DocumentReviewViewKeys.ask).variant,
+        DesignSystemButtonVariant.primary,
+      );
       await tester.tap(find.byKey(DocumentReviewViewKeys.ask));
       await tester.pump();
 
       expect(container.read(queryPaneOpenProvider(chatScope)), isTrue);
       expect(closed, 0);
     });
+
+    testWidgets('without the task chat, Go back is the one action, filled; '
+        'with neither there is no bar', (tester) async {
+      chatEnabled = false;
+      await pump(tester);
+
+      expect(find.byKey(DocumentReviewViewKeys.ask), findsNothing);
+      expect(
+        button(tester, DocumentReviewViewKeys.undo).variant,
+        DesignSystemButtonVariant.primary,
+      );
+
+      await moveTo(tester, v3);
+
+      expect(find.byKey(DocumentReviewViewKeys.undo), findsNothing);
+      expect(find.byType(DesignSystemButton), findsOneWidget); // Close review
+    });
   });
 
-  testWidgets('a draft written over an older version cannot be confirmed; '
-      'it offers asking the agent to redo it', (tester) async {
-    document = documentShowing(v2);
-    await pump(tester);
+  testWidgets('a key that names no version of the document closes the '
+      'review, showing nothing', (tester) async {
+    await pump(tester, versionId: 'version-missing');
 
-    expect(
-      tester
-          .widget<Text>(
-            find.descendant(
-              of: find.byKey(DocumentReviewViewKeys.stale),
-              matching: find.byType(Text),
-            ),
-          )
-          .data,
-      'Written against v1, but the document is now v2: confirming would '
-      'overwrite the newer text.',
-    );
-    expect(find.byKey(DocumentReviewViewKeys.confirm), findsNothing);
-    expect(find.byKey(DocumentReviewViewKeys.ask), findsNothing);
-    // Not "v2": that number is already the hand edit the draft is stale
-    // against.
-    expect(
-      tester
-          .widgetList<ReviewBlockRow>(find.byType(ReviewBlockRow))
-          .map((row) => row.proposedVersion)
-          .toSet(),
-      {null},
-    );
-    expect(
-      label(tester, DocumentReviewViewKeys.redo),
-      'Ask for a redo in chat',
-    );
-    // The left column is the draft's base, not the current text.
-    expect(find.text('Drafted over'), findsOneWidget);
-    expect(find.text('Current'), findsNothing);
-
-    await tester.tap(find.byKey(DocumentReviewViewKeys.redo));
-    await tester.pump();
-
-    expect(container.read(queryPaneOpenProvider(chatScope)), isTrue);
-  });
-
-  testWidgets('a newer draft is offered, and opening it reviews that one', (
-    tester,
-  ) async {
-    await pump(tester);
-    expect(find.byKey(DocumentReviewViewKeys.newer), findsNothing);
-    final createdAt = open.single.changeSet.createdAt;
-
-    await reloadProposals(tester, [
-      documentDraft(),
-      documentDraft(
-        setId: 'cs-newer',
-        markdown: 'Something else entirely.',
-        createdAt: createdAt.add(const Duration(minutes: 5)),
-      ),
-    ]);
-    await tester.tap(find.text('Open the newer draft'));
-
-    expect(opened, [
-      (
-        taskId: taskId,
-        documentId: documentId,
-        changeSetId: 'cs-newer',
-        itemIndex: 0,
-      ),
-    ]);
-    // The rows stay the ones the review opened with.
-    expect(find.text('Feed the penguins at one.'), findsOneWidget);
-  });
-
-  testWidgets('closes once the draft is decided elsewhere', (tester) async {
-    await pump(tester);
-
-    await reloadProposals(tester, const []);
-
+    expect(find.byType(ReviewBlockRow), findsNothing);
     expect(closed, 1);
   });
 
@@ -407,17 +388,23 @@ void main() {
     expect(closed, 2);
   });
 
-  testWidgets('a draft that rewrites the title keeps its title row', (
+  testWidgets('a version that rewrites the title keeps its title row', (
     tester,
   ) async {
-    open = [
-      documentDraft(
-        markdown:
-            '# Penguin brief\n\nFeed the penguins at noon.\n\nCount them at '
-            'dusk.',
-      ),
-    ];
-    await pump(tester);
+    final retitled = taskDocumentVersionEntry(
+      number: 2,
+      id: 'version-retitled',
+      documentId: documentId,
+      baseVersionId: 'version-1',
+      markdown:
+          '# Penguin brief\n\nFeed the penguins at noon.\n\nCount them at '
+          'dusk.',
+    );
+    when(
+      () => repository.version('version-retitled'),
+    ).thenAnswer((_) async => retitled);
+    document = documentShowing(retitled);
+    await pump(tester, versionId: 'version-retitled');
 
     expect(
       tester
@@ -428,23 +415,6 @@ void main() {
       MarkdownBlockChange.rewritten,
     );
     expect(find.textContaining('Penguin brief'), findsOneWidget);
-  });
-
-  testWidgets('on a narrow pane Discard draft is the icon — it asks first — '
-      'and Ask for changes keeps its words', (tester) async {
-    await pump(tester, width: 400);
-
-    expect(
-      find.descendant(
-        of: find.byKey(DocumentReviewViewKeys.discard),
-        matching: find.byTooltip('Discard draft'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.widgetWithText(DesignSystemButton, 'Ask for changes'),
-      findsOneWidget,
-    );
   });
 
   testWidgets('the column heads are pinned over the rows', (tester) async {
@@ -460,7 +430,7 @@ void main() {
   });
 
   testWidgets('on a narrow pane Close review is an icon, its label the '
-      'tooltip', (tester) async {
+      'tooltip, and the bar keeps both actions', (tester) async {
     await pump(tester, width: 400);
 
     expect(
@@ -470,42 +440,14 @@ void main() {
       ),
       findsOneWidget,
     );
+    for (final key in [
+      DocumentReviewViewKeys.undo,
+      DocumentReviewViewKeys.ask,
+    ]) {
+      expect(button(tester, key).size, DesignSystemButtonSize.medium);
+    }
     await tester.tap(find.byKey(DocumentReviewViewKeys.close));
     expect(closed, 1);
-  });
-
-  testWidgets('Discard draft cancelled discards nothing', (tester) async {
-    await pump(tester);
-
-    await tester.tap(find.byKey(DocumentReviewViewKeys.discard));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.tap(find.text('Cancel').last);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-
-    verifyNever(() => service.rejectItem(any(), any()));
-    expect(closed, 0);
-  });
-
-  testWidgets('a draft written before the document had text, now stale, '
-      'says so without a base version', (tester) async {
-    open = [documentDraft(base: null)];
-    document = documentShowing(v2);
-    await pump(tester);
-
-    expect(
-      tester
-          .widget<Text>(
-            find.descendant(
-              of: find.byKey(DocumentReviewViewKeys.stale),
-              matching: find.byType(Text),
-            ),
-          )
-          .data,
-      'Written before the document had text; it is now v2, and confirming '
-      'would overwrite it.',
-    );
   });
 
   testWidgets('the rows are found by their index key, which is their '
@@ -517,25 +459,5 @@ void main() {
             as SliverChildBuilderDelegate;
     expect(delegate.findChildIndexCallback!(const ValueKey<int>(2)), 2);
     expect(delegate.findChildIndexCallback!(const ValueKey('row')), isNull);
-  });
-
-  testWidgets('a stale draft with a newer one waiting offers the newer one '
-      'as its primary, not another redo', (tester) async {
-    document = documentShowing(v2);
-    await pump(tester);
-    final createdAt = open.single.changeSet.createdAt;
-    await reloadProposals(tester, [
-      documentDraft(),
-      documentDraft(
-        setId: 'cs-newer',
-        base: 'version-2',
-        createdAt: createdAt.add(const Duration(minutes: 5)),
-      ),
-    ]);
-
-    expect(find.byKey(DocumentReviewViewKeys.redo), findsNothing);
-    await tester.tap(find.byKey(DocumentReviewViewKeys.openNewer));
-
-    expect(opened.single.changeSetId, 'cs-newer');
   });
 }

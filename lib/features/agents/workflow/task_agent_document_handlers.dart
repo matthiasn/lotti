@@ -1,7 +1,7 @@
 part of 'task_agent_strategy.dart';
 
 /// The document tools of [TaskAgentStrategy] (ADR 0167): reading a
-/// document's text, and validating and queueing a proposed version.
+/// document's text, and validating and writing a version of one.
 extension TaskAgentDocumentHandlers on TaskAgentStrategy {
   /// Answers `read_document` with the text of the version the document
   /// shows, as the user's data. A document the task does not hold, or a
@@ -31,6 +31,8 @@ extension TaskAgentDocumentHandlers on TaskAgentStrategy {
               'Error: this task holds no document `$documentId`. Use an id '
               'the Documents section lists.';
         } else {
+          // What a version written later in this wake is written over.
+          _readDocumentVersions[documentId] = text.summary.versionId;
           response = renderTaskDocumentText(text);
         }
       } catch (error, stackTrace) {
@@ -51,25 +53,42 @@ extension TaskAgentDocumentHandlers on TaskAgentStrategy {
     await _recordToolResultMessage(toolName: tool, errorMessage: errorMessage);
   }
 
-  /// Validates and queues a `propose_document_version`.
+  /// Validates a `write_document_version` and writes it (ADR 0167).
   ///
-  /// Fail-closed: the text must be there, and the proposal names either a
-  /// document the wake's Documents section listed or a title for a new one.
-  /// The version it is drafted against is filled in here from that listing,
-  /// never taken from the model, so the compare-and-set at confirmation
-  /// checks what the agent was actually shown. One version per document
-  /// waits for the user at a time: a document with a version pending — from
-  /// an earlier wake or this one — is refused, and the agent is told to
-  /// retract the pending one first if this draft replaces it.
-  Future<String> _queueDocumentProposal(
-    ChangeSetBuilder csBuilder,
+  /// The version is written at once, as the agent's: the user reads it on
+  /// the document and goes back through its history if it is not wanted.
+  /// What stands in for a confirmation is checked here, fail-closed:
+  ///
+  /// - the text is there, and the call names either a document the wake's
+  ///   Documents section listed or a title for a new one;
+  /// - a document that has text was read in this wake, so the new version
+  ///   starts from what the document says now, not from nothing;
+  /// - the version it is written over is the one that read returned (the
+  ///   listed one for a document without text) — never taken from the model
+  ///   — so the write lands only while the document still shows it, and an
+  ///   edit the user made meanwhile is never replaced;
+  /// - one version per document in a wake, and one new document per title.
+  ///
+  /// A refused write, a stale one included, tells the agent what to do next;
+  /// a stale one has to be read again first.
+  Future<void> _handleWriteDocumentVersion(
     Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
   ) async {
-    const tool = TaskAgentToolNames.proposeDocumentVersion;
+    const tool = TaskAgentToolNames.writeDocumentVersion;
+    Future<void> refuse(String message) async {
+      await _recordActionMessage(toolName: tool, args: args);
+      manager.addToolResponse(toolCallId: callId, response: message);
+      await _recordToolResultMessage(toolName: tool, errorMessage: message);
+    }
+
     final markdown = args['markdown'];
     if (markdown is! String || markdown.trim().isEmpty) {
-      return 'ERROR: $tool requires the complete "markdown" of the version. '
-          'No proposal was queued.';
+      return refuse(
+        'ERROR: $tool requires the complete "markdown" of the version. '
+        'Nothing was written.',
+      );
     }
     final rawSummary = args['changeSummary'];
     final changeSummary = rawSummary is String ? rawSummary.trim() : '';
@@ -78,40 +97,59 @@ extension TaskAgentDocumentHandlers on TaskAgentStrategy {
     final documentId = rawId is String ? rawId.trim() : '';
     final newTitle = rawTitle is String ? rawTitle.trim() : '';
     if (documentId.isEmpty == newTitle.isEmpty) {
-      return 'ERROR: give either "documentId" of a document the Documents '
-          'section lists, or "newTitle" for a new document — one of them. '
-          'No proposal was queued.';
+      return refuse(
+        'ERROR: give either "documentId" of a document the Documents '
+        'section lists, or "newTitle" for a new document — one of them. '
+        'Nothing was written.',
+      );
     }
 
+    final String writtenKey;
     final Map<String, dynamic> canonicalArgs;
     if (documentId.isNotEmpty) {
       final document = taskDocuments
           .where((candidate) => candidate.id == documentId)
           .firstOrNull;
       if (document == null) {
-        return 'ERROR: this task holds no document `$documentId`. Use an id '
-            'the Documents section lists, or "newTitle" to create one. No '
-            'proposal was queued.';
+        return refuse(
+          'ERROR: this task holds no document `$documentId`. Use an id the '
+          'Documents section lists, or "newTitle" to create one. Nothing '
+          'was written.',
+        );
       }
-      final queuedThisWake = csBuilder.items.any(
-        (item) =>
-            item.toolName == tool && item.args['documentId'] == documentId,
-      );
-      if (queuedThisWake || pendingDocumentProposalIds.contains(documentId)) {
-        return 'ERROR: a version of ${jsonEncode(document.title)} is already '
-            'waiting for the user. If this draft replaces it, retract that '
-            'one with ${TaskAgentToolNames.retractSuggestions} first. No '
-            'proposal was queued.';
+      writtenKey = 'id:$documentId';
+      if (_writtenDocuments.contains(writtenKey)) {
+        return refuse(
+          'ERROR: you already wrote a version of '
+          '${jsonEncode(document.title)} in this wake. Nothing was written.',
+        );
       }
+      final wasRead = _readDocumentVersions.containsKey(documentId);
+      if (!wasRead && document.versionId != null) {
+        return refuse(
+          'ERROR: call ${TaskAgentToolNames.readDocument} for '
+          '`$documentId` first, then write the new version from its text, '
+          'keeping what the user did not ask to change. Nothing was '
+          'written.',
+        );
+      }
+      final baseVersionId = wasRead
+          ? _readDocumentVersions[documentId]
+          : document.versionId;
       canonicalArgs = {
         'documentId': documentId,
-        // For the review row, which names the document.
-        'title': document.title,
-        'baseVersionId': ?document.versionId,
+        'baseVersionId': ?baseVersionId,
         'markdown': markdown,
         'changeSummary': changeSummary,
       };
     } else {
+      writtenKey = 'title:${newTitle.toLowerCase()}';
+      if (_writtenDocuments.contains(writtenKey)) {
+        return refuse(
+          'ERROR: you already created ${jsonEncode(newTitle)} in this '
+          'wake. Nothing was written.',
+        );
+      }
       canonicalArgs = {
         'newTitle': newTitle,
         'markdown': markdown,
@@ -119,26 +157,27 @@ extension TaskAgentDocumentHandlers on TaskAgentStrategy {
       };
     }
 
-    final addRedundancy = await csBuilder.addItem(
+    // The executor enforces the category policy and records the call and
+    // its result.
+    final result = await executor.execute(
       toolName: tool,
       args: canonicalArgs,
-      humanSummary: TaskAgentChangeHandlers._generateHumanSummary(
+      targetEntityId: taskId,
+      resolveCategoryId: resolveCategoryId,
+      executeHandler: () => executeToolHandler(tool, canonicalArgs, manager),
+      readVectorClock: readVectorClock,
+    );
+    manager.addToolResponse(toolCallId: callId, response: result.output);
+    if (result.success) {
+      _writtenDocuments.add(writtenKey);
+      _recordSuccessfulMutation(
         tool,
-        canonicalArgs,
-      ),
-    );
-    if (addRedundancy != null) {
-      return 'Skipped: $addRedundancy';
+        // Not the text: the report's editor needs only what was written.
+        {...canonicalArgs}..remove('markdown'),
+      );
+    } else {
+      // Whatever was read is no longer known to be what the document shows.
+      _readDocumentVersions.remove(documentId);
     }
-
-    _domainLogger.log(
-      LogDomain.agentWorkflow,
-      'Deferred tool $tool to change set '
-      '(${csBuilder.items.length} items total)',
-      subDomain: 'TaskAgentStrategy',
-    );
-
-    return 'OK — $tool proposal recorded. The user reads and confirms it; '
-        'nothing has changed yet.${_remainingDeferredToolHint(tool)}';
   }
 }

@@ -361,7 +361,7 @@ class _TaskPaneBody extends StatelessWidget {
 /// `NavService.desktopTaskDocument` opened over it, if it belongs to this
 /// task.
 ///
-/// A draft the review route asks for (`NavService.taskDocumentReviewRequest`)
+/// A version the review route asks for (`NavService.taskDocumentReviewRequest`)
 /// is handed to that document's page, which opens it for review and clears
 /// the request.
 ///
@@ -378,7 +378,7 @@ class _TaskWithDocument extends ConsumerWidget {
     final navService = ref.read(navServiceProvider);
     final reviewRequest = navService.taskDocumentReviewRequest;
     return ListenableBuilder(
-      // The review route asks for a draft beside the document it opens, or
+      // The review route asks for a version beside the document it opens, or
       // for one of the document already open.
       listenable: Listenable.merge([
         navService.desktopTaskDocument,

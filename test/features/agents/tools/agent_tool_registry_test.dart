@@ -61,24 +61,26 @@ void main() {
     });
 
     test(
-      'offers the two document tools: the read immediate, the proposal '
-      'deferred, confirmed one at a time and repeatable within a wake',
+      'offers the two document tools, neither of them a proposal: a '
+      'version is written as the wake runs',
       () {
         expect(
           AgentToolRegistry.taskAgentTools.map((t) => t.name),
           containsAll(<String>[
             TaskAgentToolNames.readDocument,
-            TaskAgentToolNames.proposeDocumentVersion,
+            TaskAgentToolNames.writeDocumentVersion,
           ]),
         );
-        expect(
-          AgentToolRegistry.deferredTools,
-          isNot(contains(TaskAgentToolNames.readDocument)),
-        );
-        expect(
-          AgentToolRegistry.individualConfirmTools,
-          contains(TaskAgentToolNames.proposeDocumentVersion),
-        );
+        for (final name in [
+          TaskAgentToolNames.readDocument,
+          TaskAgentToolNames.writeDocumentVersion,
+        ]) {
+          expect(AgentToolRegistry.deferredTools, isNot(contains(name)));
+          expect(
+            AgentToolRegistry.individualConfirmTools,
+            isNot(contains(name)),
+          );
+        }
       },
     );
 
@@ -184,8 +186,8 @@ void main() {
   });
 
   group('AgentToolRegistry.deferredTools', () {
-    test('contains exactly 18 deferred tool names', () {
-      expect(AgentToolRegistry.deferredTools, hasLength(18));
+    test('contains exactly 17 deferred tool names', () {
+      expect(AgentToolRegistry.deferredTools, hasLength(17));
     });
 
     test('includes all expected deferred tool names', () {
@@ -206,7 +208,6 @@ void main() {
           TaskAgentToolNames.setTaskProject,
           TaskAgentToolNames.createTaskProject,
           TaskAgentToolNames.linkPullRequest,
-          TaskAgentToolNames.proposeDocumentVersion,
           TaskAgentToolNames.migrateChecklistItems,
           TaskAgentToolNames.createTimeEntry,
           TaskAgentToolNames.updateTimeEntry,
@@ -303,7 +304,6 @@ void main() {
         TaskAgentToolNames.createFollowUpTask,
         TaskAgentToolNames.linkTask,
         TaskAgentToolNames.updateTimeEntry,
-        TaskAgentToolNames.proposeDocumentVersion,
       });
     });
 

@@ -4,30 +4,31 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:uuid/uuid.dart';
 
-/// The roles of what a confirmed document proposal creates, from which the
+/// The roles of what a document write creates, from which the
 /// [ChangeEffect] derives their ids — so applying it twice creates once.
 const taskDocumentEffectRole = 'task-document';
 const taskDocumentVersionEffectRole = 'task-document-version';
 
-/// Applies a confirmed `propose_document_version` to task [taskId] through
-/// [source] (ADR 0167): the proposed markdown becomes the document's next
-/// version, the agent's, over the version the proposal was drafted against.
+/// Applies a `write_document_version` to task [taskId] through [source]
+/// (ADR 0167): the markdown becomes the document's next version, the
+/// agent's, over the version it was written against.
 ///
-/// [effect] names the confirmation; the document and version it writes take
-/// ids derived from it, and its key is stored as the version's provenance.
-/// Without one — a dispatch that confirms nothing — the ids are derived
-/// from a key that is unique to this call.
+/// [effect] names a write that came from task chat, whose change item may be
+/// applied more than once; the document and version it writes take ids
+/// derived from it, and its key is stored as the version's provenance.
+/// Without one — a task agent wake, which writes as it runs — the ids are
+/// derived from a key that is unique to this call.
 ///
 /// A refusal that applying again could only repeat — the document moved on,
-/// or is gone — is [ToolExecutionResult.nonRetryable], so the confirmation
-/// service withdraws the proposal instead of leaving it to fail again.
-Future<ToolExecutionResult> applyDocumentProposal({
+/// or is gone — is [ToolExecutionResult.nonRetryable], so a chat's change
+/// item is withdrawn instead of left to fail again.
+Future<ToolExecutionResult> applyDocumentVersion({
   required TaskDocumentSource? source,
   required String taskId,
   required Map<String, dynamic> args,
   required ChangeEffect? effect,
 }) async {
-  const tool = TaskAgentToolNames.proposeDocumentVersion;
+  const tool = TaskAgentToolNames.writeDocumentVersion;
   if (source == null) {
     return const ToolExecutionResult(
       success: false,
@@ -46,14 +47,14 @@ Future<ToolExecutionResult> applyDocumentProposal({
       output:
           'Error: "markdown" and either "documentId" or "newTitle" are '
           'required.',
-      errorMessage: 'Type validation failed for the document proposal',
+      errorMessage: 'Type validation failed for the document version',
       nonRetryable: true,
     );
   }
   final baseVersionId = args['baseVersionId'];
   final changeSummary = args['changeSummary'];
   final effectOrOwn =
-      effect ?? ChangeEffect(key: 'document-proposal:${const Uuid().v4()}');
+      effect ?? ChangeEffect(key: 'document-write:${const Uuid().v4()}');
 
   final outcome = await source.apply(
     taskId: taskId,
@@ -69,14 +70,14 @@ Future<ToolExecutionResult> applyDocumentProposal({
   return switch (outcome) {
     TaskDocumentApplied(:final documentId) => ToolExecutionResult(
       success: true,
-      output: 'Document $documentId has the confirmed version.',
+      output: 'Document `$documentId` now shows this version.',
       mutatedEntityId: documentId,
     ),
     TaskDocumentApplyRefused(:final reason, :final permanent) =>
       ToolExecutionResult(
         success: false,
         output: 'Error: $reason.',
-        errorMessage: 'Document proposal refused',
+        errorMessage: 'Document version refused',
         nonRetryable: permanent,
       ),
   };

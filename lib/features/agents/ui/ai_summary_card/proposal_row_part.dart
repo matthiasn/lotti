@@ -15,11 +15,9 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/backfill_actions.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_kind_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
-import 'package:lotti/features/agents/ui/document_proposal_preview.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
-import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -351,11 +349,6 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
 
   String get _toolName =>
       widget.suggestion?.item.toolName ?? widget.entry!.toolName;
-
-  /// A document draft is confirmed only from the sheet that shows its text
-  /// (ADR 0167): no check on the row, and no swipe to confirm. Dismissing
-  /// stays one gesture away.
-  bool get _readFirst => _toolName == TaskAgentToolNames.proposeDocumentVersion;
   Map<String, dynamic> get _args =>
       widget.suggestion?.item.args ?? widget.entry!.args;
 
@@ -449,9 +442,8 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     // row would just disappear without communicating anything new.
     setState(
       () => _dx = (_dx + details.delta.dx).clamp(
-        // A draft has no swipe: its verdicts are taps, after reading.
-        _readFirst ? 0.0 : -_swipeTrigger * 2,
-        _readFirst ? 0.0 : _swipeTrigger * 2,
+        -_swipeTrigger * 2,
+        _swipeTrigger * 2,
       ),
     );
   }
@@ -538,26 +530,6 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
 
     _resolveController.addListener(listener);
     return completer.future;
-  }
-
-  /// On desktop, a revision of a document opens side by side with the
-  /// version it rewrites, through the review route; a new document, and any
-  /// draft on a phone, is read in the sheet. Null where the sheet applies.
-  VoidCallback? _reviewRoute(BuildContext context) {
-    final suggestion = widget.suggestion;
-    final documentId = _args['documentId'];
-    if (suggestion == null ||
-        documentId is! String ||
-        !isDesktopLayout(context)) {
-      return null;
-    }
-    final set = suggestion.changeSet;
-    return () => ref
-        .read(navServiceProvider)
-        .beamToNamed(
-          '/tasks/${set.taskId}/documents/$documentId/review/'
-          '${set.id}/${suggestion.itemIndex}',
-        );
   }
 
   Future<void> _confirm() async {
@@ -884,23 +856,9 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
                         resolving: resolveKindLocal != null,
                         closesTask: isDoneProposal(_toolName, _args),
                         onReject: _reject,
-                        onConfirm: _readFirst ? null : _confirm,
-                        showActions: !_readFirst,
+                        onConfirm: _confirm,
                       ),
-                      widget.details ??
-                          (_readFirst && !widget.isResolved
-                              ? DocumentDraftRowActions(
-                                  args: _args,
-                                  busy: _busy,
-                                  resolving: resolveKindLocal != null,
-                                  onConfirm: _confirm,
-                                  onReject: _reject,
-                                  onRead: _reviewRoute(context),
-                                )
-                              : DocumentProposalReadButton(
-                                  toolName: _toolName,
-                                  args: _args,
-                                )),
+                      ?widget.details,
                     ],
                   ),
                 ),

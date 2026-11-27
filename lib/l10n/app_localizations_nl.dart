@@ -1711,10 +1711,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Metgezel op volledig scherm';
 
   @override
-  String get aiCardDocumentProposalsHint =>
-      'Lees elk concept en bevestig het daarna apart.';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'Geschiedenis · $count';
   }
@@ -7108,60 +7104,28 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get documentProposalConfirmNew => 'Document maken';
+  String get documentReviewAdded => 'Toegevoegd in deze versie';
 
   @override
-  String get documentProposalConfirmVersion => 'Deze versie gebruiken';
+  String get documentReviewAfter => 'Na';
 
   @override
-  String get documentProposalDiscard => 'Concept weggooien';
-
-  @override
-  String get documentProposalKindNew => 'Voorgesteld nieuw document';
-
-  @override
-  String get documentProposalKindVersion => 'Voorgestelde nieuwe versie';
-
-  @override
-  String get documentProposalRead => 'Concept lezen';
-
-  @override
-  String get documentReviewAdded => 'Toegevoegd in de voorgestelde versie';
+  String get documentReviewAgentWrote =>
+      'De agent heeft deze versie geschreven';
 
   @override
   String get documentReviewAskForChanges => 'Om wijzigingen vragen';
 
   @override
-  String get documentReviewBase => 'Opgesteld op';
+  String get documentReviewBefore => 'Voor';
 
   @override
   String get documentReviewClose => 'Beoordeling sluiten';
 
   @override
-  String documentReviewConfirm(int number) {
-    return 'v$number bevestigen';
-  }
-
-  @override
   String documentReviewCounts(int added, int removed, int rewritten) {
     return '$added toegevoegd, $removed verwijderd, $rewritten herschreven';
   }
-
-  @override
-  String get documentReviewCurrent => 'Huidig';
-
-  @override
-  String get documentReviewDiscardMessage =>
-      'Het concept van de agent wordt weggegooid. Je kunt in de chat van de taak om een nieuw vragen.';
-
-  @override
-  String get documentReviewDiscardTitle => 'Dit concept weggooien?';
-
-  @override
-  String get documentReviewNewer => 'Nieuwer concept openen';
-
-  @override
-  String get documentReviewNotInDraft => 'Niet in het concept';
 
   @override
   String documentReviewNotInVersion(int number) {
@@ -7172,34 +7136,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get documentReviewOpen => 'Wijzigingen bekijken';
 
   @override
-  String get documentReviewProposed => 'Voorgesteld';
+  String get documentReviewRemoved => 'Verwijderd in deze versie';
 
   @override
-  String get documentReviewRedo => 'Vraag in de chat om een nieuwe versie';
+  String get documentReviewRewritten => 'Herschreven in deze versie';
 
   @override
-  String get documentReviewRemoved => 'Verwijderd in de voorgestelde versie';
-
-  @override
-  String get documentReviewRewritten => 'Herschreven in de voorgestelde versie';
-
-  @override
-  String documentReviewStale(int base, int current) {
-    return 'Geschreven op v$base, maar het document is nu v$current: bevestigen zou de nieuwere tekst overschrijven.';
+  String documentReviewUndo(int number) {
+    return 'Terug naar v$number';
   }
-
-  @override
-  String documentReviewStaleNoText(int current) {
-    return 'Geschreven voordat het document tekst had; het is nu v$current, en bevestigen zou het overschrijven.';
-  }
-
-  @override
-  String get documentReviewWaiting =>
-      'De agent heeft een nieuwe versie opgesteld';
-
-  @override
-  String get documentReviewWaitingStale =>
-      'De agent heeft een nieuwe versie opgesteld, maar op een oudere';
 
   @override
   String get doneButton => 'Klaar';
@@ -18249,10 +18194,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskDocumentsDeleteTitle => 'Dit document verwijderen?';
 
   @override
-  String get taskDocumentsDraftedByAgent =>
-      'Opgesteld door de agent, bevestigd door jou';
-
-  @override
   String get taskDocumentsEdit => 'Document bewerken';
 
   @override
@@ -18303,6 +18244,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByAgent => 'Door de agent geschreven';
 
   @override
   String get taskDocumentsWrittenByYou => 'Door jou geschreven';

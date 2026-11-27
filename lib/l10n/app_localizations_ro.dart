@@ -1725,10 +1725,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Însoțitor pe tot ecranul';
 
   @override
-  String get aiCardDocumentProposalsHint =>
-      'Citiți fiecare ciornă, apoi confirmați-o separat.';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'Istoric · $count';
   }
@@ -7213,60 +7209,27 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get documentProposalConfirmNew => 'Creați documentul';
+  String get documentReviewAdded => 'Adăugat în această versiune';
 
   @override
-  String get documentProposalConfirmVersion => 'Folosiți această versiune';
+  String get documentReviewAfter => 'După';
 
   @override
-  String get documentProposalDiscard => 'Renunțați la ciornă';
-
-  @override
-  String get documentProposalKindNew => 'Document nou propus';
-
-  @override
-  String get documentProposalKindVersion => 'Versiune nouă propusă';
-
-  @override
-  String get documentProposalRead => 'Citiți ciorna';
-
-  @override
-  String get documentReviewAdded => 'Adăugat în versiunea propusă';
+  String get documentReviewAgentWrote => 'Agentul a scris această versiune';
 
   @override
   String get documentReviewAskForChanges => 'Cereți modificări';
 
   @override
-  String get documentReviewBase => 'Redactat pe baza';
+  String get documentReviewBefore => 'Înainte';
 
   @override
   String get documentReviewClose => 'Închideți revizuirea';
 
   @override
-  String documentReviewConfirm(int number) {
-    return 'Confirmați v$number';
-  }
-
-  @override
   String documentReviewCounts(int added, int removed, int rewritten) {
     return '$added adăugate, $removed eliminate, $rewritten rescrise';
   }
-
-  @override
-  String get documentReviewCurrent => 'Actuală';
-
-  @override
-  String get documentReviewDiscardMessage =>
-      'Ciorna agentului este eliminată. Puteți cere una nouă în chatul sarcinii.';
-
-  @override
-  String get documentReviewDiscardTitle => 'Renunțați la această ciornă?';
-
-  @override
-  String get documentReviewNewer => 'Deschideți ciorna mai nouă';
-
-  @override
-  String get documentReviewNotInDraft => 'Nu este în ciornă';
 
   @override
   String documentReviewNotInVersion(int number) {
@@ -7277,33 +7240,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get documentReviewOpen => 'Revizuiți modificările';
 
   @override
-  String get documentReviewProposed => 'Propusă';
+  String get documentReviewRemoved => 'Eliminat în această versiune';
 
   @override
-  String get documentReviewRedo => 'Cereți refacerea în chat';
+  String get documentReviewRewritten => 'Rescris în această versiune';
 
   @override
-  String get documentReviewRemoved => 'Eliminat în versiunea propusă';
-
-  @override
-  String get documentReviewRewritten => 'Rescris în versiunea propusă';
-
-  @override
-  String documentReviewStale(int base, int current) {
-    return 'Scrisă pe baza v$base, dar documentul este acum v$current: confirmarea ar suprascrie textul mai nou.';
+  String documentReviewUndo(int number) {
+    return 'Reveniți la v$number';
   }
-
-  @override
-  String documentReviewStaleNoText(int current) {
-    return 'Scrisă înainte ca documentul să aibă text; acum este v$current, iar confirmarea l-ar suprascrie.';
-  }
-
-  @override
-  String get documentReviewWaiting => 'Agentul a redactat o versiune nouă';
-
-  @override
-  String get documentReviewWaitingStale =>
-      'Agentul a redactat o versiune nouă, dar pe baza uneia mai vechi';
 
   @override
   String get doneButton => 'Gata';
@@ -18539,10 +18484,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskDocumentsDeleteTitle => 'Ștergeți acest document?';
 
   @override
-  String get taskDocumentsDraftedByAgent =>
-      'Redactat de agent, confirmat de dvs.';
-
-  @override
   String get taskDocumentsEdit => 'Editați documentul';
 
   @override
@@ -18593,6 +18534,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByAgent => 'Scris de agent';
 
   @override
   String get taskDocumentsWrittenByYou => 'Scris de dvs.';

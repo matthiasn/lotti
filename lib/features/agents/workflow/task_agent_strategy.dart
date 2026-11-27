@@ -109,7 +109,6 @@ class TaskAgentStrategy extends ConversationStrategy {
     this.refreshLinkedPullRequests,
     this.taskDocuments = const [],
     this.readTaskDocument,
-    this.pendingDocumentProposalIds = const {},
     this.flushChangeSet,
     this.stagedToolExposure,
     this.priorObservationTexts = const [],
@@ -240,17 +239,12 @@ class TaskAgentStrategy extends ConversationStrategy {
   final Future<String> Function()? refreshLinkedPullRequests;
 
   /// The task's documents as the wake listed them in `## Documents`. Validates
-  /// `propose_document_version` and supplies the version a proposal is
-  /// drafted against.
+  /// `write_document_version`.
   final List<TaskDocumentSummary> taskDocuments;
 
   /// Reads a document's current text for `read_document`; null where the
   /// documents feature is not wired.
   final Future<TaskDocumentText?> Function(String documentId)? readTaskDocument;
-
-  /// The documents with a proposed version still waiting for the user: one
-  /// at a time per document.
-  final Set<String> pendingDocumentProposalIds;
 
   String? _reportContent;
   List<AgentReportSection> _reportSections = const [];
@@ -267,6 +261,14 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// in this wake. Prevents smaller models from burning all turns on a
   /// single tool (e.g. calling `set_task_title` 4 times).
   final _usedDeferredTools = <String>{};
+
+  /// The version each document read in this wake showed (null for one with
+  /// no text yet): what a version written afterwards is written over.
+  final _readDocumentVersions = <String, String?>{};
+
+  /// The documents this wake wrote a version of, and the new ones it
+  /// created, so a repeated call writes nothing twice.
+  final _writtenDocuments = <String>{};
 
   /// Retractions the agent requested via `retract_suggestions` this wake.
   ///
@@ -450,6 +452,10 @@ class TaskAgentStrategy extends ConversationStrategy {
       if (toolName == TaskAgentToolNames.readDocument) {
         await _recordActionMessage(toolName: toolName, args: args);
         await _handleReadDocument(args, call.id, manager);
+        continue;
+      }
+      if (toolName == TaskAgentToolNames.writeDocumentVersion) {
+        await _handleWriteDocumentVersion(args, call.id, manager);
         continue;
       }
       if (toolName == retractSuggestionsToolName) {

@@ -1723,10 +1723,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Compagno a schermo intero';
 
   @override
-  String get aiCardDocumentProposalsHint =>
-      'Leggi ogni bozza, poi confermala singolarmente.';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'Cronologia · $count';
   }
@@ -7181,60 +7177,27 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get documentProposalConfirmNew => 'Crea documento';
+  String get documentReviewAdded => 'Aggiunto in questa versione';
 
   @override
-  String get documentProposalConfirmVersion => 'Usa questa versione';
+  String get documentReviewAfter => 'Dopo';
 
   @override
-  String get documentProposalDiscard => 'Scarta la bozza';
-
-  @override
-  String get documentProposalKindNew => 'Nuovo documento proposto';
-
-  @override
-  String get documentProposalKindVersion => 'Nuova versione proposta';
-
-  @override
-  String get documentProposalRead => 'Leggi la bozza';
-
-  @override
-  String get documentReviewAdded => 'Aggiunto nella versione proposta';
+  String get documentReviewAgentWrote => 'L\'agente ha scritto questa versione';
 
   @override
   String get documentReviewAskForChanges => 'Chiedi modifiche';
 
   @override
-  String get documentReviewBase => 'Scritto su';
+  String get documentReviewBefore => 'Prima';
 
   @override
   String get documentReviewClose => 'Chiudi revisione';
 
   @override
-  String documentReviewConfirm(int number) {
-    return 'Conferma v$number';
-  }
-
-  @override
   String documentReviewCounts(int added, int removed, int rewritten) {
     return '$added aggiunti, $removed rimossi, $rewritten riscritti';
   }
-
-  @override
-  String get documentReviewCurrent => 'Attuale';
-
-  @override
-  String get documentReviewDiscardMessage =>
-      'La bozza dell\'agente viene scartata. Puoi chiederne una nuova nella chat dell\'attività.';
-
-  @override
-  String get documentReviewDiscardTitle => 'Scartare questa bozza?';
-
-  @override
-  String get documentReviewNewer => 'Apri la bozza più recente';
-
-  @override
-  String get documentReviewNotInDraft => 'Non nella bozza';
 
   @override
   String documentReviewNotInVersion(int number) {
@@ -7245,33 +7208,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String get documentReviewOpen => 'Rivedi le modifiche';
 
   @override
-  String get documentReviewProposed => 'Proposta';
+  String get documentReviewRemoved => 'Rimosso in questa versione';
 
   @override
-  String get documentReviewRedo => 'Chiedi di rifarla in chat';
+  String get documentReviewRewritten => 'Riscritto in questa versione';
 
   @override
-  String get documentReviewRemoved => 'Rimosso nella versione proposta';
-
-  @override
-  String get documentReviewRewritten => 'Riscritto nella versione proposta';
-
-  @override
-  String documentReviewStale(int base, int current) {
-    return 'Scritta su v$base, ma il documento ora è v$current: confermarla sovrascriverebbe il testo più recente.';
+  String documentReviewUndo(int number) {
+    return 'Torna a v$number';
   }
-
-  @override
-  String documentReviewStaleNoText(int current) {
-    return 'Scritta prima che il documento avesse testo; ora è v$current, e confermarla lo sovrascriverebbe.';
-  }
-
-  @override
-  String get documentReviewWaiting => 'L\'agente ha scritto una nuova versione';
-
-  @override
-  String get documentReviewWaitingStale =>
-      'L\'agente ha scritto una nuova versione, ma su una più vecchia';
 
   @override
   String get doneButton => 'Fatto';
@@ -18417,10 +18362,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskDocumentsDeleteTitle => 'Eliminare questo documento?';
 
   @override
-  String get taskDocumentsDraftedByAgent =>
-      'Redatto dall\'agente, confermato da te';
-
-  @override
   String get taskDocumentsEdit => 'Modifica documento';
 
   @override
@@ -18471,6 +18412,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByAgent => 'Scritto dall\'agente';
 
   @override
   String get taskDocumentsWrittenByYou => 'Scritto da te';

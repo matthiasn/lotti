@@ -9,6 +9,7 @@ import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_action_service.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
@@ -574,6 +575,148 @@ void main() {
       },
     );
   }
+
+  group('document versions', () {
+    const brief = TaskDocumentSummary(
+      id: 'brief',
+      title: 'Habitat brief',
+      versionId: 'brief-v1',
+      versionNumber: 1,
+    );
+    const version = ChangeItem(
+      toolName: 'write_document_version',
+      args: {
+        'documentId': 'brief',
+        'title': 'Habitat brief',
+        'baseVersionId': 'brief-v1',
+        'markdown': 'Feed the penguins at noon.',
+        'changeSummary': 'Moves feeding to noon.',
+      },
+      humanSummary: 'New version of "Habitat brief"',
+    );
+    late List<ToolExecutionResult> outcomes;
+
+    /// Replaces the reviewed answer with one holding [actions], and the
+    /// service with one whose task holds the document.
+    Future<void> answerWith(List<ChangeItem> actions) async {
+      final asked = await bench.store.ask('agent', chat, 'Feed at noon.');
+      question = asked.id;
+      await bench.store.publish(
+        'agent',
+        chat,
+        QueryBuiltAnswer(
+          answer: QueryChatAnswer(
+            questionId: question,
+            text: 'Here is the brief.',
+            coverage: const QueryCoverage(),
+            proposedActions: actions,
+            dependencies: (asked.data as QueryChatQuestion).dependencies,
+          ),
+        ),
+      );
+      outcomes = [];
+      service = QueryChatActionService(
+        store: bench.store,
+        enabled: () => enabled,
+        labels: MockLabelsRepository(),
+        readContext: (taskId, ids) async => QueryTaskActionContext(
+          taskId: taskId,
+          input: const {},
+          dependencies: const [],
+          documents: const {
+            'brief': TaskDocumentText(summary: brief, markdown: 'Feed at ten.'),
+          },
+        ),
+        dispatch: (name, args, taskId, approval) async {
+          calls.add(name);
+          return outcomes.isEmpty
+              ? const ToolExecutionResult(success: true, output: 'Applied')
+              : outcomes.removeAt(0);
+        },
+      );
+    }
+
+    Future<List<ToolExecutionResult>> writeDocuments() =>
+        service.writeDocuments(
+          agentId: 'agent',
+          chatId: chat,
+          questionId: question,
+        );
+
+    Future<List<ChangeItemStatus>> statuses() async {
+      final set = await bench.repository.getEntity(
+        'query-chat:$question:actions',
+      );
+      return (set! as ChangeSetEntity).items.map((i) => i.status).toList();
+    }
+
+    test('are written with no verdict asked, and every other change of the '
+        'answer still waits for one', () async {
+      await answerWith([items.first, version]);
+
+      final results = await writeDocuments();
+
+      expect(results.map((r) => r.success), [true]);
+      expect(calls, ['write_document_version']);
+      expect(await statuses(), [
+        ChangeItemStatus.pending,
+        ChangeItemStatus.confirmed,
+      ]);
+      // No verdict on the set: the rest is still the user's to decide.
+      final decisions = (await bench.store.load('agent')).chats.single.events
+          .map((e) => e.data)
+          .whereType<QueryChatActionDecision>();
+      expect(decisions, isEmpty);
+
+      // Accept all then applies only what was waiting.
+      await resolve();
+      expect(calls, ['write_document_version', 'add_checklist_item']);
+    });
+
+    test('a repeat writes nothing more', () async {
+      await answerWith([version]);
+
+      await writeDocuments();
+      expect(await writeDocuments(), isEmpty);
+
+      expect(calls, ['write_document_version']);
+    });
+
+    test('one that could not be written stays pending, and is applied from '
+        'its row afterwards', () async {
+      await answerWith([version]);
+      outcomes.add(
+        const ToolExecutionResult(success: false, output: 'Storage down'),
+      );
+
+      final results = await writeDocuments();
+      expect(results.map((r) => r.success), [false]);
+      expect(await statuses(), [ChangeItemStatus.pending]);
+
+      final retried = await resolve();
+      expect(retried.map((r) => r.success), [true]);
+      expect(await statuses(), [ChangeItemStatus.confirmed]);
+    });
+
+    test('are not written once the chat may no longer act', () async {
+      await answerWith([version]);
+      enabled = false;
+
+      await expectLater(
+        writeDocuments(),
+        throwsA(isA<QueryScopeUnavailable>()),
+      );
+      expect(calls, isEmpty);
+    });
+
+    test('are not written into an answer the user already dismissed', () async {
+      await answerWith([version]);
+      await resolve(approved: false);
+
+      expect(await writeDocuments(), isEmpty);
+      expect(calls, isEmpty);
+    });
+  });
 
   test('repeated Accept while applying does not dispatch twice', () async {
     hold = Completer<void>();

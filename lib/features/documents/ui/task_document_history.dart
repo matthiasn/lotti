@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/documents/repository/task_document_repository.dart';
+import 'package:lotti/features/documents/state/document_review_providers.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/task_document_labels.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -21,6 +22,7 @@ import 'package:material_ui/material_ui.dart';
 abstract final class TaskDocumentHistoryKeys {
   static Key row(String versionId) => Key('task-document-version-$versionId');
   static const restore = Key('task-document-version-restore');
+  static const review = Key('task-document-version-review');
   static const current = Key('task-document-version-current');
 }
 
@@ -132,6 +134,10 @@ Future<void> showTaskDocumentVersion(
 /// text as the next version by the user (`TaskDocumentRepository.restore`),
 /// over the version the document shows now. A version that landed meanwhile
 /// refuses the restore, and the user is told to look again.
+///
+/// A version written over another offers "Review changes", which closes
+/// the sheets and lays the two side by side on the document page
+/// ([documentReviewOpenProvider]).
 class TaskDocumentVersionView extends ConsumerWidget {
   const TaskDocumentVersionView({
     required this.documentKey,
@@ -180,6 +186,19 @@ class TaskDocumentVersionView extends ConsumerWidget {
       }
     }
 
+    void review() {
+      ref.read(documentReviewOpenProvider(documentKey.taskId).notifier).open((
+        taskId: documentKey.taskId,
+        documentId: documentKey.documentId,
+        versionId: version.id,
+      ));
+      // Back past the version view and the History sheet under it, onto the
+      // page, which now shows the review.
+      Navigator.of(context)
+        ..pop()
+        ..pop();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -201,15 +220,31 @@ class TaskDocumentVersionView extends ConsumerWidget {
             color: tokens.colors.text.highEmphasis,
           ),
         ),
-        if (!isCurrent) ...[
+        if (!isCurrent || version.data.baseVersionId != null) ...[
           SizedBox(height: tokens.spacing.step5),
           Align(
             alignment: Alignment.centerRight,
-            child: DesignSystemButton(
-              key: TaskDocumentHistoryKeys.restore,
-              label: messages.taskDocumentsRestore,
-              leadingIcon: LottiIcons.restore,
-              onPressed: restore,
+            child: Wrap(
+              spacing: tokens.spacing.step2,
+              runSpacing: tokens.spacing.step2,
+              alignment: WrapAlignment.end,
+              children: [
+                if (version.data.baseVersionId != null)
+                  DesignSystemButton(
+                    key: TaskDocumentHistoryKeys.review,
+                    label: messages.documentReviewOpen,
+                    leadingIcon: LottiIcons.compare,
+                    variant: DesignSystemButtonVariant.tertiary,
+                    onPressed: review,
+                  ),
+                if (!isCurrent)
+                  DesignSystemButton(
+                    key: TaskDocumentHistoryKeys.restore,
+                    label: messages.taskDocumentsRestore,
+                    leadingIcon: LottiIcons.restore,
+                    onPressed: restore,
+                  ),
+              ],
             ),
           ),
         ],

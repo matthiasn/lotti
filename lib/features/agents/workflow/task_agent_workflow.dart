@@ -27,7 +27,6 @@ import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
-import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/task_agent_staged_tool_exposure.dart';
 import 'package:lotti/features/agents/tools/task_agent_tool_gate.dart';
@@ -211,7 +210,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
   final PullRequestLinkSource? pullRequestLinks;
 
   /// Lists and reads the task's documents for the `## Documents` section and
-  /// `read_document`, and validates `propose_document_version`; null hides
+  /// `read_document`, and validates `write_document_version`; null hides
   /// both document tools.
   final TaskDocumentSource? taskDocuments;
 
@@ -413,7 +412,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
   }
 
   /// The task's documents, for the wake's `## Documents` section, the
-  /// document tools' gate and the validation of a document proposal; empty
+  /// document tools' gate and the validation of a document write; empty
   /// where the documents feature is not wired or the read failed.
   Future<List<TaskDocumentSummary>> _taskDocumentDirectory(
     String taskId,

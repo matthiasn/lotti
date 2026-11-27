@@ -1717,10 +1717,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Begleitung im Vollbild';
 
   @override
-  String get aiCardDocumentProposalsHint =>
-      'Lies jeden Entwurf und bestätige ihn dann einzeln.';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'Verlauf · $count';
   }
@@ -7131,61 +7127,28 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get documentProposalConfirmNew => 'Dokument erstellen';
+  String get documentReviewAdded => 'In dieser Version hinzugefügt';
 
   @override
-  String get documentProposalConfirmVersion => 'Diese Version verwenden';
+  String get documentReviewAfter => 'Nachher';
 
   @override
-  String get documentProposalDiscard => 'Entwurf verwerfen';
-
-  @override
-  String get documentProposalKindNew => 'Vorgeschlagenes neues Dokument';
-
-  @override
-  String get documentProposalKindVersion => 'Vorgeschlagene neue Version';
-
-  @override
-  String get documentProposalRead => 'Entwurf lesen';
-
-  @override
-  String get documentReviewAdded =>
-      'In der vorgeschlagenen Version hinzugefügt';
+  String get documentReviewAgentWrote =>
+      'Der Agent hat diese Version geschrieben';
 
   @override
   String get documentReviewAskForChanges => 'Änderungen erbitten';
 
   @override
-  String get documentReviewBase => 'Entworfen auf';
+  String get documentReviewBefore => 'Vorher';
 
   @override
   String get documentReviewClose => 'Prüfung schließen';
 
   @override
-  String documentReviewConfirm(int number) {
-    return 'v$number übernehmen';
-  }
-
-  @override
   String documentReviewCounts(int added, int removed, int rewritten) {
     return '$added hinzugefügt, $removed entfernt, $rewritten umgeschrieben';
   }
-
-  @override
-  String get documentReviewCurrent => 'Aktuell';
-
-  @override
-  String get documentReviewDiscardMessage =>
-      'Der Entwurf des Agenten wird verworfen. Im Chat der Aufgabe kannst du um einen neuen bitten.';
-
-  @override
-  String get documentReviewDiscardTitle => 'Diesen Entwurf verwerfen?';
-
-  @override
-  String get documentReviewNewer => 'Neueren Entwurf öffnen';
-
-  @override
-  String get documentReviewNotInDraft => 'Nicht im Entwurf';
 
   @override
   String documentReviewNotInVersion(int number) {
@@ -7196,35 +7159,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get documentReviewOpen => 'Änderungen prüfen';
 
   @override
-  String get documentReviewProposed => 'Vorgeschlagen';
+  String get documentReviewRemoved => 'In dieser Version entfernt';
 
   @override
-  String get documentReviewRedo => 'Im Chat um Neufassung bitten';
+  String get documentReviewRewritten => 'In dieser Version umgeschrieben';
 
   @override
-  String get documentReviewRemoved => 'In der vorgeschlagenen Version entfernt';
-
-  @override
-  String get documentReviewRewritten =>
-      'In der vorgeschlagenen Version umgeschrieben';
-
-  @override
-  String documentReviewStale(int base, int current) {
-    return 'Geschrieben für v$base, aber das Dokument ist jetzt v$current: Übernehmen würde den neueren Text überschreiben.';
+  String documentReviewUndo(int number) {
+    return 'Zurück zu v$number';
   }
-
-  @override
-  String documentReviewStaleNoText(int current) {
-    return 'Geschrieben, bevor das Dokument Text hatte; es ist jetzt v$current, und Übernehmen würde es überschreiben.';
-  }
-
-  @override
-  String get documentReviewWaiting =>
-      'Der Agent hat eine neue Fassung entworfen';
-
-  @override
-  String get documentReviewWaitingStale =>
-      'Der Agent hat eine neue Fassung entworfen, aber auf einer älteren';
 
   @override
   String get doneButton => 'Fertig';
@@ -18329,10 +18272,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskDocumentsDeleteTitle => 'Dieses Dokument löschen?';
 
   @override
-  String get taskDocumentsDraftedByAgent =>
-      'Vom Agenten entworfen, von dir bestätigt';
-
-  @override
   String get taskDocumentsEdit => 'Dokument bearbeiten';
 
   @override
@@ -18383,6 +18322,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByAgent => 'Vom Agenten geschrieben';
 
   @override
   String get taskDocumentsWrittenByYou => 'Von dir geschrieben';

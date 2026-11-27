@@ -20,8 +20,8 @@ void main() {
     });
   });
 
-  group('propose_document_version', () {
-    final tool = toolNamed(TaskAgentToolNames.proposeDocumentVersion);
+  group('write_document_version', () {
+    final tool = toolNamed(TaskAgentToolNames.writeDocumentVersion);
 
     test(
       'requires the whole text and its summary; the document or a new title '
@@ -39,14 +39,17 @@ void main() {
     );
 
     test(
-      'is a proposal the user confirms, never because new material arrived',
+      'writes at once, and says so: only when the user asked, never because '
+      'new material arrived',
       () {
         expect(
           AgentToolRegistry.deferredTools,
-          contains(TaskAgentToolNames.proposeDocumentVersion),
+          isNot(contains(TaskAgentToolNames.writeDocumentVersion)),
         );
         expect(tool.description, contains('Only when the user asked'));
         expect(tool.description, contains('never because new material'));
+        expect(tool.description, contains('with no confirmation'));
+        expect(tool.description, contains('stay in its history'));
       },
     );
   });

@@ -1,6 +1,8 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task_document_data.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/task_document_editor.dart';
 import 'package:lotti/features/documents/ui/task_document_page.dart';
@@ -36,11 +38,15 @@ void main() {
     markdown: '# Launch brief\n\nAll 37 penguins present.',
   );
 
+  late TaskDocumentVersionEntry current;
+
   setUp(() {
     repository = MockTaskDocumentRepository();
+    current = version3;
     when(() => repository.currentVersion(withVersion)).thenAnswer(
-      (_) async => version3,
+      (_) async => current,
     );
+    when(() => repository.currentVersion(empty)).thenAnswer((_) async => null);
     when(() => repository.document('doc-brief')).thenAnswer(
       (_) async => withVersion,
     );
@@ -85,6 +91,27 @@ void main() {
         find.byKey(TaskDocumentsSectionKeys.copy('doc-empty')),
         findsNothing,
       );
+    },
+  );
+
+  testWidgets(
+    'a version the agent wrote says so on its row, since nobody was asked '
+    'before it landed',
+    (tester) async {
+      current = version3.copyWith(
+        data: version3.data.copyWith(author: TaskDocumentAuthor.agent),
+      );
+      await withClock(
+        Clock.fixed(taskDocFixtureEpoch.add(const Duration(hours: 2))),
+        () async {
+          await pump(tester);
+          // The version's author is read after the first frame.
+          await tester.pump();
+        },
+      );
+
+      expect(find.text('v3 · Written by the agent · 2 h ago'), findsOneWidget);
+      expect(find.text('v3 · 2 h ago'), findsNothing);
     },
   );
 

@@ -224,6 +224,8 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
       syncService: syncService,
       requestingAgentId: agentId,
       pullRequestLinks: pullRequestLinks,
+      // A wake writes a document version as it runs (ADR 0167).
+      taskDocuments: taskDocuments,
     );
     // One GitHub listing per wake, shared by the read tool and the
     // validation of every link proposal.
@@ -363,8 +365,7 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
         ),
         null => null,
       },
-      // The task's documents as listed, the reader for `read_document`, and
-      // the documents with a version already waiting for the user.
+      // The task's documents as listed, and the reader for `read_document`.
       taskDocuments: documents,
       readTaskDocument: switch (taskDocuments) {
         final TaskDocumentSource source => (documentId) => source.read(
@@ -372,12 +373,6 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
           documentId: documentId,
         ),
         null => null,
-      },
-      pendingDocumentProposalIds: {
-        for (final entry in ledger.open)
-          if (entry.toolName == TaskAgentToolNames.proposeDocumentVersion &&
-              entry.args['documentId'] is String)
-            entry.args['documentId'] as String,
       },
       // Canonical triples of every live link touching this task, so an
       // already-existing relationship is suppressed instead of re-proposed.

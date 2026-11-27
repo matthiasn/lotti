@@ -44,13 +44,16 @@ TaskDocumentEntry taskDocumentEntry({
 
 /// Version [number] of document [documentId], holding [markdown], under
 /// [clock], written [writtenSecond] seconds after [taskDocFixtureEpoch] and
-/// deleted then when [deleted].
+/// deleted then when [deleted] — over [baseVersionId], with [changeSummary]
+/// as its line on what it changes, when given.
 TaskDocumentVersionEntry taskDocumentVersionEntry({
   int number = 1,
   String markdown = '# Next steps\n\nShare the rollout plan.',
   String documentId = 'task-document',
   TaskDocumentAuthor author = TaskDocumentAuthor.user,
   String? id,
+  String? baseVersionId,
+  String? changeSummary,
   Map<String, int> clock = const {'a': 1},
   int writtenSecond = 0,
   bool deleted = false,
@@ -71,5 +74,7 @@ TaskDocumentVersionEntry taskDocumentVersionEntry({
     number: number,
     markdown: markdown,
     author: author,
+    baseVersionId: baseVersionId,
+    changeSummary: changeSummary,
   ),
 );

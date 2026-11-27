@@ -17,9 +17,9 @@ class TasksLocation extends BeamLocation<BeamState> {
     '/tasks',
     '/tasks/:taskId',
     '/tasks/:taskId/documents/:documentId',
-    // A draft of the document, opened for side-by-side review: the change
-    // set it travels in and its place there.
-    '/tasks/:taskId/documents/:documentId/review/:changeSetId/:itemIndex',
+    // A version of the document, opened side by side with the one before
+    // it.
+    '/tasks/:taskId/documents/:documentId/review/:versionId',
   ];
 
   @override
@@ -37,7 +37,7 @@ class TasksLocation extends BeamLocation<BeamState> {
             identical(getIt<NavService>(), navService)) {
           navService
             ..resetDesktopTaskDetail(desktopTaskId)
-            // Before the document, so the pane opening it sees the draft.
+            // Before the document, so the pane opening it sees the version.
             ..taskDocumentReviewRequest.value = review;
           // The document the URL names opens over its task in the detail
           // pane; a URL that names none returns the pane to the task.
@@ -72,30 +72,21 @@ class TasksLocation extends BeamLocation<BeamState> {
     ];
   }
 
-  /// The draft the URL opens for review; null when it names none, or names
-  /// one malformed.
-  static ({
-    String taskId,
-    String documentId,
-    String changeSetId,
-    int itemIndex,
-  })?
-  _review(BeamState state, {String? taskId, String? documentId}) {
-    final changeSetId = state.pathParameters['changeSetId'];
-    final itemIndex = int.tryParse(state.pathParameters['itemIndex'] ?? '');
-    if (!isUuid(taskId) ||
-        !isUuid(documentId) ||
-        changeSetId == null ||
-        changeSetId.isEmpty ||
-        itemIndex == null ||
-        itemIndex < 0) {
+  /// The version the URL opens for review; null when it names none, or
+  /// names one malformed.
+  static ({String taskId, String documentId, String versionId})? _review(
+    BeamState state, {
+    String? taskId,
+    String? documentId,
+  }) {
+    final versionId = state.pathParameters['versionId'];
+    if (!isUuid(taskId) || !isUuid(documentId) || !isUuid(versionId)) {
       return null;
     }
     return (
       taskId: taskId!,
       documentId: documentId!,
-      changeSetId: changeSetId,
-      itemIndex: itemIndex,
+      versionId: versionId!,
     );
   }
 }

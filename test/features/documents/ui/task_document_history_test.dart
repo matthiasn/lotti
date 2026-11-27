@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task_document_merge.dart';
 import 'package:lotti/features/documents/repository/task_document_repository.dart';
+import 'package:lotti/features/documents/state/document_review_providers.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/task_document_history.dart';
 import 'package:mocktail/mocktail.dart';
@@ -29,6 +31,7 @@ void main() {
     number: 2,
     id: 'version-2',
     documentId: 'doc-brief',
+    baseVersionId: 'version-1',
     markdown: 'The second draft.',
   );
   final document = taskDocumentEntry(
@@ -107,6 +110,35 @@ void main() {
       expect(find.text('Written by you'), findsNWidgets(2));
     },
   );
+
+  testWidgets('a version written over another offers Review changes, which '
+      'closes both sheets and opens its review on the page; a first version '
+      'has nothing to compare with', (tester) async {
+    await openHistory(tester);
+    await openVersion(tester, 'version-1');
+    expect(find.byKey(TaskDocumentHistoryKeys.review), findsNothing);
+    Navigator.of(tester.element(find.text('The first draft.'))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await openVersion(tester, 'version-2');
+    final container = ProviderScope.containerOf(
+      tester.element(find.text('The second draft.')),
+    );
+    await tester.tap(find.byKey(TaskDocumentHistoryKeys.review));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(container.read(documentReviewOpenProvider('task-1')), (
+      taskId: 'task-1',
+      documentId: 'doc-brief',
+      versionId: 'version-2',
+    ));
+    // Back on the page: neither the version view nor the History sheet.
+    expect(find.text('The second draft.'), findsNothing);
+    expect(find.byKey(TaskDocumentHistoryKeys.row('version-2')), findsNothing);
+    expect(find.text('open'), findsOneWidget);
+  });
 
   testWidgets('the version on show offers no restore', (tester) async {
     await openHistory(tester);

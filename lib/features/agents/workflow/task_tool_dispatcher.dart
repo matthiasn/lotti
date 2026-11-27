@@ -62,7 +62,7 @@ class TaskToolDispatcher {
   /// Links a confirmed `link_pull_request`; null where GitHub is not wired.
   final PullRequestLinkSource? pullRequestLinks;
 
-  /// Writes a confirmed `propose_document_version`; null where the documents
+  /// Writes a `write_document_version`; null where the documents
   /// feature is not wired.
   final TaskDocumentSource? taskDocuments;
 
@@ -295,8 +295,8 @@ class TaskToolDispatcher {
       case TaskAgentToolNames.linkPullRequest:
         return handleLinkPullRequest(taskId, normalizedArgs);
 
-      case TaskAgentToolNames.proposeDocumentVersion:
-        return applyDocumentProposal(
+      case TaskAgentToolNames.writeDocumentVersion:
+        return applyDocumentVersion(
           source: taskDocuments,
           taskId: taskId,
           args: normalizedArgs,

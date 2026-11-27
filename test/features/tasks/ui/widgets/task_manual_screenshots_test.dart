@@ -411,9 +411,9 @@ void main() {
       ValueNotifier<({String taskId, String documentId})?>(null),
     );
     when(() => navService.taskDocumentReviewRequest).thenReturn(
-      ValueNotifier<
-        ({String taskId, String documentId, String changeSetId, int itemIndex})?
-      >(null),
+      ValueNotifier<({String taskId, String documentId, String versionId})?>(
+        null,
+      ),
     );
     when(() => navService.isDesktopMode).thenReturn(true);
     when(timeService.getStream).thenAnswer((_) => const Stream.empty());

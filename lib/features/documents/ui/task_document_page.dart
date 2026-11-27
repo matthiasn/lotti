@@ -2,7 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/classes/task_document_data.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -40,6 +40,11 @@ abstract final class TaskDocumentPageKeys {
 /// with Edit, Copy, History and Delete, and Ask, which opens the task's chat
 /// beside the document to ask for a revision there.
 ///
+/// The agent writes its versions without asking, so while the version on
+/// show is one of its own the page says so, with the way to see what it
+/// changed ([DocumentReviewView], a mode of this page) and from there back
+/// to the version before it.
+///
 /// The text stays on screen while a newer version loads and is replaced in
 /// place ([taskDocumentCurrentVersionProvider]); only the very first load
 /// shows nothing. A document deleted while open — here, or on another
@@ -62,7 +67,7 @@ class TaskDocumentPage extends ConsumerStatefulWidget {
   final String documentId;
   final VoidCallback? onClose;
 
-  /// A draft of this document to open for review as the page appears, or
+  /// A version of this document to open for review as the page appears, or
   /// when a later link asks for it — the review route's. Ignored when it
   /// names another document.
   final DocumentReviewKey? initialReview;
@@ -88,16 +93,16 @@ class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
   }
 
   void _openInitialReview() {
-    final draft = widget.initialReview;
-    if (draft == null ||
-        draft.taskId != widget.taskId ||
-        draft.documentId != widget.documentId) {
+    final asked = widget.initialReview;
+    if (asked == null ||
+        asked.taskId != widget.taskId ||
+        asked.documentId != widget.documentId) {
       return;
     }
     // After the frame: opening it rebuilds this page.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(documentReviewOpenProvider(widget.taskId).notifier).open(draft);
+      ref.read(documentReviewOpenProvider(widget.taskId).notifier).open(asked);
       widget.onInitialReviewOpened?.call();
     });
   }
@@ -112,33 +117,12 @@ class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
     final key = (taskId: taskId, documentId: documentId);
     final document = ref.watch(taskDocumentProvider(key));
     final version = ref.watch(taskDocumentCurrentVersionProvider(key)).value;
-    final drafts = ref.watch(pendingDocumentProposalsProvider(key));
-    // The newest draft waiting for this document, which the notice opens.
-    final waiting = drafts?.fold<PendingSuggestion?>(
-      null,
-      (newest, draft) =>
-          newest == null ||
-              draft.changeSet.createdAt.isAfter(
-                newest.changeSet.createdAt,
-              )
-          ? draft
-          : newest,
-    );
     final review = ref.read(documentReviewOpenProvider(taskId).notifier);
     final open = ref.watch(documentReviewOpenProvider(taskId));
     final reviewing = open?.documentId == documentId ? open : null;
-    // A review whose draft stopped waiting while the page was away, or whose
-    // document is gone, is over: the page reads, and the panes that stepped
-    // aside for it come back.
-    final over =
-        reviewing != null &&
-        (document == null ||
-            (drafts != null &&
-                !drafts.any(
-                  (draft) =>
-                      draft.changeSet.id == reviewing.changeSetId &&
-                      draft.itemIndex == reviewing.itemIndex,
-                )));
+    // A review whose document is gone is over: the page says so, and the
+    // panes that stepped aside for the review come back.
+    final over = reviewing != null && document == null;
     if (over) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (ref.read(documentReviewOpenProvider(taskId)) == reviewing) {
@@ -170,8 +154,7 @@ class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
     final showingReview = reviewing != null && !over && document != null;
 
     // While reviewing, back — the arrow, the system back, the iOS swipe —
-    // closes the review onto the text instead of leaving the document with
-    // the decision open.
+    // closes the review onto the text instead of leaving the document.
     return PopScope<void>(
       canPop: !showingReview,
       onPopInvokedWithResult: (didPop, _) {
@@ -180,7 +163,7 @@ class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
       child: Scaffold(
         // The task's chat docks beside the document, so a revision can be
         // asked for while reading; it is the task's own discussion, the one
-        // its page opens, and its proposals carry a Read draft.
+        // its page opens.
         body: QueryCompanion(
           scope: QueryScope(kind: QueryScopeKind.task, id: taskId),
           entryViewBuilder: (entryId) =>
@@ -214,7 +197,6 @@ class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
                             reviewKey: reviewing,
                             title: document.data.title,
                             onClose: review.close,
-                            onOpenDraft: review.open,
                           )
                         : document == null
                         ? Center(
@@ -249,17 +231,18 @@ class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
                               kind: QueryScopeKind.task,
                               id: taskId,
                             ),
-                            reviewOutOfDate:
-                                waiting != null &&
-                                waiting.item.args['baseVersionId'] !=
-                                    document.data.current?.id,
-                            onReview: waiting == null
+                            // Only for the agent's version: the user knows
+                            // what their own edit or restore changed.
+                            onReview:
+                                version == null ||
+                                    version.data.author !=
+                                        TaskDocumentAuthor.agent ||
+                                    version.id != document.data.current?.id
                                 ? null
                                 : () => review.open((
                                     taskId: taskId,
                                     documentId: documentId,
-                                    changeSetId: waiting.changeSet.id,
-                                    itemIndex: waiting.itemIndex,
+                                    versionId: version.id,
                                   )),
                           ),
                   ),
@@ -283,7 +266,6 @@ class _DocumentBody extends StatelessWidget {
     required this.onDelete,
     required this.chatScope,
     required this.onReview,
-    required this.reviewOutOfDate,
   });
 
   final TaskDocumentEntry document;
@@ -298,13 +280,9 @@ class _DocumentBody extends StatelessWidget {
   /// The task's discussion, which the Ask button opens beside the page.
   final QueryScope chatScope;
 
-  /// Opens the agent's waiting draft of this document for review; null when
-  /// none waits.
+  /// Opens what the version on show changed; null unless the agent wrote
+  /// it.
   final VoidCallback? onReview;
-
-  /// The waiting draft was written over an older version than the one
-  /// shown.
-  final bool reviewOutOfDate;
 
   @override
   Widget build(BuildContext context) {
@@ -364,17 +342,13 @@ class _DocumentBody extends StatelessWidget {
                     ),
                   ),
                 ],
-                // A waiting draft comes before the actions: editing now
-                // would leave it stale, so reviewing it is the first thing
-                // to do, and the one filled button while it waits.
+                // The agent wrote this version without asking, so the way to
+                // see what it changed comes before the actions.
                 if (onReview != null) ...[
                   SizedBox(height: tokens.spacing.step4),
                   SizedBox(
                     width: double.infinity,
-                    child: _DraftWaitingNotice(
-                      onReview: onReview!,
-                      outOfDate: reviewOutOfDate,
-                    ),
+                    child: _AgentVersionNotice(onReview: onReview!),
                   ),
                 ],
                 SizedBox(height: tokens.spacing.step4),
@@ -387,9 +361,6 @@ class _DocumentBody extends StatelessWidget {
                       key: TaskDocumentPageKeys.edit,
                       label: messages.taskDocumentsEditAction,
                       leadingIcon: LottiIcons.edit,
-                      variant: onReview == null
-                          ? DesignSystemButtonVariant.primary
-                          : DesignSystemButtonVariant.tertiary,
                       onPressed: onEdit,
                     ),
                     DesignSystemButton(
@@ -447,17 +418,14 @@ class _DocumentBody extends StatelessWidget {
   }
 }
 
-/// The agent's draft of a new version, waiting: a status on the agent's own
-/// card surface — violet on its spark alone — with the button that lays the
-/// draft beside the current text.
-class _DraftWaitingNotice extends StatelessWidget {
-  const _DraftWaitingNotice({required this.onReview, required this.outOfDate});
+/// The version on show is the agent's: a status on the agent's own card
+/// surface — violet on its spark alone — with the button that lays the
+/// version beside the one before it. Quiet beside Edit, which stays the
+/// page's one filled button: nothing here waits for a decision.
+class _AgentVersionNotice extends StatelessWidget {
+  const _AgentVersionNotice({required this.onReview});
 
   final VoidCallback onReview;
-
-  /// The draft was written over a version the document no longer shows; it
-  /// says so before the review does.
-  final bool outOfDate;
 
   @override
   Widget build(BuildContext context) {
@@ -481,19 +449,11 @@ class _DraftWaitingNotice extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  outOfDate ? LottiIcons.warning : LottiIcons.aiSpark,
-                  size: IconSizes.m,
-                  color: outOfDate
-                      ? tokens.colors.alert.warning.defaultColor
-                      : ai.accent,
-                ),
+                Icon(LottiIcons.aiSpark, size: IconSizes.m, color: ai.accent),
                 SizedBox(width: tokens.spacing.step2),
                 Flexible(
                   child: Text(
-                    outOfDate
-                        ? messages.documentReviewWaitingStale
-                        : messages.documentReviewWaiting,
+                    messages.documentReviewAgentWrote,
                     style: tokens.typography.styles.body.bodyMedium.copyWith(
                       color: tokens.colors.text.highEmphasis,
                     ),
@@ -504,6 +464,7 @@ class _DraftWaitingNotice extends StatelessWidget {
             DesignSystemButton(
               key: TaskDocumentPageKeys.review,
               label: messages.documentReviewOpen,
+              variant: DesignSystemButtonVariant.secondary,
               onPressed: onReview,
             ),
           ],

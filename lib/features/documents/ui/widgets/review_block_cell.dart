@@ -14,14 +14,14 @@ import 'package:material_ui/material_ui.dart';
 /// padding — so plain text keeps its paragraph rhythm and the space gathers
 /// around the changes, which are what the eye finds. Headings stay at the
 /// body's size (`subordinateHeadings`), set apart by weight, so a document's
-/// own heading never outranks the review's title. A removed block's current side, an added block's
-/// proposed side and both sides of a rewritten one take the matching diff
+/// own heading never outranks the review's title. A removed block's earlier side, an added block's
+/// later side and both sides of a rewritten one take the matching diff
 /// surface; the row's gutter mark says which, so colour is never the only
 /// signal.
 ///
 /// Inside a rewritten block, the words [markRewrittenWords] marked sit on
-/// [wordMark] — the removed surface on the current side, the added one on
-/// the proposed side — so the eye finds the words that changed without
+/// [wordMark] — the removed surface on the earlier side, the added one on
+/// the later side — so the eye finds the words that changed without
 /// reading the paragraph twice.
 class ReviewBlockCell extends StatelessWidget {
   const ReviewBlockCell({
@@ -75,8 +75,8 @@ class ReviewBlockCell extends StatelessWidget {
       );
     }
     final diff = tokens.colors.diff;
-    // A removed block has only a current side and an added one only a
-    // proposed side, so the kind alone picks the surface.
+    // A removed block has only an earlier side and an added one only a
+    // later side, so the kind alone picks the surface.
     final surface = switch (kind) {
       MarkdownBlockChange.same => null,
       MarkdownBlockChange.rewritten => diff.replaced.surface,

@@ -813,7 +813,7 @@ void main() {
     });
   });
 
-  group('dispatch — propose_document_version', () {
+  group('dispatch — write_document_version', () {
     late FakeTaskDocumentSource documents;
     late TaskToolDispatcher documentDispatcher;
 
@@ -840,7 +840,7 @@ void main() {
       () async {
         const effect = ChangeEffect(key: 'change-set-1:0');
         final result = await documentDispatcher.dispatch(
-          TaskAgentToolNames.proposeDocumentVersion,
+          TaskAgentToolNames.writeDocumentVersion,
           effect.addTo(const {
             'documentId': 'doc-1',
             'markdown': '# Brief',
@@ -864,7 +864,7 @@ void main() {
       );
 
       final result = await documentDispatcher.dispatch(
-        TaskAgentToolNames.proposeDocumentVersion,
+        TaskAgentToolNames.writeDocumentVersion,
         const {'documentId': 'doc-1', 'markdown': '# Brief'},
         taskId,
       );

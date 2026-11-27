@@ -1290,10 +1290,6 @@
   "@aiCardCompanionStageTitle": {
     "description": "Screen-reader name of the companion's full-screen view, announced when it opens."
   },
-  "aiCardDocumentProposalsHint": "Read each draft, then confirm it on its own.",
-  "@aiCardDocumentProposalsHint": {
-    "description": "Caption under the Documents heading of the AI summary card's proposals, where each document draft is confirmed on its own."
-  },
   "aiCardHistoryToggle": "History · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -4519,55 +4515,29 @@
       }
     }
   },
-  "documentProposalConfirmNew": "Create document",
-  "@documentProposalConfirmNew": {
-    "description": "Primary button in the proposal preview sheet when the agent proposes a new document: confirming creates it."
-  },
-  "documentProposalConfirmVersion": "Use this version",
-  "@documentProposalConfirmVersion": {
-    "description": "Primary button in the proposal preview sheet when the agent proposes a new version of a document: confirming makes it the version the document shows."
-  },
-  "documentProposalDiscard": "Discard draft",
-  "@documentProposalDiscard": {
-    "description": "Dismisses an agent's document draft without writing it: the draft sheet's secondary button, and the button beside Read draft in chat."
-  },
-  "documentProposalKindNew": "Proposed new document",
-  "@documentProposalKindNew": {
-    "description": "Line at the top of the proposal preview sheet when the agent proposes a new document."
-  },
-  "documentProposalKindVersion": "Proposed new version",
-  "@documentProposalKindVersion": {
-    "description": "Line at the top of the proposal preview sheet when the agent proposes a new version of an existing document."
-  },
-  "documentProposalRead": "Read draft",
-  "@documentProposalRead": {
-    "description": "Button under an agent document proposal, in the AI summary card and in chat, that opens the proposed text before the user confirms it."
-  },
-  "documentReviewAdded": "Added in the proposed version",
+  "documentReviewAdded": "Added in this version",
   "@documentReviewAdded": {
-    "description": "Screen-reader label of a review row whose paragraph is new in the proposed version."
+    "description": "Screen-reader label of a review row whose paragraph is new in the version under review."
+  },
+  "documentReviewAfter": "After",
+  "@documentReviewAfter": {
+    "description": "Column head of a side-by-side document review: the version under review."
+  },
+  "documentReviewAgentWrote": "The agent wrote this version",
+  "@documentReviewAgentWrote": {
+    "description": "Notice on a task document's page while the version it shows was written by the task agent, beside the button that shows what it changed."
   },
   "documentReviewAskForChanges": "Ask for changes",
   "@documentReviewAskForChanges": {
     "description": "Button in a document review that opens the task's chat, to ask the agent to change its draft."
   },
-  "documentReviewBase": "Drafted over",
-  "@documentReviewBase": {
-    "description": "Column head over the left side of a document review whose draft is stale: the column shows the version the draft was written over (named by the version tag beside it), not the document's current text."
+  "documentReviewBefore": "Before",
+  "@documentReviewBefore": {
+    "description": "Column head of a side-by-side document review: the version the reviewed one was written over."
   },
   "documentReviewClose": "Close review",
   "@documentReviewClose": {
     "description": "Button in a document review's header that leaves the review and returns to the document."
-  },
-  "documentReviewConfirm": "Confirm v{number}",
-  "@documentReviewConfirm": {
-    "description": "Primary button of a document review: makes the agent's draft the document's new version, numbered as shown.",
-    "placeholders": {
-      "number": {
-        "type": "int",
-        "example": "3"
-      }
-    }
   },
   "documentReviewCounts": "{added} added, {removed} removed, {rewritten} rewritten",
   "@documentReviewCounts": {
@@ -4587,26 +4557,6 @@
       }
     }
   },
-  "documentReviewCurrent": "Current",
-  "@documentReviewCurrent": {
-    "description": "Column head over the left side of a side-by-side document review: the version the document shows now."
-  },
-  "documentReviewDiscardMessage": "The agent's draft is thrown away. You can ask for a new one in the task's chat.",
-  "@documentReviewDiscardMessage": {
-    "description": "Message of the confirmation asked before discarding the agent's draft in a document review: what discarding does, and how to get a new draft."
-  },
-  "documentReviewDiscardTitle": "Discard this draft?",
-  "@documentReviewDiscardTitle": {
-    "description": "Title of the confirmation asked before discarding the agent's draft in a document review."
-  },
-  "documentReviewNewer": "Open the newer draft",
-  "@documentReviewNewer": {
-    "description": "Link in a document review: the agent proposed a later draft of the same document while this one was open; opens that draft for review."
-  },
-  "documentReviewNotInDraft": "Not in the draft",
-  "@documentReviewNotInDraft": {
-    "description": "Caption in the empty slot on the proposed side of a document review whose draft was written over an older version: the draft does not have this paragraph. Used instead of a version number, since the draft would not become the next version."
-  },
   "documentReviewNotInVersion": "Not in v{number}",
   "@documentReviewNotInVersion": {
     "description": "Caption in the empty slot of a side-by-side document review, where a paragraph exists only on the other side: this version does not have it.",
@@ -4621,53 +4571,23 @@
   "@documentReviewOpen": {
     "description": "Button beside the notice on a document page that opens the agent's draft side by side with the current version."
   },
-  "documentReviewProposed": "Proposed",
-  "@documentReviewProposed": {
-    "description": "Column head over the right side of a side-by-side document review: the version the agent proposes."
-  },
-  "documentReviewRedo": "Ask for a redo in chat",
-  "@documentReviewRedo": {
-    "description": "Primary button of a document review whose draft was written over an older version: opens the task's chat, where the user asks the agent for a fresh draft against the current version."
-  },
-  "documentReviewRemoved": "Removed in the proposed version",
+  "documentReviewRemoved": "Removed in this version",
   "@documentReviewRemoved": {
-    "description": "Screen-reader label of a review row whose paragraph the proposed version drops."
+    "description": "Screen-reader label of a review row whose paragraph the version under review dropped."
   },
-  "documentReviewRewritten": "Rewritten in the proposed version",
+  "documentReviewRewritten": "Rewritten in this version",
   "@documentReviewRewritten": {
-    "description": "Screen-reader label of a review row whose paragraph the proposed version rewrites."
+    "description": "Screen-reader label of a review row whose paragraph the version under review rewrote."
   },
-  "documentReviewStale": "Written against v{base}, but the document is now v{current}: confirming would overwrite the newer text.",
-  "@documentReviewStale": {
-    "description": "Warning tag in a document review: the draft was written over version base, but the document has moved on to version current, so it cannot be confirmed.",
+  "documentReviewUndo": "Go back to v{number}",
+  "@documentReviewUndo": {
+    "description": "Button in a document review that restores the version before the reviewed one.",
     "placeholders": {
-      "base": {
-        "type": "int",
-        "example": "3"
-      },
-      "current": {
+      "number": {
         "type": "int",
         "example": "3"
       }
     }
-  },
-  "documentReviewStaleNoText": "Written before the document had text; it is now v{current}, and confirming would overwrite it.",
-  "@documentReviewStaleNoText": {
-    "description": "Warning tag in a document review: the draft was written while the document had no text, but the document now shows version current, so it cannot be confirmed.",
-    "placeholders": {
-      "current": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
-  "documentReviewWaiting": "The agent drafted a new version",
-  "@documentReviewWaiting": {
-    "description": "Notice on a document page: the task agent has drafted a new version of this document that waits for review."
-  },
-  "documentReviewWaitingStale": "The agent drafted a new version, but over an older one",
-  "@documentReviewWaitingStale": {
-    "description": "Notice on a document page: the task agent's waiting draft of a new version was written over an older version than the one the page shows, so it can no longer be confirmed as it is."
   },
   "doneButton": "Done",
   "downloadSizeMegabytes": "{megabytes} MB",
@@ -11873,10 +11793,6 @@
   "@taskDocumentsDeleteTitle": {
     "description": "Title of the confirmation before deleting a document."
   },
-  "taskDocumentsDraftedByAgent": "Drafted by the agent, confirmed by you",
-  "@taskDocumentsDraftedByAgent": {
-    "description": "Who wrote a document version: the task agent drafted it and the user confirmed it."
-  },
   "taskDocumentsEdit": "Edit document",
   "@taskDocumentsEdit": {
     "description": "Title of the editor for an existing task document."
@@ -11946,6 +11862,10 @@
         "example": "3"
       }
     }
+  },
+  "taskDocumentsWrittenByAgent": "Written by the agent",
+  "@taskDocumentsWrittenByAgent": {
+    "description": "Who wrote a document version: the task agent."
   },
   "taskDocumentsWrittenByYou": "Written by you",
   "@taskDocumentsWrittenByYou": {

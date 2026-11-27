@@ -1,11 +1,11 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task_document_data.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
-import 'package:lotti/features/agents/state/change_set_providers.dart';
-import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -13,32 +13,25 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/documents/logic/markdown_block_diff.dart';
+import 'package:lotti/features/documents/repository/task_document_repository.dart';
 import 'package:lotti/features/documents/state/document_review_providers.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
+import 'package:lotti/features/documents/ui/task_document_labels.dart';
 import 'package:lotti/features/documents/ui/widgets/review_block_row.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/providers/update_notifications_providers.dart';
-import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/widgets/markdown/markdown_title.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
-import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Keys the tests find the review's controls by.
 abstract final class DocumentReviewViewKeys {
   static const close = Key('document-review-close');
-  static const confirm = Key('document-review-confirm');
-  static const discard = Key('document-review-discard');
+  static const undo = Key('document-review-undo');
   static const ask = Key('document-review-ask');
-  static const redo = Key('document-review-redo');
-  static const stale = Key('document-review-stale');
-  static const newer = Key('document-review-newer');
-  static const openNewer = Key('document-review-open-newer');
+  static const provenance = Key('document-review-provenance');
   static const columnHeads = Key('document-review-column-heads');
 }
 
@@ -57,27 +50,26 @@ double documentReviewSideBySideMinWidth(DsTokens tokens) =>
 double documentReviewMinPaneWidth(DsTokens tokens) =>
     documentReviewSideBySideMinWidth(tokens) + 2 * tokens.spacing.step5;
 
-/// A draft of a document under review (ADR 0167, direction B): the version
-/// it was written over beside the text it proposes, row by row, with
-/// Confirm, Discard draft and Ask for changes on a glass bar.
+/// What a version of a document changed (ADR 0167): the version it was
+/// written over beside its own text, row by row. Nothing here is a
+/// decision — the version is already the document's, or was — so the glass
+/// bar offers the two ways on: going back to the version before it, while
+/// the document still shows this one, and asking the agent for changes.
 ///
 /// Measured, never a window breakpoint: where the content column holds
 /// [documentReviewSideBySideMinWidth] the versions stand side by side under
 /// their column heads; narrower — a docked chat, a dragged divider — the
 /// same rows stack into one column in reading order.
 ///
-/// The rows are pinned ([documentReviewProvider]): nothing that lands while
-/// the review is open moves them. A version landing meanwhile makes the
-/// draft stale — it would overwrite that version — so Confirm gives way to
-/// asking the agent for a fresh draft; a newer draft is offered, not swapped
-/// in. Once the draft stops waiting — decided here or on another device —
-/// [onClose] returns to the document. Escape closes too.
+/// The rows are of two versions that never change, so nothing that lands
+/// while the review is open moves them ([documentReviewProvider]). A key
+/// that names no version of the document closes the review. Escape closes
+/// too.
 class DocumentReviewView extends ConsumerStatefulWidget {
   const DocumentReviewView({
     required this.reviewKey,
     required this.title,
     required this.onClose,
-    required this.onOpenDraft,
     super.key,
   });
 
@@ -86,9 +78,6 @@ class DocumentReviewView extends ConsumerStatefulWidget {
   /// The document's title, for the header.
   final String title;
   final VoidCallback onClose;
-
-  /// Reviews another draft of the same document instead: the newer one.
-  final ValueChanged<DocumentReviewKey> onOpenDraft;
 
   @override
   ConsumerState<DocumentReviewView> createState() => _DocumentReviewViewState();
@@ -99,126 +88,66 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
 
   DocumentReviewKey get _key => widget.reviewKey;
 
-  TaskDocumentKey get _document =>
-      (taskId: _key.taskId, documentId: _key.documentId);
-
   QueryScope get _chatScope =>
       QueryScope(kind: QueryScopeKind.task, id: _key.taskId);
 
   void _askAgent() =>
       ref.read(queryPaneOpenProvider(_chatScope).notifier).open = true;
 
-  Future<void> _decide(
-    DocumentReviewSnapshot snapshot, {
-    required bool confirm,
-  }) async {
+  /// Goes back to the version this one was written over, by writing its
+  /// text as the next version (`TaskDocumentRepository.restore`): nothing is
+  /// lost, and this version stays in the history. Refused when another
+  /// version landed meanwhile, and says so.
+  Future<void> _undo(TaskDocumentVersionEntry base) async {
     if (_busy) return;
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
     final messages = context.messages;
-    final set = snapshot.proposal.changeSet;
-    final index = snapshot.proposal.itemIndex;
-    final service = ref.read(changeSetConfirmationServiceProvider);
-    try {
-      var decided = false;
-      if (confirm) {
-        final result = await service.confirmItem(set, index);
-        decided = result.success;
-        if (decided && result.errorMessage != null) {
-          messenger.showDesignSystemToast(
-            tone: DesignSystemToastTone.warning,
-            title: messages.changeSetItemConfirmedWithWarning(
-              result.errorMessage!,
-            ),
-            clearQueue: true,
-          );
-        }
-      } else {
-        decided = await service.rejectItem(set, index);
-      }
-      ref.read(updateNotificationsProvider).notify({set.agentId});
-      if (decided) {
-        // The draft is no longer waiting; the document shows the outcome.
-        if (mounted) widget.onClose();
-        return;
-      }
-      messenger.showDesignSystemToast(
-        tone: DesignSystemToastTone.error,
-        title: messages.changeSetConfirmError,
-        clearQueue: true,
-      );
-    } catch (error, stackTrace) {
-      ref
-          .read(domainLoggerProvider)
-          .error(
-            LogDomain.agentWorkflow,
-            error,
-            stackTrace: stackTrace,
-            subDomain: 'DocumentReviewView',
-            message: confirm ? 'confirmItem failed' : 'rejectItem failed',
-          );
-      messenger.showDesignSystemToast(
-        tone: DesignSystemToastTone.error,
-        title: messages.changeSetConfirmError,
-        clearQueue: true,
-      );
-    }
-    if (mounted) setState(() => _busy = false);
-  }
-
-  /// Discard draft, once the user says so: there is no undo yet, and the
-  /// draft is the agent's work.
-  Future<void> _discard(DocumentReviewSnapshot snapshot) async {
-    final messages = context.messages;
-    final sure = await showConfirmationModal(
-      context: context,
-      title: messages.documentReviewDiscardTitle,
-      message: messages.documentReviewDiscardMessage,
-      confirmLabel: messages.documentProposalDiscard,
+    final result = await ref
+        .read(taskDocumentRepositoryProvider)
+        .restore(versionId: base.id, baseVersionId: _key.versionId);
+    final written = result.status == TaskDocumentWriteStatus.written;
+    messenger.showDesignSystemToast(
+      tone: written
+          ? DesignSystemToastTone.success
+          : DesignSystemToastTone.error,
+      title: switch (result.status) {
+        TaskDocumentWriteStatus.written => messages.taskDocumentsRestored,
+        TaskDocumentWriteStatus.stale => messages.taskDocumentsRestoreStale,
+        TaskDocumentWriteStatus.missing ||
+        TaskDocumentWriteStatus.failed => messages.saveFailedRetry,
+      },
+      clearQueue: true,
     );
-    if (sure && mounted) await _decide(snapshot, confirm: false);
-  }
-
-  /// The newest other draft of this document, if one arrived after this one.
-  DocumentReviewKey? _newerDraft(DocumentReviewSnapshot snapshot) {
-    final drafts = ref.watch(pendingDocumentProposalsProvider(_document));
-    final opened = snapshot.proposal.changeSet.createdAt;
-    final newer = [
-      for (final draft in drafts ?? const <PendingSuggestion>[])
-        if (draft.changeSet.createdAt.isAfter(opened)) draft,
-    ]..sort((a, b) => b.changeSet.createdAt.compareTo(a.changeSet.createdAt));
-    final newest = newer.firstOrNull;
-    if (newest == null) return null;
-    return (
-      taskId: _key.taskId,
-      documentId: _key.documentId,
-      changeSetId: newest.changeSet.id,
-      itemIndex: newest.itemIndex,
-    );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    // The document shows the restored text now.
+    if (written) widget.onClose();
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(documentReviewProvider(_key), (previous, next) {
-      // Decided or withdrawn elsewhere: back to the document, which shows
-      // whatever came of it.
-      if (previous != null && next == null) widget.onClose();
+    ref.listen(documentReviewSnapshotProvider(_key), (_, next) {
+      // The key names no version of this document: nothing to review.
+      if (next.hasValue && next.value == null) widget.onClose();
     });
     final review = ref.watch(documentReviewProvider(_key));
     // The first load only: once shown, the review stays until it closes.
     if (review == null) return const SizedBox.shrink();
     final snapshot = review.snapshot;
     final tokens = context.designTokens;
-    final currentNumber = ref.watch(
-      taskDocumentProvider(
-        _document,
-      ).select((document) => document?.data.current?.number),
-    );
-    final baseNumber = snapshot.baseVersion?.data.number;
-    final proposedNumber = (baseNumber ?? 0) + 1;
-    final newer = review.newerProposalAvailable ? _newerDraft(snapshot) : null;
+    final base = snapshot.baseVersion;
+    final baseNumber = base?.data.number;
+    final number = snapshot.version.data.number;
+    final byAgent = snapshot.version.data.author == TaskDocumentAuthor.agent;
     final pairs = _withoutTitleRow(snapshot.pairs, widget.title);
     final horizontal = tokens.spacing.step5; // see documentReviewMinPaneWidth
+    final onUndo = review.isCurrent && base != null && !_busy
+        ? () => _undo(base)
+        : null;
+    final canUndo = review.isCurrent && base != null;
+    final canAsk = ref.watch(queryChatEnabledProvider);
+    final hasBar = canUndo || canAsk;
 
     return AppCommandScope(
       handlers: {
@@ -246,13 +175,8 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
                         _Header(
                           compact: !sideBySide,
                           title: widget.title,
-                          review: review,
-                          baseNumber: baseNumber,
-                          currentNumber: currentNumber,
+                          snapshot: snapshot,
                           onClose: widget.onClose,
-                          onOpenNewer: newer == null
-                              ? null
-                              : () => widget.onOpenDraft(newer),
                         ),
                       ),
                     ),
@@ -264,11 +188,9 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
                           color: tokens.colors.background.level01,
                           child: measure(
                             _ColumnHeads(
-                              stale: review.isStale,
                               baseNumber: baseNumber,
-                              proposedNumber: review.isStale
-                                  ? null
-                                  : proposedNumber,
+                              number: number,
+                              byAgent: byAgent,
                             ),
                           ),
                         ),
@@ -276,12 +198,14 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
                     SliverPadding(
                       padding: EdgeInsets.only(
                         bottom:
-                            WoltModalConfig.stickyActionBarClearance +
+                            (hasBar
+                                ? WoltModalConfig.stickyActionBarClearance
+                                : 0) +
                             tokens.spacing.step5,
                       ),
                       sliver: SliverList.builder(
                         itemCount: pairs.length,
-                        // The rows are pinned, so a row's index is its
+                        // The rows never change, so a row's index is its
                         // identity for as long as the review is open.
                         findChildIndexCallback: (key) =>
                             key is ValueKey<int> ? key.value : null,
@@ -294,12 +218,10 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
                             child: ReviewBlockRow(
                               pair: pairs[index],
                               baseVersion: baseNumber,
-                              proposedVersion: review.isStale
-                                  ? null
-                                  : proposedNumber,
+                              version: number,
                               noTextLabel: context.messages.taskDocumentsNoText,
                               stacked: !sideBySide,
-                              stale: review.isStale,
+                              byAgent: byAgent,
                             ),
                           ),
                         ),
@@ -307,31 +229,28 @@ class _DocumentReviewViewState extends ConsumerState<DocumentReviewView> {
                     ),
                   ],
                 ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  // The glass spans the pane; its buttons keep to the
-                  // column, Discard on the rows' text edge.
-                  child: _Bar(
-                    inset: EdgeInsets.only(
-                      left:
-                          (constraints.maxWidth - content) / 2 +
-                          (sideBySide ? IconSizes.m + tokens.spacing.step2 : 0),
-                      right: (constraints.maxWidth - content) / 2,
+                if (hasBar)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    // The glass spans the pane; its buttons keep to the
+                    // column, on the rows' text edge.
+                    child: _Bar(
+                      inset: EdgeInsets.only(
+                        left:
+                            (constraints.maxWidth - content) / 2 +
+                            (sideBySide
+                                ? IconSizes.m + tokens.spacing.step2
+                                : 0),
+                        right: (constraints.maxWidth - content) / 2,
+                      ),
+                      compact: !sideBySide,
+                      baseNumber: canUndo ? baseNumber : null,
+                      onUndo: onUndo,
+                      onAsk: canAsk ? _askAgent : null,
                     ),
-                    compact: !sideBySide,
-                    stale: review.isStale,
-                    onOpenNewer: newer == null
-                        ? null
-                        : () => widget.onOpenDraft(newer),
-                    busy: _busy,
-                    proposedNumber: proposedNumber,
-                    onConfirm: () => _decide(snapshot, confirm: true),
-                    onDiscard: () => _discard(snapshot),
-                    onAsk: _askAgent,
                   ),
-                ),
               ],
             );
           },
@@ -345,37 +264,31 @@ class _Header extends StatelessWidget {
   const _Header({
     required this.compact,
     required this.title,
-    required this.review,
-    required this.baseNumber,
-    required this.currentNumber,
+    required this.snapshot,
     required this.onClose,
-    required this.onOpenNewer,
   });
 
   /// A narrow pane: Close review is an icon, so the title keeps the line.
   final bool compact;
   final String title;
-  final DocumentReview review;
-  final int? baseNumber;
-  final int? currentNumber;
+  final DocumentReviewSnapshot snapshot;
   final VoidCallback onClose;
-  final VoidCallback? onOpenNewer;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final snapshot = review.snapshot;
     final stats = snapshot.stats;
     final summary = snapshot.changeSummary;
-    final currentNumber = this.currentNumber;
-    final baseNumber = this.baseNumber;
+    final byAgent = snapshot.version.data.author == TaskDocumentAuthor.agent;
     final accent = tokens.colors.aiCard.accent;
-    final warning = tokens.colors.alert.warning.defaultColor;
     final diff = tokens.colors.diff;
     final gap = SizedBox(height: tokens.spacing.step3);
-    // Title, then what would stop a confirm, then the agent's own line on
-    // the draft, then the counts the rows bear out.
+    final textEdge = EdgeInsets.only(
+      left: IconSizes.m + tokens.spacing.step2 + tokens.spacing.cardItemSpacing,
+    );
+    // Title, then which version this is and who wrote it, then its own line
+    // on what it changes, then the counts the rows bear out.
     return Padding(
       // The header stands apart from the table it introduces.
       padding: EdgeInsets.only(
@@ -412,29 +325,28 @@ class _Header extends StatelessWidget {
                 ),
             ],
           ),
-          if (review.isStale && currentNumber != null) ...[
-            gap,
-            // The one message that stops a confirm: a line that wraps, never
-            // a tag that clips.
-            _HeaderLine(
-              key: DocumentReviewViewKeys.stale,
-              icon: LottiIcons.warning,
-              iconColor: warning,
-              text: baseNumber == null
-                  ? messages.documentReviewStaleNoText(currentNumber)
-                  : messages.documentReviewStale(baseNumber, currentNumber),
-              // The warning hue on the glyph, the sentence in plain ink — the
-              // design system's alert grammar.
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.highEmphasis,
+          SizedBox(height: tokens.spacing.step2),
+          Padding(
+            padding: textEdge,
+            child: Text(
+              taskDocumentVersionLine(
+                messages,
+                snapshot.version,
+                now: clock.now(),
+              ),
+              key: DocumentReviewViewKeys.provenance,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
               ),
             ),
-          ],
+          ),
           if (summary != null) ...[
             gap,
             _HeaderLine(
-              icon: LottiIcons.aiSpark,
-              iconColor: accent,
+              // The agent's own words carry its spark; a restore's or an
+              // edit's line is plain.
+              icon: byAgent ? LottiIcons.aiSpark : LottiIcons.edit,
+              iconColor: byAgent ? accent : tokens.colors.text.mediumEmphasis,
               text: summary,
               style: tokens.typography.styles.body.bodyMedium.copyWith(
                 color: tokens.colors.text.highEmphasis,
@@ -444,12 +356,7 @@ class _Header extends StatelessWidget {
           SizedBox(height: tokens.spacing.step2),
           // On the text edge, under the lines above.
           Padding(
-            padding: EdgeInsets.only(
-              left:
-                  IconSizes.m +
-                  tokens.spacing.step2 +
-                  tokens.spacing.cardItemSpacing,
-            ),
+            padding: textEdge,
             child: Semantics(
               label: messages.documentReviewCounts(
                 stats.added,
@@ -485,52 +392,26 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
-          // A stale draft's bar already offers it as the primary.
-          if (onOpenNewer != null && !review.isStale) ...[
-            gap,
-            Padding(
-              padding: EdgeInsets.only(
-                left:
-                    IconSizes.m +
-                    tokens.spacing.step2 +
-                    tokens.spacing.cardItemSpacing,
-              ),
-              child: IntrinsicWidth(
-                child: DesignSystemInlineAction(
-                  key: DocumentReviewViewKeys.newer,
-                  label: messages.documentReviewNewer,
-                  semanticsLabel: messages.documentReviewNewer,
-                  leadingIcon: LottiIcons.aiSpark,
-                  // The agent's own action, in its voice.
-                  ink: accent,
-                  onTap: onOpenNewer,
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );
   }
 }
 
-/// "Current v3" over the left column and "Proposed v4" over the right, on
-/// the rows' text edge; the proposed head alone takes the agent's violet.
-/// For a stale draft the left column is not the current text but the
-/// version the draft was written over, and its head says so in the
-/// warning's colour.
+/// "Before v3" over the left column and "After v4" over the right, on the
+/// rows' text edge; the right head takes the agent's violet and spark when
+/// the agent wrote the version.
 class _ColumnHeads extends StatelessWidget {
   const _ColumnHeads({
-    required this.stale,
     required this.baseNumber,
-    required this.proposedNumber,
+    required this.number,
+    required this.byAgent,
   });
 
-  final bool stale;
+  /// Null when the document had no text before this version.
   final int? baseNumber;
-
-  /// Null for a stale draft, which would not become the next version.
-  final int? proposedNumber;
+  final int number;
+  final bool byAgent;
 
   @override
   Widget build(BuildContext context) {
@@ -538,11 +419,9 @@ class _ColumnHeads extends StatelessWidget {
     final messages = context.messages;
     final head = tokens.typography.styles.subtitle.subtitle2;
     final neutral = tokens.colors.text.mediumEmphasis;
-    final accent = tokens.colors.aiCard.accent;
-    final baseInk = stale ? tokens.colors.alert.warning.defaultColor : neutral;
+    final afterInk = byAgent ? tokens.colors.aiCard.accent : neutral;
     final textEdge = EdgeInsets.only(left: tokens.spacing.cardItemSpacing);
     final baseNumber = this.baseNumber;
-    final proposedNumber = this.proposedNumber;
     return Padding(
       key: DocumentReviewViewKeys.columnHeads,
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
@@ -556,11 +435,9 @@ class _ColumnHeads extends StatelessWidget {
                 children: [
                   Flexible(
                     child: Text(
-                      stale
-                          ? messages.documentReviewBase
-                          : messages.documentReviewCurrent,
+                      messages.documentReviewBefore,
                       overflow: TextOverflow.ellipsis,
-                      style: head.copyWith(color: baseInk),
+                      style: head.copyWith(color: neutral),
                     ),
                   ),
                   if (baseNumber != null) ...[
@@ -568,7 +445,7 @@ class _ColumnHeads extends StatelessWidget {
                     DsPill(
                       variant: DsPillVariant.outline,
                       shape: DsPillShape.tag,
-                      color: baseInk,
+                      color: neutral,
                       label: messages.taskDocumentsVersion(baseNumber),
                     ),
                   ],
@@ -582,24 +459,28 @@ class _ColumnHeads extends StatelessWidget {
               padding: textEdge,
               child: Row(
                 children: [
-                  Icon(LottiIcons.aiSpark, size: IconSizes.s, color: accent),
-                  SizedBox(width: tokens.spacing.step1),
+                  if (byAgent) ...[
+                    Icon(
+                      LottiIcons.aiSpark,
+                      size: IconSizes.s,
+                      color: afterInk,
+                    ),
+                    SizedBox(width: tokens.spacing.step1),
+                  ],
                   Flexible(
                     child: Text(
-                      messages.documentReviewProposed,
+                      messages.documentReviewAfter,
                       overflow: TextOverflow.ellipsis,
-                      style: head.copyWith(color: accent),
+                      style: head.copyWith(color: afterInk),
                     ),
                   ),
-                  if (proposedNumber != null) ...[
-                    SizedBox(width: tokens.spacing.step2),
-                    DsPill(
-                      variant: DsPillVariant.outline,
-                      shape: DsPillShape.tag,
-                      color: accent,
-                      label: messages.taskDocumentsVersion(proposedNumber),
-                    ),
-                  ],
+                  SizedBox(width: tokens.spacing.step2),
+                  DsPill(
+                    variant: DsPillVariant.outline,
+                    shape: DsPillShape.tag,
+                    color: afterInk,
+                    label: messages.taskDocumentsVersion(number),
+                  ),
                 ],
               ),
             ),
@@ -610,38 +491,33 @@ class _ColumnHeads extends StatelessWidget {
   }
 }
 
-/// The review's verdicts on glass: Confirm vN the one primary, or — for a
-/// stale draft, which confirming would let overwrite the newer text —
-/// asking the agent to redo it against the current version.
+/// The review's ways on, on glass: asking the agent for changes — the one
+/// filled button, where the task's chat is available — and going back to
+/// the version before this one, quiet beside it.
 class _Bar extends StatelessWidget {
   const _Bar({
     required this.inset,
     required this.compact,
-    required this.stale,
-    required this.onOpenNewer,
-    required this.busy,
-    required this.proposedNumber,
-    required this.onConfirm,
-    required this.onDiscard,
+    required this.baseNumber,
+    required this.onUndo,
     required this.onAsk,
   });
 
   /// Keeps the buttons to the review's column inside the full-width glass.
   final EdgeInsets inset;
 
-  /// One column, on a narrow pane: medium buttons, and Ask for changes as an
-  /// icon, so the bar stays one row.
+  /// One column, on a narrow pane: medium buttons, so the bar stays one row.
   final bool compact;
-  final bool stale;
 
-  /// Opens a newer draft of the document. For a stale draft with one
-  /// waiting, that is the next step, not asking for yet another.
-  final VoidCallback? onOpenNewer;
-  final bool busy;
-  final int proposedNumber;
-  final VoidCallback onConfirm;
-  final VoidCallback onDiscard;
-  final VoidCallback onAsk;
+  /// The version going back lands on; null when there is nothing to go back
+  /// to, or the document moved on.
+  final int? baseNumber;
+
+  /// Null while a restore runs.
+  final VoidCallback? onUndo;
+
+  /// Null where the task's chat is not available.
+  final VoidCallback? onAsk;
 
   @override
   Widget build(BuildContext context) {
@@ -650,6 +526,21 @@ class _Bar extends StatelessWidget {
     final size = compact
         ? DesignSystemButtonSize.medium
         : DesignSystemButtonSize.large;
+    final baseNumber = this.baseNumber;
+    final onAsk = this.onAsk;
+    final undo = baseNumber == null
+        ? null
+        : DesignSystemButton(
+            key: DocumentReviewViewKeys.undo,
+            label: messages.documentReviewUndo(baseNumber),
+            leadingIcon: LottiIcons.restore,
+            // Filled only when it is the bar's one action.
+            variant: onAsk == null
+                ? DesignSystemButtonVariant.primary
+                : DesignSystemButtonVariant.quiet,
+            size: size,
+            onPressed: onUndo,
+          );
     return DesignSystemModalActionBar(
       glass: true,
       layout: DesignSystemModalActionBarLayout.compactPrimary,
@@ -658,63 +549,22 @@ class _Bar extends StatelessWidget {
           vertical: compact ? tokens.spacing.step3 : tokens.spacing.step4,
         ),
       ),
-      // On a narrow pane Discard — which asks first — is the icon, so the
-      // constructive alternative to Confirm keeps its words.
-      secondary: [
-        if (compact)
-          DesignSystemIconAction(
-            key: DocumentReviewViewKeys.discard,
-            icon: LottiIcons.delete,
-            tooltip: messages.documentProposalDiscard,
-            onPressed: busy ? null : onDiscard,
-          )
-        else
-          DesignSystemButton(
-            key: DocumentReviewViewKeys.discard,
-            label: messages.documentProposalDiscard,
-            variant: DesignSystemButtonVariant.quiet,
-            size: size,
-            onPressed: busy ? null : onDiscard,
-          ),
-        // A stale draft's primary already asks the agent.
-        if (!stale)
-          DesignSystemButton(
-            key: DocumentReviewViewKeys.ask,
-            label: messages.documentReviewAskForChanges,
-            leadingIcon: LottiIcons.chat,
-            variant: DesignSystemButtonVariant.tertiary,
-            size: size,
-            onPressed: onAsk,
-          ),
-      ],
-      primary: stale && onOpenNewer != null
-          ? DesignSystemButton(
-              key: DocumentReviewViewKeys.openNewer,
-              label: messages.documentReviewNewer,
-              leadingIcon: LottiIcons.aiSpark,
-              size: size,
-              onPressed: onOpenNewer,
-            )
-          : stale
-          ? DesignSystemButton(
-              key: DocumentReviewViewKeys.redo,
-              label: messages.documentReviewRedo,
+      secondary: [if (onAsk != null) ?undo],
+      primary: onAsk == null
+          ? undo!
+          : DesignSystemButton(
+              key: DocumentReviewViewKeys.ask,
+              label: messages.documentReviewAskForChanges,
               leadingIcon: LottiIcons.chat,
               size: size,
               onPressed: onAsk,
-            )
-          : DesignSystemButton(
-              key: DocumentReviewViewKeys.confirm,
-              label: messages.documentReviewConfirm(proposedNumber),
-              size: size,
-              onPressed: busy ? null : onConfirm,
             ),
     );
   }
 }
 
 /// The rows without a leading heading that only repeats the document's
-/// title, which the header already shows; kept when the draft rewrites it.
+/// title, which the header already shows; kept when the version rewrites it.
 List<MarkdownBlockPair> _withoutTitleRow(
   List<MarkdownBlockPair> pairs,
   String title,
@@ -728,15 +578,13 @@ List<MarkdownBlockPair> _withoutTitleRow(
   return repeatsTitle ? pairs.sublist(1) : pairs;
 }
 
-/// A line of the review's header — the stale warning, the agent's summary —
-/// its icon in the rows' gutter column and its text on their text edge.
+/// A line of the review's header — the version's summary — its icon in the rows' gutter column and its text on their text edge.
 class _HeaderLine extends StatelessWidget {
   const _HeaderLine({
     required this.icon,
     required this.iconColor,
     required this.text,
     required this.style,
-    super.key,
   });
 
   final IconData icon;

@@ -11,7 +11,6 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
-import 'package:lotti/features/agents/ui/document_proposal_preview.dart';
 import 'package:lotti/features/agents/ui/query/query_action_review.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -106,6 +105,7 @@ void main() {
     QueryChatAnswer response = answer,
     QueryAccessSnapshot? access,
     bool canApply = true,
+    bool applying = false,
     Locale? locale,
     bool privateLabel = false,
   }) async {
@@ -118,6 +118,7 @@ void main() {
           approved: approved,
           access: access,
           canApply: canApply,
+          applying: applying,
         ),
         locale: locale,
         overrides: [
@@ -690,9 +691,9 @@ void main() {
     }
   });
 
-  group('document proposals', () {
-    const draft = ChangeItem(
-      toolName: 'propose_document_version',
+  group('document versions', () {
+    const version = ChangeItem(
+      toolName: 'write_document_version',
       args: {
         'documentId': 'brief',
         'title': 'Habitat brief',
@@ -708,50 +709,62 @@ void main() {
       coverage: const QueryCoverage(),
       proposedActions: items,
     );
-
-    Future<void> openDraft(WidgetTester tester) async {
-      await tester.tap(find.text('Read draft'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Feed the penguins at noon.'), findsOneWidget);
+    void savedWith(List<ChangeItem> items) {
+      saved =
+          AgentDomainEntity.changeSet(
+                id: 'query-chat:question:actions',
+                agentId: 'agent',
+                taskId: 'task',
+                threadId: 'chat',
+                runKey: 'query-chat:question',
+                status: ChangeSetStatus.partiallyResolved,
+                items: items,
+                createdAt: DateTime(2026, 9, 13),
+                vectorClock: null,
+              )
+              as ChangeSetEntity;
     }
 
-    testWidgets('a lone draft is read, then accepted from the sheet as the '
-        'whole answer', (tester) async {
-      stub((approved) async => const []);
-      await pump(tester, response: answerWith(const [draft]));
-      // Read first: no Accept beside a lone draft — Read draft, then
-      // Discard draft, on one line, with the agent's line on the draft.
-      expect(find.text('Accept'), findsNothing);
+    testWidgets('a version the chat wrote reads as applied, with the '
+        "agent's line on it and nothing left to decide", (tester) async {
+      savedWith([version.copyWith(status: ChangeItemStatus.confirmed)]);
+      await pump(tester, response: answerWith(const [version]));
+
+      expect(
+        find.textContaining('New version of "Habitat brief"'),
+        findsOneWidget,
+      );
       expect(find.textContaining('Moves feeding to noon.'), findsOneWidget);
-      // A draft's dismissal says what it does: it throws the draft away.
-      final dismiss = tester.getRect(find.text('Discard draft'));
-      final read = tester.getRect(find.text('Read draft'));
-      expect(read.left, lessThan(dismiss.left));
-      expect(dismiss.center.dy, moreOrLessEquals(read.center.dy, epsilon: 2));
-      await openDraft(tester);
-
-      await tester.tap(find.byKey(DocumentProposalPreviewKeys.confirm));
-      // The accepted answer keeps a spinner until the saved set arrives.
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      verify(
-        () => service.resolve(
-          agentId: 'agent',
-          chatId: 'chat',
-          questionId: 'question',
-          approved: true,
-        ),
-      ).called(1);
+      expect(find.text('Change applied'), findsOneWidget);
+      // Its text is on the document, not behind a sheet here.
+      expect(find.textContaining('Feed the penguins at noon.'), findsNothing);
+      expect(find.byType(DesignSystemButton), findsNothing);
     });
 
-    testWidgets('a lone draft discarded from its sheet dismisses the whole '
-        'answer', (tester) async {
+    testWidgets('while the chat is writing it, the buttons wait', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        response: answerWith(const [version]),
+        applying: true,
+      );
+
+      final buttons = tester.widgetList<DesignSystemButton>(
+        find.byType(DesignSystemButton),
+      );
+      final dismiss = buttons.firstWhere((b) => b.label == 'Dismiss');
+      final accept = buttons.firstWhere((b) => b.label == 'Accept');
+      expect(dismiss.onPressed, isNull);
+      expect(accept.isLoading, isTrue);
+    });
+
+    testWidgets('one that could not be written is applied from here, like '
+        'any other change', (tester) async {
       stub((approved) async => const []);
-      await pump(tester, response: answerWith(const [draft]));
-      await openDraft(tester);
+      await pump(tester, response: answerWith(const [version]));
 
-      await tester.tap(find.byKey(DocumentProposalPreviewKeys.reject));
+      await tester.tap(find.text('Accept'));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
@@ -760,116 +773,30 @@ void main() {
           agentId: 'agent',
           chatId: 'chat',
           questionId: 'question',
-          approved: false,
-        ),
-      ).called(1);
-    });
-
-    testWidgets('beside other changes, the sheet dismisses only the draft', (
-      tester,
-    ) async {
-      when(
-        () => service.resolveItem(
-          agentId: 'agent',
-          chatId: 'chat',
-          questionId: 'question',
-          itemIndex: any(named: 'itemIndex'),
-          approved: any(named: 'approved'),
-        ),
-      ).thenAnswer((_) async => null);
-      await pump(
-        tester,
-        response: answerWith([draft, answer.proposedActions.first]),
-      );
-      // The draft's row offers reject only; the checklist row both.
-      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
-      expect(find.byIcon(LottiIcons.close), findsNWidgets(2));
-      await openDraft(tester);
-
-      await tester.tap(find.byKey(DocumentProposalPreviewKeys.reject));
-      await tester.pumpAndSettle();
-
-      verify(
-        () => service.resolveItem(
-          agentId: 'agent',
-          chatId: 'chat',
-          questionId: 'question',
-          itemIndex: 0,
-          approved: false,
-        ),
-      ).called(1);
-    });
-
-    testWidgets('once the answer is dismissed, the draft is only read', (
-      tester,
-    ) async {
-      await pump(tester, response: answerWith(const [draft]), approved: false);
-      await openDraft(tester);
-
-      expect(find.byKey(DocumentProposalPreviewKeys.confirm), findsNothing);
-      expect(find.byKey(DocumentProposalPreviewKeys.reject), findsNothing);
-    });
-
-    testWidgets('after Accept all, a draft it skipped can still be '
-        'confirmed from its sheet', (tester) async {
-      // Accept all confirms the checklist item and leaves the draft pending,
-      // as the confirmation service does for a change confirmed on its own.
-      stub((approved) async {
-        saved =
-            AgentDomainEntity.changeSet(
-                  id: 'query-chat:question:actions',
-                  agentId: 'agent',
-                  taskId: 'task',
-                  threadId: 'chat',
-                  runKey: 'query-chat:question',
-                  status: ChangeSetStatus.partiallyResolved,
-                  items: [
-                    draft,
-                    answer.proposedActions.first.copyWith(
-                      status: ChangeItemStatus.confirmed,
-                    ),
-                  ],
-                  createdAt: DateTime(2026, 9, 13),
-                  vectorClock: null,
-                )
-                as ChangeSetEntity;
-        return const [];
-      });
-      when(
-        () => service.resolveItem(
-          agentId: 'agent',
-          chatId: 'chat',
-          questionId: 'question',
-          itemIndex: any(named: 'itemIndex'),
-          approved: any(named: 'approved'),
-        ),
-      ).thenAnswer((_) async => null);
-      await pump(
-        tester,
-        response: answerWith([draft, answer.proposedActions.first]),
-      );
-      await tester.tap(find.text('Accept all'));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      await openDraft(tester);
-      await tester.tap(find.byKey(DocumentProposalPreviewKeys.confirm));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      verify(
-        () => service.resolveItem(
-          agentId: 'agent',
-          chatId: 'chat',
-          questionId: 'question',
-          itemIndex: 0,
           approved: true,
         ),
       ).called(1);
+    });
+
+    testWidgets('beside other changes, the written version shows applied '
+        'while the rest keeps its own verdicts', (tester) async {
+      savedWith([
+        version.copyWith(status: ChangeItemStatus.confirmed),
+        answer.proposedActions.first,
+      ]);
+      await pump(
+        tester,
+        response: answerWith([version, answer.proposedActions.first]),
+      );
+
+      expect(find.text('Change applied'), findsOneWidget);
+      // Only the checklist row is still decided.
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
     });
   });
 
-  testWidgets('Dismiss comes before Accept, as on the card and the sheet', (
+  testWidgets('Dismiss comes before Accept, as on the card', (
     tester,
   ) async {
     await pump(tester);

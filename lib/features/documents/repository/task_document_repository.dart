@@ -47,9 +47,9 @@ typedef TaskDocumentWriteResult = ({
 ///
 /// A document is a [TaskDocumentEntry] linked from its task; its text lives
 /// in append-only [TaskDocumentVersionEntry] rows, and the document only
-/// names which one it shows. Every write here is the user's own or one the
-/// user confirmed: an agent version reaches [writeVersion] only after its
-/// proposal was confirmed.
+/// names which one it shows. A write here is the user's own or the agent's,
+/// each recorded as such; the agent's lands without a confirmation, over the
+/// version it read, and the user goes back through the history.
 class TaskDocumentRepository {
   TaskDocumentRepository({
     required JournalDb journalDb,
@@ -87,7 +87,7 @@ class TaskDocumentRepository {
   }
 
   /// Version [versionId], or null when there is no such version — the
-  /// version a proposal was drafted against, which need not be the one the
+  /// version another was written over, which need not be the one the
   /// document shows now.
   Future<TaskDocumentVersionEntry?> version(String versionId) async {
     final entry = await _db.journalEntityById(versionId);
@@ -102,7 +102,7 @@ class TaskDocumentRepository {
   /// filters and hides with the task that holds it.
   ///
   /// [uuidV5Input] derives the document's id, for a creation that must
-  /// happen once however often it is applied — a confirmed agent proposal
+  /// happen once however often it is applied — a write from task chat
   /// (ADR 0075). The document that id names is returned when it is there
   /// already, and nothing is created; null when it was deleted since.
   Future<TaskDocumentEntry?> create({
@@ -143,7 +143,7 @@ class TaskDocumentRepository {
   /// first version).
   ///
   /// This is the compare-and-set ADR 0167 relies on: a hand edit opened on
-  /// v3, or an agent proposal drafted against v3, never replaces a v4 that
+  /// v3, or an agent version drafted against v3, never replaces a v4 that
   /// landed meanwhile. A base that no longer matches comes back
   /// [TaskDocumentWriteStatus.stale], with nothing changed. When the
   /// document moves on between storing the version row and pointing the
@@ -152,7 +152,7 @@ class TaskDocumentRepository {
   ///
   /// [author] and the provenance fields are stored on the version as given.
   ///
-  /// [uuidV5Input] derives the version's id, so a confirmed proposal applied
+  /// [uuidV5Input] derives the version's id, so a write from task chat applied
   /// twice — on two devices, or again after a crash — writes one version
   /// (ADR 0075). When the version that id names is there already, the
   /// effect happened, and it comes back [TaskDocumentWriteStatus.written]
@@ -264,7 +264,7 @@ class TaskDocumentRepository {
 
   /// Renames document [documentId] to [title]; returns whether the document
   /// is stored under that title afterwards. Built on the stored row, so a
-  /// version confirmed meanwhile is kept.
+  /// version written meanwhile is kept.
   Future<bool> rename(String documentId, String title) async {
     var found = true;
     final stored = await writeOnStored(

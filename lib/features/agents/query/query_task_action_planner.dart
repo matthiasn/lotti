@@ -62,7 +62,7 @@ class QueryTaskActionContext {
   final Map<String, Map<String, Object?>> timeEntryFields;
 
   /// The task's documents by id, with their current text, as
-  /// `propose_document_version` may target them (ADR 0167). Null when no
+  /// `write_document_version` may target them (ADR 0167). Null when no
   /// document source is wired: the tool is then not offered at all.
   final Map<String, TaskDocumentText>? documents;
 }
@@ -99,22 +99,26 @@ class QueryTaskActionPlanner {
   /// `link_pull_request`: the chat's task context carries no project
   /// directory and no pull request listing, so a project id or a pull
   /// request number here could only be invented, and a new project could not
-  /// be told from one that already exists. `propose_document_version` is
-  /// offered only with a context that lists the task's documents.
+  /// be told from one that already exists. With them, the one tool that is
+  /// not deferred: `write_document_version`, offered only with a context
+  /// that lists the task's documents, whose item is applied as soon as the
+  /// answer is saved (`QueryChatActionService.writeDocuments`, ADR 0167).
   static final List<AgentToolDefinition> tools = AgentToolRegistry
       .taskAgentTools
       .where(
         (tool) =>
-            AgentToolRegistry.deferredTools.contains(tool.name) &&
-            tool.name != TaskAgentToolNames.setTaskProject &&
-            tool.name != TaskAgentToolNames.createTaskProject &&
-            tool.name != TaskAgentToolNames.linkPullRequest,
+            tool.name == TaskAgentToolNames.writeDocumentVersion ||
+            (AgentToolRegistry.deferredTools.contains(tool.name) &&
+                tool.name != TaskAgentToolNames.setTaskProject &&
+                tool.name != TaskAgentToolNames.createTaskProject &&
+                tool.name != TaskAgentToolNames.linkPullRequest),
       )
       .toList(growable: false);
 
-  /// What a confirmed document proposal records beyond the tool's schema —
-  /// the document's title for the review row and the version it was drafted
-  /// against — filled in from the context, never taken from the model.
+  /// What a document write records beyond the tool's schema — the
+  /// document's title for its row in the chat and the version it was
+  /// drafted against — filled in from the context, never taken from the
+  /// model.
   static const _documentRecordKeys = ['title', 'baseVersionId'];
 
   static const system =
@@ -153,7 +157,7 @@ class QueryTaskActionPlanner {
       'taskContext': context.input,
       'tools': [
         for (final tool in tools)
-          if (tool.name != TaskAgentToolNames.proposeDocumentVersion ||
+          if (tool.name != TaskAgentToolNames.writeDocumentVersion ||
               context.documents != null)
             {
               'name': tool.name,
@@ -188,10 +192,13 @@ class QueryTaskActionPlanner {
                       'user explicitly asks to set its language. Never infer this '
                       'action from the language of the question, task or reply. '
                       'Do not initialize language as a side effect of another request.',
-                TaskAgentToolNames.proposeDocumentVersion =>
-                  'Propose the full markdown of a document the user asked for '
+                TaskAgentToolNames.writeDocumentVersion =>
+                  'Write the full markdown of a document the user asked for '
                       'in this chat: a new version of a supplied document '
-                      '(documentId), or a new document (newTitle). To revise, '
+                      '(documentId), or a new document (newTitle). Unlike the '
+                      'other tools it is not reviewed first: the version '
+                      'becomes the document once this answer is saved, and '
+                      'earlier versions stay in its history. To revise, '
                       "start from the document's supplied text and keep what "
                       'the user did not ask to change. A document whose text '
                       'is not supplied cannot be revised here. Write the whole '
@@ -248,12 +255,12 @@ class QueryTaskActionPlanner {
     }
   }
 
-  /// The arguments of an earlier proposal as the chat history shows them to
-  /// the next request: a document proposal without its text, which the
+  /// The arguments of an earlier action as the chat history shows them to
+  /// the next request: a document write without its text, which the
   /// documents list already carries as it stands now, and which would
   /// otherwise spend the input budget twice.
   static Map<String, dynamic> historyArgs(ChangeItem item) =>
-      item.toolName == TaskAgentToolNames.proposeDocumentVersion
+      item.toolName == TaskAgentToolNames.writeDocumentVersion
       ? ({...item.args}..remove('markdown'))
       : item.args;
 
@@ -376,8 +383,8 @@ class QueryTaskActionPlanner {
       final name = call.toolName;
       var args = wrapFlatCreateTimeEntryCall(name, call.args);
       await validate(name, args, context, allowNewTask: newTaskId != null);
-      if (name == TaskAgentToolNames.proposeDocumentVersion) {
-        args = _documentProposalArgs(args, context, suppliedTexts);
+      if (name == TaskAgentToolNames.writeDocumentVersion) {
+        args = _documentWriteArgs(args, context, suppliedTexts);
       }
       final summary = name == TaskAgentToolNames.linkTask
           ? 'Link: this task ${DirectedRelation.fromWireName(args['relation'] as String)!.englishPhrase} '
@@ -420,12 +427,12 @@ class QueryTaskActionPlanner {
     return (text: text, items: builder.items);
   }
 
-  /// The arguments a document proposal is recorded with: the model's,
+  /// The arguments a document write is recorded with: the model's,
   /// trimmed, plus what [_documentRecordKeys] names, from [context] — the
-  /// same shape a task wake records, so one handler applies both. A revision
+  /// shape a task wake dispatches, so one handler applies both. A revision
   /// needs the document's text among [suppliedTexts]: without it the model
   /// could only have rewritten the document from nothing.
-  static Map<String, dynamic> _documentProposalArgs(
+  static Map<String, dynamic> _documentWriteArgs(
     Map<String, dynamic> args,
     QueryTaskActionContext context,
     Set<String> suppliedTexts,
@@ -473,8 +480,8 @@ class QueryTaskActionPlanner {
         throw const FormatException('Task language is already set');
       }
     }
-    if (name == TaskAgentToolNames.proposeDocumentVersion) {
-      _validateDocumentProposal(args, context);
+    if (name == TaskAgentToolNames.writeDocumentVersion) {
+      _validateDocumentWrite(args, context);
     }
     if (name == TaskAgentToolNames.updateTimeEntry &&
         context.runningTimerId != null &&
@@ -514,10 +521,10 @@ class QueryTaskActionPlanner {
     if (!valid) throw const QueryTaskActionTargetUnavailable();
   }
 
-  /// A document proposal names exactly one of a document of this task or a
+  /// A document write names exactly one of a document of this task or a
   /// new title, and carries text. Without a document source nothing may be
-  /// proposed, and a document the task does not hold is out of scope.
-  static void _validateDocumentProposal(
+  /// written, and a document the task does not hold is out of scope.
+  static void _validateDocumentWrite(
     Map<String, dynamic> args,
     QueryTaskActionContext context,
   ) {
@@ -530,7 +537,7 @@ class QueryTaskActionPlanner {
     final documentId = trimmed('documentId');
     if (documentId.isEmpty == trimmed('newTitle').isEmpty ||
         trimmed('markdown').isEmpty) {
-      throw const FormatException('Invalid document proposal');
+      throw const FormatException('Invalid document write');
     }
     if (documentId.isNotEmpty && !documents.containsKey(documentId)) {
       throw const QueryTaskActionTargetUnavailable();
@@ -625,7 +632,7 @@ class QueryTaskActionPlanner {
         },
         context,
       ),
-      TaskAgentToolNames.proposeDocumentVersion => validate(
+      TaskAgentToolNames.writeDocumentVersion => validate(
         call.toolName,
         {...args}..removeWhere((key, _) => _documentRecordKeys.contains(key)),
         context,

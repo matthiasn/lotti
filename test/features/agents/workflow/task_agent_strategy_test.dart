@@ -181,7 +181,6 @@ ChatCompletionMessageToolCall _toolCall({
   Future<String> Function()? refreshLinkedPullRequests,
   List<TaskDocumentSummary> taskDocuments = const [],
   Future<TaskDocumentText?> Function(String documentId)? readTaskDocument,
-  Set<String> pendingDocumentProposalIds = const {},
   Future<void> Function()? flushChangeSet,
   TaskAgentStagedToolExposure? stagedToolExposure,
   DomainLogger? domainLogger,
@@ -234,7 +233,6 @@ ChatCompletionMessageToolCall _toolCall({
     refreshLinkedPullRequests: refreshLinkedPullRequests,
     taskDocuments: taskDocuments,
     readTaskDocument: readTaskDocument,
-    pendingDocumentProposalIds: pendingDocumentProposalIds,
     flushChangeSet: flushChangeSet,
     stagedToolExposure: stagedToolExposure,
     priorObservationTexts: priorObservationTexts,
@@ -3550,17 +3548,48 @@ void main() {
           versionNumber: 3,
         );
 
+        const briefText = TaskDocumentText(summary: brief, markdown: '# Brief');
+
+        /// What the executor was asked to write, in order.
+        late List<Map<String, dynamic>> written;
+
+        /// The executor's answers, in order; success once they run out.
+        late List<ToolExecutionResult> results;
+
+        setUp(() {
+          written = [];
+          results = [];
+          when(
+            () => mockExecutor.execute(
+              toolName: 'write_document_version',
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer((invocation) async {
+            written.add(
+              invocation.namedArguments[#args] as Map<String, dynamic>,
+            );
+            return results.isEmpty
+                ? const ToolExecutionResult(
+                    success: true,
+                    output: 'Document `doc-1` now shows this version.',
+                    mutatedEntityId: 'doc-1',
+                  )
+                : results.removeAt(0);
+          });
+        });
+
         ({TaskAgentStrategy strategy, ChangeSetBuilder builder}) docBench({
           Future<TaskDocumentText?> Function(String id)? read,
-          Set<String> pending = const {},
+          List<TaskDocumentSummary> documents = const [brief],
         }) => _createStrategy(
           executor: mockExecutor,
           syncService: mockSyncService,
-          taskDocuments: const [brief],
+          taskDocuments: documents,
           readTaskDocument: read,
-          pendingDocumentProposalIds: pending,
-          executeToolHandler: (toolName, _, _) =>
-              fail('$toolName must not execute during the wake'),
         );
 
         test('read_document answers with the text as fenced user data, '
@@ -3615,44 +3644,117 @@ void main() {
           );
         });
 
-        test('a new version of a listed document is queued over the version '
-            'the wake listed, never one the model names', () async {
-          final b = docBench();
+        test('a new version of a document read in this wake is written at '
+            'once, over the version that read showed — never one the model '
+            'names — and nothing waits for the user', () async {
+          // The document moved on between the wake's listing and the read.
+          const moved = TaskDocumentSummary(
+            id: 'doc-1',
+            title: 'Launch brief',
+            versionId: 'version-4',
+            versionNumber: 4,
+          );
+          final b = docBench(
+            read: (_) async =>
+                const TaskDocumentText(summary: moved, markdown: '# Brief'),
+          );
 
           await b.strategy.processToolCalls(
             toolCalls: [
-              call('propose_document_version', {
-                'documentId': 'doc-1',
-                'markdown': '# Brief v4',
+              call('read_document', {'documentId': 'doc-1'}),
+              call('write_document_version', {
+                'documentId': ' doc-1 ',
+                'markdown': '# Brief v5',
                 'changeSummary': ' Adds dates. ',
                 'baseVersionId': 'invented',
+              }, id: 'call-2'),
+            ],
+            manager: mockManager,
+          );
+
+          expect(written.single, {
+            'documentId': 'doc-1',
+            'baseVersionId': 'version-4',
+            'markdown': '# Brief v5',
+            'changeSummary': 'Adds dates.',
+          });
+          expect(b.builder.items, isEmpty);
+          expect(
+            responseTo('call-2'),
+            'Document `doc-1` now shows this version.',
+          );
+          // The report's editor learns what was written, without its text.
+          final mutation = b.strategy.extractSuccessfulMutations().single;
+          expect(mutation.toolName, 'write_document_version');
+          expect(mutation.arguments, {
+            'documentId': 'doc-1',
+            'baseVersionId': 'version-4',
+            'changeSummary': 'Adds dates.',
+          });
+        });
+
+        test(
+          'a document that has text is not rewritten unread: the write '
+          'is refused, and goes through once the document was read',
+          () async {
+            final b = docBench(read: (_) async => briefText);
+            final write = {
+              'documentId': 'doc-1',
+              'markdown': '# Brief v4',
+              'changeSummary': 'Adds dates.',
+            };
+
+            await b.strategy.processToolCalls(
+              toolCalls: [call('write_document_version', write)],
+              manager: mockManager,
+            );
+            expect(written, isEmpty);
+            expect(
+              responseTo('call-1'),
+              startsWith('ERROR: call read_document for `doc-1` first'),
+            );
+            expect(b.strategy.extractSuccessfulMutations(), isEmpty);
+
+            await b.strategy.processToolCalls(
+              toolCalls: [
+                call('read_document', {'documentId': 'doc-1'}, id: 'call-2'),
+                call('write_document_version', write, id: 'call-3'),
+              ],
+              manager: mockManager,
+            );
+            expect(written.single['baseVersionId'], 'version-3');
+          },
+        );
+
+        test('a document with no text yet is written without a read, over '
+            'nothing', () async {
+          const empty = TaskDocumentSummary(id: 'doc-2', title: 'Notes');
+          final b = docBench(documents: const [empty]);
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('write_document_version', {
+                'documentId': 'doc-2',
+                'markdown': '# Notes',
+                'changeSummary': 'First notes.',
               }),
             ],
             manager: mockManager,
           );
 
-          final item = b.builder.items.single;
-          expect(item.toolName, 'propose_document_version');
-          expect(item.args, {
-            'documentId': 'doc-1',
-            'title': 'Launch brief',
-            'baseVersionId': 'version-3',
-            'markdown': '# Brief v4',
-            'changeSummary': 'Adds dates.',
+          expect(written.single, {
+            'documentId': 'doc-2',
+            'markdown': '# Notes',
+            'changeSummary': 'First notes.',
           });
-          expect(item.humanSummary, 'New version of document "Launch brief"');
-          expect(
-            responseTo('call-1'),
-            startsWith('OK — propose_document_version proposal recorded'),
-          );
         });
 
-        test('a new document is queued under its title', () async {
+        test('a new document is written under its trimmed title', () async {
           final b = docBench();
 
           await b.strategy.processToolCalls(
             toolCalls: [
-              call('propose_document_version', {
+              call('write_document_version', {
                 'newTitle': ' Meeting summary ',
                 'markdown': '# Summary',
                 'changeSummary': 'The summary of the 19 Nov meeting.',
@@ -3661,13 +3763,12 @@ void main() {
             manager: mockManager,
           );
 
-          final item = b.builder.items.single;
-          expect(item.args, {
+          expect(written.single, {
             'newTitle': 'Meeting summary',
             'markdown': '# Summary',
             'changeSummary': 'The summary of the 19 Nov meeting.',
           });
-          expect(item.humanSummary, 'Create document "Meeting summary"');
+          expect(b.builder.items, isEmpty);
         });
 
         for (final (label, args, error)
@@ -3675,7 +3776,7 @@ void main() {
               (
                 'no text',
                 {'documentId': 'doc-1', 'markdown': ' ', 'changeSummary': 'x'},
-                'ERROR: propose_document_version requires the complete',
+                'ERROR: write_document_version requires the complete',
               ),
               (
                 'both a document and a new title',
@@ -3698,81 +3799,118 @@ void main() {
                 'ERROR: this task holds no document `doc-9`',
               ),
             ]) {
-          test('refuses $label, queueing nothing', () async {
-            final b = docBench();
+          test('refuses $label, writing nothing', () async {
+            final b = docBench(read: (_) async => briefText);
 
             await b.strategy.processToolCalls(
-              toolCalls: [call('propose_document_version', args)],
+              toolCalls: [call('write_document_version', args)],
               manager: mockManager,
             );
 
+            expect(written, isEmpty);
             expect(b.builder.items, isEmpty);
-            expect(responseTo('call-1'), startsWith(error));
+            expect(
+              responseTo('call-1'),
+              allOf(startsWith(error), endsWith('Nothing was written.')),
+            );
           });
         }
 
-        test('refuses a second version of a document while one waits for the '
-            'user — from an earlier wake or this one', () async {
-          final pending = docBench(pending: const {'doc-1'});
-          await pending.strategy.processToolCalls(
-            toolCalls: [
-              call('propose_document_version', {
-                'documentId': 'doc-1',
-                'markdown': 'x',
-                'changeSummary': 'x',
-              }),
-            ],
-            manager: mockManager,
-          );
-          expect(pending.builder.items, isEmpty);
-          expect(
-            responseTo('call-1'),
-            contains('is already waiting for the user'),
-          );
-
-          reset(mockManager);
-          final b = docBench();
-          await b.strategy.processToolCalls(
-            toolCalls: [
-              call('propose_document_version', {
-                'documentId': 'doc-1',
-                'markdown': 'first',
-                'changeSummary': 'x',
-              }),
-              call('propose_document_version', {
-                'documentId': 'doc-1',
-                'markdown': 'second',
-                'changeSummary': 'x',
-              }, id: 'call-2'),
-            ],
-            manager: mockManager,
-          );
-          expect(b.builder.items.single.args['markdown'], 'first');
-          expect(
-            responseTo('call-2'),
-            contains('is already waiting for the user'),
-          );
-        });
-
-        test('the same new document proposed twice in one wake is queued '
-            'once, and the repeat is told it was skipped', () async {
-          final b = docBench();
-          final args = {
-            'newTitle': 'Meeting summary',
+        test('one version per document in a wake, and one new document per '
+            'title: a repeat writes nothing', () async {
+          final b = docBench(read: (_) async => briefText);
+          Map<String, dynamic> revision(String markdown) => {
+            'documentId': 'doc-1',
+            'markdown': markdown,
+            'changeSummary': 'x',
+          };
+          Map<String, dynamic> creation(String title) => {
+            'newTitle': title,
             'markdown': '# Summary',
-            'changeSummary': 'A summary of the meeting.',
+            'changeSummary': 'x',
           };
 
           await b.strategy.processToolCalls(
             toolCalls: [
-              call('propose_document_version', args),
-              call('propose_document_version', args, id: 'call-2'),
+              call('read_document', {'documentId': 'doc-1'}),
+              call('write_document_version', revision('first'), id: 'call-2'),
+              call('write_document_version', revision('second'), id: 'call-3'),
+              call(
+                'write_document_version',
+                creation('Meeting summary'),
+                id: 'call-4',
+              ),
+              call(
+                'write_document_version',
+                creation(' meeting SUMMARY '),
+                id: 'call-5',
+              ),
             ],
             manager: mockManager,
           );
 
-          expect(b.builder.items, hasLength(1));
-          expect(responseTo('call-2'), startsWith('Skipped: '));
+          expect(written.map((args) => args['markdown']), [
+            'first',
+            '# Summary',
+          ]);
+          expect(
+            responseTo('call-3'),
+            startsWith('ERROR: you already wrote a version of "Launch brief"'),
+          );
+          expect(
+            responseTo('call-5'),
+            startsWith('ERROR: you already created "meeting SUMMARY"'),
+          );
+        });
+
+        test('a write the document refused — it moved on meanwhile — is told '
+            'to the agent, records nothing, and needs a fresh read before '
+            'the next try', () async {
+          results.add(
+            const ToolExecutionResult(
+              success: false,
+              output:
+                  'Error: the document changed after this version was '
+                  'drafted; read it again and write the new version from its '
+                  'current text.',
+              errorMessage: 'Document version refused',
+              nonRetryable: true,
+            ),
+          );
+          final b = docBench(read: (_) async => briefText);
+          final write = {
+            'documentId': 'doc-1',
+            'markdown': '# Brief v4',
+            'changeSummary': 'x',
+          };
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('read_document', {'documentId': 'doc-1'}),
+              call('write_document_version', write, id: 'call-2'),
+              // Straight again, without reading what the document is now.
+              call('write_document_version', write, id: 'call-3'),
+            ],
+            manager: mockManager,
+          );
+
+          expect(written, hasLength(1));
+          expect(responseTo('call-2'), contains('read it again'));
+          expect(
+            responseTo('call-3'),
+            startsWith('ERROR: call read_document for `doc-1` first'),
+          );
+          expect(b.strategy.extractSuccessfulMutations(), isEmpty);
+
+          // Read again, the same wake may write after all.
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('read_document', {'documentId': 'doc-1'}, id: 'call-4'),
+              call('write_document_version', write, id: 'call-5'),
+            ],
+            manager: mockManager,
+          );
+          expect(written, hasLength(2));
         });
       });
 

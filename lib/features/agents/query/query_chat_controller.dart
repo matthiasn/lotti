@@ -8,6 +8,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -444,6 +445,32 @@ class QueryChatController extends Notifier<QueryChatSession> {
       stage = 'publish';
       final published = await store.publish(key.agentId, id, result);
       if (!published) throw const QueryCancelled();
+      // A document version the answer holds is written now, not reviewed
+      // (ADR 0167). A failure leaves it pending on its row in the chat, so it
+      // never fails the answer that was just saved.
+      if (result.answer.proposedActions.any(
+        (item) => item.toolName == TaskAgentToolNames.writeDocumentVersion,
+      )) {
+        try {
+          await ref
+              .read(queryChatActionServiceProvider)
+              .writeDocuments(
+                agentId: key.agentId,
+                chatId: id,
+                questionId: question.id,
+              );
+        } catch (error, stack) {
+          // Errors can carry document text: record only their type.
+          logger.error(
+            LogDomain.chat,
+            error.runtimeType.toString(),
+            errorType: error.runtimeType,
+            message: 'Writing the document versions of the answer failed',
+            subDomain: 'query.send',
+            stackTrace: stack,
+          );
+        }
+      }
       if (ref.mounted) {
         final visible = ref
             .read(queryChatDataProvider(key))

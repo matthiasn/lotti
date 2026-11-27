@@ -41,7 +41,7 @@ Future<void> showTaskDocumentEditor(
 ///
 /// The text opens on the document's current version, and saving writes a
 /// new version over exactly that one: when the document moved on meanwhile
-/// — another device, or an agent version confirmed — the save is refused
+/// — another device, or a version the agent wrote — the save is refused
 /// and the form stays open with the user's text, so nothing they typed is
 /// lost and nothing newer is overwritten. Only what changed is written: a
 /// new title renames, new text writes a version. A new document is created

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
@@ -33,16 +35,13 @@ import '../../../../classes/task_document_fixtures.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
-import '../../../documents/document_draft_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late FakeJournalPageController fakeController;
   late ValueNotifier<({String taskId, String documentId})?> desktopDocument;
-  late ValueNotifier<
-    ({String taskId, String documentId, String changeSetId, int itemIndex})?
-  >
+  late ValueNotifier<({String taskId, String documentId, String versionId})?>
   reviewRequest;
 
   setUp(() async {
@@ -478,15 +477,14 @@ void main() {
 
   group('a document review on screen', () {
     const document = (taskId: 'task-42', documentId: 'doc-1');
-    const draft = (
+    const version = (
       taskId: 'task-42',
       documentId: 'doc-1',
-      changeSetId: 'cs-draft',
-      itemIndex: 0,
+      versionId: 'version-2',
     );
 
-    /// The task split at [width], with document-1 open over task-42 and a
-    /// draft of it waiting; returns the container.
+    /// The task split at [width], with document-1 open over task-42;
+    /// returns the container.
     Future<ProviderContainer> pumpSplit(
       WidgetTester tester, {
       required double width,
@@ -515,11 +513,11 @@ void main() {
             taskDocumentCurrentVersionProvider(
               document,
             ).overrideWith((ref) async => null),
-            pendingDocumentProposalsProvider(
-              document,
-            ).overrideWith((ref) => [documentDraft(taskId: 'task-42')]),
-            // The rows themselves are the view's business, not the split's.
-            documentReviewProvider(draft).overrideWith((ref) => null),
+            // The rows themselves are the view's business, not the split's:
+            // the review stays on its first load.
+            documentReviewSnapshotProvider(version).overrideWith(
+              (ref) => Completer<DocumentReviewSnapshot?>().future,
+            ),
           ],
         ),
       );
@@ -544,7 +542,7 @@ void main() {
       container
           .read(documentReviewOpenProvider('task-42').notifier)
           .open(
-            draft,
+            version,
           );
       await tester.pump();
 
@@ -563,24 +561,24 @@ void main() {
       await tearDownTree(tester);
     });
 
-    testWidgets('the review route opens the draft it names, once: the '
+    testWidgets('the review route opens the version it names, once: the '
         'request is cleared when the review is open', (tester) async {
-      reviewRequest.value = draft;
+      reviewRequest.value = version;
       final container = await pumpSplit(tester, width: 1100);
       await tester.pump();
 
-      expect(container.read(documentReviewOpenProvider('task-42')), draft);
+      expect(container.read(documentReviewOpenProvider('task-42')), version);
       expect(reviewRequest.value, isNull);
       expect(find.byType(TasksTabPage), findsNothing);
 
-      // A later link to a draft of the document already open opens it too.
+      // A later link to a version of the document already open opens it too.
       container.read(documentReviewOpenProvider('task-42').notifier).close();
       await tester.pump();
-      reviewRequest.value = draft;
+      reviewRequest.value = version;
       await tester.pump();
       await tester.pump();
 
-      expect(container.read(documentReviewOpenProvider('task-42')), draft);
+      expect(container.read(documentReviewOpenProvider('task-42')), version);
       await tearDownTree(tester);
     });
 
@@ -590,7 +588,7 @@ void main() {
       container
           .read(documentReviewOpenProvider('task-42').notifier)
           .open(
-            draft,
+            version,
           );
       await tester.pump();
 
@@ -604,7 +602,7 @@ void main() {
       container
           .read(documentReviewOpenProvider('task-42').notifier)
           .open(
-            draft,
+            version,
           );
       await tester.pump();
 
@@ -625,7 +623,7 @@ void main() {
       await tester.pump();
       final review = container.read(
         documentReviewOpenProvider('task-42').notifier,
-      )..open(draft);
+      )..open(version);
       await tester.pump();
       review.close();
       await tester.pump();

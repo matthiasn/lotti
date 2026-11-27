@@ -1695,10 +1695,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Companion, full screen';
 
   @override
-  String get aiCardDocumentProposalsHint =>
-      'Read each draft, then confirm it on its own.';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'History · $count';
   }
@@ -7055,60 +7051,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get documentProposalConfirmNew => 'Create document';
+  String get documentReviewAdded => 'Added in this version';
 
   @override
-  String get documentProposalConfirmVersion => 'Use this version';
+  String get documentReviewAfter => 'After';
 
   @override
-  String get documentProposalDiscard => 'Discard draft';
-
-  @override
-  String get documentProposalKindNew => 'Proposed new document';
-
-  @override
-  String get documentProposalKindVersion => 'Proposed new version';
-
-  @override
-  String get documentProposalRead => 'Read draft';
-
-  @override
-  String get documentReviewAdded => 'Added in the proposed version';
+  String get documentReviewAgentWrote => 'The agent wrote this version';
 
   @override
   String get documentReviewAskForChanges => 'Ask for changes';
 
   @override
-  String get documentReviewBase => 'Drafted over';
+  String get documentReviewBefore => 'Before';
 
   @override
   String get documentReviewClose => 'Close review';
 
   @override
-  String documentReviewConfirm(int number) {
-    return 'Confirm v$number';
-  }
-
-  @override
   String documentReviewCounts(int added, int removed, int rewritten) {
     return '$added added, $removed removed, $rewritten rewritten';
   }
-
-  @override
-  String get documentReviewCurrent => 'Current';
-
-  @override
-  String get documentReviewDiscardMessage =>
-      'The agent\'s draft is thrown away. You can ask for a new one in the task\'s chat.';
-
-  @override
-  String get documentReviewDiscardTitle => 'Discard this draft?';
-
-  @override
-  String get documentReviewNewer => 'Open the newer draft';
-
-  @override
-  String get documentReviewNotInDraft => 'Not in the draft';
 
   @override
   String documentReviewNotInVersion(int number) {
@@ -7119,33 +7082,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get documentReviewOpen => 'Review changes';
 
   @override
-  String get documentReviewProposed => 'Proposed';
+  String get documentReviewRemoved => 'Removed in this version';
 
   @override
-  String get documentReviewRedo => 'Ask for a redo in chat';
+  String get documentReviewRewritten => 'Rewritten in this version';
 
   @override
-  String get documentReviewRemoved => 'Removed in the proposed version';
-
-  @override
-  String get documentReviewRewritten => 'Rewritten in the proposed version';
-
-  @override
-  String documentReviewStale(int base, int current) {
-    return 'Written against v$base, but the document is now v$current: confirming would overwrite the newer text.';
+  String documentReviewUndo(int number) {
+    return 'Go back to v$number';
   }
-
-  @override
-  String documentReviewStaleNoText(int current) {
-    return 'Written before the document had text; it is now v$current, and confirming would overwrite it.';
-  }
-
-  @override
-  String get documentReviewWaiting => 'The agent drafted a new version';
-
-  @override
-  String get documentReviewWaitingStale =>
-      'The agent drafted a new version, but over an older one';
 
   @override
   String get doneButton => 'Done';
@@ -18086,10 +18031,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskDocumentsDeleteTitle => 'Delete this document?';
 
   @override
-  String get taskDocumentsDraftedByAgent =>
-      'Drafted by the agent, confirmed by you';
-
-  @override
   String get taskDocumentsEdit => 'Edit document';
 
   @override
@@ -18140,6 +18081,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByAgent => 'Written by the agent';
 
   @override
   String get taskDocumentsWrittenByYou => 'Written by you';

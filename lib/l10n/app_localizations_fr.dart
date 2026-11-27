@@ -1726,10 +1726,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Compagnon en plein écran';
 
   @override
-  String get aiCardDocumentProposalsHint =>
-      'Lis chaque brouillon, puis confirme-le séparément.';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'Historique · $count';
   }
@@ -7205,60 +7201,27 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get documentProposalConfirmNew => 'Créer le document';
+  String get documentReviewAdded => 'Ajouté dans cette version';
 
   @override
-  String get documentProposalConfirmVersion => 'Utiliser cette version';
+  String get documentReviewAfter => 'Après';
 
   @override
-  String get documentProposalDiscard => 'Jeter le brouillon';
-
-  @override
-  String get documentProposalKindNew => 'Nouveau document proposé';
-
-  @override
-  String get documentProposalKindVersion => 'Nouvelle version proposée';
-
-  @override
-  String get documentProposalRead => 'Lire le brouillon';
-
-  @override
-  String get documentReviewAdded => 'Ajouté dans la version proposée';
+  String get documentReviewAgentWrote => 'L\'agent a écrit cette version';
 
   @override
   String get documentReviewAskForChanges => 'Demander des modifications';
 
   @override
-  String get documentReviewBase => 'Rédigé sur';
+  String get documentReviewBefore => 'Avant';
 
   @override
   String get documentReviewClose => 'Fermer la relecture';
 
   @override
-  String documentReviewConfirm(int number) {
-    return 'Valider v$number';
-  }
-
-  @override
   String documentReviewCounts(int added, int removed, int rewritten) {
     return '$added ajoutés, $removed supprimés, $rewritten réécrits';
   }
-
-  @override
-  String get documentReviewCurrent => 'Actuelle';
-
-  @override
-  String get documentReviewDiscardMessage =>
-      'Le brouillon de l\'agent est abandonné. Tu peux en demander un nouveau dans le chat de la tâche.';
-
-  @override
-  String get documentReviewDiscardTitle => 'Abandonner ce brouillon ?';
-
-  @override
-  String get documentReviewNewer => 'Ouvrir le brouillon plus récent';
-
-  @override
-  String get documentReviewNotInDraft => 'Absent du brouillon';
 
   @override
   String documentReviewNotInVersion(int number) {
@@ -7269,33 +7232,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get documentReviewOpen => 'Relire les changements';
 
   @override
-  String get documentReviewProposed => 'Proposée';
+  String get documentReviewRemoved => 'Supprimé dans cette version';
 
   @override
-  String get documentReviewRedo => 'Demander une nouvelle version dans le chat';
+  String get documentReviewRewritten => 'Réécrit dans cette version';
 
   @override
-  String get documentReviewRemoved => 'Supprimé dans la version proposée';
-
-  @override
-  String get documentReviewRewritten => 'Réécrit dans la version proposée';
-
-  @override
-  String documentReviewStale(int base, int current) {
-    return 'Rédigée sur v$base, mais le document est maintenant en v$current : valider écraserait le texte plus récent.';
+  String documentReviewUndo(int number) {
+    return 'Revenir à v$number';
   }
-
-  @override
-  String documentReviewStaleNoText(int current) {
-    return 'Rédigée avant que le document ait du texte ; il est maintenant en v$current, et valider l\'écraserait.';
-  }
-
-  @override
-  String get documentReviewWaiting => 'L\'agent a rédigé une nouvelle version';
-
-  @override
-  String get documentReviewWaitingStale =>
-      'L\'agent a rédigé une nouvelle version, mais sur une plus ancienne';
 
   @override
   String get doneButton => 'Terminé';
@@ -18488,10 +18433,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskDocumentsDeleteTitle => 'Supprimer ce document ?';
 
   @override
-  String get taskDocumentsDraftedByAgent =>
-      'Rédigé par l\'agent, confirmé par toi';
-
-  @override
   String get taskDocumentsEdit => 'Modifier le document';
 
   @override
@@ -18542,6 +18483,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByAgent => 'Écrit par l\'agent';
 
   @override
   String get taskDocumentsWrittenByYou => 'Écrit par toi';

@@ -10,8 +10,8 @@ abstract final class ReviewBlockRowKeys {
   static const gutter = Key('review-block-row-gutter');
 }
 
-/// One row of the side-by-side review (ADR 0167, direction B): the current
-/// version's block on the left, the proposed one's on the right, each in
+/// One row of the side-by-side review (ADR 0167): the earlier version's
+/// block on the left, the reviewed one's on the right, each in
 /// its own cell, with a mark in the leading gutter for a changed row — ＋
 /// added, − removed, ⇄ rewritten — in the diff colour, and a
 /// label a screen reader says. A changed row is one band: its two cells — or
@@ -21,37 +21,35 @@ abstract final class ReviewBlockRowKeys {
 /// changed ([markRewrittenWords]): the dropped ones on the removed surface,
 /// the new ones on the added surface.
 ///
-/// [baseVersion] and [proposedVersion] name the empty slots ("Not in v3");
-/// a null [baseVersion] means the document had no text, and its slot says
-/// [noTextLabel] instead. A null [proposedVersion] is a draft that would not
-/// become the next version — written over an older one — and its slot says
-/// "Not in the draft".
+/// [baseVersion] and [version] name the empty slots ("Not in v3"); a null
+/// [baseVersion] means the document had no text, and its slot says
+/// [noTextLabel] instead.
 ///
 /// [stacked] is the one-column form, for a pane too narrow for two: the
 /// row's blocks one above the other in reading order, with no empty slots.
 /// A rewritten block keeps the rewrite's surface on both halves — red and
 /// green mean removed and added on every width — and its old text, quiet,
-/// sits under "Current" above its new text under "Proposed".
+/// sits under "Before" above its new text under "After".
 class ReviewBlockRow extends StatelessWidget {
   const ReviewBlockRow({
     required this.pair,
     required this.baseVersion,
-    required this.proposedVersion,
+    required this.version,
     required this.noTextLabel,
     this.stacked = false,
-    this.stale = false,
+    this.byAgent = false,
     super.key,
   });
 
   final MarkdownBlockPair pair;
   final int? baseVersion;
-  final int? proposedVersion;
+  final int version;
   final String noTextLabel;
   final bool stacked;
 
-  /// The draft was written over an older version than the document shows;
-  /// a stacked rewrite then heads its old half "Drafted over".
-  final bool stale;
+  /// The agent wrote the reviewed version; a stacked rewrite then heads its
+  /// new half in the agent's violet, with its spark.
+  final bool byAgent;
 
   @override
   Widget build(BuildContext context) {
@@ -77,10 +75,9 @@ class ReviewBlockRow extends StatelessWidget {
       ),
     };
     final baseVersion = this.baseVersion;
-    final proposedVersion = this.proposedVersion;
     final band = !stacked && pair.kind != MarkdownBlockChange.same;
     final blocks = _blocks();
-    // Stacked, a rewrite opens with its "Current" caption: the mark sits
+    // Stacked, a rewrite opens with its "Before" caption: the mark sits
     // level with the first line of text below it.
     final caption = tokens.typography.styles.others.caption;
     final markTop = stacked && pair.kind == MarkdownBlockChange.rewritten
@@ -131,9 +128,7 @@ class ReviewBlockRow extends StatelessWidget {
               kind: pair.kind,
               block: blocks.proposed,
               wordMark: diff.added.surface,
-              emptyLabel: proposedVersion == null
-                  ? messages.documentReviewNotInDraft
-                  : messages.documentReviewNotInVersion(proposedVersion),
+              emptyLabel: messages.documentReviewNotInVersion(version),
             ),
           ),
         ],
@@ -174,24 +169,17 @@ class ReviewBlockRow extends StatelessWidget {
     final head = tokens.typography.styles.others.caption.copyWith(
       fontWeight: tokens.typography.weight.semiBold,
     );
-    final accent = tokens.colors.aiCard.accent;
+    final neutral = tokens.colors.text.mediumEmphasis;
+    final afterInk = byAgent ? tokens.colors.aiCard.accent : neutral;
     final textEdge = EdgeInsets.only(left: tokens.spacing.cardItemSpacing);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
           padding: textEdge,
-          // A stale draft's old half is the version it was written over,
-          // not the document's current text.
           child: Text(
-            stale
-                ? messages.documentReviewBase
-                : messages.documentReviewCurrent,
-            style: head.copyWith(
-              color: stale
-                  ? tokens.colors.alert.warning.defaultColor
-                  : tokens.colors.text.mediumEmphasis,
-            ),
+            messages.documentReviewBefore,
+            style: head.copyWith(color: neutral),
           ),
         ),
         SizedBox(height: tokens.spacing.step1),
@@ -202,18 +190,20 @@ class ReviewBlockRow extends StatelessWidget {
           quiet: true,
           wordMark: tokens.colors.diff.removed.surface,
         ),
-        // More air above "Proposed" than below it: the caption belongs to
+        // More air above "After" than below it: the caption belongs to
         // the block it heads.
         SizedBox(height: tokens.spacing.cardItemSpacing),
         Padding(
           padding: textEdge,
           child: Row(
             children: [
-              Icon(LottiIcons.aiSpark, size: IconSizes.s, color: accent),
-              SizedBox(width: tokens.spacing.step1),
+              if (byAgent) ...[
+                Icon(LottiIcons.aiSpark, size: IconSizes.s, color: afterInk),
+                SizedBox(width: tokens.spacing.step1),
+              ],
               Text(
-                messages.documentReviewProposed,
-                style: head.copyWith(color: accent),
+                messages.documentReviewAfter,
+                style: head.copyWith(color: afterInk),
               ),
             ],
           ),

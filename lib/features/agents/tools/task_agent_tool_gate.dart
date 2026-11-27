@@ -107,7 +107,7 @@ class TaskAgentWakeFacts {
   final bool hasDocumentSource;
 
   /// The task holds at least one document. Gates `read_document`, which has
-  /// no id to read otherwise; `propose_document_version` can still create
+  /// no id to read otherwise; `write_document_version` can still create
   /// the first one.
   final bool hasDocuments;
 }
@@ -153,7 +153,7 @@ Set<String> visibleTaskAgentToolNames(TaskAgentWakeFacts facts) {
     if (!facts.hasLinkedPullRequests) TaskAgentToolNames.refreshPullRequests,
     if (!facts.hasDocumentSource) ...{
       TaskAgentToolNames.readDocument,
-      TaskAgentToolNames.proposeDocumentVersion,
+      TaskAgentToolNames.writeDocumentVersion,
     },
     if (!facts.hasDocuments) TaskAgentToolNames.readDocument,
     if (!facts.hasRelatedTaskSearch) TaskAgentToolNames.findRelatedTasks,

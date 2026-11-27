@@ -72,11 +72,6 @@ ProposalKind resolveKind(String toolName, Map<String, dynamic> args) {
       return ProposalKind.estimate;
     case TaskAgentToolNames.setTaskStatus:
       return ProposalKind.status;
-    // A new document is an addition; a new version of one, an update.
-    case TaskAgentToolNames.proposeDocumentVersion:
-      return args['newTitle'] is String
-          ? ProposalKind.add
-          : ProposalKind.update;
     case TaskAgentToolNames.assignTaskLabels:
     case TaskAgentToolNames.assignTaskLabel:
       return ProposalKind.label;

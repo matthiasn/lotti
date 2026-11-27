@@ -175,7 +175,7 @@ void main() {
         ),
         {
           TaskAgentToolNames.readDocument,
-          TaskAgentToolNames.proposeDocumentVersion,
+          TaskAgentToolNames.writeDocumentVersion,
         },
       );
     });

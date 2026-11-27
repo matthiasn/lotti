@@ -19,9 +19,7 @@ void main() {
 
     late MockNavService mockNavService;
     late ValueNotifier<({String taskId, String documentId})?> desktopDocument;
-    late ValueNotifier<
-      ({String taskId, String documentId, String changeSetId, int itemIndex})?
-    >
+    late ValueNotifier<({String taskId, String documentId, String versionId})?>
     reviewRequest;
 
     setUp(() {
@@ -58,7 +56,7 @@ void main() {
         '/tasks',
         '/tasks/:taskId',
         '/tasks/:taskId/documents/:documentId',
-        '/tasks/:taskId/documents/:documentId/review/:changeSetId/:itemIndex',
+        '/tasks/:taskId/documents/:documentId/review/:versionId',
       ]);
     });
 
@@ -132,22 +130,22 @@ void main() {
         expect(page.documentId, documentId);
       });
 
-      final reviewPath = '/tasks/$taskId/documents/$documentId/review/cs-1/2';
+      const versionId = '0b9d6f7e-3c1a-4c53-9d6e-2f1a7b8c9d10';
+      final reviewPath =
+          '/tasks/$taskId/documents/$documentId/review/$versionId';
       final reviewParameters = {
         'taskId': taskId,
         'documentId': documentId,
-        'changeSetId': 'cs-1',
-        'itemIndex': '2',
+        'versionId': versionId,
       };
       final review = (
         taskId: taskId,
         documentId: documentId,
-        changeSetId: 'cs-1',
-        itemIndex: 2,
+        versionId: versionId,
       );
 
       test('on mobile, the review route stacks the document page and hands '
-          'it the draft to review', () {
+          'it the version to review', () {
         final pages =
             TasksLocation(
               RouteInformation(uri: Uri.parse(reviewPath)),
@@ -160,19 +158,19 @@ void main() {
         expect((pages[2].child as TaskDocumentPage).initialReview, review);
       });
 
-      test('a review route with no usable item index reviews nothing', () {
+      test('a review route whose version is no id reviews nothing', () {
         final pages =
             TasksLocation(
               RouteInformation(uri: Uri.parse(reviewPath)),
             ).buildPages(
               mockBuildContext,
-              stateFor(reviewPath, {...reviewParameters, 'itemIndex': 'x'}),
+              stateFor(reviewPath, {...reviewParameters, 'versionId': 'x'}),
             );
 
         expect((pages[2].child as TaskDocumentPage).initialReview, isNull);
       });
 
-      testWidgets('on desktop, the review route asks the pane for the draft '
+      testWidgets('on desktop, the review route asks the pane for the version '
           'alongside the document; a plain document URL asks for none', (
         tester,
       ) async {

@@ -1,7 +1,7 @@
 part of 'nav_service.dart';
 
 /// The task document the desktop detail pane shows over its task (ADR 0167):
-/// which one, the draft a review route asks it to open, and closing it.
+/// which one, the version a review route asks it to open, and closing it.
 mixin _DesktopTaskDocumentPane {
   ValueNotifier<String?> get desktopSelectedTaskId;
   BeamerDelegate get tasksDelegate;
@@ -13,13 +13,11 @@ mixin _DesktopTaskDocumentPane {
   final ValueNotifier<({String taskId, String documentId})?>
   desktopTaskDocument = ValueNotifier(null);
 
-  /// A draft the `/tasks/:taskId/documents/:documentId/review/…` route asks
-  /// the desktop detail pane to open for review, alongside
+  /// A version the `/tasks/:taskId/documents/:documentId/review/:versionId`
+  /// route asks the desktop detail pane to open for review, alongside
   /// [desktopTaskDocument]: one-shot, cleared by the document page once the
   /// review is open, so reopening the document later reads it instead.
-  final ValueNotifier<
-    ({String taskId, String documentId, String changeSetId, int itemIndex})?
-  >
+  final ValueNotifier<({String taskId, String documentId, String versionId})?>
   taskDocumentReviewRequest = ValueNotifier(null);
 
   /// A document is shown over its own task only: selecting another task

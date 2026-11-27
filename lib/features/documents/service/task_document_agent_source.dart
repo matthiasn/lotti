@@ -4,10 +4,9 @@ import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/documents/repository/task_document_repository.dart';
 
 /// The documents feature's side of [TaskDocumentSource]: what the task agent
-/// reads of a task's documents, and the write of a document proposal the
-/// user confirmed (ADR 0167), through [TaskDocumentRepository] — so an agent
-/// version is the same compare-and-set as a hand edit, recorded as the
-/// agent's.
+/// reads of a task's documents, and the write of a version it drafted
+/// (ADR 0167), through [TaskDocumentRepository] — so an agent version is the
+/// same compare-and-set as a hand edit, recorded as the agent's.
 class TaskDocumentAgentSource implements TaskDocumentSource {
   TaskDocumentAgentSource(this._repository);
 
@@ -74,7 +73,7 @@ class TaskDocumentAgentSource implements TaskDocumentSource {
       base = created.data.current?.id;
     } else {
       return const TaskDocumentApplyRefused(
-        reason: 'the proposal names neither a document nor a new title',
+        reason: 'the write names neither a document nor a new title',
         permanent: true,
       );
     }
@@ -95,8 +94,8 @@ class TaskDocumentAgentSource implements TaskDocumentSource {
       ),
       TaskDocumentWriteStatus.stale => const TaskDocumentApplyRefused(
         reason:
-            'the document changed after this version was drafted; ask for a '
-            'new draft of the current version',
+            'the document changed after this version was drafted; read it '
+            'again and write the new version from its current text',
         permanent: true,
       ),
       TaskDocumentWriteStatus.missing => const TaskDocumentApplyRefused(

@@ -9,8 +9,8 @@ import '../test_utils.dart';
 void main() {
   group('TaskAgentPromptBuilder.buildSystemPrompt', () {
     test(
-      'tells the agent to propose a document only when asked, and to read '
-      'one before revising it',
+      'tells the agent to write a document only when asked, that the write '
+      'is not a proposal, and to read one before revising it',
       () {
         final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
           version: makeTestTemplateVersion(),
@@ -21,14 +21,16 @@ void main() {
         expect(
           prompt,
           contains(
-            'Propose a document, or a new version of one, ONLY when the user '
+            'Write a document, or a new version of one, ONLY when the user '
             'asks for it',
           ),
         );
         expect(prompt, contains('is never a reason on its own'));
+        expect(prompt, contains('`write_document_version` is not a proposal'));
+        expect(prompt, contains('with no confirmation'));
         expect(
           prompt.indexOf('call `read_document`'),
-          lessThan(prompt.indexOf('`propose_document_version` with that')),
+          lessThan(prompt.indexOf('`write_document_version` with that')),
         );
       },
     );

@@ -20,7 +20,7 @@ abstract final class ActionEvalIds {
 
 /// The fixture task's documents: none yet. It is there because a production
 /// task chat has a document source (`taskDocumentSourceProvider`), and
-/// without one the planner never offers `propose_document_version`; with an
+/// without one the planner never offers `write_document_version`; with an
 /// empty one, creating a document is what a case can ask for. Nothing is
 /// ever applied in an eval.
 class ActionEvalDocuments implements TaskDocumentSource {
@@ -516,7 +516,7 @@ const queryActionEvalCases = <QueryActionEvalCase>[
         'that summarizes the feeder calibration work so far.',
     [
       ExpectedQueryAction(
-        'propose_document_version',
+        'write_document_version',
         {'newTitle': 'Feeder status one-pager'},
         minLengths: {'markdown': 80, 'changeSummary': 10},
       ),

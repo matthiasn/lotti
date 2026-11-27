@@ -72,8 +72,7 @@ class ProposalRowContent extends StatelessWidget {
     required this.resolvedStatus,
     required this.busy,
     required this.onReject,
-    this.onConfirm,
-    this.showActions = true,
+    required this.onConfirm,
     this.resolving = false,
     this.closesTask = false,
     this.linkedTitle,
@@ -97,13 +96,7 @@ class ProposalRowContent extends StatelessWidget {
   final bool closesTask;
 
   final Future<void> Function() onReject;
-
-  /// Null when this row is confirmed elsewhere (a document draft).
-  final Future<void> Function()? onConfirm;
-
-  /// False when the row carries its verdicts on a line of their own (a
-  /// pending document draft): the text then takes the full width.
-  final bool showActions;
+  final Future<void> Function() onConfirm;
 
   /// The title of a task [text] names. With [onOpenLinkedTitle] it becomes a
   /// link in the sentence; without, or when the sentence does not contain it,
@@ -119,7 +112,6 @@ class ProposalRowContent extends StatelessWidget {
   /// every pending state so the text beside it never rewraps on resolve.
   Widget _trailing(BuildContext context) {
     if (isResolved) return ResolvedTag(status: resolvedStatus);
-    if (!showActions) return const SizedBox.shrink();
     if (resolving) {
       return SizedBox(
         width: RowActions.footprintWidth(context),
@@ -174,10 +166,8 @@ class ProposalRowContent extends StatelessWidget {
           SizedBox(width: tokens.spacing.step2),
         ],
         Expanded(child: textWidget),
-        if (showActions || isResolved) ...[
-          SizedBox(width: tokens.spacing.step2),
-          _trailing(context),
-        ],
+        SizedBox(width: tokens.spacing.step2),
+        _trailing(context),
       ],
     );
   }

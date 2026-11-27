@@ -49,10 +49,10 @@
       "title": "Task document review",
       "kind": "route-page",
       "source": "lib/beamer/locations/tasks_location.dart",
-      "sourcePattern": "'/tasks/:taskId/documents/:documentId/review/:changeSetId/:itemIndex'",
-      "locator": "/tasks/:taskId/documents/:documentId/review/:changeSetId/:itemIndex",
+      "sourcePattern": "'/tasks/:taskId/documents/:documentId/review/:versionId'",
+      "locator": "/tasks/:taskId/documents/:documentId/review/:versionId",
       "routes": [
-        "/tasks/:taskId/documents/:documentId/review/:changeSetId/:itemIndex"
+        "/tasks/:taskId/documents/:documentId/review/:versionId"
       ],
       "page": "organize-and-reflect/tasks",
       "status": "planned"

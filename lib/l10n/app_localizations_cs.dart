@@ -1715,10 +1715,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiCardCompanionStageTitle => 'Společník na celé obrazovce';
 
   @override
-  String get aiCardDocumentProposalsHint =>
-      'Přečti si každý návrh a pak ho potvrď samostatně.';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'Historie · $count';
   }
@@ -7184,60 +7180,27 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get documentProposalConfirmNew => 'Vytvořit dokument';
+  String get documentReviewAdded => 'Přidáno v této verzi';
 
   @override
-  String get documentProposalConfirmVersion => 'Použít tuto verzi';
+  String get documentReviewAfter => 'Potom';
 
   @override
-  String get documentProposalDiscard => 'Zahodit návrh';
-
-  @override
-  String get documentProposalKindNew => 'Navržený nový dokument';
-
-  @override
-  String get documentProposalKindVersion => 'Navržená nová verze';
-
-  @override
-  String get documentProposalRead => 'Přečíst návrh';
-
-  @override
-  String get documentReviewAdded => 'Přidáno v navržené verzi';
+  String get documentReviewAgentWrote => 'Tuto verzi napsal agent';
 
   @override
   String get documentReviewAskForChanges => 'Požádat o změny';
 
   @override
-  String get documentReviewBase => 'Napsáno nad';
+  String get documentReviewBefore => 'Předtím';
 
   @override
   String get documentReviewClose => 'Zavřít kontrolu';
 
   @override
-  String documentReviewConfirm(int number) {
-    return 'Potvrdit v$number';
-  }
-
-  @override
   String documentReviewCounts(int added, int removed, int rewritten) {
     return 'Přidáno: $added, odebráno: $removed, přepsáno: $rewritten';
   }
-
-  @override
-  String get documentReviewCurrent => 'Aktuální';
-
-  @override
-  String get documentReviewDiscardMessage =>
-      'Koncept agenta se zahodí. O nový můžeš požádat v chatu úkolu.';
-
-  @override
-  String get documentReviewDiscardTitle => 'Zahodit tento koncept?';
-
-  @override
-  String get documentReviewNewer => 'Otevřít novější koncept';
-
-  @override
-  String get documentReviewNotInDraft => 'Není v konceptu';
 
   @override
   String documentReviewNotInVersion(int number) {
@@ -7248,33 +7211,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get documentReviewOpen => 'Zkontrolovat změny';
 
   @override
-  String get documentReviewProposed => 'Navržená';
+  String get documentReviewRemoved => 'Odebráno v této verzi';
 
   @override
-  String get documentReviewRedo => 'Požádat o přepracování v chatu';
+  String get documentReviewRewritten => 'Přepsáno v této verzi';
 
   @override
-  String get documentReviewRemoved => 'Odebráno v navržené verzi';
-
-  @override
-  String get documentReviewRewritten => 'Přepsáno v navržené verzi';
-
-  @override
-  String documentReviewStale(int base, int current) {
-    return 'Napsáno nad v$base, ale dokument je teď v$current: potvrzením bys přepsal novější text.';
+  String documentReviewUndo(int number) {
+    return 'Vrátit se k v$number';
   }
-
-  @override
-  String documentReviewStaleNoText(int current) {
-    return 'Napsáno dřív, než dokument měl text; teď je v$current a potvrzením bys ho přepsal.';
-  }
-
-  @override
-  String get documentReviewWaiting => 'Agent navrhl novou verzi';
-
-  @override
-  String get documentReviewWaitingStale =>
-      'Agent navrhl novou verzi, ale nad starší';
 
   @override
   String get doneButton => 'Hotovo';
@@ -18418,9 +18363,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskDocumentsDeleteTitle => 'Smazat tento dokument?';
 
   @override
-  String get taskDocumentsDraftedByAgent => 'Navrženo agentem, potvrzeno tebou';
-
-  @override
   String get taskDocumentsEdit => 'Upravit dokument';
 
   @override
@@ -18471,6 +18413,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String taskDocumentsVersion(int number) {
     return 'v$number';
   }
+
+  @override
+  String get taskDocumentsWrittenByAgent => 'Napsáno agentem';
 
   @override
   String get taskDocumentsWrittenByYou => 'Napsáno tebou';

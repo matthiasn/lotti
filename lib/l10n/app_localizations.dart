@@ -2922,12 +2922,6 @@ abstract class AppLocalizations {
   /// **'Companion, full screen'**
   String get aiCardCompanionStageTitle;
 
-  /// Caption under the Documents heading of the AI summary card's proposals, where each document draft is confirmed on its own.
-  ///
-  /// In en, this message translates to:
-  /// **'Read each draft, then confirm it on its own.'**
-  String get aiCardDocumentProposalsHint;
-
   /// No description provided for @aiCardHistoryToggle.
   ///
   /// In en, this message translates to:
@@ -11987,47 +11981,23 @@ abstract class AppLocalizations {
   /// **'Remove {deviceName} from your sync account? It will be signed out and will need to be paired again before it can sync.'**
   String deviceDeleteQuestion(String deviceName);
 
-  /// Primary button in the proposal preview sheet when the agent proposes a new document: confirming creates it.
+  /// Screen-reader label of a review row whose paragraph is new in the version under review.
   ///
   /// In en, this message translates to:
-  /// **'Create document'**
-  String get documentProposalConfirmNew;
-
-  /// Primary button in the proposal preview sheet when the agent proposes a new version of a document: confirming makes it the version the document shows.
-  ///
-  /// In en, this message translates to:
-  /// **'Use this version'**
-  String get documentProposalConfirmVersion;
-
-  /// Dismisses an agent's document draft without writing it: the draft sheet's secondary button, and the button beside Read draft in chat.
-  ///
-  /// In en, this message translates to:
-  /// **'Discard draft'**
-  String get documentProposalDiscard;
-
-  /// Line at the top of the proposal preview sheet when the agent proposes a new document.
-  ///
-  /// In en, this message translates to:
-  /// **'Proposed new document'**
-  String get documentProposalKindNew;
-
-  /// Line at the top of the proposal preview sheet when the agent proposes a new version of an existing document.
-  ///
-  /// In en, this message translates to:
-  /// **'Proposed new version'**
-  String get documentProposalKindVersion;
-
-  /// Button under an agent document proposal, in the AI summary card and in chat, that opens the proposed text before the user confirms it.
-  ///
-  /// In en, this message translates to:
-  /// **'Read draft'**
-  String get documentProposalRead;
-
-  /// Screen-reader label of a review row whose paragraph is new in the proposed version.
-  ///
-  /// In en, this message translates to:
-  /// **'Added in the proposed version'**
+  /// **'Added in this version'**
   String get documentReviewAdded;
+
+  /// Column head of a side-by-side document review: the version under review.
+  ///
+  /// In en, this message translates to:
+  /// **'After'**
+  String get documentReviewAfter;
+
+  /// Notice on a task document's page while the version it shows was written by the task agent, beside the button that shows what it changed.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent wrote this version'**
+  String get documentReviewAgentWrote;
 
   /// Button in a document review that opens the task's chat, to ask the agent to change its draft.
   ///
@@ -12035,11 +12005,11 @@ abstract class AppLocalizations {
   /// **'Ask for changes'**
   String get documentReviewAskForChanges;
 
-  /// Column head over the left side of a document review whose draft is stale: the column shows the version the draft was written over (named by the version tag beside it), not the document's current text.
+  /// Column head of a side-by-side document review: the version the reviewed one was written over.
   ///
   /// In en, this message translates to:
-  /// **'Drafted over'**
-  String get documentReviewBase;
+  /// **'Before'**
+  String get documentReviewBefore;
 
   /// Button in a document review's header that leaves the review and returns to the document.
   ///
@@ -12047,47 +12017,11 @@ abstract class AppLocalizations {
   /// **'Close review'**
   String get documentReviewClose;
 
-  /// Primary button of a document review: makes the agent's draft the document's new version, numbered as shown.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm v{number}'**
-  String documentReviewConfirm(int number);
-
   /// Screen-reader label for the count tags in a document review's header: how many paragraphs the draft adds, removes and rewrites.
   ///
   /// In en, this message translates to:
   /// **'{added} added, {removed} removed, {rewritten} rewritten'**
   String documentReviewCounts(int added, int removed, int rewritten);
-
-  /// Column head over the left side of a side-by-side document review: the version the document shows now.
-  ///
-  /// In en, this message translates to:
-  /// **'Current'**
-  String get documentReviewCurrent;
-
-  /// Message of the confirmation asked before discarding the agent's draft in a document review: what discarding does, and how to get a new draft.
-  ///
-  /// In en, this message translates to:
-  /// **'The agent\'s draft is thrown away. You can ask for a new one in the task\'s chat.'**
-  String get documentReviewDiscardMessage;
-
-  /// Title of the confirmation asked before discarding the agent's draft in a document review.
-  ///
-  /// In en, this message translates to:
-  /// **'Discard this draft?'**
-  String get documentReviewDiscardTitle;
-
-  /// Link in a document review: the agent proposed a later draft of the same document while this one was open; opens that draft for review.
-  ///
-  /// In en, this message translates to:
-  /// **'Open the newer draft'**
-  String get documentReviewNewer;
-
-  /// Caption in the empty slot on the proposed side of a document review whose draft was written over an older version: the draft does not have this paragraph. Used instead of a version number, since the draft would not become the next version.
-  ///
-  /// In en, this message translates to:
-  /// **'Not in the draft'**
-  String get documentReviewNotInDraft;
 
   /// Caption in the empty slot of a side-by-side document review, where a paragraph exists only on the other side: this version does not have it.
   ///
@@ -12101,53 +12035,23 @@ abstract class AppLocalizations {
   /// **'Review changes'**
   String get documentReviewOpen;
 
-  /// Column head over the right side of a side-by-side document review: the version the agent proposes.
+  /// Screen-reader label of a review row whose paragraph the version under review dropped.
   ///
   /// In en, this message translates to:
-  /// **'Proposed'**
-  String get documentReviewProposed;
-
-  /// Primary button of a document review whose draft was written over an older version: opens the task's chat, where the user asks the agent for a fresh draft against the current version.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask for a redo in chat'**
-  String get documentReviewRedo;
-
-  /// Screen-reader label of a review row whose paragraph the proposed version drops.
-  ///
-  /// In en, this message translates to:
-  /// **'Removed in the proposed version'**
+  /// **'Removed in this version'**
   String get documentReviewRemoved;
 
-  /// Screen-reader label of a review row whose paragraph the proposed version rewrites.
+  /// Screen-reader label of a review row whose paragraph the version under review rewrote.
   ///
   /// In en, this message translates to:
-  /// **'Rewritten in the proposed version'**
+  /// **'Rewritten in this version'**
   String get documentReviewRewritten;
 
-  /// Warning tag in a document review: the draft was written over version base, but the document has moved on to version current, so it cannot be confirmed.
+  /// Button in a document review that restores the version before the reviewed one.
   ///
   /// In en, this message translates to:
-  /// **'Written against v{base}, but the document is now v{current}: confirming would overwrite the newer text.'**
-  String documentReviewStale(int base, int current);
-
-  /// Warning tag in a document review: the draft was written while the document had no text, but the document now shows version current, so it cannot be confirmed.
-  ///
-  /// In en, this message translates to:
-  /// **'Written before the document had text; it is now v{current}, and confirming would overwrite it.'**
-  String documentReviewStaleNoText(int current);
-
-  /// Notice on a document page: the task agent has drafted a new version of this document that waits for review.
-  ///
-  /// In en, this message translates to:
-  /// **'The agent drafted a new version'**
-  String get documentReviewWaiting;
-
-  /// Notice on a document page: the task agent's waiting draft of a new version was written over an older version than the one the page shows, so it can no longer be confirmed as it is.
-  ///
-  /// In en, this message translates to:
-  /// **'The agent drafted a new version, but over an older one'**
-  String get documentReviewWaitingStale;
+  /// **'Go back to v{number}'**
+  String documentReviewUndo(int number);
 
   /// No description provided for @doneButton.
   ///
@@ -30179,12 +30083,6 @@ abstract class AppLocalizations {
   /// **'Delete this document?'**
   String get taskDocumentsDeleteTitle;
 
-  /// Who wrote a document version: the task agent drafted it and the user confirmed it.
-  ///
-  /// In en, this message translates to:
-  /// **'Drafted by the agent, confirmed by you'**
-  String get taskDocumentsDraftedByAgent;
-
   /// Title of the editor for an existing task document.
   ///
   /// In en, this message translates to:
@@ -30280,6 +30178,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'v{number}'**
   String taskDocumentsVersion(int number);
+
+  /// Who wrote a document version: the task agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Written by the agent'**
+  String get taskDocumentsWrittenByAgent;
 
   /// Who wrote a document version: the user, by hand.
   ///

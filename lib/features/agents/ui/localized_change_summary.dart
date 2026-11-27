@@ -75,7 +75,7 @@ String? localizedChangeSummary(
   TaskAgentToolNames.setTaskProject => _project(messages, args),
   TaskAgentToolNames.createTaskProject => _createProject(messages, args),
   TaskAgentToolNames.linkPullRequest => _pullRequest(messages, args),
-  TaskAgentToolNames.proposeDocumentVersion => _document(messages, args),
+  TaskAgentToolNames.writeDocumentVersion => _document(messages, args),
   TaskAgentToolNames.createTimeEntry => _createTimeEntry(messages, args),
   // The retired running-timer update carried only `summary` (plus a
   // `timerId` this sentence never names), so a proposal persisted under it

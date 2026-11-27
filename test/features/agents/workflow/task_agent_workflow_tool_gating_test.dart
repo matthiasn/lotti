@@ -390,7 +390,7 @@ void main() {
     group('document tools', () {
       const documentToolNames = <String>[
         TaskAgentToolNames.readDocument,
-        TaskAgentToolNames.proposeDocumentVersion,
+        TaskAgentToolNames.writeDocumentVersion,
       ];
 
       for (final narrowToolSurface in [false, true]) {
@@ -411,7 +411,7 @@ void main() {
         );
 
         test(
-          'offer only the proposal on a task with no document, both once it '
+          'offer only the write on a task with no document, both once it '
           'holds one (narrowToolSurface: $narrowToolSurface)',
           () async {
             final documents = FakeTaskDocumentSource();
@@ -423,7 +423,7 @@ void main() {
             );
             expect(
               empty.first.handedOver,
-              contains(TaskAgentToolNames.proposeDocumentVersion),
+              contains(TaskAgentToolNames.writeDocumentVersion),
             );
             expect(
               empty.first.handedOver,
@@ -458,7 +458,7 @@ void main() {
 
         expect(
           perTurn.first.handedOver,
-          contains(TaskAgentToolNames.proposeDocumentVersion),
+          contains(TaskAgentToolNames.writeDocumentVersion),
         );
         expect(
           perTurn.first.handedOver,
@@ -466,17 +466,20 @@ void main() {
         );
       });
 
-      test('a version an earlier wake proposed, still waiting, keeps the '
-          'agent from proposing another of that document', () async {
+      test('a version the agent writes after reading the document reaches '
+          'the documents feature during the wake, over the version it read, '
+          'with nothing left for the user to confirm', () async {
+        const brief = TaskDocumentSummary(
+          id: 'doc-1',
+          title: 'Launch brief',
+          versionId: 'version-1',
+          versionNumber: 1,
+        );
         final documents = FakeTaskDocumentSource()
-          ..documents = const [
-            TaskDocumentSummary(
-              id: 'doc-1',
-              title: 'Launch brief',
-              versionId: 'version-1',
-              versionNumber: 1,
-            ),
-          ];
+          ..documents = const [brief]
+          ..texts = const {
+            'doc-1': TaskDocumentText(summary: brief, markdown: 'Earlier.'),
+          };
         final bench = createTaskAgentWorkflowTestBench(
           taskDocuments: documents,
         );
@@ -494,28 +497,16 @@ void main() {
         when(
           () => bench.mockJournalDb.journalEntityById(taskId),
         ).thenAnswer((_) async => bareTask());
-        when(
-          () => bench.mockAgentRepository.getProposalLedger(
-            any(),
-            taskId: any(named: 'taskId'),
-            changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
-            resolvedLimit: any(named: 'resolvedLimit'),
-          ),
-        ).thenAnswer(
-          (_) async => ProposalLedger(
-            open: [
-              LedgerEntry(
-                changeSetId: 'cs-earlier',
-                itemIndex: 0,
-                toolName: TaskAgentToolNames.proposeDocumentVersion,
-                args: const {'documentId': 'doc-1', 'markdown': 'Earlier.'},
-                humanSummary: 'New version of "Launch brief"',
-                fingerprint: 'fp-earlier',
-                status: ChangeItemStatus.pending,
-                createdAt: DateTime(2026, 11, 20),
-              ),
-            ],
-            resolved: const [],
+        ChatCompletionMessageToolCall toolCall(
+          String id,
+          String name,
+          Map<String, dynamic> args,
+        ) => ChatCompletionMessageToolCall(
+          id: id,
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: name,
+            arguments: jsonEncode(args),
           ),
         );
         bench.mockConversationRepository.maxDelegateCalls = 1;
@@ -533,17 +524,17 @@ void main() {
             }) async {
               await (strategy! as TaskAgentStrategy).processToolCalls(
                 toolCalls: [
-                  ChatCompletionMessageToolCall(
-                    id: 'doc-call',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: TaskAgentToolNames.proposeDocumentVersion,
-                      arguments: jsonEncode({
-                        'documentId': 'doc-1',
-                        'markdown': 'Again.',
-                        'changeSummary': 'Another pass.',
-                      }),
-                    ),
+                  toolCall('read-call', TaskAgentToolNames.readDocument, {
+                    'documentId': 'doc-1',
+                  }),
+                  toolCall(
+                    'doc-call',
+                    TaskAgentToolNames.writeDocumentVersion,
+                    {
+                      'documentId': 'doc-1',
+                      'markdown': 'Again.',
+                      'changeSummary': 'Another pass.',
+                    },
                   ),
                 ],
                 manager: bench.mockConversationManager,
@@ -558,6 +549,14 @@ void main() {
           threadId: threadId,
         );
 
+        final write = documents.applied.single;
+        expect(write.taskId, taskId);
+        expect(write.documentId, 'doc-1');
+        expect(write.baseVersionId, 'version-1');
+        expect(write.markdown, 'Again.');
+        expect(write.changeSummary, 'Another pass.');
+        // A wake's write is no change item's effect.
+        expect(write.changeEffectKey, isNull);
         final response =
             verify(
                   () => bench.mockConversationManager.addToolResponse(
@@ -566,7 +565,12 @@ void main() {
                   ),
                 ).captured.single
                 as String;
-        expect(response, contains('is already waiting for the user'));
+        expect(response, 'Document `doc-1` now shows this version.');
+        // Nothing was queued for the user.
+        final proposed = verify(
+          () => bench.mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<ChangeSetEntity>();
+        expect(proposed, isEmpty);
       });
     });
 

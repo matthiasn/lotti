@@ -4,8 +4,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/utils/relative_age_label.dart';
 
 /// Who wrote [version], in words: the user by hand, the user restoring an
-/// older version, or the agent with the user's confirmation — an agent
-/// version only ever lands confirmed (ADR 0167), so the line says both.
+/// older version, or the agent (ADR 0167).
 String taskDocumentAuthorship(
   AppLocalizations messages,
   TaskDocumentVersionEntry version,
@@ -15,7 +14,7 @@ String taskDocumentAuthorship(
   }
   return switch (version.data.author) {
     TaskDocumentAuthor.user => messages.taskDocumentsWrittenByYou,
-    TaskDocumentAuthor.agent => messages.taskDocumentsDraftedByAgent,
+    TaskDocumentAuthor.agent => messages.taskDocumentsWrittenByAgent,
   };
 }
 
