@@ -327,24 +327,20 @@ void main() {
       expect(provider.policy, ResizeImagePolicy.fit);
     });
 
-    test('a non-positive bound on either axis decodes at full size', () {
-      expect(
-        boundedFileImage(
-          '/p/a.jpg',
-          bounds: const Size(0, 96),
-          devicePixelRatio: 2,
-        ),
-        isA<FileImage>(),
-      );
-      expect(
-        boundedFileImage(
-          '/p/a.jpg',
-          bounds: const Size(402, -1),
-          devicePixelRatio: 2,
-        ),
-        isA<FileImage>(),
-      );
-    });
+    // Zero and negative, on each axis: the guard is `<= 0`, not `== 0`.
+    for (final bounds in const [
+      Size(0, 96),
+      Size(-1, 96),
+      Size(402, 0),
+      Size(402, -1),
+    ]) {
+      test('a non-positive bound decodes at full size: $bounds', () {
+        expect(
+          boundedFileImage('/p/a.jpg', bounds: bounds, devicePixelRatio: 2),
+          isA<FileImage>(),
+        );
+      });
+    }
   });
 
   group('cappedFileImage', () {

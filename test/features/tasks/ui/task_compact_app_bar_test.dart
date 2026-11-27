@@ -356,44 +356,32 @@ void main() {
       expect(appBar.expandedHeight, isNull);
     });
 
-    testWidgets('hides the persistent title when scroll offset is near 0', (
-      tester,
-    ) async {
-      final task = buildTask();
-      await tester.pumpWidget(
-        buildTestWidget(
-          task,
-          overrides: [
-            taskAppBarControllerProvider(task.id).overrideWith(
-              () => _FixedOffsetController(0),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Test Task'), findsNothing);
-    });
-
-    testWidgets(
-      'shows the task title once scroll offset passes the threshold',
-      (tester) async {
+    // The title appears at the 48 px threshold itself, not one pixel later.
+    for (final (offset, shown) in [
+      (0.0, false),
+      (47.0, false),
+      (48.0, true),
+      (200.0, true),
+    ]) {
+      testWidgets('at scroll offset $offset the persistent title is '
+          '${shown ? 'shown' : 'hidden'}', (tester) async {
         final task = buildTask();
         await tester.pumpWidget(
           buildTestWidget(
             task,
             overrides: [
               taskAppBarControllerProvider(task.id).overrideWith(
-                () => _FixedOffsetController(200),
+                () => _FixedOffsetController(offset),
               ),
             ],
           ),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        expect(find.text('Test Task'), findsOneWidget);
-      },
-    );
+
+        expect(find.text('Test Task'), shown ? findsOneWidget : findsNothing);
+      });
+    }
   });
 
   group('TaskCompactAppBar desktop back-arrow visibility', () {

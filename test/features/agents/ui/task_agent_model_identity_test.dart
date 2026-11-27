@@ -202,4 +202,100 @@ void main() {
     expect(broken.reportRoute, route);
     expect(profileMissing.presentation, TaskAgentIdentityPresentation.broken);
   });
+
+  group('a setup that cannot run', () {
+    final provenance = ReportInferenceProvenance.executorOnly(
+      InferenceRunSnapshot(runKey: 'run', threadId: 'thread', executor: route),
+    );
+    const setups = <String, ResolvedAgentSetup?>{
+      'no setup': null,
+      'a broken setup': ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.broken,
+      ),
+      'a disabled setup': ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.disabled,
+      ),
+      'a resolved setup without a profile': ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.resolved,
+      ),
+    };
+
+    for (final MapEntry(key: name, value: setup) in setups.entries) {
+      test('$name with no report adds no report row', () {
+        final data = TaskAgentModelIdentityViewData.fromResolution(
+          setup: setup,
+          reportProvenance: null,
+          hasReport: false,
+        );
+
+        expect(data.reportAttributionUnavailable, isFalse);
+        expect(data.showsReportRow, isFalse);
+      });
+
+      test('$name names the route that wrote the report still on screen', () {
+        final data = TaskAgentModelIdentityViewData.fromResolution(
+          setup: setup,
+          reportProvenance: provenance,
+          hasReport: true,
+        );
+
+        expect(data.reportRoute, route);
+        expect(data.reportAttributionUnavailable, isFalse);
+        expect(data.showsReportRow, isTrue);
+      });
+
+      test('$name says so when the report on screen carries no '
+          'attribution', () {
+        final data = TaskAgentModelIdentityViewData.fromResolution(
+          setup: setup,
+          reportProvenance: null,
+          hasReport: true,
+        );
+
+        expect(data.reportRoute, isNull);
+        expect(data.reportAttributionUnavailable, isTrue);
+        expect(data.showsReportRow, isTrue);
+      });
+    }
+  });
+
+  group('showsReportRow for a working setup', () {
+    test('no report: one row', () {
+      final data = TaskAgentModelIdentityViewData.fromResolution(
+        setup: resolved,
+        reportProvenance: null,
+        hasReport: false,
+      );
+
+      expect(data.showsReportRow, isFalse);
+    });
+
+    test('a report the current route wrote: one row', () {
+      final data = TaskAgentModelIdentityViewData.fromResolution(
+        setup: resolved,
+        reportProvenance: ReportInferenceProvenance.executorOnly(
+          InferenceRunSnapshot(
+            runKey: 'run',
+            threadId: 'thread',
+            executor: route,
+          ),
+        ),
+        hasReport: true,
+      );
+
+      expect(data.presentation, TaskAgentIdentityPresentation.combined);
+      expect(data.showsReportRow, isFalse);
+    });
+
+    test('an unattributed report: a second row', () {
+      final data = TaskAgentModelIdentityViewData.fromResolution(
+        setup: resolved,
+        reportProvenance: null,
+        hasReport: true,
+      );
+
+      expect(data.presentation, TaskAgentIdentityPresentation.split);
+      expect(data.showsReportRow, isTrue);
+    });
+  });
 }

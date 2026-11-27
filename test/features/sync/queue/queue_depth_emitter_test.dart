@@ -240,6 +240,23 @@ void main() {
       },
     );
 
+    test(
+      'nested holds: a schedule the outer body made before an inner hold '
+      'starts is not cleared by it',
+      () async {
+        final bench = _EmitterBench(initial: _stats(total: 4));
+        addTearDown(bench.close);
+
+        await bench.emitter.holdDuring(() async {
+          bench.emitter.schedule();
+          await bench.emitter.holdDuring(() async {});
+        });
+        await pumpEventQueue();
+
+        expect(bench.emissions.single.total, 4);
+      },
+    );
+
     test('a clean hold (no schedule inside) emits nothing', () async {
       final bench = _EmitterBench();
       addTearDown(bench.close);
