@@ -1,12 +1,17 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/agents/agent_database.dart' show AgentDatabase;
 import 'package:lotti/database/agents/agent_repository.dart';
+import 'package:lotti/database/database.dart' show JournalDb;
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_entity_receive.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -33,6 +38,12 @@ import '../../mocks/mocks.dart';
 /// restart: a fresh repository and sync service over the same database,
 /// with the counter — which the real service persists — carried over.
 /// [onSent] sees every accepted message as it is accepted.
+///
+/// [receiveEnvelope] applies a sync message through the real
+/// `SyncEventProcessor` wired with [attachProcessor], so a test asserts on
+/// what the receive committed. [holdNextStoredReadOf] parks one read of a
+/// stored version, which is how a test places a local write between a
+/// receive's read and its write.
 ///
 /// Callers close the database with [close] (in `addTearDown`).
 class AgentTestDevice {
@@ -78,7 +89,8 @@ class AgentTestDevice {
   late AgentSyncService sync;
 
   void reboot() {
-    repository = AgentRepository(db);
+    repository = _holdable = _HoldableAgentRepository(db);
+    _processor?.agentRepository = repository;
     sync = AgentSyncService(
       repository: repository,
       outboxService: outbox,
@@ -96,6 +108,88 @@ class AgentTestDevice {
   bool outboxFails = false;
 
   int _counter;
+
+  late _HoldableAgentRepository _holdable;
+  SyncEventProcessor? _processor;
+
+  /// Makes [processor] apply agent records to this device's database; a
+  /// [reboot] wires it to the fresh repository.
+  void attachProcessor(SyncEventProcessor processor) =>
+      _processor = processor..agentRepository = repository;
+
+  /// Receives [message] through the attached processor's real `process`:
+  /// decode, resolve against the stored row, write, notify, record.
+  ///
+  /// [envelope] and [journalDb] default to bare mocks; a test that stubs the
+  /// event id or timestamp, or asserts on journal writes, passes its own.
+  Future<void> receiveEnvelope(
+    SyncMessage message, {
+    MockEvent? envelope,
+    JournalDb? journalDb,
+  }) {
+    final event = envelope ?? MockEvent();
+    if (envelope == null) {
+      when(() => event.eventId).thenReturn('event-id');
+      when(() => event.originServerTs).thenReturn(DateTime(2024));
+    }
+    when(
+      () => event.text,
+    ).thenReturn(base64.encode(utf8.encode(json.encode(message.toJson()))));
+    return _processor!.process(
+      envelope: event,
+      journalDb: journalDb ?? MockJournalDb(),
+    );
+  }
+
+  /// Every stored entity and link row, tombstones included, as column maps
+  /// in id order. Two snapshots are equal when nothing was written between
+  /// them.
+  Future<List<Map<String, Object?>>> storedRows() async => [
+    for (final table in const ['agent_entities', 'agent_links'])
+      for (final row
+          in await db.customSelect('SELECT * FROM $table ORDER BY id').get())
+        {'table': table, ...row.data},
+  ];
+
+  /// The entities stored now whose row differs from [before], a
+  /// [storedRows] snapshot: what was written since, in id order.
+  Future<List<AgentDomainEntity>> entitiesWrittenSince(
+    List<Map<String, Object?>> before,
+  ) async {
+    final changed = [
+      for (final row in await storedRows())
+        if (row['table'] == 'agent_entities' &&
+            !before.any((old) => _sameRow(old, row)))
+          row['id']! as String,
+    ];
+    final entities = await repository.getEntitiesByIdsIncludingDeleted(changed);
+    return [for (final id in changed) entities[id]!];
+  }
+
+  static bool _sameRow(Map<String, Object?> a, Map<String, Object?> b) =>
+      a.length == b.length &&
+      a.entries.every((entry) => b[entry.key] == entry.value);
+
+  /// Runs [then] once, right after the next entity write and inside its
+  /// transaction: a local write landing between a receive's write and what
+  /// it reads next.
+  // ignore: use_setters_to_change_properties
+  void afterNextEntityWrite(
+    Future<void> Function(AgentDomainEntity written) then,
+  ) => _holdable.afterWrite = then;
+
+  /// Runs [then] once, right after the next live read of entity [id]
+  /// returns its row: a local write landing between two reads of a receive.
+  void afterNextReadOf(String id, Future<void> Function() then) => _holdable
+    ..afterReadId = id
+    ..afterRead = then;
+
+  /// Parks the next stored-version read of entity or link [id] — the read a
+  /// receive resolves against — until the returned completer completes. The
+  /// row is read first and handed over afterwards, so a receive that reads
+  /// outside its transaction resolves against a version a local write has
+  /// since replaced.
+  Completer<void> holdNextStoredReadOf(String id) => _holdable.hold(id);
 
   /// The agent entities this device sent, in order.
   List<AgentDomainEntity> get sentEntities => [
@@ -158,4 +252,58 @@ class AgentTestDevice {
       });
 
   Future<void> close() => db.close();
+}
+
+/// The real repository, able to park one stored-version read.
+class _HoldableAgentRepository extends AgentRepository {
+  _HoldableAgentRepository(super.db);
+
+  String? _heldId;
+  var _release = Completer<void>();
+
+  Completer<void> hold(String id) {
+    _heldId = id;
+    return _release = Completer<void>();
+  }
+
+  Future<T> _afterRelease<T>(String id, T row) async {
+    if (id == _heldId) {
+      _heldId = null;
+      await _release.future;
+    }
+    return row;
+  }
+
+  Future<void> Function(AgentDomainEntity written)? afterWrite;
+
+  String? afterReadId;
+  Future<void> Function()? afterRead;
+
+  @override
+  Future<AgentDomainEntity?> getEntity(String id) async {
+    final row = await super.getEntity(id);
+    if (id == afterReadId) {
+      afterReadId = null;
+      await afterRead!();
+    }
+    return row;
+  }
+
+  @override
+  Future<void> upsertEntity(AgentDomainEntity entity) async {
+    await super.upsertEntity(entity);
+    final then = afterWrite;
+    if (then != null) {
+      afterWrite = null;
+      await then(entity);
+    }
+  }
+
+  @override
+  Future<AgentDomainEntity?> getEntityIncludingDeleted(String id) async =>
+      _afterRelease(id, await super.getEntityIncludingDeleted(id));
+
+  @override
+  Future<AgentLink?> getLinkByIdIncludingDeleted(String id) async =>
+      _afterRelease(id, await super.getLinkByIdIncludingDeleted(id));
 }

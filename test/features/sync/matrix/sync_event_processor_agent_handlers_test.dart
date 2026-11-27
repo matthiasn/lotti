@@ -1,6 +1,5 @@
 // ignore_for_file: avoid_redundant_argument_values, cascade_invocations
 
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -19,6 +18,7 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/database/agents/agent_repo_retention.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
@@ -33,6 +33,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
 import '../../../mocks/mocks.dart';
+import '../../agents/agent_test_device.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../../agents/test_data/evolution_factories.dart';
 import '../../ai_consumption/test_utils.dart';
@@ -44,128 +45,118 @@ void main() {
   setUp(setUpProcessorMocks);
 
   group('SyncEventProcessor - Agent Entities and Links', () {
-    late MockAgentRepository mockAgentRepo;
+    /// This device: a real in-memory agent database behind the real
+    /// repository, which the processor under test writes to.
+    late AgentTestDevice device;
 
     /// Project agents sync asked to arm their next update slot.
     late List<String> armedAgentIds;
+
+    Future<void> receiveEntity(AgentDomainEntity entity) =>
+        device.receiveEnvelope(
+          SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          ),
+          envelope: event,
+          journalDb: journalDb,
+        );
+
+    Future<void> receiveLink(AgentLink link) => device.receiveEnvelope(
+      SyncMessage.agentLink(agentLink: link, status: SyncEntryStatus.update),
+      envelope: event,
+      journalDb: journalDb,
+    );
 
     setUp(() {
       armedAgentIds = [];
       processor.armProjectUpdate = (agentId) async =>
           armedAgentIds.add(agentId);
-      mockAgentRepo = MockAgentRepository();
-      when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((_) async {});
-      when(() => mockAgentRepo.upsertLink(any())).thenAnswer((_) async {});
-      when(() => mockAgentRepo.getEntity(any())).thenAnswer((_) async => null);
-      when(
-        () => mockAgentRepo.getAgentState(any()),
-      ).thenAnswer((_) async => null);
-      when(
-        () => mockAgentRepo.getEntitiesByIds(any()),
-      ).thenAnswer((_) async => const <String, AgentDomainEntity>{});
-      when(() => mockAgentRepo.getLinkByIdIncludingDeleted(any())).thenAnswer(
-        (_) async => null,
-      );
-      when(
-        () => mockAgentRepo.getLinksFrom(
-          any(),
-          type: any(named: 'type'),
-        ),
-      ).thenAnswer((_) async => const []);
-      when(
-        () => mockAgentRepo.deletedAgentIdsAmong(any()),
-      ).thenAnswer((_) async => const <String>{});
-      processor.agentRepository = mockAgentRepo;
+      device = AgentTestDevice('local', background: false);
+      addTearDown(device.close);
+      device.attachProcessor(processor);
     });
 
     group('an agent this device deleted (ADR 0108)', () {
-      test('a link to or from it is refused', () async {
-        when(
-          () => mockAgentRepo.deletedAgentIdsAmong(any()),
-        ).thenAnswer((_) async => {'agent-gone'});
-        final link = AgentLink.agentTask(
-          id: 'link-gone',
-          fromId: 'agent-gone',
-          toId: 'task-1',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
+      setUp(() async {
+        await device.repository.upsertEntity(
+          makeTestIdentity(id: 'agent-gone', agentId: 'agent-gone'),
         );
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentLink(
-              agentLink: link,
-              status: SyncEntryStatus.update,
-            ),
-          ),
+        await device.repository.hardDeleteAgent('agent-gone');
+      });
+
+      AgentLink taskLink({required String id, required String fromId}) =>
+          AgentLink.agentTask(
+            id: id,
+            fromId: fromId,
+            toId: 'task-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+
+      test('a link from it is refused', () async {
+        await receiveLink(taskLink(id: 'link-gone', fromId: 'agent-gone'));
+
+        expect(
+          await device.repository.getLinkByIdIncludingDeleted('link-gone'),
+          isNull,
         );
-
-        await processor.process(envelope: event, journalDb: journalDb);
-
-        verifyNever(() => mockAgentRepo.upsertLink(any()));
         verifyNever(
           () => updateNotifications.notify(any(), fromSync: true),
         );
-        final asked =
-            verify(
-                  () => mockAgentRepo.deletedAgentIdsAmong(captureAny()),
-                ).captured.single
-                as Iterable<String>;
-        expect(asked.toSet(), {'agent-gone', 'task-1'});
       });
 
-      test('an entity of it, sent inline, is refused', () async {
-        when(
-          () => mockAgentRepo.deletedAgentIdsAmong(any()),
-        ).thenAnswer((_) async => {'agent-gone'});
-        final entity = AgentDomainEntity.agentMessage(
-          id: 'msg-late',
-          agentId: 'agent-gone',
-          threadId: 'thread-1',
-          kind: AgentMessageKind.thought,
-          createdAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-          metadata: const AgentMessageMetadata(),
-          tokensApprox: 1,
-        );
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: entity,
-              status: SyncEntryStatus.update,
-            ),
+      test('a link to it is refused: both ends are checked', () async {
+        await receiveLink(
+          AgentLink.basic(
+            id: 'link-to-gone',
+            fromId: 'agent-1',
+            toId: 'agent-gone',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
           ),
         );
 
-        await processor.process(envelope: event, journalDb: journalDb);
+        expect(
+          await device.repository.getLinkByIdIncludingDeleted('link-to-gone'),
+          isNull,
+        );
+      });
 
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+      test('an entity of it, sent inline, is refused', () async {
+        await receiveEntity(
+          AgentDomainEntity.agentMessage(
+            id: 'msg-late',
+            agentId: 'agent-gone',
+            threadId: 'thread-1',
+            kind: AgentMessageKind.thought,
+            createdAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            metadata: const AgentMessageMetadata(),
+            tokensApprox: 1,
+          ),
+        );
+
+        expect(
+          await device.repository.getEntityIncludingDeleted('msg-late'),
+          isNull,
+        );
         verifyNever(
           () => updateNotifications.notify(any(), fromSync: true),
         );
       });
 
       test('a link between two agents it did not delete is applied', () async {
-        final link = AgentLink.basic(
-          id: 'link-live',
-          fromId: 'agent-1',
-          toId: 'state-1',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-        );
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentLink(
-              agentLink: link,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
+        final link = taskLink(id: 'link-live', fromId: 'agent-1');
 
-        await processor.process(envelope: event, journalDb: journalDb);
+        await receiveLink(link);
 
-        verify(() => mockAgentRepo.upsertLink(link)).called(1);
+        expect(
+          await device.repository.getLinkByIdIncludingDeleted('link-live'),
+          link,
+        );
       });
     });
 
@@ -198,53 +189,13 @@ void main() {
               )
               as ChangeSetEntity;
 
-      late ChangeSetEntity? stored;
-
-      /// The repository as storage for one change set, with Drift-like
-      /// serialized transactions.
-      void storeChangeSet(ChangeSetEntity? initial, {Completer<void>? gate}) {
-        stored = initial;
-        var gated = gate != null;
-        var tail = Future<void>.value();
-        mockAgentRepo.transactionDelegate = <T>(action) {
-          if (Zone.current[#agentTx] == true) return action();
-          final run = tail.then(
-            (_) => runZoned(action, zoneValues: {#agentTx: true}),
-          );
-          tail = run.then<void>((_) {}, onError: (_) {});
-          return run;
-        };
-        when(() => mockAgentRepo.getEntity('cs-sync')).thenAnswer((_) async {
-          final snapshot = stored;
-          if (gated) {
-            gated = false;
-            await gate!.future;
-          }
-          return snapshot;
-        });
-        when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
-          invocation,
-        ) async {
-          final entity = invocation.positionalArguments.first;
-          if (entity is ChangeSetEntity) stored = entity;
-        });
-      }
-
-      void receive(ChangeSetEntity incoming) {
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-      }
+      Future<ChangeSetEntity?> stored() async =>
+          await device.repository.getEntity('cs-sync') as ChangeSetEntity?;
 
       test(
         'concurrent versions merge item by item: both decisions survive',
         () async {
-          storeChangeSet(
+          await device.repository.upsertEntity(
             changeSet(
               [
                 estimate.withStatus(ChangeItemStatus.confirmed),
@@ -253,7 +204,8 @@ void main() {
               {'local': 2},
             ),
           );
-          receive(
+
+          await receiveEntity(
             changeSet(
               [
                 estimate,
@@ -263,15 +215,14 @@ void main() {
             ),
           );
 
-          await processor.process(envelope: event, journalDb: journalDb);
-
-          expect(stored!.items.map((i) => i.status), [
+          final merged = (await stored())!;
+          expect(merged.items.map((i) => i.status), [
             ChangeItemStatus.confirmed,
             ChangeItemStatus.rejected,
           ]);
-          expect(stored!.status, ChangeSetStatus.resolved);
+          expect(merged.status, ChangeSetStatus.resolved);
           expect(
-            stored!.vectorClock,
+            merged.vectorClock,
             const VectorClock({'local': 2, 'peer': 1}),
           );
           verify(
@@ -290,13 +241,11 @@ void main() {
           ],
           {'local': 2},
         );
-        storeChangeSet(local);
-        receive(changeSet([estimate], {'local': 1}));
+        await device.repository.upsertEntity(local);
 
-        await processor.process(envelope: event, journalDb: journalDb);
+        await receiveEntity(changeSet([estimate], {'local': 1}));
 
-        expect(stored, same(local));
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        expect(await stored(), local);
         verify(
           () => loggingService.log(
             LogDomain.sync,
@@ -307,30 +256,29 @@ void main() {
       });
 
       test('a set not stored yet is written as received', () async {
-        storeChangeSet(null);
         final incoming = changeSet([estimate], {'peer': 1});
-        receive(incoming);
 
-        await processor.process(envelope: event, journalDb: journalDb);
+        await receiveEntity(incoming);
 
-        expect(stored, incoming);
+        expect(await stored(), incoming);
       });
 
       test(
         'a malformed local clock is logged and the peer version applied',
         () async {
-          storeChangeSet(changeSet([estimate], {'local': -1}));
+          await device.repository.upsertEntity(
+            changeSet([estimate], {'local': -1}),
+          );
           final incoming = changeSet(
             [
               estimate.withStatus(ChangeItemStatus.confirmed),
             ],
             {'peer': 1},
           );
-          receive(incoming);
 
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveEntity(incoming);
 
-          expect(stored, incoming);
+          expect(await stored(), incoming);
           verify(
             () => loggingService.error(
               LogDomain.sync,
@@ -349,12 +297,12 @@ void main() {
           // estimate, and the receive then wrote the peer's version over it:
           // the claim, and the only record that the change was applied, was
           // gone.
-          final gate = Completer<void>();
-          storeChangeSet(
+          await device.repository.upsertEntity(
             changeSet([estimate, title], {'local': 1}),
-            gate: gate,
           );
-          receive(
+          final read = device.holdNextStoredReadOf('cs-sync');
+
+          final received = receiveEntity(
             changeSet(
               [
                 estimate,
@@ -363,16 +311,10 @@ void main() {
               {'local': 1, 'peer': 1},
             ),
           );
-
-          final received = processor.process(
-            envelope: event,
-            journalDb: journalDb,
-          );
           await pumpEventQueue();
-          final claim = mockAgentRepo.runInTransaction(() async {
-            final current =
-                (await mockAgentRepo.getEntity('cs-sync'))! as ChangeSetEntity;
-            await mockAgentRepo.upsertEntity(
+          final claim = device.repository.runInTransaction(() async {
+            final current = (await stored())!;
+            await device.repository.upsertEntity(
               current.copyWith(
                 items: [
                   current.items[0].withStatus(ChangeItemStatus.confirmed),
@@ -386,10 +328,10 @@ void main() {
             );
           });
           await pumpEventQueue();
-          gate.complete();
+          read.complete();
           await Future.wait([received, claim]);
 
-          expect(stored!.items.map((i) => i.status), [
+          expect((await stored())!.items.map((i) => i.status), [
             ChangeItemStatus.confirmed,
             ChangeItemStatus.rejected,
           ]);
@@ -398,8 +340,6 @@ void main() {
     });
 
     group('removals and the one-transaction receive (ADR 0081 addendum)', () {
-      late Map<String, AgentDomainEntity> rows;
-
       AgentDomainEntity reportHead(
         Map<String, int> clock, {
         required DateTime at,
@@ -415,56 +355,9 @@ void main() {
         deletedAt: deletedAt,
       );
 
-      /// The repository as storage with Drift-like serialized transactions.
-      /// `getEntity` hides a tombstone, as the real query does; the read
-      /// with the tombstone can be held at [gate].
-      void store(AgentDomainEntity initial, {Completer<void>? gate}) {
-        rows = {initial.id: initial};
-        var gated = gate != null;
-        var tail = Future<void>.value();
-        mockAgentRepo.transactionDelegate = <T>(action) {
-          if (Zone.current[#agentTx] == true) return action();
-          final run = tail.then(
-            (_) => runZoned(action, zoneValues: {#agentTx: true}),
-          );
-          tail = run.then<void>((_) {}, onError: (_) {});
-          return run;
-        };
-        when(() => mockAgentRepo.getEntity(any())).thenAnswer((
-          invocation,
-        ) async {
-          final row = rows[invocation.positionalArguments.single as String];
-          return row?.deletedAt == null ? row : null;
-        });
-        when(() => mockAgentRepo.getEntityIncludingDeleted(any())).thenAnswer((
-          invocation,
-        ) async {
-          final snapshot = rows[invocation.positionalArguments.single];
-          if (gated) {
-            gated = false;
-            await gate!.future;
-          }
-          return snapshot;
-        });
-        when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
-          invocation,
-        ) async {
-          final entity =
-              invocation.positionalArguments.single as AgentDomainEntity;
-          rows[entity.id] = entity;
-        });
-      }
-
-      void receive(AgentDomainEntity incoming) {
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-      }
+      /// The stored version, a tombstone included.
+      Future<AgentDomainEntity?> stored() =>
+          device.repository.getEntityIncludingDeleted('head-removed');
 
       test(
         'a late copy of the live version does not bring a removed entity '
@@ -478,13 +371,14 @@ void main() {
             at: DateTime(2026, 9, 25, 9),
             deletedAt: DateTime(2026, 9, 25, 10),
           );
-          store(removal);
-          receive(reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)));
+          await device.repository.upsertEntity(removal);
 
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveEntity(
+            reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)),
+          );
 
-          expect(rows['head-removed'], same(removal));
-          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          expect(await stored(), removal);
+          expect(await device.repository.getEntity('head-removed'), isNull);
           verify(
             () => loggingService.log(
               LogDomain.sync,
@@ -496,17 +390,18 @@ void main() {
       );
 
       test('a removal replaces the live version it succeeds', () async {
-        store(reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)));
+        await device.repository.upsertEntity(
+          reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)),
+        );
         final removal = reportHead(
           {'host-A': 1, 'host-B': 1},
           at: DateTime(2026, 9, 25, 9),
           deletedAt: DateTime(2026, 9, 25, 10),
         );
-        receive(removal);
 
-        await processor.process(envelope: event, journalDb: journalDb);
+        await receiveEntity(removal);
 
-        expect(rows['head-removed'], removal);
+        expect(await stored(), removal);
       });
 
       test(
@@ -517,22 +412,17 @@ void main() {
           // and written in one transaction. For every other type a local
           // write could commit between the read and the write, and the
           // receive then wrote the peer's version over it.
-          final gate = Completer<void>();
-          store(
+          await device.repository.upsertEntity(
             reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)),
-            gate: gate,
           );
-          receive(
+          final read = device.holdNextStoredReadOf('head-removed');
+
+          final received = receiveEntity(
             reportHead(
               {'host-B': 1},
               at: DateTime(2026, 9, 25, 10),
               reportId: 'report-peer',
             ),
-          );
-
-          final received = processor.process(
-            envelope: event,
-            journalDb: journalDb,
           );
           await pumpEventQueue();
           final local = reportHead(
@@ -540,14 +430,14 @@ void main() {
             at: DateTime(2026, 9, 25, 11),
             reportId: 'report-local',
           );
-          final write = mockAgentRepo.runInTransaction(
-            () => mockAgentRepo.upsertEntity(local),
+          final write = device.repository.runInTransaction(
+            () => device.repository.upsertEntity(local),
           );
           await pumpEventQueue();
-          gate.complete();
+          read.complete();
           await Future.wait([received, write]);
 
-          expect(rows['head-removed'], local);
+          expect(await stored(), local);
         },
       );
     });
@@ -555,9 +445,6 @@ void main() {
     group('agent-state head (AgentMessageLog.tla, ADR 0076)', () {
       // `b1` came from the device whose clock runs ahead; this device
       // received it, chained `a1` off it and moved its head to `a1`.
-      late Map<String, AgentDomainEntity> entities;
-      late List<AgentLink> links;
-
       AgentStateEntity state({
         required String? head,
         required Map<String, int> clock,
@@ -578,94 +465,30 @@ void main() {
         vectorClock: null,
       );
 
-      AgentStateEntity stored() => entities['state-head']! as AgentStateEntity;
+      Future<AgentStateEntity> stored() async =>
+          (await device.repository.getEntity('state-head'))!
+              as AgentStateEntity;
 
-      /// The repository as storage for one agent's log and state row, with
-      /// Drift-like serialized transactions; [gate] holds the first read of
-      /// the state row until it completes.
-      void storeLog(AgentStateEntity local, {Completer<void>? gate}) {
-        entities = {
-          for (final message in [
-            makeTestMessage(
-              id: 'b1',
-              agentId: 'agent-1',
-              createdAt: DateTime(2026, 9, 1, 12),
-            ),
-            makeTestMessage(
-              id: 'a1',
-              agentId: 'agent-1',
-              createdAt: DateTime(2026, 9, 1, 9),
-              prevMessageId: 'b1',
-            ),
-          ])
-            message.id: message,
-          local.id: local,
-        };
-        links = [edge('a1', 'b1')];
-        var gated = gate != null;
-        var tail = Future<void>.value();
-        mockAgentRepo.transactionDelegate = <T>(action) {
-          if (Zone.current[#agentTx] == true) return action();
-          final run = tail.then(
-            (_) => runZoned(action, zoneValues: {#agentTx: true}),
-          );
-          tail = run.then<void>((_) {}, onError: (_) {});
-          return run;
-        };
-        when(() => mockAgentRepo.getEntity(any())).thenAnswer((
-          invocation,
-        ) async {
-          final id = invocation.positionalArguments.first as String;
-          final snapshot = entities[id];
-          if (gated && id == local.id) {
-            gated = false;
-            await gate!.future;
-          }
-          return snapshot;
-        });
-        when(() => mockAgentRepo.getEntitiesByIds(any())).thenAnswer((
-          invocation,
-        ) async {
-          final ids = invocation.positionalArguments.first as Iterable<String>;
-          return {
-            for (final id in ids)
-              if (entities[id] != null) id: entities[id]!,
-          };
-        });
-        when(
-          () => mockAgentRepo.getLinksToMultiple(
-            any(),
-            type: any(named: 'type'),
-          ),
-        ).thenAnswer((invocation) async {
-          final toIds = (invocation.positionalArguments.first as List<String>)
-              .toSet();
-          final result = <String, List<AgentLink>>{};
-          for (final link in links) {
-            if (toIds.contains(link.toId)) {
-              (result[link.toId] ??= []).add(link);
-            }
-          }
-          return result;
-        });
-        when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
-          invocation,
-        ) async {
-          final entity =
-              invocation.positionalArguments.first as AgentDomainEntity;
-          entities[entity.id] = entity;
-        });
-      }
-
-      void receive(AgentStateEntity incoming) {
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
+      /// Stores the agent's log — `a1` chained off `b1` — and [local], its
+      /// state row.
+      Future<void> storeLog(AgentStateEntity local) async {
+        await device.repository.upsertEntity(
+          makeTestMessage(
+            id: 'b1',
+            agentId: 'agent-1',
+            createdAt: DateTime(2026, 9, 1, 12),
           ),
         );
+        await device.repository.upsertEntity(
+          makeTestMessage(
+            id: 'a1',
+            agentId: 'agent-1',
+            createdAt: DateTime(2026, 9, 1, 9),
+            prevMessageId: 'b1',
+          ),
+        );
+        await device.repository.upsertLink(edge('a1', 'b1'));
+        await device.repository.upsertEntity(local);
       }
 
       test(
@@ -674,7 +497,7 @@ void main() {
         () async {
           // The trace: the fast device's state row still points at `b1` and
           // wins last-writer-wins on its skewed `updatedAt`.
-          storeLog(
+          await storeLog(
             state(head: 'a1', clock: {'local': 1}, at: DateTime(2026, 9, 1, 9)),
           );
           final incoming = state(
@@ -682,14 +505,14 @@ void main() {
             clock: {'peer': 1},
             at: DateTime(2026, 9, 1, 12),
           );
-          receive(incoming);
 
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveEntity(incoming);
 
-          expect(stored().recentHeadMessageId, 'a1');
+          final row = await stored();
+          expect(row.recentHeadMessageId, 'a1');
           // Every other field is still the last writer's.
-          expect(stored().updatedAt, incoming.updatedAt);
-          expect(stored().vectorClock, incoming.vectorClock);
+          expect(row.updatedAt, incoming.updatedAt);
+          expect(row.vectorClock, incoming.vectorClock);
         },
       );
 
@@ -697,21 +520,21 @@ void main() {
         'a concurrent version whose head descends from the local one moves it '
         'forward',
         () async {
-          storeLog(
+          await storeLog(
             state(
               head: 'b1',
               clock: {'local': 1},
               at: DateTime(2026, 9, 1, 12),
             ),
           );
-          receive(
+
+          await receiveEntity(
             state(head: 'a1', clock: {'peer': 1}, at: DateTime(2026, 9, 1, 9)),
           );
 
-          await processor.process(envelope: event, journalDb: journalDb);
-
-          expect(stored().recentHeadMessageId, 'a1');
-          expect(stored().vectorClock, const VectorClock({'local': 1}));
+          final row = await stored();
+          expect(row.recentHeadMessageId, 'a1');
+          expect(row.vectorClock, const VectorClock({'local': 1}));
         },
       );
 
@@ -719,7 +542,7 @@ void main() {
         'an unclocked version from an older build does not move the head '
         'back',
         () async {
-          storeLog(
+          await storeLog(
             state(head: 'a1', clock: {'local': 1}, at: DateTime(2026, 9, 1, 9)),
           );
           final legacy = state(
@@ -727,14 +550,14 @@ void main() {
             clock: const {},
             at: DateTime(2026, 9, 1, 12),
           ).copyWith(vectorClock: null);
-          receive(legacy);
 
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveEntity(legacy);
 
-          expect(stored().recentHeadMessageId, 'a1');
+          final row = await stored();
+          expect(row.recentHeadMessageId, 'a1');
           // The unclocked version still applies otherwise.
-          expect(stored().vectorClock, isNull);
-          expect(stored().updatedAt, legacy.updatedAt);
+          expect(row.vectorClock, isNull);
+          expect(row.updatedAt, legacy.updatedAt);
         },
       );
 
@@ -743,7 +566,7 @@ void main() {
         () async {
           // A concurrent merge kept the winner's clock and took `a1` from the
           // other side; the winner's successor still names `b1`.
-          storeLog(
+          await storeLog(
             state(head: 'a1', clock: {'peer': 1}, at: DateTime(2026, 9, 1, 12)),
           );
           final incoming = state(
@@ -751,12 +574,12 @@ void main() {
             clock: {'peer': 2},
             at: DateTime(2026, 9, 1, 13),
           );
-          receive(incoming);
 
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveEntity(incoming);
 
-          expect(stored().recentHeadMessageId, 'a1');
-          expect(stored().vectorClock, incoming.vectorClock);
+          final row = await stored();
+          expect(row.recentHeadMessageId, 'a1');
+          expect(row.vectorClock, incoming.vectorClock);
         },
       );
 
@@ -767,32 +590,29 @@ void main() {
           // The receive read the row (head `a1`), the executor appended `a2`
           // and moved the head, and the receive then wrote the row it had
           // resolved from its stale read: the head went back to `a1`.
-          final gate = Completer<void>();
-          storeLog(
+          await storeLog(
             state(head: 'a1', clock: {'local': 1}, at: DateTime(2026, 9, 1, 9)),
-            gate: gate,
           );
-          receive(
+          final read = device.holdNextStoredReadOf('state-head');
+
+          final received = receiveEntity(
             state(head: 'b1', clock: {'peer': 1}, at: DateTime(2026, 9, 1, 12)),
           );
-
-          final received = processor.process(
-            envelope: event,
-            journalDb: journalDb,
-          );
           await pumpEventQueue();
-          final append = mockAgentRepo.runInTransaction(() async {
-            final current =
-                (await mockAgentRepo.getEntity('state-head'))!
-                    as AgentStateEntity;
-            entities['a2'] = makeTestMessage(
-              id: 'a2',
-              agentId: 'agent-1',
-              createdAt: DateTime(2026, 9, 1, 10),
-              prevMessageId: current.recentHeadMessageId,
+          final append = device.repository.runInTransaction(() async {
+            final current = await stored();
+            await device.repository.upsertEntity(
+              makeTestMessage(
+                id: 'a2',
+                agentId: 'agent-1',
+                createdAt: DateTime(2026, 9, 1, 10),
+                prevMessageId: current.recentHeadMessageId,
+              ),
             );
-            links.add(edge('a2', current.recentHeadMessageId!));
-            await mockAgentRepo.upsertEntity(
+            await device.repository.upsertLink(
+              edge('a2', current.recentHeadMessageId!),
+            );
+            await device.repository.upsertEntity(
               current.copyWith(
                 recentHeadMessageId: 'a2',
                 vectorClock: VectorClock({
@@ -803,30 +623,16 @@ void main() {
             );
           });
           await pumpEventQueue();
-          gate.complete();
+          read.complete();
           await Future.wait([received, append]);
 
-          expect(stored().recentHeadMessageId, 'a2');
+          expect((await stored()).recentHeadMessageId, 'a2');
         },
       );
     });
 
     group('links and evolution sessions (AgentLinks.tla, '
         'EvolutionSession.tla, ADR 0081)', () {
-      /// Drift-like serialized transactions: a transaction started while
-      /// another runs waits for it.
-      void serializeTransactions() {
-        var tail = Future<void>.value();
-        mockAgentRepo.transactionDelegate = <T>(action) {
-          if (Zone.current[#agentTx] == true) return action();
-          final run = tail.then(
-            (_) => runZoned(action, zoneValues: {#agentTx: true}),
-          );
-          tail = run.then<void>((_) {}, onError: (_) {});
-          return run;
-        };
-      }
-
       AgentLink link({required Map<String, int> clock, bool removed = false}) =>
           AgentLink.parsedItemToTask(
             id: 'l',
@@ -847,8 +653,9 @@ void main() {
         vectorClock: VectorClock(clock),
       );
 
-      void receive(SyncMessage message) =>
-          when(() => event.text).thenReturn(encodeMessage(message));
+      /// The stored link, a tombstone included.
+      Future<AgentLink?> storedLink() =>
+          device.repository.getLinkByIdIncludingDeleted('l');
 
       test(
         'a late copy of a removed link does not bring it back '
@@ -856,22 +663,12 @@ void main() {
         () async {
           // The trace: the removal arrives first, then the link it removed.
           // The tombstone read as no row, so the late copy replaced it.
-          when(
-            () => mockAgentRepo.getLinkById('l'),
-          ).thenAnswer((_) async => null);
-          when(() => mockAgentRepo.getLinkByIdIncludingDeleted('l')).thenAnswer(
-            (_) async => link(clock: {'peer': 2}, removed: true),
-          );
-          receive(
-            SyncMessage.agentLink(
-              agentLink: link(clock: {'peer': 1}),
-              status: SyncEntryStatus.update,
-            ),
-          );
+          final removal = link(clock: {'peer': 2}, removed: true);
+          await device.repository.upsertLink(removal);
 
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveLink(link(clock: {'peer': 1}));
 
-          verifyNever(() => mockAgentRepo.upsertLink(any()));
+          expect(await storedLink(), removal);
         },
       );
 
@@ -879,53 +676,28 @@ void main() {
         'a local link write that commits during the receive is not '
         'overwritten (TLC: AtomicReceive)',
         () async {
-          var stored = link(clock: {'local': 1});
-          final gate = Completer<void>();
-          var gated = true;
-          serializeTransactions();
-          when(() => mockAgentRepo.getLinkByIdIncludingDeleted('l')).thenAnswer(
-            (_) async {
-              final snapshot = stored;
-              if (gated) {
-                gated = false;
-                await gate.future;
-              }
-              return snapshot;
-            },
-          );
-          when(() => mockAgentRepo.upsertLink(any())).thenAnswer((
-            invocation,
-          ) async {
-            stored = invocation.positionalArguments.single as AgentLink;
-          });
-          // A peer's removal of the row this device holds.
-          receive(
-            SyncMessage.agentLink(
-              agentLink: link(clock: {'local': 1, 'peer': 1}, removed: true),
-              status: SyncEntryStatus.update,
-            ),
-          );
+          await device.repository.upsertLink(link(clock: {'local': 1}));
+          final read = device.holdNextStoredReadOf('l');
 
-          final received = processor.process(
-            envelope: event,
-            journalDb: journalDb,
+          // A peer's removal of the row this device holds.
+          final received = receiveLink(
+            link(clock: {'local': 1, 'peer': 1}, removed: true),
           );
           await pumpEventQueue();
           // Meanwhile this device links the item again, over what it holds.
-          final relink = mockAgentRepo.runInTransaction(() async {
-            final current = (await mockAgentRepo.getLinkByIdIncludingDeleted(
-              'l',
-            ))!;
-            await mockAgentRepo.upsertLink(
+          final relink = device.repository.runInTransaction(() async {
+            final current = (await storedLink())!;
+            await device.repository.upsertLink(
               link(clock: {...current.vectorClock!.vclock, 'local': 2}),
             );
           });
           await pumpEventQueue();
-          gate.complete();
+          read.complete();
           await Future.wait([received, relink]);
 
-          expect(stored.deletedAt, isNull);
-          expect(stored.vectorClock!.vclock['local'], 2);
+          final row = (await storedLink())!;
+          expect(row.deletedAt, isNull);
+          expect(row.vectorClock!.vclock['local'], 2);
         },
       );
 
@@ -936,43 +708,21 @@ void main() {
           // The trace: this device reads its active row to apply a peer's
           // sweep, the approval completes the session, and the receive then
           // writes the sweep over the completion.
-          AgentDomainEntity stored = session(EvolutionSessionStatus.active, {
-            'local': 1,
-          });
-          final gate = Completer<void>();
-          var gated = true;
-          serializeTransactions();
-          when(() => mockAgentRepo.getEntity('s')).thenAnswer((_) async {
-            final snapshot = stored;
-            if (gated) {
-              gated = false;
-              await gate.future;
-            }
-            return snapshot;
-          });
-          when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
-            invocation,
-          ) async {
-            stored = invocation.positionalArguments.single as AgentDomainEntity;
-          });
-          receive(
-            SyncMessage.agentEntity(
-              agentEntity: session(EvolutionSessionStatus.abandoned, {
-                'local': 1,
-                'peer': 1,
-              }),
-              status: SyncEntryStatus.update,
-            ),
+          await device.repository.upsertEntity(
+            session(EvolutionSessionStatus.active, {'local': 1}),
           );
+          final read = device.holdNextStoredReadOf('s');
 
-          final received = processor.process(
-            envelope: event,
-            journalDb: journalDb,
+          final received = receiveEntity(
+            session(EvolutionSessionStatus.abandoned, {
+              'local': 1,
+              'peer': 1,
+            }),
           );
           await pumpEventQueue();
-          final approval = mockAgentRepo.runInTransaction(() async {
-            final current = (await mockAgentRepo.getEntity('s'))!;
-            await mockAgentRepo.upsertEntity(
+          final approval = device.repository.runInTransaction(() async {
+            final current = (await device.repository.getEntity('s'))!;
+            await device.repository.upsertEntity(
               session(EvolutionSessionStatus.completed, {
                 ...current.vectorClock!.vclock,
                 'local': 2,
@@ -980,11 +730,13 @@ void main() {
             );
           });
           await pumpEventQueue();
-          gate.complete();
+          read.complete();
           await Future.wait([received, approval]);
 
           expect(
-            (stored as EvolutionSessionEntity).status,
+            ((await device.repository.getEntity('s'))!
+                    as EvolutionSessionEntity)
+                .status,
             EvolutionSessionStatus.completed,
           );
         },
@@ -1007,15 +759,12 @@ void main() {
         vectorClock: null,
       );
 
-      final message = SyncMessage.agentEntity(
-        agentEntity: entity,
-        status: SyncEntryStatus.update,
+      await receiveEntity(entity);
+
+      expect(
+        await device.repository.getEntityIncludingDeleted(entity.id),
+        entity,
       );
-      when(() => event.text).thenReturn(encodeMessage(message));
-
-      await processor.process(envelope: event, journalDb: journalDb);
-
-      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
       verify(
         () => loggingService.log(
           LogDomain.sync,
@@ -1048,18 +797,12 @@ void main() {
           vectorClock: null,
           content: 'The report',
         );
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: report,
-              status: SyncEntryStatus.update,
-            ),
-          ),
+        await receiveEntity(report);
+
+        expect(
+          await device.repository.getEntityIncludingDeleted(report.id),
+          report,
         );
-
-        await processor.process(envelope: event, journalDb: journalDb);
-
-        verify(() => mockAgentRepo.upsertEntity(report)).called(1);
         verify(() => sink.onAgentEntityApplied('report-1')).called(1);
       },
     );
@@ -1098,24 +841,11 @@ void main() {
           config: const AgentConfig(profileId: 'profile-1'),
           updatedAt: DateTime(2024, 3, 16),
         );
-        when(
-          () => mockAgentRepo.getEntity(incoming.id),
-        ).thenAnswer((_) async => local);
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-
-        await processor.process(envelope: event, journalDb: journalDb);
+        await device.repository.upsertEntity(local);
+        await receiveEntity(incoming);
 
         final applied =
-            verify(
-                  () => mockAgentRepo.upsertEntity(captureAny()),
-                ).captured.single
+            (await device.repository.getEntityIncludingDeleted(incoming.id))!
                 as AgentIdentityEntity;
         expect(applied.displayName, 'Renamed by older client');
         expect(applied.config.automaticUpdatesEnabled, isFalse);
@@ -1159,24 +889,11 @@ void main() {
           config: local.config.copyWith(maxWakesPerDay: null),
           updatedAt: DateTime(2024, 3, 16),
         );
-        when(
-          () => mockAgentRepo.getEntity(incoming.id),
-        ).thenAnswer((_) async => local);
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-
-        await processor.process(envelope: event, journalDb: journalDb);
+        await device.repository.upsertEntity(local);
+        await receiveEntity(incoming);
 
         final applied =
-            verify(
-                  () => mockAgentRepo.upsertEntity(captureAny()),
-                ).captured.first
+            (await device.repository.getEntityIncludingDeleted(incoming.id))!
                 as AgentIdentityEntity;
         expect(applied.displayName, 'Renamed by older client');
         expect(applied.config.maxWakesPerDay, 2);
@@ -1220,24 +937,11 @@ void main() {
           config: local.config.copyWith(updateIntervalMinutes: null),
           updatedAt: DateTime(2024, 3, 16),
         );
-        when(
-          () => mockAgentRepo.getEntity(incoming.id),
-        ).thenAnswer((_) async => local);
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-
-        await processor.process(envelope: event, journalDb: journalDb);
+        await device.repository.upsertEntity(local);
+        await receiveEntity(incoming);
 
         final applied =
-            verify(
-                  () => mockAgentRepo.upsertEntity(captureAny()),
-                ).captured.first
+            (await device.repository.getEntityIncludingDeleted(incoming.id))!
                 as AgentIdentityEntity;
         expect(applied.displayName, 'Renamed by older client');
         expect(applied.config.updateIntervalMinutes, 1440);
@@ -1275,23 +979,12 @@ void main() {
           config: const AgentConfig(),
           updatedAt: DateTime(2024, 3, 16),
         );
-        when(
-          () => mockAgentRepo.getEntity(incoming.id),
-        ).thenAnswer((_) async => local);
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
+        await device.repository.upsertEntity(local);
+        await receiveEntity(incoming);
 
-        await processor.process(envelope: event, journalDb: journalDb);
-
-        final applied = verify(
-          () => mockAgentRepo.upsertEntity(captureAny()),
-        ).captured.whereType<AgentIdentityEntity>().single;
+        final applied =
+            (await device.repository.getEntity(incoming.id))!
+                as AgentIdentityEntity;
         expect(applied.displayName, 'Renamed by older client');
         expect(applied.config.automaticUpdatesEnabled, isFalse);
         expect(applied.config.inferenceSetup, local.config.inferenceSetup);
@@ -1333,21 +1026,13 @@ void main() {
         ),
         updatedAt: DateTime(2024, 3, 16),
       );
-      when(
-        () => mockAgentRepo.getEntity(incoming.id),
-      ).thenAnswer((_) async => local);
-      when(() => event.text).thenReturn(
-        encodeMessage(
-          SyncMessage.agentEntity(
-            agentEntity: incoming,
-            status: SyncEntryStatus.update,
-          ),
-        ),
+      await device.repository.upsertEntity(local);
+      await receiveEntity(incoming);
+
+      expect(
+        await device.repository.getEntityIncludingDeleted(incoming.id),
+        incoming,
       );
-
-      await processor.process(envelope: event, journalDb: journalDb);
-
-      verify(() => mockAgentRepo.upsertEntity(incoming)).called(1);
     });
 
     test('processes agent state entity', () async {
@@ -1361,15 +1046,12 @@ void main() {
         wakeCounter: const GCounter({'test-host': 42}),
       );
 
-      final message = SyncMessage.agentEntity(
-        agentEntity: entity,
-        status: SyncEntryStatus.update,
+      await receiveEntity(entity);
+
+      expect(
+        await device.repository.getEntityIncludingDeleted(entity.id),
+        entity,
       );
-      when(() => event.text).thenReturn(encodeMessage(message));
-
-      await processor.process(envelope: event, journalDb: journalDb);
-
-      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
     });
 
     test('repairs a legacy week rollup before applying inbound sync', () async {
@@ -1402,7 +1084,7 @@ void main() {
       await processor.process(envelope: event, journalDb: journalDb);
 
       final applied =
-          verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
+          (await device.repository.getEntityIncludingDeleted(entity.id))!
               as WeekRollupEntity;
       expect(applied, entity);
       expect(
@@ -1444,7 +1126,12 @@ void main() {
       final prepared = await processor.prepare(envelope: event);
 
       expect(prepared, isNull);
-      verifyNever(() => mockAgentRepo.upsertEntity(any()));
+      expect(
+        await device.repository.getEntityIncludingDeleted(
+          'week_rollup:2026-05-17',
+        ),
+        isNull,
+      );
       verify(
         () => loggingService.log(
           LogDomain.sync,
@@ -1486,22 +1173,11 @@ void main() {
         sleepUntil: DateTime(2030, 1, 3),
         scheduledWakeAt: DateTime(2030, 1, 1),
       );
-      when(
-        () => mockAgentRepo.getEntity('state-1'),
-      ).thenAnswer((_) async => local);
-      when(() => event.text).thenReturn(
-        encodeMessage(
-          SyncMessage.agentEntity(
-            agentEntity: incoming,
-            status: SyncEntryStatus.update,
-          ),
-        ),
-      );
-
-      await processor.process(envelope: event, journalDb: journalDb);
+      await device.repository.upsertEntity(local);
+      await receiveEntity(incoming);
 
       final upserted =
-          verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
+          (await device.repository.getEntityIncludingDeleted(incoming.id))!
               as AgentStateEntity;
       // Scheduling stays local…
       expect(upserted.scheduledWakeAt, DateTime(2024, 1, 1));
@@ -1535,22 +1211,11 @@ void main() {
         vectorClock: incomingVc,
         wakeCounter: const GCounter({'host-B': 4}),
       );
-      when(
-        () => mockAgentRepo.getEntity('state-1'),
-      ).thenAnswer((_) async => local);
-      when(() => event.text).thenReturn(
-        encodeMessage(
-          SyncMessage.agentEntity(
-            agentEntity: incoming,
-            status: SyncEntryStatus.update,
-          ),
-        ),
-      );
-
-      await processor.process(envelope: event, journalDb: journalDb);
+      await device.repository.upsertEntity(local);
+      await receiveEntity(incoming);
 
       final upserted =
-          verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
+          (await device.repository.getEntityIncludingDeleted(incoming.id))!
               as AgentStateEntity;
       // Both devices' increments survive the concurrent apply.
       expect(upserted.wakeCounter.byHost, {'host-A': 7, 'host-B': 4});
@@ -1608,22 +1273,11 @@ void main() {
           ),
         ],
       );
-      when(
-        () => mockAgentRepo.getEntity('nudge-1'),
-      ).thenAnswer((_) async => local);
-      when(() => event.text).thenReturn(
-        encodeMessage(
-          SyncMessage.agentEntity(
-            agentEntity: incoming,
-            status: SyncEntryStatus.update,
-          ),
-        ),
-      );
-
-      await processor.process(envelope: event, journalDb: journalDb);
+      await device.repository.upsertEntity(local);
+      await receiveEntity(incoming);
 
       final upserted =
-          verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
+          (await device.repository.getEntityIncludingDeleted(incoming.id))!
               as GoalNudgeEntity;
       // The dismissal-terminal override picked local as the winner, and
       // the accumulator join recovered the other device's exposure and
@@ -1680,22 +1334,11 @@ void main() {
                 totalVisibleMs: const GCounter({'host-B': 200}),
               )
               as GoalNudgeEntity;
-      when(
-        () => mockAgentRepo.getEntity('nudge-2'),
-      ).thenAnswer((_) async => local);
-      when(() => event.text).thenReturn(
-        encodeMessage(
-          SyncMessage.agentEntity(
-            agentEntity: incoming,
-            status: SyncEntryStatus.update,
-          ),
-        ),
-      );
-
-      await processor.process(envelope: event, journalDb: journalDb);
+      await device.repository.upsertEntity(local);
+      await receiveEntity(incoming);
 
       final upserted =
-          verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
+          (await device.repository.getEntityIncludingDeleted(incoming.id))!
               as GoalNudgeEntity;
       expect(upserted.status, NudgeStatus.retired);
       expect(
@@ -1745,24 +1388,11 @@ void main() {
           vectorClock: incomingVc,
           visible: const GCounter({'host-B': 200}),
         );
-        when(
-          () => mockAgentRepo.getEntity('nudge-lww'),
-        ).thenAnswer((_) async => local);
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-
-        await processor.process(envelope: event, journalDb: journalDb);
+        await device.repository.upsertEntity(local);
+        await receiveEntity(incoming);
 
         final upserted =
-            verify(
-                  () => mockAgentRepo.upsertEntity(captureAny()),
-                ).captured.single
+            (await device.repository.getEntityIncludingDeleted(incoming.id))!
                 as GoalNudgeEntity;
         expect(upserted.brief.headline, 'local copy');
         expect(
@@ -1809,24 +1439,11 @@ void main() {
           vc: incomingVc,
           visibleMs: const GCounter({'host-B': 3000}),
         );
-        when(
-          () => mockAgentRepo.getEntity('rnudge-1'),
-        ).thenAnswer((_) async => local);
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-
-        await processor.process(envelope: event, journalDb: journalDb);
+        await device.repository.upsertEntity(local);
+        await receiveEntity(incoming);
 
         final upserted =
-            verify(
-                  () => mockAgentRepo.upsertEntity(captureAny()),
-                ).captured.single
+            (await device.repository.getEntityIncludingDeleted(incoming.id))!
                 as RelationshipNudgeEntity;
         // The shared lifecycle override kept the dismissal; the shared
         // accumulator join still recovered the other device's exposure.
@@ -1869,24 +1486,11 @@ void main() {
           vectorClock: sharedVc,
           totalVisibleMs: const GCounter({'host-B': 3000}),
         );
-        when(
-          () => mockAgentRepo.getEntity('rnudge-stub-1'),
-        ).thenAnswer((_) async => localStub);
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-
-        await processor.process(envelope: event, journalDb: journalDb);
+        await device.repository.upsertEntity(localStub);
+        await receiveEntity(incoming);
 
         final upserted =
-            verify(
-                  () => mockAgentRepo.upsertEntity(captureAny()),
-                ).captured.single
+            (await device.repository.getEntityIncludingDeleted(incoming.id))!
                 as RelationshipNudgeEntity;
         expect(upserted.status, NudgeStatus.dismissed);
         expect(upserted.totalVisibleMs.byHost, {'host-B': 3000});
@@ -1923,24 +1527,11 @@ void main() {
           updatedAt: DateTime(2026, 8, 2),
           vectorClock: incomingVc,
         );
-        when(
-          () => mockAgentRepo.getEntity('rnudge-stub-2'),
-        ).thenAnswer((_) async => localStub);
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-
-        await processor.process(envelope: event, journalDb: journalDb);
+        await device.repository.upsertEntity(localStub);
+        await receiveEntity(incoming);
 
         final upserted =
-            verify(
-                  () => mockAgentRepo.upsertEntity(captureAny()),
-                ).captured.single
+            (await device.repository.getEntityIncludingDeleted(incoming.id))!
                 as RelationshipNudgeEntity;
         expect(upserted.status, NudgeStatus.active);
       },
@@ -1973,21 +1564,13 @@ void main() {
           updatedAt: DateTime(2026, 8, 2),
           vectorClock: incomingVc,
         );
-        when(
-          () => mockAgentRepo.getEntity('rnudge-stub-3'),
-        ).thenAnswer((_) async => localStub);
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
+        await device.repository.upsertEntity(localStub);
+        await receiveEntity(incoming);
+
+        expect(
+          await device.repository.getEntityIncludingDeleted(incoming.id),
+          localStub,
         );
-
-        await processor.process(envelope: event, journalDb: journalDb);
-
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
       },
     );
 
@@ -2021,24 +1604,11 @@ void main() {
           updatedAt: DateTime(2026, 8, 6),
           vectorClock: incomingVc,
         );
-        when(
-          () => mockAgentRepo.getEntity('rnudge-stub-4'),
-        ).thenAnswer((_) async => localStub);
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-
-        await processor.process(envelope: event, journalDb: journalDb);
+        await device.repository.upsertEntity(localStub);
+        await receiveEntity(incoming);
 
         final upserted =
-            verify(
-                  () => mockAgentRepo.upsertEntity(captureAny()),
-                ).captured.single
+            (await device.repository.getEntityIncludingDeleted(incoming.id))!
                 as RelationshipNudgeEntity;
         expect(upserted.status, NudgeStatus.active);
       },
@@ -2068,9 +1638,7 @@ void main() {
         vectorClock: incomingVc,
         wakeCounter: const GCounter({'host-A': 3}),
       );
-      when(
-        () => mockAgentRepo.getEntity('state-1'),
-      ).thenAnswer((_) async => local);
+      await device.repository.upsertEntity(local);
       when(() => event.text).thenReturn(
         encodeMessage(
           SyncMessage.agentEntity(
@@ -2085,7 +1653,10 @@ void main() {
         () => processor.process(envelope: event, journalDb: journalDb),
       );
 
-      verifyNever(() => mockAgentRepo.upsertEntity(any()));
+      expect(
+        await device.repository.getEntityIncludingDeleted(incoming.id),
+        local,
+      );
     });
 
     test(
@@ -2124,137 +1695,118 @@ void main() {
           vectorClock: incomingVc,
           confirmedAt: DateTime(2024, 3, 17),
         );
-        when(
-          () => mockAgentRepo.getEntity('k1'),
-        ).thenAnswer((_) async => local);
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-
-        await processor.process(envelope: event, journalDb: journalDb);
+        await device.repository.upsertEntity(local);
+        await receiveEntity(incoming);
 
         // The retraction wins despite the later edit timestamp, so the
         // incoming confirm is neither applied nor written.
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        expect(
+          await device.repository.getEntityIncludingDeleted(incoming.id),
+          local,
+        );
       },
     );
 
-    test(
-      'reads each agent entity of an outbox bundle afresh, tombstone '
-      'included, inside its own receive transaction',
-      () async {
-        const localVc = VectorClock({'host-A': 2});
-        const incomingVc = VectorClock({'host-A': 1});
-        AgentDomainEntity head(String id, VectorClock clock, int day) =>
-            AgentDomainEntity.agentReportHead(
-              id: id,
-              agentId: 'agent-$id',
-              scope: 'current',
-              reportId: 'report-1',
-              updatedAt: DateTime(2024, 3, day),
-              vectorClock: clock,
-            );
-        final stored = {
-          'state-bulk-1': head('state-bulk-1', localVc, 16),
-          'state-bulk-2': head('state-bulk-2', localVc, 16),
-        };
-        mockAgentRepo.transactionDelegate = <T>(action) =>
-            runZoned(action, zoneValues: {#agentTx: true});
-        final readsInTransaction = <String, bool>{};
-        when(() => mockAgentRepo.getEntityIncludingDeleted(any())).thenAnswer((
-          invocation,
-        ) async {
-          final id = invocation.positionalArguments.single as String;
-          readsInTransaction[id] = Zone.current[#agentTx] == true;
-          return stored[id];
-        });
+    group('agent entities in an outbox bundle', () {
+      AgentDomainEntity head(
+        String id,
+        Map<String, int> clock,
+        int day, {
+        bool removed = false,
+      }) => AgentDomainEntity.agentReportHead(
+        id: id,
+        agentId: 'agent-$id',
+        scope: 'current',
+        reportId: 'report-$day',
+        updatedAt: DateTime(2024, 3, day),
+        vectorClock: VectorClock(clock),
+        deletedAt: removed ? DateTime(2024, 3, day) : null,
+      );
 
-        when(() => event.text).thenReturn(
-          encodeMessage(
+      Future<void> receiveBundle(List<AgentDomainEntity> children) =>
+          device.receiveEnvelope(
             SyncMessage.outboxBundle(
               children: [
-                for (final id in stored.keys)
+                for (final child in children)
                   SyncMessage.agentEntity(
-                    agentEntity: head(id, incomingVc, 15),
+                    agentEntity: child,
                     status: SyncEntryStatus.update,
                   ),
               ],
             ),
-          ),
+            envelope: event,
+            journalDb: journalDb,
+          );
+
+      test('each child resolves against the stored row, a tombstone '
+          'included', () async {
+        final live = head('head-live', {'host-A': 2}, 16);
+        final removal = head('head-removed', {'host-A': 2}, 16, removed: true);
+        await device.repository.upsertEntity(live);
+        await device.repository.upsertEntity(removal);
+
+        // Late copies of versions both stored rows succeed.
+        await receiveBundle([
+          head('head-live', {'host-A': 1}, 15),
+          head('head-removed', {'host-A': 1}, 15),
+        ]);
+
+        expect(
+          await device.repository.getEntityIncludingDeleted('head-live'),
+          live,
         );
-
-        await processor.process(envelope: event, journalDb: journalDb);
-
-        expect(readsInTransaction, {
-          'state-bulk-1': true,
-          'state-bulk-2': true,
-        });
-        verifyNever(() => mockAgentRepo.getEntitiesByIds(any()));
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
-      },
-    );
-
-    test(
-      'a later child of a bundle resolves against the row an earlier child '
-      'wrote',
-      () async {
-        AgentDomainEntity head(int counter, int day) =>
-            AgentDomainEntity.agentReportHead(
-              id: 'state-cache-refresh',
-              agentId: 'agent-cache-refresh',
-              scope: 'current',
-              reportId: 'report-1',
-              updatedAt: DateTime(2024, 3, day),
-              vectorClock: VectorClock({'host-A': counter}),
-            );
-        final incomingNewer = head(3, 17);
-        final incomingOlder = head(2, 16);
-        final rows = <String, AgentDomainEntity>{
-          'state-cache-refresh': head(1, 15),
-        };
-        when(
-          () => mockAgentRepo.getEntityIncludingDeleted(any()),
-        ).thenAnswer(
-          (invocation) async =>
-              rows[invocation.positionalArguments.single as String],
+        expect(
+          await device.repository.getEntityIncludingDeleted('head-removed'),
+          removal,
         );
-        when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
-          invocation,
-        ) async {
-          final entity =
-              invocation.positionalArguments.single as AgentDomainEntity;
-          rows[entity.id] = entity;
-        });
+      });
 
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.outboxBundle(
-              children: [
-                SyncMessage.agentEntity(
-                  agentEntity: incomingNewer,
-                  status: SyncEntryStatus.update,
-                ),
-                SyncMessage.agentEntity(
-                  agentEntity: incomingOlder,
-                  status: SyncEntryStatus.update,
-                ),
-              ],
-            ),
-          ),
+      test(
+        'a local write that commits during the receive of a child is '
+        'not overwritten: each child is read inside its own transaction',
+        () async {
+          await device.repository.upsertEntity(
+            head('head-raced', {'host-A': 1}, 15),
+          );
+          final read = device.holdNextStoredReadOf('head-raced');
+
+          final received = receiveBundle([
+            head('head-raced', {'host-B': 1}, 16),
+          ]);
+          await pumpEventQueue();
+          final local = head('head-raced', {'host-A': 2}, 17);
+          final write = device.repository.runInTransaction(
+            () => device.repository.upsertEntity(local),
+          );
+          await pumpEventQueue();
+          read.complete();
+          await Future.wait([received, write]);
+
+          expect(
+            await device.repository.getEntityIncludingDeleted('head-raced'),
+            local,
+          );
+        },
+      );
+
+      test('a later child resolves against the row an earlier child '
+          'wrote', () async {
+        await device.repository.upsertEntity(
+          head('head-twice', {'host-A': 1}, 15),
         );
+        final newer = head('head-twice', {'host-A': 3}, 17);
 
-        await processor.process(envelope: event, journalDb: journalDb);
+        await receiveBundle([
+          newer,
+          head('head-twice', {'host-A': 2}, 16),
+        ]);
 
-        expect(rows['state-cache-refresh'], incomingNewer);
-        verify(() => mockAgentRepo.upsertEntity(incomingNewer)).called(1);
-        verifyNever(() => mockAgentRepo.upsertEntity(incomingOlder));
-      },
-    );
+        expect(
+          await device.repository.getEntityIncludingDeleted('head-twice'),
+          newer,
+        );
+      });
+    });
 
     test('processes agent message entity', () async {
       final entity = AgentDomainEntity.agentMessage(
@@ -2268,15 +1820,12 @@ void main() {
         tokensApprox: 100,
       );
 
-      final message = SyncMessage.agentEntity(
-        agentEntity: entity,
-        status: SyncEntryStatus.update,
+      await receiveEntity(entity);
+
+      expect(
+        await device.repository.getEntityIncludingDeleted(entity.id),
+        entity,
       );
-      when(() => event.text).thenReturn(encodeMessage(message));
-
-      await processor.process(envelope: event, journalDb: journalDb);
-
-      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
     });
 
     test('processes agent message payload entity', () async {
@@ -2288,15 +1837,12 @@ void main() {
         content: const {'text': 'hello world'},
       );
 
-      final message = SyncMessage.agentEntity(
-        agentEntity: entity,
-        status: SyncEntryStatus.update,
+      await receiveEntity(entity);
+
+      expect(
+        await device.repository.getEntityIncludingDeleted(entity.id),
+        entity,
       );
-      when(() => event.text).thenReturn(encodeMessage(message));
-
-      await processor.process(envelope: event, journalDb: journalDb);
-
-      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
     });
 
     test('processes agent report entity', () async {
@@ -2331,14 +1877,16 @@ void main() {
         vectorClock: null,
         deletedAt: DateTime(2024, 3, 16),
       );
-      when(
-        () => mockAgentRepo.getLinksFrom('agent-1', type: 'agent_task'),
-      ).thenAnswer((_) async => [taskLink, deletedTaskLink]);
+      await device.repository.upsertLink(taskLink);
+      await device.repository.upsertLink(deletedTaskLink);
       when(() => event.text).thenReturn(encodeMessage(message));
 
       await processor.process(envelope: event, journalDb: journalDb);
 
-      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      expect(
+        await device.repository.getEntityIncludingDeleted(entity.id),
+        entity,
+      );
       verify(
         () => updateNotifications.notify(
           {'agent-1', 'task-1', 'AGENT_CHANGED'},
@@ -2366,16 +1914,7 @@ void main() {
           content: 'Pip restocked the krill depot.',
           provenance: {aiAttributionProvenanceKey: attribution.toJson()},
         );
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: entity,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-
-        await processor.process(envelope: event, journalDb: journalDb);
+        await receiveEntity(entity);
 
         final projected =
             verify(
@@ -2433,9 +1972,7 @@ void main() {
           config: const AgentConfig(),
           counter: 2,
         );
-        when(
-          () => mockAgentRepo.getEntityIncludingDeleted('agent-known'),
-        ).thenAnswer((_) async => local);
+        await device.repository.upsertEntity(local);
         when(() => event.text).thenReturn(
           encodeMessage(
             SyncMessage.outboxBundle(
@@ -2456,10 +1993,8 @@ void main() {
         await processor.process(envelope: event, journalDb: journalDb);
 
         final applied = {
-          for (final entity in verify(
-            () => mockAgentRepo.upsertEntity(captureAny()),
-          ).captured.whereType<AgentIdentityEntity>())
-            entity.id: entity,
+          for (final id in ['agent-known', 'agent-new'])
+            id: (await device.repository.getEntity(id))! as AgentIdentityEntity,
         };
         expect(applied['agent-known']!.config, localConfig);
         expect(applied['agent-new']!.config, const AgentConfig());
@@ -2488,14 +2023,15 @@ void main() {
         updatedAt: DateTime(2024, 3, 15),
         vectorClock: null,
       );
-      when(
-        () => mockAgentRepo.getLinksFrom('agent-1', type: 'agent_task'),
-      ).thenAnswer((_) async => [taskLink]);
+      await device.repository.upsertLink(taskLink);
       when(() => event.text).thenReturn(encodeMessage(message));
 
       await processor.process(envelope: event, journalDb: journalDb);
 
-      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      expect(
+        await device.repository.getEntityIncludingDeleted(entity.id),
+        entity,
+      );
       verify(
         () => updateNotifications.notify(
           {'agent-1', 'task-1', 'AGENT_CHANGED'},
@@ -2520,15 +2056,12 @@ void main() {
           outputTokens: 50,
         );
 
-        final message = SyncMessage.agentEntity(
-          agentEntity: entity,
-          status: SyncEntryStatus.update,
+        await receiveEntity(entity);
+
+        expect(
+          await device.repository.getEntityIncludingDeleted(entity.id),
+          entity,
         );
-        when(() => event.text).thenReturn(encodeMessage(message));
-
-        await processor.process(envelope: event, journalDb: journalDb);
-
-        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
         verify(
           () => updateNotifications.notify(
             {'agent-1', 'tpl-1', 'AGENT_CHANGED'},
@@ -2550,15 +2083,12 @@ void main() {
         inputTokens: 200,
       );
 
-      final message = SyncMessage.agentEntity(
-        agentEntity: entity,
-        status: SyncEntryStatus.update,
+      await receiveEntity(entity);
+
+      expect(
+        await device.repository.getEntityIncludingDeleted(entity.id),
+        entity,
       );
-      when(() => event.text).thenReturn(encodeMessage(message));
-
-      await processor.process(envelope: event, journalDb: journalDb);
-
-      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
       verify(
         () => updateNotifications.notify(
           {'agent-1', 'AGENT_CHANGED'},
@@ -2577,15 +2107,12 @@ void main() {
         vectorClock: null,
       );
 
-      final message = SyncMessage.agentLink(
-        agentLink: link,
-        status: SyncEntryStatus.update,
+      await receiveLink(link);
+
+      expect(
+        await device.repository.getLinkByIdIncludingDeleted(link.id),
+        link,
       );
-      when(() => event.text).thenReturn(encodeMessage(message));
-
-      await processor.process(envelope: event, journalDb: journalDb);
-
-      verify(() => mockAgentRepo.upsertLink(link)).called(1);
       verify(
         () => loggingService.log(
           LogDomain.sync,
@@ -2608,197 +2135,82 @@ void main() {
       const vcWinsTie = VectorClock({'host-A': 2, 'host-B': 1});
       const vcLosesTie = VectorClock({'host-A': 1, 'host-B': 2});
 
-      AgentDomainEntity stateWith({
-        required VectorClock vectorClock,
-        required DateTime updatedAt,
-      }) => AgentDomainEntity.agentState(
-        id: 'state-cc',
-        agentId: 'agent-1',
-        revision: 1,
-        slots: const AgentSlots(),
-        updatedAt: updatedAt,
-        vectorClock: vectorClock,
-      );
+      AgentDomainEntity stateWith(VectorClock clock, int day) =>
+          AgentDomainEntity.agentState(
+            id: 'state-cc',
+            agentId: 'agent-1',
+            revision: 1,
+            slots: const AgentSlots(),
+            updatedAt: DateTime(2024, 3, day),
+            vectorClock: clock,
+          );
 
-      AgentLink linkWith({
-        required VectorClock vectorClock,
-        required DateTime updatedAt,
-      }) => AgentLink.basic(
+      AgentLink linkWith(VectorClock clock, int day) => AgentLink.basic(
         id: 'link-cc',
         fromId: 'agent-1',
         toId: 'state-1',
         createdAt: DateTime(2024, 3),
-        updatedAt: updatedAt,
-        vectorClock: vectorClock,
+        updatedAt: DateTime(2024, 3, day),
+        vectorClock: clock,
       );
 
-      Future<void> processEntity(AgentDomainEntity incoming) async {
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentEntity(
-              agentEntity: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-        await processor.process(envelope: event, journalDb: journalDb);
-      }
-
-      Future<void> processLink(AgentLink incoming) async {
-        when(() => event.text).thenReturn(
-          encodeMessage(
-            SyncMessage.agentLink(
-              agentLink: incoming,
-              status: SyncEntryStatus.update,
-            ),
-          ),
-        );
-        await processor.process(envelope: event, journalDb: journalDb);
-      }
-
-      test('applies incoming entity when its updatedAt is newer', () async {
-        when(() => mockAgentRepo.getEntity('state-cc')).thenAnswer(
-          (_) async => stateWith(
-            vectorClock: vcWinsTie,
-            updatedAt: DateTime(2024, 3, 15),
-          ),
-        );
-        final incoming = stateWith(
-          vectorClock: vcLosesTie,
-          updatedAt: DateTime(2024, 3, 16),
-        );
-
-        await processEntity(incoming);
-
-        // LWW: newer updatedAt wins even though the local clock is canonically
-        // greater.
-        verify(() => mockAgentRepo.upsertEntity(incoming)).called(1);
-      });
-
-      test('keeps local entity when its updatedAt is newer', () async {
-        when(() => mockAgentRepo.getEntity('state-cc')).thenAnswer(
-          (_) async => stateWith(
-            vectorClock: vcLosesTie,
-            updatedAt: DateTime(2024, 3, 16),
-          ),
-        );
-
-        await processEntity(
-          stateWith(vectorClock: vcWinsTie, updatedAt: DateTime(2024, 3, 15)),
-        );
-
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
-      });
-
-      // The next two feed the SAME concurrent pair from both device
+      // The last two rows feed the SAME concurrent pair from both device
       // perspectives on an equal timestamp: the canonically-greater version
       // wins whether it is the incoming payload or the already-stored row —
       // i.e. both devices converge on the same winner.
-      test('equal updatedAt: a greater incoming clock is applied', () async {
-        when(() => mockAgentRepo.getEntity('state-cc')).thenAnswer(
-          (_) async => stateWith(
-            vectorClock: vcLosesTie,
-            updatedAt: DateTime(2024, 3, 15),
-          ),
-        );
-        final incoming = stateWith(
-          vectorClock: vcWinsTie,
-          updatedAt: DateTime(2024, 3, 15),
-        );
+      for (final (name, local, incoming, incomingWins) in [
+        (
+          'a newer incoming updatedAt is applied, though the local clock is '
+              'canonically greater',
+          (vcWinsTie, 15),
+          (vcLosesTie, 16),
+          true,
+        ),
+        (
+          'a newer local updatedAt is kept',
+          (vcLosesTie, 16),
+          (vcWinsTie, 15),
+          false,
+        ),
+        (
+          'equal updatedAt: a greater incoming clock is applied',
+          (vcLosesTie, 15),
+          (vcWinsTie, 15),
+          true,
+        ),
+        (
+          'equal updatedAt: a greater local clock is kept',
+          (vcWinsTie, 15),
+          (vcLosesTie, 15),
+          false,
+        ),
+      ]) {
+        test('entity — $name', () async {
+          final stored = stateWith(local.$1, local.$2);
+          final received = stateWith(incoming.$1, incoming.$2);
+          await device.repository.upsertEntity(stored);
 
-        await processEntity(incoming);
+          await receiveEntity(received);
 
-        verify(() => mockAgentRepo.upsertEntity(incoming)).called(1);
-      });
+          expect(
+            await device.repository.getEntity('state-cc'),
+            incomingWins ? received : stored,
+          );
+        });
 
-      test('equal updatedAt: a greater local clock is kept', () async {
-        when(() => mockAgentRepo.getEntity('state-cc')).thenAnswer(
-          (_) async => stateWith(
-            vectorClock: vcWinsTie,
-            updatedAt: DateTime(2024, 3, 15),
-          ),
-        );
+        test('link — $name', () async {
+          final stored = linkWith(local.$1, local.$2);
+          final received = linkWith(incoming.$1, incoming.$2);
+          await device.repository.upsertLink(stored);
 
-        await processEntity(
-          stateWith(vectorClock: vcLosesTie, updatedAt: DateTime(2024, 3, 15)),
-        );
+          await receiveLink(received);
 
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
-      });
-
-      test('applies incoming link when its updatedAt is newer', () async {
-        when(
-          () => mockAgentRepo.getLinkByIdIncludingDeleted('link-cc'),
-        ).thenAnswer(
-          (_) async => linkWith(
-            vectorClock: vcWinsTie,
-            updatedAt: DateTime(2024, 3, 15),
-          ),
-        );
-        final incoming = linkWith(
-          vectorClock: vcLosesTie,
-          updatedAt: DateTime(2024, 3, 16),
-        );
-
-        await processLink(incoming);
-
-        verify(() => mockAgentRepo.upsertLink(incoming)).called(1);
-      });
-
-      test('keeps local link when its updatedAt is newer', () async {
-        when(
-          () => mockAgentRepo.getLinkByIdIncludingDeleted('link-cc'),
-        ).thenAnswer(
-          (_) async => linkWith(
-            vectorClock: vcLosesTie,
-            updatedAt: DateTime(2024, 3, 16),
-          ),
-        );
-
-        await processLink(
-          linkWith(vectorClock: vcWinsTie, updatedAt: DateTime(2024, 3, 15)),
-        );
-
-        verifyNever(() => mockAgentRepo.upsertLink(any()));
-      });
-
-      // Equal-timestamp link cases — exercise the canonical vector-clock
-      // tiebreak on the link path, mirroring the entity cases above.
-      test('equal updatedAt: a greater incoming link clock wins', () async {
-        when(
-          () => mockAgentRepo.getLinkByIdIncludingDeleted('link-cc'),
-        ).thenAnswer(
-          (_) async => linkWith(
-            vectorClock: vcLosesTie,
-            updatedAt: DateTime(2024, 3, 15),
-          ),
-        );
-        final incoming = linkWith(
-          vectorClock: vcWinsTie,
-          updatedAt: DateTime(2024, 3, 15),
-        );
-
-        await processLink(incoming);
-
-        verify(() => mockAgentRepo.upsertLink(incoming)).called(1);
-      });
-
-      test('equal updatedAt: a greater local link clock is kept', () async {
-        when(
-          () => mockAgentRepo.getLinkByIdIncludingDeleted('link-cc'),
-        ).thenAnswer(
-          (_) async => linkWith(
-            vectorClock: vcWinsTie,
-            updatedAt: DateTime(2024, 3, 15),
-          ),
-        );
-
-        await processLink(
-          linkWith(vectorClock: vcLosesTie, updatedAt: DateTime(2024, 3, 15)),
-        );
-
-        verifyNever(() => mockAgentRepo.upsertLink(any()));
-      });
+          expect(
+            await device.repository.getLinkByIdIncludingDeleted('link-cc'),
+            incomingWins ? received : stored,
+          );
+        });
+      }
     });
 
     test(
@@ -2850,8 +2262,14 @@ void main() {
         // sender already recorded each child under per-entity /
         // per-link sequence-log entries, so backfill picks them up if
         // they are missing locally.
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
-        verifyNever(() => mockAgentRepo.upsertLink(any()));
+        expect(
+          await device.repository.getEntityIncludingDeleted(entity.id),
+          isNull,
+        );
+        expect(
+          await device.repository.getLinkByIdIncludingDeleted(link.id),
+          isNull,
+        );
         verifyNever(
           () => updateNotifications.notify(
             any<Set<String>>(),
@@ -2908,24 +2326,12 @@ void main() {
         ];
 
         for (final link in links) {
-          reset(mockAgentRepo);
-          when(() => mockAgentRepo.upsertLink(any())).thenAnswer((_) async {});
-          when(
-            () => mockAgentRepo.deletedAgentIdsAmong(any()),
-          ).thenAnswer((_) async => const <String>{});
-          when(
-            () => mockAgentRepo.getLinkByIdIncludingDeleted(any()),
-          ).thenAnswer((_) async => null);
+          await receiveLink(link);
 
-          final message = SyncMessage.agentLink(
-            agentLink: link,
-            status: SyncEntryStatus.update,
+          expect(
+            await device.repository.getLinkByIdIncludingDeleted(link.id),
+            link,
           );
-          when(() => event.text).thenReturn(encodeMessage(message));
-
-          await processor.process(envelope: event, journalDb: journalDb);
-
-          verify(() => mockAgentRepo.upsertLink(link)).called(1);
         }
       },
     );
@@ -2966,7 +2372,10 @@ void main() {
         throwsA(isA<StateError>()),
       );
 
-      verifyNever(() => mockAgentRepo.upsertEntity(any()));
+      expect(
+        await device.repository.getEntityIncludingDeleted(entity.id),
+        isNull,
+      );
     });
 
     test('fails the apply of an agent link, rather than dropping it, '
@@ -2993,13 +2402,23 @@ void main() {
         throwsA(isA<StateError>()),
       );
 
-      verifyNever(() => mockAgentRepo.upsertLink(any()));
+      expect(
+        await device.repository.getLinkByIdIncludingDeleted(link.id),
+        isNull,
+      );
     });
 
     test('propagates repository error on agent entity upsert', () async {
+      // A store that fails is injected at the storage boundary.
+      final failing = MockAgentRepository();
       when(
-        () => mockAgentRepo.upsertEntity(any()),
+        () => failing.deletedAgentIdsAmong(any()),
+      ).thenAnswer((_) async => const <String>{});
+      when(() => failing.getEntity(any())).thenAnswer((_) async => null);
+      when(
+        () => failing.upsertEntity(any()),
       ).thenAnswer((_) async => throw Exception('db error'));
+      processor.agentRepository = failing;
 
       final entity = AgentDomainEntity.agent(
         id: 'agent-1',
@@ -3039,9 +2458,18 @@ void main() {
     });
 
     test('propagates repository error on agent link upsert', () async {
+      // A store that fails is injected at the storage boundary.
+      final failing = MockAgentRepository();
       when(
-        () => mockAgentRepo.upsertLink(any()),
+        () => failing.deletedAgentIdsAmong(any()),
+      ).thenAnswer((_) async => const <String>{});
+      when(
+        () => failing.getLinkByIdIncludingDeleted(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => failing.upsertLink(any()),
       ).thenAnswer((_) async => throw Exception('db error'));
+      processor.agentRepository = failing;
 
       final link = AgentLink.basic(
         id: 'link-1',
@@ -3102,21 +2530,16 @@ void main() {
             updatedAt: DateTime(2024, 3, 17),
             vectorClock: const VectorClock({'host-A': -1}),
           );
-          when(
-            () => mockAgentRepo.getEntity('state-invalid-vc'),
-          ).thenAnswer((_) async => local);
+          await device.repository.upsertEntity(local);
 
-          final message = SyncMessage.agentEntity(
-            agentEntity: incoming,
-            status: SyncEntryStatus.update,
-          );
-          when(() => event.text).thenReturn(encodeMessage(message));
-
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveEntity(incoming);
 
           // The catch block in _localAgentPayloadDominates logs and returns
           // false, so the entity is upserted anyway.
-          verify(() => mockAgentRepo.upsertEntity(incoming)).called(1);
+          expect(
+            await device.repository.getEntityIncludingDeleted(incoming.id),
+            incoming,
+          );
           verify(
             () => loggingService.error(
               LogDomain.sync,
@@ -3151,21 +2574,16 @@ void main() {
             updatedAt: DateTime(2024, 3, 17),
             vectorClock: const VectorClock({'host-A': -1}),
           );
-          when(
-            () => mockAgentRepo.getLinkByIdIncludingDeleted('link-invalid-vc'),
-          ).thenAnswer((_) async => local);
+          await device.repository.upsertLink(local);
 
-          final message = SyncMessage.agentLink(
-            agentLink: incoming,
-            status: SyncEntryStatus.update,
-          );
-          when(() => event.text).thenReturn(encodeMessage(message));
-
-          await processor.process(envelope: event, journalDb: journalDb);
+          await receiveLink(incoming);
 
           // Dominance check failed (VclockException caught), falls through to
           // upsert.
-          verify(() => mockAgentRepo.upsertLink(incoming)).called(1);
+          expect(
+            await device.repository.getLinkByIdIncludingDeleted(incoming.id),
+            incoming,
+          );
           verify(
             () => loggingService.error(
               LogDomain.sync,
@@ -3183,27 +2601,9 @@ void main() {
 
     group('agent entity sequence log recording', () {
       late MockSyncSequenceLogService mockSeqService;
-      late MockAgentRepository mockAgentRepoSeq;
 
       setUp(() {
         mockSeqService = MockSyncSequenceLogService();
-        mockAgentRepoSeq = MockAgentRepository();
-        when(
-          () => mockAgentRepoSeq.deletedAgentIdsAmong(any()),
-        ).thenAnswer((_) async => const <String>{});
-        when(
-          () => mockAgentRepoSeq.upsertEntity(any()),
-        ).thenAnswer((_) async {});
-        when(() => mockAgentRepoSeq.upsertLink(any())).thenAnswer((_) async {});
-        when(
-          () => mockAgentRepoSeq.getEntity(any()),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepoSeq.getEntitiesByIds(any()),
-        ).thenAnswer((_) async => const <String, AgentDomainEntity>{});
-        when(
-          () => mockAgentRepoSeq.getLinkByIdIncludingDeleted(any()),
-        ).thenAnswer((_) async => null);
       });
 
       test(
@@ -3228,9 +2628,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: incomingVc,
           );
-          when(
-            () => mockAgentRepoSeq.getEntity('state-dominates'),
-          ).thenAnswer((_) async => local);
+          await device.repository.upsertEntity(local);
           when(
             () => mockSeqService.recordReceivedEntry(
               entryId: any(named: 'entryId'),
@@ -3250,7 +2648,7 @@ void main() {
             settingsDb: settingsDb,
             journalEntityLoader: journalEntityLoader,
             sequenceLogService: mockSeqService,
-          )..agentRepository = mockAgentRepoSeq;
+          )..agentRepository = device.repository;
           final message = SyncMessage.agentEntity(
             agentEntity: incoming,
             status: SyncEntryStatus.update,
@@ -3258,9 +2656,10 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
+          final before = await device.storedRows();
           await proc.process(envelope: event, journalDb: journalDb);
 
-          verifyNever(() => mockAgentRepoSeq.upsertEntity(any()));
+          expect(await device.storedRows(), before);
           verify(
             () => mockSeqService.recordReceivedEntry(
               entryId: 'state-dominates',
@@ -3299,10 +2698,8 @@ void main() {
                 vectorClock: clock,
                 deletedAt: deletedAt,
               );
-          when(
-            () => mockAgentRepoSeq.getEntityIncludingDeleted('head-removed'),
-          ).thenAnswer(
-            (_) async => head(removalVc, deletedAt: DateTime(2024, 3, 16)),
+          await device.repository.upsertEntity(
+            head(removalVc, deletedAt: DateTime(2024, 3, 16)),
           );
           when(
             () => mockSeqService.recordReceivedEntry(
@@ -3327,7 +2724,7 @@ void main() {
             settingsDb: settingsDb,
             journalEntityLoader: journalEntityLoader,
             sequenceLogService: mockSeqService,
-          )..agentRepository = mockAgentRepoSeq;
+          )..agentRepository = device.repository;
           when(() => event.text).thenReturn(
             encodeMessage(
               SyncMessage.agentEntity(
@@ -3339,9 +2736,10 @@ void main() {
             ),
           );
 
+          final before = await device.storedRows();
           await proc.process(envelope: event, journalDb: journalDb);
 
-          verifyNever(() => mockAgentRepoSeq.upsertEntity(any()));
+          expect(await device.storedRows(), before);
           verify(
             () => mockSeqService.recordReceivedEntry(
               entryId: 'head-removed',
@@ -3378,9 +2776,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 16),
             vectorClock: incomingVc,
           );
-          when(
-            () => mockAgentRepoSeq.getEntity('state-newer'),
-          ).thenAnswer((_) async => local);
+          await device.repository.upsertEntity(local);
           when(
             () => mockSeqService.recordReceivedEntry(
               entryId: any(named: 'entryId'),
@@ -3400,7 +2796,7 @@ void main() {
             settingsDb: settingsDb,
             journalEntityLoader: journalEntityLoader,
             sequenceLogService: mockSeqService,
-          )..agentRepository = mockAgentRepoSeq;
+          )..agentRepository = device.repository;
           final message = SyncMessage.agentEntity(
             agentEntity: incoming,
             status: SyncEntryStatus.update,
@@ -3410,7 +2806,10 @@ void main() {
 
           await proc.process(envelope: event, journalDb: journalDb);
 
-          verify(() => mockAgentRepoSeq.upsertEntity(incoming)).called(1);
+          expect(
+            await device.repository.getEntityIncludingDeleted(incoming.id),
+            incoming,
+          );
         },
       );
 
@@ -3434,10 +2833,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: incomingVc,
           );
-          when(
-            () =>
-                mockAgentRepoSeq.getLinkByIdIncludingDeleted('link-dominates'),
-          ).thenAnswer((_) async => local);
+          await device.repository.upsertLink(local);
           when(
             () => mockSeqService.recordReceivedEntry(
               entryId: any(named: 'entryId'),
@@ -3457,7 +2853,7 @@ void main() {
             settingsDb: settingsDb,
             journalEntityLoader: journalEntityLoader,
             sequenceLogService: mockSeqService,
-          )..agentRepository = mockAgentRepoSeq;
+          )..agentRepository = device.repository;
           final message = SyncMessage.agentLink(
             agentLink: incoming,
             status: SyncEntryStatus.update,
@@ -3465,9 +2861,10 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
+          final before = await device.storedRows();
           await proc.process(envelope: event, journalDb: journalDb);
 
-          verifyNever(() => mockAgentRepoSeq.upsertLink(any()));
+          expect(await device.storedRows(), before);
           verify(
             () => mockSeqService.recordReceivedEntry(
               entryId: 'link-dominates',
@@ -3528,7 +2925,7 @@ void main() {
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           sequenceLogService: mockSeqService,
-        )..agentRepository = mockAgentRepoSeq;
+        )..agentRepository = device.repository;
 
         when(() => event.text).thenReturn(encodeMessage(message));
         await proc.process(envelope: event, journalDb: journalDb);
@@ -3588,7 +2985,7 @@ void main() {
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           sequenceLogService: mockSeqService,
-        )..agentRepository = mockAgentRepoSeq;
+        )..agentRepository = device.repository;
 
         when(() => event.text).thenReturn(encodeMessage(message));
         await proc.process(envelope: event, journalDb: journalDb);
@@ -3645,7 +3042,7 @@ void main() {
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           sequenceLogService: mockSeqService,
-        )..agentRepository = mockAgentRepoSeq;
+        )..agentRepository = device.repository;
 
         when(() => event.text).thenReturn(encodeMessage(message));
         await expectLater(
@@ -3654,7 +3051,10 @@ void main() {
         );
 
         // Entity should still be upserted despite seq log error
-        verify(() => mockAgentRepoSeq.upsertEntity(entity)).called(1);
+        expect(
+          await device.repository.getEntityIncludingDeleted(entity.id),
+          entity,
+        );
         verify(
           () => loggingService.error(
             LogDomain.sync,
@@ -3700,7 +3100,7 @@ void main() {
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           sequenceLogService: mockSeqService,
-        )..agentRepository = mockAgentRepoSeq;
+        )..agentRepository = device.repository;
 
         when(() => event.text).thenReturn(encodeMessage(message));
         await proc.process(envelope: event, journalDb: journalDb);
@@ -3757,7 +3157,7 @@ void main() {
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           sequenceLogService: mockSeqService,
-        )..agentRepository = mockAgentRepoSeq;
+        )..agentRepository = device.repository;
 
         when(() => event.text).thenReturn(encodeMessage(message));
         await proc.process(envelope: event, journalDb: journalDb);
@@ -3806,7 +3206,7 @@ void main() {
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           sequenceLogService: mockSeqService,
-        )..agentRepository = mockAgentRepoSeq;
+        )..agentRepository = device.repository;
 
         when(() => event.text).thenReturn(encodeMessage(message));
         await expectLater(
@@ -3815,7 +3215,10 @@ void main() {
         );
 
         // Link should still be upserted despite seq log error.
-        verify(() => mockAgentRepoSeq.upsertLink(link)).called(1);
+        expect(
+          await device.repository.getLinkByIdIncludingDeleted(link.id),
+          link,
+        );
         verify(
           () => loggingService.error(
             LogDomain.sync,
@@ -3856,7 +3259,7 @@ void main() {
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           sequenceLogService: mockSeqService,
-        )..agentRepository = mockAgentRepoSeq;
+        )..agentRepository = device.repository;
 
         when(() => event.text).thenReturn(encodeMessage(message));
         await proc.process(envelope: event, journalDb: journalDb);
@@ -3903,7 +3306,7 @@ void main() {
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           sequenceLogService: mockSeqService,
-        )..agentRepository = mockAgentRepoSeq;
+        )..agentRepository = device.repository;
 
         when(() => event.text).thenReturn(encodeMessage(message));
         await proc.process(envelope: event, journalDb: journalDb);
@@ -3993,17 +3396,15 @@ void main() {
             final seen = <String>[];
             processor.runtimeMaintenance = [_RecordingMaintenance(seen)];
             addTearDown(() => processor.runtimeMaintenance = const []);
-            when(
-              () => mockAgentRepo.getEntity('relationship-agent'),
-            ).thenAnswer(
-              (_) async => kind == null
-                  ? null
-                  : makeTestIdentity(
-                      id: 'relationship-agent',
-                      agentId: 'relationship-agent',
-                      kind: kind,
-                    ),
-            );
+            if (kind != null) {
+              await device.repository.upsertEntity(
+                makeTestIdentity(
+                  id: 'relationship-agent',
+                  agentId: 'relationship-agent',
+                  kind: kind,
+                ),
+              );
+            }
             when(
               () => event.text,
             ).thenReturn(encodeMessage(prerequisite.value));
@@ -4059,7 +3460,10 @@ void main() {
         // The thrower ran first and was contained; the recorder still got
         // the identity, and the entity was persisted normally.
         expect(seen, ['goal-77']);
-        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        expect(
+          await device.repository.getEntityIncludingDeleted(entity.id),
+          entity,
+        );
       });
 
       test('a synced-in goal spec head re-offers the identity — creation '
@@ -4082,9 +3486,7 @@ void main() {
           updatedAt: DateTime(2026, 8),
           vectorClock: null,
         );
-        when(
-          () => mockAgentRepo.getEntity('goal-88'),
-        ).thenAnswer((_) async => identity);
+        await device.repository.upsertEntity(identity);
 
         final head = AgentDomainEntity.goalSpecHead(
           id: 'goal_spec_head:goal-88',
@@ -4105,7 +3507,10 @@ void main() {
         await processor.process(envelope: event, journalDb: journalDb);
 
         expect(seen, ['goal-88']);
-        verify(() => mockAgentRepo.upsertEntity(head)).called(1);
+        expect(
+          await device.repository.getEntityIncludingDeleted(head.id),
+          head,
+        );
       });
 
       test('halts the agent when it is dormant', () async {
@@ -4132,7 +3537,10 @@ void main() {
 
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        expect(
+          await device.repository.getEntityIncludingDeleted(entity.id),
+          entity,
+        );
         verify(
           () => mockOrchestrator.disableAutomaticUpdatesRuntime(
             'agent-dormant',
@@ -4170,7 +3578,10 @@ void main() {
 
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        expect(
+          await device.repository.getEntityIncludingDeleted(entity.id),
+          entity,
+        );
         verify(
           () => mockOrchestrator.disableAutomaticUpdatesRuntime(
             'agent-destroyed',
@@ -4216,9 +3627,7 @@ void main() {
             updatedAt: DateTime(2026, 8, 14, 10),
             vectorClock: const VectorClock({'remote': 2}),
           );
-          when(
-            () => mockAgentRepo.getAgentState(identity.agentId),
-          ).thenAnswer((_) async => localState);
+          await device.repository.upsertEntity(localState);
           when(() => event.text).thenReturn(
             encodeMessage(
               SyncMessage.agentEntity(
@@ -4228,11 +3637,12 @@ void main() {
             ),
           );
 
+          final before = await device.storedRows();
           await processor.process(envelope: event, journalDb: journalDb);
 
-          final clearedState = verify(
-            () => mockAgentRepo.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>().single;
+          final clearedState = (await device.entitiesWrittenSince(
+            before,
+          )).whereType<AgentStateEntity>().single;
           expect(clearedState.scheduledWakeAt, isNull);
           expect(clearedState.slots.pendingProjectActivityAt, pendingAt);
           expect(clearedState.updatedAt, localState.updatedAt);
@@ -4295,25 +3705,15 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
-          AgentIdentityEntity? storedIdentity;
-          when(
-            () => mockAgentRepo.getEntity(incomingDormant.id),
-          ).thenAnswer((_) async => storedIdentity);
-          when(
-            () => mockAgentRepo.getAgentState(incomingDormant.agentId),
-          ).thenAnswer((_) async => state);
-          when(
-            () => mockAgentRepo.getLinksFrom(
-              incomingDormant.agentId,
-              type: AgentLinkTypes.agentProject,
-            ),
-          ).thenAnswer((_) async => [link]);
-          when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
-            invocation,
-          ) async {
-            final entity =
-                invocation.positionalArguments.single as AgentDomainEntity;
-            if (entity is AgentIdentityEntity) storedIdentity = newerOptIn;
+
+          await device.repository.upsertEntity(state);
+          await device.repository.upsertLink(link);
+          // A newer local opt-in lands as soon as the receive has stored the
+          // stale identity.
+          device.afterNextEntityWrite((written) async {
+            if (written is AgentIdentityEntity) {
+              await device.repository.upsertEntity(newerOptIn);
+            }
           });
           when(() => event.text).thenReturn(
             encodeMessage(
@@ -4324,11 +3724,12 @@ void main() {
             ),
           );
 
+          final before = await device.storedRows();
           await processor.process(envelope: event, journalDb: journalDb);
 
-          final stateWrites = verify(
-            () => mockAgentRepo.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>();
+          final stateWrites = (await device.entitiesWrittenSince(
+            before,
+          )).whereType<AgentStateEntity>();
           expect(stateWrites, isEmpty);
           verify(
             () => mockOrchestrator.enableAutomaticUpdatesRuntime(
@@ -4381,12 +3782,8 @@ void main() {
                     vectorClock: const VectorClock({'remote': 3}),
                   )
                   as AgentStateEntity;
-          when(
-            () => mockAgentRepo.getEntity(identity.id),
-          ).thenAnswer((_) async => identity);
-          when(
-            () => mockAgentRepo.getAgentState(identity.agentId),
-          ).thenAnswer((_) async => pendingState);
+          await device.repository.upsertEntity(identity);
+          await device.repository.upsertEntity(pendingState);
           when(() => event.text).thenReturn(
             encodeMessage(
               SyncMessage.agentEntity(
@@ -4401,9 +3798,9 @@ void main() {
           });
 
           final repaired =
-              verify(
-                    () => mockAgentRepo.upsertEntity(captureAny()),
-                  ).captured.single
+              (await device.repository.getEntityIncludingDeleted(
+                    pendingState.id,
+                  ))!
                   as AgentStateEntity;
           expect(repaired.scheduledWakeAt, isNull);
           expect(repaired.updatedAt, pendingState.updatedAt);
@@ -4458,15 +3855,9 @@ void main() {
                     vectorClock: vectorClock,
                   )
                   as AgentStateEntity;
-          when(
-            () => mockAgentRepo.getEntity(pendingState.id),
-          ).thenAnswer((_) async => pendingState);
-          when(
-            () => mockAgentRepo.getEntity(identity.id),
-          ).thenAnswer((_) async => identity);
-          when(
-            () => mockAgentRepo.getAgentState(identity.agentId),
-          ).thenAnswer((_) async => pendingState);
+          await device.repository.upsertEntity(pendingState);
+          await device.repository.upsertEntity(identity);
+          await device.repository.upsertEntity(pendingState);
           when(() => event.text).thenReturn(
             encodeMessage(
               SyncMessage.agentEntity(
@@ -4481,9 +3872,9 @@ void main() {
           });
 
           final repaired =
-              verify(
-                    () => mockAgentRepo.upsertEntity(captureAny()),
-                  ).captured.single
+              (await device.repository.getEntityIncludingDeleted(
+                    pendingState.id,
+                  ))!
                   as AgentStateEntity;
           expect(repaired.scheduledWakeAt, isNull);
           expect(repaired.updatedAt, pendingState.updatedAt);
@@ -4514,7 +3905,7 @@ void main() {
           vectorClock: null,
         );
 
-        final taskLink = AgentLink.basic(
+        final taskLink = AgentLink.agentTask(
           id: 'link-1',
           fromId: 'agent-active',
           toId: 'task-42',
@@ -4523,12 +3914,7 @@ void main() {
           vectorClock: null,
         );
 
-        when(
-          () => mockAgentRepo.getLinksFrom(
-            'agent-active',
-            type: 'agent_task',
-          ),
-        ).thenAnswer((_) async => [taskLink]);
+        await device.repository.upsertLink(taskLink);
 
         final message = SyncMessage.agentEntity(
           agentEntity: entity,
@@ -4538,7 +3924,10 @@ void main() {
 
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        expect(
+          await device.repository.getEntityIncludingDeleted(entity.id),
+          entity,
+        );
         // A cadence chosen on the other device reaches this one's runtime.
         verify(
           () => mockOrchestrator.mirrorTaskWakeCadence(
@@ -4581,22 +3970,16 @@ void main() {
           vectorClock: const VectorClock({'host-a': 3}),
         );
         // The first attempt wrote it, then failed after the commit.
-        when(
-          () => mockAgentRepo.getEntity('agent-retried'),
-        ).thenAnswer((_) async => entity);
-        when(
-          () => mockAgentRepo.getLinksFrom('agent-retried', type: 'agent_task'),
-        ).thenAnswer(
-          (_) async => [
-            AgentLink.basic(
-              id: 'link-retried',
-              fromId: 'agent-retried',
-              toId: 'task-7',
-              createdAt: DateTime(2024, 3, 15),
-              updatedAt: DateTime(2024, 3, 15),
-              vectorClock: null,
-            ),
-          ],
+        await device.repository.upsertEntity(entity);
+        await device.repository.upsertLink(
+          AgentLink.agentTask(
+            id: 'link-retried',
+            fromId: 'agent-retried',
+            toId: 'task-7',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          ),
         );
         when(() => event.text).thenReturn(
           encodeMessage(
@@ -4607,9 +3990,10 @@ void main() {
           ),
         );
 
+        final before = await device.storedRows();
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        expect(await device.storedRows(), before);
         verify(
           () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-retried'),
         ).called(1);
@@ -4629,9 +4013,7 @@ void main() {
       test(
         'an entity this device pruned is refused, not stored again',
         () async {
-          when(
-            () => mockAgentRepo.prunedAgentEntityIdsAmong(['msg-pruned']),
-          ).thenAnswer((_) async => {'msg-pruned'});
+          await recordPrunedAgentEntities(device.db, ['msg-pruned']);
           final entity = AgentDomainEntity.agentMessage(
             id: 'msg-pruned',
             agentId: 'agent-active',
@@ -4651,9 +4033,10 @@ void main() {
             ),
           );
 
+          final before = await device.storedRows();
           await processor.process(envelope: event, journalDb: journalDb);
 
-          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          expect(await device.storedRows(), before);
         },
       );
 
@@ -4682,15 +4065,8 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
-          when(
-            () => mockAgentRepo.getLinksFrom(
-              'project-agent-1',
-              type: 'agent_project',
-            ),
-          ).thenAnswer((_) async => [projectLink]);
-          when(
-            () => mockAgentRepo.getEntity(entity.id),
-          ).thenAnswer((_) async => entity);
+          await device.repository.upsertLink(projectLink);
+          await device.repository.upsertEntity(entity);
           final message = SyncMessage.agentEntity(
             agentEntity: entity,
             status: SyncEntryStatus.update,
@@ -4752,12 +4128,8 @@ void main() {
                     vectorClock: null,
                   )
                   as AgentStateEntity;
-          when(
-            () => mockAgentRepo.getAgentState('project-agent-1'),
-          ).thenAnswer((_) async => pendingState);
-          when(
-            () => mockAgentRepo.getEntity('project-agent-1'),
-          ).thenAnswer((_) async => entity);
+          await device.repository.upsertEntity(pendingState);
+          await device.repository.upsertEntity(entity);
           when(
             () => event.text,
           ).thenReturn(
@@ -4769,15 +4141,16 @@ void main() {
             ),
           );
 
+          final before = await device.storedRows();
           await withClock(Clock.fixed(now), () {
             return processor.process(envelope: event, journalDb: journalDb);
           });
 
           // The arrival asks the cadence for one synced slot; it writes no
           // device-local deadline.
-          final persistedStates = verify(
-            () => mockAgentRepo.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>();
+          final persistedStates = (await device.entitiesWrittenSince(
+            before,
+          )).whereType<AgentStateEntity>();
           expect(persistedStates, isEmpty);
           expect(armedAgentIds, ['project-agent-1']);
         },
@@ -4815,12 +4188,8 @@ void main() {
                     vectorClock: null,
                   )
                   as AgentStateEntity;
-          when(
-            () => mockAgentRepo.getEntity('project-agent-1'),
-          ).thenAnswer((_) async => identity);
-          when(
-            () => mockAgentRepo.getAgentState('project-agent-1'),
-          ).thenAnswer((_) async => pendingState);
+          await device.repository.upsertEntity(identity);
+          await device.repository.upsertEntity(pendingState);
           when(
             () => event.text,
           ).thenReturn(
@@ -4832,13 +4201,14 @@ void main() {
             ),
           );
 
+          final before = await device.storedRows();
           await withClock(Clock.fixed(now), () {
             return processor.process(envelope: event, journalDb: journalDb);
           });
 
-          final persistedStates = verify(
-            () => mockAgentRepo.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>().toList();
+          final persistedStates = (await device.entitiesWrittenSince(
+            before,
+          )).whereType<AgentStateEntity>().toList();
           expect(
             persistedStates.map((state) => state.scheduledWakeAt),
             everyElement(isNull),
@@ -4881,20 +4251,7 @@ void main() {
                     vectorClock: null,
                   )
                   as AgentStateEntity;
-          AgentStateEntity? storedState;
-          when(
-            () => mockAgentRepo.getEntity(identity.agentId),
-          ).thenAnswer((_) async => identity);
-          when(
-            () => mockAgentRepo.getAgentState(identity.agentId),
-          ).thenAnswer((_) async => storedState);
-          when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
-            invocation,
-          ) async {
-            final entity =
-                invocation.positionalArguments.single as AgentDomainEntity;
-            if (entity is AgentStateEntity) storedState = entity;
-          });
+          await device.repository.upsertEntity(identity);
           when(() => event.text).thenReturn(
             encodeMessage(
               SyncMessage.agentEntity(
@@ -4904,19 +4261,23 @@ void main() {
             ),
           );
 
+          final before = await device.storedRows();
           await withClock(Clock.fixed(now), () {
             return processor.process(envelope: event, journalDb: journalDb);
           });
 
-          final persistedStates = verify(
-            () => mockAgentRepo.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>().toList();
+          final persistedStates = (await device.entitiesWrittenSince(
+            before,
+          )).whereType<AgentStateEntity>().toList();
           expect(
             persistedStates.map((state) => state.scheduledWakeAt),
             isNot(contains(remoteFallback)),
           );
-          expect(storedState?.scheduledWakeAt, isNull);
-          expect(storedState?.updatedAt, incoming.updatedAt);
+          final storedState =
+              (await device.repository.getEntity(incoming.id))!
+                  as AgentStateEntity;
+          expect(storedState.scheduledWakeAt, isNull);
+          expect(storedState.updatedAt, incoming.updatedAt);
           expect(armedAgentIds, [identity.agentId]);
         },
       );
@@ -4955,9 +4316,7 @@ void main() {
           await processor.process(envelope: event, journalDb: journalDb);
 
           final persisted =
-              verify(
-                    () => mockAgentRepo.upsertEntity(captureAny()),
-                  ).captured.single
+              (await device.repository.getEntityIncludingDeleted(incoming.id))!
                   as AgentStateEntity;
           expect(persisted.nextWakeAt, isNull);
           expect(persisted.sleepUntil, isNull);
@@ -5005,9 +4364,7 @@ void main() {
             updatedAt: DateTime(2026, 8, 14, 10),
             vectorClock: const VectorClock({'local': 1, 'remote': 1}),
           );
-          when(
-            () => mockAgentRepo.getEntity(local.id),
-          ).thenAnswer((_) async => local);
+          await device.repository.upsertEntity(local);
           when(() => event.text).thenReturn(
             encodeMessage(
               SyncMessage.agentEntity(
@@ -5017,11 +4374,12 @@ void main() {
             ),
           );
 
+          final before = await device.storedRows();
           await processor.process(envelope: event, journalDb: journalDb);
 
-          final applied = verify(
-            () => mockAgentRepo.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>().first;
+          final applied = (await device.entitiesWrittenSince(
+            before,
+          )).whereType<AgentStateEntity>().first;
           expect(applied.slots.pendingProjectActivityAt, isNull);
           expect(applied.scheduledWakeAt, isNull);
           verify(
@@ -5066,18 +4424,17 @@ void main() {
           final slotsJson = entityJson['slots'] as Map<String, dynamic>;
           slotsJson.remove('pendingProjectActivityAt');
 
-          when(
-            () => mockAgentRepo.getEntity(local.id),
-          ).thenAnswer((_) async => local);
+          await device.repository.upsertEntity(local);
           when(() => event.text).thenReturn(
             base64.encode(utf8.encode(json.encode(messageJson))),
           );
 
+          final before = await device.storedRows();
           await processor.process(envelope: event, journalDb: journalDb);
 
-          final applied = verify(
-            () => mockAgentRepo.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>().first;
+          final applied = (await device.entitiesWrittenSince(
+            before,
+          )).whereType<AgentStateEntity>().first;
           expect(
             applied.slots.pendingProjectActivityAt,
             local.slots.pendingProjectActivityAt,
@@ -5131,18 +4488,17 @@ void main() {
 
           // A state row is read inside its receive transaction, not from the
           // bundle prefetch.
-          when(
-            () => mockAgentRepo.getEntity(local.id),
-          ).thenAnswer((_) async => local);
+          await device.repository.upsertEntity(local);
           when(() => event.text).thenReturn(
             base64.encode(utf8.encode(json.encode(bundleJson))),
           );
 
+          final before = await device.storedRows();
           await processor.process(envelope: event, journalDb: journalDb);
 
-          final applied = verify(
-            () => mockAgentRepo.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>().single;
+          final applied = (await device.entitiesWrittenSince(
+            before,
+          )).whereType<AgentStateEntity>().single;
           expect(
             applied.slots.pendingProjectActivityAt,
             local.slots.pendingProjectActivityAt,
@@ -5194,12 +4550,8 @@ void main() {
             updatedAt: DateTime(2026, 8, 14, 10),
             vectorClock: const VectorClock({'local': 1, 'remote': 1}),
           );
-          when(
-            () => mockAgentRepo.getEntity(local.id),
-          ).thenAnswer((_) async => localWithPending);
-          when(
-            () => mockAgentRepo.getEntity(identity.id),
-          ).thenAnswer((_) async => identity);
+          await device.repository.upsertEntity(localWithPending);
+          await device.repository.upsertEntity(identity);
           when(() => event.text).thenReturn(
             encodeMessage(
               SyncMessage.agentEntity(
@@ -5209,11 +4561,12 @@ void main() {
             ),
           );
 
+          final before = await device.storedRows();
           await processor.process(envelope: event, journalDb: journalDb);
 
-          final applied = verify(
-            () => mockAgentRepo.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>().first;
+          final applied = (await device.entitiesWrittenSince(
+            before,
+          )).whereType<AgentStateEntity>().first;
           expect(applied.scheduledWakeAt, isNull);
           verify(
             () => mockOrchestrator.cancelPendingAutomaticWakes(
@@ -5251,12 +4604,6 @@ void main() {
           verify(
             () => mockOrchestrator.haltAgent('project-agent-dormant'),
           ).called(1);
-          verifyNever(
-            () => mockAgentRepo.getLinksFrom(
-              any(),
-              type: 'agent_project',
-            ),
-          );
         },
       );
 
@@ -5298,24 +4645,16 @@ void main() {
                     vectorClock: null,
                   )
                   as AgentStateEntity;
-          when(
-            () => mockAgentRepo.getAgentState(entity.agentId),
-          ).thenAnswer((_) async => pendingState);
-          when(
-            () => mockAgentRepo.getEntity(entity.id),
-          ).thenAnswer((_) async => entity);
-          when(
-            () => mockAgentRepo.getLinksFrom(
-              'project-agent-manual',
-              type: 'agent_project',
-            ),
-          ).thenAnswer((_) async => [projectLink]);
+          await device.repository.upsertEntity(pendingState);
+          await device.repository.upsertEntity(entity);
+          await device.repository.upsertLink(projectLink);
           final message = SyncMessage.agentEntity(
             agentEntity: entity,
             status: SyncEntryStatus.update,
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
+          final before = await device.storedRows();
           await processor.process(envelope: event, journalDb: journalDb);
 
           verify(
@@ -5327,9 +4666,9 @@ void main() {
           verifyNever(
             () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
           );
-          final persistedStates = verify(
-            () => mockAgentRepo.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>().toList();
+          final persistedStates = (await device.entitiesWrittenSince(
+            before,
+          )).whereType<AgentStateEntity>().toList();
           expect(persistedStates, hasLength(1));
           expect(persistedStates.single.scheduledWakeAt, isNull);
           expect(
@@ -5356,7 +4695,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
-          final taskLink = AgentLink.basic(
+          final taskLink = AgentLink.agentTask(
             id: 'link-manual',
             fromId: 'agent-manual',
             toId: 'task-manual',
@@ -5364,12 +4703,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
-          when(
-            () => mockAgentRepo.getLinksFrom(
-              'agent-manual',
-              type: 'agent_task',
-            ),
-          ).thenAnswer((_) async => [taskLink]);
+          await device.repository.upsertLink(taskLink);
           final message = SyncMessage.agentEntity(
             agentEntity: entity,
             status: SyncEntryStatus.update,
@@ -5418,7 +4752,10 @@ void main() {
 
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        expect(
+          await device.repository.getEntityIncludingDeleted(entity.id),
+          entity,
+        );
         verifyNever(
           () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
         );
@@ -5451,7 +4788,10 @@ void main() {
         // Should not throw even though lifecycle is dormant.
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        expect(
+          await device.repository.getEntityIncludingDeleted(entity.id),
+          entity,
+        );
         verifyNever(
           () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
         );
@@ -5491,9 +4831,7 @@ void main() {
             vectorClock: null,
           );
 
-          when(
-            () => mockAgentRepo.getEntity('agent-1'),
-          ).thenAnswer((_) async => activeAgent);
+          await device.repository.upsertEntity(activeAgent);
 
           final link = AgentLink.agentTask(
             id: 'link-1',
@@ -5512,7 +4850,10 @@ void main() {
 
           await processor.process(envelope: event, journalDb: journalDb);
 
-          verify(() => mockAgentRepo.upsertLink(link)).called(1);
+          expect(
+            await device.repository.getLinkByIdIncludingDeleted(link.id),
+            link,
+          );
           verify(
             () => mockOrchestrator.addSubscription(
               any(
@@ -5550,9 +4891,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
-          when(
-            () => mockAgentRepo.getEntity('agent-1'),
-          ).thenAnswer((_) async => optedIn);
+          await device.repository.upsertEntity(optedIn);
 
           final link = AgentLink.agentTask(
             id: 'link-1',
@@ -5616,9 +4955,7 @@ void main() {
             vectorClock: null,
           );
 
-          when(
-            () => mockAgentRepo.getEntity('agent-1'),
-          ).thenAnswer((_) async => dormantAgent);
+          await device.repository.upsertEntity(dormantAgent);
 
           final link = AgentLink.agentTask(
             id: 'link-1',
@@ -5637,7 +4974,10 @@ void main() {
 
           await processor.process(envelope: event, journalDb: journalDb);
 
-          verify(() => mockAgentRepo.upsertLink(link)).called(1);
+          expect(
+            await device.repository.getLinkByIdIncludingDeleted(link.id),
+            link,
+          );
           verifyNever(() => mockOrchestrator.addSubscription(any()));
         },
       );
@@ -5659,9 +4999,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
-          when(
-            () => mockAgentRepo.getEntity('project-agent-1'),
-          ).thenAnswer((_) async => activeAgent);
+          await device.repository.upsertEntity(activeAgent);
           final link = AgentLink.agentProject(
             id: 'project-link-1',
             fromId: 'project-agent-1',
@@ -5670,12 +5008,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
-          when(
-            () => mockAgentRepo.getLinksFrom(
-              activeAgent.agentId,
-              type: AgentLinkTypes.agentProject,
-            ),
-          ).thenAnswer((_) async => [link]);
+          await device.repository.upsertLink(link);
           final message = SyncMessage.agentLink(
             agentLink: link,
             status: SyncEntryStatus.update,
@@ -5737,12 +5070,8 @@ void main() {
                     vectorClock: null,
                   )
                   as AgentStateEntity;
-          when(
-            () => mockAgentRepo.getEntity('project-agent-1'),
-          ).thenAnswer((_) async => activeAgent);
-          when(
-            () => mockAgentRepo.getAgentState('project-agent-1'),
-          ).thenAnswer((_) async => pendingState);
+          await device.repository.upsertEntity(activeAgent);
+          await device.repository.upsertEntity(pendingState);
           final link = AgentLink.agentProject(
             id: 'project-link-1',
             fromId: 'project-agent-1',
@@ -5752,12 +5081,7 @@ void main() {
             vectorClock: null,
           );
           // The link is persisted before the runtime re-reads it.
-          when(
-            () => mockAgentRepo.getLinksFrom(
-              'project-agent-1',
-              type: AgentLinkTypes.agentProject,
-            ),
-          ).thenAnswer((_) async => [link]);
+          await device.repository.upsertLink(link);
           when(
             () => event.text,
           ).thenReturn(
@@ -5769,11 +5093,12 @@ void main() {
             ),
           );
 
+          final before = await device.storedRows();
           await withClock(Clock.fixed(now), () {
             return processor.process(envelope: event, journalDb: journalDb);
           });
 
-          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          expect(await device.storedRows(), before);
           verify(
             () => mockOrchestrator.addSubscription(
               any(
@@ -5823,15 +5148,13 @@ void main() {
                     vectorClock: const VectorClock({'peer-a': 2}),
                   )
                   as AgentStateEntity;
-          var identityReads = 0;
-          when(
-            () => mockAgentRepo.getEntity(activeAgent.id),
-          ).thenAnswer(
-            (_) async => identityReads++ == 0 ? activeAgent : optedOutAgent,
+          await device.repository.upsertEntity(activeAgent);
+          // The opt-out lands right after the receive first reads the identity.
+          device.afterNextReadOf(
+            activeAgent.id,
+            () => device.repository.upsertEntity(optedOutAgent),
           );
-          when(
-            () => mockAgentRepo.getAgentState(activeAgent.agentId),
-          ).thenAnswer((_) async => pendingState);
+          await device.repository.upsertEntity(pendingState);
           final link = AgentLink.agentProject(
             id: 'project-link-race',
             fromId: activeAgent.agentId,
@@ -5851,7 +5174,11 @@ void main() {
 
           await processor.process(envelope: event, journalDb: journalDb);
 
-          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          // The pending activity is left for the next opt-in, not consumed.
+          expect(
+            await device.repository.getEntity(pendingState.id),
+            pendingState,
+          );
           expect(armedAgentIds, isEmpty);
           verify(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime(
@@ -5881,9 +5208,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
-          when(
-            () => mockAgentRepo.getEntity('project-agent-1'),
-          ).thenAnswer((_) async => dormantAgent);
+          await device.repository.upsertEntity(dormantAgent);
           final link = AgentLink.agentProject(
             id: 'project-link-1',
             fromId: 'project-agent-1',
@@ -5900,7 +5225,6 @@ void main() {
 
           await processor.process(envelope: event, journalDb: journalDb);
 
-          verify(() => mockAgentRepo.getEntity('project-agent-1')).called(2);
           verifyNever(() => mockOrchestrator.addSubscription(any()));
         },
       );
@@ -5922,9 +5246,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
-          when(
-            () => mockAgentRepo.getEntity('project-agent-manual'),
-          ).thenAnswer((_) async => manualAgent);
+          await device.repository.upsertEntity(manualAgent);
           final markerlessFallback =
               AgentDomainEntity.agentState(
                     id: 'state-project-agent-manual',
@@ -5935,9 +5257,7 @@ void main() {
                     vectorClock: const VectorClock({'peer-a': 2}),
                   )
                   as AgentStateEntity;
-          when(
-            () => mockAgentRepo.getAgentState('project-agent-manual'),
-          ).thenAnswer((_) async => markerlessFallback);
+          await device.repository.upsertEntity(markerlessFallback);
           final link = AgentLink.agentProject(
             id: 'project-link-manual',
             fromId: 'project-agent-manual',
@@ -5946,18 +5266,14 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
-          when(
-            () => mockAgentRepo.getLinksFrom(
-              manualAgent.agentId,
-              type: AgentLinkTypes.agentProject,
-            ),
-          ).thenAnswer((_) async => [link]);
+          await device.repository.upsertLink(link);
           final message = SyncMessage.agentLink(
             agentLink: link,
             status: SyncEntryStatus.update,
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
+          final before = await device.storedRows();
           await processor.process(envelope: event, journalDb: journalDb);
 
           verify(
@@ -5969,9 +5285,9 @@ void main() {
           verifyNever(
             () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
           );
-          final clearedFallback = verify(
-            () => mockAgentRepo.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>().single;
+          final clearedFallback = (await device.entitiesWrittenSince(
+            before,
+          )).whereType<AgentStateEntity>().single;
           expect(clearedFallback.scheduledWakeAt, isNull);
           expect(clearedFallback.slots.pendingProjectActivityAt, isNull);
           expect(clearedFallback.updatedAt, markerlessFallback.updatedAt);
@@ -6004,7 +5320,7 @@ void main() {
               'project-agent-1_project_direct_project-42',
             ),
           ).called(1);
-          verifyNever(() => mockAgentRepo.getEntity(any()));
+
           verifyNever(() => mockOrchestrator.addSubscription(any()));
         },
       );
@@ -6030,14 +5346,17 @@ void main() {
 
           await processor.process(envelope: event, journalDb: journalDb);
 
-          verify(() => mockAgentRepo.upsertLink(link)).called(1);
+          expect(
+            await device.repository.getLinkByIdIncludingDeleted(link.id),
+            link,
+          );
           // Mirror remote delete: the per-link subscription must go so this
           // device stops waking an agent that was unlinked elsewhere.
           verify(
             () => mockOrchestrator.removeSubscription('agent-1_task_task-42'),
           ).called(1);
           // Delete path skips agent lookup + re-subscribe entirely.
-          verifyNever(() => mockAgentRepo.getEntity(any()));
+
           verifyNever(() => mockOrchestrator.addSubscription(any()));
         },
       );
@@ -6060,9 +5379,11 @@ void main() {
 
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verify(() => mockAgentRepo.upsertLink(link)).called(1);
-        // getEntity should not be called for non-agent_task links.
-        verifyNever(() => mockAgentRepo.getEntity(any()));
+        expect(
+          await device.repository.getLinkByIdIncludingDeleted(link.id),
+          link,
+        );
+
         verifyNever(() => mockOrchestrator.addSubscription(any()));
       });
     });
@@ -6135,13 +5456,9 @@ void main() {
 
       test('a task agent identity runs the pass for every task it is linked '
           'to: its link may have arrived first', () async {
-        when(
-          () => mockAgentRepo.getLinksFrom(
-            'agent-1',
-            type: AgentLinkTypes.agentTask,
-          ),
-        ).thenAnswer(
-          (_) async => [taskLink(), taskLink(id: 'link-2', taskId: 'task-43')],
+        await device.repository.upsertLink(taskLink());
+        await device.repository.upsertLink(
+          taskLink(id: 'link-2', taskId: 'task-43'),
         );
 
         await receive(
@@ -6171,12 +5488,6 @@ void main() {
         );
 
         expect(passes, isEmpty);
-        verifyNever(
-          () => mockAgentRepo.getLinksFrom(
-            'agent-1',
-            type: AgentLinkTypes.agentTask,
-          ),
-        );
       });
 
       test(
@@ -6193,7 +5504,10 @@ void main() {
             ),
           );
 
-          verify(() => mockAgentRepo.upsertLink(link)).called(1);
+          expect(
+            await device.repository.getLinkByIdIncludingDeleted(link.id),
+            link,
+          );
           verify(
             () => loggingService.error(
               LogDomain.sync,
@@ -6229,7 +5543,7 @@ void main() {
             documentsDirectory: explicitDirectory,
           ),
           documentsDirectory: tempDir,
-        )..agentRepository = mockAgentRepo;
+        )..agentRepository = device.repository;
       }
 
       setUp(() {
@@ -6279,14 +5593,18 @@ void main() {
 
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        expect(
+          await device.repository.getEntityIncludingDeleted(entity.id),
+          entity,
+        );
       });
 
       test('a write about an agent this device deleted is refused, and the '
           'JSON it brought is removed (ADR 0108)', () async {
-        when(
-          () => mockAgentRepo.deletedAgentIdsAmong(any()),
-        ).thenAnswer((_) async => {'agent-gone'});
+        await device.repository.upsertEntity(
+          makeTestIdentity(id: 'agent-gone', agentId: 'agent-gone'),
+        );
+        await device.repository.hardDeleteAgent('agent-gone');
         final entity = AgentDomainEntity.agent(
           id: 'agent-gone',
           agentId: 'agent-gone',
@@ -6316,9 +5634,10 @@ void main() {
           ),
         );
 
+        final before = await device.storedRows();
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        expect(await device.storedRows(), before);
         verifyNever(
           () => updateNotifications.notify(any(), fromSync: true),
         );
@@ -6329,9 +5648,10 @@ void main() {
         'a JSON file that cannot be removed is logged, and the write is '
         'still refused',
         () async {
-          when(
-            () => mockAgentRepo.deletedAgentIdsAmong(any()),
-          ).thenAnswer((_) async => {'agent-gone'});
+          await device.repository.upsertEntity(
+            makeTestIdentity(id: 'agent-gone', agentId: 'agent-gone'),
+          );
+          await device.repository.hardDeleteAgent('agent-gone');
           final entity = AgentDomainEntity.agent(
             id: 'agent-gone',
             agentId: 'agent-gone',
@@ -6366,9 +5686,10 @@ void main() {
             ),
           );
 
+          final before = await device.storedRows();
           await processor.process(envelope: event, journalDb: journalDb);
 
-          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          expect(await device.storedRows(), before);
           verify(
             () => loggingService.error(
               LogDomain.sync,
@@ -6406,10 +5727,11 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
+        final before = await device.storedRows();
         final prepared = await processor.prepare(envelope: event);
 
         expect(prepared, isNull);
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        expect(await device.storedRows(), before);
       });
 
       test(
@@ -6455,7 +5777,10 @@ void main() {
             journalDb: journalDb,
           );
 
-          verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+          expect(
+            await device.repository.getEntityIncludingDeleted(entity.id),
+            entity,
+          );
           expect(
             File(
               path.join(tempDir.path, stripLeadingSlashes(relativePath)),
@@ -6486,9 +5811,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: incomingVc,
           );
-          when(
-            () => mockAgentRepo.getEntity('state-cache'),
-          ).thenAnswer((_) async => local);
+          await device.repository.upsertEntity(local);
 
           const relativePath = '/agent_entities/state-cache.json';
           final normalized = stripLeadingSlashes(relativePath);
@@ -6502,9 +5825,10 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
+          final before = await device.storedRows();
           await processor.process(envelope: event, journalDb: journalDb);
 
-          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          expect(await device.storedRows(), before);
           final restored = AgentDomainEntity.fromJson(
             jsonDecode(file.readAsStringSync()) as Map<String, dynamic>,
           );
@@ -6542,9 +5866,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: incomingVc,
           );
-          when(
-            () => mockAgentRepo.getEntity('state-explicit-cache'),
-          ).thenAnswer((_) async => local);
+          await device.repository.upsertEntity(local);
 
           const relativePath = '/agent_entities/state-explicit-cache.json';
           final explicitFile = File(
@@ -6560,12 +5882,13 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
+          final before = await device.storedRows();
           await explicitProcessor.process(
             envelope: event,
             journalDb: journalDb,
           );
 
-          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          expect(await device.storedRows(), before);
           final restored = AgentDomainEntity.fromJson(
             jsonDecode(explicitFile.readAsStringSync()) as Map<String, dynamic>,
           );
@@ -6606,7 +5929,10 @@ void main() {
 
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verify(() => mockAgentRepo.upsertLink(link)).called(1);
+        expect(
+          await device.repository.getLinkByIdIncludingDeleted(link.id),
+          link,
+        );
       });
 
       test('skips agent entity with no entity and no jsonPath', () async {
@@ -6615,9 +5941,10 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
+        final before = await device.storedRows();
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        expect(await device.storedRows(), before);
         verify(
           () => loggingService.log(
             LogDomain.sync,
@@ -6633,9 +5960,10 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
+        final before = await device.storedRows();
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verifyNever(() => mockAgentRepo.upsertLink(any()));
+        expect(await device.storedRows(), before);
         verify(
           () => loggingService.log(
             LogDomain.sync,
@@ -6652,9 +5980,10 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
+        final before = await device.storedRows();
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        expect(await device.storedRows(), before);
         verify(
           () => loggingService.error(
             LogDomain.sync,
@@ -6672,9 +6001,10 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
+        final before = await device.storedRows();
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verifyNever(() => mockAgentRepo.upsertLink(any()));
+        expect(await device.storedRows(), before);
         verify(
           () => loggingService.error(
             LogDomain.sync,
@@ -6730,9 +6060,10 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
+        final before = await device.storedRows();
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        expect(await device.storedRows(), before);
         verify(
           () => loggingService.error(
             LogDomain.sync,
@@ -6768,7 +6099,7 @@ void main() {
               trust: AdmittingSyncEventTrust(),
             ),
           );
-          processorWithIndex.agentRepository = mockAgentRepo;
+          processorWithIndex.agentRepository = device.repository;
 
           descriptorEvent = MockEvent();
           when(() => descriptorEvent.eventId).thenReturn('desc-event-id');
@@ -6818,7 +6149,10 @@ void main() {
               journalDb: journalDb,
             );
 
-            verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+            expect(
+              await device.repository.getEntityIncludingDeleted(entity.id),
+              entity,
+            );
             verify(descriptorEvent.downloadAndDecryptAttachment).called(1);
           },
         );
@@ -6840,9 +6174,10 @@ void main() {
               ),
             );
 
+            final before = await device.storedRows();
             expect(await processorWithIndex.prepare(envelope: event), isNull);
             verifyNever(descriptorEvent.downloadAndDecryptAttachment);
-            verifyNever(() => mockAgentRepo.upsertEntity(any()));
+            expect(await device.storedRows(), before);
           },
         );
 
@@ -6909,17 +6244,6 @@ void main() {
               ..record(olderDescriptor)
               ..record(newerDescriptor);
 
-            AgentDomainEntity? storedEntity;
-            when(
-              () => mockAgentRepo.getEntity(olderEntity.id),
-            ).thenAnswer((_) async => storedEntity);
-            when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
-              call,
-            ) async {
-              storedEntity =
-                  call.positionalArguments.first as AgentDomainEntity;
-            });
-
             final sequenceLog = MockSyncSequenceLogService();
             when(
               () => sequenceLog.recordReceivedEntry(
@@ -6945,7 +6269,7 @@ void main() {
               attachmentIndex: attachmentIndex.index,
               attachmentFetcher: attachmentIndex.fetcher,
               sequenceLogService: sequenceLog,
-            )..agentRepository = mockAgentRepo;
+            )..agentRepository = device.repository;
 
             const message = SyncMessage.agentEntity(
               status: SyncEntryStatus.update,
@@ -6958,8 +6282,11 @@ void main() {
 
             await exactProcessor.process(envelope: event, journalDb: journalDb);
 
-            verify(() => mockAgentRepo.upsertEntity(olderEntity)).called(1);
-            verifyNever(() => mockAgentRepo.upsertEntity(newerEntity));
+            expect(
+              await device.repository.getEntityIncludingDeleted(olderEntity.id),
+              olderEntity,
+            );
+
             verify(
               () => sequenceLog.recordReceivedEntry(
                 entryId: olderEntity.id,
@@ -7010,15 +6337,6 @@ void main() {
 
             attachmentIndex.record(linkDescriptorEvent);
 
-            AgentLink? storedLink;
-            when(
-              () => mockAgentRepo.getLinkByIdIncludingDeleted(link.id),
-            ).thenAnswer((_) async => storedLink);
-            when(() => mockAgentRepo.upsertLink(any())).thenAnswer((
-              call,
-            ) async {
-              storedLink = call.positionalArguments.first as AgentLink;
-            });
             final sequenceLog = MockSyncSequenceLogService();
             when(
               () => sequenceLog.recordReceivedEntry(
@@ -7044,7 +6362,7 @@ void main() {
               attachmentIndex: attachmentIndex.index,
               attachmentFetcher: attachmentIndex.fetcher,
               sequenceLogService: sequenceLog,
-            )..agentRepository = mockAgentRepo;
+            )..agentRepository = device.repository;
 
             const message = SyncMessage.agentLink(
               status: SyncEntryStatus.update,
@@ -7059,7 +6377,10 @@ void main() {
               journalDb: journalDb,
             );
 
-            verify(() => mockAgentRepo.upsertLink(link)).called(1);
+            expect(
+              await device.repository.getLinkByIdIncludingDeleted(link.id),
+              link,
+            );
             verify(
               () => sequenceLog.recordReceivedEntry(
                 entryId: link.id,
@@ -7091,6 +6412,7 @@ void main() {
             );
             when(() => event.text).thenReturn(encodeMessage(message));
 
+            final before = await device.storedRows();
             await expectLater(
               () => processorWithIndex.process(
                 envelope: event,
@@ -7099,7 +6421,7 @@ void main() {
               throwsA(isA<FileSystemException>()),
             );
 
-            verifyNever(() => mockAgentRepo.upsertEntity(any()));
+            expect(await device.storedRows(), before);
           },
         );
 
@@ -7123,10 +6445,11 @@ void main() {
 
             // Completes instead of throwing a retryable descriptor error:
             // prepare yields nothing, so the queue marks the row skipped.
+            final before = await device.storedRows();
             expect(await processorWithIndex.prepare(envelope: event), isNull);
 
             verify(descriptorEvent.downloadAndDecryptAttachment).called(1);
-            verifyNever(() => mockAgentRepo.upsertEntity(any()));
+            expect(await device.storedRows(), before);
           },
         );
 
@@ -7147,10 +6470,11 @@ void main() {
             );
             when(() => event.text).thenReturn(encodeMessage(message));
 
+            final before = await device.storedRows();
             expect(await processorWithIndex.prepare(envelope: event), isNull);
 
             verify(descriptorEvent.downloadAndDecryptAttachment).called(1);
-            verifyNever(() => mockAgentRepo.upsertEntity(any()));
+            expect(await device.storedRows(), before);
           },
         );
 
@@ -7172,11 +6496,12 @@ void main() {
             );
             when(() => event.text).thenReturn(encodeMessage(message));
 
+            final before = await device.storedRows();
             await expectLater(
               processorWithIndex.prepare(envelope: event),
               throwsA(isA<FileSystemException>()),
             );
-            verifyNever(() => mockAgentRepo.upsertEntity(any()));
+            expect(await device.storedRows(), before);
           },
         );
 
@@ -7193,6 +6518,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
+          final before = await device.storedRows();
           await expectLater(
             () => processorWithIndex.process(
               envelope: event,
@@ -7201,7 +6527,7 @@ void main() {
             throwsA(isA<FileSystemException>()),
           );
 
-          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          expect(await device.storedRows(), before);
         });
 
         test('falls back to disk when no descriptor in index', () async {
@@ -7237,7 +6563,10 @@ void main() {
             journalDb: journalDb,
           );
 
-          verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+          expect(
+            await device.repository.getEntityIncludingDeleted(entity.id),
+            entity,
+          );
         });
 
         test(
@@ -7275,12 +6604,13 @@ void main() {
               () => indexRoom.getEventById('agent-payload-not-yet-indexed'),
             ).thenAnswer((_) async => null);
 
+            final before = await device.storedRows();
             await expectLater(
               processorWithIndex.process(envelope: event, journalDb: journalDb),
               throwsA(isA<PendingSyncDescriptorException>()),
             );
 
-            verifyNever(() => mockAgentRepo.upsertEntity(any()));
+            expect(await device.storedRows(), before);
           },
         );
 
@@ -7300,12 +6630,13 @@ void main() {
 
           // Descriptor fetched successfully but JSON parse fails →
           // permanent skip (returns null), not a retry.
+          final before = await device.storedRows();
           await processorWithIndex.process(
             envelope: event,
             journalDb: journalDb,
           );
 
-          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          expect(await device.storedRows(), before);
           verify(
             () => loggingService.error(
               LogDomain.sync,
@@ -7330,9 +6661,10 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
+        final before = await device.storedRows();
         await processor.process(envelope: event, journalDb: journalDb);
 
-        verifyNever(() => mockAgentRepo.upsertLink(any()));
+        expect(await device.storedRows(), before);
         verify(
           () => loggingService.error(
             LogDomain.sync,
@@ -7375,9 +6707,7 @@ void main() {
               updatedAt: DateTime(2024, 3, 15),
               vectorClock: incomingVc,
             );
-            when(
-              () => mockAgentRepo.getEntity('state-restore-fail'),
-            ).thenAnswer((_) async => local);
+            await device.repository.upsertEntity(local);
 
             // Use a path-traversal jsonPath — resolveJsonCandidateFile throws
             // FileSystemException which _restoreDominantAgentCache catches.
@@ -7389,10 +6719,11 @@ void main() {
             when(() => event.text).thenReturn(encodeMessage(message));
 
             // Should complete without throwing.
+            final before = await device.storedRows();
             await processor.process(envelope: event, journalDb: journalDb);
 
             // Local dominates → entity NOT upserted.
-            verifyNever(() => mockAgentRepo.upsertEntity(any()));
+            expect(await device.storedRows(), before);
             // The FileSystemException is caught and logged at lines 465-469.
             verify(
               () => loggingService.error(
@@ -7430,11 +6761,7 @@ void main() {
               updatedAt: DateTime(2024, 3, 15),
               vectorClock: incomingVc,
             );
-            when(
-              () => mockAgentRepo.getLinkByIdIncludingDeleted(
-                'link-restore-fail',
-              ),
-            ).thenAnswer((_) async => local);
+            await device.repository.upsertLink(local);
 
             final message = SyncMessage.agentLink(
               agentLink: stale,
@@ -7443,9 +6770,10 @@ void main() {
             );
             when(() => event.text).thenReturn(encodeMessage(message));
 
+            final before = await device.storedRows();
             await processor.process(envelope: event, journalDb: journalDb);
 
-            verifyNever(() => mockAgentRepo.upsertLink(any()));
+            expect(await device.storedRows(), before);
             verify(
               () => loggingService.error(
                 LogDomain.sync,
