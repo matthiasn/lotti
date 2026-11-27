@@ -13,8 +13,9 @@ import 'package:lotti/utils/consts.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'nav_service_nav_state_snapshot_part.dart';
+part 'nav_service_task_document_part.dart';
 
-class NavService {
+class NavService with _DesktopTaskDocumentPane {
   NavService({
     required TabDelegates tabDelegates,
     JournalDb? journalDb,
@@ -41,14 +42,7 @@ class NavService {
     for (final spec in _tabSpecs) {
       spec.delegate.addListener(_schedulePersist);
     }
-    // A document is shown over its own task only: selecting another task
-    // closes it, so coming back to the first never reopens it unasked.
-    desktopSelectedTaskId.addListener(() {
-      final document = desktopTaskDocument.value;
-      if (document != null && document.taskId != desktopSelectedTaskId.value) {
-        desktopTaskDocument.value = null;
-      }
-    });
+    _closeTaskDocumentWhenAnotherTaskIsSelected();
 
     // Watched flags come from `sectionFlags`, not from a list spelled out
     // here. Settings -> Sections renders that same constant and calls itself
@@ -152,26 +146,12 @@ class NavService {
   /// Convenience notifier mirroring `desktopTaskDetailStack.last` (or
   /// `null` when the stack is empty). Kept as a separate notifier so
   /// existing listeners (selected-row highlighting, etc.) keep working.
+  @override
   final ValueNotifier<String?> desktopSelectedTaskId = ValueNotifier<String?>(
     null,
   );
   final ValueNotifier<String?> desktopSelectedProjectId =
       ValueNotifier<String?>(null);
-
-  /// The task document the desktop detail pane shows over its task, which
-  /// stays mounted beneath; null while the task itself shows. Set by
-  /// `openTaskDocument` and the `/tasks/:taskId/documents/:documentId` route.
-  final ValueNotifier<({String taskId, String documentId})?>
-  desktopTaskDocument = ValueNotifier(null);
-
-  /// A draft the `/tasks/:taskId/documents/:documentId/review/…` route asks
-  /// the desktop detail pane to open for review, alongside
-  /// [desktopTaskDocument]: one-shot, cleared by the document page once the
-  /// review is open, so reopening the document later reads it instead.
-  final ValueNotifier<
-    ({String taskId, String documentId, String changeSetId, int itemIndex})?
-  >
-  taskDocumentReviewRequest = ValueNotifier(null);
 
   /// Desktop split-pane People selection — the person whose page fills the
   /// right pane, or `null` for the empty state. Written exclusively by
@@ -289,6 +269,7 @@ class NavService {
   final BeamerDelegate journalDelegate;
   final BeamerDelegate eventsDelegate;
   final BeamerDelegate projectsDelegate;
+  @override
   final BeamerDelegate tasksDelegate;
   final BeamerDelegate calendarDelegate;
   final BeamerDelegate settingsDelegate;
@@ -902,6 +883,7 @@ class NavService {
 
   /// The route the given tab currently stands at, or its root when it has
   /// never been navigated deeper.
+  @override
   String routeForTab(String rootPath) {
     final spec = _specForAnyPath(rootPath);
     return spec == null ? rootPath : _routeForSpec(spec);
@@ -952,20 +934,6 @@ class NavService {
     return snapshot?.activeRoute;
   }
 
-  /// Closes the document the desktop detail pane shows over task [taskId].
-  ///
-  /// The pane goes back to the task. When the tasks tab stands on a route
-  /// that names a document of that task — a link opened it, the review route
-  /// included — the route goes back to the task too, replacing it: the
-  /// location reopens whatever document its route names on every rebuild,
-  /// and the route is what the next launch restores.
-  void closeDesktopTaskDocument(String taskId) {
-    desktopTaskDocument.value = null;
-    if (routeForTab('/tasks').startsWith('/tasks/$taskId/documents/')) {
-      tasksDelegate.beamToReplacementNamed('/tasks/$taskId');
-    }
-  }
-
   /// Pops the active tab one step back, guaranteeing an escape.
   ///
   /// When the tab has no beaming history to pop (a cold start restored
@@ -996,8 +964,7 @@ class NavService {
     }
     desktopTaskDetailStack.dispose();
     desktopSelectedTaskId.dispose();
-    desktopTaskDocument.dispose();
-    taskDocumentReviewRequest.dispose();
+    _disposeTaskDocumentPane();
     desktopSelectedProjectId.dispose();
     desktopSelectedRelationshipId.dispose();
     desktopRelationshipChatOpen.dispose();
