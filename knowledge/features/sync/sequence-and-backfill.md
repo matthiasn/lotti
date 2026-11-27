@@ -405,6 +405,11 @@ index), so neither blocks progress.
   `sync_sequence_watermarks`. Migrated hosts warm that row lazily on the first
   `getLastCounterForHost`, so startup does not recompute every historic host
   with the compatibility `ROW_NUMBER` scan.
+- Advancing a watermark walks every resolved row above it, so it first probes
+  `current + 1` by primary key and stops there when that counter is absent or
+  unresolved. A watermark held behind a hole that never fills would otherwise
+  rescan the whole log above it after every bulk insert, inside the sync
+  database's write transaction.
 
 ## Payload proof and contradictory mappings
 
