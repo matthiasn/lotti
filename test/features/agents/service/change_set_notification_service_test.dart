@@ -413,10 +413,16 @@ void main() {
           resolveSupportedLocale(const ui.Locale('en')),
           const ui.Locale('en'),
         );
-        // A script the app has no variant for still resolves by language.
+        // The script is part of the exact match: British English in a
+        // script the app has no variant for is not `en_GB`, so it resolves
+        // by language to the first English locale.
         expect(
           resolveSupportedLocale(
-            const ui.Locale.fromSubtags(languageCode: 'en', scriptCode: 'Dsrt'),
+            const ui.Locale.fromSubtags(
+              languageCode: 'en',
+              scriptCode: 'Dsrt',
+              countryCode: 'GB',
+            ),
           ),
           const ui.Locale('en'),
         );

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
@@ -243,17 +244,22 @@ void main() {
     test(
       'nested holds: a schedule the outer body made before an inner hold '
       'starts is not cleared by it',
-      () async {
-        final bench = _EmitterBench(initial: _stats(total: 4));
-        addTearDown(bench.close);
+      () {
+        fakeAsync((async) {
+          final bench = _EmitterBench(initial: _stats(total: 4));
 
-        await bench.emitter.holdDuring(() async {
-          bench.emitter.schedule();
-          await bench.emitter.holdDuring(() async {});
+          unawaited(
+            bench.emitter.holdDuring(() async {
+              bench.emitter.schedule();
+              await bench.emitter.holdDuring(() async {});
+            }),
+          );
+          async.flushMicrotasks();
+
+          expect(bench.emissions.single.total, 4);
+          unawaited(bench.close());
+          async.flushMicrotasks();
         });
-        await pumpEventQueue();
-
-        expect(bench.emissions.single.total, 4);
       },
     );
 
