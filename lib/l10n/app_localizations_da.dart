@@ -4281,6 +4281,13 @@ class AppLocalizationsDa extends AppLocalizations {
       'Vis Events-funktionen for at oprette, spore og administrere begivenheder i din journal.';
 
   @override
+  String get configFlagEnableTaskDocuments => 'Opgavedokumenter';
+
+  @override
+  String get configFlagEnableTaskDocumentsDescription =>
+      'Opgaver kan indeholde Markdown-dokumenter; opgavens agent og chat skriver og reviderer dem, når du beder om det. Eksperimentelt.';
+
+  @override
   String get configFlagEnableForkHealing => 'Agent gaffel-helbredelse';
 
   @override
@@ -18164,7 +18171,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get taskDocumentsStale =>
-      'Dokumentet blev ændret, mens du redigerede det. Kopiér din tekst, luk det og åbn det igen.';
+      'Dokumentet blev ændret, mens du redigerede det. Gem igen for at beholde din tekst; den anden version bliver i historikken.';
 
   @override
   String get taskDocumentsTextHint => 'Skriv i Markdown';

@@ -3022,6 +3022,8 @@
   "configFlagEnableRelationshipsDescription": "Show the People tab for nurturing your personal relationships.",
   "configFlagEnableSessionRatings": "Enable Session Ratings",
   "configFlagEnableSessionRatingsDescription": "Prompt for a quick session rating when you stop a timer.",
+  "configFlagEnableTaskDocuments": "Task documents",
+  "configFlagEnableTaskDocumentsDescription": "Tasks can hold markdown documents, and the task agent and the task's chat write and revise them when you ask. Experimental.",
   "configFlagEnableTooltip": "Enable tooltips",
   "configFlagEnableTooltipDescription": "Show helpful tooltips throughout the app to guide you through features.",
   "configFlagEnableUnifiedGoals": "Enable unified Goals page",
@@ -11833,9 +11835,9 @@
   "@taskDocumentsRestoreStale": {
     "description": "Toast: the restore was refused because a newer version arrived while the user was looking."
   },
-  "taskDocumentsStale": "This document changed while you were editing. Copy your text, then close and open it again.",
+  "taskDocumentsStale": "This document changed while you were editing. Save again to keep your text; the other version stays in History.",
   "@taskDocumentsStale": {
-    "description": "Editor error: the document changed on this or another device while it was being edited, so the save was refused."
+    "description": "Editor error: the document changed on this or another device while it was being edited, so the save was refused. Saving again writes over the newer version, which stays in the history."
   },
   "taskDocumentsTextHint": "Write in markdown",
   "@taskDocumentsTextHint": {

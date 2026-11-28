@@ -4330,6 +4330,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazit funkci Události pro vytváření, sledování a správu událostí ve vašem deníku.';
 
   @override
+  String get configFlagEnableTaskDocuments => 'Dokumenty úkolů';
+
+  @override
+  String get configFlagEnableTaskDocumentsDescription =>
+      'Úkoly mohou obsahovat dokumenty v Markdownu; agent úkolu a chat úkolu je píšou a upravují, když o to požádáš. Experimentální.';
+
+  @override
   String get configFlagEnableForkHealing => 'Slučování větví agenta';
 
   @override
@@ -18395,7 +18402,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskDocumentsStale =>
-      'Tento dokument se mezitím změnil. Zkopíruj svůj text, zavři ho a otevři znovu.';
+      'Tento dokument se mezitím změnil. Ulož znovu, ať ti tvůj text zůstane; druhá verze zůstane v historii.';
 
   @override
   String get taskDocumentsTextHint => 'Piš v Markdownu';

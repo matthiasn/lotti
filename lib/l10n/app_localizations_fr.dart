@@ -4341,6 +4341,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher la fonctionnalité Événements pour créer, suivre et gérer des événements dans ton journal.';
 
   @override
+  String get configFlagEnableTaskDocuments => 'Documents de tâche';
+
+  @override
+  String get configFlagEnableTaskDocumentsDescription =>
+      'Les tâches peuvent contenir des documents Markdown ; l’agent de la tâche et son chat les rédigent et les révisent quand tu le demandes. Expérimental.';
+
+  @override
   String get configFlagEnableForkHealing =>
       'Réparation des bifurcations d’agent';
 
@@ -18465,7 +18472,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get taskDocumentsStale =>
-      'Ce document a changé pendant que tu le modifiais. Copie ton texte, puis ferme-le et rouvre-le.';
+      'Ce document a changé pendant que tu le modifiais. Enregistre à nouveau pour garder ton texte ; l’autre version reste dans l’historique.';
 
   @override
   String get taskDocumentsTextHint => 'Écris en Markdown';

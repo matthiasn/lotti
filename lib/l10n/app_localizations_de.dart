@@ -4314,6 +4314,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ereignisfunktion anzeigen, um Ereignisse in deinem Journal zu erstellen, zu verfolgen und zu verwalten.';
 
   @override
+  String get configFlagEnableTaskDocuments => 'Aufgabendokumente';
+
+  @override
+  String get configFlagEnableTaskDocumentsDescription =>
+      'Aufgaben können Markdown-Dokumente enthalten; der Aufgaben-Agent und der Chat der Aufgabe schreiben und überarbeiten sie, wenn du darum bittest. Experimentell.';
+
+  @override
   String get configFlagEnableForkHealing => 'Agenten-Fork-Heilung';
 
   @override
@@ -18304,7 +18311,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskDocumentsStale =>
-      'Dieses Dokument hat sich geändert, während du es bearbeitet hast. Kopiere deinen Text, schließe es und öffne es erneut.';
+      'Dieses Dokument hat sich geändert, während du es bearbeitet hast. Speichere noch einmal, um deinen Text zu behalten; die andere Version bleibt im Verlauf.';
 
   @override
   String get taskDocumentsTextHint => 'In Markdown schreiben';

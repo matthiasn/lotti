@@ -4265,6 +4265,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show the Events feature to create, track, and manage events in your journal.';
 
   @override
+  String get configFlagEnableTaskDocuments => 'Task documents';
+
+  @override
+  String get configFlagEnableTaskDocumentsDescription =>
+      'Tasks can hold markdown documents, and the task agent and the task\'s chat write and revise them when you ask. Experimental.';
+
+  @override
   String get configFlagEnableForkHealing => 'Agent fork healing';
 
   @override
@@ -18063,7 +18070,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskDocumentsStale =>
-      'This document changed while you were editing. Copy your text, then close and open it again.';
+      'This document changed while you were editing. Save again to keep your text; the other version stays in History.';
 
   @override
   String get taskDocumentsTextHint => 'Write in markdown';

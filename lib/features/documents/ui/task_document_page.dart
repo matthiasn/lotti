@@ -47,8 +47,10 @@ abstract final class TaskDocumentPageKeys {
 ///
 /// The text stays on screen while a newer version loads and is replaced in
 /// place ([taskDocumentCurrentVersionProvider]); only the very first load
-/// shows nothing. A document deleted while open — here, or on another
-/// device — says so instead of its text.
+/// shows nothing — the document itself included, which is not yet known to
+/// exist while the task's links load ([taskDocumentGoneProvider]). A
+/// document deleted while open — here, or on another device — says so
+/// instead of its text.
 ///
 /// [onClose] leaves the page: the desktop detail pane passes the action that
 /// returns it to the task. Without it, the back arrow pops the page or beams
@@ -116,13 +118,16 @@ class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
     final messages = context.messages;
     final key = (taskId: taskId, documentId: documentId);
     final document = ref.watch(taskDocumentProvider(key));
+    // Null alone is also "not read yet": only a document known to be gone
+    // says so, or ends a review.
+    final gone = ref.watch(taskDocumentGoneProvider(key));
     final version = ref.watch(taskDocumentCurrentVersionProvider(key)).value;
     final review = ref.read(documentReviewOpenProvider(taskId).notifier);
     final open = ref.watch(documentReviewOpenProvider(taskId));
     final reviewing = open?.documentId == documentId ? open : null;
     // A review whose document is gone is over: the page says so, and the
     // panes that stepped aside for the review come back.
-    final over = reviewing != null && document == null;
+    final over = reviewing != null && gone;
     if (over) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (ref.read(documentReviewOpenProvider(taskId)) == reviewing) {
@@ -151,7 +156,7 @@ class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
       if (context.mounted) close();
     }
 
-    final showingReview = reviewing != null && !over && document != null;
+    final showingReview = reviewing != null && document != null;
 
     // While reviewing, back — the arrow, the system back, the iOS swipe —
     // closes the review onto the text instead of leaving the document.
@@ -199,15 +204,23 @@ class _TaskDocumentPageState extends ConsumerState<TaskDocumentPage> {
                             onClose: review.close,
                           )
                         : document == null
-                        ? Center(
-                            child: Text(
-                              messages.taskDocumentsGone,
-                              style: tokens.typography.styles.body.bodyMedium
-                                  .copyWith(
-                                    color: tokens.colors.text.mediumEmphasis,
+                        // Still loading: nothing, as on any first load.
+                        ? (!gone
+                              ? const SizedBox.shrink()
+                              : Center(
+                                  child: Text(
+                                    messages.taskDocumentsGone,
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .body
+                                        .bodyMedium
+                                        .copyWith(
+                                          color:
+                                              tokens.colors.text.mediumEmphasis,
+                                        ),
                                   ),
-                            ),
-                          )
+                                ))
                         : _DocumentBody(
                             document: document,
                             version: version,

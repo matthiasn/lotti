@@ -99,6 +99,7 @@ const Map<ConfigFlagGroup, List<String>> configFlagGroups = {
     enableQueryChatFlag,
     enableCompanionFlag,
     enableFrontAgentFlag,
+    enableTaskDocumentsFlag,
     enableEmbeddingsFlag,
     syncEmbeddingsFlag,
     enableVectorSearchFlag,

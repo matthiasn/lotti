@@ -1095,6 +1095,7 @@ void main() {
             TaskDetailsPage(taskId: testTask.id),
             overrides: withServiceOverrides([
               ...hTaskDetailsPageOverrides(),
+              taskDocumentsEnabledProvider.overrideWithValue(true),
               taskDocumentsProvider(
                 testTask.id,
               ).overrideWith(

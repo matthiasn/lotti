@@ -34,12 +34,12 @@ import '../../../../widget_test_utils.dart';
 /// `configFlagsOnFlagsPage`, which would make the assertion a
 /// tautology.
 ///
-/// The fixture stream carries thirteen flags, three of which ([enableEventsFlag],
+/// The fixture stream carries fourteen flags, three of which ([enableEventsFlag],
 /// [enableDailyOsPageFlag], [enableRelationshipsFlag]) are [sectionFlags] and
 /// render on *Settings → Sections* instead. They stay in the fixture on
 /// purpose: a real database holds them too, and the count is what proves this
 /// page ignores them rather than merely never being handed them.
-const _displayedFlagCount = 10;
+const _displayedFlagCount = 11;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -122,6 +122,11 @@ void main() {
           const ConfigFlag(
             name: enableForkHealingFlag,
             description: 'Enable agent fork healing?',
+            status: false,
+          ),
+          const ConfigFlag(
+            name: enableTaskDocumentsFlag,
+            description: 'Enable task documents?',
             status: false,
           ),
           const ConfigFlag(
@@ -412,6 +417,13 @@ void main() {
               description: "Enable What's New feature?",
               status: true,
             ),
+          ),
+          (
+            name: 'task-documents',
+            title: (m) => m.configFlagEnableTaskDocuments,
+            description: (m) => m.configFlagEnableTaskDocumentsDescription,
+            icon: LottiIcons.description,
+            expectedToggle: null,
           ),
           (
             name: 'fork-healing',

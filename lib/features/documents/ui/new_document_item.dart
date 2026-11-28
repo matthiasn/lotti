@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/task_document_editor.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -32,7 +33,8 @@ class NewDocumentItem extends StatelessWidget {
 }
 
 /// The documents feature's create-entry action for a task (wired into
-/// `JournalDetailSlots.taskCreateActions`): always offered, since a task
-/// can hold any number of documents.
+/// `JournalDetailSlots.taskCreateActions`): offered while task documents are
+/// switched on, on every task, since a task can hold any number of
+/// documents.
 Widget? newDocumentAction(WidgetRef ref, String taskId) =>
-    NewDocumentItem(taskId);
+    ref.watch(taskDocumentsEnabledProvider) ? NewDocumentItem(taskId) : null;

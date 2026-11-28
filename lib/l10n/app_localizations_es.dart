@@ -4329,6 +4329,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mostrar la función de eventos para crear, rastrear y gestionar eventos en tu diario.';
 
   @override
+  String get configFlagEnableTaskDocuments => 'Documentos de tareas';
+
+  @override
+  String get configFlagEnableTaskDocumentsDescription =>
+      'Las tareas pueden contener documentos Markdown; el agente de la tarea y su chat los escriben y revisan cuando lo pides. Experimental.';
+
+  @override
   String get configFlagEnableForkHealing =>
       'Reparación de bifurcaciones del agente';
 
@@ -18400,7 +18407,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get taskDocumentsStale =>
-      'Este documento cambió mientras lo editabas. Copia tu texto, ciérralo y vuelve a abrirlo.';
+      'Este documento cambió mientras lo editabas. Guarda de nuevo para conservar tu texto; la otra versión queda en el historial.';
 
   @override
   String get taskDocumentsTextHint => 'Escribe en Markdown';

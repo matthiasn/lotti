@@ -483,11 +483,14 @@ List<Override> appFeatureWiringOverrides() => [
   pullRequestLinkSourceProvider.overrideWith(
     (ref) => ref.watch(pullRequestLinkSuggestionsProvider),
   ),
-  // The task agent reads a task's documents, and a document proposal the
-  // user confirms is written, through the documents feature, which ranks
-  // above agents.
+  // The task agent and the task's chat read a task's documents and write
+  // their versions through the documents feature, which ranks above agents —
+  // while task documents are switched on. Off, the source is null and
+  // neither is offered a document tool.
   taskDocumentSourceProvider.overrideWith(
-    (ref) => ref.watch(taskDocumentAgentSourceProvider),
+    (ref) => ref.watch(taskDocumentsEnabledProvider)
+        ? ref.watch(taskDocumentAgentSourceProvider)
+        : null,
   ),
   // An active lockdown scopes every category list; categories ranks below
   // lockdown.

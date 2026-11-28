@@ -80,6 +80,7 @@ const Map<String, bool> _flagValues = {
   enableWhatsNewFlag: true,
   dailyOsOnboardingEnabledFlag: false,
   enableForkHealingFlag: false,
+  enableTaskDocumentsFlag: false,
   logSlowQueriesFlag: false,
 };
 

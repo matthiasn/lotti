@@ -144,6 +144,15 @@ sources:
 
 # Task documents
 
+**Behind a flag.** The `enable_task_documents` configuration flag defaults to
+false; the Advanced Settings flag page exposes it as "Task documents".
+`taskDocumentsEnabledProvider` reads it, false while it loads. Off, a task
+shows no Documents section and no "Write a document" row, and the composition
+root wires no `TaskDocumentSource`, so neither a task agent wake nor the
+task's chat is offered a document tool. Nothing stored is touched: documents
+written while it was on stay in the journal, keep syncing and merging, and
+show again when it is switched back on.
+
 > **Partly built.** This concept describes the design agreed in
 > [ADR 0167](../../docs/adr/0167-task-documents-are-journal-entries-the-agent-writes-directly.md).
 > What runs today: the two journal variants, their merge, the repository,
@@ -402,14 +411,18 @@ A device on an older build skips both variants as undeserializable.
   editor for a new document.
 - **Add sheet.** `NewDocumentItem`, wired into
   `JournalDetailSlots.taskCreateActions` ahead of pull request tracking, is
-  always offered on a task. It closes the sheet and opens the editor.
+  offered on every task while task documents are switched on. It closes the
+  sheet and opens the editor.
 - **Editor.**
   [`TaskDocumentEditor`](../../lib/features/documents/ui/task_document_editor.dart),
   a modal with the title and a plain markdown text box. It opens on the
   current version, read again rather than taken from the row. Save writes
   only what changed: a new title renames, new text is `writeVersion` over
   the version it opened on, by the user. A `stale` result keeps the modal
-  open with the typed text and says the document changed meanwhile. A new
+  open with the typed text and says the document changed meanwhile; the
+  form then takes the version that landed as its base, so saving again is
+  the user's choice to keep their text, written over that version, which
+  stays in the history. A new
   document is created on the first save (a version only when there is
   text), publishes `TaskFocusTarget.documents` so the page scrolls to the
   band, and a retry after a failed text write never creates it twice.
@@ -432,7 +445,12 @@ A device on an older build skips both variants as undeserializable.
   "Review changes", which opens that version in the
   [side-by-side review](#side-by-side-review). Nothing there waits for a
   decision, so Edit stays the filled button.
-  A document deleted while open says so. Delete asks first, then deletes
+  A document deleted while open says so — but only one known to be gone
+  (`taskDocumentGoneProvider`): `taskDocumentProvider` is null as well while
+  the task's links and the linked entry are still being read, and then the
+  page shows nothing of the document and leaves an open review alone, so a
+  cold open of the review route keeps the review it asked for. Delete asks
+  first, then deletes
   the document with its versions and leaves the page.
 - **History.**
   [`TaskDocumentHistory`](../../lib/features/documents/ui/task_document_history.dart)

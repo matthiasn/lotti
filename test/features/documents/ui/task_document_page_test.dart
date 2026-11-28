@@ -82,6 +82,7 @@ void main() {
     WidgetTester tester, {
     TaskDocumentEntry? shown,
     bool gone = false,
+    bool loading = false,
     VoidCallback? onClose,
     bool chat = false,
     DocumentReviewKey? initialReview,
@@ -89,7 +90,7 @@ void main() {
     TaskDocumentVersionEntry? current,
     bool pushed = false,
   }) async {
-    final doc = gone ? null : (shown ?? document);
+    final doc = gone || loading ? null : (shown ?? document);
     final page = TaskDocumentPage(
       taskId: key.taskId,
       documentId: key.documentId,
@@ -116,6 +117,7 @@ void main() {
             overrides: [
               taskDocumentRepositoryProvider.overrideWithValue(repository),
               taskDocumentProvider(key).overrideWith((ref) => doc),
+              taskDocumentGoneProvider(key).overrideWith((ref) => gone),
               taskDocumentCurrentVersionProvider(key).overrideWith(
                 (ref) async =>
                     doc?.data.current == null ? null : (current ?? version),
@@ -170,6 +172,15 @@ void main() {
 
     expect(find.text('This document was deleted.'), findsOneWidget);
     expect(find.byKey(TaskDocumentPageKeys.edit), findsNothing);
+  });
+
+  testWidgets('a document not read yet is not called deleted: the page '
+      'shows nothing of it until it is', (tester) async {
+    await pump(tester, loading: true);
+
+    expect(find.text('This document was deleted.'), findsNothing);
+    expect(find.byKey(TaskDocumentPageKeys.edit), findsNothing);
+    expect(find.byType(BackWidget), findsOneWidget);
   });
 
   testWidgets('Edit opens the editor on this document', (tester) async {
@@ -422,6 +433,19 @@ void main() {
       expect(find.byType(DocumentReviewView), findsNothing);
       expect(find.text('This document was deleted.'), findsOneWidget);
       expect(container.read(documentReviewOpenProvider('task-1')), isNull);
+    });
+
+    testWidgets('a version handed in by the review route stays asked for '
+        'while its document is still being read', (tester) async {
+      await pump(tester, loading: true, initialReview: reviewKey);
+      await tester.pump();
+      await tester.pump();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(TaskDocumentPage)),
+      );
+      expect(container.read(documentReviewOpenProvider('task-1')), reviewKey);
+      expect(find.text('This document was deleted.'), findsNothing);
     });
 
     testWidgets('a version handed in by the review route opens as the page '

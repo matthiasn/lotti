@@ -201,6 +201,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableTaskDocumentsFlag,
+    description: 'Enable task documents?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableForkHealingFlag,
     description: 'Enable agent fork healing?',
     status: false,

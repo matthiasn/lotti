@@ -4304,6 +4304,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Toon de functie Evenementen om gebeurtenissen aan te maken, te volgen en te beheren in uw journal.';
 
   @override
+  String get configFlagEnableTaskDocuments => 'Taakdocumenten';
+
+  @override
+  String get configFlagEnableTaskDocumentsDescription =>
+      'Taken kunnen Markdown-documenten bevatten; de taakagent en de chat van de taak schrijven en herzien ze wanneer je erom vraagt. Experimenteel.';
+
+  @override
   String get configFlagEnableForkHealing => 'Agent vork genezing';
 
   @override
@@ -18226,7 +18233,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get taskDocumentsStale =>
-      'Dit document is gewijzigd terwijl je het bewerkte. Kopieer je tekst, sluit het en open het opnieuw.';
+      'Dit document is gewijzigd terwijl je het bewerkte. Sla opnieuw op om je tekst te behouden; de andere versie blijft in de geschiedenis.';
 
   @override
   String get taskDocumentsTextHint => 'Schrijf in Markdown';

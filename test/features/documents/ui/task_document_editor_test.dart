@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task_document_data.dart';
+import 'package:lotti/classes/task_document_merge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/documents/repository/task_document_repository.dart';
 import 'package:lotti/features/documents/state/task_document_providers.dart';
@@ -326,13 +327,61 @@ void main() {
 
         expect(
           find.text(
-            'This document changed while you were editing. Copy your text, '
-            'then close and open it again.',
+            'This document changed while you were editing. Save again to '
+            'keep your text; the other version stays in History.',
           ),
           findsOneWidget,
         );
         expect(find.text('My edit'), findsOneWidget);
         expect(find.byType(TaskDocumentEditor), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'that moved on meanwhile is saved by saving again, over the version '
+      'that landed meanwhile',
+      (tester) async {
+        stubWrite(result(TaskDocumentWriteStatus.stale));
+        await open(tester, editing: document);
+        await tester.enterText(
+          field(TaskDocumentEditorKeys.textField),
+          'My edit',
+        );
+        await tester.pump();
+        // The agent's v4 landed while the form was open.
+        final version4 = taskDocumentVersionEntry(
+          number: 4,
+          id: 'version-4',
+          documentId: 'doc-brief',
+          markdown: 'Agent text',
+          author: TaskDocumentAuthor.agent,
+        );
+        when(() => repository.document('doc-brief')).thenAnswer(
+          (_) async => document.copyWith(
+            data: document.data.copyWith(current: version4.ref),
+          ),
+        );
+        await save(tester);
+        expect(find.byType(TaskDocumentEditor), findsOneWidget);
+
+        stubWrite(result(TaskDocumentWriteStatus.written, version: version3));
+        await save(tester);
+
+        verifyInOrder([
+          () => repository.writeVersion(
+            documentId: 'doc-brief',
+            markdown: 'My edit',
+            author: TaskDocumentAuthor.user,
+            baseVersionId: 'version-3',
+          ),
+          () => repository.writeVersion(
+            documentId: 'doc-brief',
+            markdown: 'My edit',
+            author: TaskDocumentAuthor.user,
+            baseVersionId: 'version-4',
+          ),
+        ]);
+        expect(find.byType(TaskDocumentEditor), findsNothing);
       },
     );
   });

@@ -1002,19 +1002,31 @@ void main() {
     });
 
     test('the task agent reads and writes task documents through the '
-        'documents feature', () {
+        'documents feature while task documents are switched on, and has no '
+        'document source while they are off', () {
       final source = TaskDocumentAgentSource(MockTaskDocumentRepository());
-      final container = ProviderContainer(
-        overrides: [
-          ...appFeatureWiringOverrides(),
-          taskDocumentAgentSourceProvider.overrideWithValue(source),
-        ],
-      );
-      addTearDown(container.dispose);
+      ProviderContainer containerWith({required bool enabled}) {
+        final container = ProviderContainer(
+          overrides: [
+            ...appFeatureWiringOverrides(),
+            taskDocumentAgentSourceProvider.overrideWithValue(source),
+            taskDocumentsEnabledProvider.overrideWithValue(enabled),
+          ],
+        );
+        addTearDown(container.dispose);
+        return container;
+      }
 
       expect(
-        identical(container.read(taskDocumentSourceProvider), source),
+        identical(
+          containerWith(enabled: true).read(taskDocumentSourceProvider),
+          source,
+        ),
         isTrue,
+      );
+      expect(
+        containerWith(enabled: false).read(taskDocumentSourceProvider),
+        isNull,
       );
     });
 

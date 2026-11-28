@@ -123,8 +123,11 @@ class TaskForm extends ConsumerWidget {
     final showPullRequests = ref.watch(taskShowsPullRequestsProvider(taskId));
 
     // The same rule for documents: a band only while the task holds one. The
-    // Add sheet is the way to the first.
-    final showDocuments = ref.watch(taskDocumentsProvider(taskId)).isNotEmpty;
+    // Add sheet is the way to the first. Nothing while task documents are
+    // switched off.
+    final showDocuments =
+        ref.watch(taskDocumentsEnabledProvider) &&
+        ref.watch(taskDocumentsProvider(taskId)).isNotEmpty;
 
     // only show editor for legacy entries where there is text already
     final plainText = entryState?.entry?.entryText?.plainText.trim() ?? '';

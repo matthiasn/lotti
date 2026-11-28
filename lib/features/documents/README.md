@@ -17,6 +17,11 @@ a version.
 
 ## What it does
 
+All of it sits behind the `enable_task_documents` flag (Settings → Advanced →
+Config Flags, "Task documents"), which is off by default. Off, the section,
+the Add sheet row and the agent's document tools are all hidden; documents
+already written stay stored and keep syncing.
+
 - **Shows a Documents section on the task** while the task holds a
   document: each one's title, version and age — and that the agent wrote
   it, when it did — with a Copy action that puts

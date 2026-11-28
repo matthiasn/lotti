@@ -36,6 +36,11 @@ const enableEventsFlag = 'enable_events';
 const enableRelationshipsFlag = 'enable_relationships';
 const enableSessionRatingsFlag = 'enable_session_ratings';
 const enableProjectsFlag = 'enable_projects';
+
+/// Markdown documents on tasks (ADR 0167): the Documents section, "Write a
+/// document", and the task agent's and task chat's document tools. Off hides
+/// all of them; documents already written stay stored and keep syncing.
+const enableTaskDocumentsFlag = 'enable_task_documents';
 const enableEmbeddingsFlag = 'enable_embeddings';
 
 /// Shares the vectors this device embeds with the user's other devices, and

@@ -4335,6 +4335,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Mostra la funzione Eventi per creare, tracciare e gestire eventi nel tuo diario.';
 
   @override
+  String get configFlagEnableTaskDocuments => 'Documenti delle attività';
+
+  @override
+  String get configFlagEnableTaskDocumentsDescription =>
+      'Le attività possono contenere documenti Markdown; l\'agente dell\'attività e la sua chat li scrivono e li rivedono quando lo chiedi. Sperimentale.';
+
+  @override
   String get configFlagEnableForkHealing => 'Guarigione dell\'agente Fork';
 
   @override
@@ -18394,7 +18401,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get taskDocumentsStale =>
-      'Questo documento è cambiato mentre lo modificavi. Copia il tuo testo, poi chiudilo e riaprilo.';
+      'Questo documento è cambiato mentre lo modificavi. Salva di nuovo per tenere il tuo testo; l\'altra versione resta nella cronologia.';
 
   @override
   String get taskDocumentsTextHint => 'Scrivi in Markdown';

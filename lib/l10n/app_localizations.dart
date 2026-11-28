@@ -7248,6 +7248,18 @@ abstract class AppLocalizations {
   /// **'Show the Events feature to create, track, and manage events in your journal.'**
   String get configFlagEnableEventsDescription;
 
+  /// No description provided for @configFlagEnableTaskDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Task documents'**
+  String get configFlagEnableTaskDocuments;
+
+  /// No description provided for @configFlagEnableTaskDocumentsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks can hold markdown documents, and the task agent and the task\'s chat write and revise them when you ask. Experimental.'**
+  String get configFlagEnableTaskDocumentsDescription;
+
   /// No description provided for @configFlagEnableForkHealing.
   ///
   /// In en, this message translates to:
@@ -30143,10 +30155,10 @@ abstract class AppLocalizations {
   /// **'A newer version arrived meanwhile. Look at it, then restore again.'**
   String get taskDocumentsRestoreStale;
 
-  /// Editor error: the document changed on this or another device while it was being edited, so the save was refused.
+  /// Editor error: the document changed on this or another device while it was being edited, so the save was refused. Saving again writes over the newer version, which stays in the history.
   ///
   /// In en, this message translates to:
-  /// **'This document changed while you were editing. Copy your text, then close and open it again.'**
+  /// **'This document changed while you were editing. Save again to keep your text; the other version stays in History.'**
   String get taskDocumentsStale;
 
   /// Hint in an empty task document text field.

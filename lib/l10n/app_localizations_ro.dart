@@ -4351,6 +4351,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează funcția Evenimente pentru a crea, urmări și gestiona evenimente în jurnalul dvs.';
 
   @override
+  String get configFlagEnableTaskDocuments => 'Documente de sarcină';
+
+  @override
+  String get configFlagEnableTaskDocumentsDescription =>
+      'Sarcinile pot conține documente Markdown; agentul sarcinii și chatul acesteia le scriu și le revizuiesc atunci când cereți. Experimental.';
+
+  @override
   String get configFlagEnableForkHealing => 'Repararea bifurcațiilor agentului';
 
   @override
@@ -18516,7 +18523,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskDocumentsStale =>
-      'Acest document s-a modificat în timp ce îl editați. Copiați textul, apoi închideți-l și deschideți-l din nou.';
+      'Acest document s-a modificat în timp ce îl editați. Salvați din nou pentru a vă păstra textul; cealaltă versiune rămâne în istoric.';
 
   @override
   String get taskDocumentsTextHint => 'Scrieți în Markdown';

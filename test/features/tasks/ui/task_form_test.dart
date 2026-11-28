@@ -108,9 +108,11 @@ void main() {
     GlobalKey? pullRequestsFocusKey,
     List<TaskDocumentEntry> documents = const [],
     GlobalKey? documentsFocusKey,
+    bool documentsEnabled = true,
   }) {
     return RiverpodWidgetTestBench(
       overrides: [
+        taskDocumentsEnabledProvider.overrideWithValue(documentsEnabled),
         taskDocumentsProvider(task.meta.id).overrideWith((ref) => documents),
         entryControllerProvider(task.meta.id).overrideWith(
           () => _TestEntryController(task),
@@ -514,6 +516,25 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpWidget(buildSubject(task: tracking));
         await tester.pumpAndSettle();
+        expect(find.byType(TaskDocumentsSection), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a task with documents gets no Documents band while task documents '
+      'are switched off',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            task: testTask,
+            documents: [
+              taskDocumentEntry(clock: {'a': 1}),
+            ],
+            documentsEnabled: false,
+          ),
+        );
+        await tester.pumpAndSettle();
+
         expect(find.byType(TaskDocumentsSection), findsNothing);
       },
     );

@@ -11,6 +11,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -106,6 +107,8 @@ void main() {
             journalDbProvider.overrideWithValue(mockDb),
             // The app's wiring, so the GitHub row appears as in production.
             journalDetailSlotsProvider.overrideWithValue(appJournalDetailSlots),
+            // Task documents switched on, so their row is offered on a task.
+            taskDocumentsEnabledProvider.overrideWithValue(true),
             ...extraOverrides,
           ]),
           child: makeTestableWidget2(

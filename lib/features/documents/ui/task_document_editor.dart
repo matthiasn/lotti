@@ -42,8 +42,10 @@ Future<void> showTaskDocumentEditor(
 /// The text opens on the document's current version, and saving writes a
 /// new version over exactly that one: when the document moved on meanwhile
 /// — another device, or a version the agent wrote — the save is refused
-/// and the form stays open with the user's text, so nothing they typed is
-/// lost and nothing newer is overwritten. Only what changed is written: a
+/// and the form stays open with the user's text, saying so. Saving again is
+/// then the user's choice to keep their text: it is written over the newer
+/// version, which stays in the history, so nothing is lost on either side.
+/// Only what changed is written: a
 /// new title renames, new text writes a version. A new document is created
 /// on the first save; one with no text yet has no version.
 class TaskDocumentEditor extends ConsumerStatefulWidget {
@@ -150,6 +152,12 @@ class _TaskDocumentEditorState extends ConsumerState<TaskDocumentEditor> {
           _baseVersionId = result.version?.id;
           _loadedText = text;
         case TaskDocumentWriteStatus.stale:
+          // The text stays in the form, and the next save is written over
+          // the version that landed meanwhile — which stays in the history —
+          // rather than refused for good.
+          _baseVersionId = (await repository.document(
+            document.id,
+          ))?.data.current?.id;
           error = messages.taskDocumentsStale;
         case TaskDocumentWriteStatus.missing:
         case TaskDocumentWriteStatus.failed:

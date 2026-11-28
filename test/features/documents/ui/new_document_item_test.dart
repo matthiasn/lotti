@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/documents/ui/new_document_item.dart';
 import 'package:lotti/features/documents/ui/task_document_editor.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -54,21 +55,32 @@ void main() {
     },
   );
 
-  testWidgets('the task create action offers the row for that task, always', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        Consumer(
-          builder: (context, ref, _) =>
-              newDocumentAction(ref, taskId) ?? const SizedBox.shrink(),
+  Future<void> pumpAction(WidgetTester tester, {required bool enabled}) =>
+      tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Consumer(
+            builder: (context, ref, _) =>
+                newDocumentAction(ref, taskId) ?? const Text('no row'),
+          ),
+          overrides: [taskDocumentsEnabledProvider.overrideWithValue(enabled)],
         ),
-      ),
-    );
+      );
+
+  testWidgets('the task create action offers the row for that task while '
+      'task documents are switched on', (tester) async {
+    await pumpAction(tester, enabled: true);
 
     expect(
       tester.widget<NewDocumentItem>(find.byType(NewDocumentItem)).taskId,
       taskId,
     );
+  });
+
+  testWidgets('the task create action offers no row while task documents '
+      'are switched off', (tester) async {
+    await pumpAction(tester, enabled: false);
+
+    expect(find.byType(NewDocumentItem), findsNothing);
+    expect(find.text('no row'), findsOneWidget);
   });
 }
