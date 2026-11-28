@@ -398,5 +398,35 @@ void main() {
         );
       },
     );
+
+    test(
+      'a supported regional variant is kept, not folded into the plain '
+      'language that precedes it',
+      () {
+        // Both `en` and `en_GB` are supported, and `en` comes first: only
+        // the exact match on the country keeps British English British.
+        expect(
+          resolveSupportedLocale(const ui.Locale('en', 'GB')),
+          const ui.Locale('en', 'GB'),
+        );
+        expect(
+          resolveSupportedLocale(const ui.Locale('en')),
+          const ui.Locale('en'),
+        );
+        // The script is part of the exact match: British English in a
+        // script the app has no variant for is not `en_GB`, so it resolves
+        // by language to the first English locale.
+        expect(
+          resolveSupportedLocale(
+            const ui.Locale.fromSubtags(
+              languageCode: 'en',
+              scriptCode: 'Dsrt',
+              countryCode: 'GB',
+            ),
+          ),
+          const ui.Locale('en'),
+        );
+      },
+    );
   });
 }
