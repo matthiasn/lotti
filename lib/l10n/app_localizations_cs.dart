@@ -1007,6 +1007,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateDocument(String title) {
+    return 'Vytvořit dokument „$title“';
+  }
+
+  @override
   String agentSummaryCreateFollowUp(Object title) {
     return 'Vytvořit navazující úkol: „$title“';
   }
@@ -1024,6 +1029,11 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String agentSummaryCreateTask(Object title) {
     return 'Vytvořit úkol: $title';
+  }
+
+  @override
+  String agentSummaryDocumentVersion(String title) {
+    return 'Nová verze „$title“';
   }
 
   @override
@@ -4320,6 +4330,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazit funkci Události pro vytváření, sledování a správu událostí ve vašem deníku.';
 
   @override
+  String get configFlagEnableTaskDocuments => 'Dokumenty úkolů';
+
+  @override
+  String get configFlagEnableTaskDocumentsDescription =>
+      'Úkoly mohou obsahovat dokumenty v Markdownu; agent úkolu a chat úkolu je píšou a upravují, když o to požádáš. Experimentální.';
+
+  @override
   String get configFlagEnableForkHealing => 'Slučování větví agenta';
 
   @override
@@ -7167,6 +7184,48 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String deviceDeleteQuestion(String deviceName) {
     return 'Odebrat $deviceName z tvého synchronizačního účtu? Zařízení bude odhlášeno a před další synchronizací ho bude nutné znovu spárovat.';
+  }
+
+  @override
+  String get documentReviewAdded => 'Přidáno v této verzi';
+
+  @override
+  String get documentReviewAfter => 'Potom';
+
+  @override
+  String get documentReviewAgentWrote => 'Tuto verzi napsal agent';
+
+  @override
+  String get documentReviewAskForChanges => 'Požádat o změny';
+
+  @override
+  String get documentReviewBefore => 'Předtím';
+
+  @override
+  String get documentReviewClose => 'Zavřít kontrolu';
+
+  @override
+  String documentReviewCounts(int added, int removed, int rewritten) {
+    return 'Přidáno: $added, odebráno: $removed, přepsáno: $rewritten';
+  }
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'Není ve v$number';
+  }
+
+  @override
+  String get documentReviewOpen => 'Zkontrolovat změny';
+
+  @override
+  String get documentReviewRemoved => 'Odebráno v této verzi';
+
+  @override
+  String get documentReviewRewritten => 'Přepsáno v této verzi';
+
+  @override
+  String documentReviewUndo(int number) {
+    return 'Vrátit se k v$number';
   }
 
   @override
@@ -18283,6 +18342,90 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskDetailRetry => 'Zkusit znovu';
+
+  @override
+  String get taskDocumentsAddAction => 'Napsat dokument';
+
+  @override
+  String get taskDocumentsAddActionHint =>
+      'Přidá dokument v Markdownu, který můžeš upravit a zkopírovat.';
+
+  @override
+  String get taskDocumentsCopied => 'Markdown zkopírován';
+
+  @override
+  String get taskDocumentsCopy => 'Kopírovat Markdown';
+
+  @override
+  String get taskDocumentsCopyAction => 'Kopírovat';
+
+  @override
+  String get taskDocumentsCurrent => 'Aktuální';
+
+  @override
+  String get taskDocumentsDeleteMessage =>
+      'Dokument a všechny jeho verze budou z tohoto úkolu odstraněny na všech zařízeních.';
+
+  @override
+  String get taskDocumentsDeleteTitle => 'Smazat tento dokument?';
+
+  @override
+  String get taskDocumentsEdit => 'Upravit dokument';
+
+  @override
+  String get taskDocumentsEditAction => 'Upravit';
+
+  @override
+  String get taskDocumentsGone => 'Tento dokument byl smazán.';
+
+  @override
+  String get taskDocumentsHistory => 'Historie';
+
+  @override
+  String get taskDocumentsNew => 'Nový dokument';
+
+  @override
+  String get taskDocumentsNoText => 'Zatím bez textu';
+
+  @override
+  String get taskDocumentsRestore => 'Obnovit tuto verzi';
+
+  @override
+  String get taskDocumentsRestored => 'Verze obnovena';
+
+  @override
+  String get taskDocumentsRestoredByYou => 'Obnoveno tebou';
+
+  @override
+  String get taskDocumentsRestoreStale =>
+      'Mezitím přibyla novější verze. Podívej se na ni a pak obnov znovu.';
+
+  @override
+  String get taskDocumentsStale =>
+      'Tento dokument se mezitím změnil. Ulož znovu, ať ti tvůj text zůstane; druhá verze zůstane v historii.';
+
+  @override
+  String get taskDocumentsTextHint => 'Piš v Markdownu';
+
+  @override
+  String get taskDocumentsTextLabel => 'Text';
+
+  @override
+  String get taskDocumentsTitle => 'Dokumenty';
+
+  @override
+  String get taskDocumentsTitleLabel => 'Název';
+
+  @override
+  String taskDocumentsVersion(int number) {
+    return 'v$number';
+  }
+
+  @override
+  String get taskDocumentsWrittenByAgent => 'Napsáno agentem';
+
+  @override
+  String get taskDocumentsWrittenByYou => 'Napsáno tebou';
 
   @override
   String get taskDueDateLabel => 'Datum splnění';

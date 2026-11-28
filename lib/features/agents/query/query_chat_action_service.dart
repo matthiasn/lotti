@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_task_action_planner.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 
@@ -105,6 +106,30 @@ class QueryChatActionService {
       }
     }
     return const <ToolExecutionResult>[];
+  });
+
+  /// Writes the document versions the answer to [questionId] holds, at once
+  /// and with no verdict asked (ADR 0167): the request in the chat is what
+  /// the user wanted written, and every earlier version stays in the
+  /// document's history. Each is applied as its own item, so the rest of the
+  /// set still waits for the user. A version that could not be written stays
+  /// pending, to be applied from its row. Returns the dispatch results, empty
+  /// when the set was dismissed or a decision is already in flight.
+  Future<List<ToolExecutionResult>> writeDocuments({
+    required String agentId,
+    required String chatId,
+    required String questionId,
+  }) => _exclusive(agentId, chatId, questionId, const [], () async {
+    await _authorize(agentId, chatId, questionId);
+    final set = await store.openActions(agentId, chatId, questionId);
+    if (set == null) return const <ToolExecutionResult>[];
+    final service = _confirmation(agentId, chatId, questionId);
+    return [
+      for (final (index, item) in set.items.indexed)
+        if (item.toolName == TaskAgentToolNames.writeDocumentVersion &&
+            item.status == ChangeItemStatus.pending)
+          await service.confirmItem(set, index),
+    ];
   });
 
   /// Confirms or rejects the single item at [itemIndex] — the per-item

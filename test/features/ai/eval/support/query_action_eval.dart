@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 
 /// Fixed synthetic state identifiers, independent of the model's output.
@@ -15,6 +16,37 @@ abstract final class ActionEvalIds {
   static const session = '00000000-0000-4000-8000-000000000400';
   static const timer = '00000000-0000-4000-8000-000000000401';
   static const newTask = '@new-task';
+}
+
+/// The fixture task's documents: none yet. It is there because a production
+/// task chat has a document source (`taskDocumentSourceProvider`), and
+/// without one the planner never offers `write_document_version`; with an
+/// empty one, creating a document is what a case can ask for. Nothing is
+/// ever applied in an eval.
+class ActionEvalDocuments implements TaskDocumentSource {
+  const ActionEvalDocuments();
+
+  @override
+  Future<List<TaskDocumentSummary>> documentsOf(String taskId) async => [];
+
+  @override
+  Future<TaskDocumentText?> read({
+    required String taskId,
+    required String documentId,
+  }) async => null;
+
+  @override
+  Future<TaskDocumentApplyOutcome> apply({
+    required String taskId,
+    required String markdown,
+    required String documentUuidV5Input,
+    required String versionUuidV5Input,
+    String? documentId,
+    String? newTitle,
+    String? baseVersionId,
+    String? changeSummary,
+    String? changeEffectKey,
+  }) => throw UnsupportedError('An eval proposes; it never applies.');
 }
 
 /// An independently specified action. Unrequested argument keys fail grading;
@@ -475,6 +507,18 @@ const queryActionEvalCases = <QueryActionEvalCase>[
         words: {
           'summary': ['habitat', 'maintenance'],
         },
+      ),
+    ],
+  ),
+  QueryActionEvalCase(
+    'document_new',
+    'Write a new document for this task titled "Feeder status one-pager" '
+        'that summarizes the feeder calibration work so far.',
+    [
+      ExpectedQueryAction(
+        'write_document_version',
+        {'newTitle': 'Feeder status one-pager'},
+        minLengths: {'markdown': 80, 'changeSummary': 10},
       ),
     ],
   ),

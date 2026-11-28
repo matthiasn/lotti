@@ -74,6 +74,8 @@ abstract final class ConfigFlagLabels {
         return LottiIcons.verified;
       case dailyOsOnboardingEnabledFlag:
         return LottiIcons.tip;
+      case enableTaskDocumentsFlag:
+        return LottiIcons.description;
       case enableForkHealingFlag:
         return LottiIcons.merge;
       case useIsolateSyncFlag:
@@ -133,6 +135,8 @@ abstract final class ConfigFlagLabels {
         return context.messages.configFlagEnableWhatsNew;
       case dailyOsOnboardingEnabledFlag:
         return context.messages.configFlagDailyOsOnboardingEnabled;
+      case enableTaskDocumentsFlag:
+        return context.messages.configFlagEnableTaskDocuments;
       case enableForkHealingFlag:
         return context.messages.configFlagEnableForkHealing;
       case useIsolateSyncFlag:
@@ -192,6 +196,8 @@ abstract final class ConfigFlagLabels {
         return context.messages.configFlagEnableWhatsNewDescription;
       case dailyOsOnboardingEnabledFlag:
         return context.messages.configFlagDailyOsOnboardingEnabledDescription;
+      case enableTaskDocumentsFlag:
+        return context.messages.configFlagEnableTaskDocumentsDescription;
       case enableForkHealingFlag:
         return context.messages.configFlagEnableForkHealingDescription;
       case useIsolateSyncFlag:

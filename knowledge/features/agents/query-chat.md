@@ -5,8 +5,8 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: claude-code/fable-5.2, at: 2026-11-23T10:00:00Z }
-stale_after: 2027-02-01
+generated: { by: claude-code/opus-5.5, at: 2026-11-23T12:00:00Z }
+stale_after: 2027-02-23
 sources:
   - id: controller
     resource: ../../../lib/features/agents/query/query_chat_controller.dart
@@ -478,7 +478,43 @@ live task metadata from `QueryTaskActionContextLoader`: owned checklist items,
 linked time entries, visible same-category task targets, eligible labels and
 the current timer when it belongs to the task. No neighbour raw entries are
 loaded. This supports checklist additions/updates, time recording and timer
-text, task fields, labels, follow-up tasks, relationships and migrations.
+text, task fields, labels, follow-up tasks, relationships, migrations and the
+task's documents. It is not given `set_task_project`, `create_task_project` or
+`link_pull_request`: the chat's context carries no project directory and no
+pull request listing, so an id there could only be invented.
+
+**Documents** ([Task documents](../documents.md), ADR 0167). With the
+documents feature wired (`taskDocumentSourceProvider`), the loader reads the
+task's documents through that port, text included, and the planner offers
+`write_document_version` — the one tool it offers that is not deferred. The
+planner lists each document by id, title and
+version, with its text while the texts fit what the input budget leaves
+(oldest first, keeping 1 KiB for a repair attempt). A text that does not fit
+is marked `textOmitted`, and a revision of that document is dropped as an
+unavailable target: without the text the model could only have rewritten it
+from nothing. Listing stops at the first document whose entry does not fit
+even without its text, and `documentsOmitted` counts the rest, so many
+documents or one long title never push the request over the budget and
+fail every action in the task's chat. A recorded item carries the document's `title` and
+`baseVersionId` from the context, never from the model — the shape a task
+wake dispatches, so one dispatcher handler applies both. The chat
+history shows earlier document writes without their text. Transcripts are
+still not loaded: a revision works from the document's text, the conversation
+and the user's message.
+
+**A document version is written, not reviewed.** Once the answer is saved,
+`QueryChatController.send` calls `QueryChatActionService.writeDocuments`,
+which opens the answer's change set and applies its document items — and
+only those — through the same confirmation service, scope checks and
+fresh-context validation as an approval, with those two keys set aside. No
+verdict on the set is recorded, so the answer's other changes still wait for
+Accept or Dismiss. The turn stays running while it writes, and
+`QueryActionReview` holds its buttons meanwhile (`applying`). A written
+version reads as an applied row with the agent's line on what it changes; an
+answer holding nothing but document versions is headed "Documents" instead
+of "Proposed changes". A version that could not be written stays pending and
+is applied from its row like any other change, and a failure is logged by
+type only and never fails the saved answer.
 Checklist targets use the journal metadata ID; nullable or stale legacy IDs
 inside checklist data cannot overwrite it. Chat-specific guidance allows
 migration to a supplied existing task as well as a newly proposed follow-up.

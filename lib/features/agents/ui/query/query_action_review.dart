@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
@@ -21,6 +22,11 @@ import 'package:material_ui/material_ui.dart';
 /// one change, each row takes its own confirm/reject and the set-level
 /// buttons resolve whatever is still pending. Completed items remain visible
 /// and are never repeated when retrying a set.
+///
+/// A document version is the exception (ADR 0167): the chat writes it as
+/// soon as the answer is saved, so its row normally arrives applied. While
+/// that write runs ([applying]) the buttons wait; one that failed stays
+/// pending and is applied from here like any other change.
 class QueryActionReview extends ConsumerStatefulWidget {
   const QueryActionReview({
     required this.chatKey,
@@ -29,6 +35,7 @@ class QueryActionReview extends ConsumerStatefulWidget {
     this.approved,
     this.access,
     this.canApply = true,
+    this.applying = false,
     super.key,
   });
 
@@ -38,6 +45,19 @@ class QueryActionReview extends ConsumerStatefulWidget {
   final bool? approved;
   final QueryAccessSnapshot? access;
   final bool canApply;
+
+  /// The chat is still writing this answer's document versions.
+  final bool applying;
+
+  /// What heads an answer holding [actions] in the chat, in place of the
+  /// model's own text: "Proposed changes" — or "Documents" when every one
+  /// is a document version, which is written, not proposed (ADR 0167).
+  static String heading(AppLocalizations messages, List<ChangeItem> actions) =>
+      actions.every(
+        (item) => item.toolName == TaskAgentToolNames.writeDocumentVersion,
+      )
+      ? messages.taskDocumentsTitle
+      : messages.queryActionsReview;
 
   @override
   ConsumerState<QueryActionReview> createState() => _QueryActionReviewState();
@@ -134,6 +154,11 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
     final lines = <String>[
       localizedChangeSummary(messages, item.toolName, display) ??
           item.humanSummary,
+      // A document version carries the agent's line on what it changes.
+      if (item.toolName == TaskAgentToolNames.writeDocumentVersion)
+        if (args['changeSummary'] case final String summary
+            when summary.trim().isNotEmpty)
+          summary.trim(),
     ];
     if (item.toolName == TaskAgentToolNames.updateChecklistItem) {
       final title = display['title'];
@@ -231,6 +256,7 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
                 item.toolName,
               ),
         );
+    final busy = _busy || widget.applying;
     return Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step3),
       child: Column(
@@ -262,7 +288,7 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
                   if (perItem && item.status == ChangeItemStatus.pending)
                     RowActions(
                       busy: false,
-                      enabled: !_busy,
+                      enabled: !busy,
                       onReject: () => _resolveItem(index, approved: false),
                       onConfirm: () => _resolveItem(index, approved: true),
                     ),
@@ -290,26 +316,30 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
               Wrap(
                 spacing: tokens.spacing.step2,
                 runSpacing: tokens.spacing.step2,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
+                  // Quiet Dismiss first, the way forward last: the order of
+                  // the card's ✕/✓.
+                  if (decision == null)
+                    DesignSystemButton(
+                      label: items.length > 1
+                          ? messages.queryActionsDismissAll
+                          : messages.queryActionsDismiss,
+                      // Neutral: teal marks only the way forward.
+                      variant: DesignSystemButtonVariant.quiet,
+                      onPressed: busy || !widget.canApply
+                          ? null
+                          : () => _resolve(false),
+                    ),
                   DesignSystemButton(
                     label: decision == true
                         ? messages.projectNextStepRetry
                         : items.length > 1
                         ? messages.queryActionsAcceptAll
                         : messages.queryActionsAccept,
-                    isLoading: _busy || loading,
+                    isLoading: busy || loading,
                     onPressed: widget.canApply ? () => _resolve(true) : null,
                   ),
-                  if (decision == null)
-                    DesignSystemButton(
-                      label: items.length > 1
-                          ? messages.queryActionsDismissAll
-                          : messages.queryActionsDismiss,
-                      variant: DesignSystemButtonVariant.tertiary,
-                      onPressed: _busy || !widget.canApply
-                          ? null
-                          : () => _resolve(false),
-                    ),
                 ],
               ),
           ],

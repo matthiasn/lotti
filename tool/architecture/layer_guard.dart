@@ -75,6 +75,7 @@ const featureOrder = <String>[
   'theming',
   'demo',
   'github',
+  'documents',
   'tasks',
   'plaza',
   'habits',

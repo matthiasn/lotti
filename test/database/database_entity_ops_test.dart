@@ -27,6 +27,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../classes/task_document_fixtures.dart';
 import '../features/github/pull_request_fixtures.dart';
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
@@ -1815,6 +1816,146 @@ void main() {
             );
             expect(other.skipReason, JournalUpdateSkipReason.conflict);
             expect(await conflictText(), 'theirs');
+          },
+        );
+      });
+
+      // ADR 0167: a document's text lives in immutable version rows, so two
+      // concurrent document rows only disagree about the title and which
+      // version is current.
+      group('task document versions -', () {
+        Future<TaskDocumentEntry?> receive(
+          JournalEntity first,
+          JournalEntity second,
+        ) async {
+          await clearAllTables(db!);
+          await db!.updateJournalEntity(first);
+          final result = await db!.updateJournalEntity(second);
+          expect(result.applied, isTrue);
+          expect(await db!.conflictsForEntry(first.meta.id), isEmpty);
+          return await db!.journalEntityByIdIncludingDeleted(first.meta.id)
+              as TaskDocumentEntry?;
+        }
+
+        test(
+          'a rename and a confirmed version made at once merge to both, in '
+          'either order, without a conflict for the user',
+          () async {
+            final renamed = taskDocumentEntry(
+              clock: {'a': 2},
+              title: 'One-pager for the client',
+              current: taskDocumentRef(3),
+              editedSecond: 20,
+            );
+            final confirmed = taskDocumentEntry(
+              clock: {'a': 1, 'b': 1},
+              current: taskDocumentRef(4, second: 10),
+              editedSecond: 10,
+            );
+
+            final renameFirst = await receive(renamed, confirmed);
+            final confirmFirst = await receive(confirmed, renamed);
+
+            expect(renameFirst, confirmFirst);
+            expect(renameFirst?.data.title, 'One-pager for the client');
+            expect(renameFirst?.data.current?.number, 4);
+            expect(
+              renameFirst?.meta.vectorClock,
+              const VectorClock({'a': 2, 'b': 1}),
+            );
+          },
+        );
+
+        test(
+          'a deletion concurrent with a confirmed version stays deleted in '
+          'either order',
+          () async {
+            final deleted = taskDocumentEntry(
+              clock: {'a': 2},
+              current: taskDocumentRef(3),
+              deleted: true,
+            );
+            final confirmed = taskDocumentEntry(
+              clock: {'a': 1, 'b': 1},
+              current: taskDocumentRef(4),
+              editedSecond: 10,
+            );
+
+            final deleteFirst = await receive(deleted, confirmed);
+            final confirmFirst = await receive(confirmed, deleted);
+
+            expect(deleteFirst, confirmFirst);
+            expect(deleteFirst?.meta.deletedAt, isNotNull);
+            expect(await db!.journalEntityById(deleted.meta.id), isNull);
+          },
+        );
+
+        test(
+          'two copies of one version row, written by applying one confirmed '
+          'proposal on two devices, merge without a conflict in either '
+          'order, the live copy kept over one taken back',
+          () async {
+            final applied = taskDocumentVersionEntry(
+              number: 4,
+              clock: {'a': 1},
+              writtenSecond: 10,
+            );
+            final takenBack = taskDocumentVersionEntry(
+              number: 4,
+              clock: {'b': 1},
+              writtenSecond: 20,
+              deleted: true,
+            );
+
+            for (final (first, second) in [
+              (applied, takenBack),
+              (takenBack, applied),
+            ]) {
+              await clearAllTables(db!);
+              await db!.updateJournalEntity(first);
+              final result = await db!.updateJournalEntity(second);
+
+              expect(result.applied, isTrue);
+              expect(await db!.conflictsForEntry(applied.meta.id), isEmpty);
+              final stored = await db!.journalEntityById(applied.meta.id);
+              expect(stored?.meta.deletedAt, isNull);
+              expect(
+                stored?.meta.vectorClock,
+                const VectorClock({'a': 1, 'b': 1}),
+              );
+            }
+          },
+        );
+
+        test(
+          'a live document and a purged deletion merge to the deletion in '
+          'either order, without a conflict',
+          () async {
+            final live = taskDocumentEntry(
+              clock: {'a': 1, 'b': 1},
+              current: taskDocumentRef(4),
+              editedSecond: 10,
+            );
+            final purged = taskDocumentEntry(
+              clock: {'a': 2},
+              current: taskDocumentRef(3),
+              deleted: true,
+            ).toPurgedTombstone(taskDocFixtureEpoch);
+            const joined = VectorClock({'a': 2, 'b': 1});
+
+            for (final (first, second) in [(live, purged), (purged, live)]) {
+              await clearAllTables(db!);
+              await db!.updateJournalEntity(first);
+              final result = await db!.updateJournalEntity(second);
+
+              expect(result.applied, isTrue);
+              expect(await db!.conflictsForEntry(live.meta.id), isEmpty);
+              final stored = await db!.journalEntityByIdIncludingDeleted(
+                live.meta.id,
+              );
+              expect(stored?.meta.deletedAt, isNotNull);
+              expect(stored?.meta.vectorClock, joined);
+            }
           },
         );
       });

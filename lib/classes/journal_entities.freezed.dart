@@ -1673,6 +1673,14 @@ JournalEntity _$JournalEntityFromJson(
           return PullRequestEntry.fromJson(
             json
           );
+                case 'taskDocument':
+          return TaskDocumentEntry.fromJson(
+            json
+          );
+                case 'taskDocumentVersion':
+          return TaskDocumentVersionEntry.fromJson(
+            json
+          );
         
           default:
             throw CheckedFromJsonException(
@@ -1797,7 +1805,7 @@ extension JournalEntityPatterns on JournalEntity {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( JournalEntry value)?  journalEntry,TResult Function( JournalImage value)?  journalImage,TResult Function( JournalAudio value)?  journalAudio,TResult Function( Task value)?  task,TResult Function( JournalEvent value)?  event,TResult Function( ChecklistItem value)?  checklistItem,TResult Function( Checklist value)?  checklist,TResult Function( QuantitativeEntry value)?  quantitative,TResult Function( MeasurementEntry value)?  measurement,TResult Function( AiResponseEntry value)?  aiResponse,TResult Function( WorkoutEntry value)?  workout,TResult Function( HabitCompletionEntry value)?  habitCompletion,TResult Function( SurveyEntry value)?  survey,TResult Function( DayPlanEntry value)?  dayPlan,TResult Function( RatingEntry value)?  rating,TResult Function( ProjectEntry value)?  project,TResult Function( RelationshipEntry value)?  relationship,TResult Function( CheckInEntry value)?  checkIn,TResult Function( GoalEntry value)?  goal,TResult Function( PullRequestEntry value)?  pullRequest,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( JournalEntry value)?  journalEntry,TResult Function( JournalImage value)?  journalImage,TResult Function( JournalAudio value)?  journalAudio,TResult Function( Task value)?  task,TResult Function( JournalEvent value)?  event,TResult Function( ChecklistItem value)?  checklistItem,TResult Function( Checklist value)?  checklist,TResult Function( QuantitativeEntry value)?  quantitative,TResult Function( MeasurementEntry value)?  measurement,TResult Function( AiResponseEntry value)?  aiResponse,TResult Function( WorkoutEntry value)?  workout,TResult Function( HabitCompletionEntry value)?  habitCompletion,TResult Function( SurveyEntry value)?  survey,TResult Function( DayPlanEntry value)?  dayPlan,TResult Function( RatingEntry value)?  rating,TResult Function( ProjectEntry value)?  project,TResult Function( RelationshipEntry value)?  relationship,TResult Function( CheckInEntry value)?  checkIn,TResult Function( GoalEntry value)?  goal,TResult Function( PullRequestEntry value)?  pullRequest,TResult Function( TaskDocumentEntry value)?  taskDocument,TResult Function( TaskDocumentVersionEntry value)?  taskDocumentVersion,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case JournalEntry() when journalEntry != null:
@@ -1820,7 +1828,9 @@ return project(_that);case RelationshipEntry() when relationship != null:
 return relationship(_that);case CheckInEntry() when checkIn != null:
 return checkIn(_that);case GoalEntry() when goal != null:
 return goal(_that);case PullRequestEntry() when pullRequest != null:
-return pullRequest(_that);case _:
+return pullRequest(_that);case TaskDocumentEntry() when taskDocument != null:
+return taskDocument(_that);case TaskDocumentVersionEntry() when taskDocumentVersion != null:
+return taskDocumentVersion(_that);case _:
   return orElse();
 
 }
@@ -1838,7 +1848,7 @@ return pullRequest(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( JournalEntry value)  journalEntry,required TResult Function( JournalImage value)  journalImage,required TResult Function( JournalAudio value)  journalAudio,required TResult Function( Task value)  task,required TResult Function( JournalEvent value)  event,required TResult Function( ChecklistItem value)  checklistItem,required TResult Function( Checklist value)  checklist,required TResult Function( QuantitativeEntry value)  quantitative,required TResult Function( MeasurementEntry value)  measurement,required TResult Function( AiResponseEntry value)  aiResponse,required TResult Function( WorkoutEntry value)  workout,required TResult Function( HabitCompletionEntry value)  habitCompletion,required TResult Function( SurveyEntry value)  survey,required TResult Function( DayPlanEntry value)  dayPlan,required TResult Function( RatingEntry value)  rating,required TResult Function( ProjectEntry value)  project,required TResult Function( RelationshipEntry value)  relationship,required TResult Function( CheckInEntry value)  checkIn,required TResult Function( GoalEntry value)  goal,required TResult Function( PullRequestEntry value)  pullRequest,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( JournalEntry value)  journalEntry,required TResult Function( JournalImage value)  journalImage,required TResult Function( JournalAudio value)  journalAudio,required TResult Function( Task value)  task,required TResult Function( JournalEvent value)  event,required TResult Function( ChecklistItem value)  checklistItem,required TResult Function( Checklist value)  checklist,required TResult Function( QuantitativeEntry value)  quantitative,required TResult Function( MeasurementEntry value)  measurement,required TResult Function( AiResponseEntry value)  aiResponse,required TResult Function( WorkoutEntry value)  workout,required TResult Function( HabitCompletionEntry value)  habitCompletion,required TResult Function( SurveyEntry value)  survey,required TResult Function( DayPlanEntry value)  dayPlan,required TResult Function( RatingEntry value)  rating,required TResult Function( ProjectEntry value)  project,required TResult Function( RelationshipEntry value)  relationship,required TResult Function( CheckInEntry value)  checkIn,required TResult Function( GoalEntry value)  goal,required TResult Function( PullRequestEntry value)  pullRequest,required TResult Function( TaskDocumentEntry value)  taskDocument,required TResult Function( TaskDocumentVersionEntry value)  taskDocumentVersion,}){
 final _that = this;
 switch (_that) {
 case JournalEntry():
@@ -1861,7 +1871,9 @@ return project(_that);case RelationshipEntry():
 return relationship(_that);case CheckInEntry():
 return checkIn(_that);case GoalEntry():
 return goal(_that);case PullRequestEntry():
-return pullRequest(_that);}
+return pullRequest(_that);case TaskDocumentEntry():
+return taskDocument(_that);case TaskDocumentVersionEntry():
+return taskDocumentVersion(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -1875,7 +1887,7 @@ return pullRequest(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( JournalEntry value)?  journalEntry,TResult? Function( JournalImage value)?  journalImage,TResult? Function( JournalAudio value)?  journalAudio,TResult? Function( Task value)?  task,TResult? Function( JournalEvent value)?  event,TResult? Function( ChecklistItem value)?  checklistItem,TResult? Function( Checklist value)?  checklist,TResult? Function( QuantitativeEntry value)?  quantitative,TResult? Function( MeasurementEntry value)?  measurement,TResult? Function( AiResponseEntry value)?  aiResponse,TResult? Function( WorkoutEntry value)?  workout,TResult? Function( HabitCompletionEntry value)?  habitCompletion,TResult? Function( SurveyEntry value)?  survey,TResult? Function( DayPlanEntry value)?  dayPlan,TResult? Function( RatingEntry value)?  rating,TResult? Function( ProjectEntry value)?  project,TResult? Function( RelationshipEntry value)?  relationship,TResult? Function( CheckInEntry value)?  checkIn,TResult? Function( GoalEntry value)?  goal,TResult? Function( PullRequestEntry value)?  pullRequest,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( JournalEntry value)?  journalEntry,TResult? Function( JournalImage value)?  journalImage,TResult? Function( JournalAudio value)?  journalAudio,TResult? Function( Task value)?  task,TResult? Function( JournalEvent value)?  event,TResult? Function( ChecklistItem value)?  checklistItem,TResult? Function( Checklist value)?  checklist,TResult? Function( QuantitativeEntry value)?  quantitative,TResult? Function( MeasurementEntry value)?  measurement,TResult? Function( AiResponseEntry value)?  aiResponse,TResult? Function( WorkoutEntry value)?  workout,TResult? Function( HabitCompletionEntry value)?  habitCompletion,TResult? Function( SurveyEntry value)?  survey,TResult? Function( DayPlanEntry value)?  dayPlan,TResult? Function( RatingEntry value)?  rating,TResult? Function( ProjectEntry value)?  project,TResult? Function( RelationshipEntry value)?  relationship,TResult? Function( CheckInEntry value)?  checkIn,TResult? Function( GoalEntry value)?  goal,TResult? Function( PullRequestEntry value)?  pullRequest,TResult? Function( TaskDocumentEntry value)?  taskDocument,TResult? Function( TaskDocumentVersionEntry value)?  taskDocumentVersion,}){
 final _that = this;
 switch (_that) {
 case JournalEntry() when journalEntry != null:
@@ -1898,7 +1910,9 @@ return project(_that);case RelationshipEntry() when relationship != null:
 return relationship(_that);case CheckInEntry() when checkIn != null:
 return checkIn(_that);case GoalEntry() when goal != null:
 return goal(_that);case PullRequestEntry() when pullRequest != null:
-return pullRequest(_that);case _:
+return pullRequest(_that);case TaskDocumentEntry() when taskDocument != null:
+return taskDocument(_that);case TaskDocumentVersionEntry() when taskDocumentVersion != null:
+return taskDocumentVersion(_that);case _:
   return null;
 
 }
@@ -1915,7 +1929,7 @@ return pullRequest(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( Metadata meta,  EntryText? entryText,  Geolocation? geolocation)?  journalEntry,TResult Function( Metadata meta,  ImageData data,  EntryText? entryText,  Geolocation? geolocation)?  journalImage,TResult Function( Metadata meta,  AudioData data,  EntryText? entryText,  Geolocation? geolocation)?  journalAudio,TResult Function( Metadata meta,  TaskData data,  EntryText? entryText,  Geolocation? geolocation)?  task,TResult Function( Metadata meta,  EventData data,  EntryText? entryText,  Geolocation? geolocation)?  event,TResult Function( Metadata meta,  ChecklistItemData data,  EntryText? entryText,  Geolocation? geolocation)?  checklistItem,TResult Function( Metadata meta,  ChecklistData data,  EntryText? entryText,  Geolocation? geolocation)?  checklist,TResult Function( Metadata meta,  QuantitativeData data,  EntryText? entryText,  Geolocation? geolocation)?  quantitative,TResult Function( Metadata meta,  MeasurementData data,  EntryText? entryText,  Geolocation? geolocation)?  measurement,TResult Function( Metadata meta,  AiResponseData data,  EntryText? entryText,  Geolocation? geolocation)?  aiResponse,TResult Function( Metadata meta,  WorkoutData data,  EntryText? entryText,  Geolocation? geolocation)?  workout,TResult Function( Metadata meta,  HabitCompletionData data,  EntryText? entryText,  Geolocation? geolocation)?  habitCompletion,TResult Function( Metadata meta,  SurveyData data,  EntryText? entryText,  Geolocation? geolocation)?  survey,TResult Function( Metadata meta,  DayPlanData data,  EntryText? entryText,  Geolocation? geolocation)?  dayPlan,TResult Function( Metadata meta,  RatingData data,  EntryText? entryText,  Geolocation? geolocation)?  rating,TResult Function( Metadata meta,  ProjectData data,  EntryText? entryText,  Geolocation? geolocation)?  project,TResult Function( Metadata meta,  RelationshipData data,  EntryText? entryText,  Geolocation? geolocation)?  relationship,TResult Function( Metadata meta,  CheckInData data,  EntryText? entryText,  Geolocation? geolocation)?  checkIn,TResult Function( Metadata meta,  GoalData data,  EntryText? entryText,  Geolocation? geolocation)?  goal,TResult Function( Metadata meta,  PullRequestData data,  EntryText? entryText,  Geolocation? geolocation)?  pullRequest,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( Metadata meta,  EntryText? entryText,  Geolocation? geolocation)?  journalEntry,TResult Function( Metadata meta,  ImageData data,  EntryText? entryText,  Geolocation? geolocation)?  journalImage,TResult Function( Metadata meta,  AudioData data,  EntryText? entryText,  Geolocation? geolocation)?  journalAudio,TResult Function( Metadata meta,  TaskData data,  EntryText? entryText,  Geolocation? geolocation)?  task,TResult Function( Metadata meta,  EventData data,  EntryText? entryText,  Geolocation? geolocation)?  event,TResult Function( Metadata meta,  ChecklistItemData data,  EntryText? entryText,  Geolocation? geolocation)?  checklistItem,TResult Function( Metadata meta,  ChecklistData data,  EntryText? entryText,  Geolocation? geolocation)?  checklist,TResult Function( Metadata meta,  QuantitativeData data,  EntryText? entryText,  Geolocation? geolocation)?  quantitative,TResult Function( Metadata meta,  MeasurementData data,  EntryText? entryText,  Geolocation? geolocation)?  measurement,TResult Function( Metadata meta,  AiResponseData data,  EntryText? entryText,  Geolocation? geolocation)?  aiResponse,TResult Function( Metadata meta,  WorkoutData data,  EntryText? entryText,  Geolocation? geolocation)?  workout,TResult Function( Metadata meta,  HabitCompletionData data,  EntryText? entryText,  Geolocation? geolocation)?  habitCompletion,TResult Function( Metadata meta,  SurveyData data,  EntryText? entryText,  Geolocation? geolocation)?  survey,TResult Function( Metadata meta,  DayPlanData data,  EntryText? entryText,  Geolocation? geolocation)?  dayPlan,TResult Function( Metadata meta,  RatingData data,  EntryText? entryText,  Geolocation? geolocation)?  rating,TResult Function( Metadata meta,  ProjectData data,  EntryText? entryText,  Geolocation? geolocation)?  project,TResult Function( Metadata meta,  RelationshipData data,  EntryText? entryText,  Geolocation? geolocation)?  relationship,TResult Function( Metadata meta,  CheckInData data,  EntryText? entryText,  Geolocation? geolocation)?  checkIn,TResult Function( Metadata meta,  GoalData data,  EntryText? entryText,  Geolocation? geolocation)?  goal,TResult Function( Metadata meta,  PullRequestData data,  EntryText? entryText,  Geolocation? geolocation)?  pullRequest,TResult Function( Metadata meta,  TaskDocumentData data,  EntryText? entryText,  Geolocation? geolocation)?  taskDocument,TResult Function( Metadata meta,  TaskDocumentVersionData data,  EntryText? entryText,  Geolocation? geolocation)?  taskDocumentVersion,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case JournalEntry() when journalEntry != null:
 return journalEntry(_that.meta,_that.entryText,_that.geolocation);case JournalImage() when journalImage != null:
@@ -1937,7 +1951,9 @@ return project(_that.meta,_that.data,_that.entryText,_that.geolocation);case Rel
 return relationship(_that.meta,_that.data,_that.entryText,_that.geolocation);case CheckInEntry() when checkIn != null:
 return checkIn(_that.meta,_that.data,_that.entryText,_that.geolocation);case GoalEntry() when goal != null:
 return goal(_that.meta,_that.data,_that.entryText,_that.geolocation);case PullRequestEntry() when pullRequest != null:
-return pullRequest(_that.meta,_that.data,_that.entryText,_that.geolocation);case _:
+return pullRequest(_that.meta,_that.data,_that.entryText,_that.geolocation);case TaskDocumentEntry() when taskDocument != null:
+return taskDocument(_that.meta,_that.data,_that.entryText,_that.geolocation);case TaskDocumentVersionEntry() when taskDocumentVersion != null:
+return taskDocumentVersion(_that.meta,_that.data,_that.entryText,_that.geolocation);case _:
   return orElse();
 
 }
@@ -1955,7 +1971,7 @@ return pullRequest(_that.meta,_that.data,_that.entryText,_that.geolocation);case
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( Metadata meta,  EntryText? entryText,  Geolocation? geolocation)  journalEntry,required TResult Function( Metadata meta,  ImageData data,  EntryText? entryText,  Geolocation? geolocation)  journalImage,required TResult Function( Metadata meta,  AudioData data,  EntryText? entryText,  Geolocation? geolocation)  journalAudio,required TResult Function( Metadata meta,  TaskData data,  EntryText? entryText,  Geolocation? geolocation)  task,required TResult Function( Metadata meta,  EventData data,  EntryText? entryText,  Geolocation? geolocation)  event,required TResult Function( Metadata meta,  ChecklistItemData data,  EntryText? entryText,  Geolocation? geolocation)  checklistItem,required TResult Function( Metadata meta,  ChecklistData data,  EntryText? entryText,  Geolocation? geolocation)  checklist,required TResult Function( Metadata meta,  QuantitativeData data,  EntryText? entryText,  Geolocation? geolocation)  quantitative,required TResult Function( Metadata meta,  MeasurementData data,  EntryText? entryText,  Geolocation? geolocation)  measurement,required TResult Function( Metadata meta,  AiResponseData data,  EntryText? entryText,  Geolocation? geolocation)  aiResponse,required TResult Function( Metadata meta,  WorkoutData data,  EntryText? entryText,  Geolocation? geolocation)  workout,required TResult Function( Metadata meta,  HabitCompletionData data,  EntryText? entryText,  Geolocation? geolocation)  habitCompletion,required TResult Function( Metadata meta,  SurveyData data,  EntryText? entryText,  Geolocation? geolocation)  survey,required TResult Function( Metadata meta,  DayPlanData data,  EntryText? entryText,  Geolocation? geolocation)  dayPlan,required TResult Function( Metadata meta,  RatingData data,  EntryText? entryText,  Geolocation? geolocation)  rating,required TResult Function( Metadata meta,  ProjectData data,  EntryText? entryText,  Geolocation? geolocation)  project,required TResult Function( Metadata meta,  RelationshipData data,  EntryText? entryText,  Geolocation? geolocation)  relationship,required TResult Function( Metadata meta,  CheckInData data,  EntryText? entryText,  Geolocation? geolocation)  checkIn,required TResult Function( Metadata meta,  GoalData data,  EntryText? entryText,  Geolocation? geolocation)  goal,required TResult Function( Metadata meta,  PullRequestData data,  EntryText? entryText,  Geolocation? geolocation)  pullRequest,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( Metadata meta,  EntryText? entryText,  Geolocation? geolocation)  journalEntry,required TResult Function( Metadata meta,  ImageData data,  EntryText? entryText,  Geolocation? geolocation)  journalImage,required TResult Function( Metadata meta,  AudioData data,  EntryText? entryText,  Geolocation? geolocation)  journalAudio,required TResult Function( Metadata meta,  TaskData data,  EntryText? entryText,  Geolocation? geolocation)  task,required TResult Function( Metadata meta,  EventData data,  EntryText? entryText,  Geolocation? geolocation)  event,required TResult Function( Metadata meta,  ChecklistItemData data,  EntryText? entryText,  Geolocation? geolocation)  checklistItem,required TResult Function( Metadata meta,  ChecklistData data,  EntryText? entryText,  Geolocation? geolocation)  checklist,required TResult Function( Metadata meta,  QuantitativeData data,  EntryText? entryText,  Geolocation? geolocation)  quantitative,required TResult Function( Metadata meta,  MeasurementData data,  EntryText? entryText,  Geolocation? geolocation)  measurement,required TResult Function( Metadata meta,  AiResponseData data,  EntryText? entryText,  Geolocation? geolocation)  aiResponse,required TResult Function( Metadata meta,  WorkoutData data,  EntryText? entryText,  Geolocation? geolocation)  workout,required TResult Function( Metadata meta,  HabitCompletionData data,  EntryText? entryText,  Geolocation? geolocation)  habitCompletion,required TResult Function( Metadata meta,  SurveyData data,  EntryText? entryText,  Geolocation? geolocation)  survey,required TResult Function( Metadata meta,  DayPlanData data,  EntryText? entryText,  Geolocation? geolocation)  dayPlan,required TResult Function( Metadata meta,  RatingData data,  EntryText? entryText,  Geolocation? geolocation)  rating,required TResult Function( Metadata meta,  ProjectData data,  EntryText? entryText,  Geolocation? geolocation)  project,required TResult Function( Metadata meta,  RelationshipData data,  EntryText? entryText,  Geolocation? geolocation)  relationship,required TResult Function( Metadata meta,  CheckInData data,  EntryText? entryText,  Geolocation? geolocation)  checkIn,required TResult Function( Metadata meta,  GoalData data,  EntryText? entryText,  Geolocation? geolocation)  goal,required TResult Function( Metadata meta,  PullRequestData data,  EntryText? entryText,  Geolocation? geolocation)  pullRequest,required TResult Function( Metadata meta,  TaskDocumentData data,  EntryText? entryText,  Geolocation? geolocation)  taskDocument,required TResult Function( Metadata meta,  TaskDocumentVersionData data,  EntryText? entryText,  Geolocation? geolocation)  taskDocumentVersion,}) {final _that = this;
 switch (_that) {
 case JournalEntry():
 return journalEntry(_that.meta,_that.entryText,_that.geolocation);case JournalImage():
@@ -1977,7 +1993,9 @@ return project(_that.meta,_that.data,_that.entryText,_that.geolocation);case Rel
 return relationship(_that.meta,_that.data,_that.entryText,_that.geolocation);case CheckInEntry():
 return checkIn(_that.meta,_that.data,_that.entryText,_that.geolocation);case GoalEntry():
 return goal(_that.meta,_that.data,_that.entryText,_that.geolocation);case PullRequestEntry():
-return pullRequest(_that.meta,_that.data,_that.entryText,_that.geolocation);}
+return pullRequest(_that.meta,_that.data,_that.entryText,_that.geolocation);case TaskDocumentEntry():
+return taskDocument(_that.meta,_that.data,_that.entryText,_that.geolocation);case TaskDocumentVersionEntry():
+return taskDocumentVersion(_that.meta,_that.data,_that.entryText,_that.geolocation);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -1991,7 +2009,7 @@ return pullRequest(_that.meta,_that.data,_that.entryText,_that.geolocation);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( Metadata meta,  EntryText? entryText,  Geolocation? geolocation)?  journalEntry,TResult? Function( Metadata meta,  ImageData data,  EntryText? entryText,  Geolocation? geolocation)?  journalImage,TResult? Function( Metadata meta,  AudioData data,  EntryText? entryText,  Geolocation? geolocation)?  journalAudio,TResult? Function( Metadata meta,  TaskData data,  EntryText? entryText,  Geolocation? geolocation)?  task,TResult? Function( Metadata meta,  EventData data,  EntryText? entryText,  Geolocation? geolocation)?  event,TResult? Function( Metadata meta,  ChecklistItemData data,  EntryText? entryText,  Geolocation? geolocation)?  checklistItem,TResult? Function( Metadata meta,  ChecklistData data,  EntryText? entryText,  Geolocation? geolocation)?  checklist,TResult? Function( Metadata meta,  QuantitativeData data,  EntryText? entryText,  Geolocation? geolocation)?  quantitative,TResult? Function( Metadata meta,  MeasurementData data,  EntryText? entryText,  Geolocation? geolocation)?  measurement,TResult? Function( Metadata meta,  AiResponseData data,  EntryText? entryText,  Geolocation? geolocation)?  aiResponse,TResult? Function( Metadata meta,  WorkoutData data,  EntryText? entryText,  Geolocation? geolocation)?  workout,TResult? Function( Metadata meta,  HabitCompletionData data,  EntryText? entryText,  Geolocation? geolocation)?  habitCompletion,TResult? Function( Metadata meta,  SurveyData data,  EntryText? entryText,  Geolocation? geolocation)?  survey,TResult? Function( Metadata meta,  DayPlanData data,  EntryText? entryText,  Geolocation? geolocation)?  dayPlan,TResult? Function( Metadata meta,  RatingData data,  EntryText? entryText,  Geolocation? geolocation)?  rating,TResult? Function( Metadata meta,  ProjectData data,  EntryText? entryText,  Geolocation? geolocation)?  project,TResult? Function( Metadata meta,  RelationshipData data,  EntryText? entryText,  Geolocation? geolocation)?  relationship,TResult? Function( Metadata meta,  CheckInData data,  EntryText? entryText,  Geolocation? geolocation)?  checkIn,TResult? Function( Metadata meta,  GoalData data,  EntryText? entryText,  Geolocation? geolocation)?  goal,TResult? Function( Metadata meta,  PullRequestData data,  EntryText? entryText,  Geolocation? geolocation)?  pullRequest,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( Metadata meta,  EntryText? entryText,  Geolocation? geolocation)?  journalEntry,TResult? Function( Metadata meta,  ImageData data,  EntryText? entryText,  Geolocation? geolocation)?  journalImage,TResult? Function( Metadata meta,  AudioData data,  EntryText? entryText,  Geolocation? geolocation)?  journalAudio,TResult? Function( Metadata meta,  TaskData data,  EntryText? entryText,  Geolocation? geolocation)?  task,TResult? Function( Metadata meta,  EventData data,  EntryText? entryText,  Geolocation? geolocation)?  event,TResult? Function( Metadata meta,  ChecklistItemData data,  EntryText? entryText,  Geolocation? geolocation)?  checklistItem,TResult? Function( Metadata meta,  ChecklistData data,  EntryText? entryText,  Geolocation? geolocation)?  checklist,TResult? Function( Metadata meta,  QuantitativeData data,  EntryText? entryText,  Geolocation? geolocation)?  quantitative,TResult? Function( Metadata meta,  MeasurementData data,  EntryText? entryText,  Geolocation? geolocation)?  measurement,TResult? Function( Metadata meta,  AiResponseData data,  EntryText? entryText,  Geolocation? geolocation)?  aiResponse,TResult? Function( Metadata meta,  WorkoutData data,  EntryText? entryText,  Geolocation? geolocation)?  workout,TResult? Function( Metadata meta,  HabitCompletionData data,  EntryText? entryText,  Geolocation? geolocation)?  habitCompletion,TResult? Function( Metadata meta,  SurveyData data,  EntryText? entryText,  Geolocation? geolocation)?  survey,TResult? Function( Metadata meta,  DayPlanData data,  EntryText? entryText,  Geolocation? geolocation)?  dayPlan,TResult? Function( Metadata meta,  RatingData data,  EntryText? entryText,  Geolocation? geolocation)?  rating,TResult? Function( Metadata meta,  ProjectData data,  EntryText? entryText,  Geolocation? geolocation)?  project,TResult? Function( Metadata meta,  RelationshipData data,  EntryText? entryText,  Geolocation? geolocation)?  relationship,TResult? Function( Metadata meta,  CheckInData data,  EntryText? entryText,  Geolocation? geolocation)?  checkIn,TResult? Function( Metadata meta,  GoalData data,  EntryText? entryText,  Geolocation? geolocation)?  goal,TResult? Function( Metadata meta,  PullRequestData data,  EntryText? entryText,  Geolocation? geolocation)?  pullRequest,TResult? Function( Metadata meta,  TaskDocumentData data,  EntryText? entryText,  Geolocation? geolocation)?  taskDocument,TResult? Function( Metadata meta,  TaskDocumentVersionData data,  EntryText? entryText,  Geolocation? geolocation)?  taskDocumentVersion,}) {final _that = this;
 switch (_that) {
 case JournalEntry() when journalEntry != null:
 return journalEntry(_that.meta,_that.entryText,_that.geolocation);case JournalImage() when journalImage != null:
@@ -2013,7 +2031,9 @@ return project(_that.meta,_that.data,_that.entryText,_that.geolocation);case Rel
 return relationship(_that.meta,_that.data,_that.entryText,_that.geolocation);case CheckInEntry() when checkIn != null:
 return checkIn(_that.meta,_that.data,_that.entryText,_that.geolocation);case GoalEntry() when goal != null:
 return goal(_that.meta,_that.data,_that.entryText,_that.geolocation);case PullRequestEntry() when pullRequest != null:
-return pullRequest(_that.meta,_that.data,_that.entryText,_that.geolocation);case _:
+return pullRequest(_that.meta,_that.data,_that.entryText,_that.geolocation);case TaskDocumentEntry() when taskDocument != null:
+return taskDocument(_that.meta,_that.data,_that.entryText,_that.geolocation);case TaskDocumentVersionEntry() when taskDocumentVersion != null:
+return taskDocumentVersion(_that.meta,_that.data,_that.entryText,_that.geolocation);case _:
   return null;
 
 }
@@ -4401,6 +4421,248 @@ $MetadataCopyWith<$Res> get meta {
 $PullRequestDataCopyWith<$Res> get data {
   
   return $PullRequestDataCopyWith<$Res>(_self.data, (value) {
+    return _then(_self.copyWith(data: value));
+  });
+}/// Create a copy of JournalEntity
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+    return null;
+  }
+
+  return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+    return _then(_self.copyWith(entryText: value));
+  });
+}/// Create a copy of JournalEntity
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+    return null;
+  }
+
+  return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+    return _then(_self.copyWith(geolocation: value));
+  });
+}
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class TaskDocumentEntry implements JournalEntity {
+  const TaskDocumentEntry({required this.meta, required this.data, this.entryText, this.geolocation, final  String? $type}): $type = $type ?? 'taskDocument';
+  factory TaskDocumentEntry.fromJson(Map<String, dynamic> json) => _$TaskDocumentEntryFromJson(json);
+
+@override final  Metadata meta;
+ final  TaskDocumentData data;
+@override final  EntryText? entryText;
+@override final  Geolocation? geolocation;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of JournalEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TaskDocumentEntryCopyWith<TaskDocumentEntry> get copyWith => _$TaskDocumentEntryCopyWithImpl<TaskDocumentEntry>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TaskDocumentEntryToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDocumentEntry&&(identical(other.meta, meta) || other.meta == meta)&&(identical(other.data, data) || other.data == data)&&(identical(other.entryText, entryText) || other.entryText == entryText)&&(identical(other.geolocation, geolocation) || other.geolocation == geolocation));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,meta,data,entryText,geolocation);
+
+@override
+String toString() {
+  return 'JournalEntity.taskDocument(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TaskDocumentEntryCopyWith<$Res> implements $JournalEntityCopyWith<$Res> {
+  factory $TaskDocumentEntryCopyWith(TaskDocumentEntry value, $Res Function(TaskDocumentEntry) _then) = _$TaskDocumentEntryCopyWithImpl;
+@override @useResult
+$Res call({
+ Metadata meta, TaskDocumentData data, EntryText? entryText, Geolocation? geolocation
+});
+
+
+@override $MetadataCopyWith<$Res> get meta;$TaskDocumentDataCopyWith<$Res> get data;@override $EntryTextCopyWith<$Res>? get entryText;@override $GeolocationCopyWith<$Res>? get geolocation;
+
+}
+/// @nodoc
+class _$TaskDocumentEntryCopyWithImpl<$Res>
+    implements $TaskDocumentEntryCopyWith<$Res> {
+  _$TaskDocumentEntryCopyWithImpl(this._self, this._then);
+
+  final TaskDocumentEntry _self;
+  final $Res Function(TaskDocumentEntry) _then;
+
+/// Create a copy of JournalEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? meta = null,Object? data = null,Object? entryText = freezed,Object? geolocation = freezed,}) {
+  return _then(TaskDocumentEntry(
+meta: null == meta ? _self.meta : meta // ignore: cast_nullable_to_non_nullable
+as Metadata,data: null == data ? _self.data : data // ignore: cast_nullable_to_non_nullable
+as TaskDocumentData,entryText: freezed == entryText ? _self.entryText : entryText // ignore: cast_nullable_to_non_nullable
+as EntryText?,geolocation: freezed == geolocation ? _self.geolocation : geolocation // ignore: cast_nullable_to_non_nullable
+as Geolocation?,
+  ));
+}
+
+/// Create a copy of JournalEntity
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$MetadataCopyWith<$Res> get meta {
+  
+  return $MetadataCopyWith<$Res>(_self.meta, (value) {
+    return _then(_self.copyWith(meta: value));
+  });
+}/// Create a copy of JournalEntity
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TaskDocumentDataCopyWith<$Res> get data {
+  
+  return $TaskDocumentDataCopyWith<$Res>(_self.data, (value) {
+    return _then(_self.copyWith(data: value));
+  });
+}/// Create a copy of JournalEntity
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+    return null;
+  }
+
+  return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+    return _then(_self.copyWith(entryText: value));
+  });
+}/// Create a copy of JournalEntity
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+    return null;
+  }
+
+  return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+    return _then(_self.copyWith(geolocation: value));
+  });
+}
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class TaskDocumentVersionEntry implements JournalEntity {
+  const TaskDocumentVersionEntry({required this.meta, required this.data, this.entryText, this.geolocation, final  String? $type}): $type = $type ?? 'taskDocumentVersion';
+  factory TaskDocumentVersionEntry.fromJson(Map<String, dynamic> json) => _$TaskDocumentVersionEntryFromJson(json);
+
+@override final  Metadata meta;
+ final  TaskDocumentVersionData data;
+@override final  EntryText? entryText;
+@override final  Geolocation? geolocation;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of JournalEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TaskDocumentVersionEntryCopyWith<TaskDocumentVersionEntry> get copyWith => _$TaskDocumentVersionEntryCopyWithImpl<TaskDocumentVersionEntry>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TaskDocumentVersionEntryToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDocumentVersionEntry&&(identical(other.meta, meta) || other.meta == meta)&&(identical(other.data, data) || other.data == data)&&(identical(other.entryText, entryText) || other.entryText == entryText)&&(identical(other.geolocation, geolocation) || other.geolocation == geolocation));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,meta,data,entryText,geolocation);
+
+@override
+String toString() {
+  return 'JournalEntity.taskDocumentVersion(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TaskDocumentVersionEntryCopyWith<$Res> implements $JournalEntityCopyWith<$Res> {
+  factory $TaskDocumentVersionEntryCopyWith(TaskDocumentVersionEntry value, $Res Function(TaskDocumentVersionEntry) _then) = _$TaskDocumentVersionEntryCopyWithImpl;
+@override @useResult
+$Res call({
+ Metadata meta, TaskDocumentVersionData data, EntryText? entryText, Geolocation? geolocation
+});
+
+
+@override $MetadataCopyWith<$Res> get meta;$TaskDocumentVersionDataCopyWith<$Res> get data;@override $EntryTextCopyWith<$Res>? get entryText;@override $GeolocationCopyWith<$Res>? get geolocation;
+
+}
+/// @nodoc
+class _$TaskDocumentVersionEntryCopyWithImpl<$Res>
+    implements $TaskDocumentVersionEntryCopyWith<$Res> {
+  _$TaskDocumentVersionEntryCopyWithImpl(this._self, this._then);
+
+  final TaskDocumentVersionEntry _self;
+  final $Res Function(TaskDocumentVersionEntry) _then;
+
+/// Create a copy of JournalEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? meta = null,Object? data = null,Object? entryText = freezed,Object? geolocation = freezed,}) {
+  return _then(TaskDocumentVersionEntry(
+meta: null == meta ? _self.meta : meta // ignore: cast_nullable_to_non_nullable
+as Metadata,data: null == data ? _self.data : data // ignore: cast_nullable_to_non_nullable
+as TaskDocumentVersionData,entryText: freezed == entryText ? _self.entryText : entryText // ignore: cast_nullable_to_non_nullable
+as EntryText?,geolocation: freezed == geolocation ? _self.geolocation : geolocation // ignore: cast_nullable_to_non_nullable
+as Geolocation?,
+  ));
+}
+
+/// Create a copy of JournalEntity
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$MetadataCopyWith<$Res> get meta {
+  
+  return $MetadataCopyWith<$Res>(_self.meta, (value) {
+    return _then(_self.copyWith(meta: value));
+  });
+}/// Create a copy of JournalEntity
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TaskDocumentVersionDataCopyWith<$Res> get data {
+  
+  return $TaskDocumentVersionDataCopyWith<$Res>(_self.data, (value) {
     return _then(_self.copyWith(data: value));
   });
 }/// Create a copy of JournalEntity

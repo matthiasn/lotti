@@ -19,6 +19,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
+import 'package:lotti/features/agents/state/task_document_source_provider.dart';
 import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
@@ -33,6 +34,8 @@ import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maint
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
+import 'package:lotti/features/documents/service/task_document_agent_source.dart';
+import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/front_agent/runtime/front_runtime_maintenance.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
@@ -995,6 +998,35 @@ void main() {
       expect(
         identical(container.read(pullRequestContextSourceProvider), service),
         isTrue,
+      );
+    });
+
+    test('the task agent reads and writes task documents through the '
+        'documents feature while task documents are switched on, and has no '
+        'document source while they are off', () {
+      final source = TaskDocumentAgentSource(MockTaskDocumentRepository());
+      ProviderContainer containerWith({required bool enabled}) {
+        final container = ProviderContainer(
+          overrides: [
+            ...appFeatureWiringOverrides(),
+            taskDocumentAgentSourceProvider.overrideWithValue(source),
+            taskDocumentsEnabledProvider.overrideWithValue(enabled),
+          ],
+        );
+        addTearDown(container.dispose);
+        return container;
+      }
+
+      expect(
+        identical(
+          containerWith(enabled: true).read(taskDocumentSourceProvider),
+          source,
+        ),
+        isTrue,
+      );
+      expect(
+        containerWith(enabled: false).read(taskDocumentSourceProvider),
+        isNull,
       );
     });
 

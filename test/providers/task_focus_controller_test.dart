@@ -72,6 +72,18 @@ void main() {
         'TaskFocusIntent.pullRequests(taskId: test-task-id, alignment: 0.1)',
       );
     });
+
+    test('a documents intent names its target and carries no entry', () {
+      final intent = TaskFocusIntent.documents(taskId: testTaskId);
+
+      expect(intent.target, TaskFocusTarget.documents);
+      expect(intent.entryId, isNull);
+      expect(intent.alignment, 0.1);
+      expect(
+        intent.toString(),
+        'TaskFocusIntent.documents(taskId: test-task-id, alignment: 0.1)',
+      );
+    });
   });
 
   group('TaskFocusController', () {
@@ -120,6 +132,17 @@ void main() {
       final state = container.read(provider);
       expect(state?.taskId, testTaskId);
       expect(state?.target, TaskFocusTarget.pullRequests);
+      expect(state?.entryId, isNull);
+    });
+
+    test('publishDocumentsFocus sets a documents intent', () {
+      final provider = taskFocusControllerProvider(testTaskId);
+
+      container.read(provider.notifier).publishDocumentsFocus();
+
+      final state = container.read(provider);
+      expect(state?.taskId, testTaskId);
+      expect(state?.target, TaskFocusTarget.documents);
       expect(state?.entryId, isNull);
     });
 

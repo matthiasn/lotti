@@ -17,6 +17,7 @@ import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/classes/task_document_data.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:research_package/model.dart';
@@ -346,6 +347,24 @@ sealed class JournalEntity with _$JournalEntity {
     Geolocation? geolocation,
   }) = PullRequestEntry;
 
+  /// A markdown document a task holds: its title and which version it
+  /// shows — see [TaskDocumentData] and ADR 0167.
+  const factory JournalEntity.taskDocument({
+    required Metadata meta,
+    required TaskDocumentData data,
+    EntryText? entryText,
+    Geolocation? geolocation,
+  }) = TaskDocumentEntry;
+
+  /// One immutable version of a task document's text — see
+  /// [TaskDocumentVersionData].
+  const factory JournalEntity.taskDocumentVersion({
+    required Metadata meta,
+    required TaskDocumentVersionData data,
+    EntryText? entryText,
+    Geolocation? geolocation,
+  }) = TaskDocumentVersionEntry;
+
   factory JournalEntity.fromJson(Map<String, dynamic> json) =>
       _$JournalEntityFromJson(json);
 }
@@ -354,6 +373,12 @@ extension JournalEntityExtension on JournalEntity {
   String get id => meta.id;
   String? get categoryId => meta.categoryId;
   bool get isDeleted => meta.deletedAt != null;
+
+  /// Whether a task shows this entry in a section of its own — Linked
+  /// tasks, Pull requests, Documents — so its history of linked entries
+  /// leaves it out.
+  bool get hasOwnTaskSection =>
+      this is Task || this is PullRequestEntry || this is TaskDocumentEntry;
 
   Set<String> get affectedIds {
     final ids = <String>{id};
@@ -431,6 +456,17 @@ extension JournalEntityExtension on JournalEntity {
 
       case PullRequestEntry():
         ids.add(pullRequestNotification);
+
+      case TaskDocumentEntry():
+        ids.add(taskDocumentNotification);
+
+      // A new version also wakes its document: the document page and the
+      // task's section render the current text, so writing a version must
+      // refresh the document that owns it, not only the version row.
+      case final TaskDocumentVersionEntry version:
+        ids
+          ..add(version.data.documentId)
+          ..add(taskDocumentNotification);
     }
 
     return ids;

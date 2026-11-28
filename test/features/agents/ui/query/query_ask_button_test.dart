@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
@@ -104,4 +105,33 @@ void main() {
       );
     });
   }
+  testWidgets('inline, it says its scope in the agent violet and opens it', (
+    tester,
+  ) async {
+    const scope = QueryScope(kind: QueryScopeKind.task, id: 'penguin');
+    await tester.pumpWidget(
+      makeTestableWidget(
+        const QueryAskButton(scope: scope, inline: true),
+        overrides: [
+          configFlagProvider(
+            'enable_query_chat',
+          ).overrideWith((ref) => Stream.value(true)),
+        ],
+      ),
+    );
+    await tester.pump();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(QueryAskButton)),
+    );
+    final label = find.text('Ask about this task');
+    expect(label, findsOneWidget);
+    expect(
+      tester.widget<Text>(label).style?.color,
+      tester.element(label).designTokens.colors.aiCard.accent,
+    );
+    expect(find.byType(DesignSystemButton), findsNothing);
+
+    await tester.tap(label);
+    expect(container.read(queryPaneOpenProvider(scope)), isTrue);
+  });
 }

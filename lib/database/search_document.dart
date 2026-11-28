@@ -69,6 +69,12 @@ SearchDocument searchDocumentFor(
             body: _joined([goal.data.statement, text]),
             extra: '',
           ),
+    // A document is found by its title. A version is part of its document,
+    // which is found instead, so search never lists every revision.
+    taskDocument: (document) =>
+        SearchDocument(title: document.data.title, body: '', extra: ''),
+    taskDocumentVersion: (_) =>
+        const SearchDocument(title: '', body: '', extra: ''),
     event: (event) =>
         SearchDocument(title: event.data.title, body: text, extra: ''),
     checklist: (checklist) =>

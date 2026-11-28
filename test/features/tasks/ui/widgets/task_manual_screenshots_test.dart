@@ -405,6 +405,16 @@ void main() {
     ).thenReturn(null);
     when(() => navService.desktopSelectedTaskId).thenReturn(selectedTaskId);
     when(() => navService.desktopTaskDetailStack).thenReturn(detailStack);
+    // The desktop task pane listens for a document opened beside the task
+    // and for a review asked for by route; neither is shown here.
+    when(() => navService.desktopTaskDocument).thenReturn(
+      ValueNotifier<({String taskId, String documentId})?>(null),
+    );
+    when(() => navService.taskDocumentReviewRequest).thenReturn(
+      ValueNotifier<({String taskId, String documentId, String versionId})?>(
+        null,
+      ),
+    );
     when(() => navService.isDesktopMode).thenReturn(true);
     when(timeService.getStream).thenAnswer((_) => const Stream.empty());
     when(() => timeService.linkedFrom).thenReturn(null);

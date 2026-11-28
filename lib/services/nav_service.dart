@@ -13,8 +13,9 @@ import 'package:lotti/utils/consts.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'nav_service_nav_state_snapshot_part.dart';
+part 'nav_service_task_document_part.dart';
 
-class NavService {
+class NavService with _DesktopTaskDocumentPane {
   NavService({
     required TabDelegates tabDelegates,
     JournalDb? journalDb,
@@ -41,6 +42,7 @@ class NavService {
     for (final spec in _tabSpecs) {
       spec.delegate.addListener(_schedulePersist);
     }
+    _closeTaskDocumentWhenAnotherTaskIsSelected();
 
     // Watched flags come from `sectionFlags`, not from a list spelled out
     // here. Settings -> Sections renders that same constant and calls itself
@@ -144,6 +146,7 @@ class NavService {
   /// Convenience notifier mirroring `desktopTaskDetailStack.last` (or
   /// `null` when the stack is empty). Kept as a separate notifier so
   /// existing listeners (selected-row highlighting, etc.) keep working.
+  @override
   final ValueNotifier<String?> desktopSelectedTaskId = ValueNotifier<String?>(
     null,
   );
@@ -266,6 +269,7 @@ class NavService {
   final BeamerDelegate journalDelegate;
   final BeamerDelegate eventsDelegate;
   final BeamerDelegate projectsDelegate;
+  @override
   final BeamerDelegate tasksDelegate;
   final BeamerDelegate calendarDelegate;
   final BeamerDelegate settingsDelegate;
@@ -879,6 +883,7 @@ class NavService {
 
   /// The route the given tab currently stands at, or its root when it has
   /// never been navigated deeper.
+  @override
   String routeForTab(String rootPath) {
     final spec = _specForAnyPath(rootPath);
     return spec == null ? rootPath : _routeForSpec(spec);
@@ -959,6 +964,7 @@ class NavService {
     }
     desktopTaskDetailStack.dispose();
     desktopSelectedTaskId.dispose();
+    _disposeTaskDocumentPane();
     desktopSelectedProjectId.dispose();
     desktopSelectedRelationshipId.dispose();
     desktopRelationshipChatOpen.dispose();

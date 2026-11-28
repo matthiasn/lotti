@@ -22,6 +22,8 @@ class TaskAgentWakeFacts {
     this.hasLinkedPullRequests = true,
     this.hasRelatedTaskSearch = true,
     this.hasLinkedTasks = true,
+    this.hasDocumentSource = true,
+    this.hasDocuments = true,
   });
 
   /// Every fact permissive: the tool list is exactly today's.
@@ -99,6 +101,15 @@ class TaskAgentWakeFacts {
   /// `get_task_report`: with neither a linked task nor a search there is no
   /// task they may read, and offering them would invite a guessed id.
   final bool hasLinkedTasks;
+
+  /// The documents feature is wired (`TaskDocumentSource`). Gates both
+  /// document tools: without it no document can be read or written.
+  final bool hasDocumentSource;
+
+  /// The task holds at least one document. Gates `read_document`, which has
+  /// no id to read otherwise; `write_document_version` can still create
+  /// the first one.
+  final bool hasDocuments;
 }
 
 /// The tools a wake with these [facts] may be offered.
@@ -140,6 +151,11 @@ Set<String> visibleTaskAgentToolNames(TaskAgentWakeFacts facts) {
       TaskAgentToolNames.linkPullRequest,
     },
     if (!facts.hasLinkedPullRequests) TaskAgentToolNames.refreshPullRequests,
+    if (!facts.hasDocumentSource) ...{
+      TaskAgentToolNames.readDocument,
+      TaskAgentToolNames.writeDocumentVersion,
+    },
+    if (!facts.hasDocuments) TaskAgentToolNames.readDocument,
     if (!facts.hasRelatedTaskSearch) TaskAgentToolNames.findRelatedTasks,
     if (!facts.hasRelatedTaskSearch && !facts.hasLinkedTasks) ...{
       TaskAgentToolNames.getTaskTldr,

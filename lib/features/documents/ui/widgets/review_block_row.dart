@@ -1,0 +1,221 @@
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/logic/markdown_block_diff.dart';
+import 'package:lotti/features/documents/logic/rewrite_word_marks.dart';
+import 'package:lotti/features/documents/ui/widgets/review_block_cell.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
+
+/// Keys the tests find a row's parts by.
+abstract final class ReviewBlockRowKeys {
+  static const gutter = Key('review-block-row-gutter');
+}
+
+/// One row of the side-by-side review (ADR 0167): the earlier version's
+/// block on the left, the reviewed one's on the right, each in
+/// its own cell, with a mark in the leading gutter for a changed row — ＋
+/// added, − removed, ⇄ rewritten — in the diff colour, and a
+/// label a screen reader says. A changed row is one band: its two cells — or
+/// a block and the empty slot beside it — share a top and a bottom edge, the
+/// shorter standing as tall as the other. An unchanged row is plain text and
+/// keeps each side's own height. A rewritten row also marks the words it
+/// changed ([markRewrittenWords]): the dropped ones on the removed surface,
+/// the new ones on the added surface.
+///
+/// [baseVersion] and [version] name the empty slots ("Not in v3"); a null
+/// [baseVersion] means the document had no text, and its slot says
+/// [noTextLabel] instead.
+///
+/// [stacked] is the one-column form, for a pane too narrow for two: the
+/// row's blocks one above the other in reading order, with no empty slots.
+/// A rewritten block keeps the rewrite's surface on both halves — red and
+/// green mean removed and added on every width — and its old text, quiet,
+/// sits under "Before" above its new text under "After".
+class ReviewBlockRow extends StatelessWidget {
+  const ReviewBlockRow({
+    required this.pair,
+    required this.baseVersion,
+    required this.version,
+    required this.noTextLabel,
+    this.stacked = false,
+    this.byAgent = false,
+    super.key,
+  });
+
+  final MarkdownBlockPair pair;
+  final int? baseVersion;
+  final int version;
+  final String noTextLabel;
+  final bool stacked;
+
+  /// The agent wrote the reviewed version; a stacked rewrite then heads its
+  /// new half in the agent's violet, with its spark.
+  final bool byAgent;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final diff = tokens.colors.diff;
+    final mark = switch (pair.kind) {
+      MarkdownBlockChange.same => null,
+      MarkdownBlockChange.added => (
+        LottiIcons.add,
+        diff.added.color,
+        messages.documentReviewAdded,
+      ),
+      MarkdownBlockChange.removed => (
+        LottiIcons.remove,
+        diff.removed.color,
+        messages.documentReviewRemoved,
+      ),
+      MarkdownBlockChange.rewritten => (
+        LottiIcons.compare,
+        diff.replaced.color,
+        messages.documentReviewRewritten,
+      ),
+    };
+    final baseVersion = this.baseVersion;
+    final band = !stacked && pair.kind != MarkdownBlockChange.same;
+    final blocks = _blocks();
+    // Stacked, a rewrite opens with its "Before" caption: the mark sits
+    // level with the first line of text below it.
+    final caption = tokens.typography.styles.others.caption;
+    final markTop = stacked && pair.kind == MarkdownBlockChange.rewritten
+        ? (caption.fontSize! * (caption.height ?? 1)) +
+              tokens.spacing.step1 +
+              tokens.spacing.cardItemSpacing
+        : tokens.spacing.cardItemSpacing;
+    final Widget row = Row(
+      crossAxisAlignment: band
+          ? CrossAxisAlignment.stretch
+          : CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: IconSizes.m,
+          child: mark == null
+              ? null
+              // Top-aligned in a stretched band too.
+              : Align(
+                  alignment: Alignment.topCenter,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: markTop),
+                    child: Icon(
+                      mark.$1,
+                      key: ReviewBlockRowKeys.gutter,
+                      size: IconSizes.m,
+                      color: mark.$2,
+                    ),
+                  ),
+                ),
+        ),
+        SizedBox(width: tokens.spacing.step2),
+        if (stacked)
+          Expanded(child: _stackedCells(context, tokens, blocks))
+        else ...[
+          Expanded(
+            child: ReviewBlockCell(
+              kind: pair.kind,
+              block: blocks.base,
+              wordMark: diff.removed.surface,
+              emptyLabel: baseVersion == null
+                  ? noTextLabel
+                  : messages.documentReviewNotInVersion(baseVersion),
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step6),
+          Expanded(
+            child: ReviewBlockCell(
+              kind: pair.kind,
+              block: blocks.proposed,
+              wordMark: diff.added.surface,
+              emptyLabel: messages.documentReviewNotInVersion(version),
+            ),
+          ),
+        ],
+      ],
+    );
+    final sized = band ? IntrinsicHeight(child: row) : row;
+    if (mark == null) return sized;
+    return Semantics(container: true, label: mark.$3, child: sized);
+  }
+
+  /// The row's two blocks, a rewrite's with its changed words marked.
+  ({String? base, String? proposed}) _blocks() {
+    final base = pair.base;
+    final proposed = pair.proposed;
+    if (pair.kind == MarkdownBlockChange.rewritten &&
+        base != null &&
+        proposed != null) {
+      return markRewrittenWords(base, proposed);
+    }
+    return (base: base, proposed: proposed);
+  }
+
+  Widget _stackedCells(
+    BuildContext context,
+    DsTokens tokens,
+    ({String? base, String? proposed}) blocks,
+  ) {
+    final messages = context.messages;
+    final kind = pair.kind;
+    if (kind != MarkdownBlockChange.rewritten) {
+      // One side only — or both the same, shown once.
+      return ReviewBlockCell(
+        kind: kind,
+        block: kind == MarkdownBlockChange.removed ? pair.base : pair.proposed,
+        emptyLabel: noTextLabel,
+      );
+    }
+    final head = tokens.typography.styles.others.caption.copyWith(
+      fontWeight: tokens.typography.weight.semiBold,
+    );
+    final neutral = tokens.colors.text.mediumEmphasis;
+    final afterInk = byAgent ? tokens.colors.aiCard.accent : neutral;
+    final textEdge = EdgeInsets.only(left: tokens.spacing.cardItemSpacing);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: textEdge,
+          child: Text(
+            messages.documentReviewBefore,
+            style: head.copyWith(color: neutral),
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step1),
+        ReviewBlockCell(
+          kind: kind,
+          block: blocks.base,
+          emptyLabel: noTextLabel,
+          quiet: true,
+          wordMark: tokens.colors.diff.removed.surface,
+        ),
+        // More air above "After" than below it: the caption belongs to
+        // the block it heads.
+        SizedBox(height: tokens.spacing.cardItemSpacing),
+        Padding(
+          padding: textEdge,
+          child: Row(
+            children: [
+              if (byAgent) ...[
+                Icon(LottiIcons.aiSpark, size: IconSizes.s, color: afterInk),
+                SizedBox(width: tokens.spacing.step1),
+              ],
+              Text(
+                messages.documentReviewAfter,
+                style: head.copyWith(color: afterInk),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step1),
+        ReviewBlockCell(
+          kind: kind,
+          block: blocks.proposed,
+          emptyLabel: noTextLabel,
+          wordMark: tokens.colors.diff.added.surface,
+        ),
+      ],
+    );
+  }
+}

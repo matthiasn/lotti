@@ -1,4 +1,5 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/task_document_tool_definitions.dart';
 
 /// Backing list for [AgentToolRegistry.taskAgentTools].
 ///
@@ -17,6 +18,7 @@ final taskAgentToolList = <AgentToolDefinition>[
   ...taskLinkTools,
   ...taskProjectTools,
   ...taskPullRequestTools,
+  ...taskDocumentTools,
   ...taskTimeTools,
   ...taskPlanningTools,
 ];

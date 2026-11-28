@@ -55,7 +55,11 @@ mixin _JournalDbEntityOps
   /// there is nothing for the user to choose, and [updateJournalEntity]
   /// merges them. Nor are two versions of a pull request entry: their
   /// snapshots are fetched, not written by anyone, and [updateJournalEntity]
-  /// keeps the newer observation.
+  /// keeps the newer observation. Nor are two versions of a task document:
+  /// its text lives in immutable version rows, so [updateJournalEntity] only
+  /// has to pick which version the document shows. Nor are two copies of one
+  /// such version row, written by applying one chat write on two
+  /// devices: their text is the same by construction.
   Future<VclockStatus> detectConflict(
     JournalEntity existing,
     JournalEntity updated,
@@ -86,31 +90,54 @@ mixin _JournalDbEntityOps
   /// Whether two concurrent versions are merged here rather than left to the
   /// user as a conflict.
   static bool _mergesConcurrent(JournalEntity a, JournalEntity b) =>
-      _bothDeleted(a, b) || _pullRequestPair(a, b);
+      _bothDeleted(a, b) || _pullRequestPair(a, b) || _taskDocumentPair(a, b);
 
   /// Two concurrent versions of one pull request entry. A purge reduces a
   /// deleted pull request to a [JournalEntry] tombstone (ADR 0095), so either
   /// side may be one, as long as the other is still a pull request.
   static bool _pullRequestPair(JournalEntity a, JournalEntity b) =>
-      (a is PullRequestEntry || a.isPurgedTombstone) &&
-      (b is PullRequestEntry || b.isPurgedTombstone) &&
-      (a is PullRequestEntry || b is PullRequestEntry);
+      _pairOf<PullRequestEntry>(a, b);
+
+  /// Two concurrent versions of one task document, or two concurrent copies
+  /// of one of its version rows (ADR 0167), with the same allowance for a
+  /// purge's tombstone on one side.
+  static bool _taskDocumentPair(JournalEntity a, JournalEntity b) =>
+      _pairOf<TaskDocumentEntry>(a, b) ||
+      _pairOf<TaskDocumentVersionEntry>(a, b);
+
+  static bool _pairOf<T extends JournalEntity>(
+    JournalEntity a,
+    JournalEntity b,
+  ) =>
+      (a is T || a.isPurgedTombstone) &&
+      (b is T || b.isPurgedTombstone) &&
+      (a is T || b is T);
 
   /// The merged row for two concurrent versions [_mergesConcurrent] accepts.
   ///
   /// A pull request pair is decided by observation, deleted or not, so two
-  /// unlinks keep the newer snapshot too. Against a purge's tombstone the
-  /// unlink wins under the join of both clocks; [_overStored] then compacts
-  /// it as it does for every entry type.
+  /// unlinks keep the newer snapshot too. A task document pair shows the
+  /// newer current version and keeps a deletion from either side; a version
+  /// row pair keeps a live copy over a deleted one. Against a
+  /// purge's tombstone the deletion wins under the join of both clocks;
+  /// [_overStored] then compacts it as it does for every entry type.
   static JournalEntity _mergeConcurrent(
     JournalEntity stored,
     JournalEntity incoming,
   ) {
-    if (!_pullRequestPair(stored, incoming)) {
-      return _mergeDeletions(stored, incoming);
-    }
     if (stored is PullRequestEntry && incoming is PullRequestEntry) {
       return mergeConcurrentPullRequestVersions(stored, incoming);
+    }
+    if (stored is TaskDocumentEntry && incoming is TaskDocumentEntry) {
+      return mergeConcurrentTaskDocumentVersions(stored, incoming);
+    }
+    if (stored is TaskDocumentVersionEntry &&
+        incoming is TaskDocumentVersionEntry) {
+      return mergeConcurrentTaskDocumentVersionRows(stored, incoming);
+    }
+    if (!_pullRequestPair(stored, incoming) &&
+        !_taskDocumentPair(stored, incoming)) {
+      return _mergeDeletions(stored, incoming);
     }
     final tombstone = stored.isPurgedTombstone ? stored : incoming;
     return tombstone.copyWith(
@@ -317,7 +344,8 @@ mixin _JournalDbEntityOps
   /// replaces a deleted row outright, as it always has. Two concurrent
   /// deletions are merged ([_mergeDeletions]), and so are two concurrent
   /// versions of a pull request entry ([mergeConcurrentPullRequestVersions],
-  /// `specs/tla/PullRequestSnapshot.tla`). An applied write marks the
+  /// `specs/tla/PullRequestSnapshot.tla`) or of a task document
+  /// ([mergeConcurrentTaskDocumentVersions], ADR 0167). An applied write marks the
   /// entry's conflict resolved only when it includes the conflict's version
   /// (ADR 0083).
   ///

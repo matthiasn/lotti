@@ -206,6 +206,7 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
     required ProposalLedger ledger,
     required SuggestionRetractionService retractionService,
     RelatedTaskLookup? relatedTasks,
+    List<TaskDocumentSummary> documents = const [],
     List<String> priorObservationTexts = const [],
   }) {
     final pendingSets = ledger.pendingSets;
@@ -223,6 +224,8 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
       syncService: syncService,
       requestingAgentId: agentId,
       pullRequestLinks: pullRequestLinks,
+      // A wake writes a document version as it runs (ADR 0167).
+      taskDocuments: taskDocuments,
     );
     // One GitHub listing per wake, shared by the read tool and the
     // validation of every link proposal.
@@ -359,6 +362,15 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
       refreshLinkedPullRequests: switch (pullRequestContextService) {
         final PullRequestContextSource context => () => context.refreshOpenFor(
           taskId,
+        ),
+        null => null,
+      },
+      // The task's documents as listed, and the reader for `read_document`.
+      taskDocuments: documents,
+      readTaskDocument: switch (taskDocuments) {
+        final TaskDocumentSource source => (documentId) => source.read(
+          taskId: taskId,
+          documentId: documentId,
         ),
         null => null,
       },

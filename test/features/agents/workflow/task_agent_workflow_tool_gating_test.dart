@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
@@ -8,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/pull_request_link_source.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/get_it.dart';
@@ -18,6 +21,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../mocks/mocks.dart';
 import '../../github/pull_request_fixtures.dart';
 import '../../projects/test_utils.dart' show makeTestProject;
+import '../fake_task_document_source.dart';
 import 'task_agent_workflow_test_helpers.dart';
 
 /// Covers the agenda-gated tool surface of a wake: which tools
@@ -382,6 +386,193 @@ void main() {
         ).called(1);
       },
     );
+
+    group('document tools', () {
+      const documentToolNames = <String>[
+        TaskAgentToolNames.readDocument,
+        TaskAgentToolNames.writeDocumentVersion,
+      ];
+
+      for (final narrowToolSurface in [false, true]) {
+        test(
+          'are withheld without the documents feature '
+          '(narrowToolSurface: $narrowToolSurface)',
+          () async {
+            final bench = createTaskAgentWorkflowTestBench(
+              narrowToolSurface: narrowToolSurface,
+            );
+
+            final perTurn = await exposedToolNamesPerTurn(bench);
+
+            for (final name in documentToolNames) {
+              expect(perTurn.first.handedOver, isNot(contains(name)));
+            }
+          },
+        );
+
+        test(
+          'offer only the write on a task with no document, both once it '
+          'holds one (narrowToolSurface: $narrowToolSurface)',
+          () async {
+            final documents = FakeTaskDocumentSource();
+            final empty = await exposedToolNamesPerTurn(
+              createTaskAgentWorkflowTestBench(
+                narrowToolSurface: narrowToolSurface,
+                taskDocuments: documents,
+              ),
+            );
+            expect(
+              empty.first.handedOver,
+              contains(TaskAgentToolNames.writeDocumentVersion),
+            );
+            expect(
+              empty.first.handedOver,
+              isNot(contains(TaskAgentToolNames.readDocument)),
+            );
+
+            documents.documents = const [
+              TaskDocumentSummary(id: 'doc-1', title: 'Launch brief'),
+            ];
+            final holding = await exposedToolNamesPerTurn(
+              createTaskAgentWorkflowTestBench(
+                narrowToolSurface: narrowToolSurface,
+                taskDocuments: documents,
+              ),
+            );
+            expect(holding.first.handedOver, containsAll(documentToolNames));
+          },
+        );
+      }
+
+      test('a failed listing leaves the task as holding no document: the '
+          'wake goes on, offering only the proposal', () async {
+        final documents = FakeTaskDocumentSource()
+          ..documents = const [
+            TaskDocumentSummary(id: 'doc-1', title: 'Launch brief'),
+          ]
+          ..listError = Exception('documents unavailable');
+
+        final perTurn = await exposedToolNamesPerTurn(
+          createTaskAgentWorkflowTestBench(taskDocuments: documents),
+        );
+
+        expect(
+          perTurn.first.handedOver,
+          contains(TaskAgentToolNames.writeDocumentVersion),
+        );
+        expect(
+          perTurn.first.handedOver,
+          isNot(contains(TaskAgentToolNames.readDocument)),
+        );
+      });
+
+      test('a version the agent writes after reading the document reaches '
+          'the documents feature during the wake, over the version it read, '
+          'with nothing left for the user to confirm', () async {
+        const brief = TaskDocumentSummary(
+          id: 'doc-1',
+          title: 'Launch brief',
+          versionId: 'version-1',
+          versionNumber: 1,
+        );
+        final documents = FakeTaskDocumentSource()
+          ..documents = const [brief]
+          ..texts = const {
+            'doc-1': TaskDocumentText(summary: brief, markdown: 'Earlier.'),
+          };
+        final bench = createTaskAgentWorkflowTestBench(
+          taskDocuments: documents,
+        );
+        stubFullExecutePath(
+          mockAgentRepository: bench.mockAgentRepository,
+          mockAiInputRepository: bench.mockAiInputRepository,
+          mockAiConfigRepository: bench.mockAiConfigRepository,
+          mockConversationManager: bench.mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
+        when(
+          () => bench.mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => bareTask());
+        ChatCompletionMessageToolCall toolCall(
+          String id,
+          String name,
+          Map<String, dynamic> args,
+        ) => ChatCompletionMessageToolCall(
+          id: id,
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: name,
+            arguments: jsonEncode(args),
+          ),
+        );
+        bench.mockConversationRepository.maxDelegateCalls = 1;
+        bench.mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              await (strategy! as TaskAgentStrategy).processToolCalls(
+                toolCalls: [
+                  toolCall('read-call', TaskAgentToolNames.readDocument, {
+                    'documentId': 'doc-1',
+                  }),
+                  toolCall(
+                    'doc-call',
+                    TaskAgentToolNames.writeDocumentVersion,
+                    {
+                      'documentId': 'doc-1',
+                      'markdown': 'Again.',
+                      'changeSummary': 'Another pass.',
+                    },
+                  ),
+                ],
+                manager: bench.mockConversationManager,
+              );
+              return null;
+            };
+
+        await bench.workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        final write = documents.applied.single;
+        expect(write.taskId, taskId);
+        expect(write.documentId, 'doc-1');
+        expect(write.baseVersionId, 'version-1');
+        expect(write.markdown, 'Again.');
+        expect(write.changeSummary, 'Another pass.');
+        // A wake's write is no change item's effect.
+        expect(write.changeEffectKey, isNull);
+        final response =
+            verify(
+                  () => bench.mockConversationManager.addToolResponse(
+                    toolCallId: 'doc-call',
+                    response: captureAny(named: 'response'),
+                  ),
+                ).captured.single
+                as String;
+        expect(response, 'Document `doc-1` now shows this version.');
+        // Nothing was queued for the user.
+        final proposed = verify(
+          () => bench.mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<ChangeSetEntity>();
+        expect(proposed, isEmpty);
+      });
+    });
 
     test('offers the pull request tools with the flag off once the task has '
         'a repository and a linked pull request', () async {

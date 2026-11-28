@@ -32,6 +32,32 @@
       "status": "verified"
     },
     {
+      "id": "task-document",
+      "title": "Task document",
+      "kind": "route-page",
+      "source": "lib/beamer/locations/tasks_location.dart",
+      "sourcePattern": "'/tasks/:taskId/documents/:documentId'",
+      "locator": "/tasks/:taskId/documents/:documentId",
+      "routes": [
+        "/tasks/:taskId/documents/:documentId"
+      ],
+      "page": "organize-and-reflect/tasks",
+      "status": "planned"
+    },
+    {
+      "id": "task-document-review",
+      "title": "Task document review",
+      "kind": "route-page",
+      "source": "lib/beamer/locations/tasks_location.dart",
+      "sourcePattern": "'/tasks/:taskId/documents/:documentId/review/:versionId'",
+      "locator": "/tasks/:taskId/documents/:documentId/review/:versionId",
+      "routes": [
+        "/tasks/:taskId/documents/:documentId/review/:versionId"
+      ],
+      "page": "organize-and-reflect/tasks",
+      "status": "planned"
+    },
+    {
       "id": "daily-os-day",
       "title": "Daily OS day",
       "kind": "route-page",

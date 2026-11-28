@@ -339,6 +339,7 @@ received, in one transaction: it reads the stored row **with its deletion**
 | concurrent | refused and stored as a `Conflict` row of the entry, **unless an open conflict already holds that version or a newer one**; it replaces the open conflicts it follows and stands beside the others. A failure storing it fails the write, so the receive retries rather than record the version as held |
 | concurrent, both deleted | merged, no conflict: the canonically greater deletion's fields under the join of both clocks, the same row on every device |
 | concurrent, both pull request entries | merged, no conflict: the newer observation, deleted if either side is, under the join of both clocks, the same row on every device (`mergeConcurrentPullRequestVersions`; the snapshot is fetched, not authored, so there is nothing for the user to choose — [GitHub pull requests](../github.md)) |
+| concurrent, both task documents | merged, no conflict: the newer current version, the title from the later edit, deleted if either side is, under the join of both clocks, the same row on every device (`mergeConcurrentTaskDocumentVersions`; the text lives in immutable version rows, so only the pointer and title can differ — [Task documents](../documents.md)) |
 | incoming without a clock | refused over a clocked row; applied over a row without one |
 | stored without a clock | incoming applied |
 
@@ -407,7 +408,8 @@ changes — is left out of the comparison, for tasks only
 
 Two details make it trustworthy:
 
-- **Text fields carry a word-level LCS diff** (`computeTitleDiff`).
+- **Text fields carry a word-level LCS diff** (`computeTitleDiff`, over the
+  shared `diffTokens` in [`text_diff.dart`](../../../lib/utils/text_diff.dart)).
 - **A JSON completeness guard** emits a single `EntryField.other` entry whenever
   the two versions differ in a field the registry does not model. A change can
   therefore never be silently hidden across any of the 16 entity types — which

@@ -69,10 +69,8 @@ HistoryTarget? historyTargetForRoute(String route) {
       HistoryTarget(kind: kind, entityId: id, route: path);
 
   return switch (segments.first) {
-    'tasks' when segments.length == 2 => target(
-      HistoryEntityKind.task,
-      '/tasks/$id',
-    ),
+    // A document of a task is a sub-page of the task.
+    'tasks' => target(HistoryEntityKind.task, '/tasks/$id'),
     'journal' when segments.length == 2 => target(
       HistoryEntityKind.entry,
       '/journal/$id',

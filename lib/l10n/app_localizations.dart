@@ -1807,6 +1807,12 @@ abstract class AppLocalizations {
   /// **'Check: \"{title}\"'**
   String agentSummaryCheckItem(Object title);
 
+  /// Proposal row: the task agent proposes a new document.
+  ///
+  /// In en, this message translates to:
+  /// **'Create document \"{title}\"'**
+  String agentSummaryCreateDocument(String title);
+
   /// No description provided for @agentSummaryCreateFollowUp.
   ///
   /// In en, this message translates to:
@@ -1830,6 +1836,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create task: {title}'**
   String agentSummaryCreateTask(Object title);
+
+  /// Proposal row: the task agent proposes a new version of a document.
+  ///
+  /// In en, this message translates to:
+  /// **'New version of \"{title}\"'**
+  String agentSummaryDocumentVersion(String title);
 
   /// No description provided for @agentSummaryFollowUpTask.
   ///
@@ -7236,6 +7248,18 @@ abstract class AppLocalizations {
   /// **'Show the Events feature to create, track, and manage events in your journal.'**
   String get configFlagEnableEventsDescription;
 
+  /// No description provided for @configFlagEnableTaskDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Task documents'**
+  String get configFlagEnableTaskDocuments;
+
+  /// No description provided for @configFlagEnableTaskDocumentsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks can hold markdown documents, and the task agent and the task\'s chat write and revise them when you ask. Experimental.'**
+  String get configFlagEnableTaskDocumentsDescription;
+
   /// No description provided for @configFlagEnableForkHealing.
   ///
   /// In en, this message translates to:
@@ -11968,6 +11992,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove {deviceName} from your sync account? It will be signed out and will need to be paired again before it can sync.'**
   String deviceDeleteQuestion(String deviceName);
+
+  /// Screen-reader label of a review row whose paragraph is new in the version under review.
+  ///
+  /// In en, this message translates to:
+  /// **'Added in this version'**
+  String get documentReviewAdded;
+
+  /// Column head of a side-by-side document review: the version under review.
+  ///
+  /// In en, this message translates to:
+  /// **'After'**
+  String get documentReviewAfter;
+
+  /// Notice on a task document's page while the version it shows was written by the task agent, beside the button that shows what it changed.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent wrote this version'**
+  String get documentReviewAgentWrote;
+
+  /// Button in a document review that opens the task's chat, to ask the agent to change its draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for changes'**
+  String get documentReviewAskForChanges;
+
+  /// Column head of a side-by-side document review: the version the reviewed one was written over.
+  ///
+  /// In en, this message translates to:
+  /// **'Before'**
+  String get documentReviewBefore;
+
+  /// Button in a document review's header that leaves the review and returns to the document.
+  ///
+  /// In en, this message translates to:
+  /// **'Close review'**
+  String get documentReviewClose;
+
+  /// Screen-reader label for the count tags in a document review's header: how many paragraphs the draft adds, removes and rewrites.
+  ///
+  /// In en, this message translates to:
+  /// **'{added} added, {removed} removed, {rewritten} rewritten'**
+  String documentReviewCounts(int added, int removed, int rewritten);
+
+  /// Caption in the empty slot of a side-by-side document review, where a paragraph exists only on the other side: this version does not have it.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in v{number}'**
+  String documentReviewNotInVersion(int number);
+
+  /// Button beside the notice on a document page that opens the agent's draft side by side with the current version.
+  ///
+  /// In en, this message translates to:
+  /// **'Review changes'**
+  String get documentReviewOpen;
+
+  /// Screen-reader label of a review row whose paragraph the version under review dropped.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed in this version'**
+  String get documentReviewRemoved;
+
+  /// Screen-reader label of a review row whose paragraph the version under review rewrote.
+  ///
+  /// In en, this message translates to:
+  /// **'Rewritten in this version'**
+  String get documentReviewRewritten;
+
+  /// Button in a document review that restores the version before the reviewed one.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to v{number}'**
+  String documentReviewUndo(int number);
 
   /// No description provided for @doneButton.
   ///
@@ -29950,6 +30046,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try again'**
   String get taskDetailRetry;
+
+  /// Add-sheet row on a task that creates a markdown document.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a document'**
+  String get taskDocumentsAddAction;
+
+  /// Subtitle of the add-sheet row that creates a task document.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds a markdown document you can revise and copy out.'**
+  String get taskDocumentsAddActionHint;
+
+  /// Toast after a document's markdown was copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Markdown copied'**
+  String get taskDocumentsCopied;
+
+  /// Action on a document row that copies the current version's markdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy markdown'**
+  String get taskDocumentsCopy;
+
+  /// Button on a document page that copies its markdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get taskDocumentsCopyAction;
+
+  /// Marks the version a document shows in its version history.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get taskDocumentsCurrent;
+
+  /// Body of the confirmation before deleting a document.
+  ///
+  /// In en, this message translates to:
+  /// **'The document and all its versions are removed from this task, on every device.'**
+  String get taskDocumentsDeleteMessage;
+
+  /// Title of the confirmation before deleting a document.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this document?'**
+  String get taskDocumentsDeleteTitle;
+
+  /// Title of the editor for an existing task document.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit document'**
+  String get taskDocumentsEdit;
+
+  /// Button on a document page that opens the editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get taskDocumentsEditAction;
+
+  /// Shown on a document page whose document was deleted while it was open.
+  ///
+  /// In en, this message translates to:
+  /// **'This document was deleted.'**
+  String get taskDocumentsGone;
+
+  /// Button on a document page, and title of the sheet listing its versions.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get taskDocumentsHistory;
+
+  /// Title of the editor for a new task document, and the section's add button label.
+  ///
+  /// In en, this message translates to:
+  /// **'New document'**
+  String get taskDocumentsNew;
+
+  /// Document row subtitle while the document has no version yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No text yet'**
+  String get taskDocumentsNoText;
+
+  /// Button that writes an older version's text as the document's newest version.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore this version'**
+  String get taskDocumentsRestore;
+
+  /// Toast after an older version was restored.
+  ///
+  /// In en, this message translates to:
+  /// **'Version restored'**
+  String get taskDocumentsRestored;
+
+  /// Who wrote a document version: the user restored an older version's text.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored by you'**
+  String get taskDocumentsRestoredByYou;
+
+  /// Toast: the restore was refused because a newer version arrived while the user was looking.
+  ///
+  /// In en, this message translates to:
+  /// **'A newer version arrived meanwhile. Look at it, then restore again.'**
+  String get taskDocumentsRestoreStale;
+
+  /// Editor error: the document changed on this or another device while it was being edited, so the save was refused. Saving again writes over the newer version, which stays in the history.
+  ///
+  /// In en, this message translates to:
+  /// **'This document changed while you were editing. Save again to keep your text; the other version stays in History.'**
+  String get taskDocumentsStale;
+
+  /// Hint in an empty task document text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Write in markdown'**
+  String get taskDocumentsTextHint;
+
+  /// Label of a task document's markdown text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get taskDocumentsTextLabel;
+
+  /// Title of the task page's Documents section.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get taskDocumentsTitle;
+
+  /// Label of a task document's title field.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get taskDocumentsTitleLabel;
+
+  /// Short label of a document version number, e.g. v3.
+  ///
+  /// In en, this message translates to:
+  /// **'v{number}'**
+  String taskDocumentsVersion(int number);
+
+  /// Who wrote a document version: the task agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Written by the agent'**
+  String get taskDocumentsWrittenByAgent;
+
+  /// Who wrote a document version: the user, by hand.
+  ///
+  /// In en, this message translates to:
+  /// **'Written by you'**
+  String get taskDocumentsWrittenByYou;
 
   /// No description provided for @taskDueDateLabel.
   ///

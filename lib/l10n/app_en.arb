@@ -568,6 +568,15 @@
       "title": {}
     }
   },
+  "agentSummaryCreateDocument": "Create document \"{title}\"",
+  "@agentSummaryCreateDocument": {
+    "description": "Proposal row: the task agent proposes a new document.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "agentSummaryCreateFollowUp": "Create follow-up task: \"{title}\"",
   "@agentSummaryCreateFollowUp": {
     "placeholders": {
@@ -591,6 +600,15 @@
   "@agentSummaryCreateTask": {
     "placeholders": {
       "title": {}
+    }
+  },
+  "agentSummaryDocumentVersion": "New version of \"{title}\"",
+  "@agentSummaryDocumentVersion": {
+    "description": "Proposal row: the task agent proposes a new version of a document.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
     }
   },
   "agentSummaryFollowUpTask": "Follow-up task: {title}",
@@ -3004,6 +3022,8 @@
   "configFlagEnableRelationshipsDescription": "Show the People tab for nurturing your personal relationships.",
   "configFlagEnableSessionRatings": "Enable Session Ratings",
   "configFlagEnableSessionRatingsDescription": "Prompt for a quick session rating when you stop a timer.",
+  "configFlagEnableTaskDocuments": "Task documents",
+  "configFlagEnableTaskDocumentsDescription": "Tasks can hold markdown documents, and the task agent and the task's chat write and revise them when you ask. Experimental.",
   "configFlagEnableTooltip": "Enable tooltips",
   "configFlagEnableTooltipDescription": "Show helpful tooltips throughout the app to guide you through features.",
   "configFlagEnableUnifiedGoals": "Enable unified Goals page",
@@ -4494,6 +4514,80 @@
     "placeholders": {
       "deviceName": {
         "type": "String"
+      }
+    }
+  },
+  "documentReviewAdded": "Added in this version",
+  "@documentReviewAdded": {
+    "description": "Screen-reader label of a review row whose paragraph is new in the version under review."
+  },
+  "documentReviewAfter": "After",
+  "@documentReviewAfter": {
+    "description": "Column head of a side-by-side document review: the version under review."
+  },
+  "documentReviewAgentWrote": "The agent wrote this version",
+  "@documentReviewAgentWrote": {
+    "description": "Notice on a task document's page while the version it shows was written by the task agent, beside the button that shows what it changed."
+  },
+  "documentReviewAskForChanges": "Ask for changes",
+  "@documentReviewAskForChanges": {
+    "description": "Button in a document review that opens the task's chat, to ask the agent to change its draft."
+  },
+  "documentReviewBefore": "Before",
+  "@documentReviewBefore": {
+    "description": "Column head of a side-by-side document review: the version the reviewed one was written over."
+  },
+  "documentReviewClose": "Close review",
+  "@documentReviewClose": {
+    "description": "Button in a document review's header that leaves the review and returns to the document."
+  },
+  "documentReviewCounts": "{added} added, {removed} removed, {rewritten} rewritten",
+  "@documentReviewCounts": {
+    "description": "Screen-reader label for the count tags in a document review's header: how many paragraphs the draft adds, removes and rewrites.",
+    "placeholders": {
+      "added": {
+        "type": "int",
+        "example": "3"
+      },
+      "removed": {
+        "type": "int",
+        "example": "3"
+      },
+      "rewritten": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "documentReviewNotInVersion": "Not in v{number}",
+  "@documentReviewNotInVersion": {
+    "description": "Caption in the empty slot of a side-by-side document review, where a paragraph exists only on the other side: this version does not have it.",
+    "placeholders": {
+      "number": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "documentReviewOpen": "Review changes",
+  "@documentReviewOpen": {
+    "description": "Button beside the notice on a document page that opens the agent's draft side by side with the current version."
+  },
+  "documentReviewRemoved": "Removed in this version",
+  "@documentReviewRemoved": {
+    "description": "Screen-reader label of a review row whose paragraph the version under review dropped."
+  },
+  "documentReviewRewritten": "Rewritten in this version",
+  "@documentReviewRewritten": {
+    "description": "Screen-reader label of a review row whose paragraph the version under review rewrote."
+  },
+  "documentReviewUndo": "Go back to v{number}",
+  "@documentReviewUndo": {
+    "description": "Button in a document review that restores the version before the reviewed one.",
+    "placeholders": {
+      "number": {
+        "type": "int",
+        "example": "3"
       }
     }
   },
@@ -11668,6 +11762,116 @@
   "taskDetailRetry": "Try again",
   "@taskDetailRetry": {
     "description": "Action on the task page's load-failed state."
+  },
+  "taskDocumentsAddAction": "Write a document",
+  "@taskDocumentsAddAction": {
+    "description": "Add-sheet row on a task that creates a markdown document."
+  },
+  "taskDocumentsAddActionHint": "Adds a markdown document you can revise and copy out.",
+  "@taskDocumentsAddActionHint": {
+    "description": "Subtitle of the add-sheet row that creates a task document."
+  },
+  "taskDocumentsCopied": "Markdown copied",
+  "@taskDocumentsCopied": {
+    "description": "Toast after a document's markdown was copied."
+  },
+  "taskDocumentsCopy": "Copy markdown",
+  "@taskDocumentsCopy": {
+    "description": "Action on a document row that copies the current version's markdown."
+  },
+  "taskDocumentsCopyAction": "Copy",
+  "@taskDocumentsCopyAction": {
+    "description": "Button on a document page that copies its markdown."
+  },
+  "taskDocumentsCurrent": "Current",
+  "@taskDocumentsCurrent": {
+    "description": "Marks the version a document shows in its version history."
+  },
+  "taskDocumentsDeleteMessage": "The document and all its versions are removed from this task, on every device.",
+  "@taskDocumentsDeleteMessage": {
+    "description": "Body of the confirmation before deleting a document."
+  },
+  "taskDocumentsDeleteTitle": "Delete this document?",
+  "@taskDocumentsDeleteTitle": {
+    "description": "Title of the confirmation before deleting a document."
+  },
+  "taskDocumentsEdit": "Edit document",
+  "@taskDocumentsEdit": {
+    "description": "Title of the editor for an existing task document."
+  },
+  "taskDocumentsEditAction": "Edit",
+  "@taskDocumentsEditAction": {
+    "description": "Button on a document page that opens the editor."
+  },
+  "taskDocumentsGone": "This document was deleted.",
+  "@taskDocumentsGone": {
+    "description": "Shown on a document page whose document was deleted while it was open."
+  },
+  "taskDocumentsHistory": "History",
+  "@taskDocumentsHistory": {
+    "description": "Button on a document page, and title of the sheet listing its versions."
+  },
+  "taskDocumentsNew": "New document",
+  "@taskDocumentsNew": {
+    "description": "Title of the editor for a new task document, and the section's add button label."
+  },
+  "taskDocumentsNoText": "No text yet",
+  "@taskDocumentsNoText": {
+    "description": "Document row subtitle while the document has no version yet."
+  },
+  "taskDocumentsRestore": "Restore this version",
+  "@taskDocumentsRestore": {
+    "description": "Button that writes an older version's text as the document's newest version."
+  },
+  "taskDocumentsRestored": "Version restored",
+  "@taskDocumentsRestored": {
+    "description": "Toast after an older version was restored."
+  },
+  "taskDocumentsRestoredByYou": "Restored by you",
+  "@taskDocumentsRestoredByYou": {
+    "description": "Who wrote a document version: the user restored an older version's text."
+  },
+  "taskDocumentsRestoreStale": "A newer version arrived meanwhile. Look at it, then restore again.",
+  "@taskDocumentsRestoreStale": {
+    "description": "Toast: the restore was refused because a newer version arrived while the user was looking."
+  },
+  "taskDocumentsStale": "This document changed while you were editing. Save again to keep your text; the other version stays in History.",
+  "@taskDocumentsStale": {
+    "description": "Editor error: the document changed on this or another device while it was being edited, so the save was refused. Saving again writes over the newer version, which stays in the history."
+  },
+  "taskDocumentsTextHint": "Write in markdown",
+  "@taskDocumentsTextHint": {
+    "description": "Hint in an empty task document text field."
+  },
+  "taskDocumentsTextLabel": "Text",
+  "@taskDocumentsTextLabel": {
+    "description": "Label of a task document's markdown text field."
+  },
+  "taskDocumentsTitle": "Documents",
+  "@taskDocumentsTitle": {
+    "description": "Title of the task page's Documents section."
+  },
+  "taskDocumentsTitleLabel": "Title",
+  "@taskDocumentsTitleLabel": {
+    "description": "Label of a task document's title field."
+  },
+  "taskDocumentsVersion": "v{number}",
+  "@taskDocumentsVersion": {
+    "description": "Short label of a document version number, e.g. v3.",
+    "placeholders": {
+      "number": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "taskDocumentsWrittenByAgent": "Written by the agent",
+  "@taskDocumentsWrittenByAgent": {
+    "description": "Who wrote a document version: the task agent."
+  },
+  "taskDocumentsWrittenByYou": "Written by you",
+  "@taskDocumentsWrittenByYou": {
+    "description": "Who wrote a document version: the user, by hand."
   },
   "taskDueDateLabel": "Due date",
   "taskDueDateWithDate": "Due: {date}",

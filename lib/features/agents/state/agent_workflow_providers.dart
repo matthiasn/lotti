@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/service/change_set_notification_service.da
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/pull_request_link_source_provider.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/state/task_document_source_provider.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
@@ -126,6 +127,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     projectRepository: ref.watch(projectRepositoryProvider),
     pullRequestContextService: ref.watch(pullRequestContextSourceProvider),
     pullRequestLinks: ref.watch(pullRequestLinkSourceProvider),
+    taskDocuments: ref.watch(taskDocumentSourceProvider),
     changeSetNotificationService: notificationService,
     inputCaptureService: AgentInputCaptureService(
       syncService: ref.watch(agentSyncServiceProvider),

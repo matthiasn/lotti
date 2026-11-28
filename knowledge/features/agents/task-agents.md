@@ -5,7 +5,7 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-15T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-23T09:00:00Z }
 stale_after: 2027-02-01
 sources:
   - id: adr-0166
@@ -960,6 +960,8 @@ of the payload.
 | `resolve_attention_request` | this agent holds no active attention claim on the task |
 | `get_category_projects`, `set_task_project` | the task's category has no projects, or the workflow has no `ProjectRepository` |
 | `get_unlinked_pull_requests`, `link_pull_request` | the task's category names no GitHub repository, this device holds no token, or the workflow has no `PullRequestLinkSource` (`canListFor`, local reads only) |
+| `read_document`, `write_document_version` | the workflow has no `TaskDocumentSource` — the documents feature is not wired (`hasDocumentSource`) |
+| `read_document` | the task holds no document (`hasDocuments`); the write stays offered, since it can create the first |
 | `refresh_pull_requests` | the task links no pull request, or the workflow has no `PullRequestContextSource`. A merged one keeps it offered: the wake's own refresh may have timed out and shown it as not refreshed, then stored it as merged in the background before the facts were read |
 | `find_related_tasks` | search by meaning cannot run on this device (`hasRelatedTaskSearch`) |
 | `get_task_tldr`, `get_task_report` | search by meaning cannot run *and* the wake's Linked Tasks section lists no task (`hasLinkedTasks`) — there is then no task they may read |
@@ -1015,14 +1017,18 @@ default.
 
 ## Locally short-circuited tools
 
-Ten tools are short-circuited **locally** in `TaskAgentStrategy` and never
+Eleven tools are short-circuited **locally** in `TaskAgentStrategy` and never
 reach `AgentToolExecutor`: `update_report`, `record_observations`,
 `flag_unmet_request`, `find_related_tasks`, `get_task_tldr`, `get_task_report`,
 `get_category_projects`, `get_unlinked_pull_requests`, `refresh_pull_requests`,
-`retract_suggestions`.
+`read_document`, `retract_suggestions`.
 
-Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatcher`:
+Three run immediately but route through `AgentToolExecutor` → `TaskToolDispatcher`:
 
+- `write_document_version` — writes a version of one of the task's documents,
+  after the strategy's own checks ([Task documents](#task-documents)). It is
+  the one immediate tool that changes what the user reads, which is why it is
+  a named pre-approved change (ADR 0167, decision 3).
 - `request_attention` — writes an evidence-backed `AttentionRequestEntity` into
   the synced agent log. Intentionally immediate because it is an auditable claim
   for the day planner, not a user-visible mutation.
@@ -1349,6 +1355,50 @@ sequenceDiagram
   D->>L: link
   L->>G: read the pull request, check holders again
 ```
+
+## Task documents
+
+A task's markdown documents are owned by the documents feature, which ranks
+above agents; the agent reaches them through the `TaskDocumentSource` port
+(`lib/features/agents/model/task_document_source.dart`), wired in
+`app_bootstrap.dart`. See [Task documents](../documents.md) for the documents
+themselves (ADR 0167).
+
+- **Context.** The wake reads the task's documents once
+  (`_taskDocumentDirectory`, empty when unwired or the read fails) and lists
+  them by id, quoted title and version in a `## Documents` section in the
+  volatile tail, after Pull Requests (`renderTaskDocumentDirectory`). Their
+  text never enters the context unread — a deliberate exception to omitting
+  the prior report's prose, since a document is the user's work product.
+- **`read_document {documentId}`** is **read-only**, handled in the strategy
+  (`task_agent_document_handlers.dart`). It answers with the version's
+  markdown fenced as the user's data, or a sentence for an unknown id or a
+  failed read.
+- **`write_document_version {documentId | newTitle, markdown,
+  changeSummary}`** is **not deferred**: it writes during the wake, and the
+  version is the document's text at once (ADR 0167, decision 3). The
+  strategy validates it fail-closed first (`_handleWriteDocumentVersion`):
+  the text must be there, and exactly one of `documentId` (a document the
+  section listed) or `newTitle`. What stands in for a confirmation is
+  checked there too: a document that has text must have been read with
+  `read_document` in this wake, the version is written over the version
+  that read returned — never an id the model names — and a wake writes one
+  version per document and one new document per title. The call then runs
+  through the tool executor (category policy, the action and result
+  messages) and the wake's `TaskToolDispatcher`, which is given the port for
+  it. A write the document refuses because it moved on meanwhile tells the
+  agent to read again, and the read is required again before another try.
+  A successful write is recorded among the wake's mutations without its
+  text.
+- **Only when asked.** The system prompt's `## Documents` rules and the tool
+  description say so: a request in a note, voice note or chat message, never
+  new material on its own — and that the write is not a proposal. Writing
+  or reading a document does not by itself require a new report
+  (`TaskAgentReportPolicy`).
+- **Gating.** Both tools need the port; `read_document` also needs a
+  document. The query chat's planner offers the write on its own terms (see
+  [Query chat](query-chat.md) and
+  [Writing an agent version](../documents.md#writing-an-agent-version)).
 
 ## Linked and related tasks are read on demand
 

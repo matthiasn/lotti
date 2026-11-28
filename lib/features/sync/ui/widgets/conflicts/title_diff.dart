@@ -1,5 +1,4 @@
-import 'dart:math' as math;
-
+import 'package:lotti/utils/text_diff.dart';
 import 'package:meta/meta.dart';
 
 /// How a segment of the diff should render. Maps 1:1 to the
@@ -76,7 +75,7 @@ class TitleDiff {
 TitleDiff computeTitleDiff(String localTitle, String remoteTitle) {
   final localTokens = _tokenize(localTitle);
   final remoteTokens = _tokenize(remoteTitle);
-  final ops = _diffTokens(localTokens, remoteTokens);
+  final ops = diffTokens(localTokens, remoteTokens);
   return TitleDiff(
     local: _mergeAdjacent(_buildLocal(ops)),
     remote: _mergeAdjacent(_buildRemote(ops)),
@@ -89,66 +88,20 @@ List<String> _tokenize(String value) {
   return trimmed.split(RegExp(r'\s+'));
 }
 
-enum _OpKind { equal, deleted, inserted }
-
-class _Op {
-  const _Op(this.kind, this.token);
-  final _OpKind kind;
-  final String token;
-}
-
-/// Standard LCS backtrack that produces a forward edit script:
-/// `equal` for tokens common to both, `deleted` for tokens only in
-/// local, `inserted` for tokens only in remote.
-List<_Op> _diffTokens(List<String> a, List<String> b) {
-  final m = a.length;
-  final n = b.length;
-  final dp = List<List<int>>.generate(
-    m + 1,
-    (_) => List<int>.filled(n + 1, 0),
-  );
-  for (var i = 1; i <= m; i++) {
-    for (var j = 1; j <= n; j++) {
-      if (a[i - 1] == b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-  final ops = <_Op>[];
-  var i = m;
-  var j = n;
-  while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && a[i - 1] == b[j - 1]) {
-      ops.add(_Op(_OpKind.equal, a[i - 1]));
-      i--;
-      j--;
-    } else if (j > 0 && (i == 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-      ops.add(_Op(_OpKind.inserted, b[j - 1]));
-      j--;
-    } else {
-      ops.add(_Op(_OpKind.deleted, a[i - 1]));
-      i--;
-    }
-  }
-  return ops.reversed.toList();
-}
-
 /// Local card sees common + added (local-only) tokens; never the
 /// remote-only insertions. Empty-string segments are filtered so a
 /// trailing space doesn't produce a blank token.
-List<TitleDiffSegment> _buildLocal(List<_Op> ops) {
+List<TitleDiffSegment> _buildLocal(List<TextDiffEdit> ops) {
   final out = <TitleDiffSegment>[];
   for (final op in ops) {
-    switch (op.kind) {
-      case _OpKind.equal:
+    switch (op.op) {
+      case TextDiffOp.equal:
         out.add(
           TitleDiffSegment(text: op.token, kind: TitleDiffKind.common),
         );
-      case _OpKind.deleted:
+      case TextDiffOp.deleted:
         out.add(TitleDiffSegment(text: op.token, kind: TitleDiffKind.added));
-      case _OpKind.inserted:
+      case TextDiffOp.inserted:
         // Remote-only — never shown on the local card.
         break;
     }
@@ -158,19 +111,19 @@ List<TitleDiffSegment> _buildLocal(List<_Op> ops) {
 
 /// Remote card sees common tokens, plus what the remote dropped (rendered
 /// `removed`/struck-through) and what it introduced (`replaced`).
-List<TitleDiffSegment> _buildRemote(List<_Op> ops) {
+List<TitleDiffSegment> _buildRemote(List<TextDiffEdit> ops) {
   final out = <TitleDiffSegment>[];
   for (final op in ops) {
-    switch (op.kind) {
-      case _OpKind.equal:
+    switch (op.op) {
+      case TextDiffOp.equal:
         out.add(
           TitleDiffSegment(text: op.token, kind: TitleDiffKind.common),
         );
-      case _OpKind.deleted:
+      case TextDiffOp.deleted:
         out.add(
           TitleDiffSegment(text: op.token, kind: TitleDiffKind.removed),
         );
-      case _OpKind.inserted:
+      case TextDiffOp.inserted:
         out.add(
           TitleDiffSegment(text: op.token, kind: TitleDiffKind.replaced),
         );

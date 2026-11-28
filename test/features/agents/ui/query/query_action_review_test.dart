@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/agents/ui/query/query_action_review.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -104,6 +105,7 @@ void main() {
     QueryChatAnswer response = answer,
     QueryAccessSnapshot? access,
     bool canApply = true,
+    bool applying = false,
     Locale? locale,
     bool privateLabel = false,
   }) async {
@@ -116,6 +118,7 @@ void main() {
           approved: approved,
           access: access,
           canApply: canApply,
+          applying: applying,
         ),
         locale: locale,
         overrides: [
@@ -686,5 +689,120 @@ void main() {
         verifyZeroInteractions(service);
       });
     }
+  });
+
+  group('document versions', () {
+    const version = ChangeItem(
+      toolName: 'write_document_version',
+      args: {
+        'documentId': 'brief',
+        'title': 'Habitat brief',
+        'baseVersionId': 'brief-v1',
+        'markdown': 'Feed the penguins at noon.',
+        'changeSummary': 'Moves feeding to noon.',
+      },
+      humanSummary: 'New version of "Habitat brief"',
+    );
+    QueryChatAnswer answerWith(List<ChangeItem> items) => QueryChatAnswer(
+      questionId: 'question',
+      text: 'Here is a shorter brief.',
+      coverage: const QueryCoverage(),
+      proposedActions: items,
+    );
+    void savedWith(List<ChangeItem> items) {
+      saved =
+          AgentDomainEntity.changeSet(
+                id: 'query-chat:question:actions',
+                agentId: 'agent',
+                taskId: 'task',
+                threadId: 'chat',
+                runKey: 'query-chat:question',
+                status: ChangeSetStatus.partiallyResolved,
+                items: items,
+                createdAt: DateTime(2026, 9, 13),
+                vectorClock: null,
+              )
+              as ChangeSetEntity;
+    }
+
+    testWidgets('a version the chat wrote reads as applied, with the '
+        "agent's line on it and nothing left to decide", (tester) async {
+      savedWith([version.copyWith(status: ChangeItemStatus.confirmed)]);
+      await pump(tester, response: answerWith(const [version]));
+
+      expect(
+        find.textContaining('New version of "Habitat brief"'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Moves feeding to noon.'), findsOneWidget);
+      expect(find.text('Change applied'), findsOneWidget);
+      // Its text is on the document, not behind a sheet here.
+      expect(find.textContaining('Feed the penguins at noon.'), findsNothing);
+      expect(find.byType(DesignSystemButton), findsNothing);
+    });
+
+    testWidgets('while the chat is writing it, the buttons wait', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        response: answerWith(const [version]),
+        applying: true,
+      );
+
+      final buttons = tester.widgetList<DesignSystemButton>(
+        find.byType(DesignSystemButton),
+      );
+      final dismiss = buttons.firstWhere((b) => b.label == 'Dismiss');
+      final accept = buttons.firstWhere((b) => b.label == 'Accept');
+      expect(dismiss.onPressed, isNull);
+      expect(accept.isLoading, isTrue);
+    });
+
+    testWidgets('one that could not be written is applied from here, like '
+        'any other change', (tester) async {
+      stub((approved) async => const []);
+      await pump(tester, response: answerWith(const [version]));
+
+      await tester.tap(find.text('Accept'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      verify(
+        () => service.resolve(
+          agentId: 'agent',
+          chatId: 'chat',
+          questionId: 'question',
+          approved: true,
+        ),
+      ).called(1);
+    });
+
+    testWidgets('beside other changes, the written version shows applied '
+        'while the rest keeps its own verdicts', (tester) async {
+      savedWith([
+        version.copyWith(status: ChangeItemStatus.confirmed),
+        answer.proposedActions.first,
+      ]);
+      await pump(
+        tester,
+        response: answerWith([version, answer.proposedActions.first]),
+      );
+
+      expect(find.text('Change applied'), findsOneWidget);
+      // Only the checklist row is still decided.
+      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+      expect(find.byIcon(LottiIcons.close), findsOneWidget);
+    });
+  });
+
+  testWidgets('Dismiss comes before Accept, as on the card', (
+    tester,
+  ) async {
+    await pump(tester);
+    expect(
+      tester.getTopLeft(find.text('Dismiss all')).dx,
+      lessThan(tester.getTopLeft(find.text('Accept all')).dx),
+    );
   });
 }

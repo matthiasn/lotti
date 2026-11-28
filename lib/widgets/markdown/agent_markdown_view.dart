@@ -20,6 +20,7 @@ class AgentMarkdownView extends StatelessWidget {
     this.onCitationTap,
     this.subordinateHeadings = false,
     this.imageBuilder,
+    this.inlineDirectives,
     super.key,
   });
 
@@ -58,6 +59,11 @@ class AgentMarkdownView extends StatelessWidget {
   /// from somewhere it trusts to that extent, such as a pull request's own
   /// description, passes a builder that loads the image.
   final ImageBuilder? imageBuilder;
+
+  /// Host-delimited inline regions the Markdown parser leaves alone and
+  /// [InlineDirective.builder] draws — a review's marks on the words a
+  /// rewrite changed.
+  final List<InlineDirective>? inlineDirectives;
 
   @override
   Widget build(BuildContext context) {
@@ -155,6 +161,7 @@ class AgentMarkdownView extends StatelessWidget {
                 );
               },
               imageBuilder: imageBuilder ?? buildBlockedMarkdownImage,
+              inlineDirectives: inlineDirectives,
             ),
           ),
         ),

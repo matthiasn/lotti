@@ -105,6 +105,11 @@ stateDiagram-v2
   above an unchanged base — so tapping that base in the list did nothing.
 - `desktopSelectedTaskId` stays in sync with `stack.last`, so existing
   list-pane highlight listeners keep working unchanged.
+- A **task document** opens over its task in the same pane, not on the
+  stack: `NavService.desktopTaskDocument` names it, and the pane keeps the
+  task page mounted beneath it (offstage, tickers paused, focus excluded), so
+  closing the document returns to the task as it was. Selecting another task
+  closes it. See [Task documents](../documents.md).
 
 Both panes share a `ListDetailFocusTraversal`: Right Arrow on a focused task
 selects the row and moves focus to a real detail control **after the detail frame

@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/query/query_transcription_provider.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/agents/ui/query/query_action_review.dart';
 import 'package:lotti/features/agents/ui/query/query_audio_controls.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/agents/ui/query/query_evidence_card.dart';
@@ -298,6 +299,59 @@ void main() {
       expect(find.text('Accept'), findsOneWidget);
       expect(find.text('Dismiss'), findsOneWidget);
       expect(inferenceCalls, 0);
+    },
+  );
+
+  testWidgets(
+    'an answer of document versions is headed Documents, not as proposed '
+    'changes, and its buttons wait while the chat is writing them',
+    (tester) async {
+      events.addAll([
+        event(
+          'q',
+          'feeder',
+          const QueryChatQuestion(text: 'Write the feeder brief.'),
+        ),
+        event(
+          'a',
+          'feeder',
+          const QueryChatAnswer(
+            questionId: 'q',
+            text: 'I wrote it.',
+            coverage: QueryCoverage(),
+            proposedActions: [
+              ChangeItem(
+                toolName: 'write_document_version',
+                args: {
+                  'newTitle': 'Feeder brief',
+                  'markdown': 'Feed at noon.',
+                  'changeSummary': 'A first brief.',
+                },
+                humanSummary: 'Create document "Feeder brief"',
+              ),
+            ],
+          ),
+        ),
+      ]);
+      await pump(
+        tester,
+        session: const QueryChatSession(
+          selectedId: 'feeder',
+          chats: {'feeder': QueryChatLocal(status: QueryTurnStatus.running)},
+        ),
+      );
+
+      expect(find.text('Documents'), findsOneWidget);
+      expect(find.textContaining('Proposed changes'), findsNothing);
+      expect(
+        find.textContaining('Create document "Feeder brief"'),
+        findsOneWidget,
+      );
+      final review = tester.widget<QueryActionReview>(
+        find.byType(QueryActionReview),
+      );
+      expect(review.applying, isTrue);
+      await tester.pumpWidget(const SizedBox.shrink());
     },
   );
 

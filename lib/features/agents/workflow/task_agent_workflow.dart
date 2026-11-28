@@ -14,6 +14,7 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/pull_request_link_source.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/decision_events.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
@@ -46,6 +47,7 @@ import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
+import 'package:lotti/features/agents/workflow/task_document_context.dart';
 import 'package:lotti/features/agents/workflow/task_project_options.dart';
 import 'package:lotti/features/agents/workflow/task_pull_request_candidates.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
@@ -136,6 +138,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     this.projectRepository,
     this.pullRequestContextService,
     this.pullRequestLinks,
+    this.taskDocuments,
     this.changeSetNotificationService,
     this.inputCaptureService,
     this.logSummarizer,
@@ -205,6 +208,11 @@ class TaskAgentWorkflow with AgentErrorLogging {
   /// Lists the task's unlinked pull requests for `get_unlinked_pull_requests`
   /// and links a confirmed `link_pull_request`; null hides both tools.
   final PullRequestLinkSource? pullRequestLinks;
+
+  /// Lists and reads the task's documents for the `## Documents` section and
+  /// `read_document`, and validates `write_document_version`; null hides
+  /// both document tools.
+  final TaskDocumentSource? taskDocuments;
 
   /// Optional bridge that keeps task-suggestion notifications aligned with
   /// agent change-set resolution.
@@ -403,6 +411,26 @@ class TaskAgentWorkflow with AgentErrorLogging {
     }
   }
 
+  /// The task's documents, for the wake's `## Documents` section, the
+  /// document tools' gate and the validation of a document write; empty
+  /// where the documents feature is not wired or the read failed.
+  Future<List<TaskDocumentSummary>> _taskDocumentDirectory(
+    String taskId,
+  ) async {
+    final source = taskDocuments;
+    if (source == null) return const [];
+    try {
+      return await source.documentsOf(taskId);
+    } catch (error, stackTrace) {
+      logError(
+        'task documents read failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return const [];
+    }
+  }
+
   Future<({List<AttentionRequestEntity> claims, Task? task})>
   _maintainAndLoadAttentionClaims({
     required String agentId,
@@ -439,6 +467,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     String? compactedTaskLog,
     String? categoryKnowledge,
     String? pullRequestsContext,
+    String? documentsContext,
     List<ReportFactDrift> reportFactDrifts = const [],
     List<TaskProjectOption> projectCandidates = const [],
     AgentStateEntity? agentState,
@@ -458,6 +487,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     compactedTaskLog: compactedTaskLog,
     categoryKnowledge: categoryKnowledge,
     pullRequestsContext: pullRequestsContext,
+    documentsContext: documentsContext,
     reportFactDrifts: reportFactDrifts,
     projectCandidates: projectCandidates,
     agentState: agentState,

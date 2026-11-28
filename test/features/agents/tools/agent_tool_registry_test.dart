@@ -56,9 +56,33 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 29 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(29));
+    test('contains exactly 31 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(31));
     });
+
+    test(
+      'offers the two document tools, neither of them a proposal: a '
+      'version is written as the wake runs',
+      () {
+        expect(
+          AgentToolRegistry.taskAgentTools.map((t) => t.name),
+          containsAll(<String>[
+            TaskAgentToolNames.readDocument,
+            TaskAgentToolNames.writeDocumentVersion,
+          ]),
+        );
+        for (final name in [
+          TaskAgentToolNames.readDocument,
+          TaskAgentToolNames.writeDocumentVersion,
+        ]) {
+          expect(AgentToolRegistry.deferredTools, isNot(contains(name)));
+          expect(
+            AgentToolRegistry.individualConfirmTools,
+            isNot(contains(name)),
+          );
+        }
+      },
+    );
 
     test('offers the three pull request tools, only the link deferred', () {
       expect(

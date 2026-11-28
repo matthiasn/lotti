@@ -31,6 +31,8 @@ void main() {
         TaskAgentToolNames.setTaskProject,
         TaskAgentToolNames.createTaskProject,
         TaskAgentToolNames.linkPullRequest,
+        TaskAgentToolNames.readDocument,
+        TaskAgentToolNames.writeDocumentVersion,
       ];
       expect(
         TaskAgentReportPolicy.requiresReport(

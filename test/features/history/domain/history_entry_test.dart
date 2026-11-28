@@ -46,6 +46,12 @@ void main() {
         entityId: 'h1',
         route: '/habits/edit/h1',
       ),
+      // A document of a task counts as a visit to the task.
+      '/tasks/t1/documents/d1': HistoryTarget(
+        kind: HistoryEntityKind.task,
+        entityId: 't1',
+        route: '/tasks/t1',
+      ),
       // A query string does not change which entity is shown.
       '/tasks/t1?tab=checklist': HistoryTarget(
         kind: HistoryEntityKind.task,

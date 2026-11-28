@@ -244,6 +244,14 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableTaskDocumentsFlag,
+      description: 'Enable task documents?',
+      status: false,
+    ),
+  );
+
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableForkHealingFlag,
       description: 'Enable agent fork healing?',
       status: false,

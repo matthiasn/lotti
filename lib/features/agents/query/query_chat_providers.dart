@@ -26,6 +26,7 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/state/task_document_source_provider.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
@@ -64,6 +65,7 @@ final queryActionContextReaderProvider = Provider<QueryActionContextReader>((
 ) {
   final loader = QueryTaskActionContextLoader(
     access: ref.watch(querySourceAccessProvider),
+    documents: ref.watch(taskDocumentSourceProvider),
   );
   return (taskId, relatedIds) => loader.load(
     taskId,

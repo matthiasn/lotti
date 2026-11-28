@@ -49,7 +49,8 @@ flowchart LR
 `historyTargetForRoute` maps a route to the entity it shows, or to nothing.
 Task, entry, project, event, person, dashboard and habit detail routes are
 entities; lists, create forms, settings, Daily OS days and goal pages are not.
-A sub-page — a person's chat or check-in, a project's edit form — counts as a
+A sub-page — a person's chat or check-in, a project's edit form, a task's
+document — counts as a
 visit to the entity itself and is **recorded at the entity's main route**, so
 going back from history lands on the entity, not on a form.
 

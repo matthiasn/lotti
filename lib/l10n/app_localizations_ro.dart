@@ -1016,6 +1016,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateDocument(String title) {
+    return 'Creați documentul „$title”';
+  }
+
+  @override
   String agentSummaryCreateFollowUp(Object title) {
     return 'Creați sarcină ulterioară: „$title”';
   }
@@ -1033,6 +1038,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String agentSummaryCreateTask(Object title) {
     return 'Creați sarcină: $title';
+  }
+
+  @override
+  String agentSummaryDocumentVersion(String title) {
+    return 'Versiune nouă a „$title”';
   }
 
   @override
@@ -4341,6 +4351,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează funcția Evenimente pentru a crea, urmări și gestiona evenimente în jurnalul dvs.';
 
   @override
+  String get configFlagEnableTaskDocuments => 'Documente de sarcină';
+
+  @override
+  String get configFlagEnableTaskDocumentsDescription =>
+      'Sarcinile pot conține documente Markdown; agentul sarcinii și chatul acesteia le scriu și le revizuiesc atunci când cereți. Experimental.';
+
+  @override
   String get configFlagEnableForkHealing => 'Repararea bifurcațiilor agentului';
 
   @override
@@ -7196,6 +7213,48 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String deviceDeleteQuestion(String deviceName) {
     return 'Eliminați $deviceName din contul dvs. de sincronizare? Dispozitivul va fi deconectat și va trebui asociat din nou înainte de a putea sincroniza.';
+  }
+
+  @override
+  String get documentReviewAdded => 'Adăugat în această versiune';
+
+  @override
+  String get documentReviewAfter => 'După';
+
+  @override
+  String get documentReviewAgentWrote => 'Agentul a scris această versiune';
+
+  @override
+  String get documentReviewAskForChanges => 'Cereți modificări';
+
+  @override
+  String get documentReviewBefore => 'Înainte';
+
+  @override
+  String get documentReviewClose => 'Închideți revizuirea';
+
+  @override
+  String documentReviewCounts(int added, int removed, int rewritten) {
+    return '$added adăugate, $removed eliminate, $rewritten rescrise';
+  }
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'Nu este în v$number';
+  }
+
+  @override
+  String get documentReviewOpen => 'Revizuiți modificările';
+
+  @override
+  String get documentReviewRemoved => 'Eliminat în această versiune';
+
+  @override
+  String get documentReviewRewritten => 'Rescris în această versiune';
+
+  @override
+  String documentReviewUndo(int number) {
+    return 'Reveniți la v$number';
   }
 
   @override
@@ -18404,6 +18463,90 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskDetailRetry => 'Încercați din nou';
+
+  @override
+  String get taskDocumentsAddAction => 'Scrieți un document';
+
+  @override
+  String get taskDocumentsAddActionHint =>
+      'Adaugă un document Markdown pe care îl puteți revizui și copia.';
+
+  @override
+  String get taskDocumentsCopied => 'Markdown copiat';
+
+  @override
+  String get taskDocumentsCopy => 'Copiați Markdown';
+
+  @override
+  String get taskDocumentsCopyAction => 'Copiați';
+
+  @override
+  String get taskDocumentsCurrent => 'Actuală';
+
+  @override
+  String get taskDocumentsDeleteMessage =>
+      'Documentul și toate versiunile sale sunt eliminate din această sarcină, pe toate dispozitivele.';
+
+  @override
+  String get taskDocumentsDeleteTitle => 'Ștergeți acest document?';
+
+  @override
+  String get taskDocumentsEdit => 'Editați documentul';
+
+  @override
+  String get taskDocumentsEditAction => 'Editați';
+
+  @override
+  String get taskDocumentsGone => 'Acest document a fost șters.';
+
+  @override
+  String get taskDocumentsHistory => 'Istoric';
+
+  @override
+  String get taskDocumentsNew => 'Document nou';
+
+  @override
+  String get taskDocumentsNoText => 'Încă nu există text';
+
+  @override
+  String get taskDocumentsRestore => 'Restaurați această versiune';
+
+  @override
+  String get taskDocumentsRestored => 'Versiune restaurată';
+
+  @override
+  String get taskDocumentsRestoredByYou => 'Restaurat de dvs.';
+
+  @override
+  String get taskDocumentsRestoreStale =>
+      'Între timp a apărut o versiune mai nouă. Consultați-o, apoi restaurați din nou.';
+
+  @override
+  String get taskDocumentsStale =>
+      'Acest document s-a modificat în timp ce îl editați. Salvați din nou pentru a vă păstra textul; cealaltă versiune rămâne în istoric.';
+
+  @override
+  String get taskDocumentsTextHint => 'Scrieți în Markdown';
+
+  @override
+  String get taskDocumentsTextLabel => 'Text';
+
+  @override
+  String get taskDocumentsTitle => 'Documente';
+
+  @override
+  String get taskDocumentsTitleLabel => 'Titlu';
+
+  @override
+  String taskDocumentsVersion(int number) {
+    return 'v$number';
+  }
+
+  @override
+  String get taskDocumentsWrittenByAgent => 'Scris de agent';
+
+  @override
+  String get taskDocumentsWrittenByYou => 'Scris de dvs.';
 
   @override
   String get taskDueDateLabel => 'Data scadenței';

@@ -16,6 +16,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../classes/task_document_fixtures.dart';
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
 import '../../github/pull_request_fixtures.dart';
@@ -106,8 +107,8 @@ void main() {
     });
 
     test(
-      'returns false when the only links are tasks and pull requests, which '
-      'have their own sections',
+      'returns false when the only links are tasks, pull requests and '
+      'documents, which have their own sections',
       () {
         final container = ProviderContainer(
           overrides: [
@@ -115,6 +116,7 @@ void main() {
               (ref) => [
                 buildTask('linked-id-1'),
                 prEntry(clock: {'a': 1}),
+                taskDocumentEntry(clock: {'a': 1}),
               ],
             ),
           ],

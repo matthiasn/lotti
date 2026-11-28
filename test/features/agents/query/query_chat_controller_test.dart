@@ -4,14 +4,18 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_controller.dart';
+import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_summary_reader.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -45,6 +49,10 @@ void main() {
   var recall = false;
   var malformed = false;
   var unavailable = false;
+  // Set by the tests of an answer's actions: the answer the builder returns,
+  // and the service that applies it.
+  List<ChangeItem>? plannedActions;
+  MockQueryChatActionService? actions;
   final now = DateTime(2026, 9, 10, 12);
 
   setUpAll(registerAllFallbackValues);
@@ -56,6 +64,8 @@ void main() {
       }),
       domainLoggerProvider.overrideWithValue(logger),
       queryChatStoreProvider.overrideWithValue(bench.store),
+      if (actions case final service?)
+        queryChatActionServiceProvider.overrideWithValue(service),
       queryChatDataProvider(chatKey).overrideWith((ref) => history.stream),
       configFlagProvider(
         'private',
@@ -70,6 +80,9 @@ void main() {
       ) async {
         if (unavailable) throw const QueryInferenceUnavailable();
         if (setupError case final error?) throw error;
+        if (plannedActions case final planned?) {
+          return _PlannedAnswerBuilder(planned);
+        }
         return QueryAnswerBuilder(
           summaryReader: summaryReader,
           crawler: bench.crawler,
@@ -153,6 +166,8 @@ void main() {
     synthesis = null;
     summaryReader = null;
     unavailable = false;
+    plannedActions = null;
+    actions = null;
     history = StreamController<QueryChatData>.broadcast();
     privacy = StreamController<bool>.broadcast();
     enabled = StreamController<bool>.broadcast();
@@ -165,6 +180,120 @@ void main() {
     await privacy.close();
     await enabled.close();
     await bench.close();
+  });
+
+  group('an answer holding document versions', () {
+    const version = ChangeItem(
+      toolName: 'write_document_version',
+      args: {
+        'newTitle': 'Feeder brief',
+        'markdown': 'Feed the penguins at noon.',
+        'changeSummary': 'A first brief.',
+      },
+      humanSummary: 'Create document "Feeder brief"',
+    );
+    const title = ChangeItem(
+      toolName: 'set_task_title',
+      args: {'title': 'Feeder'},
+      humanSummary: 'Set title',
+    );
+
+    /// Sends a question whose answer holds [planned], with [write] standing
+    /// in for the service's write, and returns the chat.
+    Future<String> ask(
+      List<ChangeItem> planned, {
+      Future<List<ToolExecutionResult>> Function(String questionId)? write,
+    }) async {
+      plannedActions = planned;
+      final service = actions = MockQueryChatActionService();
+      when(
+        () => service.writeDocuments(
+          agentId: any(named: 'agentId'),
+          chatId: any(named: 'chatId'),
+          questionId: any(named: 'questionId'),
+        ),
+      ).thenAnswer(
+        (invocation) =>
+            write?.call(invocation.namedArguments[#questionId] as String) ??
+            Future.value(const <ToolExecutionResult>[]),
+      );
+      container.dispose();
+      container = buildContainer(key);
+      controller = container.read(provider.notifier);
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
+      await container.read(configFlagProvider('enable_query_chat').future);
+      final id = await controller.create('Feeder');
+      controller.updateDraft(id, 'Write the feeder brief.');
+      await controller.send(id);
+      return id;
+    }
+
+    test(
+      'writes them once the answer is saved, with no verdict asked',
+      () => withClock(Clock.fixed(now), () async {
+        bool? answerSavedFirst;
+        final id = await ask(
+          const [title, version],
+          write: (questionId) async {
+            final chat = (await bench.store.load('agent')).chats.single;
+            answerSavedFirst = chat.answerFor(questionId) != null;
+            return const [ToolExecutionResult(success: true, output: 'ok')];
+          },
+        );
+
+        final saved = (await bench.store.load('agent')).chats.single;
+        verify(
+          () => actions!.writeDocuments(
+            agentId: 'agent',
+            chatId: id,
+            questionId: saved.questions.single.id,
+          ),
+        ).called(1);
+        expect(answerSavedFirst, isTrue);
+        expect(container.read(provider).local(id).status, QueryTurnStatus.idle);
+      }),
+    );
+
+    test(
+      'a write that throws leaves the saved answer and the turn intact, '
+      'logging only the error type',
+      () => withClock(Clock.fixed(now), () async {
+        final id = await ask(
+          const [version],
+          write: (_) async => throw StateError('document text'),
+        );
+
+        final saved = (await bench.store.load('agent')).chats.single;
+        expect(saved.answerFor(saved.questions.single.id), isNotNull);
+        expect(container.read(provider).local(id).status, QueryTurnStatus.idle);
+        verify(
+          () => logger.error(
+            LogDomain.chat,
+            'StateError',
+            errorType: StateError,
+            message: 'Writing the document versions of the answer failed',
+            subDomain: 'query.send',
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+          ),
+        ).called(1);
+      }),
+    );
+
+    test(
+      'an answer with no document version writes nothing',
+      () => withClock(Clock.fixed(now), () async {
+        await ask(const [title]);
+
+        verifyNever(
+          () => actions!.writeDocuments(
+            agentId: any(named: 'agentId'),
+            chatId: any(named: 'chatId'),
+            questionId: any(named: 'questionId'),
+          ),
+        );
+      }),
+    );
   });
 
   test(
@@ -935,5 +1064,36 @@ void main() {
       await failed;
       expect((await bench.store.load('agent')).chats, isEmpty);
     }),
+  );
+}
+
+/// A builder whose answer is fixed: the planned actions, on the question it
+/// was asked.
+class _PlannedAnswerBuilder extends Fake implements QueryAnswerBuilder {
+  _PlannedAnswerBuilder(this.planned);
+
+  final List<ChangeItem> planned;
+
+  @override
+  Future<QueryBuiltAnswer> build({
+    required QueryChatHistory chat,
+    required AgentQueryChatEventEntity question,
+    required List<AgentQueryChatEventEntity> memories,
+    required QueryCancellation cancellation,
+    required QueryProgress onProgress,
+    void Function()? onAnswering,
+    void Function(QueryChatAnswer)? onSynthesisReady,
+    void Function(String)? onAnswerText,
+    void Function()? onFirstSynthesisToken,
+    bool homeOnly = false,
+    QuerySourceKind? kind,
+  }) async => QueryBuiltAnswer(
+    answer: QueryChatAnswer(
+      questionId: question.id,
+      text: 'Here it is.',
+      coverage: const QueryCoverage(),
+      proposedActions: planned,
+      dependencies: (question.data as QueryChatQuestion).dependencies,
+    ),
   );
 }

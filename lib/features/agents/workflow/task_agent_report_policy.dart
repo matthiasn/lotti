@@ -631,6 +631,9 @@ A report already exists. Before publishing, identify a new or corrected task fac
           TaskAgentToolNames.setTaskProject,
           TaskAgentToolNames.createTaskProject,
           TaskAgentToolNames.linkPullRequest,
+          // A document is the user's work product, not a fact about the task.
+          TaskAgentToolNames.readDocument,
+          TaskAgentToolNames.writeDocumentVersion,
         }.contains(name),
       );
 }

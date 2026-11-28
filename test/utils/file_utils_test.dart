@@ -15,6 +15,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/classes/task_document_data.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
@@ -213,6 +214,31 @@ void main() {
 
       final path = entityPath(testEntity, Directory(''));
       expect(path, '/pull_requests/2021-11-30/test-id.pull_request.json');
+    });
+
+    test('JSON file names for a task document and its versions', () async {
+      final document = JournalEntity.taskDocument(
+        meta: testMeta,
+        data: const TaskDocumentData(title: 'Client one-pager'),
+      );
+      final version = JournalEntity.taskDocumentVersion(
+        meta: testMeta,
+        data: const TaskDocumentVersionData(
+          documentId: 'doc-1',
+          number: 1,
+          markdown: 'Text',
+          author: TaskDocumentAuthor.user,
+        ),
+      );
+
+      expect(
+        entityPath(document, Directory('')),
+        '/task_documents/2021-11-30/test-id.task_document.json',
+      );
+      expect(
+        entityPath(version, Directory('')),
+        '/task_document_versions/2021-11-30/test-id.task_document_version.json',
+      );
     });
 
     test('JSON file name for audio entry should be correct', () async {

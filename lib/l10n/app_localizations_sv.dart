@@ -1010,6 +1010,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateDocument(String title) {
+    return 'Skapa dokumentet ”$title”';
+  }
+
+  @override
   String agentSummaryCreateFollowUp(Object title) {
     return 'Skapa uppföljningsuppgift: ”$title”';
   }
@@ -1027,6 +1032,11 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String agentSummaryCreateTask(Object title) {
     return 'Skapa uppgift: $title';
+  }
+
+  @override
+  String agentSummaryDocumentVersion(String title) {
+    return 'Ny version av ”$title”';
   }
 
   @override
@@ -4277,6 +4287,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Visa funktionen Händelser för att skapa, följa och hantera händelser i din journal.';
 
   @override
+  String get configFlagEnableTaskDocuments => 'Uppgiftsdokument';
+
+  @override
+  String get configFlagEnableTaskDocumentsDescription =>
+      'Uppgifter kan innehålla Markdown-dokument; uppgiftens agent och chatt skriver och reviderar dem när du ber om det. Experimentellt.';
+
+  @override
   String get configFlagEnableForkHealing => 'Agentgaffelläkning';
 
   @override
@@ -7081,6 +7098,49 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String deviceDeleteQuestion(String deviceName) {
     return 'Ta bort $deviceName från ditt synkroniseringskonto? Enheten loggas ut och måste paras ihop igen innan den kan synkronisera.';
+  }
+
+  @override
+  String get documentReviewAdded => 'Tillagt i den här versionen';
+
+  @override
+  String get documentReviewAfter => 'Efter';
+
+  @override
+  String get documentReviewAgentWrote =>
+      'Agenten har skrivit den här versionen';
+
+  @override
+  String get documentReviewAskForChanges => 'Be om ändringar';
+
+  @override
+  String get documentReviewBefore => 'Före';
+
+  @override
+  String get documentReviewClose => 'Stäng granskning';
+
+  @override
+  String documentReviewCounts(int added, int removed, int rewritten) {
+    return '$added tillagda, $removed borttagna, $rewritten omskrivna';
+  }
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'Inte i v$number';
+  }
+
+  @override
+  String get documentReviewOpen => 'Granska ändringar';
+
+  @override
+  String get documentReviewRemoved => 'Borttaget i den här versionen';
+
+  @override
+  String get documentReviewRewritten => 'Omskrivet i den här versionen';
+
+  @override
+  String documentReviewUndo(int number) {
+    return 'Gå tillbaka till v$number';
   }
 
   @override
@@ -18078,6 +18138,90 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get taskDetailRetry => 'Försök igen';
+
+  @override
+  String get taskDocumentsAddAction => 'Skriv ett dokument';
+
+  @override
+  String get taskDocumentsAddActionHint =>
+      'Lägger till ett Markdown-dokument som du kan bearbeta och kopiera ut.';
+
+  @override
+  String get taskDocumentsCopied => 'Markdown kopierad';
+
+  @override
+  String get taskDocumentsCopy => 'Kopiera Markdown';
+
+  @override
+  String get taskDocumentsCopyAction => 'Kopiera';
+
+  @override
+  String get taskDocumentsCurrent => 'Aktuell';
+
+  @override
+  String get taskDocumentsDeleteMessage =>
+      'Dokumentet och alla dess versioner tas bort från den här uppgiften på alla enheter.';
+
+  @override
+  String get taskDocumentsDeleteTitle => 'Ta bort det här dokumentet?';
+
+  @override
+  String get taskDocumentsEdit => 'Redigera dokument';
+
+  @override
+  String get taskDocumentsEditAction => 'Redigera';
+
+  @override
+  String get taskDocumentsGone => 'Det här dokumentet har tagits bort.';
+
+  @override
+  String get taskDocumentsHistory => 'Historik';
+
+  @override
+  String get taskDocumentsNew => 'Nytt dokument';
+
+  @override
+  String get taskDocumentsNoText => 'Ingen text ännu';
+
+  @override
+  String get taskDocumentsRestore => 'Återställ den här versionen';
+
+  @override
+  String get taskDocumentsRestored => 'Versionen återställd';
+
+  @override
+  String get taskDocumentsRestoredByYou => 'Återställt av dig';
+
+  @override
+  String get taskDocumentsRestoreStale =>
+      'En nyare version har kommit under tiden. Titta på den och återställ sedan igen.';
+
+  @override
+  String get taskDocumentsStale =>
+      'Dokumentet ändrades medan du redigerade det. Spara igen för att behålla din text; den andra versionen finns kvar i historiken.';
+
+  @override
+  String get taskDocumentsTextHint => 'Skriv i Markdown';
+
+  @override
+  String get taskDocumentsTextLabel => 'Text';
+
+  @override
+  String get taskDocumentsTitle => 'Dokument';
+
+  @override
+  String get taskDocumentsTitleLabel => 'Titel';
+
+  @override
+  String taskDocumentsVersion(int number) {
+    return 'v$number';
+  }
+
+  @override
+  String get taskDocumentsWrittenByAgent => 'Skrivet av agenten';
+
+  @override
+  String get taskDocumentsWrittenByYou => 'Skrivet av dig';
 
   @override
   String get taskDueDateLabel => 'Förfallodatum';

@@ -85,6 +85,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   final GlobalKey _pullRequestsKey = GlobalKey(
     debugLabel: 'task_pull_requests',
   );
+  final GlobalKey _documentsKey = GlobalKey(debugLabel: 'task_documents');
 
   /// Anchors the seam just below the AI card (the linked-entries sliver). When
   /// the card grows while scrolled fully above the viewport, pinning this seam
@@ -516,6 +517,15 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
             onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
             isInitialLoad: isInitialLoad,
           );
+        case TaskFocusTarget.documents:
+          // Published as the first document is created: the band mounts once
+          // the new link is read back, and the retry waits for it.
+          _scrollToSection(
+            _documentsKey,
+            intent.alignment,
+            onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
+            isInitialLoad: isInitialLoad,
+          );
       }
     }
 
@@ -689,6 +699,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                           taskId: widget.taskId,
                           suggestionsFocusKey: _suggestionsKey,
                           pullRequestsFocusKey: _pullRequestsKey,
+                          documentsFocusKey: _documentsKey,
                           cardRegionKey: _cardRegionKey,
                           linkedTasksRegionKey: _linkedTasksRegionKey,
                           onSuggestionResolveStart: _holdSuggestionsStable,

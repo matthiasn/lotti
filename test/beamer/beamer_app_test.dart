@@ -58,6 +58,7 @@ import 'package:lotti/features/design_system/components/navigation/resizable_div
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/state/document_review_providers.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
@@ -392,6 +393,15 @@ Future<void> _stubNavService(
   final taskStack = ValueNotifier<List<String>>([]);
   when(() => navService.desktopTaskDetailStack).thenReturn(taskStack);
   addTearDown(taskStack.dispose);
+  final document = ValueNotifier<({String taskId, String documentId})?>(null);
+  final reviewRequest =
+      ValueNotifier<({String taskId, String documentId, String versionId})?>(
+        null,
+      );
+  when(() => navService.desktopTaskDocument).thenReturn(document);
+  when(() => navService.taskDocumentReviewRequest).thenReturn(reviewRequest);
+  addTearDown(document.dispose);
+  addTearDown(reviewRequest.dispose);
 
   final tasksDelegate = await _createEmptyDelegate('/tasks');
   projectsDelegate ??= await _createEmptyDelegate('/projects');
@@ -5456,6 +5466,65 @@ void main() {
         );
         expect(container.read(paneWidthControllerProvider), widths);
         container.read(queryPaneOpenProvider(scope).notifier).open = false;
+        await tester.pump();
+        expect(tester.element(find.byType(DayViewSidePanel)), same(panel));
+        expect(container.read(paneWidthControllerProvider), widths);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'a document review on screen hides the mounted day panel, and it comes '
+      'back when the review closes or the pane returns to the task',
+      (tester) async {
+        final nav = await stubbedNavService();
+        final stack = ValueNotifier<List<String>>(['task-42']);
+        final document = ValueNotifier<({String taskId, String documentId})?>(
+          (taskId: 'task-42', documentId: 'doc-1'),
+        );
+        addTearDown(stack.dispose);
+        addTearDown(document.dispose);
+        when(() => nav.desktopTaskDetailStack).thenReturn(stack);
+        when(() => nav.desktopTaskDocument).thenReturn(document);
+        await _pumpAppScreen(
+          tester,
+          navService: nav,
+          viewportSize: _desktopViewportSize,
+        );
+        await tester.tap(find.byKey(const Key('day_view_panel_show_button')));
+        await tester.pump();
+        final panel = tester.element(find.byType(DayViewSidePanel));
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(AppScreen)),
+        );
+        final widths = container.read(paneWidthControllerProvider);
+        final review =
+            container.read(
+              documentReviewOpenProvider('task-42').notifier,
+            )..open((
+              taskId: 'task-42',
+              documentId: 'doc-1',
+              versionId: 'version-2',
+            ));
+        await tester.pump();
+        expect(find.byType(DayViewSidePanel), findsNothing);
+        expect(
+          tester.element(find.byType(DayViewSidePanel, skipOffstage: false)),
+          same(panel),
+        );
+        expect(container.read(paneWidthControllerProvider), widths);
+
+        // Back on the task, the review left open behind the document.
+        document.value = null;
+        await tester.pump();
+        expect(tester.element(find.byType(DayViewSidePanel)), same(panel));
+
+        document.value = (taskId: 'task-42', documentId: 'doc-1');
+        await tester.pump();
+        expect(find.byType(DayViewSidePanel), findsNothing);
+
+        review.close();
         await tester.pump();
         expect(tester.element(find.byType(DayViewSidePanel)), same(panel));
         expect(container.read(paneWidthControllerProvider), widths);

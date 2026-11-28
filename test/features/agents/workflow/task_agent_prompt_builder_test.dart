@@ -8,6 +8,33 @@ import '../test_utils.dart';
 
 void main() {
   group('TaskAgentPromptBuilder.buildSystemPrompt', () {
+    test(
+      'tells the agent to write a document only when asked, that the write '
+      'is not a proposal, and to read one before revising it',
+      () {
+        final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+          version: makeTestTemplateVersion(),
+          soulVersion: null,
+        );
+
+        expect(prompt, contains('## Documents'));
+        expect(
+          prompt,
+          contains(
+            'Write a document, or a new version of one, ONLY when the user '
+            'asks for it',
+          ),
+        );
+        expect(prompt, contains('is never a reason on its own'));
+        expect(prompt, contains('`write_document_version` is not a proposal'));
+        expect(prompt, contains('with no confirmation'));
+        expect(
+          prompt.indexOf('call `read_document`'),
+          lessThan(prompt.indexOf('`write_document_version` with that')),
+        );
+      },
+    );
+
     test('both scaffolds defer routine language writes on no-change wakes', () {
       for (final modelId in const [
         'glm-5.3-flash',

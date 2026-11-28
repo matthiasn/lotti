@@ -78,6 +78,9 @@ const _ungatedDeclarations = <String, String>{
       'through journalEntitiesByIdsUnorderedAllPrivate',
   'lib/database/database_task_queries.dart:getTaskEstimatesByIds':
       'estimates for task ids the caller holds',
+  'lib/database/database_task_document_queries.dart:getTaskDocumentVersions':
+      'the versions of a document the caller holds, read only through that '
+      'document, which the private filter has already let through (ADR 0167)',
   'lib/database/database_project_queries.dart:getTaskIdsForProjects':
       'id-to-id resolution for project ids the caller holds; no row content',
   'lib/database/database_project_queries.dart:getExistingProjectIds':

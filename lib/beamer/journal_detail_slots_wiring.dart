@@ -1,3 +1,4 @@
+import 'package:lotti/features/documents/ui/new_document_item.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/github/ui/track_pull_requests_item.dart';
 import 'package:lotti/features/journal/state/journal_detail_slots.dart';
@@ -24,5 +25,5 @@ final appJournalDetailSlots = JournalDetailSlots(
             index: 0,
           ),
   linkedFromChecklist: LinkedFromChecklistWidget.new,
-  taskCreateAction: pullRequestTrackingAction,
+  taskCreateActions: const [newDocumentAction, pullRequestTrackingAction],
 );

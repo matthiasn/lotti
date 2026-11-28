@@ -1,5 +1,30 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-27
+* **Changed**: [Task documents](features/documents.md) — the agent writes a
+  document version directly, with no confirmation; the earlier versions are
+  the way back. The proposal lifecycle and the draft sheet are gone, "How a
+  version is made" and "Writing an agent version" describe the read-first
+  and compare-and-set guards that stand in for a confirmation, and the
+  side-by-side review now compares a written version with the one before it
+  and offers going back
+  ([ADR 0167](../docs/adr/0167-task-documents-are-journal-entries-the-agent-writes-directly.md),
+  revised before it was accepted).
+  [Task agents](features/agents/task-agents.md) and
+  [Query chat](features/agents/query-chat.md) follow: `write_document_version`
+  is an immediate tool in a wake, and chat applies it once the answer is
+  saved.
+
+## 2026-11-22
+* **New**: [Task documents](features/documents.md), a draft concept for a
+  feature not built yet: journal-stored documents with append-only versions,
+  agent versions only through proposals, the side-by-side review and how it
+  borrows width
+  ([ADR 0167](../docs/adr/0167-task-documents-are-journal-entries-the-agent-writes-directly.md)).
+  The two journal variants and their merge have landed;
+  [Journal entity](domain/journal-entity.md) and
+  [Vector clocks and conflicts](features/sync/vector-clocks-and-conflicts.md)
+  list them.
 ## 2026-11-03
 * **Update**: [GitHub pull requests](features/github.md) — the settings page
   opens GitHub's token form pre-filled with Lotti's read-only permissions

@@ -75,6 +75,7 @@ String? localizedChangeSummary(
   TaskAgentToolNames.setTaskProject => _project(messages, args),
   TaskAgentToolNames.createTaskProject => _createProject(messages, args),
   TaskAgentToolNames.linkPullRequest => _pullRequest(messages, args),
+  TaskAgentToolNames.writeDocumentVersion => _document(messages, args),
   TaskAgentToolNames.createTimeEntry => _createTimeEntry(messages, args),
   // The retired running-timer update carried only `summary` (plus a
   // `timerId` this sentence never names), so a proposal persisted under it
@@ -433,6 +434,18 @@ String? _pullRequest(AppLocalizations messages, Map<String, dynamic> args) {
     '$number',
     title is String ? title.trim() : '',
   );
+}
+
+/// A proposed document version names the document: a new one by its
+/// `newTitle`, a revised one by the `title` the proposal recorded.
+String? _document(AppLocalizations messages, Map<String, dynamic> args) {
+  final newTitle = args['newTitle'];
+  if (newTitle is String && newTitle.trim().isNotEmpty) {
+    return messages.agentSummaryCreateDocument(newTitle.trim());
+  }
+  final title = args['title'];
+  if (title is! String || title.trim().isEmpty) return null;
+  return messages.agentSummaryDocumentVersion(title.trim());
 }
 
 /// Presence and validity of `endTime` are separate facts, exactly as they are

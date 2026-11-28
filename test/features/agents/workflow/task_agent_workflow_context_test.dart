@@ -15,6 +15,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
@@ -26,6 +27,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../categories/test_utils.dart';
 import '../../projects/test_utils.dart' show makeTestProject;
+import '../fake_task_document_source.dart';
 import 'task_agent_workflow_test_helpers.dart';
 
 void main() {
@@ -53,7 +55,10 @@ void main() {
   setUpAll(setUpTaskAgentWorkflowTestGetIt);
   tearDownAll(tearDownTaskAgentWorkflowTestGetIt);
 
+  late FakeTaskDocumentSource taskDocuments;
+
   setUp(() {
+    taskDocuments = FakeTaskDocumentSource();
     // Wired, so the wake can tell whether a task needs a project; categories
     // have no projects unless a test gives them some.
     mockProjectRepository = MockProjectRepository();
@@ -65,6 +70,7 @@ void main() {
     ).thenAnswer((_) async => null);
     final bench = createTaskAgentWorkflowTestBench(
       projectRepository: mockProjectRepository,
+      taskDocuments: taskDocuments,
     );
     mockAgentRepository = bench.mockAgentRepository;
     mockSyncService = bench.mockSyncService;
@@ -392,6 +398,36 @@ void main() {
           ).called(1);
         },
       );
+
+      test("lists the task's documents by id and title in their own "
+          'section', () async {
+        taskDocuments.documents = const [
+          TaskDocumentSummary(
+            id: 'doc-1',
+            title: 'Launch brief',
+            versionId: 'version-3',
+            versionNumber: 3,
+          ),
+        ];
+
+        final message = await executeAndCaptureMessage();
+
+        expect(
+          message,
+          contains('## Documents\nThe documents this task holds.'),
+        );
+        expect(
+          message,
+          contains('- id `doc-1`, title "Launch brief", version 3\n'),
+        );
+      });
+
+      test('a task without documents has no section', () async {
+        expect(
+          await executeAndCaptureMessage(),
+          isNot(contains('## Documents')),
+        );
+      });
 
       test('a task without pull requests has no section', () async {
         final message = await executeAndCaptureMessage();

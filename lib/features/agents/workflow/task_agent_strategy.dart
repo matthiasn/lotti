@@ -11,6 +11,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
@@ -24,6 +25,7 @@ import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/related_task_lookup.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
+import 'package:lotti/features/agents/workflow/task_document_context.dart';
 import 'package:lotti/features/agents/workflow/task_observation_contract.dart';
 import 'package:lotti/features/agents/workflow/task_project_options.dart';
 import 'package:lotti/features/agents/workflow/task_pull_request_candidates.dart';
@@ -36,6 +38,7 @@ export 'package:lotti/features/agents/model/observation_record.dart'
     show ObservationRecord;
 
 part 'task_agent_change_handlers.dart';
+part 'task_agent_document_handlers.dart';
 part 'task_agent_tool_handlers.dart';
 
 /// Callback that resolves a journal entity's category ID from its entity ID.
@@ -104,6 +107,8 @@ class TaskAgentStrategy extends ConversationStrategy {
     this.resolveCategoryProjects,
     this.resolveUnlinkedPullRequests,
     this.refreshLinkedPullRequests,
+    this.taskDocuments = const [],
+    this.readTaskDocument,
     this.flushChangeSet,
     this.stagedToolExposure,
     this.priorObservationTexts = const [],
@@ -233,6 +238,14 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// merged read from GitHub again now. Backs `refresh_pull_requests`.
   final Future<String> Function()? refreshLinkedPullRequests;
 
+  /// The task's documents as the wake listed them in `## Documents`. Validates
+  /// `write_document_version`.
+  final List<TaskDocumentSummary> taskDocuments;
+
+  /// Reads a document's current text for `read_document`; null where the
+  /// documents feature is not wired.
+  final Future<TaskDocumentText?> Function(String documentId)? readTaskDocument;
+
   String? _reportContent;
   List<AgentReportSection> _reportSections = const [];
   String? _reportTldr;
@@ -248,6 +261,14 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// in this wake. Prevents smaller models from burning all turns on a
   /// single tool (e.g. calling `set_task_title` 4 times).
   final _usedDeferredTools = <String>{};
+
+  /// The version each document read in this wake showed (null for one with
+  /// no text yet): what a version written afterwards is written over.
+  final _readDocumentVersions = <String, String?>{};
+
+  /// The documents this wake wrote a version of, and the new ones it
+  /// created, so a repeated call writes nothing twice.
+  final _writtenDocuments = <String>{};
 
   /// Retractions the agent requested via `retract_suggestions` this wake.
   ///
@@ -426,6 +447,15 @@ class TaskAgentStrategy extends ConversationStrategy {
           toolName == TaskAgentToolNames.refreshPullRequests) {
         await _recordActionMessage(toolName: toolName, args: args);
         await _handlePullRequestRead(toolName, call.id, manager);
+        continue;
+      }
+      if (toolName == TaskAgentToolNames.readDocument) {
+        await _recordActionMessage(toolName: toolName, args: args);
+        await _handleReadDocument(args, call.id, manager);
+        continue;
+      }
+      if (toolName == TaskAgentToolNames.writeDocumentVersion) {
+        await _handleWriteDocumentVersion(args, call.id, manager);
         continue;
       }
       if (toolName == retractSuggestionsToolName) {

@@ -546,5 +546,43 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'draws an inline directive with its builder, the parser never seeing '
+      'inside it',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            AgentMarkdownView(
+              'Feed the \u{E020}**young**\u{E021} birds.',
+              inlineDirectives: [
+                InlineDirective(
+                  open: '\u{E020}',
+                  close: '\u{E021}',
+                  builder: (context, payload, style) => TextSpan(
+                    text: payload,
+                    style: style.copyWith(backgroundColor: Colors.pink),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        TextSpan? marked;
+        for (final text in tester.widgetList<RichText>(find.byType(RichText))) {
+          text.text.visitChildren((span) {
+            if (span is TextSpan && span.text == '**young**') marked = span;
+            return marked == null;
+          });
+        }
+        expect(marked?.style?.backgroundColor, Colors.pink);
+        expect(
+          find.textContaining('\u{E020}', findRichText: true),
+          findsNothing,
+        );
+      },
+    );
   });
 }

@@ -1016,6 +1016,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String agentSummaryCreateDocument(String title) {
+    return 'Dokument „$title“ anlegen';
+  }
+
+  @override
   String agentSummaryCreateFollowUp(Object title) {
     return 'Folgeaufgabe erstellen: „$title“';
   }
@@ -1033,6 +1038,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String agentSummaryCreateTask(Object title) {
     return 'Aufgabe erstellen: $title';
+  }
+
+  @override
+  String agentSummaryDocumentVersion(String title) {
+    return 'Neue Version von „$title“';
   }
 
   @override
@@ -4304,6 +4314,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ereignisfunktion anzeigen, um Ereignisse in deinem Journal zu erstellen, zu verfolgen und zu verwalten.';
 
   @override
+  String get configFlagEnableTaskDocuments => 'Aufgabendokumente';
+
+  @override
+  String get configFlagEnableTaskDocumentsDescription =>
+      'Aufgaben können Markdown-Dokumente enthalten; der Aufgaben-Agent und der Chat der Aufgabe schreiben und überarbeiten sie, wenn du darum bittest. Experimentell.';
+
+  @override
   String get configFlagEnableForkHealing => 'Agenten-Fork-Heilung';
 
   @override
@@ -7114,6 +7131,49 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String deviceDeleteQuestion(String deviceName) {
     return '$deviceName aus deinem Sync-Konto entfernen? Das Gerät wird abgemeldet und muss neu gekoppelt werden, bevor es wieder synchronisieren kann.';
+  }
+
+  @override
+  String get documentReviewAdded => 'In dieser Version hinzugefügt';
+
+  @override
+  String get documentReviewAfter => 'Nachher';
+
+  @override
+  String get documentReviewAgentWrote =>
+      'Der Agent hat diese Version geschrieben';
+
+  @override
+  String get documentReviewAskForChanges => 'Änderungen erbitten';
+
+  @override
+  String get documentReviewBefore => 'Vorher';
+
+  @override
+  String get documentReviewClose => 'Prüfung schließen';
+
+  @override
+  String documentReviewCounts(int added, int removed, int rewritten) {
+    return '$added hinzugefügt, $removed entfernt, $rewritten umgeschrieben';
+  }
+
+  @override
+  String documentReviewNotInVersion(int number) {
+    return 'Nicht in v$number';
+  }
+
+  @override
+  String get documentReviewOpen => 'Änderungen prüfen';
+
+  @override
+  String get documentReviewRemoved => 'In dieser Version entfernt';
+
+  @override
+  String get documentReviewRewritten => 'In dieser Version umgeschrieben';
+
+  @override
+  String documentReviewUndo(int number) {
+    return 'Zurück zu v$number';
   }
 
   @override
@@ -18191,6 +18251,90 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskDetailRetry => 'Erneut versuchen';
+
+  @override
+  String get taskDocumentsAddAction => 'Dokument schreiben';
+
+  @override
+  String get taskDocumentsAddActionHint =>
+      'Fügt ein Markdown-Dokument hinzu, das du überarbeiten und herauskopieren kannst.';
+
+  @override
+  String get taskDocumentsCopied => 'Markdown kopiert';
+
+  @override
+  String get taskDocumentsCopy => 'Markdown kopieren';
+
+  @override
+  String get taskDocumentsCopyAction => 'Kopieren';
+
+  @override
+  String get taskDocumentsCurrent => 'Aktuell';
+
+  @override
+  String get taskDocumentsDeleteMessage =>
+      'Das Dokument und alle seine Versionen werden auf allen Geräten aus dieser Aufgabe entfernt.';
+
+  @override
+  String get taskDocumentsDeleteTitle => 'Dieses Dokument löschen?';
+
+  @override
+  String get taskDocumentsEdit => 'Dokument bearbeiten';
+
+  @override
+  String get taskDocumentsEditAction => 'Bearbeiten';
+
+  @override
+  String get taskDocumentsGone => 'Dieses Dokument wurde gelöscht.';
+
+  @override
+  String get taskDocumentsHistory => 'Verlauf';
+
+  @override
+  String get taskDocumentsNew => 'Neues Dokument';
+
+  @override
+  String get taskDocumentsNoText => 'Noch kein Text';
+
+  @override
+  String get taskDocumentsRestore => 'Diese Version wiederherstellen';
+
+  @override
+  String get taskDocumentsRestored => 'Version wiederhergestellt';
+
+  @override
+  String get taskDocumentsRestoredByYou => 'Von dir wiederhergestellt';
+
+  @override
+  String get taskDocumentsRestoreStale =>
+      'Inzwischen ist eine neuere Version da. Sieh sie dir an und stelle dann erneut wieder her.';
+
+  @override
+  String get taskDocumentsStale =>
+      'Dieses Dokument hat sich geändert, während du es bearbeitet hast. Speichere noch einmal, um deinen Text zu behalten; die andere Version bleibt im Verlauf.';
+
+  @override
+  String get taskDocumentsTextHint => 'In Markdown schreiben';
+
+  @override
+  String get taskDocumentsTextLabel => 'Text';
+
+  @override
+  String get taskDocumentsTitle => 'Dokumente';
+
+  @override
+  String get taskDocumentsTitleLabel => 'Titel';
+
+  @override
+  String taskDocumentsVersion(int number) {
+    return 'v$number';
+  }
+
+  @override
+  String get taskDocumentsWrittenByAgent => 'Vom Agenten geschrieben';
+
+  @override
+  String get taskDocumentsWrittenByYou => 'Von dir geschrieben';
 
   @override
   String get taskDueDateLabel => 'Fälligkeitsdatum';

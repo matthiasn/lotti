@@ -12,6 +12,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/pull_request_link_source.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
@@ -517,13 +518,15 @@ typedef TaskAgentWorkflowTestBench = ({
 ///
 /// [projectRepository] wires the project tools; without one the wake has no
 /// projects to offer. [pullRequestLinks] likewise wires the tools that list
-/// and link unlinked pull requests. [vectorSearch] wires the related-task
+/// and link unlinked pull requests, and [taskDocuments] the document tools.
+/// [vectorSearch] wires the related-task
 /// tools, which a wake offers only while search by meaning is also
 /// switched on.
 TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench({
   bool narrowToolSurface = false,
   ProjectRepository? projectRepository,
   PullRequestLinkSource? pullRequestLinks,
+  TaskDocumentSource? taskDocuments,
   VectorSearchRepository? vectorSearch,
 }) {
   const agentId = taskAgentTestAgentId;
@@ -737,6 +740,7 @@ TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench({
     pullRequestContextService: mockPullRequestContextService,
     projectRepository: projectRepository,
     pullRequestLinks: pullRequestLinks,
+    taskDocuments: taskDocuments,
     vectorSearch: vectorSearch,
     narrowToolSurface: narrowToolSurface,
     domainLogger: DomainLogger(loggingService: LoggingService())

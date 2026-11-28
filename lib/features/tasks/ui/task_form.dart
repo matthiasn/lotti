@@ -3,6 +3,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/design_system/components/motion/staggered_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/state/task_document_providers.dart';
+import 'package:lotti/features/documents/ui/task_documents_section.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/task_pull_requests_section.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -24,8 +26,9 @@ import 'package:material_ui/material_ui.dart';
 /// [AiSummaryCard] (whose proposals can be scrolled into view via
 /// [suggestionsFocusKey]), the [ChecklistsWidget], the [LinkedTasksWidget],
 /// the [TaskPullRequestsSection] once the task tracks pull requests (scrolled
-/// into view via [pullRequestsFocusKey]), and — on a task with no content at
-/// all — [TaskFirstRunActions].
+/// into view via [pullRequestsFocusKey]), the [TaskDocumentsSection] while the
+/// task holds a document (scrolled into view via [documentsFocusKey]), and —
+/// on a task with no content at all — [TaskFirstRunActions].
 ///
 /// Every band a confirmed agent proposal can resize reports its geometry to
 /// the task page's pre-paint scroll stabilizer, because an unreported change
@@ -70,6 +73,7 @@ class TaskForm extends ConsumerWidget {
     required this.taskId,
     this.suggestionsFocusKey,
     this.pullRequestsFocusKey,
+    this.documentsFocusKey,
     this.cardRegionKey,
     this.linkedTasksRegionKey,
     this.onSuggestionResolveStart,
@@ -82,6 +86,10 @@ class TaskForm extends ConsumerWidget {
   /// Marks the Pull requests band, so turning tracking on can scroll it into
   /// view.
   final GlobalKey? pullRequestsFocusKey;
+
+  /// Marks the Documents band, so creating the first document can scroll it
+  /// into view.
+  final GlobalKey? documentsFocusKey;
 
   /// Marks the AI card band so the page can measure where it sits relative to
   /// the viewport. Deliberately the reporter's own child, so the page's
@@ -113,6 +121,13 @@ class TaskForm extends ConsumerWidget {
     // the entrance staggers by position, so a band that renders nothing
     // still delays it.
     final showPullRequests = ref.watch(taskShowsPullRequestsProvider(taskId));
+
+    // The same rule for documents: a band only while the task holds one. The
+    // Add sheet is the way to the first. Nothing while task documents are
+    // switched off.
+    final showDocuments =
+        ref.watch(taskDocumentsEnabledProvider) &&
+        ref.watch(taskDocumentsProvider(taskId)).isNotEmpty;
 
     // only show editor for legacy entries where there is text already
     final plainText = entryState?.entry?.entryText?.plainText.trim() ?? '';
@@ -215,6 +230,15 @@ class TaskForm extends ConsumerWidget {
             child: KeyedSubtree(
               key: pullRequestsFocusKey,
               child: TaskPullRequestsSection(taskId: taskId),
+            ),
+          ),
+        if (showDocuments)
+          ViewportStableSizeReporter(
+            key: ValueKey('documents-size-reporter-$taskId'),
+            offscreenOnly: true,
+            child: KeyedSubtree(
+              key: documentsFocusKey,
+              child: TaskDocumentsSection(taskId: taskId),
             ),
           ),
         if (isFirstRun)

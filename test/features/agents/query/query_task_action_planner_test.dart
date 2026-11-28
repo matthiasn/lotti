@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/change_set.dart';
+import 'package:lotti/features/agents/model/task_document_source.dart';
 import 'package:lotti/features/agents/query/query_task_action_planner.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 
@@ -1056,6 +1057,19 @@ void main() {
       );
     });
 
+    test('a context without a document source offers no document proposal, '
+        'and refuses one', () async {
+      expect(context.documents, isNull);
+      await expectLater(
+        QueryTaskActionPlanner.validate(
+          'write_document_version',
+          {'documentId': 'doc-1', 'markdown': '# Brief', 'changeSummary': ''},
+          context,
+        ),
+        throwsA(isA<QueryTaskActionTargetUnavailable>()),
+      );
+    });
+
     test('withholds link_pull_request, whose numbers the chat context '
         'lacks', () async {
       expect(
@@ -1081,6 +1095,256 @@ void main() {
         ),
         throwsFormatException,
       );
+    });
+  });
+
+  group('document proposals', () {
+    TaskDocumentText doc(String id, String title, int? version, String text) =>
+        TaskDocumentText(
+          summary: TaskDocumentSummary(
+            id: id,
+            title: title,
+            versionId: version == null ? null : '$id-v$version',
+            versionNumber: version,
+          ),
+          markdown: text,
+        );
+    final withDocuments = QueryTaskActionContext(
+      taskId: 'habitat',
+      input: const {'title': 'Inspect orbital penguin habitat'},
+      dependencies: const [],
+      documents: {
+        'brief': doc('brief', 'Habitat brief', 2, '# Brief\n\nFeed at noon.'),
+        'log': doc('log', 'Dive log', 1, 'x' * 40000),
+      },
+    );
+
+    Future<({String text, List<ChangeItem> items, Map<String, dynamic> input})>
+    planWith(List<Map<String, Object?>> actions) async {
+      Map<String, dynamic>? sent;
+      final result =
+          await QueryTaskActionPlanner(
+            inference: QueryTextInference(
+              generate: (_, prompt) {
+                sent ??= jsonDecode(prompt) as Map<String, dynamic>;
+                return Stream.value(
+                  jsonEncode({
+                    'answer': 'Review the draft.',
+                    'actions': actions,
+                  }),
+                );
+              },
+            ),
+          ).plan(
+            context: withDocuments,
+            question: 'Make the brief shorter.',
+            conversation: [],
+            cancellation: QueryCancellation(),
+          );
+      return (text: result.text, items: result.items, input: sent!);
+    }
+
+    test('offers the tool, and lists each document with the text that fits '
+        'the budget', () async {
+      final result = await planWith([]);
+      final tools = (result.input['tools'] as List).map(
+        (tool) => (tool as Map)['name'],
+      );
+      expect(tools, contains('write_document_version'));
+      expect(result.input['documents'], [
+        {
+          'id': 'brief',
+          'title': 'Habitat brief',
+          'version': 2,
+          'text': '# Brief\n\nFeed at noon.',
+        },
+        {'id': 'log', 'title': 'Dive log', 'version': 1, 'textOmitted': true},
+      ]);
+    });
+
+    test('stops listing at a document whose entry does not fit, counts the '
+        'rest, and still plans the task action asked for', () async {
+      Map<String, dynamic>? sent;
+      final result =
+          await QueryTaskActionPlanner(
+            inference: QueryTextInference(
+              generate: (_, prompt) {
+                sent ??= jsonDecode(prompt) as Map<String, dynamic>;
+                return Stream.value(
+                  jsonEncode({
+                    'answer': 'Rename it.',
+                    'actions': [
+                      {
+                        'name': 'set_task_title',
+                        'arguments': {'title': 'Inspect the habitat'},
+                        'summary': 'Rename the task',
+                      },
+                    ],
+                  }),
+                );
+              },
+            ),
+          ).plan(
+            context: QueryTaskActionContext(
+              taskId: 'habitat',
+              input: const {'title': 'Inspect orbital penguin habitat'},
+              dependencies: const [],
+              documents: {
+                'brief': doc('brief', 'Habitat brief', 2, '# Brief'),
+                // A title longer than the whole input budget.
+                'huge': doc('huge', 'y' * 40000, 1, 'Short.'),
+                'log': doc('log', 'Dive log', 1, 'Logged.'),
+              },
+            ),
+            question: 'Rename this task to "Inspect the habitat".',
+            conversation: [],
+            cancellation: QueryCancellation(),
+          );
+
+      expect(result.items.single.toolName, 'set_task_title');
+      expect(sent!['documents'], [
+        {
+          'id': 'brief',
+          'title': 'Habitat brief',
+          'version': 2,
+          'text': '# Brief',
+        },
+      ]);
+      expect(sent!['documentsOmitted'], 2);
+    });
+
+    test('records a revision with the title and base version from the '
+        'context, never the model', () async {
+      final result = await planWith([
+        {
+          'name': 'write_document_version',
+          'arguments': {
+            'documentId': ' brief ',
+            'markdown': '# Brief',
+            'changeSummary': ' Shorter. ',
+          },
+          'summary': 'Shorter brief',
+        },
+      ]);
+      expect(result.items.single.toolName, 'write_document_version');
+      expect(result.items.single.args, {
+        'documentId': 'brief',
+        'title': 'Habitat brief',
+        'baseVersionId': 'brief-v2',
+        'markdown': '# Brief',
+        'changeSummary': 'Shorter.',
+      });
+      // What confirmation re-validates on fresh context passes the schema.
+      await QueryTaskActionPlanner.validateItem(
+        result.items.single,
+        withDocuments,
+      );
+    });
+
+    test('records a new document by its trimmed title', () async {
+      final result = await planWith([
+        {
+          'name': 'write_document_version',
+          'arguments': {
+            'newTitle': ' Follow-up email ',
+            'markdown': 'Hi team,',
+            'changeSummary': 'A follow-up email.',
+          },
+          'summary': 'New email',
+        },
+      ]);
+      expect(result.items.single.args, {
+        'newTitle': 'Follow-up email',
+        'markdown': 'Hi team,',
+        'changeSummary': 'A follow-up email.',
+      });
+    });
+
+    test('keeps the answer and drops a revision of a document whose text '
+        'was not supplied', () async {
+      final result = await planWith([
+        {
+          'name': 'write_document_version',
+          'arguments': {
+            'documentId': 'log',
+            'markdown': 'Shorter log',
+            'changeSummary': 'Shorter.',
+          },
+          'summary': 'Shorter log',
+        },
+      ]);
+      expect(result.text, 'Review the draft.');
+      expect(result.items, isEmpty);
+    });
+
+    test('refuses a document the task does not hold', () async {
+      await expectLater(
+        QueryTaskActionPlanner.validate(
+          'write_document_version',
+          {'documentId': 'elsewhere', 'markdown': 'x', 'changeSummary': ''},
+          withDocuments,
+        ),
+        throwsA(isA<QueryTaskActionTargetUnavailable>()),
+      );
+    });
+
+    for (final (name, args) in [
+      (
+        'both a document and a title',
+        {
+          'documentId': 'brief',
+          'newTitle': 'Brief',
+          'markdown': 'x',
+          'changeSummary': '',
+        },
+      ),
+      (
+        'neither a document nor a title',
+        {
+          'markdown': 'x',
+          'changeSummary': '',
+        },
+      ),
+      (
+        'blank text',
+        {
+          'newTitle': 'Brief',
+          'markdown': '  ',
+          'changeSummary': '',
+        },
+      ),
+    ]) {
+      test('rejects a proposal with $name as malformed', () async {
+        await expectLater(
+          QueryTaskActionPlanner.validate(
+            'write_document_version',
+            args,
+            withDocuments,
+          ),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e,
+              'kind',
+              isNot(isA<QueryTaskActionTargetUnavailable>()),
+            ),
+          ),
+        );
+      });
+    }
+
+    test('history shows a document proposal without its text', () {
+      const item = ChangeItem(
+        toolName: 'write_document_version',
+        args: {'documentId': 'brief', 'markdown': '# Brief'},
+        humanSummary: '',
+      );
+      expect(QueryTaskActionPlanner.historyArgs(item), {'documentId': 'brief'});
+      const other = ChangeItem(
+        toolName: 'set_task_title',
+        args: {'title': 'Feed'},
+        humanSummary: '',
+      );
+      expect(QueryTaskActionPlanner.historyArgs(other), other.args);
     });
   });
 }

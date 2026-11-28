@@ -3024,7 +3024,9 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
         argumentsJson: jsonEncode({
           ...report.toJson(),
           if (report.sections.isNotEmpty)
-            'sections': [for (final section in report.sections) section.toJson()],
+            'sections': [
+              for (final section in report.sections) section.toJson(),
+            ],
         }),
         phase: LocalTaskAgentEvalToolCallPhase.reportPass,
       ),

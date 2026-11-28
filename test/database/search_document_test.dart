@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/search_document.dart';
 import 'package:research_package/model.dart';
 
+import '../classes/task_document_fixtures.dart';
 import '../features/github/pull_request_fixtures.dart';
 import '../test_data/test_data.dart';
 
@@ -111,6 +112,18 @@ void main() {
 
   // ADR 0139: a check-in is found by its topics and its notes for next
   // time, not only by the note it was logged with.
+  test(
+    'a task document is found by its title; a version contributes nothing, '
+    'so search lists the document once rather than every revision',
+    () {
+      final document = documentOf(taskDocumentEntry(clock: {'a': 1}));
+      expect(document.title, 'Client one-pager');
+      expect(document.body, isEmpty);
+
+      expect(documentOf(taskDocumentVersionEntry()).isEmpty, isTrue);
+    },
+  );
+
   test('a check-in is found by its topics and next-time notes', () {
     final checkIn = JournalEntity.checkIn(
       meta: meta,

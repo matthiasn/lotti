@@ -1,7 +1,7 @@
 ---
 type: Domain Model
 title: JournalEntity
-description: The twenty-variant union every recorded journal entry is, what sits outside it, and the shared Metadata envelope that carries identity, time, ownership and sync state.
+description: The twenty-two-variant union every recorded journal entry is, what sits outside it, and the shared Metadata envelope that carries identity, time, ownership and sync state.
 resource: ../../lib/classes/journal_entities.dart
 tags: [domain, journal-entity, metadata, freezed]
 status: stable
@@ -18,7 +18,7 @@ sources:
     last_modified: 2026-07-22
 ---
 
-# One union, twenty variants
+# One union, twenty-two variants
 
 Every entry the user *records* is a `JournalEntity` — a Freezed union whose
 variants are:
@@ -26,7 +26,7 @@ variants are:
 `journalEntry`, `journalImage`, `journalAudio`, `task`, `event`, `checklistItem`,
 `checklist`, `quantitative`, `measurement`, `aiResponse`, `workout`,
 `habitCompletion`, `survey`, `dayPlan`, `rating`, `project`, `relationship`,
-`checkIn`, `goal`, `pullRequest`.
+`checkIn`, `goal`, `pullRequest`, `taskDocument`, `taskDocumentVersion`.
 
 That breadth is why the [journal feature](../features/journal/) is the app's
 substrate rather than a note-taking screen: create, browse, search, link, focus
@@ -78,6 +78,8 @@ classDiagram
   JournalEntity <|-- CheckInEntry
   JournalEntity <|-- GoalEntry
   JournalEntity <|-- PullRequestEntry
+  JournalEntity <|-- TaskDocumentEntry
+  JournalEntity <|-- TaskDocumentVersionEntry
 
   Task o-- TaskData : payload
   JournalEvent o-- EventData : payload
@@ -169,12 +171,18 @@ each kind carries what it needs.
   versions of a `PullRequestEntry` are merged by the journal write, keeping the
   newer observation, rather than raised as a conflict for the user — see
   [GitHub pull requests](../features/github.md).
+- **A task document's text is in immutable version rows.** A
+  `TaskDocumentEntry` holds only its title and which version it shows; each
+  `TaskDocumentVersionEntry` is written once. Two concurrent versions of the
+  document row are merged by the journal write, not raised as a conflict —
+  see [Task documents](../features/documents.md).
 
 Several variants also **denormalize a lookup key into the `subtype` column**
 via `toDbEntity`, so "all children of X" is an indexed filter rather than a
 link traversal: `habitCompletion` writes `habitId`, `checkIn` writes
 `relationshipId`, a goal's spec snapshot writes the goal it belongs to, and
-`pullRequest` writes `owner/repo#number`. That column is the only place the
+`pullRequest` writes `owner/repo#number`, and a task document version writes
+its document. That column is the only place the
 pattern lives — see [relationships](../features/relationships.md).
 
 # Related

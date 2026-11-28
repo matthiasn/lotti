@@ -11,6 +11,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/documents/state/task_document_providers.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -106,6 +107,8 @@ void main() {
             journalDbProvider.overrideWithValue(mockDb),
             // The app's wiring, so the GitHub row appears as in production.
             journalDetailSlotsProvider.overrideWithValue(appJournalDetailSlots),
+            // Task documents switched on, so their row is offered on a task.
+            taskDocumentsEnabledProvider.overrideWithValue(true),
             ...extraOverrides,
           ]),
           child: makeTestableWidget2(
@@ -257,6 +260,9 @@ void main() {
           findsOneWidget,
         );
         expect(find.byIcon(LottiIcons.timer), findsNothing);
+        // A task can hold any number of documents, so the row is always
+        // offered on one.
+        expect(find.text(messages.taskDocumentsAddAction), findsOneWidget);
       },
     );
 
@@ -290,6 +296,8 @@ void main() {
         )!;
         expect(find.byIcon(LottiIcons.timer), findsNothing);
         expect(find.text(messages.addActionCreateLinkedTask), findsNothing);
+        // Documents belong to tasks only.
+        expect(find.text(messages.taskDocumentsAddAction), findsNothing);
         // The rest of the sheet stays: a note and a voice note among them.
         expect(find.text(messages.taskFirstRunWriteNote), findsOneWidget);
       },
@@ -458,6 +466,17 @@ void main() {
         (tester) async {
           expect(await offered(tester, token: GitHubTokenStatus.valid), isTrue);
           expect(find.byIcon(LottiIcons.merge), findsOneWidget);
+          // The slot rows keep the order they are wired in: a document,
+          // then pull request tracking.
+          final messages = AppLocalizations.of(
+            tester.element(find.byType(DsActionRow).first),
+          )!;
+          expect(
+            tester.getTopLeft(find.text(messages.taskDocumentsAddAction)).dy,
+            lessThan(
+              tester.getTopLeft(find.text(messages.githubTrackPullRequests)).dy,
+            ),
+          );
         },
       );
 
