@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -507,6 +508,11 @@ class _RelationshipDetailsPageState
             );
             final rowInset = tokens.spacing.step3;
             return CustomScrollView(
+              // A couple of screens either way, as the chat keeps: at the
+              // default 250 a row was dropped as soon as it left the screen
+              // and built again on the way back up — its photos resolved
+              // and decoded again in front of the reader.
+              scrollCacheExtent: const ScrollCacheExtent.pixels(2000),
               slivers: [
                 PersonHeroAppBar(
                   relationship: relationship,

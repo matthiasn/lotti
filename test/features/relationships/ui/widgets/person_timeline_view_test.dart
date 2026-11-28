@@ -1004,6 +1004,124 @@ void main() {
       expect(find.text('Line many-0.'), findsNothing);
     });
 
+    // Sixty recordings on a phone under [above]; the newest holds a long
+    // talk and is opened when [open], so its row is many times the height of
+    // the others. Walks down a part of a screen at a time and back up, and
+    // returns the length the list claimed at every stop with its real one.
+    Future<({List<double> claimed, double real})> walkHistory(
+      WidgetTester tester, {
+      required bool open,
+      double above = 0,
+    }) async {
+      final many = [
+        for (var i = 0; i < 60; i++)
+          audio(
+            'many-$i',
+            DateTime(2026, 8, 12).subtract(Duration(hours: 7 * i)),
+            words: i == 0 ? List.filled(12, longWords).join(' ') : longWords,
+          ),
+      ];
+      final summaries = {for (final a in many) a.meta.id: 'Line ${a.meta.id}.'};
+      const phone = Size(390, 844);
+      setTestSurfaceSize(tester, phone);
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          CustomScrollView(
+            controller: controller,
+            slivers: [
+              SliverToBoxAdapter(child: SizedBox(height: above)),
+              PersonTimelineSliver(
+                timeline: timeline(checkIns: [], tasks: [], entries: many),
+                summaries: summaries,
+                personName: 'Pip',
+                filter: PersonTimelineFilter.all,
+                onFilter: (_) {},
+                actions: actions(),
+                now: now,
+              ),
+            ],
+          ),
+          mediaQueryData: const MediaQueryData(size: phone),
+        ),
+      );
+      await tester.pump();
+      final position = controller.position;
+      if (open) {
+        await tester.tap(
+          find.byKey(const ValueKey('folded-words-more-many-0')),
+        );
+        await tester.pump();
+        expect(
+          tester
+              .getSize(find.byKey(const ValueKey('person-timeline-row-many-0')))
+              .height,
+          greaterThan(position.viewportDimension),
+          reason: 'the opened row alone fills the screen',
+        );
+      }
+
+      final claimed = <double>[];
+      Future<void> walk(double step) async {
+        for (var stop = 0; stop < 600; stop++) {
+          final target = (position.pixels + step).clamp(
+            0.0,
+            position.maxScrollExtent,
+          );
+          if (target == position.pixels) return;
+          controller.jumpTo(target);
+          await tester.pump();
+          claimed.add(position.maxScrollExtent);
+        }
+        fail('the walk never reached its end');
+      }
+
+      await walk(90);
+      expect(find.text('Line many-59.'), findsOneWidget);
+      // At the end every row has been laid out: this is the real length.
+      final real = position.maxScrollExtent;
+      await walk(-90);
+      expect(position.pixels, 0);
+      return (claimed: claimed, real: real);
+    }
+
+    testWidgets('an opened recording never makes the history claim many '
+        'times its length, down the list or back up to it', (tester) async {
+      // A list that guesses its length from the rows on stage multiplied the
+      // one opened row by all the rows left: the scrollbar thumb shrank and
+      // leapt whenever that row was on stage, most of all on the way back up
+      // to it.
+      final (:claimed, :real) = await walkHistory(tester, open: true);
+
+      expect(
+        claimed,
+        everyElement(inInclusiveRange(real * 0.7, real * 1.3)),
+        reason: 'the real length is $real',
+      );
+    });
+
+    testWidgets('a history that starts below the screen is not measured by '
+        'its heading alone', (tester) async {
+      // On the page the timeline sits under the header and the briefing, so
+      // the first rows the list lays out are its heading, the filter and a
+      // section label — far shorter than a row. Once rows have been seen,
+      // the claim has to follow them, all the way down and back.
+      final (:claimed, :real) = await walkHistory(
+        tester,
+        open: false,
+        above: 2000,
+      );
+
+      // The stops past the blocks above, where rows are on stage.
+      final amongRows = claimed.sublist(30, claimed.length - 30);
+      expect(
+        amongRows,
+        everyElement(inInclusiveRange(real * 0.7, real * 1.3)),
+        reason: 'the real length is $real',
+      );
+    });
+
     testWidgets('a voice note with words offers Sort this, which sorts it; '
         'one still waiting for its words does not', (tester) async {
       await pump(

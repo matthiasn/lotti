@@ -20,6 +20,7 @@ import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.d
 import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_timeline_extent.dart';
 import 'package:lotti/features/speech/ui/widgets/recording_playback.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/check_in_interaction_icon.dart';
@@ -274,6 +275,28 @@ class PersonTimelineSliver extends ConsumerWidget {
           ),
         ),
     ];
+    return _TimelineList(slots: slots);
+  }
+}
+
+/// The timeline's lazy list, holding what it has learned about how tall its
+/// rows usually are ([TimelineSlotExtents]) across the rebuilds a reload brings.
+class _TimelineList extends StatefulWidget {
+  const _TimelineList({required this.slots});
+
+  final List<_TimelineSlot> slots;
+
+  @override
+  State<_TimelineList> createState() => _TimelineListState();
+}
+
+class _TimelineListState extends State<_TimelineList> {
+  final _extents = TimelineSlotExtents();
+
+  @override
+  Widget build(BuildContext context) {
+    final slots = widget.slots;
+    final scaler = MediaQuery.textScalerOf(context);
     final indexOfKey = {
       for (final (index, slot) in slots.indexed) slot.key: index,
     };
@@ -285,13 +308,27 @@ class PersonTimelineSliver extends ConsumerWidget {
     // every reload that added or removed a row: the person page flickered
     // after each check-in, twice (the check-in, then its recording moving
     // in). With it, a row keeps its element wherever it moves.
-    return SliverList.builder(
-      itemCount: slots.length,
-      itemBuilder: (context, index) {
-        final slot = slots[index];
-        return slot.build(context, slot.key);
-      },
-      findChildIndexCallback: (key) => indexOfKey[key],
+    return SliverList(
+      delegate: TimelineChildDelegate(
+        (context, index) {
+          final slot = slots[index];
+          // The list's key sits on the measuring wrapper; the slot keeps its
+          // own on what it builds.
+          return MeasuredSlot(
+            key: ValueKey<Key>(slot.key),
+            onSize: (size) => _extents.measure(
+              slot.key,
+              size.height,
+              layout: (size.width, scaler),
+            ),
+            child: slot.build(context, slot.key),
+          );
+        },
+        extents: _extents,
+        childCount: slots.length,
+        findChildIndexCallback: (key) =>
+            key is ValueKey<Key> ? indexOfKey[key.value] : null,
+      ),
     );
   }
 }
