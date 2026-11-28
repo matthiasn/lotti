@@ -938,6 +938,29 @@ words opened with *Show more* (the shared `FoldedWords`) keep the row alive in t
 lazy list while open (`AutomaticKeepAliveClientMixin`), so a jump down the
 history and back does not build it again folded and shorter.
 
+The page's scroll view keeps 2,000 px built either side of the screen
+(`ScrollCacheExtent.pixels(2000)`, the chat's figure). At the default 250 a
+row was dropped as soon as it left the screen and built again on the way
+back up, its photos resolved and decoded again in front of the reader; now
+the rows a couple of screens behind are the same elements when they return.
+
+An opened row is also why the timeline estimates its own length. A lazy list
+guesses the rows it has not built as the average height of the rows laid out
+right now times the rows left, and a recording's opened words are twenty to
+thirty rows tall: with one on stage — the newest, at the top, as the reader
+scrolled back up to it — the list claimed up to twenty-five times its real
+length, so the scrollbar thumb shrank and leapt and a thumb drag or a jump to
+the end overshot. Each slot now reports the height it is laid out at, the
+list keeps the least height each was seen at — an opened row still counts as
+the folded row it was — and its delegate (`TimelineChildDelegate`, in
+[`person_timeline_extent.dart`](../../lib/features/relationships/ui/widgets/person_timeline_extent.dart))
+extrapolates the rows left from the mean of those, kept across rebuilds. That
+is a guess, not a bound: it is exact once the end is laid out and within a
+few rows' height before, and a row that grows for good, its words arriving,
+counts at its earlier height. The heights belong to the width and text scale
+they were measured at, and are forgotten when either changes: every row is a
+different height then.
+
 The page sets four type sizes: the title for the name (23), `heading3` for
 the one headline the brief card leads with (20), 16 for section and card
 titles (`subtitle1`, semibold) and everything the user reads (`bodyMedium`),

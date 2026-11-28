@@ -295,6 +295,62 @@ void main() {
       )
       .data!;
 
+  testWidgets('a row a screen and more behind the reader stays built, so the '
+      'way back up meets the same row', (tester) async {
+    // Sixty check-ins on a phone: far more history than the screen holds.
+    tester.view
+      ..physicalSize = const Size(390, 844)
+      ..devicePixelRatio = 1;
+    when(
+      () => mockRepository.getRelationshipById('rel-1'),
+    ).thenAnswer((_) async => relationship());
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer(
+      (_) async => [for (var i = 0; i < 60; i++) checkIn('check-in-$i')],
+    );
+    await pumpPage(tester);
+
+    const firstRow = ValueKey('person-timeline-row-check-in-0');
+    final built = tester.element(
+      find.byKey(firstRow, skipOffstage: false),
+    );
+    final position = tester
+        .state<ScrollableState>(
+          find
+              .descendant(
+                of: find.byType(CustomScrollView),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        )
+        .position;
+    final rowTop = tester
+        .getTopLeft(find.byKey(firstRow, skipOffstage: false))
+        .dy;
+
+    // The row ends up 1,200 px above the top of the screen: well past the
+    // 250 a list keeps by default, inside the two screens this page keeps.
+    position.jumpTo(position.pixels + rowTop + 1200);
+    await tester.pump();
+    expect(
+      tester.getBottomLeft(find.byKey(firstRow, skipOffstage: false)).dy,
+      lessThan(-1000),
+      reason: 'the row is far behind the reader',
+    );
+    position.jumpTo(0);
+    await tester.pump();
+
+    expect(built.mounted, isTrue, reason: 'never dropped');
+    expect(
+      identical(
+        tester.element(find.byKey(firstRow, skipOffstage: false)),
+        built,
+      ),
+      isTrue,
+    );
+  });
+
   testWidgets('tapping the hero avatar opens the photo sheet', (tester) async {
     when(
       () => mockRepository.getRelationshipById('rel-1'),
