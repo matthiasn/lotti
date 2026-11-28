@@ -169,10 +169,32 @@ mixin _SyncDbSequenceWatermarks on _$SyncDatabase {
     }
   }
 
+  /// Moves [hostId]'s watermark past every resolved counter contiguous with
+  /// [current].
+  ///
+  /// The window query below walks every resolved row above [current], so its
+  /// cost grows with how far the log runs past the watermark — not with how far
+  /// the watermark moves. A watermark stuck behind a hole that never fills sits
+  /// below everything since, and the 2026-11-26 logs show the walk at 113 ms
+  /// median and 570 ms p95 while holding the sync database's write lock, most
+  /// often only to conclude it cannot move.
+  ///
+  /// It can move only if `current + 1` is resolved, so a primary-key probe of
+  /// that one row comes first and settles the common stuck case on its own.
   Future<void> _advanceSequenceWatermarkForHost(
     String hostId,
     int current,
   ) async {
+    final nextRow = await customSelect(
+      'SELECT status FROM sync_sequence_log WHERE host_id = ? AND counter = ?',
+      variables: [Variable.withString(hostId), Variable.withInt(current + 1)],
+      readsFrom: {syncSequenceLog},
+    ).getSingleOrNull();
+    if (nextRow == null ||
+        !_isResolvedSequenceStatusIndex(nextRow.read<int>('status'))) {
+      return;
+    }
+
     final row = await customSelect(
       '''
       WITH resolved_after AS (

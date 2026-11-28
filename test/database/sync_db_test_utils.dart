@@ -98,6 +98,23 @@ Future<void> clearAllSyncTables(SyncDatabase db) async {
   await db.customStatement('PRAGMA foreign_keys = ON');
 }
 
+/// Records the SQL of every select it intercepts, in order, then runs it.
+/// Wrap a call in `runWithInterceptor` to assert which reads it issued — or,
+/// for a skipped expensive read, that it issued none.
+class SelectStatementLog extends QueryInterceptor {
+  final List<String> statements = [];
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    statements.add(statement);
+    return executor.runSelect(statement, args);
+  }
+}
+
 /// Records the `EXPLAIN QUERY PLAN` of each select it intercepts, then runs
 /// the select itself. Wrap a call in `runWithInterceptor` and read
 /// [formattedPlan] to assert the plan of the statement drift actually built.
